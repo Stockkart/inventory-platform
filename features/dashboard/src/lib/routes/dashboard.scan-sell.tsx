@@ -1008,7 +1008,8 @@ export default function ScanSellPage() {
       return;
     }
 
-    if (item.currentCount <= 0) {
+    const availableBase = item.currentBaseCount ?? item.currentCount;
+    if (availableBase <= 0) {
       notifyError('Product is out of stock');
       return;
     }
@@ -1032,9 +1033,10 @@ export default function ScanSellPage() {
         // Update quantity if item already in cart
         const newQuantity = existingItem.quantity + 1;
         const newBaseQuantity = existingItem.baseQuantity + existingItem.unitFactor;
-        // Validate stock only if we have accurate inventory data
-        if (item.currentCount > 0 && newBaseQuantity > item.currentCount) {
-          notifyError(`Only ${item.currentCount} items available in stock`);
+        // Validate stock: compare base quantities (currentBaseCount is in base units)
+        const availableBase = item.currentBaseCount ?? item.currentCount;
+        if (availableBase > 0 && newBaseQuantity > availableBase) {
+          notifyError(`Only ${availableBase} items available in stock`);
           return prev;
         }
         updatedItems = prev.map((cartItem) =>
@@ -1051,9 +1053,9 @@ export default function ScanSellPage() {
         const unitFactor = getUnitFactorForUnit(item, defaultUnit, 1);
         const availableUnits = getAvailableUnitsFromInventory(item);
         const baseQuantity = unitFactor;
-        // Add new item to cart
-        // Validate stock only if we have accurate inventory data
-        if (item.currentCount > 0 && item.currentCount < baseQuantity) {
+        // Add new item to cart: validate stock in base units (currentBaseCount)
+        const availableBase = item.currentBaseCount ?? item.currentCount;
+        if (availableBase > 0 && availableBase < baseQuantity) {
           notifyError('Product is out of stock');
           return prev;
         }
@@ -1094,13 +1096,11 @@ export default function ScanSellPage() {
     const factor = Math.max(1, originalItem.unitFactor);
     const newQuantity = Number((newBaseQuantity / factor).toFixed(3));
 
-    if (
-      originalItem.inventoryItem.currentCount < 999999 &&
-      newBaseQuantity > originalItem.inventoryItem.currentCount
-    ) {
-      setError(
-        `Only ${originalItem.inventoryItem.currentCount} items available in stock`
-      );
+    const availableBase =
+      originalItem.inventoryItem.currentBaseCount ??
+      originalItem.inventoryItem.currentCount;
+    if (availableBase < 999999 && newBaseQuantity > availableBase) {
+      setError(`Only ${availableBase} items available in stock`);
       throw new Error('Stock exceeded');
     }
 
