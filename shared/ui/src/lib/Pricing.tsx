@@ -1,53 +1,58 @@
-import type { Plan } from '@inventory-platform/types';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
+import { plansApi } from '@inventory-platform/api';
+import { PlanGrid } from './PlanGrid';
 import styles from './Pricing.module.css';
 
 export function Pricing() {
-  const plans: Plan[] = [
-    {
-      name: 'Starter',
-      description: 'Perfect for small businesses',
-      price: '₹000',
-      priceSuffix: '/month',
-      features: [
-        'Up to 1,000 products',
-        'Basic analytics',
-        'Email support',
-        'Single user access',
-        'Barcode scanning',
-      ],
-    },
-    {
-      name: 'Professional',
-      label: 'Most Popular',
-      description: 'For growing businesses',
-      price: '₹000',
-      priceSuffix: '/month',
-      highlight: true,
-      features: [
-        'Unlimited products',
-        'Advanced analytics',
-        'Priority support',
-        'Custom integrations',
-        'Multi-location support',
-        'Multi user access',
-        'Team collaboration',
-      ],
-    },
-    {
-      name: 'Enterprise',
-      description: 'For large organizations',
-      price: 'Custom',
-      priceSuffix: '',
-      features: [
-        'Everything in Professional',
-        'Dedicated account manager',
-        'Custom development',
-        'SLA guarantee',
-        'Advanced security',
-        'On-premise deployment',
-      ],
-    },
-  ];
+  const navigate = useNavigate();
+  const [plans, setPlans] = useState<Awaited<ReturnType<typeof plansApi.list>>>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const data = await plansApi.list();
+        setPlans(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load plans');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPlans();
+  }, []);
+
+  const handleGetStarted = () => {
+    navigate('/signup');
+  };
+
+  if (loading) {
+    return (
+      <section id="pricing" className={styles.pricing}>
+        <div className={styles.container}>
+          <div className={styles.header}>
+            <p className={styles.subtitle}>Loading plans...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section id="pricing" className={styles.pricing}>
+        <div className={styles.container}>
+          <div className={styles.header}>
+            <p className={styles.subtitle} style={{ color: 'var(--error, #dc2626)' }}>
+              {error}
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="pricing" className={styles.pricing}>
@@ -59,49 +64,12 @@ export function Pricing() {
           </p>
         </header>
 
-        <div className={styles.grid}>
-          {plans.map((plan) => (
-            <article
-              key={plan.name}
-              className={`${styles.card} ${
-                plan.highlight ? styles.cardHighlight : ''
-              }`}
-            >
-              {plan.label && <div className={styles.badge}>{plan.label}</div>}
-
-              <div className={styles.cardHeader}>
-                <h3 className={styles.planName}>{plan.name}</h3>
-                <p className={styles.planDescription}>{plan.description}</p>
-
-                <div className={styles.priceRow}>
-                  <span className={styles.price}>{plan.price}</span>
-                  {plan.priceSuffix && (
-                    <span className={styles.priceSuffix}>
-                      {plan.priceSuffix}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <ul className={styles.featuresList}>
-                {plan.features.map((feature) => (
-                  <li key={feature} className={styles.featureItem}>
-                    <span className={styles.checkIcon}>✓</span>
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <button
-                className={`${styles.ctaButton} ${
-                  plan.highlight ? styles.ctaPrimary : styles.ctaGhost
-                }`}
-              >
-                Get Started
-              </button>
-            </article>
-          ))}
-        </div>
+        <PlanGrid
+          plans={plans}
+          onSelectPlan={() => handleGetStarted()}
+          ctaLabel="Get Started"
+          showTrialBadge
+        />
       </div>
     </section>
   );

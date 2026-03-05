@@ -10,7 +10,10 @@ export { default as ProductSearchPage } from './lib/routes/dashboard.product-sea
 export { default as PricingPage } from './lib/routes/dashboard.pricing';
 export { default as RemindersPage } from './lib/routes/dashboard.reminders';
 export { default as ScanSellPage } from './lib/routes/dashboard.scan-sell';
-export { default as CheckoutPage, meta as checkoutMeta } from './lib/routes/dashboard.checkout';
+export {
+  default as CheckoutPage,
+  meta as checkoutMeta,
+} from './lib/routes/dashboard.checkout';
 export { default as InvitationsPage } from './lib/routes/dashboard.invitations';
 export { default as MyInvitationsPage } from './lib/routes/dashboard.my-invitations';
 export { default as ShopUsersPage } from './lib/routes/dashboard.shop-users';
@@ -19,6 +22,8 @@ export { default as HistoryPage } from './lib/routes/dashboard.history';
 export { default as RefundPage } from './lib/routes/dashboard.refund';
 export { default as PriceEditPage } from './lib/routes/dashboard.price-edit';
 export { default as TaxesPage } from './lib/routes/dashboard.taxes';
+export { default as PlanStatusPage } from './lib/routes/dashboard.plan-status';
+export { default as PlanPaymentPage } from './lib/routes/dashboard.plan-payment';
 
 // Re-export meta functions
 export { meta as dashboardMeta } from './lib/routes/dashboard';
@@ -38,3 +43,5 @@ export { meta as historyMeta } from './lib/routes/dashboard.history';
 export { meta as refundMeta } from './lib/routes/dashboard.refund';
 export { meta as priceEditMeta } from './lib/routes/dashboard.price-edit';
 export { meta as taxesMeta } from './lib/routes/dashboard.taxes';
+export { meta as planStatusMeta } from './lib/routes/dashboard.plan-status';
+export { meta as planPaymentMeta } from './lib/routes/dashboard.plan-payment';
