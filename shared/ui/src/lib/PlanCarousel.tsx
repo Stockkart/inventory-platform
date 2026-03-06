@@ -20,9 +20,10 @@ export function PlanCarousel({
   ctaLabel = 'Get Started',
   showTrialBadge = true,
 }: PlanCarouselProps) {
-  const [activeIndex, setActiveIndex] = useState(0);
+  const visible = 3;
+  const startIndex = visible;
+  const [activeIndex, setActiveIndex] = useState(startIndex);
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const [centerOffset, setCenterOffset] = useState(0);
 
   const [step, setStep] = useState(CARD_WIDTH + CARD_GAP);
   const [isPaused, setIsPaused] = useState(false);
@@ -35,7 +36,6 @@ export function PlanCarousel({
       const isNarrow = w < 768;
       const cardW = isNarrow ? 260 : CARD_WIDTH;
       const gap = isNarrow ? 16 : CARD_GAP;
-      setCenterOffset(w / 2 - cardW / 2);
       setStep(cardW + gap);
     };
     update();
@@ -50,26 +50,43 @@ export function PlanCarousel({
     return 0;
   });
 
+  const clones = [
+    ...sortedPlans.slice(-visible),
+    ...sortedPlans,
+    ...sortedPlans.slice(0, visible),
+  ];
+
   const total = sortedPlans.length;
 
   useEffect(() => {
     if (isPaused) return;
 
     const interval = setInterval(() => {
-      setActiveIndex((i) => (i + 1) % total);
+      setActiveIndex((i) => i + 1);
     }, 4000);
 
     return () => clearInterval(interval);
-  }, [total, isPaused]);
+  }, [isPaused]);
+
+  useEffect(() => {
+    if (activeIndex >= sortedPlans.length + visible) {
+      setTimeout(() => setActiveIndex(visible), 0);
+    }
+
+    if (activeIndex < visible) {
+      setTimeout(() => setActiveIndex(sortedPlans.length + visible - 1), 0);
+    }
+  }, [activeIndex, sortedPlans.length]);
+
+  const goNext = useCallback(() => {
+    setIsPaused(true);
+    setActiveIndex((i) => i + 1);
+  }, []);
 
   const goPrev = useCallback(() => {
     setIsPaused(true);
-    setActiveIndex((i) => (i - 1 + total) % total);
-  }, [total]);
-  const goNext = useCallback(() => {
-    setIsPaused(true);
-    setActiveIndex((i) => (i + 1) % total);
-  }, [total]);
+    setActiveIndex((i) => i - 1);
+  }, []);
 
   if (sortedPlans.length === 0) return null;
 
@@ -94,10 +111,10 @@ export function PlanCarousel({
           <div
             className={styles.track}
             style={{
-              transform: `translateX(${centerOffset - activeIndex * step}px)`,
+              transform: `translateX(-${(activeIndex - 1) * step}px)`,
             }}
           >
-            {sortedPlans.map((plan, idx) => {
+            {clones.map((plan, idx) => {
               const diff = idx - activeIndex;
               const isCenter = diff === 0;
               const isLeft = diff === -1;
@@ -125,17 +142,17 @@ ${isRight ? styles.slideRight : ''}
                     } ${highlight ? styles.cardHighlight : ''}`}
                   >
                     {highlight && isCenter && (
-                      <div className={styles.badge}>Popular</div>
+                      <div className={styles.badge}>Most Popular</div>
                     )}
                     <div className={styles.cardInner}>
                       {showTrialBadge && plan.planName !== EXTRA_USER_PLAN && (
-                        <div className={styles.trialBadge}>Free 30-day trial</div>
+                        <div className={styles.trialBadge}>
+                          Free 30-day trial
+                        </div>
                       )}
                       <h3 className={styles.planName}>{plan.planName}</h3>
                       {plan.planName !== EXTRA_USER_PLAN && plan.bestFor && (
-                        <p className={styles.planDescription}>
-                          {plan.bestFor}
-                        </p>
+                        <p className={styles.planDescription}>{plan.bestFor}</p>
                       )}
                       <div className={styles.priceRow}>
                         <span className={styles.price}>
@@ -150,11 +167,14 @@ ${isRight ? styles.slideRight : ''}
                             : '/year'}
                         </span>
                       </div>
-                      {plan.planName !== EXTRA_USER_PLAN && plan.price != null && plan.price > 0 && (
-                        <p className={styles.oneTimePrice}>
-                          One-time ₹{plan.price?.toLocaleString('en-IN')} if taking support
-                        </p>
-                      )}
+                      {plan.planName !== EXTRA_USER_PLAN &&
+                        plan.price != null &&
+                        plan.price > 0 && (
+                          <p className={styles.oneTimePrice}>
+                            One-time ₹{plan.price?.toLocaleString('en-IN')} if
+                            taking support
+                          </p>
+                        )}
                       <ul className={styles.featuresList}>
                         {features.map((f) => (
                           <li key={f} className={styles.featureItem}>
@@ -191,7 +211,7 @@ ${isRight ? styles.slideRight : ''}
       </div>
 
       <div className={styles.dots}>
-        {sortedPlans.map((_, i) => (
+        {Array.from({ length: total - 2 }, (_, i) => i + 1).map((_, i) => (
           <button
             key={i}
             type="button"
@@ -200,7 +220,7 @@ ${isRight ? styles.slideRight : ''}
             }`}
             onClick={() => {
               setIsPaused(true);
-              setActiveIndex(i);
+              setActiveIndex(i + 1);
             }}
             aria-label={`Go to plan ${i + 1}`}
           />
