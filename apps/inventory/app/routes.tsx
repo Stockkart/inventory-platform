@@ -9,6 +9,7 @@ export default [
   ),
   route('login', './routes/login.tsx'),
   route('signup', './routes/signup.tsx'),
+  route('plans', './routes/plans.tsx'),
   route('shop-selection', './routes/shop-selection.tsx'),
   route('request-join-shop', './routes/request-join-shop.tsx'),
   route('my-requests-invitations', './routes/my-requests-invitations.tsx'),

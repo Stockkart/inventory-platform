@@ -102,7 +102,7 @@ export default function PlanStatusPage() {
                 <div className={styles.trialBadge}>Trial</div>
                 <p className={styles.planName}>Base (Trial) — 30 days</p>
                 <p className={styles.planExpiry}>
-                  Expires: {formatDate(s.expiryDate)}
+                  Expires: {formatDate(s.planExpiryDate)}
                 </p>
                 {s.trialExpired && (
                   <div className={styles.trialExpired}>
@@ -114,7 +114,7 @@ export default function PlanStatusPage() {
               <>
                 <p className={styles.planName}>{s.plan?.planName ?? '—'}</p>
                 <p className={styles.planExpiry}>
-                  Renews: {formatDate(s.expiryDate)}
+                  Renews: {formatDate(s.planExpiryDate)}
                 </p>
                 <p className={styles.planPosition}>
                   Plan {currentPlanIndex + 1} of {plans.length}

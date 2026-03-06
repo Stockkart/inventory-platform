@@ -47,15 +47,6 @@ const MENU_GROUPS: MenuGroup[] = [
     ],
   },
   {
-    id: 'payment-plan',
-    label: 'Payment & Plan',
-    icon: '💳',
-    items: [
-      { path: '/dashboard/plan-payment', label: 'Payment', icon: '💳' },
-      { path: '/dashboard/plan-status', label: 'Plan', icon: '📋' },
-    ],
-  },
-  {
     id: 'reminders-alerts',
     label: 'Reminders & Alerts',
     icon: '🔔',
@@ -95,6 +86,15 @@ const MENU_GROUPS: MenuGroup[] = [
       },
       { path: '/dashboard/join-requests', label: 'Join Requests', icon: '🤝' },
       { path: '/dashboard/shop-users', label: 'Shop Users', icon: '👥' },
+    ],
+  },
+  {
+    id: 'payment-plan',
+    label: 'Payment & Plan',
+    icon: '💳',
+    items: [
+      { path: '/dashboard/plan-payment', label: 'Payment', icon: '💳' },
+      { path: '/dashboard/plan-status', label: 'My Plan', icon: '📋' },
     ],
   },
 ];

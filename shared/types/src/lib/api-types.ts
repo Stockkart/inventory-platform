@@ -1355,7 +1355,7 @@ export interface ShopPlanStatusResponse {
   shopId: string;
   planId: string | null;
   plan: PlanResponse | null;
-  expiryDate: string | null;
+  planExpiryDate: string | null;
   trial: boolean;
   trialExpired: boolean;
   currentUsage: UsageResponse;

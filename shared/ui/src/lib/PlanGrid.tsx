@@ -31,9 +31,6 @@ export function buildPlanFeatures(plan: PlanResponse): string[] {
       features.push(`${plan.userLimit} user${plan.userLimit > 1 ? 's' : ''}`);
     }
   }
-  if (plan.bestFor && plan.planName !== EXTRA_USER_PLAN) {
-    features.push(plan.bestFor);
-  }
   return features;
 }
 
@@ -62,7 +59,11 @@ export function PlanGrid({
     <div className={styles.grid}>
       {sortedPlans.map((plan, idx) => {
         const features = buildPlanFeatures(plan);
-        const highlight = plan.planName === 'Silver' || idx === 2;
+        const highlight =
+          plan.planName === 'Silver' ||
+          idx === 2 ||
+          plan.planName === 'Gold' ||
+          idx === 3;
         const isCurrent = currentPlanId != null && plan.id === currentPlanId;
 
         return (
@@ -94,11 +95,14 @@ export function PlanGrid({
                   {plan.planName === EXTRA_USER_PLAN ? '/user/year' : '/year'}
                 </span>
               </div>
-              {plan.planName !== EXTRA_USER_PLAN && plan.price != null && plan.price > 0 && (
-                <p className={styles.oneTimePrice}>
-                  One-time ₹{plan.price?.toLocaleString('en-IN')} if taking support
-                </p>
-              )}
+              {plan.planName !== EXTRA_USER_PLAN &&
+                plan.price != null &&
+                plan.price > 0 && (
+                  <p className={styles.oneTimePrice}>
+                    One-time ₹{plan.price?.toLocaleString('en-IN')} if taking
+                    support
+                  </p>
+                )}
             </div>
 
             <ul className={styles.featuresList}>

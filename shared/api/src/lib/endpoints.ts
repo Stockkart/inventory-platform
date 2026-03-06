@@ -134,7 +134,6 @@ export const API_ENDPOINTS = {
     BASE: '/plans',
     BY_ID: (id: string) => `/plans/${id}`,
     SHOP_STATUS: '/plans/shop/status',
-    SHOP_STATUS_BY_ID: (shopId: string) => `/plans/shop/${shopId}/status`,
     SHOP_SUGGESTED: (shopId: string) => `/plans/shop/${shopId}/suggested`,
     SHOP_ASSIGN: (shopId: string) => `/plans/shop/${shopId}/assign`,
     SHOP_USAGE: '/plans/shop/usage',

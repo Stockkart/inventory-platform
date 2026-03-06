@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { plansApi } from '@inventory-platform/api';
-import { PlanGrid } from './PlanGrid';
+import { PlanCarousel } from './PlanCarousel';
 import styles from './Pricing.module.css';
 
 export function Pricing() {
@@ -64,12 +64,17 @@ export function Pricing() {
           </p>
         </header>
 
-        <PlanGrid
+        <PlanCarousel
           plans={plans}
           onSelectPlan={() => handleGetStarted()}
           ctaLabel="Get Started"
           showTrialBadge
         />
+        <div className={styles.showAllWrapper}>
+          <Link to="/plans" className={styles.showAllButton}>
+            Show all pricing
+          </Link>
+        </div>
       </div>
     </section>
   );

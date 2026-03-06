@@ -34,16 +34,6 @@ export const plansApi = {
     return response.data;
   },
 
-  /** Get shop plan status by shop ID (requires auth) */
-  getShopStatusById: async (
-    shopId: string
-  ): Promise<ShopPlanStatusResponse> => {
-    const response = await apiClient.get<ApiResponse<ShopPlanStatusResponse>>(
-      API_ENDPOINTS.PLANS.SHOP_STATUS_BY_ID(shopId)
-    );
-    return response.data;
-  },
-
   /** Get suggested next plan for upsell */
   getSuggestedPlan: async (shopId: string): Promise<PlanResponse | null> => {
     const response = await apiClient.get<ApiResponse<PlanResponse | null>>(
