@@ -1362,6 +1362,64 @@ export interface InventoryAnalytics {
   };
 }
 
+// Plan types
+export interface PlanResponse {
+  id: string;
+  planName: string;
+  price: number;
+  arcPrice: number;
+  billingLimit: number | null;
+  billCountLimit: number | null;
+  smsLimit: number | null;
+  whatsappLimit: number | null;
+  userLimit: number | null;
+  unlimited: boolean;
+  linkedId: string | null;
+  bestFor: string | null;
+}
+
+export interface UsageResponse {
+  shopId: string;
+  month: string;
+  billingAmountUsed: number;
+  billCountUsed: number;
+  smsUsed: number;
+  whatsappUsed: number;
+}
+
+export interface ShopPlanStatusResponse {
+  shopId: string;
+  planId: string | null;
+  plan: PlanResponse | null;
+  planExpiryDate: string | null;
+  trial: boolean;
+  trialExpired: boolean;
+  currentUsage: UsageResponse;
+  suggestedPlan: PlanResponse | null;
+  billingLimitReached: boolean;
+  billCountLimitReached: boolean;
+  smsLimitReached: boolean;
+  whatsappLimitReached: boolean;
+  userLimitReached: boolean;
+}
+
+export interface AssignPlanRequest {
+  planId: string;
+  durationMonths: number;
+  paymentMethod?: string;
+}
+
+export interface PlanTransactionResponse {
+  id: string;
+  shopId: string;
+  planId: string;
+  planName: string;
+  amount: number;
+  durationMonths: number;
+  paymentMethod: string;
+  createdAt: string;
+}
+
 // Dashboard types
 export interface DashboardKeyMetrics {
   totalProducts: number;

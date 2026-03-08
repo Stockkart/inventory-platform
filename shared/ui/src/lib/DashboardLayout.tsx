@@ -36,7 +36,11 @@ const MENU_GROUPS: MenuGroup[] = [
         label: 'Product Registration',
         icon: '📦',
       },
-      { path: '/dashboard/product-search', label: 'Product Search', icon: '🔍' },
+      {
+        path: '/dashboard/product-search',
+        label: 'Product Search',
+        icon: '🔍',
+      },
       { path: '/dashboard/pricing', label: 'Pricing', icon: '💰' },
       { path: '/dashboard/scan-sell', label: 'Scan and Sell', icon: '📱' },
       { path: '/dashboard/refund', label: 'Refund', icon: '↩️' },
@@ -60,7 +64,11 @@ const MENU_GROUPS: MenuGroup[] = [
     label: 'Reports & Analytics',
     icon: '📈',
     items: [
-      { path: '/dashboard/analytics', label: 'Analytics Dashboard', icon: '📈' },
+      {
+        path: '/dashboard/analytics',
+        label: 'Analytics Dashboard',
+        icon: '📈',
+      },
       { path: '/dashboard/taxes', label: 'Taxes', icon: '📋' },
       { path: '/dashboard/history', label: 'History', icon: '📜' },
     ],
@@ -71,9 +79,22 @@ const MENU_GROUPS: MenuGroup[] = [
     icon: '👥',
     items: [
       { path: '/dashboard/invitations', label: 'Invitations', icon: '✉️' },
-      { path: '/dashboard/my-invitations', label: 'My Invitations', icon: '📬' },
+      {
+        path: '/dashboard/my-invitations',
+        label: 'My Invitations',
+        icon: '📬',
+      },
       { path: '/dashboard/join-requests', label: 'Join Requests', icon: '🤝' },
       { path: '/dashboard/shop-users', label: 'Shop Users', icon: '👥' },
+    ],
+  },
+  {
+    id: 'payment-plan',
+    label: 'Payment & Plan',
+    icon: '💳',
+    items: [
+      { path: '/dashboard/plan-payment', label: 'Payment', icon: '💳' },
+      { path: '/dashboard/plan-status', label: 'My Plan', icon: '📋' },
     ],
   },
 ];
@@ -149,7 +170,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     return MENU_GROUPS.map((group) => ({
       ...group,
       items: isCashier
-        ? group.items.filter((item) => !CASHIER_HIDDEN_PATHS.includes(item.path))
+        ? group.items.filter(
+            (item) => !CASHIER_HIDDEN_PATHS.includes(item.path)
+          )
         : group.items,
     })).filter((group) => group.items.length > 0);
   }, [user?.role]);

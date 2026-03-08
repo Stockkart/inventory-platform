@@ -1,63 +1,8 @@
-.pricing {
-  padding: 5rem 2rem 6rem;
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-.container {
-  max-width: 1100px;
-  margin: 0 auto;
-}
-
-.header {
-  text-align: center;
-  margin-bottom: 3.5rem;
-}
-
-.title {
-  font-size: 2.75rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--text-primary);
-  margin-bottom: 0.75rem;
-  transition: color 0.3s ease;
-}
-
-.subtitle {
-  font-size: 1.05rem;
-  color: var(--text-secondary);
-  transition: color 0.3s ease;
-}
-
-.showAllWrapper {
-  display: flex;
-  justify-content: center;
-  margin-top: 2rem;
-}
-
-.showAllButton {
-  padding: 0.75rem 1.75rem;
-  font-size: 1rem;
-  font-weight: 500;
-  border-radius: 999px;
-  border: 1px solid var(--border-color);
-  background: transparent;
-  color: var(--text-primary);
-  text-decoration: none;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.showAllButton:hover {
-  background: rgba(148, 163, 184, 0.08);
-  border-color: var(--border-hover);
-}
-
 .grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.75rem;
+  justify-items: stretch;
 }
 
 .card {
@@ -70,7 +15,7 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 420px;
+  min-height: 380px;
   transition:
     border-color 0.2s ease,
     transform 0.2s ease,
@@ -85,11 +30,16 @@
 }
 
 .cardHighlight {
-  border-color: #2563eb; 
+  border-color: #2563eb;
 }
 
 .cardHighlight:hover {
   border-color: #1d4ed8;
+}
+
+.cardCurrent {
+  border-color: #22c55e;
+  background: rgba(34, 197, 94, 0.05);
 }
 
 .badge {
@@ -103,6 +53,18 @@
   border-radius: 999px;
   background: #2563eb;
   color: #f9fafb;
+}
+
+.currentBadge {
+  position: absolute;
+  top: -14px;
+  right: 1rem;
+  padding: 0.25rem 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 999px;
+  background: #22c55e;
+  color: white;
 }
 
 .cardHeader {
@@ -154,6 +116,14 @@
   transition: color 0.3s ease;
 }
 
+.oneTimePrice {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
+  margin-bottom: 0;
+  opacity: 0.9;
+}
+
 .featuresList {
   list-style: none;
   padding: 0;
@@ -193,13 +163,18 @@
     box-shadow 0.15s ease;
 }
 
+.ctaButton:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
 .ctaPrimary {
   background: var(--btn-primary);
   color: var(--btn-text);
   border-color: transparent;
 }
 
-.ctaPrimary:hover {
+.ctaPrimary:hover:not(:disabled) {
   opacity: 0.95;
 }
 
@@ -219,7 +194,7 @@
   color: #ffffff;
 }
 
-.ctaGhost:hover {
+.ctaGhost:hover:not(:disabled) {
   background: rgba(148, 163, 184, 0.08);
   border-color: var(--border-hover);
   transform: translateY(-2px);
@@ -235,23 +210,4 @@
   .card {
     min-height: 0;
   }
-
-  .pricing {
-    padding: 4rem 1.5rem 4.5rem;
-  }
 }
-
-@media (max-width: 640px) {
-  .title {
-    font-size: 2.1rem;
-  }
-
-  .subtitle {
-    font-size: 0.95rem;
-  }
-
-  .pricing {
-    padding-inline: 1.25rem;
-  }
-}
-

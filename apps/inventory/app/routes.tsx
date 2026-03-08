@@ -9,6 +9,7 @@ export default [
   ),
   route('login', './routes/login.tsx'),
   route('signup', './routes/signup.tsx'),
+  route('plans', './routes/plans.tsx'),
   route('shop-selection', './routes/shop-selection.tsx'),
   route('request-join-shop', './routes/request-join-shop.tsx'),
   route('my-requests-invitations', './routes/my-requests-invitations.tsx'),
@@ -17,7 +18,10 @@ export default [
   route('dashboard', './routes/dashboard._layout.tsx', [
     route('', './routes/dashboard.tsx'),
     route('shops', './routes/dashboard.shops.tsx'),
-    route('product-registration', './routes/dashboard.product-registration.tsx'),
+    route(
+      'product-registration',
+      './routes/dashboard.product-registration.tsx'
+    ),
     route('product-search', './routes/dashboard.product-search.tsx'),
     route('pricing', './routes/dashboard.pricing.tsx'),
     route('scan-sell', './routes/dashboard.scan-sell.tsx'),
@@ -34,5 +38,7 @@ export default [
     route('refund', './routes/dashboard.refund.tsx'),
     route('price-edit/:pricingId', './routes/dashboard.price-edit.tsx'),
     route('taxes', './routes/dashboard.taxes.tsx'),
+    route('plan-payment', './routes/dashboard.plan-payment.tsx'),
+    route('plan-status', './routes/dashboard.plan-status.tsx'),
   ]),
 ] satisfies RouteConfig;
