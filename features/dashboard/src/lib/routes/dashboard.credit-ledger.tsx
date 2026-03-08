@@ -9,6 +9,8 @@ import type {
   CustomerResponse,
   ReceivableItem,
   PayableItem,
+  CustomerReceivableItem,
+  PayableToShopItem,
 } from '@inventory-platform/types';
 import styles from './dashboard.refund.module.css';
 import { useNotify } from '@inventory-platform/store';
@@ -83,8 +85,12 @@ export default function CreditLedgerPage() {
 
   // Amounts to pay (amounts this shop owes to vendors)
   const [payables, setPayables] = useState<PayableItem[]>([]);
-  // Amounts to collect (when this shop is the vendor's shop)
+  // Amounts to pay to other shops (bought from them as customer)
+  const [payablesToShops, setPayablesToShops] = useState<PayableToShopItem[]>([]);
+  // Amounts to collect (when this shop is the vendor's shop - from buyer shops)
   const [receivables, setReceivables] = useState<ReceivableItem[]>([]);
+  // Amounts to collect from customers (we sold to them on credit)
+  const [customerReceivables, setCustomerReceivables] = useState<CustomerReceivableItem[]>([]);
 
   const fetchEntries = async (page = 0) => {
     setIsLoading(true);
@@ -130,8 +136,12 @@ export default function CreditLedgerPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await ledgerApi.getPayables();
-      setPayables(res.payables ?? []);
+      const [payablesRes, payablesToShopsRes] = await Promise.all([
+        ledgerApi.getPayables(),
+        ledgerApi.getPayablesToShops(),
+      ]);
+      setPayables(payablesRes.payables ?? []);
+      setPayablesToShops(payablesToShopsRes.payables ?? []);
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to load payables';
       setError(msg);
@@ -145,8 +155,12 @@ export default function CreditLedgerPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await ledgerApi.getReceivables();
-      setReceivables(res.receivables ?? []);
+      const [receivablesRes, customerReceivablesRes] = await Promise.all([
+        ledgerApi.getReceivables(),
+        ledgerApi.getCustomerReceivables(),
+      ]);
+      setReceivables(receivablesRes.receivables ?? []);
+      setCustomerReceivables(customerReceivablesRes.receivables ?? []);
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to load receivables';
       setError(msg);
@@ -245,6 +259,7 @@ export default function CreditLedgerPage() {
       setPaymentDescription('');
       fetchBalance();
       fetchPayables();
+      fetchReceivables();
       setActiveTab('entries');
       fetchEntries(0);
     } catch (e) {
@@ -260,6 +275,20 @@ export default function CreditLedgerPage() {
     paymentPartyType === 'VENDOR'
       ? selectedVendor?.vendorId
       : selectedCustomer?.customerId;
+
+  const handleRecordPaymentFromCustomer = (r: CustomerReceivableItem) => {
+    setSelectedCustomer({
+      customerId: r.customerId,
+      name: r.customerName,
+      phone: r.customerPhone || '',
+    });
+    setSelectedVendor(null);
+    setPaymentPartyType('CUSTOMER');
+    setCustomerPhone(r.customerPhone || '');
+    setPaymentAmount(String(r.balance));
+    setPaymentDescription('');
+    setActiveTab('record-payment');
+  };
 
   const handlePayFromPayables = (p: PayableItem) => {
     setSelectedVendor({
@@ -313,7 +342,7 @@ export default function CreditLedgerPage() {
         </span>
       );
     }
-    if (entry.roleInEntry === 'VENDOR') {
+    if (entry.roleInEntry === 'VENDOR' || entry.roleInEntry === 'SELLER') {
       return isPayment ? (
         <span
           style={{
@@ -712,82 +741,96 @@ export default function CreditLedgerPage() {
         <div className={styles.content}>
           <h3 className={styles.sectionTitle}>Amount to Pay</h3>
           <p style={{ color: 'var(--text-secondary)', marginBottom: 16 }}>
-            Pending amounts your shop owes to vendors from credit purchases. Balances update when you record payments.
+            Pending amounts your shop owes. To vendors (credit purchases) and to other shops (bought from them as customer on credit).
           </p>
-          {isLoading && payables.length === 0 ? (
+          {isLoading && payables.length === 0 && payablesToShops.length === 0 ? (
             <p>Loading...</p>
-          ) : payables.length === 0 ? (
+          ) : payables.length === 0 && payablesToShops.length === 0 ? (
             <p style={{ color: 'var(--text-secondary)' }}>
               No pending amounts to pay.
             </p>
           ) : (
             <>
-              <div
-                style={{
-                  overflowX: 'auto',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: 8,
-                }}
-              >
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr
-                      style={{
-                        backgroundColor: 'var(--bg-secondary)',
-                        borderBottom: '1px solid var(--border-color)',
-                      }}
-                    >
-                      <th style={{ padding: 12, textAlign: 'left' }}>Vendor</th>
-                      <th style={{ padding: 12, textAlign: 'right' }}>Amount</th>
-                      <th style={{ padding: 12, textAlign: 'right' }}>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {payables.map((p) => (
-                      <tr
-                        key={p.vendorId}
-                        style={{
-                          borderBottom: '1px solid var(--border-color)',
-                        }}
-                      >
-                        <td style={{ padding: 12 }}>
-                          {p.vendorName}
-                          {p.counterpartyShopName && (
-                            <span
-                              style={{
-                                display: 'block',
-                                fontSize: '0.85rem',
-                                color: 'var(--text-secondary)',
-                              }}
-                            >
-                              {p.counterpartyShopName}
-                            </span>
-                          )}
-                        </td>
-                        <td
-                          style={{
-                            padding: 12,
-                            textAlign: 'right',
-                            fontWeight: 500,
-                          }}
-                        >
-                          {formatCurrency(p.balance)}
-                        </td>
-                        <td style={{ padding: 12, textAlign: 'right' }}>
-                          <button
-                            type="button"
-                            className={styles.searchBtn}
-                            onClick={() => handlePayFromPayables(p)}
-                            style={{ fontSize: '0.875rem', padding: '6px 12px' }}
-                          >
-                            Record Payment
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              {payables.length > 0 && (
+                <>
+                  <h4 style={{ marginTop: 0, marginBottom: 12 }}>To Vendors</h4>
+                  <div
+                    style={{
+                      overflowX: 'auto',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 8,
+                      marginBottom: 24,
+                    }}
+                  >
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr style={{ backgroundColor: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)' }}>
+                          <th style={{ padding: 12, textAlign: 'left' }}>Vendor</th>
+                          <th style={{ padding: 12, textAlign: 'right' }}>Amount</th>
+                          <th style={{ padding: 12, textAlign: 'right' }}>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {payables.map((p) => (
+                          <tr key={p.vendorId} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                            <td style={{ padding: 12 }}>
+                              {p.vendorName}
+                              {p.counterpartyShopName && (
+                                <span style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                  {p.counterpartyShopName}
+                                </span>
+                              )}
+                            </td>
+                            <td style={{ padding: 12, textAlign: 'right', fontWeight: 500 }}>{formatCurrency(p.balance)}</td>
+                            <td style={{ padding: 12, textAlign: 'right' }}>
+                              <button
+                                type="button"
+                                className={styles.searchBtn}
+                                onClick={() => handlePayFromPayables(p)}
+                                style={{ fontSize: '0.875rem', padding: '6px 12px' }}
+                              >
+                                Record Payment
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+              {payablesToShops.length > 0 && (
+                <>
+                  <h4 style={{ marginBottom: 12 }}>To Shops</h4>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: 12 }}>
+                    Amounts you owe to shops you bought from as a customer. The seller records payment when received.
+                  </p>
+                  <div
+                    style={{
+                      overflowX: 'auto',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 8,
+                    }}
+                  >
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr style={{ backgroundColor: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)' }}>
+                          <th style={{ padding: 12, textAlign: 'left' }}>Shop</th>
+                          <th style={{ padding: 12, textAlign: 'right' }}>Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {payablesToShops.map((p) => (
+                          <tr key={p.sellerShopId} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                            <td style={{ padding: 12 }}>{p.sellerShopName}</td>
+                            <td style={{ padding: 12, textAlign: 'right', fontWeight: 500 }}>{formatCurrency(p.balance)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>
@@ -797,62 +840,98 @@ export default function CreditLedgerPage() {
         <div className={styles.content}>
           <h3 className={styles.sectionTitle}>Amounts to Collect</h3>
           <p style={{ color: 'var(--text-secondary)', marginBottom: 16 }}>
-            Pending amounts that buyer shops owe to vendors. Shown when this shop was assigned as the vendor&apos;s shop during product registration. Balances update when buyers record payments.
+            Pending amounts owed to you. From buyer shops (when you&apos;re the vendor) and from customers (when you sold to them on credit).
           </p>
-          {isLoading && receivables.length === 0 ? (
+          {isLoading && receivables.length === 0 && customerReceivables.length === 0 ? (
             <p>Loading...</p>
-          ) : receivables.length === 0 ? (
+          ) : receivables.length === 0 && customerReceivables.length === 0 ? (
             <p style={{ color: 'var(--text-secondary)' }}>
               No pending amounts to collect.
             </p>
           ) : (
             <>
-              <div
-                style={{
-                  overflowX: 'auto',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: 8,
-                }}
-              >
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr
-                      style={{
-                        backgroundColor: 'var(--bg-secondary)',
-                        borderBottom: '1px solid var(--border-color)',
-                      }}
-                    >
-                      <th style={{ padding: 12, textAlign: 'left' }}>Who has to pay</th>
-                      <th style={{ padding: 12, textAlign: 'left' }}>Vendor</th>
-                      <th style={{ padding: 12, textAlign: 'right' }}>Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {receivables.map((r) => (
-                      <tr
-                        key={`${r.buyerShopId}-${r.vendorId}`}
-                        style={{
-                          borderBottom: '1px solid var(--border-color)',
-                        }}
-                      >
-                        <td style={{ padding: 12 }}>
-                          {r.buyerPayerName || r.buyerShopName}
-                        </td>
-                        <td style={{ padding: 12 }}>{r.vendorName}</td>
-                        <td
-                          style={{
-                            padding: 12,
-                            textAlign: 'right',
-                            fontWeight: 500,
-                          }}
-                        >
-                          {formatCurrency(r.balance)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              {receivables.length > 0 && (
+                <>
+                  <h4 style={{ marginTop: 0, marginBottom: 12 }}>From Buyer Shops</h4>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: 12 }}>
+                    When this shop was assigned as the vendor&apos;s shop during product registration.
+                  </p>
+                  <div
+                    style={{
+                      overflowX: 'auto',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 8,
+                      marginBottom: 24,
+                    }}
+                  >
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr style={{ backgroundColor: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)' }}>
+                          <th style={{ padding: 12, textAlign: 'left' }}>Who has to pay</th>
+                          <th style={{ padding: 12, textAlign: 'left' }}>Vendor</th>
+                          <th style={{ padding: 12, textAlign: 'right' }}>Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {receivables.map((r) => (
+                          <tr key={`${r.buyerShopId}-${r.vendorId}`} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                            <td style={{ padding: 12 }}>{r.buyerPayerName || r.buyerShopName}</td>
+                            <td style={{ padding: 12 }}>{r.vendorName}</td>
+                            <td style={{ padding: 12, textAlign: 'right', fontWeight: 500 }}>{formatCurrency(r.balance)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+              {customerReceivables.length > 0 && (
+                <>
+                  <h4 style={{ marginBottom: 12 }}>From Customers</h4>
+                  <div
+                    style={{
+                      overflowX: 'auto',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 8,
+                    }}
+                  >
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr style={{ backgroundColor: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)' }}>
+                          <th style={{ padding: 12, textAlign: 'left' }}>Customer</th>
+                          <th style={{ padding: 12, textAlign: 'right' }}>Amount</th>
+                          <th style={{ padding: 12, textAlign: 'right' }}>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {customerReceivables.map((r) => (
+                          <tr key={r.customerId} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                            <td style={{ padding: 12 }}>
+                              {r.customerName}
+                              {r.customerPhone && (
+                                <span style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                  {r.customerPhone}
+                                </span>
+                              )}
+                            </td>
+                            <td style={{ padding: 12, textAlign: 'right', fontWeight: 500 }}>{formatCurrency(r.balance)}</td>
+                            <td style={{ padding: 12, textAlign: 'right' }}>
+                              <button
+                                type="button"
+                                className={styles.searchBtn}
+                                onClick={() => handleRecordPaymentFromCustomer(r)}
+                                style={{ fontSize: '0.875rem', padding: '6px 12px' }}
+                              >
+                                Record Payment
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>

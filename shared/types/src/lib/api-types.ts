@@ -915,6 +915,8 @@ export interface AddToCartDto {
   customerGstin?: string;
   customerDlNo?: string;
   customerPan?: string;
+  /** Links customer to a StockKart user. Enables credit sync; user sees "Amount to Pay" in their shop. */
+  customerUserId?: string;
 }
 
 export interface UpdateCartStatusDto {
@@ -1197,6 +1199,30 @@ export interface ReceivableItem {
 
 export interface ReceivablesResponse {
   receivables: ReceivableItem[];
+}
+
+/** Amount to collect from a customer (when we sold to them on credit) */
+export interface CustomerReceivableItem {
+  customerId: string;
+  customerName: string;
+  customerPhone?: string | null;
+  balance: number;
+}
+
+export interface CustomerReceivablesResponse {
+  receivables: CustomerReceivableItem[];
+}
+
+/** Amount we owe to another shop (bought from them as customer on credit) */
+export interface PayableToShopItem {
+  sellerShopId: string;
+  sellerShopName: string;
+  customerId?: string | null;
+  balance: number;
+}
+
+export interface PayablesToShopsResponse {
+  payables: PayableToShopItem[];
 }
 
 /** Amount to pay to a vendor (when viewing from buyer's shop) */

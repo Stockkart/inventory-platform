@@ -3,11 +3,13 @@ import { API_ENDPOINTS } from './endpoints';
 import type {
   ApiResponse,
   CreateLedgerEntryRequest,
+  CustomerReceivablesResponse,
   LedgerBalance,
   LedgerEntriesResponse,
   LedgerEntry,
   LedgerPartyType,
   PayablesResponse,
+  PayablesToShopsResponse,
   ReceivablesResponse,
 } from '@inventory-platform/types';
 
@@ -59,11 +61,27 @@ export const ledgerApi = {
     return (response as ApiResponse<ReceivablesResponse>).data;
   },
 
+  /** Amounts to collect from customers (we sold to them on credit). */
+  getCustomerReceivables: async (): Promise<CustomerReceivablesResponse> => {
+    const response = await apiClient.get<ApiResponse<CustomerReceivablesResponse>>(
+      API_ENDPOINTS.LEDGER.CUSTOMER_RECEIVABLES
+    );
+    return (response as ApiResponse<CustomerReceivablesResponse>).data;
+  },
+
   /** Amounts to pay when this shop owes vendors. */
   getPayables: async (): Promise<PayablesResponse> => {
     const response = await apiClient.get<ApiResponse<PayablesResponse>>(
       API_ENDPOINTS.LEDGER.PAYABLES
     );
     return (response as ApiResponse<PayablesResponse>).data;
+  },
+
+  /** Amounts to pay to other shops (bought from them as customer on credit). */
+  getPayablesToShops: async (): Promise<PayablesToShopsResponse> => {
+    const response = await apiClient.get<ApiResponse<PayablesToShopsResponse>>(
+      API_ENDPOINTS.LEDGER.PAYABLES_TO_SHOPS
+    );
+    return (response as ApiResponse<PayablesToShopsResponse>).data;
   },
 };

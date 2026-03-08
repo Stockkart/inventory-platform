@@ -138,7 +138,9 @@ export const API_ENDPOINTS = {
     BALANCE: '/ledger/balance',
     ENTRIES: '/ledger/entries',
     RECEIVABLES: '/ledger/receivables',
+    CUSTOMER_RECEIVABLES: '/ledger/customer-receivables',
     PAYABLES: '/ledger/payables',
+    PAYABLES_TO_SHOPS: '/ledger/payables-to-shops',
   },
 
   // Dashboard endpoints
