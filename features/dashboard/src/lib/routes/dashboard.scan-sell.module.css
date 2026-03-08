@@ -475,6 +475,81 @@
   margin-bottom: 1rem;
 }
 
+.customerLinkSection {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.customerLinkLabel {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.customerLinkStatus {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.customerUnlinkBtn {
+  font-size: 0.8rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.customerUnlinkBtn:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+.customerLinkSearch {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.customerLinkHint {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.customerLinkSearchBtn {
+  align-self: flex-start;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+  color: white;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.customerLinkSearchBtn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.customerLinkSearchBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.customerLinkMessage {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
 .customerField {
   display: flex;
   flex-direction: column;

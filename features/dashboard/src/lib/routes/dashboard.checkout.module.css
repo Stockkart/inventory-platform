@@ -297,6 +297,18 @@
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
+.creditBtn {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+  color: white;
+  border-color: #8b5cf6;
+}
+
+.creditBtn:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
 /* Actions Section */
 .actionsSection {
   display: flex;

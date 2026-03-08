@@ -559,6 +559,10 @@ export interface CreateInventoryDto {
   reminderAt?: string;
   customReminders?: CustomReminderInput[];
   vendorId?: string;
+  /** When true, record this purchase as credit (buyer owes vendor). When false, treated as paid/cash. */
+  onCredit?: boolean | null;
+  /** When vendor is a StockKart user and purchase is on credit, assign to vendor's shop so they can see it. */
+  vendorShopId?: string | null;
   lotId?: string;
   hsn?: string;
   sac?: string;
@@ -626,6 +630,10 @@ export interface BulkCreateInventoryItem {
 
 export interface BulkCreateInventoryDto {
   vendorId: string;
+  /** When true, record this purchase as credit (buyer owes vendor). */
+  onCredit?: boolean | null;
+  /** When vendor is a StockKart user and purchase is on credit, assign to vendor's shop. */
+  vendorShopId?: string | null;
   lotId?: string | null;
   items: BulkCreateInventoryItem[];
 }
@@ -887,6 +895,7 @@ export interface CartResponse {
   customerGstin?: string;
   customerDlNo?: string;
   customerPan?: string;
+  customerId?: string;
   paymentMethod?: string;
   totalCost?: number | null;
   revenueBeforeTax?: number | null;
@@ -906,6 +915,8 @@ export interface AddToCartDto {
   customerGstin?: string;
   customerDlNo?: string;
   customerPan?: string;
+  /** Links customer to a StockKart user. Enables credit sync; user sees "Amount to Pay" in their shop. */
+  customerUserId?: string;
 }
 
 export interface UpdateCartStatusDto {
@@ -1104,6 +1115,128 @@ export interface ShopUsersResponse {
 // User Role type
 export type UserRole = 'ADMIN' | 'MANAGER' | 'CASHIER';
 
+/** Minimal user info when searching to link vendor/customer to a registered user */
+export interface LinkableUser {
+  userId: string;
+  email: string;
+  name: string;
+}
+
+// Credit Ledger types
+export type LedgerPartyType = 'VENDOR' | 'CUSTOMER';
+export type LedgerEntryType = 'DEBIT' | 'CREDIT';
+export type LedgerSource =
+  | 'PURCHASE'
+  | 'SALE'
+  | 'PAYMENT'
+  | 'ADJUSTMENT';
+export type LedgerReferenceType =
+  | 'INVENTORY'
+  | 'PURCHASE'
+  | 'PAYMENT_RECEIPT'
+  | 'ADJUSTMENT';
+
+export interface LedgerEntry {
+  id: string;
+  shopId: string;
+  partyType: LedgerPartyType;
+  partyId: string;
+  /** Resolved vendor or customer name for display */
+  partyName?: string | null;
+  /** Resolved counterparty shop name (vendor's shop when assigned) */
+  counterpartyShopName?: string | null;
+  /** Display name for Party column: vendor/customer when we're buyer, buyer shop when we're vendor */
+  displayPartyName?: string | null;
+  /** Our role: BUYER (we owe), VENDOR (they owe us as vendor), or SELLER (customer owes us) */
+  roleInEntry?: 'BUYER' | 'VENDOR' | 'SELLER' | null;
+  counterpartyShopId?: string | null;
+  amount: number;
+  type: LedgerEntryType;
+  source: LedgerSource;
+  referenceId?: string | null;
+  referenceType?: LedgerReferenceType | null;
+  description?: string | null;
+  createdByUserId?: string | null;
+  createdAt: string;
+}
+
+export interface LedgerBalance {
+  shopId: string;
+  partyType: LedgerPartyType;
+  partyId: string;
+  balance: number;
+}
+
+export interface CreateLedgerEntryRequest {
+  partyType: LedgerPartyType;
+  partyId: string;
+  amount: number;
+  type: LedgerEntryType;
+  source: LedgerSource;
+  referenceId?: string | null;
+  referenceType?: LedgerReferenceType | null;
+  description?: string | null;
+}
+
+export interface LedgerEntriesResponse {
+  entries: LedgerEntry[];
+  page: number;
+  size: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+/** Amount to collect from a buyer shop (when viewing from vendor's shop) */
+export interface ReceivableItem {
+  buyerShopId: string;
+  buyerShopName: string;
+  /** Display name for who has to pay: shop name and/or owner/contact name */
+  buyerPayerName?: string | null;
+  vendorId: string;
+  vendorName: string;
+  balance: number;
+}
+
+export interface ReceivablesResponse {
+  receivables: ReceivableItem[];
+}
+
+/** Amount to collect from a customer (when we sold to them on credit) */
+export interface CustomerReceivableItem {
+  customerId: string;
+  customerName: string;
+  customerPhone?: string | null;
+  balance: number;
+}
+
+export interface CustomerReceivablesResponse {
+  receivables: CustomerReceivableItem[];
+}
+
+/** Amount we owe to another shop (bought from them as customer on credit) */
+export interface PayableToShopItem {
+  sellerShopId: string;
+  sellerShopName: string;
+  customerId?: string | null;
+  balance: number;
+}
+
+export interface PayablesToShopsResponse {
+  payables: PayableToShopItem[];
+}
+
+/** Amount to pay to a vendor (when viewing from buyer's shop) */
+export interface PayableItem {
+  vendorId: string;
+  vendorName: string;
+  counterpartyShopName?: string | null;
+  balance: number;
+}
+
+export interface PayablesResponse {
+  payables: PayableItem[];
+}
+
 // Vendor types
 export type VendorBusinessType =
   | 'WHOLESALE'
@@ -1120,6 +1253,8 @@ export interface Vendor {
   companyName: string;
   businessType: VendorBusinessType;
   gstinUin?: string | null;
+  /** Optional. Set when vendor is linked to a registered user. */
+  userId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1131,6 +1266,8 @@ export interface CreateVendorDto {
   address?: string;
   businessType: VendorBusinessType;
   gstinUin?: string;
+  /** Optional. Links vendor to a registered user (enables credit sync across shops). */
+  userId?: string | null;
 }
 
 export interface VendorResponse {
@@ -1142,6 +1279,8 @@ export interface VendorResponse {
   companyName: string;
   businessType: VendorBusinessType;
   gstinUin?: string | null;
+  /** Optional. Set when vendor is linked to a registered user. */
+  userId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1156,6 +1295,8 @@ export interface Customer {
   gstin?: string | null;
   dlNo?: string | null;
   pan?: string | null;
+  /** Optional. Set when customer is linked to a registered user. */
+  userId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1169,6 +1310,8 @@ export interface CustomerResponse {
   gstin?: string | null;
   dlNo?: string | null;
   pan?: string | null;
+  /** Optional. Set when customer is linked to a registered user. */
+  userId?: string | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -109,7 +109,7 @@ export default function CheckoutPage() {
     );
   }
 
-  const handlePayment = async (method: 'CASH' | 'ONLINE') => {
+  const handlePayment = async (method: 'CASH' | 'ONLINE' | 'CREDIT') => {
     if (!checkoutData) {
       notifyError('Checkout data not available');
       return;
@@ -596,6 +596,21 @@ export default function CheckoutPage() {
                   💳
                 </span>
                 {isProcessingPayment ? 'Processing...' : 'Pay Online'}
+              </button>
+              <button
+                className={`${styles.paymentBtn} ${styles.creditBtn}`}
+                onClick={() => handlePayment('CREDIT')}
+                disabled={isProcessingPayment || isUpdating}
+                title={
+                  !checkoutData.customerId
+                    ? 'Add customer (search by phone in cart) to sell on credit'
+                    : 'Complete sale on credit – amount will be tracked in Credit Ledger'
+                }
+              >
+                <span role="img" aria-label="Credit">
+                  📒
+                </span>
+                {isProcessingPayment ? 'Processing...' : 'Sell on Credit'}
               </button>
             </div>
           </div>

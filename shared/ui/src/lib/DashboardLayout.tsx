@@ -60,6 +60,14 @@ const MENU_GROUPS: MenuGroup[] = [
     ],
   },
   {
+    id: 'credit-ledger',
+    label: 'Credit & Ledger',
+    icon: '📒',
+    items: [
+      { path: '/dashboard/credit-ledger', label: 'Credit Ledger', icon: '📒' },
+    ],
+  },
+  {
     id: 'analytics-history',
     label: 'Reports & Analytics',
     icon: '📈',
