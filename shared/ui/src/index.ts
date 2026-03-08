@@ -5,6 +5,8 @@ export * from './lib/Hero';
 export * from './lib/Stats';
 export * from './lib/Features';
 export * from './lib/Pricing';
+export * from './lib/PlanGrid';
+export * from './lib/PlanCarousel';
 export * from './lib/CTA';
 export * from './lib/Footer';
 export * from './lib/LoginForm';

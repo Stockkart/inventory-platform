@@ -54,6 +54,9 @@
   ],
   "references": [
     {
+      "path": "../../shared/store/tsconfig.lib.json"
+    },
+    {
       "path": "../../features/onboarding/tsconfig.lib.json"
     },
     {

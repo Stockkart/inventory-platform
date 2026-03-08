@@ -24,3 +24,4 @@ export * from './lib/dashboard';
 export * from './lib/upload';
 export * from './lib/pricing';
 export * from './lib/gstr1';
+export * from './lib/plans';
