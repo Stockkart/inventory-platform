@@ -58,6 +58,44 @@
   font-weight: 400;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.editBtn {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-primary, #3b82f6);
+  background: transparent;
+  color: var(--color-primary, #3b82f6);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.editBtn:hover {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.editInput {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  width: 100%;
+  min-width: 0;
+}
+
+.editInput:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
 .closeBtn {
   background: rgba(0, 0, 0, 0.05);
   border: none;

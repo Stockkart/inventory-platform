@@ -195,6 +195,13 @@ export default function InventoryAlertPage() {
         open={!!selected}
         item={selected}
         onClose={() => setSelected(null)}
+        editable
+        onUpdated={(updated) => {
+          setAlerts((prev) =>
+            prev.map((a) => (a.id === updated.id ? { ...a, raw: updated } : a))
+          );
+          setSelected(updated);
+        }}
       />
 
       {/* Threshold Configuration Modal */}

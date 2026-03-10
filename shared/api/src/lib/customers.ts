@@ -21,5 +21,19 @@ export const customersApi = {
       throw error;
     }
   },
+  searchByEmail: async (email: string): Promise<CustomerResponse | null> => {
+    try {
+      const response = await apiClient.get<ApiResponse<CustomerResponse>>(
+        API_ENDPOINTS.CUSTOMERS.SEARCH,
+        { email }
+      );
+      return response.data;
+    } catch (error: any) {
+      if (error?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  },
 };
 

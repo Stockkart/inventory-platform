@@ -471,6 +471,13 @@ export default function ProductSearchPage() {
         open={selectedItem !== null}
         item={selectedItem}
         onClose={() => setSelectedItem(null)}
+        editable
+        onUpdated={(updated) => {
+          setInventory((prev) =>
+            prev.map((i) => (i.id === updated.id ? updated : i))
+          );
+          setSelectedItem(updated);
+        }}
       />
     </div>
   );

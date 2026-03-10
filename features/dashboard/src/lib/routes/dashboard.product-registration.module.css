@@ -435,6 +435,17 @@
   border-radius: 8px;
 }
 
+.stockkartUserBadge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #059669;
+  background: #d1fae5;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
 .vendorCard h4 {
   margin: 0 0 0.75rem 0;
   font-size: 1.1rem;

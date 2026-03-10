@@ -6,7 +6,7 @@ import {
   ChangeEvent,
 } from 'react';
 import { useNavigate, Link } from 'react-router';
-import { inventoryApi, cartApi, customersApi } from '@inventory-platform/api';
+import { inventoryApi, cartApi, customersApi, usersApi } from '@inventory-platform/api';
 import type {
   AvailableUnit,
   BillingMode,
@@ -350,6 +350,9 @@ export default function ScanSellPage() {
   const [customerDlNo, setCustomerDlNo] = useState('');
   const [customerPan, setCustomerPan] = useState('');
   const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
+  const [linkedUser, setLinkedUser] = useState<{ userId: string; email: string; name: string } | null>(null);
+  const [userSearchMessage, setUserSearchMessage] = useState<string | null>(null);
+  const [isSearchingUser, setIsSearchingUser] = useState(false);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [customerSectionOpen, setCustomerSectionOpen] = useState(false);
   const [additionalDiscountOverrides, setAdditionalDiscountOverrides] = useState<
@@ -957,6 +960,7 @@ export default function ScanSellPage() {
         ...(isRetailer && customerGstin && { customerGstin }),
         ...(isRetailer && customerDlNo && { customerDlNo }),
         ...(isRetailer && customerPan && { customerPan }),
+        ...(linkedUser && { customerUserId: linkedUser.userId }),
       };
 
       const updatedCart = await cartApi.add(cartPayload);
@@ -1301,6 +1305,7 @@ export default function ScanSellPage() {
           ...(isRetailer && customerGstin && { customerGstin }),
           ...(isRetailer && customerDlNo && { customerDlNo }),
           ...(isRetailer && customerPan && { customerPan }),
+          ...(linkedUser && { customerUserId: linkedUser.userId }),
         };
 
         const updatedCart = await cartApi.add(cartPayload);
@@ -1422,6 +1427,9 @@ export default function ScanSellPage() {
           setCustomerDlNo('');
           setCustomerPan('');
         }
+        if (customer.userId) {
+          setLinkedUser({ userId: customer.userId, email: customer.email || '', name: customer.name || '' });
+        }
       } else {
         // Customer not found - clear all fields
         setCustomerName('');
@@ -1449,6 +1457,94 @@ export default function ScanSellPage() {
     }
   };
 
+  const handleCustomerSearchByEmail = async () => {
+    if (!customerEmail.trim()) {
+      notifyError('Please enter a customer email');
+      return;
+    }
+
+    setIsSearchingCustomer(true);
+    setError(null);
+    try {
+      const customer = await customersApi.searchByEmail(customerEmail.trim());
+      if (customer) {
+        setCustomerName(customer.name || '');
+        setCustomerPhone(customer.phone || '');
+        setCustomerAddress(customer.address || '');
+        const hasRetailerFields = !!(
+          customer.gstin ||
+          customer.dlNo ||
+          customer.pan
+        );
+        if (hasRetailerFields) {
+          setIsRetailer(true);
+          setCustomerGstin(customer.gstin || '');
+          setCustomerDlNo(customer.dlNo || '');
+          setCustomerPan(customer.pan || '');
+        } else {
+          setIsRetailer(false);
+          setCustomerGstin('');
+          setCustomerDlNo('');
+          setCustomerPan('');
+        }
+        if (customer.userId) {
+          setLinkedUser({ userId: customer.userId, email: customer.email || '', name: customer.name || '' });
+        }
+      } else {
+        setCustomerName('');
+        setCustomerPhone('');
+        setCustomerAddress('');
+        setIsRetailer(false);
+        setCustomerGstin('');
+        setCustomerDlNo('');
+        setCustomerPan('');
+      }
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to search customer';
+      notifyError(errorMessage);
+      setCustomerName('');
+      setCustomerPhone('');
+      setCustomerAddress('');
+      setIsRetailer(false);
+      setCustomerGstin('');
+      setCustomerDlNo('');
+      setCustomerPan('');
+    } finally {
+      setIsSearchingCustomer(false);
+    }
+  };
+
+  const handleSearchUserForLink = async () => {
+    const email = customerEmail?.trim();
+    if (!email) {
+      notifyError('Enter customer email first to check for StockKart user');
+      return;
+    }
+    setIsSearchingUser(true);
+    setUserSearchMessage(null);
+    setLinkedUser(null);
+    try {
+      const user = await usersApi.searchByEmail(email);
+      if (user) {
+        setLinkedUser({ userId: user.userId, email: user.email, name: user.name });
+        setUserSearchMessage(`Found: ${user.name} (${user.email})`);
+        setCustomerName((prev) => prev || user.name);
+      } else {
+        setUserSearchMessage('No StockKart user found with this email');
+      }
+    } catch {
+      setUserSearchMessage('Failed to search. Please try again.');
+    } finally {
+      setIsSearchingUser(false);
+    }
+  };
+
+  const handleUnlinkUser = () => {
+    setLinkedUser(null);
+    setUserSearchMessage(null);
+  };
+
   const handleProcessPayment = async () => {
     if (cartItems.length === 0) {
       notifyError('Cart is empty');
@@ -1472,6 +1568,7 @@ export default function ScanSellPage() {
         ...(isRetailer &&
           customerDlNo && { customerDlNo: customerDlNo.trim() }),
         ...(isRetailer && customerPan && { customerPan: customerPan.trim() }),
+        ...(linkedUser && { customerUserId: linkedUser.userId }),
       };
 
       const upsertResponse = await cartApi.add(upsertPayload);
@@ -1884,16 +1981,28 @@ export default function ScanSellPage() {
                     <label htmlFor="sidebar-customerEmail" className={styles.customerLabel}>
                       Email
                     </label>
-                    <input
-                      id="sidebar-customerEmail"
-                      type="email"
-                      className={styles.customerInput}
-                      placeholder="Email"
-                      value={customerEmail}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                        setCustomerEmail(e.currentTarget.value)
-                      }
-                    />
+                    <div className={styles.customerInputRow}>
+                      <input
+                        id="sidebar-customerEmail"
+                        type="email"
+                        className={styles.customerInput}
+                        placeholder="Email"
+                        value={customerEmail}
+                        onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                          setCustomerEmail(e.currentTarget.value)
+                        }
+                        disabled={isSearchingCustomer}
+                      />
+                      <button
+                        type="button"
+                        className={styles.sidebarSearchBtn}
+                        onClick={handleCustomerSearchByEmail}
+                        disabled={isSearchingCustomer || !customerEmail.trim()}
+                        title="Search customer by email"
+                      >
+                        {isSearchingCustomer ? '…' : '⌕'}
+                      </button>
+                    </div>
                   </div>
                   <div className={styles.customerField}>
                     <label htmlFor="sidebar-customerAddress" className={styles.customerLabel}>
@@ -1978,6 +2087,44 @@ export default function ScanSellPage() {
                     </div>
                   </div>
                 )}
+                <div className={styles.customerLinkSection}>
+                  <span className={styles.customerLinkLabel}>
+                    Link to StockKart user
+                  </span>
+                  {linkedUser ? (
+                    <div className={styles.customerLinkStatus}>
+                      <span>
+                        Linked: {linkedUser.name} ({linkedUser.email})
+                      </span>
+                      <button
+                        type="button"
+                        className={styles.customerUnlinkBtn}
+                        onClick={handleUnlinkUser}
+                      >
+                        Unlink
+                      </button>
+                    </div>
+                  ) : (
+                    <div className={styles.customerLinkSearch}>
+                      <p className={styles.customerLinkHint}>
+                        Enter email above and search to link a new customer to their StockKart account.
+                      </p>
+                      <button
+                        type="button"
+                        className={styles.customerLinkSearchBtn}
+                        onClick={handleSearchUserForLink}
+                        disabled={isSearchingUser || !customerEmail?.trim()}
+                      >
+                        {isSearchingUser ? '…' : 'Search by email'}
+                      </button>
+                      {userSearchMessage && (
+                        <span className={styles.customerLinkMessage}>
+                          {userSearchMessage}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -2006,22 +2153,29 @@ export default function ScanSellPage() {
                       </span>
                     </div>
                   )}
-                {cartBillingMode === 'REGULAR' && (
+                {cartBillingMode === 'REGULAR' &&
+                  ((cartData?.taxTotal ?? 0) !== 0 ||
+                    (cartData?.sgstAmount ?? 0) !== 0 ||
+                    (cartData?.cgstAmount ?? 0) !== 0) && (
+                  <>
+                    <div className={styles.summaryRow}>
+                      <span>SGST ({getSGSTPercentage()}%)</span>
+                      <span>₹{calculateSGST().toFixed(2)}</span>
+                    </div>
+                    <div className={styles.summaryRow}>
+                      <span>CGST ({getCGSTPercentage()}%)</span>
+                      <span>₹{calculateCGST().toFixed(2)}</span>
+                    </div>
+                  </>
+                )}
+                {((cartData?.taxTotal ?? 0) !== 0 ||
+                  (cartData?.sgstAmount ?? 0) !== 0 ||
+                  (cartData?.cgstAmount ?? 0) !== 0) && (
                   <div className={styles.summaryRow}>
-                    <span>SGST ({getSGSTPercentage()}%)</span>
-                    <span>₹{calculateSGST().toFixed(2)}</span>
+                    <span>Total Tax</span>
+                    <span>₹{calculateTax().toFixed(2)}</span>
                   </div>
                 )}
-                {cartBillingMode === 'REGULAR' && (
-                  <div className={styles.summaryRow}>
-                    <span>CGST ({getCGSTPercentage()}%)</span>
-                    <span>₹{calculateCGST().toFixed(2)}</span>
-                  </div>
-                )}
-                <div className={styles.summaryRow}>
-                  <span>Total Tax</span>
-                  <span>₹{calculateTax().toFixed(2)}</span>
-                </div>
                 <div className={styles.summaryRowTotal}>
                   <span>Total</span>
                   <span>₹{calculateTotal().toFixed(2)}</span>
@@ -2031,7 +2185,6 @@ export default function ScanSellPage() {
           </div>
           {cartData &&
             (cartData.totalCost != null ||
-              cartData.revenueBeforeTax != null ||
               cartData.revenueAfterTax != null ||
               cartData.totalProfit != null ||
               cartData.marginPercent != null) && (
@@ -2042,12 +2195,6 @@ export default function ScanSellPage() {
                     ₹{(cartData.totalCost ?? 0).toFixed(2)}
                   </span>
                 </div>
-                {cartData.revenueBeforeTax != null && (
-                  <div className={styles.summaryRow}>
-                    <span>Revenue (before tax)</span>
-                    <span>₹{cartData.revenueBeforeTax.toFixed(2)}</span>
-                  </div>
-                )}
                 {cartData.revenueAfterTax != null && (
                   <div className={styles.summaryRow}>
                     <span>Revenue (after tax)</span>

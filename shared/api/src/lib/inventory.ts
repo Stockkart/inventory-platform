@@ -10,6 +10,8 @@ import type {
   BulkCreateInventoryDto,
   BulkCreateInventoryResponse,
   ParseInvoiceResponse,
+  UpdateInventoryRequest,
+  InventoryItem,
 } from '@inventory-platform/types';
 import axios from 'axios';
 
@@ -100,6 +102,17 @@ export const inventoryApi = {
       API_ENDPOINTS.INVENTORY.BY_ID(inventoryId),
       { thresholdCount }
     );
+  },
+
+  update: async (
+    inventoryId: string,
+    data: UpdateInventoryRequest
+  ): Promise<InventoryItem> => {
+    const response = await apiClient.put<ApiResponse<InventoryItem>>(
+      API_ENDPOINTS.INVENTORY.BY_ID(inventoryId),
+      data
+    );
+    return response.data;
   },
 
   parseInvoice: async (imageFile: File): Promise<ParseInvoiceResponse> => {

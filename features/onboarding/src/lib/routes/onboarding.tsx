@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { useAuthStore } from '@inventory-platform/store';
 import { shopsApi } from '@inventory-platform/api';
-import type { OnboardingStep } from '@inventory-platform/types';
+import type { OnboardingStep, ShopType } from '@inventory-platform/types';
 import styles from './onboarding.module.css';
 import { useNotify } from '@inventory-platform/store';
 
 const STEPS: OnboardingStep[] = [
   'name',
+  'shopType',
   'tagline',
   // 'businessId',
   'contactPhone',
@@ -18,6 +19,7 @@ const STEPS: OnboardingStep[] = [
 
 const STEP_LABELS: Record<OnboardingStep, string> = {
   name: 'Shop Name',
+  shopType: 'Shop Type',
   // businessId: 'Business ID',
   contactPhone: 'Mobile number',
   contactEmail: 'Contact Email',
@@ -25,6 +27,12 @@ const STEP_LABELS: Record<OnboardingStep, string> = {
   businessDetails: 'Business Details',
   tagline: 'Tagline',
 };
+
+const SHOP_TYPES: { value: ShopType; label: string }[] = [
+  { value: 'RETAILER', label: 'Retailer' },
+  { value: 'DISTRIBUTOR', label: 'Distributor' },
+  { value: 'WHOLESALER', label: 'Wholesaler' },
+];
 
 export function meta() {
   return [
@@ -44,6 +52,7 @@ export default function OnboardingPage() {
   const { error: notifyError } = useNotify;
   const [formData, setFormData] = useState({
     name: '',
+    shopType: '' as ShopType | '',
     // businessId: 'Pharmacy',
     location: {
       primaryAddress: '',
@@ -105,6 +114,8 @@ export default function OnboardingPage() {
       setFormData({ ...formData, [name]: value });
     } else if (step === 'tagline') {
       setFormData({ ...formData, tagline: value });
+    } else if (step === 'shopType' || name === 'shopType') {
+      setFormData({ ...formData, shopType: value as ShopType });
     }
 
     if (error) {
@@ -115,6 +126,7 @@ export default function OnboardingPage() {
   const getCurrentValue = (fieldName?: string): string => {
     const step = STEPS[currentStep];
     if (step === 'name') return formData.name;
+    if (step === 'shopType') return formData.shopType;
     // if (step === 'businessId') return formData.businessId;
     if (step === 'contactPhone') return formData.contactPhone;
     if (step === 'contactEmail') return formData.contactEmail;
@@ -133,8 +145,13 @@ export default function OnboardingPage() {
   const handleContinue = () => {
     const step = STEPS[currentStep];
 
-    // Validate location step - check all required fields
-    if (step === 'location') {
+    // Validate shopType step
+    if (step === 'shopType') {
+      if (!formData.shopType || !['RETAILER', 'DISTRIBUTOR', 'WHOLESALER'].includes(formData.shopType)) {
+        notifyError('Please select a shop type');
+        return;
+      }
+    } else if (step === 'location') {
       if (!formData.location.primaryAddress.trim()) {
         notifyError('Please enter primary address');
         return;
@@ -214,6 +231,7 @@ export default function OnboardingPage() {
         },
         contactEmail: formData.contactEmail,
         contactPhone: formData.contactPhone,
+        shopType: formData.shopType || undefined,
         gstinNo: formData.gstinNo || undefined,
         fssai: formData.fssai || undefined,
         dlNo: formData.dlNo || undefined,
@@ -535,6 +553,33 @@ export default function OnboardingPage() {
                   </div>
                 </div>
               </>
+            ) : STEPS[currentStep] === 'shopType' ? (
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Shop Type *</label>
+                <div
+                  className={styles.radioGroup}
+                  role="radiogroup"
+                  aria-label="Shop type"
+                >
+                  {SHOP_TYPES.map(({ value, label }) => (
+                    <label
+                      key={value}
+                      className={`${styles.radioOption} ${getCurrentValue() === value ? styles.radioOptionSelected : ''}`}
+                    >
+                      <input
+                        type="radio"
+                        name="shopType"
+                        value={value}
+                        checked={getCurrentValue() === value}
+                        onChange={handleChange}
+                        disabled={isLoading}
+                        className={styles.radioInput}
+                      />
+                      <span className={styles.radioLabel}>{label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
             ) : STEPS[currentStep] === 'tagline' ? (
               <>
                 <p

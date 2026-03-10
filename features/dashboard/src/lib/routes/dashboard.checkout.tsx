@@ -109,7 +109,7 @@ export default function CheckoutPage() {
     );
   }
 
-  const handlePayment = async (method: 'CASH' | 'ONLINE') => {
+  const handlePayment = async (method: 'CASH' | 'ONLINE' | 'CREDIT') => {
     if (!checkoutData) {
       notifyError('Checkout data not available');
       return;
@@ -521,10 +521,14 @@ export default function CheckoutPage() {
                   <span>₹{checkoutData.cgstAmount.toFixed(2)}</span>
                 </div>
               )}
-            <div className={styles.summaryRow}>
-              <span>Tax:</span>
-              <span>₹{checkoutData.taxTotal.toFixed(2)}</span>
-            </div>
+            {((checkoutData.taxTotal ?? 0) !== 0 ||
+              (checkoutData.sgstAmount ?? 0) !== 0 ||
+              (checkoutData.cgstAmount ?? 0) !== 0) && (
+              <div className={styles.summaryRow}>
+                <span>Tax:</span>
+                <span>₹{checkoutData.taxTotal.toFixed(2)}</span>
+              </div>
+            )}
             {checkoutData.additionalDiscountTotal > 0 && (
               <div className={styles.summaryRow}>
                 <span>Additional Discount:</span>
@@ -536,7 +540,6 @@ export default function CheckoutPage() {
               <span>₹{checkoutData.grandTotal.toFixed(2)}</span>
             </div>
             {(checkoutData.totalCost != null ||
-              checkoutData.revenueBeforeTax != null ||
               checkoutData.revenueAfterTax != null ||
               checkoutData.totalProfit != null ||
               checkoutData.marginPercent != null) && (
@@ -546,12 +549,6 @@ export default function CheckoutPage() {
                   <span>Total Cost:</span>
                   <span>₹{(checkoutData.totalCost ?? 0).toFixed(2)}</span>
                 </div>
-                {checkoutData.revenueBeforeTax != null && (
-                  <div className={styles.summaryRow}>
-                    <span>Revenue (before tax):</span>
-                    <span>₹{checkoutData.revenueBeforeTax.toFixed(2)}</span>
-                  </div>
-                )}
                 {checkoutData.revenueAfterTax != null && (
                   <div className={styles.summaryRow}>
                     <span>Revenue (after tax):</span>
@@ -599,6 +596,21 @@ export default function CheckoutPage() {
                   💳
                 </span>
                 {isProcessingPayment ? 'Processing...' : 'Pay Online'}
+              </button>
+              <button
+                className={`${styles.paymentBtn} ${styles.creditBtn}`}
+                onClick={() => handlePayment('CREDIT')}
+                disabled={isProcessingPayment || isUpdating}
+                title={
+                  !checkoutData.customerId
+                    ? 'Add customer (search by phone in cart) to sell on credit'
+                    : 'Complete sale on credit – amount will be tracked in Credit Ledger'
+                }
+              >
+                <span role="img" aria-label="Credit">
+                  📒
+                </span>
+                {isProcessingPayment ? 'Processing...' : 'Sell on Credit'}
               </button>
             </div>
           </div>

@@ -1,10 +1,11 @@
 import { useState, FormEvent, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { QRCodeSVG } from 'qrcode.react';
-import { inventoryApi, vendorsApi, uploadApi } from '@inventory-platform/api';
+import { inventoryApi, vendorsApi, uploadApi, usersApi } from '@inventory-platform/api';
 import type {
   CreateInventoryDto,
   CustomReminderInput,
+  LinkableUser,
   Vendor,
   CreateVendorDto,
   VendorBusinessType,
@@ -16,6 +17,7 @@ import type {
   DiscountApplicable,
   SchemeType,
   BillingMode,
+  ShopMembership,
 } from '@inventory-platform/types';
 import { CustomRemindersSection } from '@inventory-platform/ui';
 import { useNotify } from '@inventory-platform/store';
@@ -87,6 +89,10 @@ export default function ProductRegistrationPage() {
   });
   const [customBusinessType, setCustomBusinessType] = useState('');
   const [showCustomBusinessType, setShowCustomBusinessType] = useState(false);
+  // Link vendor to registered user
+  const [linkedUser, setLinkedUser] = useState<LinkableUser | null>(null);
+  const [isSearchingUser, setIsSearchingUser] = useState(false);
+  const [userSearchMessage, setUserSearchMessage] = useState<string | null>(null);
 
   const [lotId, setLotId] = useState('');
   const [lotIdSearchQuery, setLotIdSearchQuery] = useState('');
@@ -95,6 +101,13 @@ export default function ProductRegistrationPage() {
   >([]);
   const [isSearchingLots, setIsSearchingLots] = useState(false);
   const [showLotIdDropdown, setShowLotIdDropdown] = useState(false);
+
+  // Take on credit (buyer owes vendor) - when true, ledger entry is created
+  const [onCredit, setOnCredit] = useState<boolean>(false);
+  // When vendor is StockKart user: assign credit to their shop so they can see it
+  const [vendorShops, setVendorShops] = useState<ShopMembership[]>([]);
+  const [selectedVendorShopId, setSelectedVendorShopId] = useState<string>('');
+  const [isLoadingVendorShops, setIsLoadingVendorShops] = useState(false);
 
   // Multiple products state
   const [products, setProducts] = useState<ProductFormData[]>([]);
@@ -747,7 +760,11 @@ export default function ProductRegistrationPage() {
             unit: 'SALE UNIT',
             factor: Number(product.conversionFactor) || 1,
           },
-          expiryDate: product.expiryDate,
+          expiryDate: product.expiryDate
+            ? product.expiryDate.includes('T') && product.expiryDate.includes('Z')
+              ? product.expiryDate
+              : `${String(product.expiryDate).trim().slice(0, 10)}T00:00:00Z`
+            : '',
           reminderAt: reminderAtISO,
           customReminders: customReminders,
           hsn: product.hsn || null,
@@ -788,10 +805,10 @@ export default function ProductRegistrationPage() {
           ...(product.purchaseDate
             ? {
                 purchaseDate:
-                  product.purchaseDate.includes('T') ||
+                  product.purchaseDate.includes('T') &&
                   product.purchaseDate.includes('Z')
-                    ? new Date(product.purchaseDate).toISOString()
-                    : `${product.purchaseDate}T00:00:00Z`,
+                    ? product.purchaseDate
+                    : `${String(product.purchaseDate).trim().slice(0, 10)}T00:00:00Z`,
               }
             : {}),
           ...(validRates.length > 0
@@ -811,7 +828,11 @@ export default function ProductRegistrationPage() {
       // Create bulk request
       const bulkData: BulkCreateInventoryDto = {
         vendorId: selectedVendor.vendorId,
+        onCredit,
         ...(lotId && { lotId }),
+        ...(onCredit &&
+          selectedVendor.userId &&
+          selectedVendorShopId && { vendorShopId: selectedVendorShopId }),
         items,
       };
 
@@ -930,12 +951,27 @@ export default function ProductRegistrationPage() {
     setVendorSearchQuery(vendor.name);
     setShowVendorDropdown(false);
     setVendorSearchResults([]);
+    setSelectedVendorShopId('');
+    setVendorShops([]);
+    if (vendor.userId) {
+      setIsLoadingVendorShops(true);
+      vendorsApi
+        .getVendorShops(vendor.vendorId)
+        .then((shops) => {
+          setVendorShops(shops ?? []);
+          if (shops?.length === 1) setSelectedVendorShopId(shops[0].shopId);
+        })
+        .catch(() => setVendorShops([]))
+        .finally(() => setIsLoadingVendorShops(false));
+    }
   };
 
   const handleCloseVendorModal = () => {
     setShowVendorModal(false);
     setShowCustomBusinessType(false);
     setCustomBusinessType('');
+    setLinkedUser(null);
+    setUserSearchMessage(null);
     setVendorFormData({
       name: '',
       contactEmail: '',
@@ -944,6 +980,36 @@ export default function ProductRegistrationPage() {
       businessType: 'WHOLESALE',
       gstinUin: '',
     });
+  };
+
+  const handleSearchUserForLink = async () => {
+    const email = vendorFormData.contactEmail?.trim();
+    if (!email) {
+      notifyError('Enter vendor email first to check for registered user');
+      return;
+    }
+    setIsSearchingUser(true);
+    setUserSearchMessage(null);
+    setLinkedUser(null);
+    try {
+      const user = await usersApi.searchByEmail(email);
+      if (user) {
+        setLinkedUser(user);
+        setUserSearchMessage(`Found: ${user.name} (${user.email})`);
+        setVendorFormData((prev) => ({ ...prev, name: user.name }));
+      } else {
+        setUserSearchMessage('No registered user found with this email');
+      }
+    } catch {
+      setUserSearchMessage('Failed to search. Please try again.');
+    } finally {
+      setIsSearchingUser(false);
+    }
+  };
+
+  const handleUnlinkUser = () => {
+    setLinkedUser(null);
+    setUserSearchMessage(null);
   };
 
   const handleCreateVendor = async () => {
@@ -977,6 +1043,7 @@ export default function ProductRegistrationPage() {
         ...(vendorFormData.gstinUin?.trim() && {
           gstinUin: vendorFormData.gstinUin.trim(),
         }),
+        ...(linkedUser && { userId: linkedUser.userId }),
       };
       const vendor = await vendorsApi.create(vendorPayload);
       setSelectedVendor(vendor);
@@ -996,6 +1063,9 @@ export default function ProductRegistrationPage() {
     setVendorSearchQuery('');
     setVendorSearchResults([]);
     setShowVendorDropdown(false);
+    setVendorShops([]);
+    setSelectedVendorShopId('');
+    setOnCredit(false);
     setVendorFormData({
       name: '',
       contactEmail: '',
@@ -1386,7 +1456,61 @@ export default function ProductRegistrationPage() {
               {selectedVendor && (
                 <div className={styles.vendorInfo}>
                   <div className={styles.vendorCard}>
+                    {selectedVendor.userId && (
+                      <span className={styles.stockkartUserBadge}>
+                        StockKart user
+                      </span>
+                    )}
                     <h4>{selectedVendor.name}</h4>
+                    <div className={styles.formGroup} style={{ marginTop: 12 }}>
+                      <label
+                        className={styles.label}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={onCredit}
+                          onChange={(e) => {
+                            setOnCredit(e.target.checked);
+                            if (!e.target.checked) setSelectedVendorShopId('');
+                          }}
+                          disabled={isLoading}
+                        />
+                        Take this purchase on credit (amount owed to vendor)
+                      </label>
+                    </div>
+                    {onCredit && selectedVendor.userId && (
+                      <div className={styles.formGroup} style={{ marginTop: 12 }}>
+                        <label className={styles.label}>
+                          Assign credit to vendor&apos;s shop
+                        </label>
+                        <select
+                          className={styles.input}
+                          value={selectedVendorShopId}
+                          onChange={(e) =>
+                            setSelectedVendorShopId(e.target.value)
+                          }
+                          disabled={isLoadingVendorShops || isLoading}
+                        >
+                          <option value="">
+                            — Not assigned (vendor won&apos;t see in their shop) —
+                          </option>
+                          {vendorShops.map((s) => (
+                            <option key={s.shopId} value={s.shopId}>
+                              {s.shopName}
+                            </option>
+                          ))}
+                        </select>
+                        <small style={{ color: 'var(--text-secondary)', marginTop: 4, display: 'block' }}>
+                          When assigned, the vendor can see this pending amount when they log into that shop.
+                        </small>
+                      </div>
+                    )}
                     <p>
                       <strong>Phone:</strong> {selectedVendor.contactPhone}
                     </p>
@@ -1595,6 +1719,53 @@ export default function ProductRegistrationPage() {
                   }
                   disabled={isCreatingVendor}
                 />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>
+                  Link to registered user
+                </label>
+                <p
+                  className={styles.helperText}
+                  style={{ marginBottom: 8, fontSize: 13, color: '#666' }}
+                >
+                  If this vendor is a registered user, search by their email to
+                  link. Enables credit sync across shops.
+                </p>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    className={styles.cancelBtn}
+                    onClick={handleSearchUserForLink}
+                    disabled={
+                      isCreatingVendor ||
+                      isSearchingUser ||
+                      !vendorFormData.contactEmail?.trim()
+                    }
+                  >
+                    {isSearchingUser ? 'Checking...' : 'Check'}
+                  </button>
+                  {linkedUser && (
+                    <button
+                      type="button"
+                      className={styles.clearBtn}
+                      onClick={handleUnlinkUser}
+                      disabled={isCreatingVendor}
+                    >
+                      Unlink
+                    </button>
+                  )}
+                </div>
+                {userSearchMessage && (
+                  <p
+                    style={{
+                      marginTop: 8,
+                      fontSize: 13,
+                      color: linkedUser ? '#16a34a' : '#666',
+                    }}
+                  >
+                    {userSearchMessage}
+                  </p>
+                )}
               </div>
               <div className={styles.formGroup}>
                 <label htmlFor="vendorAddress" className={styles.label}>

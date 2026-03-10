@@ -81,6 +81,8 @@ export const API_ENDPOINTS = {
     INVITATIONS: '/users/invitations',
     ME_SHOPS: '/users/me/shops',
     ACTIVE_SHOP: '/users/me/active-shop',
+    /** Search user by email for linking to vendor/customer */
+    SEARCH: '/users/search',
   },
 
   // Inventory endpoints
@@ -122,6 +124,7 @@ export const API_ENDPOINTS = {
     BASE: '/vendors',
     SEARCH: '/vendors/search',
     BY_ID: (id: string) => `/vendors/${id}`,
+    SHOPS: (vendorId: string) => `/vendors/${vendorId}/shops`,
   },
 
   // Customer endpoints
@@ -129,6 +132,16 @@ export const API_ENDPOINTS = {
     SEARCH: '/customers/search',
   },
 
+  // Credit Ledger endpoints
+  LEDGER: {
+    BASE: '/ledger',
+    BALANCE: '/ledger/balance',
+    ENTRIES: '/ledger/entries',
+    RECEIVABLES: '/ledger/receivables',
+    CUSTOMER_RECEIVABLES: '/ledger/customer-receivables',
+    PAYABLES: '/ledger/payables',
+    PAYABLES_TO_SHOPS: '/ledger/payables-to-shops',
+  },
   // Plan endpoints
   PLANS: {
     BASE: '/plans',
