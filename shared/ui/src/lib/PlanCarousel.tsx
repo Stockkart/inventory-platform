@@ -4,8 +4,11 @@ import { buildPlanFeatures } from './PlanGrid';
 import styles from './PlanCarousel.module.css';
 
 const EXTRA_PLANS = ['Extra User Plan', 'Extra Shop Plan'];
-const CARD_WIDTH = 300;
-const CARD_GAP = 24;
+
+function getCssNumber(el: HTMLElement, varName: string, fallback: number) {
+  const v = getComputedStyle(el).getPropertyValue(varName);
+  return v ? parseInt(v) : fallback;
+}
 
 export interface PlanCarouselProps {
   plans: PlanResponse[];
@@ -22,25 +25,29 @@ export function PlanCarousel({
 }: PlanCarouselProps) {
   const visible = 3;
   const startIndex = visible;
-  const [activeIndex, setActiveIndex] = useState(startIndex);
-  const wrapperRef = useRef<HTMLDivElement>(null);
 
-  const [step, setStep] = useState(CARD_WIDTH + CARD_GAP);
+  const [activeIndex, setActiveIndex] = useState(startIndex);
+  const [step, setStep] = useState(324);
   const [isPaused, setIsPaused] = useState(false);
+
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const el = wrapperRef.current;
     if (!el) return;
+
     const update = () => {
-      const w = el.offsetWidth;
-      const isNarrow = w < 768;
-      const cardW = isNarrow ? 260 : CARD_WIDTH;
-      const gap = isNarrow ? 16 : CARD_GAP;
+      const cardW = getCssNumber(el, '--card-width', 300);
+      const gap = getCssNumber(el, '--card-gap', 24);
+
       setStep(cardW + gap);
     };
+
     update();
+
     const ro = new ResizeObserver(update);
     ro.observe(el);
+
     return () => ro.disconnect();
   }, []);
 
@@ -92,23 +99,18 @@ export function PlanCarousel({
     setActiveIndex((i) => i - 1);
   }, []);
 
-  if (sortedPlans.length === 0) return null;
+  if (!sortedPlans.length) return null;
 
   return (
     <div className={styles.carouselWrapper}>
       <div className={styles.carouselContainer}>
-        <button
-          type="button"
-          className={styles.navButton}
-          onClick={goPrev}
-          aria-label="Previous plan"
-        >
+        <button type="button" className={styles.navButton} onClick={goPrev}>
           ‹
         </button>
 
         <div
-          className={styles.trackWrapper}
           ref={wrapperRef}
+          className={styles.trackWrapper}
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
         >
@@ -120,34 +122,40 @@ export function PlanCarousel({
           >
             {clones.map((plan, idx) => {
               const diff = idx - activeIndex;
+
               const isCenter = diff === 0;
               const isLeft = diff === -1;
               const isRight = diff === 1;
+
               const allFeatures = buildPlanFeatures(plan);
+
               const features =
                 plan.bestFor && !EXTRA_PLANS.includes(plan.planName)
                   ? allFeatures.filter((f) => f !== plan.bestFor)
                   : allFeatures;
+
               const highlight =
                 plan.planName === 'Silver' || plan.planName === 'Gold';
 
               return (
                 <div
-                  key={plan.id}
+                  key={`${plan.id}-${idx}`}
                   className={`${styles.slide}
-${isCenter ? styles.slideCenter : ''}
-${isLeft ? styles.slideLeft : ''}
-${isRight ? styles.slideRight : ''}
-`}
+                  ${isCenter ? styles.slideCenter : ''}
+                  ${isLeft ? styles.slideLeft : ''}
+                  ${isRight ? styles.slideRight : ''}
+                  `}
                 >
                   <article
-                    className={`${styles.card} ${
-                      isCenter ? styles.cardCenter : ''
-                    } ${highlight ? styles.cardHighlight : ''}`}
+                    className={`${styles.card}
+                    ${isCenter ? styles.cardCenter : ''}
+                    ${highlight ? styles.cardHighlight : ''}
+                    `}
                   >
                     {highlight && isCenter && (
                       <div className={styles.badge}>Most Popular</div>
                     )}
+
                     <div className={styles.cardInner}>
                       {showTrialBadge &&
                         !EXTRA_PLANS.includes(plan.planName) && (
@@ -155,10 +163,13 @@ ${isRight ? styles.slideRight : ''}
                             Free 30-day trial
                           </div>
                         )}
+
                       <h3 className={styles.planName}>{plan.planName}</h3>
+
                       {!EXTRA_PLANS.includes(plan.planName) && plan.bestFor && (
                         <p className={styles.planDescription}>{plan.bestFor}</p>
                       )}
+
                       <div className={styles.priceRow}>
                         <span className={styles.price}>
                           ₹
@@ -166,20 +177,22 @@ ${isRight ? styles.slideRight : ''}
                             'en-IN'
                           ) ?? 0}
                         </span>
+
                         <span className={styles.priceSuffix}>
                           {EXTRA_PLANS.includes(plan.planName)
-                            ? '/user/year'
+                            ? '/year'
                             : '/year'}
                         </span>
                       </div>
+
                       {!EXTRA_PLANS.includes(plan.planName) &&
-                        plan.price != null &&
+                        plan.price &&
                         plan.price > 0 && (
                           <p className={styles.oneTimePrice}>
-                            One-time ₹{plan.price?.toLocaleString('en-IN')} if
-                            taking support
+                            One-time ₹{plan.price.toLocaleString('en-IN')}
                           </p>
                         )}
+
                       <ul className={styles.featuresList}>
                         {features.map((f) => (
                           <li key={f} className={styles.featureItem}>
@@ -188,9 +201,9 @@ ${isRight ? styles.slideRight : ''}
                           </li>
                         ))}
                       </ul>
+
                       {onSelectPlan && isCenter && (
                         <button
-                          type="button"
                           className={styles.ctaButton}
                           onClick={() => onSelectPlan(plan)}
                         >
@@ -205,12 +218,7 @@ ${isRight ? styles.slideRight : ''}
           </div>
         </div>
 
-        <button
-          type="button"
-          className={styles.navButton}
-          onClick={goNext}
-          aria-label="Next plan"
-        >
+        <button type="button" className={styles.navButton} onClick={goNext}>
           ›
         </button>
       </div>
@@ -219,7 +227,6 @@ ${isRight ? styles.slideRight : ''}
         {Array.from({ length: total - 2 }, (_, i) => i + 1).map((_, i) => (
           <button
             key={i}
-            type="button"
             className={`${styles.dot} ${
               i === activeIndex ? styles.dotActive : ''
             }`}
@@ -227,7 +234,6 @@ ${isRight ? styles.slideRight : ''}
               setIsPaused(true);
               setActiveIndex(i + 1);
             }}
-            aria-label={`Go to plan ${i + 1}`}
           />
         ))}
       </div>

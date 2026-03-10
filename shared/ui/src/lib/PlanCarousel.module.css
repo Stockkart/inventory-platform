@@ -1,4 +1,12 @@
+:root {
+  --card-width: 300px;
+  --card-gap: 24px;
+}
+
 .carouselWrapper {
+  --card-width: 300px;
+  --card-gap: 24px;
+
   padding: 1rem 0 2rem;
 }
 
@@ -37,7 +45,7 @@
 
 .trackWrapper {
   flex: 1;
-  max-width: calc(300px * 3 + 24px * 2);
+  max-width: calc(var(--card-width) * 3 + var(--card-gap) * 2);
   overflow: hidden;
   padding-top: 10px;
 }
@@ -46,14 +54,14 @@
   display: flex;
   align-items: stretch; /* important */
   justify-content: flex-start;
-  gap: 24px;
+  gap: var(--card-gap);
   padding: 1rem 0;
   transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .slide {
   flex-shrink: 0;
-  width: 300px;
+  width: var(--card-width);
   display: flex;
   justify-content: center;
   transition: all 0.5s ease;

@@ -1,8 +1,6 @@
 import type { PlanResponse } from '@inventory-platform/types';
 import styles from './PlanGrid.module.css';
 
-const DEFAULT_BILLING_LIMIT = 150000;
-const DEFAULT_BILL_COUNT = 450;
 const EXTRA_USER_PLAN = 'Extra User Plan';
 const EXTRA_SHOP_PLAN = 'Extra Shop Plan';
 
@@ -18,28 +16,40 @@ export function buildPlanFeatures(plan: PlanResponse): string[] {
 
     return [`₹${price} per year`];
   }
+
   const features: string[] = [];
+
   if (plan.unlimited) {
     features.push('Unlimited billing', 'Unlimited SMS', 'Unlimited WhatsApp');
-  } else {
-    const billingLimit = plan.billingLimit ?? DEFAULT_BILLING_LIMIT;
-    const billCountLimit = plan.billCountLimit ?? DEFAULT_BILL_COUNT;
-    features.push(`Billing cap ₹${(billingLimit / 100000).toFixed(1)}L/month`);
-    features.push(`${billCountLimit} bills/month`);
-    if (plan.smsLimit != null && plan.smsLimit > 0) {
-      features.push(`${plan.smsLimit} SMS/month`);
-    } else if (!plan.unlimited) {
-      features.push('No SMS');
-    }
-    if (plan.whatsappLimit != null && plan.whatsappLimit > 0) {
-      features.push(`${plan.whatsappLimit} WhatsApp messages/month`);
-    } else if (!plan.unlimited) {
-      features.push('No WhatsApp');
-    }
-    if (plan.userLimit != null) {
-      features.push(`${plan.userLimit} user${plan.userLimit > 1 ? 's' : ''}`);
-    }
+    return features;
   }
+
+  if (plan.billingLimit != null) {
+    features.push(
+      `Billing cap ₹${(plan.billingLimit / 100000).toFixed(1)}L/month`
+    );
+  }
+
+  if (plan.billCountLimit != null) {
+    features.push(`${plan.billCountLimit} bills/month`);
+  }
+
+  if (plan.smsLimit != null && plan.smsLimit > 0) {
+    features.push(`${plan.smsLimit} SMS/month`);
+  } else {
+    features.push('No SMS');
+  }
+
+  if (plan.whatsappLimit != null && plan.whatsappLimit > 0) {
+    features.push(`${plan.whatsappLimit} WhatsApp messages/month`);
+  } else {
+    features.push('No WhatsApp');
+  }
+
+  if (plan.userLimit != null) {
+    features.push(`${plan.userLimit} user${plan.userLimit > 1 ? 's' : ''}`);
+  }
+
   return features;
 }
 
