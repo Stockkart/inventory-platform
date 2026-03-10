@@ -23,10 +23,8 @@ export function PlanCarousel({
   ctaLabel = 'Get Started',
   showTrialBadge = true,
 }: PlanCarouselProps) {
-  const visible = 3;
-  const startIndex = visible;
-
-  const [activeIndex, setActiveIndex] = useState(startIndex);
+  const [visible, setVisible] = useState(3);
+  const [activeIndex, setActiveIndex] = useState(3);
   const [step, setStep] = useState(324);
   const [isPaused, setIsPaused] = useState(false);
 
@@ -68,6 +66,28 @@ export function PlanCarousel({
   ];
 
   const total = sortedPlans.length;
+
+  useEffect(() => {
+    const updateVisible = () => {
+      const w = window.innerWidth;
+
+      if (w < 768) {
+        setVisible(1);
+        setActiveIndex(1);
+      } else if (w < 1100) {
+        setVisible(2);
+        setActiveIndex(2);
+      } else {
+        setVisible(3);
+        setActiveIndex(3);
+      }
+    };
+
+    updateVisible();
+    window.addEventListener('resize', updateVisible);
+
+    return () => window.removeEventListener('resize', updateVisible);
+  }, []);
 
   useEffect(() => {
     if (isPaused) return;
@@ -117,7 +137,9 @@ export function PlanCarousel({
           <div
             className={styles.track}
             style={{
-              transform: `translateX(-${(activeIndex - 1) * step}px)`,
+              transform: `translateX(-${
+                (activeIndex - Math.floor(visible / 2)) * step
+              }px)`,
             }}
           >
             {clones.map((plan, idx) => {

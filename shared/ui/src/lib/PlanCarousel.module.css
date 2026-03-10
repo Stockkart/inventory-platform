@@ -17,6 +17,7 @@
   gap: 0.75rem;
   position: relative;
   min-height: 460px;
+  width: 100%;
 }
 
 .navButton {
@@ -45,6 +46,7 @@
 
 .trackWrapper {
   flex: 1;
+  min-width: 0;
   max-width: calc(var(--card-width) * 3 + var(--card-gap) * 2);
   overflow: hidden;
   padding-top: 10px;
@@ -257,25 +259,43 @@
 }
 
 @media (max-width: 768px) {
-  .track {
-    gap: 16px;
+  .carouselWrapper {
+    --card-width: 260px;
+    --card-gap: 16px;
   }
 
-  .slide {
-    width: 260px;
+  .trackWrapper {
+    max-width: 100%;
   }
 
-  .card {
-    min-height: 380px;
-  }
-
-  .cardInner {
-    padding: 1.5rem 1.25rem;
+  .carouselContainer {
+    gap: 0.25rem;
   }
 
   .navButton {
-    width: 40px;
-    height: 40px;
-    font-size: 1.5rem;
+    width: 36px;
+    height: 36px;
+    font-size: 1.2rem;
+  }
+}
+@media (max-width: 1100px) {
+  .carouselWrapper {
+    --card-width: 280px;
+    --card-gap: 20px;
+  }
+
+  .trackWrapper {
+    max-width: calc(var(--card-width) * 2 + var(--card-gap));
+  }
+}
+
+@media (max-width: 768px) {
+  .carouselWrapper {
+    --card-width: 260px;
+    --card-gap: 16px;
+  }
+
+  .trackWrapper {
+    max-width: var(--card-width);
   }
 }
