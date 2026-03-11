@@ -60,14 +60,6 @@ const MENU_GROUPS: MenuGroup[] = [
     ],
   },
   {
-    id: 'credit-ledger',
-    label: 'Credit & Ledger',
-    icon: '📒',
-    items: [
-      { path: '/dashboard/credit-ledger', label: 'Credit Ledger', icon: '📒' },
-    ],
-  },
-  {
     id: 'analytics-history',
     label: 'Reports & Analytics',
     icon: '📈',
@@ -79,6 +71,14 @@ const MENU_GROUPS: MenuGroup[] = [
       },
       { path: '/dashboard/taxes', label: 'Taxes', icon: '📋' },
       { path: '/dashboard/history', label: 'History', icon: '📜' },
+    ],
+  },
+  {
+    id: 'credit-ledger',
+    label: 'Credit & Ledger',
+    icon: '📒',
+    items: [
+      { path: '/dashboard/credit-ledger', label: 'Credit Ledger', icon: '📒' },
     ],
   },
   {

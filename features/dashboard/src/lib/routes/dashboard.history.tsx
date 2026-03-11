@@ -1,23 +1,55 @@
-import { PurchaseList } from '@inventory-platform/ui';
+import { useState } from 'react';
+import { PurchaseList, RefundHistoryList } from '@inventory-platform/ui';
 import styles from './dashboard.history.module.css';
 
 export function meta() {
   return [
-    { title: 'Purchase History - StockKart' },
-    { name: 'description', content: 'View all purchase history' },
+    { title: 'History - StockKart' },
+    {
+      name: 'description',
+      content: 'View purchase and refund history',
+    },
   ];
 }
 
 export default function HistoryPage() {
+  const [activeTab, setActiveTab] = useState<'purchases' | 'refunds'>(
+    'purchases'
+  );
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Purchase History</h1>
-        <p className={styles.subtitle}>View all purchases made in your shop</p>
+        <h1 className={styles.title}>History</h1>
+        <p className={styles.subtitle}>
+          View purchase and refund history for your shop
+        </p>
+      </div>
+
+      <div className={styles.tabs}>
+        <button
+          type="button"
+          className={`${styles.tab} ${
+            activeTab === 'purchases' ? styles.activeTab : ''
+          }`}
+          onClick={() => setActiveTab('purchases')}
+        >
+          Purchase History
+        </button>
+        <button
+          type="button"
+          className={`${styles.tab} ${
+            activeTab === 'refunds' ? styles.activeTab : ''
+          }`}
+          onClick={() => setActiveTab('refunds')}
+        >
+          Refund History
+        </button>
       </div>
 
       <div className={styles.content}>
-        <PurchaseList />
+        {activeTab === 'purchases' && <PurchaseList />}
+        {activeTab === 'refunds' && <RefundHistoryList />}
       </div>
     </div>
   );

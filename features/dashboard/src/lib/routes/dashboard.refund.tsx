@@ -1,11 +1,11 @@
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent } from 'react';
 import { refundsApi } from '@inventory-platform/api';
 import type {
   Purchase,
   RefundItem,
-  Refund,
   SearchPurchasesParams,
 } from '@inventory-platform/types';
+import { RefundHistoryList } from '@inventory-platform/ui';
 import styles from './dashboard.refund.module.css';
 import { useNotify } from '@inventory-platform/store';
 
@@ -65,12 +65,9 @@ export default function RefundPage() {
     Record<string, { quantity: number; maxQuantity: number }>
   >({});
 
-  // History state
-  const [refunds, setRefunds] = useState<Refund[]>([]);
-  const [historyPage, setHistoryPage] = useState(1);
-  const [historyLimit] = useState(20);
-  const [historyTotalPages, setHistoryTotalPages] = useState(1);
-  const [historyTotal, setHistoryTotal] = useState(0);
+  // Refresh refund history when a refund is processed (used by RefundHistoryList)
+  const [refundHistoryRefreshTrigger, setRefundHistoryRefreshTrigger] =
+    useState(0);
 
   const handleSearchChange = (
     field: keyof SearchPurchasesParams,
@@ -192,15 +189,11 @@ export default function RefundPage() {
         )}. Refund ID: ${response.refundId}`
       );
 
-      // Reset form
+      // Reset form and refresh refund history
       setSelectedPurchase(null);
       setRefundItems({});
       setPurchases([]);
-
-      // Refresh history if on history tab
-      if (activeTab === 'history') {
-        loadRefundHistory();
-      }
+      setRefundHistoryRefreshTrigger((t) => t + 1);
     } catch (err) {
       const errorMessage =
         err instanceof Error
@@ -212,44 +205,11 @@ export default function RefundPage() {
     }
   };
 
-  const loadRefundHistory = async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await refundsApi.getAll({
-        page: historyPage,
-        limit: historyLimit,
-      });
-      setRefunds(response.refunds);
-      setHistoryTotalPages(response.totalPages);
-      setHistoryTotal(response.total);
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'Failed to load refund history. Please try again.';
-      notifyError(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleTabChange = (tab: 'process' | 'history') => {
     setActiveTab(tab);
     setError(null);
     setSuccess(null);
-    if (tab === 'history') {
-      loadRefundHistory();
-    }
   };
-
-  useEffect(() => {
-    if (activeTab === 'history') {
-      loadRefundHistory();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [historyPage, activeTab]);
 
   const calculateRefundTotal = (): number => {
     if (!selectedPurchase) return 0;
@@ -523,79 +483,7 @@ export default function RefundPage() {
         <div className={styles.content}>
           <div className={styles.historySection}>
             <h3 className={styles.sectionTitle}>Refund History</h3>
-            {isLoading && refunds.length === 0 ? (
-              <div className={styles.loading}>Loading refund history...</div>
-            ) : refunds.length === 0 ? (
-              <div className={styles.emptyState}>No refunds found.</div>
-            ) : (
-              <>
-                <div className={styles.refundsList}>
-                  {refunds.map((refund) => (
-                    <div key={refund.refundId} className={styles.refundCard}>
-                      <div className={styles.refundHeader}>
-                        <div>
-                          <strong>Refund ID:</strong> {refund.refundId}
-                        </div>
-                        <div>
-                          <strong>Date:</strong> {formatDate(refund.createdAt)}
-                        </div>
-                      </div>
-                      <div className={styles.refundDetails}>
-                        <div>
-                          <strong>Invoice No:</strong> {refund.invoiceNo}
-                        </div>
-                        <div>
-                          <strong>Customer:</strong> {refund.customerName}
-                        </div>
-                        <div>
-                          <strong>Phone:</strong> {refund.customerPhone}
-                        </div>
-                        <div>
-                          <strong>Items Refunded:</strong>{' '}
-                          {refund.totalItemsRefunded}
-                        </div>
-                        <div>
-                          <strong>Refund Amount:</strong>{' '}
-                          {formatCurrency(refund.refundAmount)}
-                        </div>
-                        {refund.reason && (
-                          <div>
-                            <strong>Reason:</strong> {refund.reason}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {historyTotalPages > 1 && (
-                  <div className={styles.pagination}>
-                    <button
-                      className={styles.pageBtn}
-                      onClick={() => setHistoryPage((p) => Math.max(1, p - 1))}
-                      disabled={historyPage === 1 || isLoading}
-                    >
-                      Previous
-                    </button>
-                    <span className={styles.pageInfo}>
-                      Page {historyPage} of {historyTotalPages} ({historyTotal}{' '}
-                      total)
-                    </span>
-                    <button
-                      className={styles.pageBtn}
-                      onClick={() =>
-                        setHistoryPage((p) =>
-                          Math.min(historyTotalPages, p + 1)
-                        )
-                      }
-                      disabled={historyPage === historyTotalPages || isLoading}
-                    >
-                      Next
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
+            <RefundHistoryList refreshTrigger={refundHistoryRefreshTrigger} />
           </div>
         </div>
       )}

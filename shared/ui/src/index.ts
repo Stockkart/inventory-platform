@@ -23,6 +23,7 @@ export * from './lib/JoinRequestCard';
 export * from './lib/JoinRequestList';
 export * from './lib/PurchaseCard';
 export * from './lib/PurchaseList';
+export * from './lib/RefundHistoryList';
 export * from './lib/ReminderForm';
 export * from './lib/InventoryAlertDetails';
 export * from './lib/CustomReminderInput';
