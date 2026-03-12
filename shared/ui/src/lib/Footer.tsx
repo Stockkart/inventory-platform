@@ -7,8 +7,11 @@ export function Footer() {
         <div className={styles.footerContent}>
           <div className={styles.brandColumn}>
             <div className={styles.brand}>
-              <div className={styles.logoIcon}></div>
-              <span className={styles.brandName}>StockKart</span>
+              <img
+                src="/assets/logo/STOCKKART-3x.png"
+                alt="StockKart"
+                className={styles.brandLogo}
+              />
             </div>
             <p className={styles.brandDescription}>
               Complete inventory management solution for modern businesses.

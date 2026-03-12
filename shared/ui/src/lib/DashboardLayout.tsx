@@ -6,6 +6,7 @@ import styles from './DashboardLayout.module.css';
 import { ThemeToggle } from './ThemeToggle';
 import { useNotifications } from '@inventory-platform/store';
 import { ToastProvider } from './ToastProvider';
+import { Menu } from 'lucide-react';
 
 type MenuItem = { path: string; label: string; icon: string };
 
@@ -118,7 +119,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const navigate = useNavigate();
   const { user, shop, logout, isLoading } = useAuthStore();
 
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  //const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() =>
+    typeof window !== 'undefined' && window.innerWidth <= 768 ? false : true
+  );
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [showNotificationMenu, setShowNotificationMenu] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
@@ -230,6 +234,22 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div className={styles.dashboard}>
       <ToastProvider />
+      {!sidebarOpen && window.innerWidth <= 768 && (
+        <button
+          className={styles.mobileMenuFloating}
+          onClick={() => setSidebarOpen(true)}
+          type="button"
+        >
+          <Menu size={18} />
+        </button>
+      )}
+      {sidebarOpen && (
+        <div
+          className={styles.sidebarBackdrop}
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
       {/* Sidebar */}
       <aside
         className={`${styles.sidebar} ${
@@ -239,7 +259,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className={styles.sidebarHeader}>
           <Link to="/dashboard" className={styles.logo}>
             <img
-              src="/assets/logo/STOCKKART-3x.png"
+              src={
+                sidebarOpen
+                  ? '/assets/logo/STOCKKART-3x.png'
+                  : '/assets/logo/stockkart_icon.png'
+              }
               alt="StockKart"
               className={styles.logoImg}
             />
@@ -250,19 +274,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             onClick={() => setSidebarOpen((s) => !s)}
             aria-label="Toggle sidebar"
           >
-            <svg width="20" height="20" viewBox="0 0 20 20">
-              <path
-                d={
-                  sidebarOpen
-                    ? 'M6 15L11 10L6 5'
-                    : 'M5 5L15 5M5 10L15 10M5 15L15 15'
-                }
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <Menu size={18} />
           </button>
         </div>
 
