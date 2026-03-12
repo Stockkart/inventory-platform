@@ -1,6 +1,8 @@
+import { useNavigate } from 'react-router';
 import styles from './CTA.module.css';
 
 export function CTA() {
+  const navigate = useNavigate();
   return (
     <section className={styles.cta}>
       <div className={styles.container}>
@@ -11,7 +13,7 @@ export function CTA() {
           Join thousands of businesses that trust StockKart to streamline their
           operations.
         </p>
-        <button className={styles.button}>
+        <button className={styles.button} onClick={() => navigate('/plans')}>
           Get Started for Free
           <svg
             width="20"

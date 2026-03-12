@@ -24,22 +24,14 @@
 .brand {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
   margin-bottom: 1rem;
 }
 
-.logoIcon {
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
-  border-radius: 6px;
-}
-
-.brandName {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  transition: color 0.3s ease;
+.brandLogo {
+  height: 40px;
+  width: auto;
+  max-width: 160px;
+  object-fit: contain;
 }
 
 .brandDescription {
@@ -88,7 +80,7 @@
     grid-template-columns: 1fr 1fr;
     gap: 2rem;
   }
-  
+
   .brandColumn {
     grid-column: 1 / -1;
     max-width: 100%;
@@ -100,9 +92,8 @@
     grid-template-columns: 1fr;
     gap: 2rem;
   }
-  
+
   .brandColumn {
     grid-column: 1;
   }
 }
-

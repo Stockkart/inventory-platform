@@ -61,9 +61,7 @@ export default function PlansPage() {
             </p>
           </header>
 
-          {loading && (
-            <p className={styles.loading}>Loading plans...</p>
-          )}
+          {loading && <p className={styles.loading}>Loading plans...</p>}
 
           {error && (
             <p className={styles.error} style={{ color: 'var(--error)' }}>
