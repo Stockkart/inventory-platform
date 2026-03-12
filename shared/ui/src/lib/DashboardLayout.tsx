@@ -6,7 +6,15 @@ import styles from './DashboardLayout.module.css';
 import { ThemeToggle } from './ThemeToggle';
 import { useNotifications } from '@inventory-platform/store';
 import { ToastProvider } from './ToastProvider';
-import { Menu } from 'lucide-react';
+import {
+  Menu,
+  Headphones,
+  Phone,
+  Mail,
+  MessageCircle,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
 
 type MenuItem = { path: string; label: string; icon: string };
 
@@ -128,6 +136,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
     () => new Set(['overview', 'products'])
   );
+  const [supportOpen, setSupportOpen] = useState(false);
+  const [chatMessage, setChatMessage] = useState('');
+  const [chatMessages, setChatMessages] = useState<
+    { text: string; from: 'user' | 'support' }[]
+  >([]);
 
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -229,6 +242,25 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     } finally {
       navigate('/login');
     }
+  };
+
+  const handleChatSend = () => {
+    if (!chatMessage.trim()) return;
+    setChatMessages((prev) => [
+      ...prev,
+      { text: chatMessage.trim(), from: 'user' },
+    ]);
+    setChatMessage('');
+    // Placeholder: simulate support reply (will integrate with backend later)
+    setTimeout(() => {
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          text: 'Thanks for reaching out! Our team will respond shortly. (Chat integration coming soon)',
+          from: 'support',
+        },
+      ]);
+    }, 500);
   };
 
   return (
@@ -338,6 +370,114 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           )}
         </nav>
+
+        {/* Support section at bottom */}
+        <div className={styles.sidebarSupport}>
+          <button
+            type="button"
+            className={styles.supportToggle}
+            onClick={() => {
+              if (!sidebarOpen) {
+                setSidebarOpen(true);
+                setSupportOpen(true);
+              } else {
+                setSupportOpen((o) => !o);
+              }
+            }}
+            aria-expanded={supportOpen}
+            title="Support"
+          >
+            <Headphones size={18} className={styles.supportIcon} />
+            {sidebarOpen && (
+              <span className={styles.supportLabel}>Support</span>
+            )}
+            {sidebarOpen &&
+              (supportOpen ? (
+                <ChevronUp size={16} />
+              ) : (
+                <ChevronDown size={16} />
+              ))}
+          </button>
+
+          {supportOpen && (
+            <div className={styles.supportPanel}>
+              {/* Phone */}
+              <div className={styles.supportSection}>
+                <Phone size={14} className={styles.supportSectionIcon} />
+                <span className={styles.supportSectionTitle}>Call us</span>
+                <a href="tel:+919828606899" className={styles.supportLink}>
+                  +91-9828606899
+                </a>
+                <a href="tel:+918800107393" className={styles.supportLink}>
+                  +91-8800107393
+                </a>
+              </div>
+
+              {/* Email */}
+              <div className={styles.supportSection}>
+                <Mail size={14} className={styles.supportSectionIcon} />
+                <span className={styles.supportSectionTitle}>Email</span>
+                <a
+                  href="mailto:stockkartofficial@gmail.com"
+                  className={styles.supportLink}
+                >
+                  stockkartofficial@gmail.com
+                </a>
+              </div>
+
+              {/* Online chat placeholder */}
+              <div className={styles.supportSection}>
+                <MessageCircle
+                  size={14}
+                  className={styles.supportSectionIcon}
+                />
+                <span className={styles.supportSectionTitle}>
+                  Instant online support
+                </span>
+                <div className={styles.chatPlaceholder}>
+                  <div className={styles.chatMessages}>
+                    {chatMessages.length === 0 && (
+                      <p className={styles.chatEmpty}>
+                        Start a conversation. We&apos;ll integrate with backend
+                        soon.
+                      </p>
+                    )}
+                    {chatMessages.map((m, i) => (
+                      <div
+                        key={i}
+                        className={
+                          m.from === 'user'
+                            ? styles.chatBubbleUser
+                            : styles.chatBubbleSupport
+                        }
+                      >
+                        {m.text}
+                      </div>
+                    ))}
+                  </div>
+                  <div className={styles.chatInputRow}>
+                    <input
+                      type="text"
+                      placeholder="Type your message..."
+                      value={chatMessage}
+                      onChange={(e) => setChatMessage(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
+                      className={styles.chatInput}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleChatSend}
+                      className={styles.chatSendBtn}
+                      aria-label="Send message"
+                    >
+                      Send
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </aside>
 
       {/* Main */}
