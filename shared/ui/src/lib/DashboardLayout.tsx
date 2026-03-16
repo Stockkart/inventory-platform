@@ -646,7 +646,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                             setEditModalOpen(true);
                           }}
                         >
-                          ✏️ Edit tagline &amp; location
+                          Edit
                         </button>
                       </div>
                     </div>
