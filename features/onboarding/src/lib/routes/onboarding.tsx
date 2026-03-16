@@ -186,6 +186,15 @@ export default function OnboardingPage() {
         setError(null);
       }
       return;
+    } else if (step === 'tagline') {
+      // Tagline is optional, skip validation and move to next step or submit
+      if (currentStep === STEPS.length - 1) {
+        handleSubmit();
+      } else {
+        setCurrentStep(currentStep + 1);
+        setError(null);
+      }
+      return;
     } else {
       // Validate other steps
       const value = getCurrentValue().trim();
