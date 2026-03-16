@@ -374,7 +374,7 @@ export default function ProductSearchPage() {
                               return (
                                 <div className={styles.productMetaScheme}>
                                   <span className={styles.productMetaItem}>
-                                    Scheme: {item.schemePercentage}%
+                                    Scheme/Deal: {item.schemePercentage}%
                                   </span>
                                 </div>
                               );
@@ -383,7 +383,7 @@ export default function ProductSearchPage() {
                               return (
                                 <div className={styles.productMetaScheme}>
                                   <span className={styles.productMetaItem}>
-                                    Scheme: {item.scheme} free
+                                    Scheme/Deal: {item.scheme} free
                                   </span>
                                 </div>
                               );

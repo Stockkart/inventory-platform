@@ -387,7 +387,7 @@ export default function CheckoutPage() {
                   <th>Selling Price</th>
                   <th>Discount</th>
                   <th>Additional Discount</th>
-                  <th>Scheme</th>
+                  <th>Scheme/Deal</th>
                   {billingMode === 'REGULAR' && <th>CGST%</th>}
                   {billingMode === 'REGULAR' && <th>SGST%</th>}
                   <th>Total</th>

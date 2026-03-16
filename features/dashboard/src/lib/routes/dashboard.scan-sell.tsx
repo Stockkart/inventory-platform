@@ -1996,7 +1996,7 @@ export default function ScanSellPage() {
                           </div>
                           <div className={styles.itemFieldGroup}>
                             <label className={styles.itemFieldLabel}>
-                              Scheme
+                              Scheme/Deal
                             </label>
                             <div className={styles.itemSchemeInputs}>
                               <CartSchemeInput
@@ -2598,7 +2598,7 @@ export default function ScanSellPage() {
                     <div className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}>
                       <div className={styles.detailModalDetailIcon}>🎁</div>
                       <div className={styles.detailModalDetailContent}>
-                        <span className={styles.detailModalDetailLabel}>Scheme</span>
+                        <span className={styles.detailModalDetailLabel}>Scheme/Deal</span>
                         <span className={styles.detailModalDetailValue}>{schemeLabel}</span>
                       </div>
                     </div>

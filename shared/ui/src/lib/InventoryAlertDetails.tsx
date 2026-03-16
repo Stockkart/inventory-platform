@@ -424,7 +424,7 @@ export function InventoryAlertDetails({
                     <div className={styles.detailCard}>
                       <div className={styles.detailIcon}>🎁</div>
                       <div className={styles.detailContent}>
-                        <span className={styles.detailLabel}>Scheme</span>
+                        <span className={styles.detailLabel}>Scheme/Deal</span>
                         <span className={styles.detailValue}>
                           {item.schemePercentage}% extra free
                         </span>
@@ -441,7 +441,7 @@ export function InventoryAlertDetails({
                     <div className={styles.detailCard}>
                       <div className={styles.detailIcon}>🎁</div>
                       <div className={styles.detailContent}>
-                        <span className={styles.detailLabel}>Scheme</span>
+                        <span className={styles.detailLabel}>Scheme/Deal</span>
                         <span className={styles.detailValue}>
                           {item.scheme} free
                         </span>

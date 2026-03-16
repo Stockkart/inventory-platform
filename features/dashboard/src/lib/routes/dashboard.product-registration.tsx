@@ -2341,7 +2341,7 @@ function ProductAccordion({
                 htmlFor={`schemeType-${product.id}`}
                 className={styles.label}
               >
-                Scheme type
+                Scheme/Deal type
               </label>
               <select
                 id={`schemeType-${product.id}`}
@@ -2396,7 +2396,7 @@ function ProductAccordion({
                   htmlFor={`schemePercentage-${product.id}`}
                   className={styles.label}
                 >
-                  Scheme % *
+                  Scheme/Deal % *
                 </label>
                 <input
                   type="number"
@@ -2604,9 +2604,9 @@ function ProductAccordion({
                   >
                     <option value="">— Select —</option>
                     <option value="DISCOUNT">Discount applicable</option>
-                    <option value="SCHEME">Scheme applicable</option>
+                    <option value="SCHEME">Scheme/Deal applicable</option>
                     <option value="DISCOUNT_AND_SCHEME">
-                      Both discount and scheme applicable
+                      Both discount and scheme/deal applicable
                     </option>
                   </select>
                 </div>
@@ -2640,9 +2640,9 @@ function ProductAccordion({
                 >
                   <option value="">— Select —</option>
                   <option value="DISCOUNT">Discount applicable</option>
-                  <option value="SCHEME">Scheme applicable</option>
+                  <option value="SCHEME">Scheme/Deal applicable</option>
                   <option value="DISCOUNT_AND_SCHEME">
-                    Both discount and scheme applicable
+                    Both discount and scheme/deal applicable
                   </option>
                 </select>
               </div>
