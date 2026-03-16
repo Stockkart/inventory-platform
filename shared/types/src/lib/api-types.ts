@@ -567,7 +567,12 @@ export interface CreateInventoryDto {
   hsn?: string;
   sac?: string;
   batchNo?: string;
+  /** @deprecated Prefer schemePayFor + schemeFree for FIXED_UNITS. */
   scheme?: number | null;
+  /** When schemeType FIXED_UNITS: pay for this many (e.g. 10). Quantity in payload = count only. */
+  schemePayFor?: number | null;
+  /** When schemeType FIXED_UNITS: free units per batch (e.g. 2). "schemeFree free on schemePayFor". */
+  schemeFree?: number | null;
   schemeType?: SchemeType;
   schemePercentage?: number | null;
   additionalDiscount?: number | null;
@@ -610,6 +615,8 @@ export interface BulkCreateInventoryItem {
   sac?: string | null;
   batchNo?: string | null;
   scheme?: number | null;
+  schemePayFor?: number | null;
+  schemeFree?: number | null;
   schemeType?: SchemeType;
   schemePercentage?: number | null;
   sgst?: string | null;
@@ -668,6 +675,8 @@ export interface ParseInvoiceItem {
   sac?: string | null;
   batchNo?: string | null;
   scheme?: number | null;
+  schemePayFor?: number | null;
+  schemeFree?: number | null;
   schemeType?: SchemeType;
   schemePercentage?: number | null;
   sgst?: string | null;
@@ -711,6 +720,8 @@ export interface InventoryItem {
   sac?: string | null;
   batchNo?: string | null;
   scheme?: number | null;
+  schemePayFor?: number | null;
+  schemeFree?: number | null;
   schemeType?: SchemeType;
   schemePercentage?: number | null;
   sgst?: string | null;
@@ -764,6 +775,8 @@ export interface UpdateInventoryRequest {
   purchaseDate?: string | null;
   schemeType?: SchemeType | null;
   scheme?: number | null;
+  schemePayFor?: number | null;
+  schemeFree?: number | null;
   schemePercentage?: number | null;
   baseUnit?: string | null;
   unitConversions?: UnitConversion | null;
