@@ -164,8 +164,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   useEffect(() => {
     if (shop?.name) {
       setShopName(shop.name);
+      localStorage.setItem('shopName', shop.name);
+    } else {
+      const saved = localStorage.getItem('shopName');
+      if (saved) {
+        setShopName(saved);
+      }
     }
-  }, [shop?.name]);
+  }, [shop]);
 
   // Close user menu on outside click
   useEffect(() => {
