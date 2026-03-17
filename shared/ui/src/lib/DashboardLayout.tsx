@@ -577,7 +577,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                       </div>
 
                       <div className={styles.userMenuInfo}>
-                        <span className={styles.roleBadge}>{shop?.name}</span>
+                        <span className={styles.roleBadge}>{shopName}</span>
                         <button
                           type="button"
                           className={styles.editMetaBtn}
