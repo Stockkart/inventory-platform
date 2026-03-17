@@ -169,10 +169,14 @@ export const API_ENDPOINTS = {
     BULK_UPDATE: '/pricing/bulk-update',
   },
 
-  // Taxation endpoints (GSTR-1)
+  // Taxation endpoints (GSTR-1, GSTR-2, GSTR-3B)
   TAXATION: {
     GSTR1: '/taxation/gstr1',
     GSTR1_DOWNLOAD: '/taxation/gstr1/download',
+    GSTR2: '/taxation/gstr2',
+    GSTR2_DOWNLOAD: '/taxation/gstr2/download',
+    GSTR3B: '/taxation/gstr3b',
+    GSTR3B_DOWNLOAD: '/taxation/gstr3b/download',
   },
 
   // Upload endpoints (QR Code Upload Flow)

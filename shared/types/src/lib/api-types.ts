@@ -1956,3 +1956,256 @@ export interface Gstr1ReportResponse {
   'hsn(b2c)': Gstr1HsnTab;
   docs: Gstr1DocsTab;
 }
+
+// GSTR-2 types (inward supplies)
+export interface Gstr2B2bLineDto {
+  supplierGstin?: string;
+  invoiceNo?: string;
+  invoiceDate?: string;
+  invoiceValue?: number;
+  placeOfSupply?: string;
+  reverseCharge?: string;
+  invoiceType?: string;
+  rate?: number;
+  taxableValue?: number;
+  integratedTaxPaid?: number;
+  centralTaxPaid?: number;
+  stateUtTaxPaid?: number;
+  cessAmount?: number;
+  itcEligibility?: string;
+  availedItcIntegrated?: number;
+  availedItcCentral?: number;
+  availedItcStateUt?: number;
+  availedItcCess?: number;
+}
+
+export interface Gstr2B2burLineDto {
+  supplierName?: string;
+  invoiceNo?: string;
+  invoiceDate?: string;
+  invoiceValue?: number;
+  placeOfSupply?: string;
+  supplyType?: string;
+  rate?: number;
+  taxableValue?: number;
+  integratedTaxPaid?: number;
+  centralTaxPaid?: number;
+  stateUtTaxPaid?: number;
+  cessAmount?: number;
+  itcEligibility?: string;
+  availedItcIntegrated?: number;
+  availedItcCentral?: number;
+  availedItcStateUt?: number;
+  availedItcCess?: number;
+}
+
+export interface Gstr2ImpsLineDto {
+  invoiceNo?: string;
+  invoiceDate?: string;
+  invoiceValue?: number;
+  placeOfSupply?: string;
+  rate?: number;
+  taxableValue?: number;
+  integratedTaxPaid?: number;
+  cessPaid?: number;
+  itcEligibility?: string;
+  availedItcIntegrated?: number;
+  availedItcCess?: number;
+}
+
+export interface Gstr2ImpgLineDto {
+  portCode?: string;
+  billOfEntryNo?: string;
+  billOfEntryDate?: string;
+  billOfEntryValue?: number;
+  documentType?: string;
+  sezSupplierGstin?: string;
+  rate?: number;
+  taxableValue?: number;
+  integratedTaxPaid?: number;
+  cessPaid?: number;
+  itcEligibility?: string;
+  availedItcIntegrated?: number;
+  availedItcCess?: number;
+}
+
+export interface Gstr2CdnrLineDto {
+  supplierGstin?: string;
+  noteNumber?: string;
+  noteDate?: string;
+  invoiceNo?: string;
+  invoiceDate?: string;
+  preGst?: string;
+  documentType?: string;
+  reasonForIssuing?: string;
+  supplyType?: string;
+  noteValue?: number;
+  rate?: number;
+  taxableValue?: number;
+  integratedTaxPaid?: number;
+  centralTaxPaid?: number;
+  stateUtTaxPaid?: number;
+  cessPaid?: number;
+  itcEligibility?: string;
+  availedItcIntegrated?: number;
+}
+
+export interface Gstr2CdnurLineDto {
+  noteNumber?: string;
+  noteDate?: string;
+  invoiceNo?: string;
+  invoiceDate?: string;
+  preGst?: string;
+  documentType?: string;
+  reasonForIssuing?: string;
+  supplyType?: string;
+  invoiceType?: string;
+  noteValue?: number;
+  rate?: number;
+  taxableValue?: number;
+  integratedTaxPaid?: number;
+  centralTaxPaid?: number;
+  stateUtTaxPaid?: number;
+  cessPaid?: number;
+  itcEligibility?: string;
+  availedItcIntegrated?: number;
+}
+
+export interface Gstr2AtLineDto {
+  placeOfSupply?: string;
+  rate?: number;
+  grossAdvancePaid?: number;
+  cessAmount?: number;
+}
+
+export interface Gstr2AtadjLineDto {
+  placeOfSupply?: string;
+  rate?: number;
+  grossAdvanceToBeAdjusted?: number;
+  cessAdjusted?: number;
+}
+
+export interface Gstr2ExempLineDto {
+  description?: string;
+  compositionTaxablePerson?: number;
+  nilRatedSupplies?: number;
+  exemptedOtherThanNilOrNonGst?: number;
+  nonGstSupplies?: number;
+}
+
+export interface Gstr2ItcrLineDto {
+  description?: string;
+  toBeAddedOrReduced?: string;
+  itcIntegratedTaxAmount?: number;
+  itcCentralTaxAmount?: number;
+  itcStateUtTaxAmount?: number;
+  itcCessAmount?: number;
+}
+
+export interface Gstr2HsnLineDto {
+  hsn?: string;
+  description?: string;
+  uqc?: string;
+  totalQuantity?: number;
+  totalValue?: number;
+  rate?: number;
+  taxableValue?: number;
+  integratedTaxAmount?: number;
+  centralTaxAmount?: number;
+  stateUtTaxAmount?: number;
+  cessAmount?: number;
+}
+
+export interface Gstr2TabDto<T> {
+  lines: T[];
+}
+
+export interface Gstr2ReportResponse {
+  shopId: string;
+  shopGstin: string;
+  period: string;
+  year: number;
+  month: number;
+  b2b: Gstr2TabDto<Gstr2B2bLineDto>;
+  b2bur: Gstr2TabDto<Gstr2B2burLineDto>;
+  imps: Gstr2TabDto<Gstr2ImpsLineDto>;
+  impg: Gstr2TabDto<Gstr2ImpgLineDto>;
+  cdnr: Gstr2TabDto<Gstr2CdnrLineDto>;
+  cdnur: Gstr2TabDto<Gstr2CdnurLineDto>;
+  at: Gstr2TabDto<Gstr2AtLineDto>;
+  atadj: Gstr2TabDto<Gstr2AtadjLineDto>;
+  exemp: Gstr2TabDto<Gstr2ExempLineDto>;
+  itcr: Gstr2TabDto<Gstr2ItcrLineDto>;
+  hsnsum: Gstr2TabDto<Gstr2HsnLineDto>;
+}
+
+// GSTR-3B types
+export interface Gstr3bSection31Dto {
+  outwardTaxableValue?: number;
+  outwardTaxableIgst?: number;
+  outwardTaxableCgst?: number;
+  outwardTaxableSgst?: number;
+  outwardTaxableCess?: number;
+  zeroRatedValue?: number;
+  zeroRatedIgst?: number;
+  nilExemptValue?: number;
+  inwardRcmValue?: number;
+  inwardRcmIgst?: number;
+  inwardRcmCgst?: number;
+  inwardRcmSgst?: number;
+  inwardRcmCess?: number;
+  nonGstValue?: number;
+}
+
+export interface Gstr3bInterStateSupplyDto {
+  placeOfSupply?: string;
+  taxableValue?: number;
+  integratedTax?: number;
+}
+
+export interface Gstr3bSection4Dto {
+  itcOtherIgst?: number;
+  itcOtherCgst?: number;
+  itcOtherSgst?: number;
+  itcReversedOthersIgst?: number;
+  itcReversedOthersCgst?: number;
+  itcReversedOthersSgst?: number;
+}
+
+export interface Gstr3bSection5Dto {
+  compExemptInterState?: number;
+  compExemptIntraState?: number;
+  nonGstInterState?: number;
+  nonGstIntraState?: number;
+}
+
+export interface Gstr3bSection61Dto {
+  igstPayable?: number;
+  igstPaidByItc?: number;
+  igstPaidByCash?: number;
+  cgstPayable?: number;
+  cgstPaidByItcIgst?: number;
+  cgstPaidByItcCgst?: number;
+  cgstPaidByItcSgst?: number;
+  cgstPaidByCash?: number;
+  sgstPayable?: number;
+  sgstPaidByItcIgst?: number;
+  sgstPaidByItcCgst?: number;
+  sgstPaidByItcSgst?: number;
+  sgstPaidByCash?: number;
+  cessPayable?: number;
+}
+
+export interface Gstr3bReportResponse {
+  shopId: string;
+  shopGstin: string;
+  legalName: string;
+  period: string;
+  year: number;
+  month: number;
+  section31?: Gstr3bSection31Dto;
+  interStateSupplies?: Gstr3bInterStateSupplyDto[];
+  section4?: Gstr3bSection4Dto;
+  section5?: Gstr3bSection5Dto;
+  section61?: Gstr3bSection61Dto;
+}
