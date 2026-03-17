@@ -33,6 +33,7 @@ const MENU_GROUPS: MenuGroup[] = [
     items: [
       { path: '/dashboard', label: 'Dashboard', icon: '📊' },
       { path: '/dashboard/shops', label: 'Shops', icon: '🏪' },
+      { path: '/dashboard/profile', label: 'Profile', icon: '👤' },
     ],
   },
   {
@@ -100,12 +101,6 @@ const MENU_GROUPS: MenuGroup[] = [
     ],
   },
   {
-    id: 'profile',
-    label: 'Profile',
-    icon: '👤',
-    items: [{ path: '/dashboard/profile', label: 'View profile', icon: '👤' }],
-  },
-  {
     id: 'team',
     label: 'Team & Collaboration',
     icon: '👥',
@@ -163,6 +158,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { notifications, unreadCount, markAsRead } = useNotifications(
     user?.shopId ?? undefined
   );
+
+  const [shopName, setShopName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (shop?.name) {
+      setShopName(shop.name);
+    }
+  }, [shop?.name]);
 
   // Close user menu on outside click
   useEffect(() => {

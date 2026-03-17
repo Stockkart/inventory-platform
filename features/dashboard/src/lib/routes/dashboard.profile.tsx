@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { shopsApi } from '@inventory-platform/api';
+import { ShopProfileForm } from '@inventory-platform/ui';
 import type { Location as LocationType } from '@inventory-platform/types';
 import styles from './dashboard.profile.module.css';
 
@@ -231,90 +232,13 @@ export default function ProfilePage() {
         <div className={styles.card}>
           <h2 className={styles.cardTitle}>Edit shop</h2>
           {saveError && <div className={styles.saveError}>{saveError}</div>}
-          <div className={styles.form}>
-            <label className={styles.label} htmlFor="profile-tagline">
-              Tagline (optional)
-            </label>
-            <input
-              id="profile-tagline"
-              type="text"
-              className={styles.input}
-              value={editTagline}
-              onChange={(e) => setEditTagline(e.target.value)}
-              placeholder="e.g. Your Trusted Pharmacy"
-            />
-            <label className={styles.label}>Location</label>
-            <input
-              type="text"
-              className={styles.input}
-              placeholder="Primary address *"
-              value={editLocation.primaryAddress}
-              onChange={(e) =>
-                setEditLocation((prev) => ({
-                  ...prev,
-                  primaryAddress: e.target.value,
-                }))
-              }
-            />
-            <input
-              type="text"
-              className={styles.input}
-              placeholder="Secondary address"
-              value={editLocation.secondaryAddress ?? ''}
-              onChange={(e) =>
-                setEditLocation((prev) => ({
-                  ...prev,
-                  secondaryAddress: e.target.value,
-                }))
-              }
-            />
-            <div className={styles.row}>
-              <input
-                type="text"
-                className={styles.input}
-                placeholder="City *"
-                value={editLocation.city}
-                onChange={(e) =>
-                  setEditLocation((prev) => ({ ...prev, city: e.target.value }))
-                }
-              />
-              <input
-                type="text"
-                className={styles.input}
-                placeholder="State *"
-                value={editLocation.state}
-                onChange={(e) =>
-                  setEditLocation((prev) => ({
-                    ...prev,
-                    state: e.target.value,
-                  }))
-                }
-              />
-            </div>
-            <div className={styles.row}>
-              <input
-                type="text"
-                className={styles.input}
-                placeholder="PIN *"
-                value={editLocation.pin}
-                onChange={(e) =>
-                  setEditLocation((prev) => ({ ...prev, pin: e.target.value }))
-                }
-              />
-              <input
-                type="text"
-                className={styles.input}
-                placeholder="Country *"
-                value={editLocation.country}
-                onChange={(e) =>
-                  setEditLocation((prev) => ({
-                    ...prev,
-                    country: e.target.value,
-                  }))
-                }
-              />
-            </div>
-          </div>
+          <ShopProfileForm
+            tagline={editTagline}
+            onTaglineChange={setEditTagline}
+            location={editLocation}
+            onLocationChange={setEditLocation}
+            disabled={saving}
+          />
           <div className={styles.actions}>
             <button
               type="button"

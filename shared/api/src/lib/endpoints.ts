@@ -130,7 +130,9 @@ export const API_ENDPOINTS = {
 
   // Customer endpoints
   CUSTOMERS: {
+    BASE: '/customers',
     SEARCH: '/customers/search',
+    BY_ID: (id: string) => `/customers/${id}`,
   },
 
   // Credit Ledger endpoints
