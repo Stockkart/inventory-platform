@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { Gstr1Tab } from './dashboard.gstr1';
+import { Gstr2Tab } from './dashboard.gstr2';
+import { Gstr3bTab } from './dashboard.gstr3b';
 import styles from './dashboard.taxes.module.css';
 
 const TAX_TABS = [
   { id: 'gstr1', label: 'GSTR-1' },
-  // Future: { id: 'gstr2', label: 'GSTR-2' }, etc.
+  { id: 'gstr2', label: 'GSTR-2' },
+  { id: 'gstr3b', label: 'GSTR-3B' },
 ] as const;
 
 export function meta() {
@@ -41,6 +44,8 @@ export default function TaxesPage() {
 
       <div className={styles.tabContent}>
         {activeTab === 'gstr1' && <Gstr1Tab />}
+        {activeTab === 'gstr2' && <Gstr2Tab />}
+        {activeTab === 'gstr3b' && <Gstr3bTab />}
       </div>
     </div>
   );
