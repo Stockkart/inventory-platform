@@ -1,9 +1,39 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { cartApi } from '@inventory-platform/api';
-import type { CartResponse } from '@inventory-platform/types';
+import type { CartResponse, UpdateCartStatusDto } from '@inventory-platform/types';
 import styles from './dashboard.checkout.module.css';
 import { useNotify } from '@inventory-platform/store';
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+function formatPaymentSummary(c: CartResponse): string {
+  const m = c.paymentMethod;
+  if (!m) return '—';
+  const fmt = (x: number | null | undefined) =>
+    x != null && !Number.isNaN(Number(x)) ? `₹${round2(Number(x)).toFixed(2)}` : '';
+  switch (m) {
+    case 'CASH':
+      return 'Cash';
+    case 'ONLINE':
+      return 'Online';
+    case 'CREDIT':
+      return 'Credit (full)';
+    case 'SPLIT': {
+      const parts: string[] = [];
+      if (c.amountOnCredit) parts.push(`Credit ${fmt(c.amountOnCredit)}`);
+      if (c.amountPaidCash) parts.push(`Cash ${fmt(c.amountPaidCash)}`);
+      if (c.amountPaidOnline) parts.push(`Online ${fmt(c.amountPaidOnline)}`);
+      return parts.length ? `Split (${parts.join(' + ')})` : 'Split';
+    }
+    case 'MULTI':
+      return `Multi: Cash ${fmt(c.amountPaidCash)} + Online ${fmt(c.amountPaidOnline)}`;
+    default:
+      return m;
+  }
+}
 
 export function meta() {
   return [
@@ -23,6 +53,11 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null);
   const [isPrinting, setIsPrinting] = useState(false);
   const cartLoadedRef = useRef(false);
+  const [paymentForm, setPaymentForm] = useState<null | 'SPLIT' | 'MULTI'>(null);
+  const [splitCreditInput, setSplitCreditInput] = useState('');
+  const [splitPaidVia, setSplitPaidVia] = useState<'CASH' | 'ONLINE'>('CASH');
+  const [multiCashInput, setMultiCashInput] = useState('');
+  const [multiOnlineInput, setMultiOnlineInput] = useState('');
 
   const loadCart = useCallback(async () => {
     setIsLoading(true);
@@ -109,54 +144,90 @@ export default function CheckoutPage() {
     );
   }
 
+  const completePurchase = async (payload: Omit<UpdateCartStatusDto, 'purchaseId' | 'status'>) => {
+    if (!checkoutData?.purchaseId) {
+      notifyError('Purchase ID not found');
+      return;
+    }
+    setIsProcessingPayment(true);
+    setError(null);
+    try {
+      const statusPayload: UpdateCartStatusDto = {
+        purchaseId: checkoutData.purchaseId,
+        status: 'COMPLETED',
+        ...payload,
+      };
+      await cartApi.updateStatus(statusPayload);
+      setCheckoutData({
+        ...checkoutData,
+        status: 'COMPLETED',
+        paymentMethod: payload.paymentMethod,
+        amountPaidCash: payload.amountPaidCash ?? null,
+        amountPaidOnline: payload.amountPaidOnline ?? null,
+        amountOnCredit: payload.amountOnCredit ?? null,
+      });
+      setPaymentForm(null);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+    } catch (err) {
+      notifyError(err instanceof Error ? err.message : 'Failed to process payment');
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
   const handlePayment = async (method: 'CASH' | 'ONLINE' | 'CREDIT') => {
     if (!checkoutData) {
       notifyError('Checkout data not available');
       return;
     }
-
-    setIsProcessingPayment(true);
-    setError(null);
-
-    try {
-      const purchaseId = checkoutData.purchaseId;
-
-      if (!purchaseId) {
-        throw new Error('Purchase ID not found in checkout data');
-      }
-
-      // Call update status API with status COMPLETED and payment method
-      const statusPayload = {
-        purchaseId,
-        status: 'COMPLETED',
-        paymentMethod: method,
-      };
-
-      await cartApi.updateStatus(statusPayload);
-
-      // Update local checkout data status to COMPLETED
-      if (checkoutData) {
-        setCheckoutData({
-          ...checkoutData,
-          status: 'COMPLETED',
-          paymentMethod: method,
-        });
-      }
-
-      // Show success animation
-      setShowSuccess(true);
-      setIsProcessingPayment(false);
-
-      // After showing success overlay, hide it (don't call loadCart as it will return 404 for COMPLETED)
-      setTimeout(() => {
-        setShowSuccess(false);
-      }, 3000);
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to process payment';
-      notifyError(errorMessage);
-      setIsProcessingPayment(false);
+    if (method === 'CREDIT' && !checkoutData.customerId) {
+      notifyError('Add a customer (search by phone in cart) to sell on credit');
+      return;
     }
+    await completePurchase({ paymentMethod: method });
+  };
+
+  const handleSplitConfirm = async () => {
+    if (!checkoutData) return;
+    if (!checkoutData.customerId) {
+      notifyError('Customer required for split payment (credit + paid)');
+      return;
+    }
+    const total = round2(checkoutData.grandTotal);
+    const credit = round2(parseFloat(splitCreditInput.replace(/,/g, '')) || 0);
+    const paid = round2(total - credit);
+    if (credit <= 0 || paid <= 0) {
+      notifyError('Enter credit amount greater than 0 and less than grand total');
+      return;
+    }
+    await completePurchase({
+      paymentMethod: 'SPLIT',
+      amountOnCredit: credit,
+      amountPaidCash: splitPaidVia === 'CASH' ? paid : 0,
+      amountPaidOnline: splitPaidVia === 'ONLINE' ? paid : 0,
+    });
+  };
+
+  const handleMultiConfirm = async () => {
+    if (!checkoutData) return;
+    const total = round2(checkoutData.grandTotal);
+    const cash = round2(parseFloat(multiCashInput.replace(/,/g, '')) || 0);
+    const online = round2(parseFloat(multiOnlineInput.replace(/,/g, '')) || 0);
+    if (cash <= 0 || online <= 0) {
+      notifyError('Enter both cash and online amounts (each greater than 0)');
+      return;
+    }
+    if (round2(cash + online) !== total) {
+      notifyError(`Cash + Online must equal grand total (₹${total.toFixed(2)})`);
+      return;
+    }
+    await completePurchase({
+      paymentMethod: 'MULTI',
+      amountPaidCash: cash,
+      amountPaidOnline: online,
+      amountOnCredit: 0,
+    });
   };
 
   const handleGoBack = async () => {
@@ -421,9 +492,9 @@ export default function CheckoutPage() {
               </div>
             )}
             <div className={styles.infoItem}>
-              <span className={styles.infoLabel}>Payment Method:</span>
+              <span className={styles.infoLabel}>Payment:</span>
               <span className={styles.infoValue}>
-                {checkoutData.paymentMethod || 'Not specified'}
+                {formatPaymentSummary(checkoutData)}
               </span>
             </div>
             <div className={styles.infoItem}>
@@ -576,10 +647,18 @@ export default function CheckoutPage() {
         {checkoutData.status !== 'COMPLETED' && (
           <div className={styles.paymentSection}>
             <h3 className={styles.sectionTitle}>Payment Options</h3>
+            <p className={styles.hintText}>
+              <strong>Split</strong>: part on credit + rest in cash or online.{' '}
+              <strong>Multi</strong>: pay using cash and online together.
+            </p>
             <div className={styles.paymentButtons}>
               <button
+                type="button"
                 className={`${styles.paymentBtn} ${styles.cashBtn}`}
-                onClick={() => handlePayment('CASH')}
+                onClick={() => {
+                  setPaymentForm(null);
+                  void handlePayment('CASH');
+                }}
                 disabled={isProcessingPayment || isUpdating}
               >
                 <span role="img" aria-label="Cash">
@@ -588,8 +667,12 @@ export default function CheckoutPage() {
                 {isProcessingPayment ? 'Processing...' : 'Pay in Cash'}
               </button>
               <button
+                type="button"
                 className={`${styles.paymentBtn} ${styles.onlineBtn}`}
-                onClick={() => handlePayment('ONLINE')}
+                onClick={() => {
+                  setPaymentForm(null);
+                  void handlePayment('ONLINE');
+                }}
                 disabled={isProcessingPayment || isUpdating}
               >
                 <span role="img" aria-label="Online Payment">
@@ -598,21 +681,172 @@ export default function CheckoutPage() {
                 {isProcessingPayment ? 'Processing...' : 'Pay Online'}
               </button>
               <button
+                type="button"
                 className={`${styles.paymentBtn} ${styles.creditBtn}`}
-                onClick={() => handlePayment('CREDIT')}
+                onClick={() => {
+                  setPaymentForm(null);
+                  void handlePayment('CREDIT');
+                }}
                 disabled={isProcessingPayment || isUpdating}
                 title={
                   !checkoutData.customerId
                     ? 'Add customer (search by phone in cart) to sell on credit'
-                    : 'Complete sale on credit – amount will be tracked in Credit Ledger'
+                    : 'Full amount on credit – tracked in Credit Ledger'
                 }
               >
                 <span role="img" aria-label="Credit">
                   📒
                 </span>
-                {isProcessingPayment ? 'Processing...' : 'Sell on Credit'}
+                {isProcessingPayment ? 'Processing...' : 'Full Credit'}
+              </button>
+              <button
+                type="button"
+                className={`${styles.paymentBtn} ${styles.splitBtn}`}
+                onClick={() => {
+                  setPaymentForm(paymentForm === 'SPLIT' ? null : 'SPLIT');
+                  setSplitCreditInput('');
+                }}
+                disabled={isProcessingPayment || isUpdating}
+                title={
+                  !checkoutData.customerId
+                    ? 'Customer required for split (credit portion)'
+                    : 'Credit + cash or online'
+                }
+              >
+                Split (credit + paid)
+              </button>
+              <button
+                type="button"
+                className={`${styles.paymentBtn} ${styles.multiBtn}`}
+                onClick={() => {
+                  setPaymentForm(paymentForm === 'MULTI' ? null : 'MULTI');
+                  setMultiCashInput('');
+                  setMultiOnlineInput('');
+                }}
+                disabled={isProcessingPayment || isUpdating}
+                title="Cash + online (no credit)"
+              >
+                Cash + Online
               </button>
             </div>
+            {paymentForm === 'SPLIT' && (
+              <div className={styles.paymentFormPanel}>
+                <div className={styles.paymentFormRow}>
+                  <label htmlFor="split-credit">On credit (₹)</label>
+                  <input
+                    id="split-credit"
+                    className={styles.paymentInput}
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={splitCreditInput}
+                    onChange={(e) => setSplitCreditInput(e.target.value)}
+                  />
+                  <span className={styles.hintText}>
+                    Rest: ₹
+                    {(() => {
+                      const t = round2(checkoutData.grandTotal);
+                      const c = round2(parseFloat(splitCreditInput) || 0);
+                      const r = round2(t - c);
+                      return r >= 0 ? r.toFixed(2) : '—';
+                    })()}{' '}
+                    via{' '}
+                    {splitPaidVia === 'CASH' ? 'cash' : 'online'}
+                  </span>
+                </div>
+                <div className={styles.paymentFormRow}>
+                  <span className={styles.hintText}>Pay remainder with:</span>
+                  <div className={styles.radioGroup}>
+                    <label>
+                      <input
+                        type="radio"
+                        name="splitPaidVia"
+                        checked={splitPaidVia === 'CASH'}
+                        onChange={() => setSplitPaidVia('CASH')}
+                      />
+                      Cash
+                    </label>
+                    <label>
+                      <input
+                        type="radio"
+                        name="splitPaidVia"
+                        checked={splitPaidVia === 'ONLINE'}
+                        onChange={() => setSplitPaidVia('ONLINE')}
+                      />
+                      Online
+                    </label>
+                  </div>
+                </div>
+                <div className={styles.paymentFormActions}>
+                  <button
+                    type="button"
+                    className={styles.confirmPaymentBtn}
+                    disabled={isProcessingPayment || !checkoutData.customerId}
+                    onClick={() => void handleSplitConfirm()}
+                  >
+                    Complete split payment
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.cancelPaymentFormBtn}
+                    onClick={() => setPaymentForm(null)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+            {paymentForm === 'MULTI' && (
+              <div className={styles.paymentFormPanel}>
+                <div className={styles.paymentFormRow}>
+                  <label htmlFor="multi-cash">Cash (₹)</label>
+                  <input
+                    id="multi-cash"
+                    className={styles.paymentInput}
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={multiCashInput}
+                    onChange={(e) => setMultiCashInput(e.target.value)}
+                  />
+                </div>
+                <div className={styles.paymentFormRow}>
+                  <label htmlFor="multi-online">Online (₹)</label>
+                  <input
+                    id="multi-online"
+                    className={styles.paymentInput}
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={multiOnlineInput}
+                    onChange={(e) => setMultiOnlineInput(e.target.value)}
+                  />
+                </div>
+                <p className={styles.hintText}>
+                  Total must equal ₹{checkoutData.grandTotal.toFixed(2)}
+                </p>
+                <div className={styles.paymentFormActions}>
+                  <button
+                    type="button"
+                    className={styles.confirmPaymentBtn}
+                    disabled={isProcessingPayment}
+                    onClick={() => void handleMultiConfirm()}
+                  >
+                    Complete multi payment
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.cancelPaymentFormBtn}
+                    onClick={() => setPaymentForm(null)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

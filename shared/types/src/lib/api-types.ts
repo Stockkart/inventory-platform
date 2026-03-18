@@ -911,6 +911,10 @@ export interface CartResponse {
   customerPan?: string;
   customerId?: string;
   paymentMethod?: string;
+  /** Breakdown when payment is SPLIT, MULTI, or for display */
+  amountPaidCash?: number | null;
+  amountPaidOnline?: number | null;
+  amountOnCredit?: number | null;
   totalCost?: number | null;
   revenueBeforeTax?: number | null;
   revenueAfterTax?: number | null;
@@ -937,6 +941,9 @@ export interface UpdateCartStatusDto {
   purchaseId: string;
   status: string;
   paymentMethod: string;
+  amountPaidCash?: number;
+  amountPaidOnline?: number;
+  amountOnCredit?: number;
 }
 
 // Purchase History types
@@ -957,6 +964,9 @@ export interface Purchase {
   soldAt: string;
   status: string;
   paymentMethod: string;
+  amountPaidCash?: number | null;
+  amountPaidOnline?: number | null;
+  amountOnCredit?: number | null;
   customerName: string | null;
   customerAddress: string | null;
   customerPhone: string | null;
