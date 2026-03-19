@@ -470,16 +470,19 @@ export default function ScanSellPage() {
     ]
   );
 
-  // Preload rates when cart items are displayed (before dropdown interaction)
+  // Preload rates when cart items are displayed (before dropdown interaction).
+  // Only re-run when cart item IDs change to avoid flicker from effect re-running on load completion.
+  const loadPricingRef = useRef(loadPricingOnDropdownClick);
+  loadPricingRef.current = loadPricingOnDropdownClick;
   const cartItemIds = cartItems.map((c) => c.inventoryItem.id).join(',');
   useEffect(() => {
     if (!cartItems.length) return;
     cartItems.forEach((item) => {
       const invId = item.inventoryItem.id;
       const pricingId = item.inventoryItem.pricingId ?? inventoryToPricingId[invId];
-      loadPricingOnDropdownClick(pricingId ?? undefined, invId);
+      loadPricingRef.current(pricingId ?? undefined, invId);
     });
-  }, [cartItemIds, cartItems, loadPricingOnDropdownClick]);
+  }, [cartItemIds, cartItems, inventoryToPricingId]);
 
   const normalizeBillingMode = useCallback(
     (mode?: BillingMode | null): BillingMode =>
@@ -1922,14 +1925,17 @@ export default function ScanSellPage() {
                                 const selectValue = matched
                                   ? matched.label
                                   : '__custom__';
+                                // Never switch select value to loading - keep current selection to avoid flicker
+                                const displayValue = isLoading && rateOpts.length === 0
+                                  ? '__custom__'
+                                  : selectValue;
                                 return (
                                   <select
                                     className={styles.itemRateSelect}
-                                    value={isLoading ? '__loading__' : selectValue}
+                                    value={displayValue}
                                     onChange={(e) => {
                                       const sel = e.target.value;
-                                      if (sel === '__custom__' || sel === '__loading__')
-                                        return;
+                                      if (sel === '__custom__') return;
                                       const opt = rateOpts.find(
                                         (o) => o.label === sel
                                       );
@@ -1947,26 +1953,17 @@ export default function ScanSellPage() {
                                       );
                                     }}
                                     disabled={isUpdatingCart || isLoading}
-                                    title="Select rate"
+                                    title={isLoading ? 'Loading rates…' : 'Select rate'}
                                   >
-                                    {isLoading ? (
-                                      <option value="__loading__">
-                                        Loading rates…
+                                    <option value="__custom__">Custom</option>
+                                    {rateOpts.map((opt) => (
+                                      <option
+                                        key={`${opt.label}-${opt.price}`}
+                                        value={opt.label}
+                                      >
+                                        {opt.label} ({formatPrice(opt.price)})
                                       </option>
-                                    ) : (
-                                      <>
-                                        <option value="__custom__">Custom</option>
-                                        {rateOpts.map((opt) => (
-                                          <option
-                                            key={opt.label}
-                                            value={opt.label}
-                                          >
-                                            {opt.label} (
-                                            {formatPrice(opt.price)})
-                                          </option>
-                                        ))}
-                                      </>
-                                    )}
+                                    ))}
                                   </select>
                                 );
                               })()}
@@ -2048,7 +2045,10 @@ export default function ScanSellPage() {
                                 ? cartItem.availableUnits
                                 : [{ unit: cartItem.unit, baseUnit: false }]
                               ).map((unitOption) => (
-                                <option key={unitOption.unit} value={unitOption.unit}>
+                                <option
+                                  key={`${unitOption.unit}-${unitOption.baseUnit}`}
+                                  value={unitOption.unit}
+                                >
                                   {unitOption.unit}
                                   {unitOption.baseUnit ? ' (base)' : ''}
                                 </option>
