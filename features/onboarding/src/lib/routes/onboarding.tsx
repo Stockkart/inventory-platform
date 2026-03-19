@@ -187,7 +187,7 @@ export default function OnboardingPage() {
       }
       return;
     } else if (step === 'tagline') {
-      // Tagline is optional, skip validation and move to next step or submit
+      // Tagline is optional
       if (currentStep === STEPS.length - 1) {
         handleSubmit();
       } else {

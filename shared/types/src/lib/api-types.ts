@@ -478,6 +478,20 @@ export interface RegisterShopResponse {
   status: string;
 }
 
+export interface ShopDetailResponse {
+  shopId: string;
+  name: string;
+  tagline?: string | null;
+  location?: Location | null;
+  /** PAN derived from GSTIN: 10 chars from 3rd character (1-based). */
+  panNo?: string | null;
+}
+
+export interface UpdateShopDto {
+  tagline?: string | null;
+  location?: Location | null;
+}
+
 export interface RequestJoinShopDto {
   ownerEmail: string;
   shopId: string;
@@ -1342,10 +1356,58 @@ export interface CustomerResponse {
   gstin?: string | null;
   dlNo?: string | null;
   pan?: string | null;
+  /** PAN derived from GSTIN: 10 chars from 3rd character (1-based). */
+  panNo?: string | null;
   /** Optional. Set when customer is linked to a registered user. */
   userId?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CustomerListResponse {
+  data: CustomerResponse[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface CreateCustomerDto {
+  name: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  gstin?: string;
+  dlNo?: string;
+  pan?: string;
+}
+
+export interface UpdateCustomerDto {
+  name?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  gstin?: string;
+  dlNo?: string;
+  pan?: string;
+}
+
+export interface VendorListResponse {
+  data: VendorResponse[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface UpdateVendorDto {
+  name?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  address?: string;
+  companyName?: string;
+  businessType?: string;
+  gstinUin?: string;
 }
 
 // Vendor Analytics types

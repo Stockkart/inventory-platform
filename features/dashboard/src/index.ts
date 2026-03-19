@@ -2,6 +2,9 @@
 export { default as DashboardLayoutRoute } from './lib/routes/dashboard._layout';
 export { default as DashboardPage } from './lib/routes/dashboard';
 export { default as ShopsPage } from './lib/routes/dashboard.shops';
+export { default as ProfilePage } from './lib/routes/dashboard.profile';
+export { default as CustomersPage } from './lib/routes/dashboard.customers';
+export { default as VendorsPage } from './lib/routes/dashboard.vendors';
 export { default as AnalyticsPage } from './lib/routes/dashboard.analytics';
 export { default as InventoryAlertPage } from './lib/routes/dashboard.inventory-alert';
 export { default as PaymentBillingPage } from './lib/routes/dashboard.payment-billing';

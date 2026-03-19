@@ -11,6 +11,8 @@ import type {
   OwnerShopSummary,
   ProcessJoinRequestDto,
   ProcessJoinRequestResponse,
+  ShopDetailResponse,
+  UpdateShopDto,
 } from '@inventory-platform/types';
 
 export const shopsApi = {
@@ -64,6 +66,23 @@ export const shopsApi = {
   ): Promise<ProcessJoinRequestResponse> => {
     const response = await apiClient.post<ApiResponse<ProcessJoinRequestResponse>>(
       API_ENDPOINTS.SHOPS.PROCESS_JOIN_REQUEST(requestId),
+      data
+    );
+    return response.data;
+  },
+
+  /** Get the current user's active shop (uses X-Shop-Id / user's shopId from auth). */
+  getActiveShop: async (): Promise<ShopDetailResponse> => {
+    const response = await apiClient.get<ApiResponse<ShopDetailResponse>>(
+      API_ENDPOINTS.SHOPS.ACTIVE_SHOP
+    );
+    return response.data;
+  },
+
+  /** Update the current user's active shop tagline/location. */
+  updateActiveShop: async (data: UpdateShopDto): Promise<ShopDetailResponse> => {
+    const response = await apiClient.patch<ApiResponse<ShopDetailResponse>>(
+      API_ENDPOINTS.SHOPS.ACTIVE_SHOP,
       data
     );
     return response.data;

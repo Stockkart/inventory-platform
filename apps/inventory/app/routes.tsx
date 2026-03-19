@@ -20,6 +20,9 @@ export default [
   route('dashboard', './routes/dashboard._layout.tsx', [
     route('', './routes/dashboard.tsx'),
     route('shops', './routes/dashboard.shops.tsx'),
+    route('profile', './routes/dashboard.profile.tsx'),
+    route('customers', './routes/dashboard.customers.tsx'),
+    route('vendors', './routes/dashboard.vendors.tsx'),
     route(
       'product-registration',
       './routes/dashboard.product-registration.tsx'

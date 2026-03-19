@@ -64,6 +64,7 @@ export const API_ENDPOINTS = {
   // Shop endpoints
   SHOPS: {
     REGISTER: '/shops/register',
+    ACTIVE_SHOP: '/shops/active-shop',
     BY_OWNER_EMAIL: '/shops/by-owner-email',
     JOIN_REQUEST: '/shops/join-request',
     JOIN_REQUESTS: '/shops/join-requests',
@@ -131,7 +132,9 @@ export const API_ENDPOINTS = {
 
   // Customer endpoints
   CUSTOMERS: {
+    BASE: '/customers',
     SEARCH: '/customers/search',
+    BY_ID: (id: string) => `/customers/${id}`,
   },
 
   // Credit Ledger endpoints
