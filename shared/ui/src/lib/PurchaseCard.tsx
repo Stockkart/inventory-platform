@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { cartApi } from '@inventory-platform/api';
 import type { Purchase } from '@inventory-platform/types';
+import { PrintInvoiceModal } from './PrintInvoiceModal';
 import styles from './PurchaseCard.module.css';
 import { useNotify } from '@inventory-platform/store';
 
@@ -11,7 +11,7 @@ interface PurchaseCardProps {
 export function PurchaseCard({ purchase }: PurchaseCardProps) {
   const [isItemsExpanded, setIsItemsExpanded] = useState(false);
   const [isPriceExpanded, setIsPriceExpanded] = useState(false);
-  const [isPrinting, setIsPrinting] = useState(false);
+  const [showPrintModal, setShowPrintModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { error: notifyError } = useNotify;
 
@@ -52,47 +52,6 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
     }
   };
 
-  const handlePrintInvoice = async () => {
-    if (!purchase.purchaseId) {
-      notifyError('Purchase ID not found');
-      return;
-    }
-
-    setIsPrinting(true);
-    setError(null);
-
-    try {
-      const pdfBlob = await cartApi.getInvoicePdf(purchase.purchaseId);
-
-      // Create a blob URL and open it in a new window for viewing/printing
-      const url = window.URL.createObjectURL(pdfBlob);
-      const newWindow = window.open(url, '_blank');
-
-      if (!newWindow) {
-        // If popup was blocked, fall back to download
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `invoice-${
-          purchase.invoiceNo || purchase.purchaseId
-        }.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
-
-      // Clean up the blob URL after a delay
-      setTimeout(() => {
-        window.URL.revokeObjectURL(url);
-      }, 1000);
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to download invoice PDF';
-      notifyError(errorMessage);
-    } finally {
-      setIsPrinting(false);
-    }
-  };
-
   return (
     <div className={styles.card}>
       <div className={styles.header}>
@@ -108,44 +67,25 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
             {purchase.status === 'COMPLETED' && (
               <button
                 className={styles.printBtn}
-                onClick={handlePrintInvoice}
-                disabled={isPrinting}
+                onClick={() => setShowPrintModal(true)}
                 aria-label="Print Invoice"
                 title="Print Invoice"
               >
-                {isPrinting ? (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className={styles.spinner}
-                  >
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
-                  </svg>
-                ) : (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                    <rect x="6" y="14" width="12" height="8"></rect>
-                  </svg>
-                )}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                  <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                  <rect x="6" y="14" width="12" height="8"></rect>
+                </svg>
               </button>
             )}
             <span
@@ -366,6 +306,16 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
           </div>
         )}
       </div>
+
+      {purchase.purchaseId && (
+        <PrintInvoiceModal
+          isOpen={showPrintModal}
+          onClose={() => setShowPrintModal(false)}
+          purchaseId={purchase.purchaseId}
+          invoiceNo={purchase.invoiceNo}
+          onError={(msg) => msg && notifyError(msg)}
+        />
+      )}
     </div>
   );
 }

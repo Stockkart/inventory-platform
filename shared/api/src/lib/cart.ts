@@ -35,14 +35,17 @@ export const cartApi = {
     return response.data;
   },
 
-  getInvoicePdf: async (purchaseId: string): Promise<Blob> => {
+  getInvoicePdf: async (
+    purchaseId: string,
+    printerType?: 'NORMAL' | 'DOT_MATRIX'
+  ): Promise<Blob> => {
     const token =
       typeof window !== 'undefined'
         ? localStorage.getItem('auth_token')
         : null;
 
     const response = await axios.get(
-      `${API_BASE_URL}${API_ENDPOINTS.INVOICES.PDF(purchaseId)}`,
+      `${API_BASE_URL}${API_ENDPOINTS.INVOICES.PDF(purchaseId, printerType)}`,
       {
         responseType: 'blob',
         headers: {

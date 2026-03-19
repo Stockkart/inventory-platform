@@ -26,6 +26,7 @@ export * from './lib/PurchaseList';
 export * from './lib/RefundHistoryList';
 export * from './lib/ReminderForm';
 export * from './lib/InventoryAlertDetails';
+export * from './lib/PrintInvoiceModal';
 export * from './lib/CustomReminderInput';
 export * from './lib/Toast';
 export * from './lib/ToastProvider';

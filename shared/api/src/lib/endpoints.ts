@@ -160,7 +160,10 @@ export const API_ENDPOINTS = {
 
   // Invoice endpoints
   INVOICES: {
-    PDF: (purchaseId: string) => `/invoices/${purchaseId}/pdf`,
+    PDF: (purchaseId: string, printerType?: 'NORMAL' | 'DOT_MATRIX') =>
+      printerType != null
+        ? `/invoices/${purchaseId}/pdf?printerType=${printerType}`
+        : `/invoices/${purchaseId}/pdf`,
   },
 
   // Pricing endpoints
