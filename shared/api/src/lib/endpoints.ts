@@ -93,6 +93,7 @@ export const API_ENDPOINTS = {
     BASE: '/inventory',
     BULK: '/inventory/bulk',
     PARSE_INVOICE: '/inventory/parse-invoice',
+    PARSE_STOCK_SHEET: '/inventory/parse-stock-sheet',
     SEARCH: '/inventory/search',
     LOTS: '/inventory/lots',
     LOW_STOCK: '/inventory/low-stock',

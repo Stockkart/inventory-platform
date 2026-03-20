@@ -325,12 +325,10 @@ export default function ProductRegistrationPage() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         notifyError('Please select an image file');
         return;
       }
-      // Validate file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
         notifyError('File size must be less than 10MB');
         return;
@@ -352,25 +350,21 @@ export default function ProductRegistrationPage() {
     setUploadProgress('Compressing image...');
 
     try {
-      // Compress the image before uploading
       const compressedFile = await compressImage(selectedFile);
       setUploadProgress('Uploading and parsing invoice...');
-
       const response = await inventoryApi.parseInvoice(compressedFile);
 
       if (response && response.items && response.items.length > 0) {
-        // Transform parsed items to product form data
         const parsedProducts = response.items.map(transformParsedItemToProduct);
         setProducts(parsedProducts);
         notifySuccess(
           `✅ Successfully parsed invoice! Found ${response.totalItems} item(s).`
         );
+        scrollToProducts(response.totalItems);
         setSelectedFile(null);
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
-        // Scroll to products section
-        scrollToProducts(response.totalItems);
       } else {
         notifyError(
           'No items found in the invoice image. Please try a different image.'
@@ -1166,20 +1160,18 @@ export default function ProductRegistrationPage() {
           information
         </p>
       </div>
+
       <div className={styles.formContainer}>
         {error && <div className={styles.errorMessage}>{error}</div>}
         {success && <div className={styles.successMessage}>{success}</div>}
 
         <form className={styles.form} onSubmit={handleSubmit}>
-          {/* Invoice Upload Section - First for fastest path */}
           <div className={styles.uploadSection}>
             <div className={styles.uploadHeader}>
-              <h3 className={styles.sectionTitle}>
-                Upload Invoice Image (Optional)
-              </h3>
+              <h3 className={styles.sectionTitle}>Upload Invoice Image (Optional)</h3>
               <ul className={styles.helperText}>
                 <li>Upload invoice image to auto-parse product details</li>
-                <li>Choose one of the options below to upload</li>
+                <li>Review and edit parsed products before bulk save</li>
               </ul>
             </div>
             <div className={styles.uploadOptionsHeader}>
@@ -1208,7 +1200,7 @@ export default function ProductRegistrationPage() {
               <div className={styles.uploadContainer}>
                 <div className={styles.uploadOptionLabel}>
                   <span className={styles.uploadOptionTitle}>Upload from this device</span>
-                  <span className={styles.uploadOptionSubtitle}>Choose file from computer</span>
+                  <span className={styles.uploadOptionSubtitle}>Choose image file from computer</span>
                 </div>
               <input
                 ref={fileInputRef}

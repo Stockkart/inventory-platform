@@ -27,6 +27,7 @@ export default [
       'product-registration',
       './routes/dashboard.product-registration.tsx'
     ),
+    route('import', './routes/dashboard.import.tsx'),
     route('product-search', './routes/dashboard.product-search.tsx'),
     route('pricing', './routes/dashboard.pricing.tsx'),
     route('scan-sell', './routes/dashboard.scan-sell.tsx'),

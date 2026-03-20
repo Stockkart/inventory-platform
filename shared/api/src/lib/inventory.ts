@@ -143,4 +143,26 @@ export const inventoryApi = {
 
     return response.data.data;
   },
+
+  parseStockSheet: async (stockFile: File): Promise<ParseInvoiceResponse> => {
+    const token = localStorage.getItem('auth_token');
+    const API_BASE_URL =
+      import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+
+    const formData = new FormData();
+    formData.append('file', stockFile);
+
+    const response = await axios.post<ApiResponse<ParseInvoiceResponse>>(
+      `${API_BASE_URL}${API_ENDPOINTS.INVENTORY.PARSE_STOCK_SHEET}`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: token ? `Bearer ${token}` : '',
+        },
+      }
+    );
+
+    return response.data.data;
+  },
 };

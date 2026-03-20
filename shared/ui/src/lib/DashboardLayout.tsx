@@ -46,6 +46,8 @@ const MENU_GROUPS: MenuGroup[] = [
         label: 'Product Registration',
         icon: '📦',
       },
+      // Import disabled for now
+      // { path: '/dashboard/import', label: 'Import', icon: '📥' },
       {
         path: '/dashboard/product-search',
         label: 'Product Search',
