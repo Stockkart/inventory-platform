@@ -47,5 +47,6 @@ export default [
     route('taxes', './routes/dashboard.taxes.tsx'),
     route('plan-payment', './routes/dashboard.plan-payment.tsx'),
     route('plan-status', './routes/dashboard.plan-status.tsx'),
+    route('whatsapp-marketing', './routes/dashboard.whatsapp-marketing.tsx'),
   ]),
 ] satisfies RouteConfig;

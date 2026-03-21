@@ -29,6 +29,7 @@ export { default as PriceEditPage } from './lib/routes/dashboard.price-edit';
 export { default as TaxesPage } from './lib/routes/dashboard.taxes';
 export { default as PlanStatusPage } from './lib/routes/dashboard.plan-status';
 export { default as PlanPaymentPage } from './lib/routes/dashboard.plan-payment';
+export { default as WhatsAppMarketingPage } from './lib/routes/dashboard.whatsapp-marketing';
 
 // Re-export meta functions
 export { meta as dashboardMeta } from './lib/routes/dashboard';

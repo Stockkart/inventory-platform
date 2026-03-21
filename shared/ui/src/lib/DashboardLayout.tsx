@@ -103,6 +103,18 @@ const MENU_GROUPS: MenuGroup[] = [
     ],
   },
   {
+    id: 'marketing',
+    label: 'Marketing',
+    icon: '📣',
+    items: [
+      {
+        path: '/dashboard/whatsapp-marketing',
+        label: 'WhatsApp Marketing',
+        icon: '💬',
+      },
+    ],
+  },
+  {
     id: 'team',
     label: 'Team & Collaboration',
     icon: '👥',
