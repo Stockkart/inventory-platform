@@ -3,11 +3,40 @@ import { API_ENDPOINTS } from './endpoints';
 import type {
   ApiResponse,
   VendorResponse,
+  VendorListResponse,
   CreateVendorDto,
+  UpdateVendorDto,
   ShopMembership,
 } from '@inventory-platform/types';
 
 export const vendorsApi = {
+  list: async (params?: {
+    page?: number;
+    limit?: number;
+    q?: string;
+  }): Promise<VendorListResponse> => {
+    const queryParams: Record<string, string> = {};
+    if (params?.page !== undefined) queryParams.page = String(params.page);
+    if (params?.limit !== undefined) queryParams.limit = String(params.limit);
+    if (params?.q) queryParams.q = params.q;
+    const response = await apiClient.get<ApiResponse<VendorListResponse>>(
+      API_ENDPOINTS.VENDORS.BASE,
+      Object.keys(queryParams).length > 0 ? queryParams : undefined
+    );
+    return response.data;
+  },
+
+  update: async (
+    vendorId: string,
+    data: UpdateVendorDto
+  ): Promise<VendorResponse> => {
+    const response = await apiClient.patch<ApiResponse<VendorResponse>>(
+      API_ENDPOINTS.VENDORS.BY_ID(vendorId),
+      data
+    );
+    return response.data;
+  },
+
   create: async (data: CreateVendorDto): Promise<VendorResponse> => {
     const response = await apiClient.post<ApiResponse<VendorResponse>>(
       API_ENDPOINTS.VENDORS.BASE,

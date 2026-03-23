@@ -3,7 +3,11 @@ import { API_ENDPOINTS } from './endpoints';
 import type {
   ApiResponse,
   AuthResponse,
+  ForgotPasswordDto,
+  ForgotPasswordResponse,
   LoginDto,
+  ResetPasswordDto,
+  ResetPasswordResponse,
   SignupDto,
   AcceptInviteDto,
   AcceptInviteResponse,
@@ -69,6 +73,25 @@ export const authApi = {
     if (response.success && response.data.accessToken) {
       apiClient.setToken(response.data.accessToken);
     }
+    return response.data;
+  },
+
+  forgotPassword: async (
+    data: ForgotPasswordDto
+  ): Promise<ForgotPasswordResponse> => {
+    const response = await apiClient.post<
+      ApiResponse<ForgotPasswordResponse>
+    >(API_ENDPOINTS.AUTH.FORGOT_PASSWORD, data);
+    return response.data;
+  },
+
+  resetPassword: async (
+    data: ResetPasswordDto
+  ): Promise<ResetPasswordResponse> => {
+    const response = await apiClient.post<ApiResponse<ResetPasswordResponse>>(
+      API_ENDPOINTS.AUTH.RESET_PASSWORD,
+      data
+    );
     return response.data;
   },
 };

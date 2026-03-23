@@ -9,6 +9,8 @@ export const API_ENDPOINTS = {
     REFRESH: '/auth/refresh',
     ME: '/auth/me',
     ACCEPT_INVITE: '/auth/accept-invite',
+    FORGOT_PASSWORD: '/auth/forgot-password',
+    RESET_PASSWORD: '/auth/reset-password',
   },
 
   // Product endpoints
@@ -62,7 +64,7 @@ export const API_ENDPOINTS = {
   // Shop endpoints
   SHOPS: {
     REGISTER: '/shops/register',
-    BY_ID: (shopId: string) => `/shops/${shopId}`,
+    ACTIVE_SHOP: '/shops/active-shop',
     BY_OWNER_EMAIL: '/shops/by-owner-email',
     JOIN_REQUEST: '/shops/join-request',
     JOIN_REQUESTS: '/shops/join-requests',
@@ -91,6 +93,7 @@ export const API_ENDPOINTS = {
     BASE: '/inventory',
     BULK: '/inventory/bulk',
     PARSE_INVOICE: '/inventory/parse-invoice',
+    PARSE_STOCK_SHEET: '/inventory/parse-stock-sheet',
     SEARCH: '/inventory/search',
     LOTS: '/inventory/lots',
     LOW_STOCK: '/inventory/low-stock',
@@ -130,7 +133,9 @@ export const API_ENDPOINTS = {
 
   // Customer endpoints
   CUSTOMERS: {
+    BASE: '/customers',
     SEARCH: '/customers/search',
+    BY_ID: (id: string) => `/customers/${id}`,
   },
 
   // Credit Ledger endpoints
@@ -161,7 +166,10 @@ export const API_ENDPOINTS = {
 
   // Invoice endpoints
   INVOICES: {
-    PDF: (purchaseId: string) => `/invoices/${purchaseId}/pdf`,
+    PDF: (purchaseId: string, printerType?: 'NORMAL' | 'DOT_MATRIX') =>
+      printerType != null
+        ? `/invoices/${purchaseId}/pdf?printerType=${printerType}`
+        : `/invoices/${purchaseId}/pdf`,
   },
 
   // Pricing endpoints
@@ -170,10 +178,14 @@ export const API_ENDPOINTS = {
     BULK_UPDATE: '/pricing/bulk-update',
   },
 
-  // Taxation endpoints (GSTR-1)
+  // Taxation endpoints (GSTR-1, GSTR-2, GSTR-3B)
   TAXATION: {
     GSTR1: '/taxation/gstr1',
     GSTR1_DOWNLOAD: '/taxation/gstr1/download',
+    GSTR2: '/taxation/gstr2',
+    GSTR2_DOWNLOAD: '/taxation/gstr2/download',
+    GSTR3B: '/taxation/gstr3b',
+    GSTR3B_DOWNLOAD: '/taxation/gstr3b/download',
   },
 
   // Upload endpoints (QR Code Upload Flow)

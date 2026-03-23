@@ -266,6 +266,7 @@ function CartSchemeInput({
   };
 
   const [draft, setDraft] = useState(formatFromProps());
+  const skipNextBlurCommitRef = useRef(false);
 
   useEffect(() => {
     setDraft(formatFromProps());
@@ -332,6 +333,14 @@ function CartSchemeInput({
       return;
     }
 
+    // Plain number: treat as percentage (e.g. 0, 5, 10 → schemeType PERCENTAGE, schemePercentage that number)
+    const num = parseFloat(trimmed);
+    if (!isNaN(num) && num >= 0 && num <= 100) {
+      onCommitUnits(null, null);
+      onCommitPercentage(num);
+      return;
+    }
+
     // Invalid format, reset to last valid representation
     setDraft(formatFromProps());
   };
@@ -342,14 +351,21 @@ function CartSchemeInput({
       type="text"
       className={styles.itemAdditionalInput}
       value={draft}
-      placeholder="10 + 1 or 10%"
+      placeholder="0, 10, 10 + 1 (number = %)"
       disabled={disabled}
       onChange={(e: ChangeEvent<HTMLInputElement>) =>
         handleChange(e.target.value)
       }
-      onBlur={commit}
+      onBlur={() => {
+        if (skipNextBlurCommitRef.current) {
+          skipNextBlurCommitRef.current = false;
+          return;
+        }
+        commit();
+      }}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
+          skipNextBlurCommitRef.current = true;
           commit();
           e.currentTarget.blur();
         }
@@ -375,6 +391,7 @@ export default function ScanSellPage() {
   const [isUpdatingCart, setIsUpdatingCart] = useState(false);
   const cartLoadedRef = useRef(false);
   const isUpdatingRef = useRef(false);
+  const syncVersionRef = useRef(0);
   const [customerName, setCustomerName] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -453,16 +470,19 @@ export default function ScanSellPage() {
     ]
   );
 
-  // Preload rates when cart items are displayed (before dropdown interaction)
+  // Preload rates when cart items are displayed (before dropdown interaction).
+  // Only re-run when cart item IDs change to avoid flicker from effect re-running on load completion.
+  const loadPricingRef = useRef(loadPricingOnDropdownClick);
+  loadPricingRef.current = loadPricingOnDropdownClick;
   const cartItemIds = cartItems.map((c) => c.inventoryItem.id).join(',');
   useEffect(() => {
     if (!cartItems.length) return;
     cartItems.forEach((item) => {
       const invId = item.inventoryItem.id;
       const pricingId = item.inventoryItem.pricingId ?? inventoryToPricingId[invId];
-      loadPricingOnDropdownClick(pricingId ?? undefined, invId);
+      loadPricingRef.current(pricingId ?? undefined, invId);
     });
-  }, [cartItemIds, cartItems, loadPricingOnDropdownClick]);
+  }, [cartItemIds, cartItems, inventoryToPricingId]);
 
   const normalizeBillingMode = useCallback(
     (mode?: BillingMode | null): BillingMode =>
@@ -798,10 +818,16 @@ export default function ScanSellPage() {
     priceToRetailUpdate?: { inventoryId: string; priceToRetail: number },
     baseQuantityDeltaMode = false
   ) => {
-    // Prevent duplicate calls
-    if (isUpdatingRef.current) {
+    // Prevent duplicate full-cart syncs; allow item-specific updates (scheme, discount, price) so they are not dropped
+    const isItemSpecificUpdate =
+      schemeUpdate != null ||
+      additionalDiscountUpdate != null ||
+      priceToRetailUpdate != null;
+    if (isUpdatingRef.current && !isItemSpecificUpdate) {
       return;
     }
+
+    const thisSyncVersion = ++syncVersionRef.current;
 
     type CartItemPayload = {
       id: string;
@@ -1067,6 +1093,8 @@ export default function ScanSellPage() {
       };
 
       const updatedCart = await cartApi.add(cartPayload);
+      // Only apply if no newer sync started (prevents stale response overwriting e.g. 15 with 10)
+      if (thisSyncVersion !== syncVersionRef.current) return;
       setCartData(updatedCart);
       // Merge response into local state (no extra inventory/search API calls)
       setCartItems(mergeCartResponseToItems(updatedCart, items));
@@ -1087,13 +1115,16 @@ export default function ScanSellPage() {
       } else {
         notifyError(errorMessage);
       }
-      // Revert to previous cart state on error by reloading cart
-      try {
-        const currentCart = await cartApi.get();
-        setCartData(currentCart);
-        setCartItems(mergeCartResponseToItems(currentCart, items));
-      } catch {
-        // If reload fails, just show the error
+      // Revert to previous cart state on error by reloading cart (only if still latest sync)
+      if (thisSyncVersion === syncVersionRef.current) {
+        try {
+          const currentCart = await cartApi.get();
+          if (thisSyncVersion !== syncVersionRef.current) return;
+          setCartData(currentCart);
+          setCartItems(mergeCartResponseToItems(currentCart, items));
+        } catch {
+          // If reload fails, just show the error
+        }
       }
       throw err;
     } finally {
@@ -1894,14 +1925,17 @@ export default function ScanSellPage() {
                                 const selectValue = matched
                                   ? matched.label
                                   : '__custom__';
+                                // Never switch select value to loading - keep current selection to avoid flicker
+                                const displayValue = isLoading && rateOpts.length === 0
+                                  ? '__custom__'
+                                  : selectValue;
                                 return (
                                   <select
                                     className={styles.itemRateSelect}
-                                    value={isLoading ? '__loading__' : selectValue}
+                                    value={displayValue}
                                     onChange={(e) => {
                                       const sel = e.target.value;
-                                      if (sel === '__custom__' || sel === '__loading__')
-                                        return;
+                                      if (sel === '__custom__') return;
                                       const opt = rateOpts.find(
                                         (o) => o.label === sel
                                       );
@@ -1919,26 +1953,17 @@ export default function ScanSellPage() {
                                       );
                                     }}
                                     disabled={isUpdatingCart || isLoading}
-                                    title="Select rate"
+                                    title={isLoading ? 'Loading rates…' : 'Select rate'}
                                   >
-                                    {isLoading ? (
-                                      <option value="__loading__">
-                                        Loading rates…
+                                    <option value="__custom__">Custom</option>
+                                    {rateOpts.map((opt) => (
+                                      <option
+                                        key={`${opt.label}-${opt.price}`}
+                                        value={opt.label}
+                                      >
+                                        {opt.label} ({formatPrice(opt.price)})
                                       </option>
-                                    ) : (
-                                      <>
-                                        <option value="__custom__">Custom</option>
-                                        {rateOpts.map((opt) => (
-                                          <option
-                                            key={opt.label}
-                                            value={opt.label}
-                                          >
-                                            {opt.label} (
-                                            {formatPrice(opt.price)})
-                                          </option>
-                                        ))}
-                                      </>
-                                    )}
+                                    ))}
                                   </select>
                                 );
                               })()}
@@ -2020,7 +2045,10 @@ export default function ScanSellPage() {
                                 ? cartItem.availableUnits
                                 : [{ unit: cartItem.unit, baseUnit: false }]
                               ).map((unitOption) => (
-                                <option key={unitOption.unit} value={unitOption.unit}>
+                                <option
+                                  key={`${unitOption.unit}-${unitOption.baseUnit}`}
+                                  value={unitOption.unit}
+                                >
                                   {unitOption.unit}
                                   {unitOption.baseUnit ? ' (base)' : ''}
                                 </option>

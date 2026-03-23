@@ -35,6 +35,7 @@ const MENU_GROUPS: MenuGroup[] = [
     items: [
       { path: '/dashboard', label: 'Dashboard', icon: '📊' },
       { path: '/dashboard/shops', label: 'Shops', icon: '🏪' },
+      { path: '/dashboard/profile', label: 'Profile', icon: '👤' },
     ],
   },
   {
@@ -47,6 +48,8 @@ const MENU_GROUPS: MenuGroup[] = [
         label: 'Product Registration',
         icon: '📦',
       },
+      // Import disabled for now
+      // { path: '/dashboard/import', label: 'Import', icon: '📥' },
       {
         path: '/dashboard/product-search',
         label: 'Product Search',
@@ -90,6 +93,27 @@ const MENU_GROUPS: MenuGroup[] = [
     icon: '📒',
     items: [
       { path: '/dashboard/credit-ledger', label: 'Credit Ledger', icon: '📒' },
+    ],
+  },
+  {
+    id: 'contact',
+    label: 'Contact',
+    icon: '📇',
+    items: [
+      { path: '/dashboard/customers', label: 'Customer', icon: '👥' },
+      { path: '/dashboard/vendors', label: 'Vendor', icon: '🚚' },
+    ],
+  },
+  {
+    id: 'marketing',
+    label: 'Marketing',
+    icon: '📣',
+    items: [
+      {
+        path: '/dashboard/whatsapp-marketing',
+        label: 'WhatsApp Marketing',
+        icon: '💬',
+      },
     ],
   },
   {
@@ -163,6 +187,20 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { notifications, unreadCount, markAsRead } = useNotifications(
     user?.shopId ?? undefined
   );
+
+  const [shopName, setShopName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (shop?.name) {
+      setShopName(shop.name);
+      localStorage.setItem('shopName', shop.name);
+    } else {
+      const saved = localStorage.getItem('shopName');
+      if (saved) {
+        setShopName(saved);
+      }
+    }
+  }, [shop]);
 
   // Close user menu on outside click
   useEffect(() => {
@@ -637,16 +675,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                       </div>
 
                       <div className={styles.userMenuInfo}>
-                        <span className={styles.roleBadge}>{shop?.name}</span>
+                        <span className={styles.roleBadge}>{shopName}</span>
                         <button
                           type="button"
                           className={styles.editMetaBtn}
                           onClick={() => {
                             setUserMenuOpen(false);
-                            setEditModalOpen(true);
+                            navigate('/dashboard/profile');
                           }}
                         >
-                          ✏️ Edit tagline &amp; location
+                          View profile
                         </button>
                       </div>
                     </div>

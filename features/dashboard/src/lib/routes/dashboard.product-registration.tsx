@@ -138,6 +138,8 @@ export default function ProductRegistrationPage() {
     hsn: '',
     batchNo: '',
     scheme: null,
+    schemePayFor: null,
+    schemeFree: null,
     schemeType: 'FIXED_UNITS',
     schemePercentage: null,
     sgst: '',
@@ -211,6 +213,18 @@ export default function ProductRegistrationPage() {
           ? (typeof item.scheme === 'number'
               ? item.scheme
               : parseInt(String(item.scheme), 10)) || null
+          : null,
+      schemePayFor:
+        item.schemePayFor != null
+          ? (typeof item.schemePayFor === 'number'
+              ? item.schemePayFor
+              : parseInt(String(item.schemePayFor), 10)) || null
+          : null,
+      schemeFree:
+        item.schemeFree != null
+          ? (typeof item.schemeFree === 'number'
+              ? item.schemeFree
+              : parseInt(String(item.schemeFree), 10)) || null
           : null,
       schemeType: item.schemeType ?? 'FIXED_UNITS',
       schemePercentage:
@@ -311,12 +325,10 @@ export default function ProductRegistrationPage() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         notifyError('Please select an image file');
         return;
       }
-      // Validate file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
         notifyError('File size must be less than 10MB');
         return;
@@ -338,25 +350,21 @@ export default function ProductRegistrationPage() {
     setUploadProgress('Compressing image...');
 
     try {
-      // Compress the image before uploading
       const compressedFile = await compressImage(selectedFile);
       setUploadProgress('Uploading and parsing invoice...');
-
       const response = await inventoryApi.parseInvoice(compressedFile);
 
       if (response && response.items && response.items.length > 0) {
-        // Transform parsed items to product form data
         const parsedProducts = response.items.map(transformParsedItemToProduct);
         setProducts(parsedProducts);
         notifySuccess(
           `✅ Successfully parsed invoice! Found ${response.totalItems} item(s).`
         );
+        scrollToProducts(response.totalItems);
         setSelectedFile(null);
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
-        // Scroll to products section
-        scrollToProducts(response.totalItems);
       } else {
         notifyError(
           'No items found in the invoice image. Please try a different image.'
@@ -676,18 +684,34 @@ export default function ProductRegistrationPage() {
             setIsLoading(false);
             return;
           }
-        } else if (
-          product.scheme != null &&
-          product.scheme !== undefined &&
-          product.scheme < 0
-        ) {
-          notifyError(
-            `Product "${
-              product.name || 'Unnamed'
-            }": Scheme (free units) must be zero or greater`
-          );
-          setIsLoading(false);
-          return;
+        } else {
+          const useNewStyle =
+            product.schemePayFor != null || product.schemeFree != null;
+          if (useNewStyle) {
+            const payFor = product.schemePayFor ?? 0;
+            const free = product.schemeFree ?? 0;
+            if (payFor < 0 || free < 0) {
+              notifyError(
+                `Product "${
+                  product.name || 'Unnamed'
+                }": schemePayFor and schemeFree must be zero or greater (e.g. 10 + 2)`
+              );
+              setIsLoading(false);
+              return;
+            }
+          } else if (
+            product.scheme != null &&
+            product.scheme !== undefined &&
+            product.scheme < 0
+          ) {
+            notifyError(
+              `Product "${
+                product.name || 'Unnamed'
+              }": Scheme (free units) must be zero or greater`
+            );
+            setIsLoading(false);
+            return;
+          }
         }
       }
 
@@ -773,10 +797,17 @@ export default function ProductRegistrationPage() {
                 schemeType: 'PERCENTAGE' as const,
                 schemePercentage: product.schemePercentage ?? null,
               }
-            : {
-                schemeType: (product.schemeType ?? 'FIXED_UNITS') as 'FIXED_UNITS',
-                scheme: product.scheme ?? null,
-              }),
+            : product.schemePayFor != null || product.schemeFree != null
+              ? {
+                  schemeType: 'FIXED_UNITS' as const,
+                  schemePayFor: product.schemePayFor ?? null,
+                  schemeFree: product.schemeFree ?? null,
+                  scheme: null,
+                }
+              : {
+                  schemeType: (product.schemeType ?? 'FIXED_UNITS') as 'FIXED_UNITS',
+                  scheme: product.scheme ?? null,
+                }),
           billingMode: billingMode as BillingMode,
           ...(billingMode !== 'BASIC' &&
           product.sgst &&
@@ -1129,20 +1160,18 @@ export default function ProductRegistrationPage() {
           information
         </p>
       </div>
+
       <div className={styles.formContainer}>
         {error && <div className={styles.errorMessage}>{error}</div>}
         {success && <div className={styles.successMessage}>{success}</div>}
 
         <form className={styles.form} onSubmit={handleSubmit}>
-          {/* Invoice Upload Section - First for fastest path */}
           <div className={styles.uploadSection}>
             <div className={styles.uploadHeader}>
-              <h3 className={styles.sectionTitle}>
-                Upload Invoice Image (Optional)
-              </h3>
+              <h3 className={styles.sectionTitle}>Upload Invoice Image (Optional)</h3>
               <ul className={styles.helperText}>
                 <li>Upload invoice image to auto-parse product details</li>
-                <li>Choose one of the options below to upload</li>
+                <li>Review and edit parsed products before bulk save</li>
               </ul>
             </div>
             <div className={styles.uploadOptionsHeader}>
@@ -1171,7 +1200,7 @@ export default function ProductRegistrationPage() {
               <div className={styles.uploadContainer}>
                 <div className={styles.uploadOptionLabel}>
                   <span className={styles.uploadOptionTitle}>Upload from this device</span>
-                  <span className={styles.uploadOptionSubtitle}>Choose file from computer</span>
+                  <span className={styles.uploadOptionSubtitle}>Choose image file from computer</span>
                 </div>
               <input
                 ref={fileInputRef}
@@ -2032,6 +2061,50 @@ function ProductAccordion({
 }: ProductAccordionProps) {
   const productTitle = product.name || `Product ${index + 1}`;
 
+  const formatSchemeFixed = (p: ProductFormData): string => {
+    if (p.schemePayFor != null || p.schemeFree != null) {
+      return `${p.schemePayFor ?? 0} + ${p.schemeFree ?? 0}`;
+    }
+    if (p.scheme != null && p.scheme !== undefined) return `1 + ${p.scheme}`;
+    return '';
+  };
+
+  const [schemeFixedDraft, setSchemeFixedDraft] = useState('');
+  const [schemeFixedFocused, setSchemeFixedFocused] = useState(false);
+
+  useEffect(() => {
+    if (!schemeFixedFocused) setSchemeFixedDraft(formatSchemeFixed(product));
+  }, [product.id, product.schemePayFor, product.schemeFree, product.scheme, schemeFixedFocused]);
+
+  const commitSchemeFixed = () => {
+    const raw = schemeFixedDraft.trim();
+    if (raw === '') {
+      onChange(product.id, 'schemePayFor', null);
+      onChange(product.id, 'schemeFree', null);
+      onChange(product.id, 'scheme', null);
+      return;
+    }
+    const plusIdx = raw.indexOf('+');
+    if (plusIdx === -1) {
+      const num = parseInt(raw, 10);
+      if (!isNaN(num) && num >= 0) {
+        onChange(product.id, 'schemePayFor', num);
+        onChange(product.id, 'schemeFree', 0);
+        onChange(product.id, 'scheme', null);
+      }
+      return;
+    }
+    const leftStr = raw.slice(0, plusIdx).trim();
+    const rightStr = raw.slice(plusIdx + 1).trim();
+    const left = leftStr === '' ? 0 : parseInt(leftStr, 10);
+    const right = rightStr === '' ? 0 : parseInt(rightStr, 10);
+    if (!isNaN(left) && !isNaN(right) && left >= 0 && right >= 0) {
+      onChange(product.id, 'schemePayFor', left);
+      onChange(product.id, 'schemeFree', right);
+      onChange(product.id, 'scheme', null);
+    }
+  };
+
   return (
     <div className={styles.productAccordion}>
       <div className={styles.accordionHeader} onClick={onToggle}>
@@ -2292,36 +2365,26 @@ function ProductAccordion({
             {(product.schemeType ?? 'FIXED_UNITS') === 'FIXED_UNITS' ? (
               <div className={styles.formGroup}>
                 <label
-                  htmlFor={`scheme-${product.id}`}
+                  htmlFor={`scheme-fixed-${product.id}`}
                   className={styles.label}
                 >
-                  Free units
+                  Pay + free (e.g. 10 + 2)
                 </label>
                 <input
-                  type="number"
-                  id={`scheme-${product.id}`}
+                  type="text"
+                  id={`scheme-fixed-${product.id}`}
                   className={styles.input}
-                  placeholder="Optional, e.g. 2"
-                  min={0}
-                  step={1}
-                  value={
-                    product.scheme !== null && product.scheme !== undefined
-                      ? product.scheme
-                      : ''
-                  }
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === '') {
-                      onChange(product.id, 'scheme', null);
-                    } else {
-                      const num = parseInt(val, 10);
-                      if (
-                        !isNaN(num) &&
-                        num >= 0 &&
-                        Number.isInteger(num)
-                      ) {
-                        onChange(product.id, 'scheme', num);
-                      }
+                  placeholder="Optional, e.g. 10 + 2"
+                  value={schemeFixedDraft}
+                  onChange={(e) => setSchemeFixedDraft(e.target.value)}
+                  onFocus={() => setSchemeFixedFocused(true)}
+                  onBlur={() => {
+                    setSchemeFixedFocused(false);
+                    commitSchemeFixed();
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.currentTarget.blur();
                     }
                   }}
                   disabled={isLoading}
