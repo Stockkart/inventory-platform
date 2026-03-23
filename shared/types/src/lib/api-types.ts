@@ -653,6 +653,12 @@ export interface BulkCreateInventoryItem {
   sgst?: string | null;
   cgst?: string | null;
   additionalDiscount?: number | null;
+  /** Purchase scheme (from vendor) - for comparison at sale */
+  purchaseSchemeType?: SchemeType | null;
+  purchaseSchemePayFor?: number | null;
+  purchaseSchemeFree?: number | null;
+  purchaseSchemePercentage?: number | null;
+  purchaseAdditionalDiscount?: number | null;
   itemType?: ItemType;
   itemTypeDegree?: number;
   discountApplicable?: DiscountApplicable;
@@ -776,6 +782,13 @@ export interface InventoryItem {
   defaultRate?: string | null;
   /** Effective selling price (based on defaultRate); use for display and cart. Falls back to priceToRetail. */
   sellingPrice?: number | null;
+  /** From registration (cart only): additional discount % - read-only at sale */
+  purchaseAdditionalDiscount?: number | null;
+  /** From registration (cart only): scheme - read-only at sale */
+  purchaseSchemeType?: SchemeType | null;
+  purchaseSchemePayFor?: number | null;
+  purchaseSchemeFree?: number | null;
+  purchaseSchemePercentage?: number | null;
 }
 
 /** Partial update - only non-null fields are updated. Omitted fields keep current values. */
@@ -894,6 +907,13 @@ export interface CheckoutItemResponse {
   profit?: number | null;
   marginPercent?: number | null;
   billingMode?: BillingMode;
+  /** From registration: additional discount % (read-only at sale) */
+  purchaseAdditionalDiscount?: number | null;
+  /** From registration: scheme (read-only at sale) */
+  purchaseSchemeType?: SchemeType | null;
+  purchaseSchemePayFor?: number | null;
+  purchaseSchemeFree?: number | null;
+  purchaseSchemePercentage?: number | null;
 }
 
 export interface CheckoutResponse {

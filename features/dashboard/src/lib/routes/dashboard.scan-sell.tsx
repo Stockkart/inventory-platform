@@ -1,10 +1,4 @@
-import {
-  useState,
-  useEffect,
-  useRef,
-  useCallback,
-  ChangeEvent,
-} from 'react';
+import { useState, useEffect, useRef, useCallback, ChangeEvent } from 'react';
 import { useNavigate, Link } from 'react-router';
 import {
   inventoryApi,
@@ -72,6 +66,26 @@ interface CartItem {
   schemePayFor?: number | null;
   schemeFree?: number | null;
   schemePercentage?: number | null;
+}
+
+/** Format purchase scheme from inventory (registration) for read-only display. Uses purchase* when present (from API). */
+function formatPurchaseSchemeLabel(inv: InventoryItem): string {
+  const schemeType = inv.purchaseSchemeType ?? inv.schemeType;
+  const schemePercentage = inv.purchaseSchemePercentage ?? inv.schemePercentage;
+  const schemePayFor = inv.purchaseSchemePayFor ?? inv.schemePayFor;
+  const schemeFree = inv.purchaseSchemeFree ?? inv.schemeFree;
+  if (schemeType === 'PERCENTAGE' && schemePercentage != null) {
+    return `${schemePercentage}%`;
+  }
+  if (schemePayFor != null || schemeFree != null) {
+    return `${schemePayFor ?? 0} + ${schemeFree ?? 0}`;
+  }
+  return '—';
+}
+
+/** Get purchase additional discount from inventory (registration). Uses purchase* when present. */
+function getPurchaseAdditionalDiscount(inv: InventoryItem): number | null {
+  return inv.purchaseAdditionalDiscount ?? inv.additionalDiscount ?? null;
 }
 
 function CartQuantityInput({
@@ -188,8 +202,7 @@ function CartAdditionalDiscountInput({
   );
 
   useEffect(() => {
-    const next =
-      value !== null && value !== undefined ? value.toString() : '';
+    const next = value !== null && value !== undefined ? value.toString() : '';
     setDraft(next);
   }, [value]);
 
@@ -251,7 +264,11 @@ function CartSchemeInput({
 }) {
   const formatFromProps = () => {
     // Use schemeType first to decide what to show (API can return both values)
-    if (schemeType === 'PERCENTAGE' && percentage != null && percentage !== undefined) {
+    if (
+      schemeType === 'PERCENTAGE' &&
+      percentage != null &&
+      percentage !== undefined
+    ) {
       return `${percentage}%`;
     }
     if (
@@ -401,21 +418,26 @@ export default function ScanSellPage() {
   const [customerDlNo, setCustomerDlNo] = useState('');
   const [customerPan, setCustomerPan] = useState('');
   const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
-  const [linkedUser, setLinkedUser] = useState<{ userId: string; email: string; name: string } | null>(null);
-  const [userSearchMessage, setUserSearchMessage] = useState<string | null>(null);
+  const [linkedUser, setLinkedUser] = useState<{
+    userId: string;
+    email: string;
+    name: string;
+  } | null>(null);
+  const [userSearchMessage, setUserSearchMessage] = useState<string | null>(
+    null
+  );
   const [isSearchingUser, setIsSearchingUser] = useState(false);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [customerSectionOpen, setCustomerSectionOpen] = useState(false);
-  const [additionalDiscountOverrides, setAdditionalDiscountOverrides] = useState<
-    Record<string, number | null>
-  >({});
+  const [additionalDiscountOverrides, setAdditionalDiscountOverrides] =
+    useState<Record<string, number | null>>({});
   const [detailModalItem, setDetailModalItem] = useState<CartItem | null>(null);
   const [pricingCache, setPricingCache] = useState<
     Record<string, PricingResponse>
   >({});
-  const [pricingLoading, setPricingLoading] = useState<
-    Record<string, boolean>
-  >({});
+  const [pricingLoading, setPricingLoading] = useState<Record<string, boolean>>(
+    {}
+  );
   const searchWrapperRef = useRef<HTMLDivElement>(null);
   const { error: notifyError } = useNotify;
 
@@ -436,7 +458,10 @@ export default function ScanSellPage() {
           const resolvedId = inv.pricingId ?? undefined;
           if (!resolvedId) return;
           idToFetch = resolvedId;
-          setInventoryToPricingId((prev) => ({ ...prev, [inventoryId]: resolvedId }));
+          setInventoryToPricingId((prev) => ({
+            ...prev,
+            [inventoryId]: resolvedId,
+          }));
         } catch (err) {
           notifyError(
             err instanceof Error ? err.message : 'Failed to load inventory'
@@ -462,12 +487,7 @@ export default function ScanSellPage() {
         setPricingLoading((prev) => ({ ...prev, [finalPricingId]: false }));
       }
     },
-    [
-      pricingCache,
-      pricingLoading,
-      inventoryToPricingId,
-      notifyError,
-    ]
+    [pricingCache, pricingLoading, inventoryToPricingId, notifyError]
   );
 
   // Preload rates when cart items are displayed (before dropdown interaction).
@@ -479,7 +499,8 @@ export default function ScanSellPage() {
     if (!cartItems.length) return;
     cartItems.forEach((item) => {
       const invId = item.inventoryItem.id;
-      const pricingId = item.inventoryItem.pricingId ?? inventoryToPricingId[invId];
+      const pricingId =
+        item.inventoryItem.pricingId ?? inventoryToPricingId[invId];
       loadPricingRef.current(pricingId ?? undefined, invId);
     });
   }, [cartItemIds, cartItems, inventoryToPricingId]);
@@ -495,7 +516,9 @@ export default function ScanSellPage() {
     return Number.isFinite(num) ? num : fallback;
   }, []);
 
-  const getAvailableUnitsFromInventory = (item: InventoryItem): AvailableUnit[] => {
+  const getAvailableUnitsFromInventory = (
+    item: InventoryItem
+  ): AvailableUnit[] => {
     const fromApi = item.availableUnits ?? [];
     if (Array.isArray(fromApi) && fromApi.length > 0) {
       return fromApi;
@@ -551,7 +574,11 @@ export default function ScanSellPage() {
       setIsSearching(true);
       setError(null);
       try {
-        const response = await inventoryApi.search(query.trim(), pageNum, pageSize);
+        const response = await inventoryApi.search(
+          query.trim(),
+          pageNum,
+          pageSize
+        );
         let items: InventoryItem[] = [];
         if (response) {
           if (Array.isArray(response)) items = response;
@@ -562,7 +589,8 @@ export default function ScanSellPage() {
               typeof response.data === 'object' &&
               'data' in response.data
             ) {
-              const nestedData = (response.data as { data?: InventoryItem[] }).data;
+              const nestedData = (response.data as { data?: InventoryItem[] })
+                .data;
               items = Array.isArray(nestedData) ? nestedData : [];
             }
           }
@@ -702,7 +730,8 @@ export default function ScanSellPage() {
           (i) => i.inventoryItem.id === resItem.inventoryId
         );
         const availableUnits =
-          (Array.isArray(resItem.availableUnits) && resItem.availableUnits.length > 0
+          (Array.isArray(resItem.availableUnits) &&
+          resItem.availableUnits.length > 0
             ? resItem.availableUnits
             : existing?.availableUnits) ?? [];
         const inferredBaseUnit =
@@ -712,16 +741,18 @@ export default function ScanSellPage() {
         const saleUnit =
           resItem.saleUnit ??
           existing?.unit ??
-          (availableUnits.find((u) => !u.baseUnit)?.unit ??
-            availableUnits[0]?.unit ??
-            inferredBaseUnit ??
-            'UNIT');
+          availableUnits.find((u) => !u.baseUnit)?.unit ??
+          availableUnits[0]?.unit ??
+          inferredBaseUnit ??
+          'UNIT';
         const unitFactor = Math.max(
           1,
           toNumber(
             resItem.unitFactor,
             existing?.unitFactor ??
-              (saleUnit === inferredBaseUnit ? 1 : toNumber(existing?.unitFactor, 1))
+              (saleUnit === inferredBaseUnit
+                ? 1
+                : toNumber(existing?.unitFactor, 1))
           )
         );
         const apiBaseQuantity = toNumber(
@@ -747,6 +778,26 @@ export default function ScanSellPage() {
                 saleUnit !== inferredBaseUnit && unitFactor > 1
                   ? { unit: saleUnit, factor: unitFactor }
                   : existing.inventoryItem.unitConversions ?? null,
+              purchaseAdditionalDiscount:
+                resItem.purchaseAdditionalDiscount ??
+                existing.inventoryItem.purchaseAdditionalDiscount ??
+                null,
+              purchaseSchemeType:
+                resItem.purchaseSchemeType ??
+                existing.inventoryItem.purchaseSchemeType ??
+                null,
+              purchaseSchemePayFor:
+                resItem.purchaseSchemePayFor ??
+                existing.inventoryItem.purchaseSchemePayFor ??
+                null,
+              purchaseSchemeFree:
+                resItem.purchaseSchemeFree ??
+                existing.inventoryItem.purchaseSchemeFree ??
+                null,
+              purchaseSchemePercentage:
+                resItem.purchaseSchemePercentage ??
+                existing.inventoryItem.purchaseSchemePercentage ??
+                null,
             }
           : {
               id: resItem.inventoryId,
@@ -775,6 +826,13 @@ export default function ScanSellPage() {
                   : null,
               availableUnits,
               pricingId: resItem.pricingId ?? undefined,
+              purchaseAdditionalDiscount:
+                resItem.purchaseAdditionalDiscount ?? null,
+              purchaseSchemeType: resItem.purchaseSchemeType ?? null,
+              purchaseSchemePayFor: resItem.purchaseSchemePayFor ?? null,
+              purchaseSchemeFree: resItem.purchaseSchemeFree ?? null,
+              purchaseSchemePercentage:
+                resItem.purchaseSchemePercentage ?? null,
             };
         return {
           inventoryItem,
@@ -808,7 +866,10 @@ export default function ScanSellPage() {
     quantityDelta?: number,
     originalItem?: CartItem,
     overrides?: Record<string, number | null>,
-    additionalDiscountUpdate?: { inventoryId: string; additionalDiscount: number | null },
+    additionalDiscountUpdate?: {
+      inventoryId: string;
+      additionalDiscount: number | null;
+    },
     schemeUpdate?: {
       inventoryId: string;
       schemePayFor?: number | null;
@@ -862,8 +923,7 @@ export default function ScanSellPage() {
         const hasUnits =
           (cartItem.schemePayFor !== undefined &&
             cartItem.schemePayFor !== null) ||
-          (cartItem.schemeFree !== undefined &&
-            cartItem.schemeFree !== null);
+          (cartItem.schemeFree !== undefined && cartItem.schemeFree !== null);
 
         if (hasPercentage) {
           result = {
@@ -891,7 +951,10 @@ export default function ScanSellPage() {
       priceToRetail: number,
       cartItem?: CartItem
     ) =>
-      withItemFields({ id, unit, quantity, baseQuantity, priceToRetail }, cartItem);
+      withItemFields(
+        { id, unit, quantity, baseQuantity, priceToRetail },
+        cartItem
+      );
 
     isUpdatingRef.current = true;
     setIsUpdatingCart(true);
@@ -983,7 +1046,9 @@ export default function ScanSellPage() {
           const effectiveBaseDelta = baseQuantityDeltaMode
             ? quantityDelta
             : quantityDelta * Math.max(1, changedItem.unitFactor);
-          const effectiveQuantityDelta = baseQuantityDeltaMode ? 0 : quantityDelta;
+          const effectiveQuantityDelta = baseQuantityDeltaMode
+            ? 0
+            : quantityDelta;
           // Send the actual delta value (1 for +, -1 for -)
           itemsToSend = [
             withAdditionalDiscount(
@@ -1041,7 +1106,9 @@ export default function ScanSellPage() {
             const effectiveBaseDelta = baseQuantityDeltaMode
               ? quantityDelta
               : quantityDelta * Math.max(1, itemToRemove.unitFactor);
-            const effectiveQuantityDelta = baseQuantityDeltaMode ? 0 : quantityDelta;
+            const effectiveQuantityDelta = baseQuantityDeltaMode
+              ? 0
+              : quantityDelta;
             itemsToSend = [
               withAdditionalDiscount(
                 changedItemId,
@@ -1135,7 +1202,8 @@ export default function ScanSellPage() {
 
   const handleAddToCart = async (item: InventoryItem, price?: number) => {
     // Use sellingPrice (effective) as default, or override with provided price
-    const finalPrice = price !== undefined ? price : (item.sellingPrice ?? item.priceToRetail);
+    const finalPrice =
+      price !== undefined ? price : item.sellingPrice ?? item.priceToRetail;
     const incomingMode = normalizeBillingMode(item.billingMode);
     const activeMode = normalizeBillingMode(
       cartData?.billingMode ?? cartItems[0]?.inventoryItem.billingMode
@@ -1170,7 +1238,8 @@ export default function ScanSellPage() {
       if (existingItem) {
         // Update quantity if item already in cart
         const newQuantity = existingItem.quantity + 1;
-        const newBaseQuantity = existingItem.baseQuantity + existingItem.unitFactor;
+        const newBaseQuantity =
+          existingItem.baseQuantity + existingItem.unitFactor;
         // Validate stock: compare base quantities (currentBaseCount is in base units)
         const availableBase = item.currentBaseCount ?? item.currentCount;
         if (availableBase > 0 && newBaseQuantity > availableBase) {
@@ -1286,18 +1355,17 @@ export default function ScanSellPage() {
     });
   };
 
-  const handleAdditionalDiscountChange = (inventoryId: string, value: number | null) => {
+  const handleAdditionalDiscountChange = (
+    inventoryId: string,
+    value: number | null
+  ) => {
     const next = { ...additionalDiscountOverrides, [inventoryId]: value };
     setAdditionalDiscountOverrides(next);
     // Send only this item to API (id + additionalDiscount), like quantity update
-    syncCartToAPI(
-      cartItems,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      { inventoryId, additionalDiscount: value }
-    );
+    syncCartToAPI(cartItems, undefined, undefined, undefined, undefined, {
+      inventoryId,
+      additionalDiscount: value,
+    });
   };
 
   const handleSchemeChange = (
@@ -1367,10 +1435,15 @@ export default function ScanSellPage() {
     );
   };
 
-  const handleSellingPriceChange = (inventoryId: string, priceToRetail: number) => {
+  const handleSellingPriceChange = (
+    inventoryId: string,
+    priceToRetail: number
+  ) => {
     setCartItems((prev) =>
       prev.map((item) =>
-        item.inventoryItem.id === inventoryId ? { ...item, price: priceToRetail } : item
+        item.inventoryItem.id === inventoryId
+          ? { ...item, price: priceToRetail }
+          : item
       )
     );
     syncCartToAPI(
@@ -1389,8 +1462,15 @@ export default function ScanSellPage() {
     setCartItems((prev) => {
       const updatedItems = prev.map((item) => {
         if (item.inventoryItem.id !== inventoryId) return item;
-        const nextFactor = getUnitFactorForUnit(item.inventoryItem, unit, item.unitFactor);
-        const preservedBaseQty = Math.max(1, toNumber(item.baseQuantity, item.quantity));
+        const nextFactor = getUnitFactorForUnit(
+          item.inventoryItem,
+          unit,
+          item.unitFactor
+        );
+        const preservedBaseQty = Math.max(
+          1,
+          toNumber(item.baseQuantity, item.quantity)
+        );
         const nextQty =
           nextFactor > 0
             ? Number((preservedBaseQty / nextFactor).toFixed(3))
@@ -1562,7 +1642,11 @@ export default function ScanSellPage() {
           setCustomerPan('');
         }
         if (customer.userId) {
-          setLinkedUser({ userId: customer.userId, email: customer.email || '', name: customer.name || '' });
+          setLinkedUser({
+            userId: customer.userId,
+            email: customer.email || '',
+            name: customer.name || '',
+          });
         }
       } else {
         // Customer not found - clear all fields
@@ -1622,7 +1706,11 @@ export default function ScanSellPage() {
           setCustomerPan('');
         }
         if (customer.userId) {
-          setLinkedUser({ userId: customer.userId, email: customer.email || '', name: customer.name || '' });
+          setLinkedUser({
+            userId: customer.userId,
+            email: customer.email || '',
+            name: customer.name || '',
+          });
         }
       } else {
         setCustomerName('');
@@ -1661,7 +1749,11 @@ export default function ScanSellPage() {
     try {
       const user = await usersApi.searchByEmail(email);
       if (user) {
-        setLinkedUser({ userId: user.userId, email: user.email, name: user.name });
+        setLinkedUser({
+          userId: user.userId,
+          email: user.email,
+          name: user.name,
+        });
         setUserSearchMessage(`Found: ${user.name} (${user.email})`);
         setCustomerName((prev) => prev || user.name);
       } else {
@@ -1740,9 +1832,7 @@ export default function ScanSellPage() {
 
       <div className={styles.header}>
         <h2 className={styles.title}>Scan and Sell</h2>
-        <p className={styles.subtitle}>
-          Speed up sales with barcode scanning
-        </p>
+        <p className={styles.subtitle}>Speed up sales with barcode scanning</p>
       </div>
 
       {/* Main: cart (wider) + totals sidebar (narrow fixed) */}
@@ -1751,10 +1841,7 @@ export default function ScanSellPage() {
           <div className={styles.cartSection}>
             {/* Search inside cart: API only on Enter or Search button */}
             <div className={styles.searchRow} ref={searchWrapperRef}>
-              <form
-                className={styles.searchForm}
-                onSubmit={handleSearchSubmit}
-              >
+              <form className={styles.searchForm} onSubmit={handleSearchSubmit}>
                 <div className={styles.searchInputWrapper}>
                   <span
                     className={styles.searchIcon}
@@ -1795,7 +1882,9 @@ export default function ScanSellPage() {
                   {isSearching ? (
                     <div className={styles.dropdownLoading}>Searching...</div>
                   ) : searchResults.length === 0 ? (
-                    <div className={styles.dropdownEmpty}>No products found</div>
+                    <div className={styles.dropdownEmpty}>
+                      No products found
+                    </div>
                   ) : (
                     <ul className={styles.dropdownList}>
                       {searchResults.map((item) => (
@@ -1822,302 +1911,371 @@ export default function ScanSellPage() {
               ) : cartItems.length === 0 ? (
                 <div className={styles.emptyCart}>Cart is empty</div>
               ) : (
-                cartItems.map((cartItem) => (
+                cartItems.map((cartItem) =>
                   (() => {
                     const isBaseUnitSelected =
                       (cartItem.inventoryItem.baseUnit != null &&
                         cartItem.unit === cartItem.inventoryItem.baseUnit) ||
                       cartItem.availableUnits.some(
                         (unitOption) =>
-                          unitOption.baseUnit && unitOption.unit === cartItem.unit
+                          unitOption.baseUnit &&
+                          unitOption.unit === cartItem.unit
                       );
                     const quantityInputValue = isBaseUnitSelected
                       ? cartItem.baseQuantity
                       : cartItem.quantity;
                     return (
-                  <div
-                    key={cartItem.inventoryItem.id}
-                    className={styles.cartItem}
-                  >
-                    <div className={styles.itemInfo}>
-                      <div className={styles.itemHeader}>
-                        <button
-                          type="button"
-                          className={styles.itemNameButton}
-                          onClick={() => setDetailModalItem(cartItem)}
-                          aria-label="View pricing details"
-                        >
-                          {cartItem.inventoryItem.name || 'Unnamed Product'}
-                        </button>
-                        <span className={styles.modeBadge}>
-                          {normalizeBillingMode(cartItem.inventoryItem.billingMode)}
-                        </span>
-                        {cartItem.inventoryItem.companyName && (
-                          <span className={styles.itemCompany}>
-                            {cartItem.inventoryItem.companyName}
-                          </span>
-                        )}
-                        <span className={styles.itemUnitMeta}>
-                          {cartItem.baseQuantity} {cartItem.inventoryItem.baseUnit ?? 'base units'}
-                          {' '}({cartItem.quantity} {cartItem.unit})
-                        </span>
-                        {cartItem.inventoryItem.maximumRetailPrice >
-                          cartItem.price && (
-                          <span className={styles.itemDiscount}>
-                            {(
-                              ((cartItem.inventoryItem.maximumRetailPrice -
-                                cartItem.price) /
-                                cartItem.inventoryItem.maximumRetailPrice) *
-                              100
-                            ).toFixed(1)}
-                            % off MRP
-                          </span>
-                        )}
-                      </div>
-                      <div className={styles.itemEditRow}>
-                        <div className={styles.itemEditFields}>
-                          <div className={styles.itemFieldGroup}>
-                            <label className={styles.itemFieldLabel} htmlFor={`price-${cartItem.inventoryItem.id}`}>
-                              Price
-                            </label>
-                            <div className={styles.itemFieldInputWrap}>
-                              <CartSellingPriceInput
-                                id={`price-${cartItem.inventoryItem.id}`}
-                                value={cartItem.price}
-                                onCommit={(num) =>
-                                  handleSellingPriceChange(
-                                    cartItem.inventoryItem.id,
-                                    num
-                                  )
-                                }
-                                disabled={isUpdatingCart}
-                              />
-                              {(() => {
-                                const pricingId =
-                                  cartItem.inventoryItem.pricingId ??
-                                  inventoryToPricingId[cartItem.inventoryItem.id];
-                                const pricing = pricingId
-                                  ? pricingCache[pricingId]
-                                  : undefined;
-                                const invId = cartItem.inventoryItem.id;
-                                const isLoading =
-                                  pricingLoading[pricingId ?? ''] ||
-                                  pricingLoading[`inv:${invId}`];
-                                const rateOpts = getRateOptions(
-                                  cartItem.inventoryItem,
-                                  pricing
-                                );
-                                const formatPrice = (n: number) =>
-                                  new Intl.NumberFormat('en-IN', {
-                                    style: 'currency',
-                                    currency: 'INR',
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  }).format(n);
-                                const showDropdown =
-                                  pricingId ||
-                                  invId ||
-                                  rateOpts.length > 1;
-                                if (!showDropdown) return null;
-                                const matched = rateOpts.find(
-                                  (o) => Math.abs(o.price - cartItem.price) < 0.01
-                                );
-                                const selectValue = matched
-                                  ? matched.label
-                                  : '__custom__';
-                                // Never switch select value to loading - keep current selection to avoid flicker
-                                const displayValue = isLoading && rateOpts.length === 0
-                                  ? '__custom__'
-                                  : selectValue;
-                                return (
-                                  <select
-                                    className={styles.itemRateSelect}
-                                    value={displayValue}
-                                    onChange={(e) => {
-                                      const sel = e.target.value;
-                                      if (sel === '__custom__') return;
-                                      const opt = rateOpts.find(
-                                        (o) => o.label === sel
-                                      );
-                                      if (opt) {
-                                        handleSellingPriceChange(
-                                          cartItem.inventoryItem.id,
-                                          opt.price
-                                        );
-                                      }
-                                    }}
-                                    onMouseDown={() => {
-                                      loadPricingOnDropdownClick(
-                                        cartItem.inventoryItem.pricingId ?? undefined,
-                                        invId
-                                      );
-                                    }}
-                                    disabled={isUpdatingCart || isLoading}
-                                    title={isLoading ? 'Loading rates…' : 'Select rate'}
-                                  >
-                                    <option value="__custom__">Custom</option>
-                                    {rateOpts.map((opt) => (
-                                      <option
-                                        key={`${opt.label}-${opt.price}`}
-                                        value={opt.label}
-                                      >
-                                        {opt.label} ({formatPrice(opt.price)})
-                                      </option>
-                                    ))}
-                                  </select>
-                                );
-                              })()}
-                              <span className={styles.itemFieldUnit}>/{cartItem.unit}</span>
-                            </div>
-                          </div>
-                          <div className={styles.itemFieldGroup}>
-                            <label className={styles.itemFieldLabel} htmlFor={`add-disc-${cartItem.inventoryItem.id}`}>
-                              Add. discount
-                            </label>
-                            <div className={styles.itemFieldInputWrap}>
-                              <CartAdditionalDiscountInput
-                                id={`add-disc-${cartItem.inventoryItem.id}`}
-                                value={
-                                  getEffectiveAdditionalDiscount(
-                                    cartItem.inventoryItem.id,
-                                    cartItem
-                                  )
-                                }
-                                onCommit={(num) =>
-                                  handleAdditionalDiscountChange(
-                                    cartItem.inventoryItem.id,
-                                    num
-                                  )
-                                }
-                                disabled={isUpdatingCart}
-                              />
-                              <span className={styles.itemFieldUnit}>%</span>
-                            </div>
-                          </div>
-                          <div className={styles.itemFieldGroup}>
-                            <label className={styles.itemFieldLabel}>
-                              Scheme/Deal
-                            </label>
-                            <div className={styles.itemSchemeInputs}>
-                              <CartSchemeInput
-                                id={`scheme-${cartItem.inventoryItem.id}`}
-                                schemeType={cartItem.schemeType ?? null}
-                                payFor={cartItem.schemePayFor ?? null}
-                                free={cartItem.schemeFree ?? null}
-                                percentage={cartItem.schemePercentage ?? null}
-                                onCommitUnits={(payFor, free) =>
-                                  handleSchemeChange(
-                                    cartItem.inventoryItem.id,
-                                    payFor,
-                                    free
-                                  )
-                                }
-                                onCommitPercentage={(perc) =>
-                                  handleSchemePercentageChange(
-                                    cartItem.inventoryItem.id,
-                                    perc
-                                  )
-                                }
-                                disabled={isUpdatingCart}
-                              />
-                            </div>
-                          </div>
-                          <div className={styles.itemFieldGroup}>
-                            <label
-                              className={styles.itemFieldLabel}
-                              htmlFor={`unit-${cartItem.inventoryItem.id}`}
-                            >
-                              Unit
-                            </label>
-                            <select
-                              id={`unit-${cartItem.inventoryItem.id}`}
-                              className={styles.itemUnitSelect}
-                              value={cartItem.unit}
-                              onChange={(e) =>
-                                handleUnitChange(
-                                  cartItem.inventoryItem.id,
-                                  e.currentTarget.value
-                                )
-                              }
-                              disabled={isUpdatingCart}
-                            >
-                              {(cartItem.availableUnits.length > 0
-                                ? cartItem.availableUnits
-                                : [{ unit: cartItem.unit, baseUnit: false }]
-                              ).map((unitOption) => (
-                                <option
-                                  key={`${unitOption.unit}-${unitOption.baseUnit}`}
-                                  value={unitOption.unit}
-                                >
-                                  {unitOption.unit}
-                                  {unitOption.baseUnit ? ' (base)' : ''}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-                        <div className={styles.itemActions}>
-                      <div className={styles.qtyStepper}>
-                        <button
-                          className={styles.qtyBtn}
-                          onClick={() =>
-                            handleUpdateQuantity(
-                              cartItem.inventoryItem.id,
-                              -1,
-                              isBaseUnitSelected
-                            )
-                          }
-                          disabled={isUpdatingCart}
-                          aria-label="Decrease quantity"
-                        >
-                          −
-                        </button>
-                        <CartQuantityInput
-                          value={quantityInputValue}
-                          disabled={isUpdatingCart}
-                          onCommit={async (newQty) => {
-                            const delta = newQty - quantityInputValue;
-                            if (delta !== 0) {
-                              await handleUpdateQuantity(
-                                cartItem.inventoryItem.id,
-                                delta,
-                                isBaseUnitSelected
-                              );
-                            }
-                          }}
-                        />
-                        <button
-                          className={styles.qtyBtn}
-                          onClick={() =>
-                            handleUpdateQuantity(
-                              cartItem.inventoryItem.id,
-                              1,
-                              isBaseUnitSelected
-                            )
-                          }
-                          disabled={isUpdatingCart}
-                          aria-label="Increase quantity"
-                        >
-                          +
-                        </button>
-                      </div>
-                      <button
-                        type="button"
-                        className={styles.removeBtn}
-                        onClick={() =>
-                          handleRemoveItem(cartItem.inventoryItem.id)
-                        }
-                        disabled={isUpdatingCart}
+                      <div
+                        key={cartItem.inventoryItem.id}
+                        className={styles.cartItem}
                       >
-                        Remove
-                      </button>
+                        <div className={styles.itemInfo}>
+                          <div className={styles.itemHeader}>
+                            <button
+                              type="button"
+                              className={styles.itemNameButton}
+                              onClick={() => setDetailModalItem(cartItem)}
+                              aria-label="View pricing details"
+                            >
+                              {cartItem.inventoryItem.name || 'Unnamed Product'}
+                            </button>
+                            <span className={styles.modeBadge}>
+                              {normalizeBillingMode(
+                                cartItem.inventoryItem.billingMode
+                              )}
+                            </span>
+                            {cartItem.inventoryItem.companyName && (
+                              <span className={styles.itemCompany}>
+                                {cartItem.inventoryItem.companyName}
+                              </span>
+                            )}
+                            <span className={styles.itemUnitMeta}>
+                              {cartItem.baseQuantity}{' '}
+                              {cartItem.inventoryItem.baseUnit ?? 'base units'}{' '}
+                              ({cartItem.quantity} {cartItem.unit})
+                            </span>
+                            {cartItem.inventoryItem.maximumRetailPrice >
+                              cartItem.price && (
+                              <span className={styles.itemDiscount}>
+                                {(
+                                  ((cartItem.inventoryItem.maximumRetailPrice -
+                                    cartItem.price) /
+                                    cartItem.inventoryItem.maximumRetailPrice) *
+                                  100
+                                ).toFixed(1)}
+                                % off MRP
+                              </span>
+                            )}
+                          </div>
+                          <div className={styles.itemEditRow}>
+                            <div className={styles.itemEditFields}>
+                              <div className={styles.itemFieldGroup}>
+                                <label
+                                  className={styles.itemFieldLabel}
+                                  htmlFor={`price-${cartItem.inventoryItem.id}`}
+                                >
+                                  Price
+                                </label>
+                                <div className={styles.itemFieldInputWrap}>
+                                  <CartSellingPriceInput
+                                    id={`price-${cartItem.inventoryItem.id}`}
+                                    value={cartItem.price}
+                                    onCommit={(num) =>
+                                      handleSellingPriceChange(
+                                        cartItem.inventoryItem.id,
+                                        num
+                                      )
+                                    }
+                                    disabled={isUpdatingCart}
+                                  />
+                                  {(() => {
+                                    const pricingId =
+                                      cartItem.inventoryItem.pricingId ??
+                                      inventoryToPricingId[
+                                        cartItem.inventoryItem.id
+                                      ];
+                                    const pricing = pricingId
+                                      ? pricingCache[pricingId]
+                                      : undefined;
+                                    const invId = cartItem.inventoryItem.id;
+                                    const isLoading =
+                                      pricingLoading[pricingId ?? ''] ||
+                                      pricingLoading[`inv:${invId}`];
+                                    const rateOpts = getRateOptions(
+                                      cartItem.inventoryItem,
+                                      pricing
+                                    );
+                                    const formatPrice = (n: number) =>
+                                      new Intl.NumberFormat('en-IN', {
+                                        style: 'currency',
+                                        currency: 'INR',
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2,
+                                      }).format(n);
+                                    const showDropdown =
+                                      pricingId || invId || rateOpts.length > 1;
+                                    if (!showDropdown) return null;
+                                    const matched = rateOpts.find(
+                                      (o) =>
+                                        Math.abs(o.price - cartItem.price) <
+                                        0.01
+                                    );
+                                    const selectValue = matched
+                                      ? matched.label
+                                      : '__custom__';
+                                    // Never switch select value to loading - keep current selection to avoid flicker
+                                    const displayValue =
+                                      isLoading && rateOpts.length === 0
+                                        ? '__custom__'
+                                        : selectValue;
+                                    return (
+                                      <select
+                                        className={styles.itemRateSelect}
+                                        value={displayValue}
+                                        onChange={(e) => {
+                                          const sel = e.target.value;
+                                          if (sel === '__custom__') return;
+                                          const opt = rateOpts.find(
+                                            (o) => o.label === sel
+                                          );
+                                          if (opt) {
+                                            handleSellingPriceChange(
+                                              cartItem.inventoryItem.id,
+                                              opt.price
+                                            );
+                                          }
+                                        }}
+                                        onMouseDown={() => {
+                                          loadPricingOnDropdownClick(
+                                            cartItem.inventoryItem.pricingId ??
+                                              undefined,
+                                            invId
+                                          );
+                                        }}
+                                        disabled={isUpdatingCart || isLoading}
+                                        title={
+                                          isLoading
+                                            ? 'Loading rates…'
+                                            : 'Select rate'
+                                        }
+                                      >
+                                        <option value="__custom__">
+                                          Custom
+                                        </option>
+                                        {rateOpts.map((opt) => (
+                                          <option
+                                            key={`${opt.label}-${opt.price}`}
+                                            value={opt.label}
+                                          >
+                                            {opt.label} (
+                                            {formatPrice(opt.price)})
+                                          </option>
+                                        ))}
+                                      </select>
+                                    );
+                                  })()}
+                                  <span className={styles.itemFieldUnit}>
+                                    /{cartItem.unit}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className={styles.itemPurchaseRow}>
+                                <div className={styles.itemFieldGroup}>
+                                  <label
+                                    className={styles.itemFieldLabel}
+                                    title="From product registration"
+                                  >
+                                    Purchase add. discount
+                                  </label>
+                                  <div className={styles.itemFieldInputWrap}>
+                                    <span
+                                      className={styles.itemFieldReadOnly}
+                                      aria-readonly="true"
+                                    >
+                                      {(() => {
+                                        const v =
+                                          getPurchaseAdditionalDiscount(
+                                            cartItem.inventoryItem
+                                          );
+                                        return v != null ? `${v}%` : '—';
+                                      })()}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className={styles.itemFieldGroup}>
+                                  <label
+                                    className={styles.itemFieldLabel}
+                                    title="From product registration"
+                                  >
+                                    Purchase scheme/deal
+                                  </label>
+                                  <div className={styles.itemFieldInputWrap}>
+                                    <span
+                                      className={styles.itemFieldReadOnly}
+                                      aria-readonly="true"
+                                    >
+                                      {formatPurchaseSchemeLabel(
+                                        cartItem.inventoryItem
+                                      )}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className={styles.itemSaleRow}>
+                                <div className={styles.itemFieldGroup}>
+                                  <label
+                                    className={styles.itemFieldLabel}
+                                    htmlFor={`add-disc-${cartItem.inventoryItem.id}`}
+                                  >
+                                    Sale add. discount
+                                  </label>
+                                  <div className={styles.itemFieldInputWrap}>
+                                    <CartAdditionalDiscountInput
+                                      id={`add-disc-${cartItem.inventoryItem.id}`}
+                                      value={getEffectiveAdditionalDiscount(
+                                        cartItem.inventoryItem.id,
+                                        cartItem
+                                      )}
+                                      onCommit={(num) =>
+                                        handleAdditionalDiscountChange(
+                                          cartItem.inventoryItem.id,
+                                          num
+                                        )
+                                      }
+                                      disabled={isUpdatingCart}
+                                    />
+                                    <span className={styles.itemFieldUnit}>
+                                      %
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className={styles.itemFieldGroup}>
+                                  <label className={styles.itemFieldLabel}>
+                                    Sale scheme/deal
+                                  </label>
+                                  <div className={styles.itemSchemeInputs}>
+                                  <CartSchemeInput
+                                    id={`scheme-${cartItem.inventoryItem.id}`}
+                                    schemeType={cartItem.schemeType ?? null}
+                                    payFor={cartItem.schemePayFor ?? null}
+                                    free={cartItem.schemeFree ?? null}
+                                    percentage={
+                                      cartItem.schemePercentage ?? null
+                                    }
+                                    onCommitUnits={(payFor, free) =>
+                                      handleSchemeChange(
+                                        cartItem.inventoryItem.id,
+                                        payFor,
+                                        free
+                                      )
+                                    }
+                                    onCommitPercentage={(perc) =>
+                                      handleSchemePercentageChange(
+                                        cartItem.inventoryItem.id,
+                                        perc
+                                      )
+                                    }
+                                    disabled={isUpdatingCart}
+                                  />
+                                </div>
+                              </div>
+                              </div>
+                              <div className={styles.itemFieldGroup}>
+                                <label
+                                  className={styles.itemFieldLabel}
+                                  htmlFor={`unit-${cartItem.inventoryItem.id}`}
+                                >
+                                  Unit
+                                </label>
+                                <select
+                                  id={`unit-${cartItem.inventoryItem.id}`}
+                                  className={styles.itemUnitSelect}
+                                  value={cartItem.unit}
+                                  onChange={(e) =>
+                                    handleUnitChange(
+                                      cartItem.inventoryItem.id,
+                                      e.currentTarget.value
+                                    )
+                                  }
+                                  disabled={isUpdatingCart}
+                                >
+                                  {(cartItem.availableUnits.length > 0
+                                    ? cartItem.availableUnits
+                                    : [{ unit: cartItem.unit, baseUnit: false }]
+                                  ).map((unitOption) => (
+                                    <option
+                                      key={`${unitOption.unit}-${unitOption.baseUnit}`}
+                                      value={unitOption.unit}
+                                    >
+                                      {unitOption.unit}
+                                      {unitOption.baseUnit ? ' (base)' : ''}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                            <div className={styles.itemActions}>
+                              <div className={styles.qtyStepper}>
+                                <button
+                                  className={styles.qtyBtn}
+                                  onClick={() =>
+                                    handleUpdateQuantity(
+                                      cartItem.inventoryItem.id,
+                                      -1,
+                                      isBaseUnitSelected
+                                    )
+                                  }
+                                  disabled={isUpdatingCart}
+                                  aria-label="Decrease quantity"
+                                >
+                                  −
+                                </button>
+                                <CartQuantityInput
+                                  value={quantityInputValue}
+                                  disabled={isUpdatingCart}
+                                  onCommit={async (newQty) => {
+                                    const delta = newQty - quantityInputValue;
+                                    if (delta !== 0) {
+                                      await handleUpdateQuantity(
+                                        cartItem.inventoryItem.id,
+                                        delta,
+                                        isBaseUnitSelected
+                                      );
+                                    }
+                                  }}
+                                />
+                                <button
+                                  className={styles.qtyBtn}
+                                  onClick={() =>
+                                    handleUpdateQuantity(
+                                      cartItem.inventoryItem.id,
+                                      1,
+                                      isBaseUnitSelected
+                                    )
+                                  }
+                                  disabled={isUpdatingCart}
+                                  aria-label="Increase quantity"
+                                >
+                                  +
+                                </button>
+                              </div>
+                              <button
+                                type="button"
+                                className={styles.removeBtn}
+                                onClick={() =>
+                                  handleRemoveItem(cartItem.inventoryItem.id)
+                                }
+                                disabled={isUpdatingCart}
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
                     );
                   })()
-                ))
+                )
               )}
             </div>
           </div>
@@ -2148,7 +2306,10 @@ export default function ScanSellPage() {
               <div className={styles.customerForm}>
                 <div className={styles.customerFieldsVertical}>
                   <div className={styles.customerField}>
-                    <label htmlFor="sidebar-customerPhone" className={styles.customerLabel}>
+                    <label
+                      htmlFor="sidebar-customerPhone"
+                      className={styles.customerLabel}
+                    >
                       Phone
                     </label>
                     <div className={styles.customerInputRow}>
@@ -2175,7 +2336,10 @@ export default function ScanSellPage() {
                     </div>
                   </div>
                   <div className={styles.customerField}>
-                    <label htmlFor="sidebar-customerName" className={styles.customerLabel}>
+                    <label
+                      htmlFor="sidebar-customerName"
+                      className={styles.customerLabel}
+                    >
                       Name
                     </label>
                     <input
@@ -2190,7 +2354,10 @@ export default function ScanSellPage() {
                     />
                   </div>
                   <div className={styles.customerField}>
-                    <label htmlFor="sidebar-customerEmail" className={styles.customerLabel}>
+                    <label
+                      htmlFor="sidebar-customerEmail"
+                      className={styles.customerLabel}
+                    >
                       Email
                     </label>
                     <div className={styles.customerInputRow}>
@@ -2217,7 +2384,10 @@ export default function ScanSellPage() {
                     </div>
                   </div>
                   <div className={styles.customerField}>
-                    <label htmlFor="sidebar-customerAddress" className={styles.customerLabel}>
+                    <label
+                      htmlFor="sidebar-customerAddress"
+                      className={styles.customerLabel}
+                    >
                       Address
                     </label>
                     <input
@@ -2253,7 +2423,10 @@ export default function ScanSellPage() {
                 {isRetailer && (
                   <div className={styles.retailerSection}>
                     <div className={styles.customerField}>
-                      <label htmlFor="sidebar-customerGstin" className={styles.customerLabel}>
+                      <label
+                        htmlFor="sidebar-customerGstin"
+                        className={styles.customerLabel}
+                      >
                         GSTIN
                       </label>
                       <input
@@ -2268,7 +2441,10 @@ export default function ScanSellPage() {
                       />
                     </div>
                     <div className={styles.customerField}>
-                      <label htmlFor="sidebar-customerDlNo" className={styles.customerLabel}>
+                      <label
+                        htmlFor="sidebar-customerDlNo"
+                        className={styles.customerLabel}
+                      >
                         DL No
                       </label>
                       <input
@@ -2283,7 +2459,10 @@ export default function ScanSellPage() {
                       />
                     </div>
                     <div className={styles.customerField}>
-                      <label htmlFor="sidebar-customerPan" className={styles.customerLabel}>
+                      <label
+                        htmlFor="sidebar-customerPan"
+                        className={styles.customerLabel}
+                      >
                         PAN
                       </label>
                       <input
@@ -2319,7 +2498,8 @@ export default function ScanSellPage() {
                   ) : (
                     <div className={styles.customerLinkSearch}>
                       <p className={styles.customerLinkHint}>
-                        Enter email above and search to link a new customer to their StockKart account.
+                        Enter email above and search to link a new customer to
+                        their StockKart account.
                       </p>
                       <button
                         type="button"
@@ -2369,17 +2549,17 @@ export default function ScanSellPage() {
                   ((cartData?.taxTotal ?? 0) !== 0 ||
                     (cartData?.sgstAmount ?? 0) !== 0 ||
                     (cartData?.cgstAmount ?? 0) !== 0) && (
-                  <>
-                    <div className={styles.summaryRow}>
-                      <span>SGST ({getSGSTPercentage()}%)</span>
-                      <span>₹{calculateSGST().toFixed(2)}</span>
-                    </div>
-                    <div className={styles.summaryRow}>
-                      <span>CGST ({getCGSTPercentage()}%)</span>
-                      <span>₹{calculateCGST().toFixed(2)}</span>
-                    </div>
-                  </>
-                )}
+                    <>
+                      <div className={styles.summaryRow}>
+                        <span>SGST ({getSGSTPercentage()}%)</span>
+                        <span>₹{calculateSGST().toFixed(2)}</span>
+                      </div>
+                      <div className={styles.summaryRow}>
+                        <span>CGST ({getCGSTPercentage()}%)</span>
+                        <span>₹{calculateCGST().toFixed(2)}</span>
+                      </div>
+                    </>
+                  )}
                 {((cartData?.taxTotal ?? 0) !== 0 ||
                   (cartData?.sgstAmount ?? 0) !== 0 ||
                   (cartData?.cgstAmount ?? 0) !== 0) && (
@@ -2403,9 +2583,7 @@ export default function ScanSellPage() {
               <div className={styles.costMarginDetail}>
                 <div className={styles.summaryRow}>
                   <span>Total Cost</span>
-                  <span>
-                    ₹{(cartData.totalCost ?? 0).toFixed(2)}
-                  </span>
+                  <span>₹{(cartData.totalCost ?? 0).toFixed(2)}</span>
                 </div>
                 {cartData.revenueAfterTax != null && (
                   <div className={styles.summaryRow}>
@@ -2451,223 +2629,349 @@ export default function ScanSellPage() {
         </aside>
       </div>
 
-      {detailModalItem && (() => {
-        const apiItem = cartData?.items?.find(
-          (i: CheckoutItemResponse) => i.inventoryId === detailModalItem.inventoryItem.id
-        );
-        const mrp = detailModalItem.inventoryItem.maximumRetailPrice;
-        const price = detailModalItem.price;
-        const qty = detailModalItem.quantity;
-        const addDisc = getEffectiveAdditionalDiscount(
-          detailModalItem.inventoryItem.id,
-          detailModalItem
-        );
-        const schemeLabel =
-          detailModalItem.schemeType === 'PERCENTAGE' &&
-          detailModalItem.schemePercentage != null
-            ? `${detailModalItem.schemePercentage}%`
-            : (detailModalItem.schemePayFor != null || detailModalItem.schemeFree != null)
-              ? `${detailModalItem.schemePayFor ?? 0} + ${detailModalItem.schemeFree ?? 0}`
+      {detailModalItem &&
+        (() => {
+          const apiItem = cartData?.items?.find(
+            (i: CheckoutItemResponse) =>
+              i.inventoryId === detailModalItem.inventoryItem.id
+          );
+          const mrp = detailModalItem.inventoryItem.maximumRetailPrice;
+          const price = detailModalItem.price;
+          const qty = detailModalItem.quantity;
+          const addDisc = getEffectiveAdditionalDiscount(
+            detailModalItem.inventoryItem.id,
+            detailModalItem
+          );
+          const schemeLabel =
+            detailModalItem.schemeType === 'PERCENTAGE' &&
+            detailModalItem.schemePercentage != null
+              ? `${detailModalItem.schemePercentage}%`
+              : detailModalItem.schemePayFor != null ||
+                detailModalItem.schemeFree != null
+              ? `${detailModalItem.schemePayFor ?? 0} + ${
+                  detailModalItem.schemeFree ?? 0
+                }`
               : '—';
-        return (
-          <div
-            className={styles.detailModalOverlay}
-            onClick={() => setDetailModalItem(null)}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="cart-detail-modal-title"
-          >
+          return (
             <div
-              className={styles.detailModalContent}
-              onClick={(e) => e.stopPropagation()}
+              className={styles.detailModalOverlay}
+              onClick={() => setDetailModalItem(null)}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="cart-detail-modal-title"
             >
-              <div className={styles.detailModalHeader}>
-                <div className={styles.detailModalHeaderContent}>
-                  <span className={styles.detailModalProductIcon} aria-hidden>📦</span>
-                  <div>
-                    <h3 id="cart-detail-modal-title" className={styles.detailModalTitle}>
-                      {detailModalItem.inventoryItem.name || 'Product'}
-                    </h3>
-                    {detailModalItem.inventoryItem.companyName && (
-                      <p className={styles.detailModalSubtitle}>
-                        {detailModalItem.inventoryItem.companyName}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className={styles.detailModalClose}
-                  onClick={() => setDetailModalItem(null)}
-                  aria-label="Close"
-                >
-                  ×
-                </button>
-              </div>
-              <div className={styles.detailModalBody}>
-                <div className={styles.detailModalSection}>
-                  <div className={styles.detailModalSectionHeader}>
-                    <span className={styles.detailModalSectionIcon} aria-hidden>📋</span>
-                    <h4 className={styles.detailModalSectionTitle}>Product Information</h4>
-                  </div>
-                  <div className={styles.detailModalDetailsGrid}>
-                    <div className={styles.detailModalDetailCard}>
-                      <div className={styles.detailModalDetailIcon}>🏷️</div>
-                      <div className={styles.detailModalDetailContent}>
-                        <span className={styles.detailModalDetailLabel}>Product name</span>
-                        <span className={styles.detailModalDetailValue}>
-                          {detailModalItem.inventoryItem.name || '—'}
-                        </span>
-                      </div>
-                    </div>
-                    {detailModalItem.inventoryItem.companyName && (
-                      <div className={styles.detailModalDetailCard}>
-                        <div className={styles.detailModalDetailIcon}>🏢</div>
-                        <div className={styles.detailModalDetailContent}>
-                          <span className={styles.detailModalDetailLabel}>Company</span>
-                          <span className={styles.detailModalDetailValue}>
-                            {detailModalItem.inventoryItem.companyName}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                    <div className={styles.detailModalDetailCard}>
-                      <div className={styles.detailModalDetailIcon}>🔢</div>
-                      <div className={styles.detailModalDetailContent}>
-                        <span className={styles.detailModalDetailLabel}>Quantity</span>
-                        <span className={styles.detailModalDetailValue}>{qty}</span>
-                      </div>
-                    </div>
-                    <div className={styles.detailModalDetailCard}>
-                      <div className={styles.detailModalDetailIcon}>🧾</div>
-                      <div className={styles.detailModalDetailContent}>
-                        <span className={styles.detailModalDetailLabel}>Billing mode</span>
-                        <span className={styles.detailModalDetailValue}>
-                          {normalizeBillingMode(
-                            detailModalItem.inventoryItem.billingMode
-                          )}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className={styles.detailModalSection}>
-                  <div className={styles.detailModalSectionHeader}>
-                    <span className={styles.detailModalSectionIcon} aria-hidden>💰</span>
-                    <h4 className={styles.detailModalSectionTitle}>Pricing</h4>
-                  </div>
-                  <div className={styles.detailModalPricingGrid}>
-                    <div className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}>
-                      <div className={styles.detailModalDetailIcon}>💵</div>
-                      <div className={styles.detailModalDetailContent}>
-                        <span className={styles.detailModalDetailLabel}>Selling Price</span>
-                        <span className={`${styles.detailModalDetailValue} ${styles.detailModalPriceValue}`}>
-                          ₹{price.toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}>
-                      <div className={styles.detailModalDetailIcon}>🏷️</div>
-                      <div className={styles.detailModalDetailContent}>
-                        <span className={styles.detailModalDetailLabel}>MRP</span>
-                        <span className={`${styles.detailModalDetailValue} ${styles.detailModalMrpValue}`}>
-                          ₹{mrp.toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                    {mrp > 0 && (
-                      <div className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}>
-                        <div className={styles.detailModalDetailIcon}>📉</div>
-                        <div className={styles.detailModalDetailContent}>
-                          <span className={styles.detailModalDetailLabel}>Discount off MRP</span>
-                          <span className={styles.detailModalDetailValue}>
-                            {(((mrp - price) / mrp) * 100).toFixed(1)}%
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                    <div className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}>
-                      <div className={styles.detailModalDetailIcon}>🏷️</div>
-                      <div className={styles.detailModalDetailContent}>
-                        <span className={styles.detailModalDetailLabel}>Additional discount</span>
-                        <span className={styles.detailModalDetailValue}>
-                          {addDisc != null ? `${addDisc}%` : '—'}
-                        </span>
-                      </div>
-                    </div>
-                    <div className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}>
-                      <div className={styles.detailModalDetailIcon}>🎁</div>
-                      <div className={styles.detailModalDetailContent}>
-                        <span className={styles.detailModalDetailLabel}>Scheme/Deal</span>
-                        <span className={styles.detailModalDetailValue}>{schemeLabel}</span>
-                      </div>
-                    </div>
-                    {normalizeBillingMode(detailModalItem.inventoryItem.billingMode) ===
-                      'REGULAR' &&
-                      apiItem?.sgst != null && (
-                      <div className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}>
-                        <div className={styles.detailModalDetailIcon}>📊</div>
-                        <div className={styles.detailModalDetailContent}>
-                          <span className={styles.detailModalDetailLabel}>SGST</span>
-                          <span className={styles.detailModalDetailValue}>{apiItem.sgst}%</span>
-                        </div>
-                      </div>
-                    )}
-                    {normalizeBillingMode(detailModalItem.inventoryItem.billingMode) ===
-                      'REGULAR' &&
-                      apiItem?.cgst != null && (
-                      <div className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}>
-                        <div className={styles.detailModalDetailIcon}>📊</div>
-                        <div className={styles.detailModalDetailContent}>
-                          <span className={styles.detailModalDetailLabel}>CGST</span>
-                          <span className={styles.detailModalDetailValue}>{apiItem.cgst}%</span>
-                        </div>
-                      </div>
-                    )}
-                    {apiItem?.discount != null && (
-                      <div className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}>
-                        <div className={styles.detailModalDetailIcon}>💰</div>
-                        <div className={styles.detailModalDetailContent}>
-                          <span className={styles.detailModalDetailLabel}>Discount (amount)</span>
-                          <span className={styles.detailModalDetailValue}>
-                            ₹{Number(apiItem.discount).toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                    <div className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}>
-                      <div className={styles.detailModalDetailIcon}>₹</div>
-                      <div className={styles.detailModalDetailContent}>
-                        <span className={styles.detailModalDetailLabel}>Total amount</span>
-                        <span className={`${styles.detailModalDetailValue} ${styles.detailModalTotalValue}`}>
-                          ₹{(apiItem?.totalAmount ?? price * qty).toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  {detailModalItem.inventoryItem.pricingId && (
-                    <div className={styles.detailModalPricingActions}>
-                      <Link
-                        to={`/dashboard/price-edit/${detailModalItem.inventoryItem.pricingId}`}
-                        state={{
-                          priceToRetail: detailModalItem.inventoryItem.priceToRetail,
-                          maximumRetailPrice: detailModalItem.inventoryItem.maximumRetailPrice,
-                          productName: detailModalItem.inventoryItem.name,
-                          rates: detailModalItem.inventoryItem.rates ?? undefined,
-                          defaultRate: detailModalItem.inventoryItem.defaultRate ?? undefined,
-                        }}
-                        className={styles.editPriceLink}
+              <div
+                className={styles.detailModalContent}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className={styles.detailModalHeader}>
+                  <div className={styles.detailModalHeaderContent}>
+                    <span className={styles.detailModalProductIcon} aria-hidden>
+                      📦
+                    </span>
+                    <div>
+                      <h3
+                        id="cart-detail-modal-title"
+                        className={styles.detailModalTitle}
                       >
-                        Edit price
-                      </Link>
+                        {detailModalItem.inventoryItem.name || 'Product'}
+                      </h3>
+                      {detailModalItem.inventoryItem.companyName && (
+                        <p className={styles.detailModalSubtitle}>
+                          {detailModalItem.inventoryItem.companyName}
+                        </p>
+                      )}
                     </div>
-                  )}
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.detailModalClose}
+                    onClick={() => setDetailModalItem(null)}
+                    aria-label="Close"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className={styles.detailModalBody}>
+                  <div className={styles.detailModalSection}>
+                    <div className={styles.detailModalSectionHeader}>
+                      <span
+                        className={styles.detailModalSectionIcon}
+                        aria-hidden
+                      >
+                        📋
+                      </span>
+                      <h4 className={styles.detailModalSectionTitle}>
+                        Product Information
+                      </h4>
+                    </div>
+                    <div className={styles.detailModalDetailsGrid}>
+                      <div className={styles.detailModalDetailCard}>
+                        <div className={styles.detailModalDetailIcon}>🏷️</div>
+                        <div className={styles.detailModalDetailContent}>
+                          <span className={styles.detailModalDetailLabel}>
+                            Product name
+                          </span>
+                          <span className={styles.detailModalDetailValue}>
+                            {detailModalItem.inventoryItem.name || '—'}
+                          </span>
+                        </div>
+                      </div>
+                      {detailModalItem.inventoryItem.companyName && (
+                        <div className={styles.detailModalDetailCard}>
+                          <div className={styles.detailModalDetailIcon}>🏢</div>
+                          <div className={styles.detailModalDetailContent}>
+                            <span className={styles.detailModalDetailLabel}>
+                              Company
+                            </span>
+                            <span className={styles.detailModalDetailValue}>
+                              {detailModalItem.inventoryItem.companyName}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      <div className={styles.detailModalDetailCard}>
+                        <div className={styles.detailModalDetailIcon}>🔢</div>
+                        <div className={styles.detailModalDetailContent}>
+                          <span className={styles.detailModalDetailLabel}>
+                            Quantity
+                          </span>
+                          <span className={styles.detailModalDetailValue}>
+                            {qty}
+                          </span>
+                        </div>
+                      </div>
+                      <div className={styles.detailModalDetailCard}>
+                        <div className={styles.detailModalDetailIcon}>🧾</div>
+                        <div className={styles.detailModalDetailContent}>
+                          <span className={styles.detailModalDetailLabel}>
+                            Billing mode
+                          </span>
+                          <span className={styles.detailModalDetailValue}>
+                            {normalizeBillingMode(
+                              detailModalItem.inventoryItem.billingMode
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className={styles.detailModalSection}>
+                    <div className={styles.detailModalSectionHeader}>
+                      <span
+                        className={styles.detailModalSectionIcon}
+                        aria-hidden
+                      >
+                        💰
+                      </span>
+                      <h4 className={styles.detailModalSectionTitle}>
+                        Pricing
+                      </h4>
+                    </div>
+                    <div className={styles.detailModalPricingGrid}>
+                      <div
+                        className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
+                      >
+                        <div className={styles.detailModalDetailIcon}>💵</div>
+                        <div className={styles.detailModalDetailContent}>
+                          <span className={styles.detailModalDetailLabel}>
+                            Selling Price
+                          </span>
+                          <span
+                            className={`${styles.detailModalDetailValue} ${styles.detailModalPriceValue}`}
+                          >
+                            ₹{price.toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                      <div
+                        className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
+                      >
+                        <div className={styles.detailModalDetailIcon}>🏷️</div>
+                        <div className={styles.detailModalDetailContent}>
+                          <span className={styles.detailModalDetailLabel}>
+                            MRP
+                          </span>
+                          <span
+                            className={`${styles.detailModalDetailValue} ${styles.detailModalMrpValue}`}
+                          >
+                            ₹{mrp.toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                      {mrp > 0 && (
+                        <div
+                          className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
+                        >
+                          <div className={styles.detailModalDetailIcon}>📉</div>
+                          <div className={styles.detailModalDetailContent}>
+                            <span className={styles.detailModalDetailLabel}>
+                              Discount off MRP
+                            </span>
+                            <span className={styles.detailModalDetailValue}>
+                              {(((mrp - price) / mrp) * 100).toFixed(1)}%
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      <div
+                        className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
+                      >
+                        <div className={styles.detailModalDetailIcon}>🏷️</div>
+                        <div className={styles.detailModalDetailContent}>
+                          <span className={styles.detailModalDetailLabel}>
+                            Purchase add. discount
+                          </span>
+                          <span className={styles.detailModalDetailValue}>
+                            {(() => {
+                              const v = getPurchaseAdditionalDiscount(
+                                detailModalItem.inventoryItem
+                              );
+                              return v != null ? `${v}%` : '—';
+                            })()}
+                          </span>
+                        </div>
+                      </div>
+                      <div
+                        className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
+                      >
+                        <div className={styles.detailModalDetailIcon}>🎁</div>
+                        <div className={styles.detailModalDetailContent}>
+                          <span className={styles.detailModalDetailLabel}>
+                            Purchase scheme/deal
+                          </span>
+                          <span className={styles.detailModalDetailValue}>
+                            {formatPurchaseSchemeLabel(
+                              detailModalItem.inventoryItem
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                      <div
+                        className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
+                      >
+                        <div className={styles.detailModalDetailIcon}>🏷️</div>
+                        <div className={styles.detailModalDetailContent}>
+                          <span className={styles.detailModalDetailLabel}>
+                            Sale add. discount
+                          </span>
+                          <span className={styles.detailModalDetailValue}>
+                            {addDisc != null ? `${addDisc}%` : '—'}
+                          </span>
+                        </div>
+                      </div>
+                      <div
+                        className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
+                      >
+                        <div className={styles.detailModalDetailIcon}>🎁</div>
+                        <div className={styles.detailModalDetailContent}>
+                          <span className={styles.detailModalDetailLabel}>
+                            Sale scheme/deal
+                          </span>
+                          <span className={styles.detailModalDetailValue}>
+                            {schemeLabel}
+                          </span>
+                        </div>
+                      </div>
+                      {normalizeBillingMode(
+                        detailModalItem.inventoryItem.billingMode
+                      ) === 'REGULAR' &&
+                        apiItem?.sgst != null && (
+                          <div
+                            className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
+                          >
+                            <div className={styles.detailModalDetailIcon}>
+                              📊
+                            </div>
+                            <div className={styles.detailModalDetailContent}>
+                              <span className={styles.detailModalDetailLabel}>
+                                SGST
+                              </span>
+                              <span className={styles.detailModalDetailValue}>
+                                {apiItem.sgst}%
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      {normalizeBillingMode(
+                        detailModalItem.inventoryItem.billingMode
+                      ) === 'REGULAR' &&
+                        apiItem?.cgst != null && (
+                          <div
+                            className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
+                          >
+                            <div className={styles.detailModalDetailIcon}>
+                              📊
+                            </div>
+                            <div className={styles.detailModalDetailContent}>
+                              <span className={styles.detailModalDetailLabel}>
+                                CGST
+                              </span>
+                              <span className={styles.detailModalDetailValue}>
+                                {apiItem.cgst}%
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      {apiItem?.discount != null && (
+                        <div
+                          className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
+                        >
+                          <div className={styles.detailModalDetailIcon}>💰</div>
+                          <div className={styles.detailModalDetailContent}>
+                            <span className={styles.detailModalDetailLabel}>
+                              Discount (amount)
+                            </span>
+                            <span className={styles.detailModalDetailValue}>
+                              ₹{Number(apiItem.discount).toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      <div
+                        className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
+                      >
+                        <div className={styles.detailModalDetailIcon}>₹</div>
+                        <div className={styles.detailModalDetailContent}>
+                          <span className={styles.detailModalDetailLabel}>
+                            Total amount
+                          </span>
+                          <span
+                            className={`${styles.detailModalDetailValue} ${styles.detailModalTotalValue}`}
+                          >
+                            ₹{(apiItem?.totalAmount ?? price * qty).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    {detailModalItem.inventoryItem.pricingId && (
+                      <div className={styles.detailModalPricingActions}>
+                        <Link
+                          to={`/dashboard/price-edit/${detailModalItem.inventoryItem.pricingId}`}
+                          state={{
+                            priceToRetail:
+                              detailModalItem.inventoryItem.priceToRetail,
+                            maximumRetailPrice:
+                              detailModalItem.inventoryItem.maximumRetailPrice,
+                            productName: detailModalItem.inventoryItem.name,
+                            rates:
+                              detailModalItem.inventoryItem.rates ?? undefined,
+                            defaultRate:
+                              detailModalItem.inventoryItem.defaultRate ??
+                              undefined,
+                          }}
+                          className={styles.editPriceLink}
+                        >
+                          Edit price
+                        </Link>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        );
-      })()}
+          );
+        })()}
     </div>
   );
 }
@@ -2722,14 +3026,26 @@ function SearchDropdownItem({
         <span className={styles.dropdownItemMeta}>
           Current: {item.currentCount}
         </span>
-        <span className={`${styles.dropdownItemMeta} ${styles.dropdownItemMetaBold}`}>
-          MRP: ₹{item.maximumRetailPrice != null ? item.maximumRetailPrice.toFixed(2) : '—'}
+        <span
+          className={`${styles.dropdownItemMeta} ${styles.dropdownItemMetaBold}`}
+        >
+          MRP: ₹
+          {item.maximumRetailPrice != null
+            ? item.maximumRetailPrice.toFixed(2)
+            : '—'}
         </span>
-        <span className={`${styles.dropdownItemMeta} ${styles.dropdownItemMetaBold}`}>
-          Selling: ₹{(item.sellingPrice ?? item.priceToRetail) != null ? (item.sellingPrice ?? item.priceToRetail)!.toFixed(2) : '—'}
+        <span
+          className={`${styles.dropdownItemMeta} ${styles.dropdownItemMetaBold}`}
+        >
+          Selling: ₹
+          {(item.sellingPrice ?? item.priceToRetail) != null
+            ? (item.sellingPrice ?? item.priceToRetail)!.toFixed(2)
+            : '—'}
         </span>
         {item.expiryDate && (
-          <span className={`${styles.dropdownItemMeta} ${styles.dropdownItemMetaBold}`}>
+          <span
+            className={`${styles.dropdownItemMeta} ${styles.dropdownItemMetaBold}`}
+          >
             Expires: {formatDate(item.expiryDate)}
           </span>
         )}
@@ -2747,4 +3063,3 @@ function SearchDropdownItem({
     </li>
   );
 }
-

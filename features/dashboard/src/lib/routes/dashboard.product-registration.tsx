@@ -46,6 +46,11 @@ interface ProductFormData
   sgst?: string;
   cgst?: string;
   additionalDiscount?: number | null;
+  purchaseSchemeType?: SchemeType;
+  purchaseSchemePayFor?: number | null;
+  purchaseSchemeFree?: number | null;
+  purchaseSchemePercentage?: number | null;
+  purchaseAdditionalDiscount?: number | null;
   conversionUnit?: string;
   conversionFactor?: number;
   enableAdditionalSaleUnit?: boolean;
@@ -145,6 +150,11 @@ export default function ProductRegistrationPage() {
     sgst: '',
     cgst: '',
     additionalDiscount: null,
+    purchaseSchemeType: 'FIXED_UNITS',
+    purchaseSchemePayFor: null,
+    purchaseSchemeFree: null,
+    purchaseSchemePercentage: null,
+    purchaseAdditionalDiscount: null,
     billingMode,
     itemType: 'NORMAL',
     itemTypeDegree: undefined,
@@ -236,6 +246,11 @@ export default function ProductRegistrationPage() {
       sgst: billingMode === 'BASIC' ? '' : item.sgst || '',
       cgst: billingMode === 'BASIC' ? '' : item.cgst || '',
       additionalDiscount: item.additionalDiscount ?? null,
+      purchaseSchemeType: (item as { purchaseSchemeType?: SchemeType }).purchaseSchemeType ?? 'FIXED_UNITS',
+      purchaseSchemePayFor: (item as { purchaseSchemePayFor?: number | null }).purchaseSchemePayFor ?? null,
+      purchaseSchemeFree: (item as { purchaseSchemeFree?: number | null }).purchaseSchemeFree ?? null,
+      purchaseSchemePercentage: (item as { purchaseSchemePercentage?: number | null }).purchaseSchemePercentage ?? null,
+      purchaseAdditionalDiscount: (item as { purchaseAdditionalDiscount?: number | null }).purchaseAdditionalDiscount ?? null,
       billingMode,
       itemType: item.itemType ?? 'NORMAL',
       itemTypeDegree: item.itemTypeDegree,
@@ -822,6 +837,32 @@ export default function ProductRegistrationPage() {
           ...(product.additionalDiscount !== null &&
           product.additionalDiscount !== undefined
             ? { additionalDiscount: product.additionalDiscount }
+            : {}),
+          ...(product.purchaseSchemeType != null ||
+          product.purchaseSchemePayFor != null ||
+          product.purchaseSchemeFree != null ||
+          product.purchaseSchemePercentage != null
+            ? (product.purchaseSchemeType ?? 'FIXED_UNITS') === 'PERCENTAGE'
+              ? {
+                  purchaseSchemeType: 'PERCENTAGE' as const,
+                  purchaseSchemePercentage:
+                    product.purchaseSchemePercentage ?? null,
+                  purchaseSchemePayFor: null,
+                  purchaseSchemeFree: null,
+                }
+              : {
+                  purchaseSchemeType: 'FIXED_UNITS' as const,
+                  purchaseSchemePayFor: product.purchaseSchemePayFor ?? null,
+                  purchaseSchemeFree: product.purchaseSchemeFree ?? null,
+                  purchaseSchemePercentage: null,
+                }
+            : {}),
+          ...(product.purchaseAdditionalDiscount !== null &&
+          product.purchaseAdditionalDiscount !== undefined
+            ? {
+                purchaseAdditionalDiscount:
+                  product.purchaseAdditionalDiscount,
+              }
             : {}),
           ...(product.itemType != null ? { itemType: product.itemType } : {}),
           ...(product.itemType === 'DEGREE' &&
@@ -2068,13 +2109,32 @@ function ProductAccordion({
     if (p.scheme != null && p.scheme !== undefined) return `1 + ${p.scheme}`;
     return '';
   };
+  const formatPurchaseSchemeFixed = (p: ProductFormData): string => {
+    if (p.purchaseSchemePayFor != null || p.purchaseSchemeFree != null) {
+      return `${p.purchaseSchemePayFor ?? 0} + ${p.purchaseSchemeFree ?? 0}`;
+    }
+    return '';
+  };
 
   const [schemeFixedDraft, setSchemeFixedDraft] = useState('');
   const [schemeFixedFocused, setSchemeFixedFocused] = useState(false);
+  const [purchaseSchemeFixedDraft, setPurchaseSchemeFixedDraft] = useState('');
+  const [purchaseSchemeFixedFocused, setPurchaseSchemeFixedFocused] =
+    useState(false);
 
   useEffect(() => {
     if (!schemeFixedFocused) setSchemeFixedDraft(formatSchemeFixed(product));
   }, [product.id, product.schemePayFor, product.schemeFree, product.scheme, schemeFixedFocused]);
+
+  useEffect(() => {
+    if (!purchaseSchemeFixedFocused)
+      setPurchaseSchemeFixedDraft(formatPurchaseSchemeFixed(product));
+  }, [
+    product.id,
+    product.purchaseSchemePayFor,
+    product.purchaseSchemeFree,
+    purchaseSchemeFixedFocused,
+  ]);
 
   const commitSchemeFixed = () => {
     const raw = schemeFixedDraft.trim();
@@ -2102,6 +2162,31 @@ function ProductAccordion({
       onChange(product.id, 'schemePayFor', left);
       onChange(product.id, 'schemeFree', right);
       onChange(product.id, 'scheme', null);
+    }
+  };
+  const commitPurchaseSchemeFixed = () => {
+    const raw = purchaseSchemeFixedDraft.trim();
+    if (raw === '') {
+      onChange(product.id, 'purchaseSchemePayFor', null);
+      onChange(product.id, 'purchaseSchemeFree', null);
+      return;
+    }
+    const plusIdx = raw.indexOf('+');
+    if (plusIdx === -1) {
+      const num = parseInt(raw, 10);
+      if (!isNaN(num) && num >= 0) {
+        onChange(product.id, 'purchaseSchemePayFor', num);
+        onChange(product.id, 'purchaseSchemeFree', 0);
+      }
+      return;
+    }
+    const leftStr = raw.slice(0, plusIdx).trim();
+    const rightStr = raw.slice(plusIdx + 1).trim();
+    const left = leftStr === '' ? 0 : parseInt(leftStr, 10);
+    const right = rightStr === '' ? 0 : parseInt(rightStr, 10);
+    if (!isNaN(left) && !isNaN(right) && left >= 0 && right >= 0) {
+      onChange(product.id, 'purchaseSchemePayFor', left);
+      onChange(product.id, 'purchaseSchemeFree', right);
     }
   };
 
@@ -2341,7 +2426,7 @@ function ProductAccordion({
                 htmlFor={`schemeType-${product.id}`}
                 className={styles.label}
               >
-                Scheme/Deal type
+                Sale scheme/deal type
               </label>
               <select
                 id={`schemeType-${product.id}`}
@@ -2396,7 +2481,7 @@ function ProductAccordion({
                   htmlFor={`schemePercentage-${product.id}`}
                   className={styles.label}
                 >
-                  Scheme/Deal % *
+                  Sale Scheme/Deal % *
                 </label>
                 <input
                   type="number"
@@ -2438,7 +2523,7 @@ function ProductAccordion({
                 htmlFor={`additionalDiscount-${product.id}`}
                 className={styles.label}
               >
-                Additional Discount (%)
+                Sale add. discount (%)
               </label>
               <input
                 type="number"
@@ -2468,6 +2553,139 @@ function ProductAccordion({
                 disabled={isLoading}
               />
             </div>
+          </div>
+
+          {/* Purchase (from vendor) - for comparison at sale */}
+          <div className={styles.formRow}>
+            <div className={styles.formGroup}>
+              <label
+                htmlFor={`purchaseSchemeType-${product.id}`}
+                className={styles.label}
+              >
+                Purchase scheme/deal type
+              </label>
+              <select
+                id={`purchaseSchemeType-${product.id}`}
+                className={styles.input}
+                value={product.purchaseSchemeType ?? 'FIXED_UNITS'}
+                onChange={(e) => {
+                  const val = e.target.value as SchemeType;
+                  onChange(product.id, 'purchaseSchemeType', val);
+                  if (val === 'PERCENTAGE') {
+                    onChange(product.id, 'purchaseSchemePayFor', null);
+                    onChange(product.id, 'purchaseSchemeFree', null);
+                  } else {
+                    onChange(product.id, 'purchaseSchemePercentage', null);
+                  }
+                }}
+                disabled={isLoading}
+              >
+                <option value="FIXED_UNITS">Free units</option>
+                <option value="PERCENTAGE">Percentage</option>
+              </select>
+            </div>
+            {(product.purchaseSchemeType ?? 'FIXED_UNITS') === 'FIXED_UNITS' ? (
+              <div className={styles.formGroup}>
+                <label
+                  htmlFor={`purchase-scheme-fixed-${product.id}`}
+                  className={styles.label}
+                >
+                  Purchase scheme/deal (e.g. 10 + 2)
+                </label>
+                <input
+                  type="text"
+                  id={`purchase-scheme-fixed-${product.id}`}
+                  className={styles.input}
+                  placeholder="Optional, from vendor"
+                  value={purchaseSchemeFixedDraft}
+                  onChange={(e) => setPurchaseSchemeFixedDraft(e.target.value)}
+                  onFocus={() => setPurchaseSchemeFixedFocused(true)}
+                  onBlur={() => {
+                    setPurchaseSchemeFixedFocused(false);
+                    commitPurchaseSchemeFixed();
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.currentTarget.blur();
+                    }
+                  }}
+                  disabled={isLoading}
+                />
+              </div>
+            ) : (
+              <div className={styles.formGroup}>
+                <label
+                  htmlFor={`purchaseSchemePercentage-${product.id}`}
+                  className={styles.label}
+                >
+                  Purchase scheme %
+                </label>
+                <input
+                  type="number"
+                  id={`purchaseSchemePercentage-${product.id}`}
+                  className={styles.input}
+                  placeholder="From vendor"
+                  min={0}
+                  max={100}
+                  step={0.01}
+                  value={
+                    product.purchaseSchemePercentage != null
+                      ? product.purchaseSchemePercentage
+                      : ''
+                  }
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '') {
+                      onChange(product.id, 'purchaseSchemePercentage', null);
+                    } else {
+                      const num = parseFloat(val);
+                      if (!isNaN(num) && num >= 0 && num <= 100) {
+                        onChange(product.id, 'purchaseSchemePercentage', num);
+                      }
+                    }
+                  }}
+                  disabled={isLoading}
+                />
+              </div>
+            )}
+            <div className={styles.formGroup}>
+              <label
+                htmlFor={`purchaseAdditionalDiscount-${product.id}`}
+                className={styles.label}
+              >
+                Purchase add. discount (%)
+              </label>
+              <input
+                type="number"
+                id={`purchaseAdditionalDiscount-${product.id}`}
+                className={styles.input}
+                placeholder="From vendor"
+                step="0.01"
+                min="0"
+                max="100"
+                value={
+                  product.purchaseAdditionalDiscount === null ||
+                  product.purchaseAdditionalDiscount === undefined
+                    ? ''
+                    : product.purchaseAdditionalDiscount
+                }
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === '') {
+                    onChange(product.id, 'purchaseAdditionalDiscount', null);
+                  } else {
+                    const numValue = parseFloat(value);
+                    if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
+                      onChange(product.id, 'purchaseAdditionalDiscount', numValue);
+                    }
+                  }
+                }}
+                disabled={isLoading}
+              />
+            </div>
+          </div>
+
+          <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label
                 htmlFor={`itemType-${product.id}`}
@@ -2648,6 +2866,7 @@ function ProductAccordion({
               </div>
               <div className={styles.formGroup}>
                 <label
+                
                   htmlFor={`purchaseDate-${product.id}`}
                   className={styles.label}
                 >
