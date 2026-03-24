@@ -897,7 +897,7 @@ export default function ScanSellPage() {
       quantity?: number;
       baseQuantity?: number;
       priceToRetail?: number;
-      additionalDiscount?: number | null;
+      saleAdditionalDiscount?: number | null;
       schemePayFor?: number | null;
       schemeFree?: number | null;
       schemeType?: 'FIXED_UNITS' | 'PERCENTAGE' | null;
