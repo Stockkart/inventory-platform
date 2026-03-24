@@ -50,7 +50,7 @@ interface ProductFormData
   maximumRetailPrice: number | string;
   sgst?: string;
   cgst?: string;
-  additionalDiscount?: number | null;
+  saleAdditionalDiscount?: number | null;
   purchaseSchemeType?: SchemeType;
   purchaseSchemePayFor?: number | null;
   purchaseSchemeFree?: number | null;
@@ -158,7 +158,7 @@ export default function ProductRegistrationPage() {
     schemePercentage: null,
     sgst: '',
     cgst: '',
-    additionalDiscount: null,
+    saleAdditionalDiscount: null,
     purchaseSchemeType: 'FIXED_UNITS',
     purchaseSchemePayFor: null,
     purchaseSchemeFree: null,
@@ -254,7 +254,7 @@ export default function ProductRegistrationPage() {
           : null,
       sgst: billingMode === 'BASIC' ? '' : item.sgst || '',
       cgst: billingMode === 'BASIC' ? '' : item.cgst || '',
-      additionalDiscount: item.additionalDiscount ?? null,
+      saleAdditionalDiscount: item.saleAdditionalDiscount ?? null,
       purchaseSchemeType:
         (item as { purchaseSchemeType?: SchemeType }).purchaseSchemeType ??
         'FIXED_UNITS',
@@ -875,9 +875,9 @@ export default function ProductRegistrationPage() {
           ...(billingMode !== 'BASIC' && product.cgst && product.cgst.trim()
             ? { cgst: product.cgst.trim() }
             : {}),
-          ...(product.additionalDiscount !== null &&
-          product.additionalDiscount !== undefined
-            ? { additionalDiscount: product.additionalDiscount }
+          ...(product.saleAdditionalDiscount !== null &&
+          product.saleAdditionalDiscount !== undefined
+            ? { saleAdditionalDiscount: product.saleAdditionalDiscount }
             : {}),
           ...(product.purchaseSchemeType != null ||
           product.purchaseSchemePayFor != null ||
@@ -2612,33 +2612,33 @@ function ProductAccordion({
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label
-                htmlFor={`additionalDiscount-${product.id}`}
+                htmlFor={`saleAdditionalDiscount-${product.id}`}
                 className={styles.label}
               >
                 Sale add. discount (%)
               </label>
               <input
                 type="number"
-                id={`additionalDiscount-${product.id}`}
+                id={`saleAdditionalDiscount-${product.id}`}
                 className={styles.input}
                 placeholder="Enter discount percentage"
                 step="0.01"
                 min="0"
                 max="100"
                 value={
-                  product.additionalDiscount === null ||
-                  product.additionalDiscount === undefined
+                  product.saleAdditionalDiscount === null ||
+                  product.saleAdditionalDiscount === undefined
                     ? ''
-                    : product.additionalDiscount
+                    : product.saleAdditionalDiscount
                 }
                 onChange={(e) => {
                   const value = e.target.value;
                   if (value === '') {
-                    onChange(product.id, 'additionalDiscount', null);
+                    onChange(product.id, 'saleAdditionalDiscount', null);
                   } else {
                     const numValue = parseFloat(value);
                     if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
-                      onChange(product.id, 'additionalDiscount', numValue);
+                      onChange(product.id, 'saleAdditionalDiscount', numValue);
                     }
                   }
                 }}

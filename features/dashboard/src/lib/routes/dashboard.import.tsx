@@ -64,7 +64,9 @@ export default function ImportPage() {
           }))
         );
         setImportTablePage(0);
-        notifySuccess(`Parsed ${response.totalItems} items. Review and import below.`);
+        notifySuccess(
+          `Parsed ${response.totalItems} items. Review and import below.`
+        );
         setSelectedFile(null);
         if (fileInputRef.current) fileInputRef.current.value = '';
       } else {
@@ -118,11 +120,12 @@ export default function ImportPage() {
       scheme: row.scheme ?? null,
       schemePayFor: row.schemePayFor ?? null,
       schemeFree: row.schemeFree ?? null,
-      schemeType: (row.schemeType ?? 'FIXED_UNITS') as import('@inventory-platform/types').SchemeType,
+      schemeType: (row.schemeType ??
+        'FIXED_UNITS') as import('@inventory-platform/types').SchemeType,
       schemePercentage: row.schemePercentage ?? null,
       sgst: row.sgst || null,
       cgst: row.cgst || null,
-      additionalDiscount: row.additionalDiscount ?? null,
+      saleAdditionalDiscount: row.saleAdditionalDiscount ?? null,
       billingMode,
       ...(row.purchaseDate?.trim()
         ? {
@@ -168,7 +171,9 @@ export default function ImportPage() {
       const response = await inventoryApi.createBulk(bulkData);
       const created = response?.createdCount ?? response?.items?.length ?? 0;
       notifySuccess(
-        `Imported ${created} items! ${response?.lotId ? `Lot ID: ${response.lotId}` : ''}`
+        `Imported ${created} items! ${
+          response?.lotId ? `Lot ID: ${response.lotId}` : ''
+        }`
       );
       setImportTableItems([]);
       setSelectedVendor(null);
@@ -333,7 +338,9 @@ export default function ImportPage() {
                   <div className={styles.pagination}>
                     <button
                       type="button"
-                      onClick={() => setImportTablePage((p) => Math.max(0, p - 1))}
+                      onClick={() =>
+                        setImportTablePage((p) => Math.max(0, p - 1))
+                      }
                       disabled={importTablePage === 0}
                     >
                       ← Prev
@@ -347,14 +354,19 @@ export default function ImportPage() {
                       onClick={() =>
                         setImportTablePage((p) =>
                           Math.min(
-                            Math.ceil(importTableItems.length / importTablePageSize) - 1,
+                            Math.ceil(
+                              importTableItems.length / importTablePageSize
+                            ) - 1,
                             p + 1
                           )
                         )
                       }
                       disabled={
                         importTablePage >=
-                        Math.ceil(importTableItems.length / importTablePageSize) - 1
+                        Math.ceil(
+                          importTableItems.length / importTablePageSize
+                        ) -
+                          1
                       }
                     >
                       Next →
@@ -386,7 +398,10 @@ export default function ImportPage() {
                       const globalIdx =
                         importTablePage * importTablePageSize + idx;
                       return (
-                        <tr key={row.id} className={idx % 2 === 1 ? styles.altRow : ''}>
+                        <tr
+                          key={row.id}
+                          className={idx % 2 === 1 ? styles.altRow : ''}
+                        >
                           <td>{globalIdx + 1}</td>
                           <td>
                             <EditableCell
@@ -537,10 +552,7 @@ export default function ImportPage() {
               {showVendorDropdown && vendorSearchResults.length > 0 && (
                 <ul className={styles.vendorList}>
                   {vendorSearchResults.map((v) => (
-                    <li
-                      key={v.vendorId}
-                      onClick={() => handleSelectVendor(v)}
-                    >
+                    <li key={v.vendorId} onClick={() => handleSelectVendor(v)}>
                       {v.name}
                     </li>
                   ))}

@@ -196,7 +196,8 @@ export default function CheckoutPage() {
   };
 
   // Get SGST and CGST percentages from items if available, otherwise calculate from amounts
-  const billingMode = checkoutData.billingMode === 'BASIC' ? 'BASIC' : 'REGULAR';
+  const billingMode =
+    checkoutData.billingMode === 'BASIC' ? 'BASIC' : 'REGULAR';
   const firstItem = checkoutData.items[0];
   const sgstPercentage = firstItem?.sgst
     ? parseFloat(firstItem.sgst).toFixed(1)
@@ -407,14 +408,16 @@ export default function CheckoutPage() {
                       <td>₹{item.priceToRetail.toFixed(2)}</td>
                       <td>₹{discountAmount.toFixed(2)}</td>
                       <td>
-                        {item.additionalDiscount !== null &&
-                        item.additionalDiscount !== undefined
-                          ? `${item.additionalDiscount.toFixed(2)}%`
+                        {item.saleAdditionalDiscount !== null &&
+                        item.saleAdditionalDiscount !== undefined
+                          ? `${item.saleAdditionalDiscount.toFixed(2)}%`
                           : '—'}
                       </td>
                       <td>
                         {item.schemePayFor != null || item.schemeFree != null
-                          ? `${item.schemePayFor ?? '—'} + ${item.schemeFree ?? '—'}`
+                          ? `${item.schemePayFor ?? '—'} + ${
+                              item.schemeFree ?? '—'
+                            }`
                           : '—'}
                       </td>
                       {billingMode === 'REGULAR' && (
@@ -470,21 +473,25 @@ export default function CheckoutPage() {
                 <span>₹{checkoutData.taxTotal.toFixed(2)}</span>
               </div>
             )}
-            {checkoutData.additionalDiscountTotal !== 0 &&
-              checkoutData.additionalDiscountTotal != null && (
-              <div className={styles.summaryRow}>
-                <span>
-                  {checkoutData.additionalDiscountTotal > 0
-                    ? 'Additional Discount:'
-                    : 'Additional (markup):'}
-                </span>
-                <span>
-                  {checkoutData.additionalDiscountTotal > 0
-                    ? `-₹${checkoutData.additionalDiscountTotal.toFixed(2)}`
-                    : `+₹${Math.abs(checkoutData.additionalDiscountTotal).toFixed(2)}`}
-                </span>
-              </div>
-            )}
+            {checkoutData.saleAdditionalDiscountTotal !== 0 &&
+              checkoutData.saleAdditionalDiscountTotal != null && (
+                <div className={styles.summaryRow}>
+                  <span>
+                    {checkoutData.saleAdditionalDiscountTotal > 0
+                      ? 'Additional Discount:'
+                      : 'Additional (markup):'}
+                  </span>
+                  <span>
+                    {checkoutData.saleAdditionalDiscountTotal > 0
+                      ? `-₹${checkoutData.saleAdditionalDiscountTotal.toFixed(
+                          2
+                        )}`
+                      : `+₹${Math.abs(
+                          checkoutData.saleAdditionalDiscountTotal
+                        ).toFixed(2)}`}
+                  </span>
+                </div>
+              )}
             <div className={styles.summaryRowTotal}>
               <span>Grand Total:</span>
               <span>₹{checkoutData.grandTotal.toFixed(2)}</span>

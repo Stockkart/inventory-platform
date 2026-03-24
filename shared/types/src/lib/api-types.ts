@@ -556,10 +556,7 @@ export interface ProcessJoinRequestResponse {
 
 // Inventory types
 export type ItemType = 'NORMAL' | 'COSTLY' | 'DEGREE';
-export type DiscountApplicable =
-  | 'DISCOUNT'
-  | 'SCHEME'
-  | 'DISCOUNT_AND_SCHEME';
+export type DiscountApplicable = 'DISCOUNT' | 'SCHEME' | 'DISCOUNT_AND_SCHEME';
 
 export type SchemeType = 'FIXED_UNITS' | 'PERCENTAGE';
 export type BillingMode = 'REGULAR' | 'BASIC';
@@ -606,7 +603,7 @@ export interface CreateInventoryDto {
   schemeFree?: number | null;
   schemeType?: SchemeType;
   schemePercentage?: number | null;
-  additionalDiscount?: number | null;
+  saleAdditionalDiscount?: number | null;
   itemType?: ItemType;
   itemTypeDegree?: number;
   discountApplicable?: DiscountApplicable;
@@ -652,7 +649,7 @@ export interface BulkCreateInventoryItem {
   schemePercentage?: number | null;
   sgst?: string | null;
   cgst?: string | null;
-  additionalDiscount?: number | null;
+  saleAdditionalDiscount?: number | null;
   /** Purchase scheme (from vendor) - for comparison at sale */
   purchaseSchemeType?: SchemeType | null;
   purchaseSchemePayFor?: number | null;
@@ -718,7 +715,7 @@ export interface ParseInvoiceItem {
   schemePercentage?: number | null;
   sgst?: string | null;
   cgst?: string | null;
-  additionalDiscount?: number | null;
+  saleAdditionalDiscount?: number | null;
   itemType?: ItemType;
   itemTypeDegree?: number;
   discountApplicable?: DiscountApplicable;
@@ -763,7 +760,7 @@ export interface InventoryItem {
   schemePercentage?: number | null;
   sgst?: string | null;
   cgst?: string | null;
-  additionalDiscount?: number | null;
+  saleAdditionalDiscount?: number | null;
   createdAt?: string;
   itemType?: ItemType;
   itemTypeDegree?: number;
@@ -804,7 +801,14 @@ export interface UpdateInventoryRequest {
   priceToRetail?: number | null;
   rates?: PricingRate[] | null;
   defaultRate?: string | null;
-  additionalDiscount?: number | null;
+  saleAdditionalDiscount?: number | null;
+  /** Purchase add. discount % from vendor */
+  purchaseAdditionalDiscount?: number | null;
+  /** Purchase scheme from vendor */
+  purchaseSchemeType?: SchemeType | null;
+  purchaseSchemePayFor?: number | null;
+  purchaseSchemeFree?: number | null;
+  purchaseSchemePercentage?: number | null;
   sgst?: string | null;
   cgst?: string | null;
   expiryDate?: string | null;
@@ -867,7 +871,7 @@ export interface CheckoutItem {
   quantity?: number;
   baseQuantity?: number;
   priceToRetail?: number;
-  additionalDiscount?: number | null;
+  saleAdditionalDiscount?: number | null;
   // Scheme can be represented either as fixed units or percentage
   schemeType?: SchemeType | null;
   schemePercentage?: number | null;
@@ -894,7 +898,7 @@ export interface CheckoutItemResponse {
   maximumRetailPrice: number;
   priceToRetail: number;
   discount: number;
-  additionalDiscount?: number | null;
+  saleAdditionalDiscount?: number | null;
   totalAmount: number;
   sgst?: string | null;
   cgst?: string | null;
@@ -951,7 +955,7 @@ export interface CartResponse {
   sgstAmount?: number;
   cgstAmount?: number;
   discountTotal: number;
-  additionalDiscountTotal: number;
+  saleAdditionalDiscountTotal: number;
   grandTotal: number;
   status: string;
   customerName?: string;
@@ -1191,11 +1195,7 @@ export interface LinkableUser {
 // Credit Ledger types
 export type LedgerPartyType = 'VENDOR' | 'CUSTOMER';
 export type LedgerEntryType = 'DEBIT' | 'CREDIT';
-export type LedgerSource =
-  | 'PURCHASE'
-  | 'SALE'
-  | 'PAYMENT'
-  | 'ADJUSTMENT';
+export type LedgerSource = 'PURCHASE' | 'SALE' | 'PAYMENT' | 'ADJUSTMENT';
 export type LedgerReferenceType =
   | 'INVENTORY'
   | 'PURCHASE'
@@ -1795,6 +1795,14 @@ export interface BulkPricingUpdateDto {
   updates: BulkPricingUpdateItem[];
 }
 
+/** Purchase scheme/deal from vendor. Object: schemeType, schemePayFor, schemeFree, schemePercentage */
+export interface PurchaseSchemeDto {
+  schemeType?: string | null;
+  schemePayFor?: number | null;
+  schemeFree?: number | null;
+  schemePercentage?: number | null;
+}
+
 export interface PricingResponse {
   id: string;
   shopId?: string;
@@ -1804,7 +1812,13 @@ export interface PricingResponse {
   rates?: PricingRate[];
   defaultRate?: string;
   sellingPrice?: number;
-  additionalDiscount?: number;
+  saleAdditionalDiscount?: number | null;
+  /** Purchase add. discount % from vendor */
+  purchaseAdditionalDiscount?: number | null;
+  /** Purchase scheme/deal from vendor */
+  purchaseScheme?: PurchaseSchemeDto | null;
+  /** Sale scheme/deal (e.g. 7+1) */
+  saleScheme?: PurchaseSchemeDto | null;
   sgst?: string | null;
   cgst?: string | null;
   createdAt?: string;

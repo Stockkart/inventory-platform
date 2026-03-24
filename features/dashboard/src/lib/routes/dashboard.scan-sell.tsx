@@ -85,7 +85,7 @@ function formatPurchaseSchemeLabel(inv: InventoryItem): string {
 
 /** Get purchase additional discount from inventory (registration). Uses purchase* when present. */
 function getPurchaseAdditionalDiscount(inv: InventoryItem): number | null {
-  return inv.purchaseAdditionalDiscount ?? inv.additionalDiscount ?? null;
+  return inv.purchaseAdditionalDiscount ?? inv.saleAdditionalDiscount ?? null;
 }
 
 function CartQuantityInput({
@@ -767,9 +767,9 @@ export default function ScanSellPage() {
         const inventoryItem: InventoryItem = existing
           ? {
               ...existing.inventoryItem,
-              additionalDiscount:
-                resItem.additionalDiscount ??
-                existing.inventoryItem.additionalDiscount,
+              saleAdditionalDiscount:
+                resItem.saleAdditionalDiscount ??
+                existing.inventoryItem.saleAdditionalDiscount,
               billingMode: normalizeBillingMode(
                 resItem.billingMode ?? existing.inventoryItem.billingMode
               ),
@@ -816,7 +816,7 @@ export default function ScanSellPage() {
               location: '',
               expiryDate: '',
               shopId: cart.shopId,
-              additionalDiscount: resItem.additionalDiscount ?? null,
+              saleAdditionalDiscount: resItem.saleAdditionalDiscount ?? null,
               billingMode: normalizeBillingMode(
                 resItem.billingMode ?? cart.billingMode
               ),
@@ -856,7 +856,7 @@ export default function ScanSellPage() {
   const getEffectiveAdditionalDiscount = useCallback(
     (inventoryId: string, item: CartItem) =>
       additionalDiscountOverrides[inventoryId] ??
-      item.inventoryItem.additionalDiscount ??
+      item.inventoryItem.saleAdditionalDiscount ??
       null,
     [additionalDiscountOverrides]
   );
@@ -867,9 +867,9 @@ export default function ScanSellPage() {
     quantityDelta?: number,
     originalItem?: CartItem,
     overrides?: Record<string, number | null>,
-    additionalDiscountUpdate?: {
+    saleAdditionalDiscountUpdate?: {
       inventoryId: string;
-      additionalDiscount: number | null;
+      saleAdditionalDiscount: number | null;
     },
     schemeUpdate?: {
       inventoryId: string;
@@ -883,7 +883,7 @@ export default function ScanSellPage() {
     // Prevent duplicate full-cart syncs; allow item-specific updates (scheme, discount, price) so they are not dropped
     const isItemSpecificUpdate =
       schemeUpdate != null ||
-      additionalDiscountUpdate != null ||
+      saleAdditionalDiscountUpdate != null ||
       priceToRetailUpdate != null;
     if (isUpdatingRef.current && !isItemSpecificUpdate) {
       return;
@@ -913,10 +913,10 @@ export default function ScanSellPage() {
       if (cartItem != null) {
         const addDisc =
           effectiveOverrides[cartItem.inventoryItem.id] ??
-          cartItem.inventoryItem.additionalDiscount ??
+          cartItem.inventoryItem.saleAdditionalDiscount ??
           undefined;
         if (addDisc !== undefined && addDisc !== null) {
-          result = { ...result, additionalDiscount: addDisc };
+          result = { ...result, saleAdditionalDiscount: addDisc };
         }
         const hasPercentage =
           cartItem.schemePercentage !== undefined &&
@@ -1017,24 +1017,24 @@ export default function ScanSellPage() {
               : {}),
           },
         ];
-      } else if (additionalDiscountUpdate) {
-        // Only discount changed: send id + additionalDiscount (no quantity/baseQuantity)
+      } else if (saleAdditionalDiscountUpdate) {
+        // Only discount changed: send id + saleAdditionalDiscount (no quantity/baseQuantity)
         const item = items.find(
-          (i) => i.inventoryItem.id === additionalDiscountUpdate.inventoryId
+          (i) => i.inventoryItem.id === saleAdditionalDiscountUpdate.inventoryId
         );
         if (!item) {
           isUpdatingRef.current = false;
           setIsUpdatingCart(false);
           return;
         }
-        const addDisc = additionalDiscountUpdate.additionalDiscount;
+        const addDisc = saleAdditionalDiscountUpdate.saleAdditionalDiscount;
         itemsToSend = [
           {
             id: item.inventoryItem.id,
             unit: item.unit,
             priceToRetail: item.price,
             ...(addDisc !== null && addDisc !== undefined
-              ? { additionalDiscount: addDisc }
+              ? { saleAdditionalDiscount: addDisc }
               : {}),
           } as CartItemPayload,
         ];
@@ -2094,10 +2094,9 @@ export default function ScanSellPage() {
                                       aria-readonly="true"
                                     >
                                       {(() => {
-                                        const v =
-                                          getPurchaseAdditionalDiscount(
-                                            cartItem.inventoryItem
-                                          );
+                                        const v = getPurchaseAdditionalDiscount(
+                                          cartItem.inventoryItem
+                                        );
                                         return v != null ? `${v}%` : '—';
                                       })()}
                                     </span>
@@ -2156,31 +2155,31 @@ export default function ScanSellPage() {
                                     Sale scheme/deal
                                   </label>
                                   <div className={styles.itemSchemeInputs}>
-                                  <CartSchemeInput
-                                    id={`scheme-${cartItem.inventoryItem.id}`}
-                                    schemeType={cartItem.schemeType ?? null}
-                                    payFor={cartItem.schemePayFor ?? null}
-                                    free={cartItem.schemeFree ?? null}
-                                    percentage={
-                                      cartItem.schemePercentage ?? null
-                                    }
-                                    onCommitUnits={(payFor, free) =>
-                                      handleSchemeChange(
-                                        cartItem.inventoryItem.id,
-                                        payFor,
-                                        free
-                                      )
-                                    }
-                                    onCommitPercentage={(perc) =>
-                                      handleSchemePercentageChange(
-                                        cartItem.inventoryItem.id,
-                                        perc
-                                      )
-                                    }
-                                    disabled={isUpdatingCart}
-                                  />
+                                    <CartSchemeInput
+                                      id={`scheme-${cartItem.inventoryItem.id}`}
+                                      schemeType={cartItem.schemeType ?? null}
+                                      payFor={cartItem.schemePayFor ?? null}
+                                      free={cartItem.schemeFree ?? null}
+                                      percentage={
+                                        cartItem.schemePercentage ?? null
+                                      }
+                                      onCommitUnits={(payFor, free) =>
+                                        handleSchemeChange(
+                                          cartItem.inventoryItem.id,
+                                          payFor,
+                                          free
+                                        )
+                                      }
+                                      onCommitPercentage={(perc) =>
+                                        handleSchemePercentageChange(
+                                          cartItem.inventoryItem.id,
+                                          perc
+                                        )
+                                      }
+                                      disabled={isUpdatingCart}
+                                    />
+                                  </div>
                                 </div>
-                              </div>
                               </div>
                               <div className={styles.itemFieldGroup}>
                                 <label
@@ -2549,7 +2548,9 @@ export default function ScanSellPage() {
                       <span>
                         {cartData.additionalDiscountTotal > 0
                           ? `-₹${cartData.additionalDiscountTotal.toFixed(2)}`
-                          : `+₹${Math.abs(cartData.additionalDiscountTotal).toFixed(2)}`}
+                          : `+₹${Math.abs(
+                              cartData.additionalDiscountTotal
+                            ).toFixed(2)}`}
                       </span>
                     </div>
                   )}

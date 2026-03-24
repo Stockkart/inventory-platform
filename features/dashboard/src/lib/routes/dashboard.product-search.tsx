@@ -321,17 +321,21 @@ export default function ProductSearchPage() {
                         <span className={styles.productPrice}>
                           Selling Price: ₹
                           {(item.sellingPrice ?? item.priceToRetail) != null
-                            ? (item.sellingPrice ?? item.priceToRetail)!.toFixed(2)
+                            ? (item.sellingPrice ??
+                                item.priceToRetail)!.toFixed(2)
                             : '—'}
                         </span>
                         <span className={styles.productPrice}>
-                          MRP: ₹{item.maximumRetailPrice != null ? item.maximumRetailPrice.toFixed(2) : '—'}
+                          MRP: ₹
+                          {item.maximumRetailPrice != null
+                            ? item.maximumRetailPrice.toFixed(2)
+                            : '—'}
                         </span>
-                        {item.additionalDiscount !== null &&
-                          item.additionalDiscount !== undefined && (
+                        {item.saleAdditionalDiscount !== null &&
+                          item.saleAdditionalDiscount !== undefined && (
                             <span className={styles.productPrice}>
                               Additional Discount:{' '}
-                              {item.additionalDiscount.toFixed(2)}%
+                              {item.saleAdditionalDiscount.toFixed(2)}%
                             </span>
                           )}
                       </div>
@@ -340,17 +344,23 @@ export default function ProductSearchPage() {
                           Expires: {formatDate(item.expiryDate)}
                         </span>
                       </div>
-                      {(item.itemType || item.discountApplicable || item.purchaseDate || item.createdAt || item.schemeType || item.scheme != null) && (
+                      {(item.itemType ||
+                        item.discountApplicable ||
+                        item.purchaseDate ||
+                        item.createdAt ||
+                        item.schemeType ||
+                        item.scheme != null) && (
                         <>
                           <div className={styles.productMeta}>
                             {item.itemType && item.itemType !== 'NORMAL' && (
                               <span className={styles.productMetaItem}>
                                 Type:{' '}
-                                {item.itemType === 'DEGREE' && item.itemTypeDegree != null
+                                {item.itemType === 'DEGREE' &&
+                                item.itemTypeDegree != null
                                   ? `Temperature (${item.itemTypeDegree}°)`
                                   : item.itemType === 'COSTLY'
-                                    ? 'Costly'
-                                    : item.itemType}
+                                  ? 'Costly'
+                                  : item.itemType}
                               </span>
                             )}
                             {item.discountApplicable && (
@@ -358,19 +368,25 @@ export default function ProductSearchPage() {
                                 {item.discountApplicable === 'DISCOUNT'
                                   ? 'Discount applicable'
                                   : item.discountApplicable === 'SCHEME'
-                                    ? 'Scheme applicable'
-                                    : 'Both discount and scheme applicable'}
+                                  ? 'Scheme applicable'
+                                  : 'Both discount and scheme applicable'}
                               </span>
                             )}
                             {(item.purchaseDate || item.createdAt) && (
                               <span className={styles.productMetaItem}>
-                                Purchased: {formatDate(item.purchaseDate || item.createdAt!)}
+                                Purchased:{' '}
+                                {formatDate(
+                                  item.purchaseDate || item.createdAt!
+                                )}
                               </span>
                             )}
                           </div>
                           {(() => {
                             const st = item.schemeType ?? 'FIXED_UNITS';
-                            if (st === 'PERCENTAGE' && item.schemePercentage != null) {
+                            if (
+                              st === 'PERCENTAGE' &&
+                              item.schemePercentage != null
+                            ) {
                               return (
                                 <div className={styles.productMetaScheme}>
                                   <span className={styles.productMetaItem}>
@@ -379,7 +395,11 @@ export default function ProductSearchPage() {
                                 </div>
                               );
                             }
-                            if ((st === 'FIXED_UNITS' || !item.schemeType) && item.scheme != null && item.scheme > 0) {
+                            if (
+                              (st === 'FIXED_UNITS' || !item.schemeType) &&
+                              item.scheme != null &&
+                              item.scheme > 0
+                            ) {
                               return (
                                 <div className={styles.productMetaScheme}>
                                   <span className={styles.productMetaItem}>
