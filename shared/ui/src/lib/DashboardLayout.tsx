@@ -7,6 +7,26 @@ import { ThemeToggle } from './ThemeToggle';
 import { useNotifications } from '@inventory-platform/store';
 import { ToastProvider } from './ToastProvider';
 import {
+  getDashboardMenuGroupsForRole,
+  getDashboardNavRowsForRole,
+} from './dashboardNavConfig';
+import { CommandPalette } from './CommandPalette';
+import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
+import {
+  DASHBOARD_HOTKEY,
+  getDashboardModLabel,
+  isModLetter,
+  isQuickNavSlash,
+  isShortcutsHelp,
+} from './dashboardHotkeys';
+import {
+  favoriteShortcutMatches,
+  loadFavoritePageShortcuts,
+  refreshFavoriteLabels,
+  saveFavoritePageShortcuts,
+} from './favoritePageShortcuts';
+import type { FavoritePageShortcut } from './favoritePageShortcuts';
+import {
   Menu,
   Headphones,
   Phone,
@@ -14,137 +34,16 @@ import {
   MessageCircle,
   ChevronDown,
   ChevronUp,
+  Keyboard,
 } from 'lucide-react';
 
-type MenuItem = { path: string; label: string; icon: string };
-
-type MenuGroup = {
-  id: string;
-  label: string;
-  icon: string;
-  items: MenuItem[];
-};
-
-const MENU_GROUPS: MenuGroup[] = [
-  {
-    id: 'overview',
-    label: 'Overview',
-    icon: '📊',
-    items: [
-      { path: '/dashboard', label: 'Dashboard', icon: '📊' },
-      { path: '/dashboard/shops', label: 'Shops', icon: '🏪' },
-      { path: '/dashboard/profile', label: 'Profile', icon: '👤' },
-    ],
-  },
-  {
-    id: 'products',
-    label: 'Products & Sales',
-    icon: '📦',
-    items: [
-      {
-        path: '/dashboard/product-registration',
-        label: 'Product Registration',
-        icon: '📦',
-      },
-      // Import disabled for now
-      // { path: '/dashboard/import', label: 'Import', icon: '📥' },
-      {
-        path: '/dashboard/product-search',
-        label: 'Product Search',
-        icon: '🔍',
-      },
-      { path: '/dashboard/pricing', label: 'Pricing', icon: '💰' },
-      { path: '/dashboard/scan-sell', label: 'Scan and Sell', icon: '📱' },
-      { path: '/dashboard/refund', label: 'Refund', icon: '↩️' },
-    ],
-  },
-  {
-    id: 'reminders-alerts',
-    label: 'Reminders & Alerts',
-    icon: '🔔',
-    items: [
-      { path: '/dashboard/reminders', label: 'Reminder', icon: '📅' },
-      {
-        path: '/dashboard/inventory-alert',
-        label: 'Inventory Low Alert',
-        icon: '🔔',
-      },
-    ],
-  },
-  {
-    id: 'analytics-history',
-    label: 'Reports & Analytics',
-    icon: '📈',
-    items: [
-      {
-        path: '/dashboard/analytics',
-        label: 'Analytics Dashboard',
-        icon: '📈',
-      },
-      { path: '/dashboard/taxes', label: 'Taxes', icon: '📋' },
-      { path: '/dashboard/history', label: 'History', icon: '📜' },
-    ],
-  },
-  {
-    id: 'credit-ledger',
-    label: 'Credit & Ledger',
-    icon: '📒',
-    items: [
-      { path: '/dashboard/credit-ledger', label: 'Credit Ledger', icon: '📒' },
-    ],
-  },
-  {
-    id: 'contact',
-    label: 'Contact',
-    icon: '📇',
-    items: [
-      { path: '/dashboard/customers', label: 'Customer', icon: '👥' },
-      { path: '/dashboard/vendors', label: 'Vendor', icon: '🚚' },
-    ],
-  },
-  {
-    id: 'marketing',
-    label: 'Marketing',
-    icon: '📣',
-    items: [
-      {
-        path: '/dashboard/whatsapp-marketing',
-        label: 'WhatsApp Marketing',
-        icon: '💬',
-      },
-    ],
-  },
-  {
-    id: 'team',
-    label: 'Team & Collaboration',
-    icon: '👥',
-    items: [
-      { path: '/dashboard/invitations', label: 'Invitations', icon: '✉️' },
-      {
-        path: '/dashboard/my-invitations',
-        label: 'My Invitations',
-        icon: '📬',
-      },
-      { path: '/dashboard/join-requests', label: 'Join Requests', icon: '🤝' },
-      { path: '/dashboard/shop-users', label: 'Shop Users', icon: '👥' },
-    ],
-  },
-  {
-    id: 'payment-plan',
-    label: 'Payment & Plan',
-    icon: '💳',
-    items: [
-      { path: '/dashboard/plan-payment', label: 'Payment', icon: '💳' },
-      { path: '/dashboard/plan-status', label: 'My Plan', icon: '📋' },
-    ],
-  },
-];
-
-const CASHIER_HIDDEN_PATHS = [
-  '/dashboard/shop-users',
-  '/dashboard/invitations',
-  '/dashboard/join-requests',
-];
+function isTypingInField(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.isContentEditable) return true;
+  const tag = target.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+  return Boolean(target.closest('[contenteditable="true"]'));
+}
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const location = useLocation();
@@ -166,7 +65,38 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { text: string; from: 'user' | 'support' }[]
   >([]);
 
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
+  const [favoritePageShortcuts, setFavoritePageShortcuts] = useState<
+    FavoritePageShortcut[]
+  >(() => loadFavoritePageShortcuts());
+
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  const modLabel = useMemo(() => getDashboardModLabel(), []);
+
+  const navRowsForPalette = useMemo(
+    () => getDashboardNavRowsForRole(user?.role),
+    [user?.role]
+  );
+
+  const favoritesNav = useMemo(
+    () => refreshFavoriteLabels(favoritePageShortcuts, navRowsForPalette),
+    [favoritePageShortcuts, navRowsForPalette]
+  );
+
+  useEffect(() => {
+    saveFavoritePageShortcuts(favoritePageShortcuts);
+  }, [favoritePageShortcuts]);
+
+  useEffect(() => {
+    const allowed = new Set(navRowsForPalette.map((r) => r.path));
+    setFavoritePageShortcuts((prev) => {
+      const next = prev.filter((f) => allowed.has(f.path));
+      if (next.length === prev.length) return prev;
+      return refreshFavoriteLabels(next, navRowsForPalette);
+    });
+  }, [navRowsForPalette]);
 
   // Reminder notifications (ALL logic lives in hook)
   const { notifications, unreadCount, markAsRead } = useNotifications(
@@ -228,17 +158,49 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const currentPath = location.pathname;
 
-  const filteredMenuGroups = useMemo(() => {
-    const isCashier = user?.role === 'CASHIER';
-    return MENU_GROUPS.map((group) => ({
-      ...group,
-      items: isCashier
-        ? group.items.filter(
-            (item) => !CASHIER_HIDDEN_PATHS.includes(item.path)
-          )
-        : group.items,
-    })).filter((group) => group.items.length > 0);
-  }, [user?.role]);
+  const filteredMenuGroups = useMemo(
+    () => getDashboardMenuGroupsForRole(user?.role),
+    [user?.role]
+  );
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (isModLetter(e, DASHBOARD_HOTKEY.quickNavToggleModKey)) {
+        e.preventDefault();
+        setCommandPaletteOpen((open) => !open);
+        setShortcutsHelpOpen(false);
+        return;
+      }
+      if (commandPaletteOpen || shortcutsHelpOpen) return;
+
+      const inField = isTypingInField(e.target);
+      if (isModLetter(e, DASHBOARD_HOTKEY.toggleSidebarModKey)) {
+        if (inField) return;
+        e.preventDefault();
+        setSidebarOpen((s) => !s);
+        return;
+      }
+      if (!inField && isQuickNavSlash(e)) {
+        e.preventDefault();
+        setCommandPaletteOpen(true);
+        return;
+      }
+      if (!inField && isShortcutsHelp(e)) {
+        e.preventDefault();
+        setShortcutsHelpOpen(true);
+        return;
+      }
+      if (!inField) {
+        const fav = favoritesNav.find((f) => favoriteShortcutMatches(e, f));
+        if (fav) {
+          e.preventDefault();
+          navigate(fav.path);
+        }
+      }
+    };
+    document.addEventListener('keydown', onKeyDown, true);
+    return () => document.removeEventListener('keydown', onKeyDown, true);
+  }, [commandPaletteOpen, shortcutsHelpOpen, favoritesNav, navigate]);
 
   const allMenuItems = useMemo(
     () => filteredMenuGroups.flatMap((g) => g.items),
@@ -303,6 +265,24 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className={styles.dashboard}>
+      <CommandPalette
+        open={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+        navRows={navRowsForPalette}
+        modLabel={modLabel}
+      />
+      <KeyboardShortcutsModal
+        open={shortcutsHelpOpen}
+        onClose={() => setShortcutsHelpOpen(false)}
+        modLabel={modLabel}
+        navRows={navRowsForPalette}
+        favorites={favoritesNav}
+        onFavoritesChange={(next) =>
+          setFavoritePageShortcuts(
+            refreshFavoriteLabels(next, navRowsForPalette)
+          )
+        }
+      />
       <ToastProvider />
       {!sidebarOpen && window.innerWidth <= 768 && (
         <button
@@ -567,6 +547,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   </div>
                 )}
               </div>
+
+              <button
+                type="button"
+                className={styles.hotkeysBtn}
+                onClick={() => setShortcutsHelpOpen(true)}
+                title={`Keyboard shortcuts (${DASHBOARD_HOTKEY.shortcutsHelp})`}
+                aria-label="Keyboard shortcuts"
+              >
+                <Keyboard size={18} aria-hidden />
+              </button>
 
               <ThemeToggle />
 
