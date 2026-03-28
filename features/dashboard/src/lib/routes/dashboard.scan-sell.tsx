@@ -17,6 +17,10 @@ import type {
 } from '@inventory-platform/types';
 import styles from './dashboard.scan-sell.module.css';
 import { useNotify } from '@inventory-platform/store';
+import {
+  isScanSellHidePurchaseKey,
+  shouldSkipScanSellHidePurchaseKey,
+} from '@inventory-platform/ui';
 
 export function meta() {
   return [
@@ -440,6 +444,13 @@ export default function ScanSellPage() {
     }
     return 'list';
   });
+  /** When true, purchase scheme / purchase add. discount read-only rows are hidden in cart (sale inputs stay). */
+  const [hidePurchaseDetailsInSell, setHidePurchaseDetailsInSell] = useState(
+    () => {
+      if (typeof window === 'undefined') return false;
+      return localStorage.getItem('scan-sell-hide-purchase-details') === '1';
+    }
+  );
   const [pricingCache, setPricingCache] = useState<
     Record<string, PricingResponse>
   >({});
@@ -512,6 +523,24 @@ export default function ScanSellPage() {
       loadPricingRef.current(pricingId ?? undefined, invId);
     });
   }, [cartItemIds, cartItems, inventoryToPricingId]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!isScanSellHidePurchaseKey(e)) return;
+      if (shouldSkipScanSellHidePurchaseKey(document.activeElement)) return;
+      e.preventDefault();
+      setHidePurchaseDetailsInSell((v) => {
+        const next = !v;
+        localStorage.setItem(
+          'scan-sell-hide-purchase-details',
+          next ? '1' : '0'
+        );
+        return next;
+      });
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   const normalizeBillingMode = useCallback(
     (mode?: BillingMode | null): BillingMode =>
@@ -2136,14 +2165,16 @@ export default function ScanSellPage() {
                             </td>
                             <td className={styles.excelTd}>
                               <div className={styles.compareCell}>
-                                <div className={styles.compareTop}>
-                                  {(() => {
-                                    const v = getPurchaseAdditionalDiscount(
-                                      cartItem.inventoryItem
-                                    );
-                                    return v != null ? `${v}%` : '—';
-                                  })()}
-                                </div>
+                                {!hidePurchaseDetailsInSell && (
+                                  <div className={styles.compareTop}>
+                                    {(() => {
+                                      const v = getPurchaseAdditionalDiscount(
+                                        cartItem.inventoryItem
+                                      );
+                                      return v != null ? `${v}%` : '—';
+                                    })()}
+                                  </div>
+                                )}
 
                                 <div className={styles.compareBottom}>
                                   <CartAdditionalDiscountInput
@@ -2164,11 +2195,13 @@ export default function ScanSellPage() {
                             </td>
                             <td className={styles.excelTd}>
                               <div className={styles.compareCell}>
-                                <div className={styles.compareTop}>
-                                  {formatPurchaseSchemeLabel(
-                                    cartItem.inventoryItem
-                                  )}
-                                </div>
+                                {!hidePurchaseDetailsInSell && (
+                                  <div className={styles.compareTop}>
+                                    {formatPurchaseSchemeLabel(
+                                      cartItem.inventoryItem
+                                    )}
+                                  </div>
+                                )}
 
                                 <div className={styles.compareBottom}>
                                   <CartSchemeInput
@@ -2585,14 +2618,17 @@ export default function ScanSellPage() {
                                   </label>
 
                                   <div className={styles.compareCell}>
-                                    <div className={styles.compareTop}>
-                                      {(() => {
-                                        const v = getPurchaseAdditionalDiscount(
-                                          cartItem.inventoryItem
-                                        );
-                                        return v != null ? `${v}%` : '—';
-                                      })()}
-                                    </div>
+                                    {!hidePurchaseDetailsInSell && (
+                                      <div className={styles.compareTop}>
+                                        {(() => {
+                                          const v =
+                                            getPurchaseAdditionalDiscount(
+                                              cartItem.inventoryItem
+                                            );
+                                          return v != null ? `${v}%` : '—';
+                                        })()}
+                                      </div>
+                                    )}
 
                                     <div className={styles.compareBottom}>
                                       <CartAdditionalDiscountInput
@@ -2619,11 +2655,13 @@ export default function ScanSellPage() {
                                   </label>
 
                                   <div className={styles.compareCell}>
-                                    <div className={styles.compareTop}>
-                                      {formatPurchaseSchemeLabel(
-                                        cartItem.inventoryItem
-                                      )}
-                                    </div>
+                                    {!hidePurchaseDetailsInSell && (
+                                      <div className={styles.compareTop}>
+                                        {formatPurchaseSchemeLabel(
+                                          cartItem.inventoryItem
+                                        )}
+                                      </div>
+                                    )}
 
                                     <div className={styles.compareBottom}>
                                       <CartSchemeInput
@@ -3300,39 +3338,47 @@ export default function ScanSellPage() {
                           </div>
                         </div>
                       )}
-                      <div
-                        className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
-                      >
-                        <div className={styles.detailModalDetailIcon}>🏷️</div>
-                        <div className={styles.detailModalDetailContent}>
-                          <span className={styles.detailModalDetailLabel}>
-                            Purchase add. discount
-                          </span>
-                          <span className={styles.detailModalDetailValue}>
-                            {(() => {
-                              const v = getPurchaseAdditionalDiscount(
-                                detailModalItem.inventoryItem
-                              );
-                              return v != null ? `${v}%` : '—';
-                            })()}
-                          </span>
-                        </div>
-                      </div>
-                      <div
-                        className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
-                      >
-                        <div className={styles.detailModalDetailIcon}>🎁</div>
-                        <div className={styles.detailModalDetailContent}>
-                          <span className={styles.detailModalDetailLabel}>
-                            Purchase scheme/deal
-                          </span>
-                          <span className={styles.detailModalDetailValue}>
-                            {formatPurchaseSchemeLabel(
-                              detailModalItem.inventoryItem
-                            )}
-                          </span>
-                        </div>
-                      </div>
+                      {!hidePurchaseDetailsInSell && (
+                        <>
+                          <div
+                            className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
+                          >
+                            <div className={styles.detailModalDetailIcon}>
+                              🏷️
+                            </div>
+                            <div className={styles.detailModalDetailContent}>
+                              <span className={styles.detailModalDetailLabel}>
+                                Purchase add. discount
+                              </span>
+                              <span className={styles.detailModalDetailValue}>
+                                {(() => {
+                                  const v = getPurchaseAdditionalDiscount(
+                                    detailModalItem.inventoryItem
+                                  );
+                                  return v != null ? `${v}%` : '—';
+                                })()}
+                              </span>
+                            </div>
+                          </div>
+                          <div
+                            className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
+                          >
+                            <div className={styles.detailModalDetailIcon}>
+                              🎁
+                            </div>
+                            <div className={styles.detailModalDetailContent}>
+                              <span className={styles.detailModalDetailLabel}>
+                                Purchase scheme/deal
+                              </span>
+                              <span className={styles.detailModalDetailValue}>
+                                {formatPurchaseSchemeLabel(
+                                  detailModalItem.inventoryItem
+                                )}
+                              </span>
+                            </div>
+                          </div>
+                        </>
+                      )}
                       <div
                         className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
                       >

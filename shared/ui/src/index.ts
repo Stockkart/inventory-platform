@@ -15,6 +15,7 @@ export * from './lib/ForgotPasswordForm';
 export * from './lib/ResetPasswordForm';
 export * from './lib/formKeyboardNav';
 export * from './lib/FormKeyboardNavScope';
+export * from './lib/dashboardHotkeys';
 export * from './lib/DashboardLayout';
 export * from './lib/ShopSwitcher';
 export * from './lib/AuthInitializer';

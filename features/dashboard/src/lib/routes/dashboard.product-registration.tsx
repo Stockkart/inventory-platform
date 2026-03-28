@@ -147,6 +147,17 @@ export default function ProductRegistrationPage() {
     Record<string, { sale?: string; purchase?: string }>
   >({});
 
+  const purchaseDateFieldMin = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    return d.toISOString().split('T')[0];
+  })();
+  const purchaseDateFieldMax = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    return d.toISOString().split('T')[0];
+  })();
+
   // Image upload state
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<string>('');
@@ -1849,12 +1860,19 @@ export default function ProductRegistrationPage() {
                   <thead>
                     <tr>
                       <th className={styles.excelTh}>#</th>
+                      <th className={styles.excelTh}>Barcode</th>
                       <th className={styles.excelTh}>Product</th>
                       <th className={styles.excelTh}>Company</th>
                       <th className={styles.excelTh}>Count</th>
                       <th className={styles.excelTh}>Packaging</th>
                       <th className={styles.excelTh}>Expiry</th>
                       <th className={styles.excelTh}>Location</th>
+                      {billingMode !== 'BASIC' && (
+                        <>
+                          <th className={styles.excelTh}>HSN</th>
+                          <th className={styles.excelTh}>Batch</th>
+                        </>
+                      )}
                       <th className={styles.excelTh}>Cost</th>
                       <th className={styles.excelTh}>PTR</th>
                       <th className={styles.excelTh}>MRP</th>
@@ -1864,6 +1882,16 @@ export default function ProductRegistrationPage() {
                       <th className={styles.excelTh}>Purchase deal type</th>
                       <th className={styles.excelTh}>Purchase scheme</th>
                       <th className={styles.excelTh}>Purchase disc %</th>
+                      <th className={styles.excelTh}>Item type</th>
+                      <th className={styles.excelTh}>°</th>
+                      <th className={styles.excelTh}>Disc appl.</th>
+                      <th className={styles.excelTh}>Purch. date</th>
+                      {billingMode === 'REGULAR' && (
+                        <>
+                          <th className={styles.excelTh}>CGST %</th>
+                          <th className={styles.excelTh}>SGST %</th>
+                        </>
+                      )}
                       <th className={styles.excelTh}>Actions</th>
                     </tr>
                   </thead>
@@ -1871,6 +1899,22 @@ export default function ProductRegistrationPage() {
                     {products.map((product, idx) => (
                       <tr key={product.id} className={styles.excelTr}>
                         <td className={styles.excelTd}>{idx + 1}</td>
+                        <td className={styles.excelTd}>
+                          <input
+                            type="text"
+                            className={styles.excelInput}
+                            placeholder="Barcode"
+                            value={product.barcode}
+                            onChange={(e) =>
+                              handleProductChange(
+                                product.id,
+                                'barcode',
+                                e.target.value
+                              )
+                            }
+                            disabled={isLoading}
+                          />
+                        </td>
                         <td className={styles.excelTd}>
                           <input
                             type="text"
@@ -1981,6 +2025,42 @@ export default function ProductRegistrationPage() {
                             disabled={isLoading}
                           />
                         </td>
+                        {billingMode !== 'BASIC' && (
+                          <>
+                            <td className={styles.excelTd}>
+                              <input
+                                type="text"
+                                className={styles.excelInput}
+                                placeholder="HSN"
+                                value={product.hsn || ''}
+                                onChange={(e) =>
+                                  handleProductChange(
+                                    product.id,
+                                    'hsn',
+                                    e.target.value
+                                  )
+                                }
+                                disabled={isLoading}
+                              />
+                            </td>
+                            <td className={styles.excelTd}>
+                              <input
+                                type="text"
+                                className={styles.excelInput}
+                                placeholder="Batch"
+                                value={product.batchNo || ''}
+                                onChange={(e) =>
+                                  handleProductChange(
+                                    product.id,
+                                    'batchNo',
+                                    e.target.value
+                                  )
+                                }
+                                disabled={isLoading}
+                              />
+                            </td>
+                          </>
+                        )}
                         <td className={styles.excelTd}>
                           <input
                             type="text"
@@ -2449,6 +2529,182 @@ export default function ProductRegistrationPage() {
                           />
                         </td>
                         <td className={styles.excelTd}>
+                          <label
+                            className={styles.srOnly}
+                            htmlFor={`grid-item-type-${product.id}`}
+                          >
+                            Item type
+                          </label>
+                          <select
+                            id={`grid-item-type-${product.id}`}
+                            className={styles.excelSelect}
+                            value={product.itemType ?? 'NORMAL'}
+                            onChange={(e) => {
+                              const val = e.target.value as ItemType | '';
+                              const itemType =
+                                val === '' ? 'NORMAL' : (val as ItemType);
+                              handleProductChange(
+                                product.id,
+                                'itemType',
+                                itemType
+                              );
+                              if (itemType !== 'DEGREE') {
+                                handleProductChange(
+                                  product.id,
+                                  'itemTypeDegree',
+                                  undefined
+                                );
+                              }
+                            }}
+                            disabled={isLoading}
+                          >
+                            <option value="NORMAL">Normal</option>
+                            <option value="COSTLY">Costly</option>
+                            <option value="DEGREE">Temp / °</option>
+                          </select>
+                        </td>
+                        <td className={styles.excelTd}>
+                          {product.itemType === 'DEGREE' ? (
+                            <input
+                              type="number"
+                              className={styles.excelInputNarrow}
+                              placeholder="°"
+                              min={1}
+                              step={1}
+                              value={
+                                product.itemTypeDegree != null
+                                  ? product.itemTypeDegree
+                                  : ''
+                              }
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === '') {
+                                  handleProductChange(
+                                    product.id,
+                                    'itemTypeDegree',
+                                    undefined
+                                  );
+                                } else {
+                                  const num = parseInt(val, 10);
+                                  if (
+                                    !isNaN(num) &&
+                                    num > 0 &&
+                                    Number.isInteger(num)
+                                  ) {
+                                    handleProductChange(
+                                      product.id,
+                                      'itemTypeDegree',
+                                      num
+                                    );
+                                  }
+                                }
+                              }}
+                              disabled={isLoading}
+                            />
+                          ) : (
+                            <span className={styles.excelCellDash}>—</span>
+                          )}
+                        </td>
+                        <td className={styles.excelTd}>
+                          <label
+                            className={styles.srOnly}
+                            htmlFor={`grid-discount-applicable-${product.id}`}
+                          >
+                            Discount applicable
+                          </label>
+                          <select
+                            id={`grid-discount-applicable-${product.id}`}
+                            className={styles.excelSelect}
+                            value={product.discountApplicable ?? ''}
+                            onChange={(e) => {
+                              const val = e.target.value as DiscountApplicable | '';
+                              handleProductChange(
+                                product.id,
+                                'discountApplicable',
+                                val === ''
+                                  ? undefined
+                                  : (val as DiscountApplicable)
+                              );
+                            }}
+                            disabled={isLoading}
+                          >
+                            <option value="">—</option>
+                            <option value="DISCOUNT">Discount</option>
+                            <option value="SCHEME">Scheme</option>
+                            <option value="DISCOUNT_AND_SCHEME">Both</option>
+                          </select>
+                        </td>
+                        <td className={styles.excelTd}>
+                          <input
+                            type="date"
+                            className={styles.excelInputDate}
+                            min={purchaseDateFieldMin}
+                            max={purchaseDateFieldMax}
+                            value={
+                              product.purchaseDate
+                                ? new Date(product.purchaseDate)
+                                    .toISOString()
+                                    .split('T')[0]
+                                : ''
+                            }
+                            onChange={(e) => {
+                              const dateValue = e.target.value;
+                              if (dateValue) {
+                                handleProductChange(
+                                  product.id,
+                                  'purchaseDate',
+                                  `${dateValue}T00:00:00.000Z`
+                                );
+                              } else {
+                                handleProductChange(
+                                  product.id,
+                                  'purchaseDate',
+                                  undefined
+                                );
+                              }
+                            }}
+                            disabled={isLoading}
+                          />
+                        </td>
+                        {billingMode === 'REGULAR' && (
+                          <>
+                            <td className={styles.excelTd}>
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                className={styles.excelInputNarrow}
+                                placeholder="CGST"
+                                value={product.cgst || ''}
+                                onChange={(e) =>
+                                  handleProductChange(
+                                    product.id,
+                                    'cgst',
+                                    e.target.value
+                                  )
+                                }
+                                disabled={isLoading}
+                              />
+                            </td>
+                            <td className={styles.excelTd}>
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                className={styles.excelInputNarrow}
+                                placeholder="SGST"
+                                value={product.sgst || ''}
+                                onChange={(e) =>
+                                  handleProductChange(
+                                    product.id,
+                                    'sgst',
+                                    e.target.value
+                                  )
+                                }
+                                disabled={isLoading}
+                              />
+                            </td>
+                          </>
+                        )}
+                        <td className={styles.excelTd}>
                           <button
                             type="button"
                             className={styles.excelRemoveBtn}
@@ -2463,6 +2719,10 @@ export default function ProductRegistrationPage() {
                     ))}
                   </tbody>
                 </table>
+                <p className={styles.gridViewFootnote}>
+                  Optional rate tiers and custom reminders are editable in list
+                  view.
+                </p>
               </div>
             ) : (
               <div className={styles.productsList}>
