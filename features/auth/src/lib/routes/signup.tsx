@@ -1,4 +1,8 @@
-import { Header, SignupForm } from '@inventory-platform/ui';
+import {
+  FormKeyboardNavScope,
+  Header,
+  SignupForm,
+} from '@inventory-platform/ui';
 import styles from './signup.module.css';
 
 export function meta() {
@@ -13,9 +17,9 @@ export default function SignupPage() {
     <div className={styles.page}>
       <Header />
       <main className={styles.main}>
-        <div className={styles.container}>
+        <FormKeyboardNavScope className={styles.container}>
           <SignupForm />
-        </div>
+        </FormKeyboardNavScope>
       </main>
     </div>
   );

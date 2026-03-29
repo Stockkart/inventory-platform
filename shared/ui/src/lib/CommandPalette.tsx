@@ -7,6 +7,7 @@ import {
   DASHBOARD_HOTKEY,
   getQuickNavFooterHints,
 } from './dashboardHotkeys';
+import { KEYBOARD_NAV_SKIP } from './formKeyboardNav';
 import styles from './CommandPalette.module.css';
 
 type CommandPaletteProps = {
@@ -177,6 +178,7 @@ export function CommandPalette({
       role="dialog"
       aria-modal="true"
       aria-label="Go to page"
+      {...{ 'data-keyboard-nav': KEYBOARD_NAV_SKIP }}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}

@@ -8,6 +8,7 @@ import {
   parseRecordedFavoriteBinding,
   removeFavoritePageShortcut,
 } from './favoritePageShortcuts';
+import { KEYBOARD_NAV_SKIP } from './formKeyboardNav';
 import styles from './KeyboardShortcutsModal.module.css';
 
 type KeyboardShortcutsModalProps = {
@@ -128,6 +129,7 @@ export function KeyboardShortcutsModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="keyboard-shortcuts-title"
+      {...{ 'data-keyboard-nav': KEYBOARD_NAV_SKIP }}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}

@@ -1,4 +1,5 @@
 import {
+  FormKeyboardNavScope,
   Header,
   Hero,
   Stats,
@@ -25,11 +26,13 @@ export default function Index() {
     <div className={styles.page}>
       <Header />
       <main>
-        <Hero />
-        <Stats />
-        <Features />
-        <Pricing />
-        <CTA />
+        <FormKeyboardNavScope>
+          <Hero />
+          <Stats />
+          <Features />
+          <Pricing />
+          <CTA />
+        </FormKeyboardNavScope>
       </main>
       <Footer />
     </div>

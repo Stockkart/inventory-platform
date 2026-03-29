@@ -1,4 +1,4 @@
-import { Header, LoginForm } from '@inventory-platform/ui';
+import { FormKeyboardNavScope, Header, LoginForm } from '@inventory-platform/ui';
 import styles from './login.module.css';
 
 export function meta() {
@@ -13,9 +13,9 @@ export default function LoginPage() {
     <div className={styles.page}>
       <Header />
       <main className={styles.main}>
-        <div className={styles.container}>
+        <FormKeyboardNavScope className={styles.container}>
           <LoginForm />
-        </div>
+        </FormKeyboardNavScope>
       </main>
     </div>
   );

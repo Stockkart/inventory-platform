@@ -27,6 +27,12 @@ import {
 } from './favoritePageShortcuts';
 import type { FavoritePageShortcut } from './favoritePageShortcuts';
 import {
+  KEYBOARD_NAV_GRID,
+  KEYBOARD_NAV_SKIP,
+  runFormKeyboardNavigation,
+  shouldSkipGlobalMainKeyboardNav,
+} from './formKeyboardNav';
+import {
   Menu,
   Headphones,
   Phone,
@@ -72,6 +78,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   >(() => loadFavoritePageShortcuts());
 
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const mainContentRef = useRef<HTMLElement>(null);
 
   const modLabel = useMemo(() => getDashboardModLabel(), []);
 
@@ -427,7 +434,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </button>
 
           {supportOpen && (
-            <div className={styles.supportPanel}>
+            <div
+              className={styles.supportPanel}
+              {...{ 'data-keyboard-nav': KEYBOARD_NAV_SKIP }}
+            >
               {/* Phone */}
               <div className={styles.supportSection}>
                 <Phone size={14} className={styles.supportSectionIcon} />
@@ -620,7 +630,26 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
         </header>
 
-        <main className={styles.content}>{children}</main>
+        <main
+          ref={mainContentRef}
+          className={styles.content}
+          onKeyDownCapture={(e) => {
+            const mainEl = mainContentRef.current;
+            if (!mainEl) return;
+            const active = document.activeElement;
+            if (
+              active?.closest(
+                `[data-keyboard-nav="${KEYBOARD_NAV_GRID}"]`
+              )
+            ) {
+              return;
+            }
+            if (shouldSkipGlobalMainKeyboardNav(active)) return;
+            runFormKeyboardNavigation(e, mainEl, 'list');
+          }}
+        >
+          {children}
+        </main>
       </div>
     </div>
   );

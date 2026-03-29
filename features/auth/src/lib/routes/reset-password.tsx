@@ -1,4 +1,8 @@
-import { Header, ResetPasswordForm } from '@inventory-platform/ui';
+import {
+  FormKeyboardNavScope,
+  Header,
+  ResetPasswordForm,
+} from '@inventory-platform/ui';
 import styles from './login.module.css';
 
 export function meta() {
@@ -16,9 +20,9 @@ export default function ResetPasswordPage() {
     <div className={styles.page}>
       <Header />
       <main className={styles.main}>
-        <div className={styles.container}>
+        <FormKeyboardNavScope className={styles.container}>
           <ResetPasswordForm />
-        </div>
+        </FormKeyboardNavScope>
       </main>
     </div>
   );
