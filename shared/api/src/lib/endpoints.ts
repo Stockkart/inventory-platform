@@ -88,6 +88,12 @@ export const API_ENDPOINTS = {
     SEARCH: '/users/search',
   },
 
+  // Vendor purchase invoices (stock-in from vendors)
+  VENDOR_PURCHASE_INVOICES: {
+    BASE: '/vendor-purchase-invoices',
+    BY_ID: (id: string) => `/vendor-purchase-invoices/${id}`,
+  },
+
   // Inventory endpoints
   INVENTORY: {
     BASE: '/inventory',

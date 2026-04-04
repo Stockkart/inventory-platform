@@ -16,6 +16,8 @@ import type {
   VendorBusinessType,
   BulkCreateInventoryDto,
   ParseInvoiceItem,
+  ParsedVendorInvoiceDto,
+  VendorPurchaseInvoicePayload,
   PricingRate,
   UploadStatus,
   ItemType,
@@ -32,6 +34,77 @@ import {
 } from '@inventory-platform/ui';
 import { useNotify } from '@inventory-platform/store';
 import styles from './dashboard.product-registration.module.css';
+
+function optionalNumFromString(s: string): number | undefined {
+  const t = s.trim();
+  if (!t) return undefined;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+function roundMoney(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+function formatComputedAmount(n: number): string {
+  if (!Number.isFinite(n)) return '';
+  return String(roundMoney(n));
+}
+
+/** Parse GST rate from OCR strings like "9", "9%", " 9 ". */
+function parseGstPercent(rate: string | null | undefined): number {
+  if (rate == null) return 0;
+  const s = String(rate).trim().replace(/%/g, '');
+  if (!s) return 0;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function numOr0(v: number | null | undefined): number {
+  if (v == null) return 0;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/**
+ * Line subtotal = sum of qty × unit cost (costPrice, else priceToRetail).
+ * Tax total = sum over lines of (line base × (SGST% + CGST%) / 100), when rates are present.
+ * Assumes unit cost is pre-tax (typical B2B purchase); if OCR only gives inclusive amounts, totals are approximate.
+ */
+function computeVendorInvoiceTotalsFromParseItems(
+  items: ParseInvoiceItem[]
+): { lineSubTotal: number; taxTotal: number } {
+  let lineSubTotal = 0;
+  let taxTotal = 0;
+  for (const item of items) {
+    const qtyRaw = item.count;
+    const q =
+      qtyRaw != null && Number.isFinite(Number(qtyRaw))
+        ? Math.max(0, Number(qtyRaw))
+        : 0;
+    const cost =
+      item.costPrice != null ? Number(item.costPrice) : Number.NaN;
+    const ptr = Number(item.priceToRetail);
+    const unit =
+      Number.isFinite(cost) && cost > 0
+        ? cost
+        : Number.isFinite(ptr) && ptr > 0
+          ? ptr
+          : 0;
+    const lineBase = roundMoney(q * unit);
+    lineSubTotal += lineBase;
+    const sgst = parseGstPercent(item.sgst ?? undefined);
+    const cgst = parseGstPercent(item.cgst ?? undefined);
+    const pct = sgst + cgst;
+    if (pct > 0 && lineBase > 0) {
+      taxTotal += roundMoney(lineBase * (pct / 100));
+    }
+  }
+  return {
+    lineSubTotal: roundMoney(lineSubTotal),
+    taxTotal: roundMoney(taxTotal),
+  };
+}
 
 export function meta() {
   return [
@@ -113,13 +186,58 @@ export default function ProductRegistrationPage() {
     null
   );
 
-  const [lotId, setLotId] = useState('');
-  const [lotIdSearchQuery, setLotIdSearchQuery] = useState('');
-  const [lotIdSearchResults, setLotIdSearchResults] = useState<
-    { lotId: string; createdAt: string }[]
-  >([]);
-  const [isSearchingLots, setIsSearchingLots] = useState(false);
-  const [showLotIdDropdown, setShowLotIdDropdown] = useState(false);
+  const [vendorInvoiceNo, setVendorInvoiceNo] = useState('');
+  const [vendorInvoiceDate, setVendorInvoiceDate] = useState('');
+  const [vendorLineSubTotal, setVendorLineSubTotal] = useState('');
+  const [vendorTaxTotal, setVendorTaxTotal] = useState('');
+  const [vendorShippingCharge, setVendorShippingCharge] = useState('');
+  const [vendorOtherCharges, setVendorOtherCharges] = useState('');
+  const [vendorRoundOff, setVendorRoundOff] = useState('');
+  const [vendorInvoiceTotal, setVendorInvoiceTotal] = useState('');
+
+  /**
+   * Apply OCR header + optional line-derived totals. When `parsedItems` has
+   * rows, line subtotal, tax total, and invoice total are computed from items
+   * (and header shipping / other / round-off); header line/tax/invoice amounts
+   * are ignored in that case.
+   */
+  const applyParsedVendorInvoice = (
+    v: ParsedVendorInvoiceDto | null | undefined,
+    parsedItems?: ParseInvoiceItem[] | null
+  ) => {
+    const hasItems = parsedItems != null && parsedItems.length > 0;
+
+    if (v) {
+      if (v.invoiceNo) setVendorInvoiceNo(String(v.invoiceNo).trim());
+      if (v.invoiceDate) {
+        const raw = String(v.invoiceDate).trim();
+        setVendorInvoiceDate(raw.length >= 10 ? raw.slice(0, 10) : raw);
+      }
+      if (v.shippingCharge != null)
+        setVendorShippingCharge(String(v.shippingCharge));
+      if (v.otherCharges != null) setVendorOtherCharges(String(v.otherCharges));
+      if (v.roundOff != null) setVendorRoundOff(String(v.roundOff));
+      if (!hasItems) {
+        if (v.lineSubTotal != null) setVendorLineSubTotal(String(v.lineSubTotal));
+        if (v.taxTotal != null) setVendorTaxTotal(String(v.taxTotal));
+        if (v.invoiceTotal != null) setVendorInvoiceTotal(String(v.invoiceTotal));
+      }
+    }
+
+    if (hasItems) {
+      const { lineSubTotal, taxTotal } =
+        computeVendorInvoiceTotalsFromParseItems(parsedItems);
+      const shipping = numOr0(v?.shippingCharge);
+      const other = numOr0(v?.otherCharges);
+      const roundOff = numOr0(v?.roundOff);
+      const invoiceTotal = roundMoney(
+        lineSubTotal + taxTotal + shipping + other + roundOff
+      );
+      setVendorLineSubTotal(formatComputedAmount(lineSubTotal));
+      setVendorTaxTotal(formatComputedAmount(taxTotal));
+      setVendorInvoiceTotal(formatComputedAmount(invoiceTotal));
+    }
+  };
 
   // Take on credit (buyer owes vendor) - when true, ledger entry is created
   const [onCredit, setOnCredit] = useState<boolean>(false);
@@ -425,6 +543,10 @@ export default function ProductRegistrationPage() {
       if (response && response.items && response.items.length > 0) {
         const parsedProducts = response.items.map(transformParsedItemToProduct);
         setProducts(parsedProducts);
+        applyParsedVendorInvoice(
+          response.vendorPurchaseInvoice,
+          response.items
+        );
         notifySuccess(
           `✅ Successfully parsed invoice! Found ${response.totalItems} item(s).`
         );
@@ -526,6 +648,10 @@ export default function ProductRegistrationPage() {
                 transformParsedItemToProduct
               );
               setProducts(parsedProducts);
+              applyParsedVendorInvoice(
+                parsedResponse.vendorPurchaseInvoice,
+                parsedResponse.items
+              );
               notifySuccess(
                 `✅ Successfully parsed invoice! Found ${parsedResponse.totalItems} item(s).`
               );
@@ -653,6 +779,23 @@ export default function ProductRegistrationPage() {
       if (!selectedVendor || !selectedVendor.vendorId) {
         notifyError(
           'Vendor information is required. Please search and select a vendor.'
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      const trimmedInvNo = vendorInvoiceNo.trim();
+      const hasInvoiceExtra =
+        vendorInvoiceDate.trim() !== '' ||
+        optionalNumFromString(vendorLineSubTotal) !== undefined ||
+        optionalNumFromString(vendorTaxTotal) !== undefined ||
+        optionalNumFromString(vendorShippingCharge) !== undefined ||
+        optionalNumFromString(vendorOtherCharges) !== undefined ||
+        optionalNumFromString(vendorRoundOff) !== undefined ||
+        optionalNumFromString(vendorInvoiceTotal) !== undefined;
+      if (hasInvoiceExtra && !trimmedInvNo) {
+        notifyError(
+          'Enter the vendor invoice number, or clear all vendor invoice fields.'
         );
         setIsLoading(false);
         return;
@@ -975,14 +1118,34 @@ export default function ProductRegistrationPage() {
         };
       });
 
+      let vendorPurchaseInvoice: VendorPurchaseInvoicePayload | undefined;
+      if (trimmedInvNo) {
+        vendorPurchaseInvoice = { invoiceNo: trimmedInvNo };
+        if (vendorInvoiceDate.trim()) {
+          vendorPurchaseInvoice.invoiceDate = `${vendorInvoiceDate.trim()}T00:00:00.000Z`;
+        }
+        const ls = optionalNumFromString(vendorLineSubTotal);
+        if (ls !== undefined) vendorPurchaseInvoice.lineSubTotal = ls;
+        const tt = optionalNumFromString(vendorTaxTotal);
+        if (tt !== undefined) vendorPurchaseInvoice.taxTotal = tt;
+        const sh = optionalNumFromString(vendorShippingCharge);
+        if (sh !== undefined) vendorPurchaseInvoice.shippingCharge = sh;
+        const oc = optionalNumFromString(vendorOtherCharges);
+        if (oc !== undefined) vendorPurchaseInvoice.otherCharges = oc;
+        const ro = optionalNumFromString(vendorRoundOff);
+        if (ro !== undefined) vendorPurchaseInvoice.roundOff = ro;
+        const it = optionalNumFromString(vendorInvoiceTotal);
+        if (it !== undefined) vendorPurchaseInvoice.invoiceTotal = it;
+      }
+
       // Create bulk request
       const bulkData: BulkCreateInventoryDto = {
         vendorId: selectedVendor.vendorId,
         onCredit,
-        ...(lotId && { lotId }),
         ...(onCredit &&
           selectedVendor.userId &&
           selectedVendorShopId && { vendorShopId: selectedVendorShopId }),
+        ...(vendorPurchaseInvoice && { vendorPurchaseInvoice }),
         items,
       };
 
@@ -993,9 +1156,13 @@ export default function ProductRegistrationPage() {
         // The response should be BulkCreateInventoryResponse
         // Handle cases where the response structure might vary
         const createdCount =
-          response?.createdCount ?? response?.items?.length ?? 0;
-        const lotId = response?.lotId;
+          response?.createdCount ??
+          response?.totalCreated ??
+          response?.items?.length ??
+          0;
         const items = response?.items ?? [];
+        const savedVendorInvoiceId =
+          response?.vendorPurchaseInvoiceId ?? response?.lotId;
 
         // If we have items or a positive createdCount, consider it successful
         if (createdCount > 0 || items.length > 0) {
@@ -1013,18 +1180,25 @@ export default function ProductRegistrationPage() {
           notifySuccess(
             `Successfully registered ${
               createdCount || items.length
-            } product(s)! ${lotId ? `Lot ID: ${lotId}. ` : ''}${
-              itemDetails ? `Details: ${itemDetails}` : ''
-            }`
+            } product(s)! ${
+              savedVendorInvoiceId
+                ? `Stock-in ID: ${savedVendorInvoiceId}. `
+                : ''
+            }${itemDetails ? `Details: ${itemDetails}` : ''}`
           );
 
           // Clear form after 5 seconds
           setTimeout(() => {
             setProducts([]);
             handleClearVendor();
-            setLotId('');
-            setLotIdSearchQuery('');
-            setLotIdSearchResults([]);
+            setVendorInvoiceNo('');
+            setVendorInvoiceDate('');
+            setVendorLineSubTotal('');
+            setVendorTaxTotal('');
+            setVendorShippingCharge('');
+            setVendorOtherCharges('');
+            setVendorRoundOff('');
+            setVendorInvoiceTotal('');
             setSuccess(null);
           }, 5000);
         } else if (response) {
@@ -1032,15 +1206,24 @@ export default function ProductRegistrationPage() {
           // (API might return success without detailed counts)
           notifySuccess(
             `Successfully registered ${products.length} product(s)! ${
-              lotId ? `Lot ID: ${lotId}. ` : ''
+              (response?.vendorPurchaseInvoiceId ?? response?.lotId)
+                ? `Stock-in ID: ${
+                    response.vendorPurchaseInvoiceId ?? response.lotId
+                  }. `
+                : ''
             }`
           );
           setTimeout(() => {
             setProducts([]);
             handleClearVendor();
-            setLotId('');
-            setLotIdSearchQuery('');
-            setLotIdSearchResults([]);
+            setVendorInvoiceNo('');
+            setVendorInvoiceDate('');
+            setVendorLineSubTotal('');
+            setVendorTaxTotal('');
+            setVendorShippingCharge('');
+            setVendorOtherCharges('');
+            setVendorRoundOff('');
+            setVendorInvoiceTotal('');
             setSuccess(null);
           }, 5000);
         } else {
@@ -1216,6 +1399,14 @@ export default function ProductRegistrationPage() {
     setVendorShops([]);
     setSelectedVendorShopId('');
     setOnCredit(false);
+    setVendorInvoiceNo('');
+    setVendorInvoiceDate('');
+    setVendorLineSubTotal('');
+    setVendorTaxTotal('');
+    setVendorShippingCharge('');
+    setVendorOtherCharges('');
+    setVendorRoundOff('');
+    setVendorInvoiceTotal('');
     setVendorFormData({
       name: '',
       contactEmail: '',
@@ -1226,37 +1417,6 @@ export default function ProductRegistrationPage() {
     });
     setShowCustomBusinessType(false);
     setCustomBusinessType('');
-  };
-
-  const handleLotIdSearch = async () => {
-    if (!lotIdSearchQuery.trim()) {
-      return;
-    }
-
-    setIsSearchingLots(true);
-    setError(null);
-    try {
-      const response = await inventoryApi.searchLots(lotIdSearchQuery.trim());
-      const lots = response.data || [];
-      setLotIdSearchResults(
-        lots.map((lot) => ({ lotId: lot.lotId, createdAt: lot.createdAt }))
-      );
-      setShowLotIdDropdown(true);
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to search lots';
-      notifyError(errorMessage);
-      setLotIdSearchResults([]);
-    } finally {
-      setIsSearchingLots(false);
-    }
-  };
-
-  const handleSelectLotId = (selectedLotId: string) => {
-    setLotId(selectedLotId);
-    setLotIdSearchQuery(selectedLotId);
-    setShowLotIdDropdown(false);
-    setLotIdSearchResults([]);
   };
 
   // Convert ISO (UTC) → datetime-local (local time)
@@ -1276,8 +1436,8 @@ export default function ProductRegistrationPage() {
       <div className={styles.header}>
         <h2 className={styles.title}>Product Registration</h2>
         <p className={styles.subtitle}>
-          Register multiple products at once with shared vendor and lot
-          information
+          Register multiple products at once with shared vendor and stock-in
+          (invoice) information
         </p>
       </div>
 
@@ -1419,7 +1579,7 @@ export default function ProductRegistrationPage() {
             </div>
           </div>
 
-          {/* Shared Vendor and Lot ID Section */}
+          {/* Shared vendor & billing */}
           <div className={styles.sharedSection}>
             <h3 className={styles.sectionTitle}>Shared Information</h3>
             <div className={styles.sharedTopRow}>
@@ -1438,75 +1598,6 @@ export default function ProductRegistrationPage() {
                 <option value="REGULAR">REGULAR</option>
                 <option value="BASIC">BASIC</option>
               </select>
-            </div>
-            <div className={styles.sharedInfoGrid}>
-              {/* Lot ID */}
-              <div className={styles.formGroup}>
-                <label htmlFor="lotId" className={styles.label}>
-                  Lot ID (Optional)
-                </label>
-                <div className={styles.sharedFieldWrap}>
-                  <div className={styles.sharedInputRow}>
-                    <input
-                      type="text"
-                      id="lotId"
-                      className={`${styles.input} ${styles.sharedInputGrow}`}
-                      placeholder="Enter or search lot ID"
-                      value={lotIdSearchQuery}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                        setLotIdSearchQuery(e.target.value);
-                        setLotId(e.target.value);
-                        setShowLotIdDropdown(false);
-                      }}
-                      disabled={isLoading || isSearchingLots}
-                    />
-                    <button
-                      type="button"
-                      className={styles.searchBtn}
-                      onClick={handleLotIdSearch}
-                      disabled={
-                        isLoading || isSearchingLots || !lotIdSearchQuery.trim()
-                      }
-                    >
-                      {isSearchingLots ? 'Searching...' : 'Search'}
-                    </button>
-                  </div>
-                  {showLotIdDropdown && lotIdSearchResults.length > 0 && (
-                    <div className={styles.dropdown}>
-                      {lotIdSearchResults.map((lot) => {
-                        const formatDate = (dateString: string) => {
-                          try {
-                            const date = new Date(dateString);
-                            return date.toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            });
-                          } catch {
-                            return dateString;
-                          }
-                        };
-                        return (
-                          <div
-                            key={lot.lotId}
-                            className={styles.dropdownItem}
-                            onClick={() => handleSelectLotId(lot.lotId)}
-                          >
-                            <div className={styles.dropdownItemTitle}>
-                              {lot.lotId}
-                            </div>
-                            <div className={styles.dropdownItemSub}>
-                              {formatDate(lot.createdAt)}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
 
             {/* Vendor Section */}
@@ -1713,6 +1804,159 @@ export default function ProductRegistrationPage() {
                   </div>
                 </div>
               )}
+
+              <div
+                className={styles.vendorSection}
+                style={{ marginTop: '1.25rem' }}
+              >
+                <h4 className={styles.subsectionTitle}>
+                  Vendor purchase invoice (optional)
+                </h4>
+                <p
+                  className={styles.helperText}
+                  style={{ marginBottom: '0.75rem' }}
+                >
+                  Add the supplier&apos;s invoice number and amounts to keep a
+                  history of what was bought on each bill. Leave blank to
+                  register stock without an invoice record.
+                </p>
+                <div className={styles.sharedInfoGrid}>
+                  <div className={styles.formGroup}>
+                    <label htmlFor="vendorInvoiceNo" className={styles.label}>
+                      Invoice number
+                    </label>
+                    <input
+                      id="vendorInvoiceNo"
+                      type="text"
+                      className={styles.input}
+                      value={vendorInvoiceNo}
+                      onChange={(e) => setVendorInvoiceNo(e.target.value)}
+                      placeholder="e.g. INV-2024-001"
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label
+                      htmlFor="vendorInvoiceDate"
+                      className={styles.label}
+                    >
+                      Invoice date
+                    </label>
+                    <input
+                      id="vendorInvoiceDate"
+                      type="date"
+                      className={styles.input}
+                      value={vendorInvoiceDate}
+                      onChange={(e) => setVendorInvoiceDate(e.target.value)}
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label
+                      htmlFor="vendorLineSubTotal"
+                      className={styles.label}
+                    >
+                      Line subtotal
+                    </label>
+                    <input
+                      id="vendorLineSubTotal"
+                      type="text"
+                      inputMode="decimal"
+                      className={styles.input}
+                      value={vendorLineSubTotal}
+                      onChange={(e) => setVendorLineSubTotal(e.target.value)}
+                      placeholder="0"
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label htmlFor="vendorTaxTotal" className={styles.label}>
+                      Tax total
+                    </label>
+                    <input
+                      id="vendorTaxTotal"
+                      type="text"
+                      inputMode="decimal"
+                      className={styles.input}
+                      value={vendorTaxTotal}
+                      onChange={(e) => setVendorTaxTotal(e.target.value)}
+                      placeholder="0"
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label
+                      htmlFor="vendorShippingCharge"
+                      className={styles.label}
+                    >
+                      Shipping / delivery
+                    </label>
+                    <input
+                      id="vendorShippingCharge"
+                      type="text"
+                      inputMode="decimal"
+                      className={styles.input}
+                      value={vendorShippingCharge}
+                      onChange={(e) =>
+                        setVendorShippingCharge(e.target.value)
+                      }
+                      placeholder="0"
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label
+                      htmlFor="vendorOtherCharges"
+                      className={styles.label}
+                    >
+                      Other charges
+                    </label>
+                    <input
+                      id="vendorOtherCharges"
+                      type="text"
+                      inputMode="decimal"
+                      className={styles.input}
+                      value={vendorOtherCharges}
+                      onChange={(e) => setVendorOtherCharges(e.target.value)}
+                      placeholder="0"
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label htmlFor="vendorRoundOff" className={styles.label}>
+                      Round off
+                    </label>
+                    <input
+                      id="vendorRoundOff"
+                      type="text"
+                      inputMode="decimal"
+                      className={styles.input}
+                      value={vendorRoundOff}
+                      onChange={(e) => setVendorRoundOff(e.target.value)}
+                      placeholder="0"
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label
+                      htmlFor="vendorInvoiceTotal"
+                      className={styles.label}
+                    >
+                      Invoice total
+                    </label>
+                    <input
+                      id="vendorInvoiceTotal"
+                      type="text"
+                      inputMode="decimal"
+                      className={styles.input}
+                      value={vendorInvoiceTotal}
+                      onChange={(e) => setVendorInvoiceTotal(e.target.value)}
+                      placeholder="0"
+                      disabled={isLoading}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

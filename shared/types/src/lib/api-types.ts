@@ -669,25 +669,103 @@ export interface BulkCreateInventoryItem {
   defaultRate?: string | null;
 }
 
+/** Optional vendor invoice header on bulk stock-in. Omit for legacy behavior. */
+export interface VendorPurchaseInvoicePayload {
+  invoiceNo: string;
+  invoiceDate?: string | null;
+  lineSubTotal?: number | null;
+  taxTotal?: number | null;
+  shippingCharge?: number | null;
+  otherCharges?: number | null;
+  roundOff?: number | null;
+  invoiceTotal?: number | null;
+}
+
 export interface BulkCreateInventoryDto {
   vendorId: string;
   /** When true, record this purchase as credit (buyer owes vendor). */
   onCredit?: boolean | null;
   /** When vendor is a StockKart user and purchase is on credit, assign to vendor's shop. */
   vendorShopId?: string | null;
-  lotId?: string | null;
+  /** When set, persists invoice metadata and links created inventory rows. */
+  vendorPurchaseInvoice?: VendorPurchaseInvoicePayload | null;
   items: BulkCreateInventoryItem[];
 }
 
 export interface BulkCreateInventoryResponse {
-  success: boolean;
+  success?: boolean;
   lotId?: string | null;
-  createdCount: number;
+  /** Backend may expose createdCount (alias) or totalCreated */
+  createdCount?: number;
+  totalCreated?: number;
+  totalFailed?: number;
+  vendorPurchaseInvoiceId?: string | null;
   items: Array<{
     id: string;
+    lotId?: string;
     barcode: string;
     reminderCreated: boolean;
   }>;
+}
+
+/** Parsed optional header from invoice OCR (all fields optional). */
+export interface ParsedVendorInvoiceDto {
+  invoiceNo?: string | null;
+  invoiceDate?: string | null;
+  lineSubTotal?: number | null;
+  taxTotal?: number | null;
+  shippingCharge?: number | null;
+  otherCharges?: number | null;
+  roundOff?: number | null;
+  invoiceTotal?: number | null;
+}
+
+export interface VendorPurchaseInvoiceLineDto {
+  lineIndex: number;
+  name: string;
+  barcode: string | null;
+  count: number | null;
+  costPrice: number | null;
+  inventoryId: string | null;
+}
+
+export interface VendorPurchaseInvoiceSummary {
+  id: string;
+  vendorId: string;
+  invoiceNo: string;
+  invoiceDate: string | null;
+  invoiceTotal: number | null;
+  lineCount: number;
+  createdAt: string | null;
+  synthetic?: boolean | null;
+  legacyLotId?: string | null;
+}
+
+export interface VendorPurchaseInvoiceDetail {
+  id: string;
+  vendorId: string;
+  invoiceNo: string;
+  invoiceDate: string | null;
+  lineSubTotal: number | null;
+  taxTotal: number | null;
+  shippingCharge: number | null;
+  otherCharges: number | null;
+  roundOff: number | null;
+  invoiceTotal: number | null;
+  createdAt: string | null;
+  synthetic?: boolean | null;
+  legacyLotId?: string | null;
+  lines: VendorPurchaseInvoiceLineDto[];
+}
+
+export interface VendorPurchaseInvoiceListResponse {
+  invoices: VendorPurchaseInvoiceSummary[];
+  page: {
+    page: number;
+    size: number;
+    totalItems: number;
+    totalPages: number;
+  };
 }
 
 export interface ParseInvoiceItem {
@@ -730,6 +808,7 @@ export interface ParseInvoiceItem {
 export interface ParseInvoiceResponse {
   items: ParseInvoiceItem[];
   totalItems: number;
+  vendorPurchaseInvoice?: ParsedVendorInvoiceDto | null;
 }
 
 export interface InventoryItem {
@@ -750,6 +829,7 @@ export interface InventoryItem {
   expiryDate: string;
   shopId: string;
   vendorId?: string | null;
+  vendorPurchaseInvoiceId?: string | null;
   hsn?: string | null;
   sac?: string | null;
   batchNo?: string | null;
@@ -1768,6 +1848,7 @@ export interface UploadStatusResponse {
 export interface ParsedItemsResponse {
   items: ParseInvoiceItem[];
   totalItems: number;
+  vendorPurchaseInvoice?: ParsedVendorInvoiceDto | null;
 }
 
 // Pricing API types

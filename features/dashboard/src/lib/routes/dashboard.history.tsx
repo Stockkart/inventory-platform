@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router';
 import { PurchaseList, RefundHistoryList } from '@inventory-platform/ui';
 import styles from './dashboard.history.module.css';
 
@@ -45,6 +46,9 @@ export default function HistoryPage() {
         >
           Refund History
         </button>
+        <Link to="/dashboard/vendor-invoices" className={styles.tab}>
+          Vendor stock-in
+        </Link>
       </div>
 
       <div className={styles.content}>

@@ -12,6 +12,8 @@ import type {
   ParseInvoiceResponse,
   UpdateInventoryRequest,
   InventoryItem,
+  VendorPurchaseInvoiceDetail,
+  VendorPurchaseInvoiceListResponse,
 } from '@inventory-platform/types';
 import axios from 'axios';
 
@@ -164,5 +166,27 @@ export const inventoryApi = {
     );
 
     return response.data.data;
+  },
+
+  listVendorPurchaseInvoices: async (
+    page = 0,
+    size = 20
+  ): Promise<VendorPurchaseInvoiceListResponse> => {
+    const response = await apiClient.get<
+      ApiResponse<VendorPurchaseInvoiceListResponse>
+    >(API_ENDPOINTS.VENDOR_PURCHASE_INVOICES.BASE, {
+      page: String(page),
+      size: String(size),
+    });
+    return response.data;
+  },
+
+  getVendorPurchaseInvoice: async (
+    id: string
+  ): Promise<VendorPurchaseInvoiceDetail> => {
+    const response = await apiClient.get<
+      ApiResponse<VendorPurchaseInvoiceDetail>
+    >(API_ENDPOINTS.VENDOR_PURCHASE_INVOICES.BY_ID(id));
+    return response.data;
   },
 };

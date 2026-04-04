@@ -38,6 +38,9 @@
   cursor: pointer;
   transition: all 0.2s;
   margin-bottom: -2px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
 }
 
 .tab:hover {

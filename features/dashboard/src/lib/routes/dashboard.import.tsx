@@ -41,7 +41,6 @@ export default function ImportPage() {
   const [vendorSearchResults, setVendorSearchResults] = useState<Vendor[]>([]);
   const [_isSearchingVendor, setIsSearchingVendor] = useState(false);
   const [showVendorDropdown, setShowVendorDropdown] = useState(false);
-  const [lotId, setLotId] = useState('');
   const [onCredit, _setOnCredit] = useState(false);
   const [selectedVendorShopId, _setSelectedVendorShopId] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -162,7 +161,6 @@ export default function ImportPage() {
       const bulkData: BulkCreateInventoryDto = {
         vendorId: selectedVendor.vendorId,
         onCredit,
-        ...(lotId && { lotId }),
         ...(onCredit &&
           selectedVendor.userId &&
           selectedVendorShopId && { vendorShopId: selectedVendorShopId }),
@@ -170,15 +168,13 @@ export default function ImportPage() {
       };
       const response = await inventoryApi.createBulk(bulkData);
       const created = response?.createdCount ?? response?.items?.length ?? 0;
+      const regId = response?.vendorPurchaseInvoiceId ?? response?.lotId;
       notifySuccess(
-        `Imported ${created} items! ${
-          response?.lotId ? `Lot ID: ${response.lotId}` : ''
-        }`
+        `Imported ${created} items!${regId ? ` Stock-in ID: ${regId}` : ''}`
       );
       setImportTableItems([]);
       setSelectedVendor(null);
       setVendorSearchQuery('');
-      setLotId('');
     } catch (err) {
       notifyError(err instanceof Error ? err.message : 'Failed to import');
     } finally {
@@ -510,7 +506,7 @@ export default function ImportPage() {
             </div>
 
             <div className={styles.sharedSection}>
-              <h3>Vendor & Lot</h3>
+              <h3>Vendor</h3>
               <div className={styles.sharedRow}>
                 <select
                   value={billingMode}
@@ -542,12 +538,6 @@ export default function ImportPage() {
                     Search
                   </button>
                 </div>
-                <input
-                  type="text"
-                  placeholder="Lot ID (optional)"
-                  value={lotId}
-                  onChange={(e) => setLotId(e.target.value)}
-                />
               </div>
               {showVendorDropdown && vendorSearchResults.length > 0 && (
                 <ul className={styles.vendorList}>

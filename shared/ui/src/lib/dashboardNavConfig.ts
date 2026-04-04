@@ -67,6 +67,11 @@ export const DASHBOARD_MENU_GROUPS: DashboardMenuGroup[] = [
       },
       { path: '/dashboard/taxes', label: 'Taxes', icon: '📋' },
       { path: '/dashboard/history', label: 'History', icon: '📜' },
+      {
+        path: '/dashboard/vendor-invoices',
+        label: 'Vendor invoices',
+        icon: '🧾',
+      },
     ],
   },
   {
