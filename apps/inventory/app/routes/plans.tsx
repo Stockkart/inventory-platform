@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { plansApi } from '@inventory-platform/api';
-import { PlanGrid, Header, Footer } from '@inventory-platform/ui';
+import {
+  FormKeyboardNavScope,
+  PlanGrid,
+  Header,
+  Footer,
+} from '@inventory-platform/ui';
 import { useAuthStore } from '@inventory-platform/store';
 import styles from './plans.module.css';
 
@@ -50,7 +55,7 @@ export default function PlansPage() {
     <div className={styles.page}>
       <Header />
       <main className={styles.main}>
-        <div className={styles.container}>
+        <FormKeyboardNavScope className={styles.container}>
           <header className={styles.header}>
             <Link to="/" className={styles.backLink}>
               ← Back to home
@@ -77,7 +82,7 @@ export default function PlansPage() {
               showTrialBadge
             />
           )}
-        </div>
+        </FormKeyboardNavScope>
       </main>
       <Footer />
     </div>

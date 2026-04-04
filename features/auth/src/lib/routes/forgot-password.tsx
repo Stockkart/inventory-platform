@@ -1,4 +1,8 @@
-import { Header, ForgotPasswordForm } from '@inventory-platform/ui';
+import {
+  FormKeyboardNavScope,
+  Header,
+  ForgotPasswordForm,
+} from '@inventory-platform/ui';
 import styles from './login.module.css';
 
 export function meta() {
@@ -16,9 +20,9 @@ export default function ForgotPasswordPage() {
     <div className={styles.page}>
       <Header />
       <main className={styles.main}>
-        <div className={styles.container}>
+        <FormKeyboardNavScope className={styles.container}>
           <ForgotPasswordForm />
-        </div>
+        </FormKeyboardNavScope>
       </main>
     </div>
   );

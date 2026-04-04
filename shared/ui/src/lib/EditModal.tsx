@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { FormKeyboardNavScope } from './FormKeyboardNavScope';
 import styles from './forms.module.css';
 
 interface EditModalProps {
@@ -24,7 +25,12 @@ export function EditModal({
 }: EditModalProps) {
   return (
     <div className={styles.modalBackdrop} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+      <div
+        className={styles.modal}
+        role="dialog"
+        aria-modal="true"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className={styles.modalHeader}>
           <h2 className={styles.modalTitle}>{title}</h2>
           <button type="button" className={styles.closeBtn} onClick={onClose}>
@@ -32,7 +38,7 @@ export function EditModal({
           </button>
         </div>
         {error && <div className={styles.modalError}>{error}</div>}
-        <div className={styles.modalBody}>
+        <FormKeyboardNavScope className={styles.modalBody}>
           {children}
           <div className={styles.formActions}>
             <button
@@ -52,7 +58,7 @@ export function EditModal({
               {saving ? 'Saving…' : saveLabel}
             </button>
           </div>
-        </div>
+        </FormKeyboardNavScope>
       </div>
     </div>
   );

@@ -393,7 +393,8 @@
 }
 
 @keyframes sparkle {
-  0%, 100% {
+  0%,
+  100% {
     transform: scale(1) rotate(0deg);
     opacity: 1;
   }
@@ -844,7 +845,11 @@
   align-items: center;
   gap: 1rem;
   padding: 1rem 1.25rem;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.1) 0%,
+    rgba(6, 182, 212, 0.1) 100%
+  );
   border: 2px solid #3b82f6;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
@@ -898,6 +903,220 @@
 
 .productsHeader .sectionTitle {
   margin-bottom: 0;
+}
+
+.productsHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* View toggle: List / Grid */
+.viewToggleWrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.viewToggleLabel {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.viewToggleButtons {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.viewToggleBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+}
+
+.viewToggleBtn:hover {
+  border-color: #94a3b8;
+  color: var(--text-primary);
+}
+
+.viewToggleBtnActive {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  font-weight: 500;
+}
+
+.keyboardNavHint {
+  margin: 0.35rem 0 0.75rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.keyboardNavHintLabel {
+  font-weight: 600;
+  color: var(--text-tertiary);
+}
+
+.kbdInline {
+  font-family: ui-monospace, monospace;
+  font-size: 0.72em;
+  padding: 0.08rem 0.28rem;
+  border-radius: 3px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Excel-style grid table */
+.excelTableWrap {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 70vh;
+  margin-top: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.excelTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  background: var(--bg-primary);
+}
+
+.excelTh {
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  font-weight: 600;
+  background: #e2e8f0;
+  border: 1px solid #cbd5e1;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.excelTr {
+  transition: background 0.15s;
+}
+
+.excelTr:nth-child(even) {
+  background: #f8fafc;
+}
+
+.excelTr:hover {
+  background: #f1f5f9;
+}
+
+.excelTd {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #e2e8f0;
+  vertical-align: middle;
+}
+
+.excelInput {
+  width: 100%;
+  min-width: 90px;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+.excelInput:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.excelInputNarrow {
+  width: 60px;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+.excelInputNarrow:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.excelInputDate {
+  min-width: 115px;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+.excelInputDate:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.excelSelect {
+  width: 100%;
+  min-width: 7.5rem;
+  max-width: 11rem;
+  padding: 0.3rem 0.35rem;
+  font-size: 0.8rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.excelSelect:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.excelRemoveBtn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  border: 1px solid #f87171;
+  background: #fef2f2;
+  color: #dc2626;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.excelRemoveBtn:hover:not(:disabled) {
+  background: #fee2e2;
+}
+
+.excelCellDash {
+  display: inline-block;
+  min-width: 1.25rem;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.gridViewFootnote {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: #64748b;
 }
 
 .addProductBtn {
@@ -1064,7 +1283,11 @@
   margin-top: 0;
   padding: 2rem;
   border-top: 1px solid var(--border-color);
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.03) 0%, rgba(6, 182, 212, 0.03) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.03) 0%,
+    rgba(6, 182, 212, 0.03) 100%
+  );
   border-radius: 12px;
   border: 1px solid var(--border-color);
   margin-bottom: 0;
@@ -1258,13 +1481,22 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(59, 130, 246, 0.1),
+    transparent
+  );
   transition: left 0.5s;
 }
 
 .fileInputLabel:hover:not(:disabled) {
   border-color: #3b82f6;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(6, 182, 212, 0.05) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.05) 0%,
+    rgba(6, 182, 212, 0.05) 100%
+  );
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
 }
@@ -1314,7 +1546,11 @@
   padding: 1rem;
   border: 2px solid var(--border-color);
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.08) 0%,
+    rgba(6, 182, 212, 0.08) 100%
+  );
   color: var(--text-primary);
   font-size: 1rem;
   font-weight: 500;
@@ -1334,13 +1570,22 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.1), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(59, 130, 246, 0.1),
+    transparent
+  );
   transition: left 0.5s;
 }
 
 .qrUploadBtn:hover:not(:disabled) {
   border-color: #3b82f6;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(6, 182, 212, 0.15) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.15) 0%,
+    rgba(6, 182, 212, 0.15) 100%
+  );
   transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(59, 130, 246, 0.2);
 }
@@ -1377,7 +1622,6 @@
   color: var(--text-secondary);
   font-weight: 400;
 }
-
 
 .uploadBtn:disabled {
   opacity: 0.6;

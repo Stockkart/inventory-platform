@@ -901,10 +901,206 @@
   margin-bottom: 1.5rem;
 }
 
+/* View toggle: List / Grid */
+.viewToggleWrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-shrink: 0;
+}
+
+.viewToggleLabel {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.viewToggleButtons {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.viewToggleBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+}
+
+.viewToggleBtn:hover {
+  border-color: #94a3b8;
+  color: var(--text-primary);
+}
+
+.viewToggleBtnActive {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  font-weight: 500;
+}
+
 .cartItems {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+/* Grid view: Excel-style table */
+.cartItemsExcel {
+  overflow: auto;
+}
+
+.excelTableWrap {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+.excelTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  background: var(--bg-primary);
+}
+
+.excelTh {
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  font-weight: 600;
+  background: #e2e8f0;
+  border: 1px solid #cbd5e1;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.excelTable td:nth-child(4) .excelCellInput input {
+  width: 35px;
+  min-width: 35px;
+  /* padding: 2px 4px; */
+}
+
+.excelTable td:nth-child(5) select {
+  width: 60px;
+  min-width: 60px;
+}
+
+.excelTr {
+  transition: background 0.15s;
+}
+
+.excelTr:nth-child(even) {
+  background: #f8fafc;
+}
+
+.excelTr:hover {
+  background: #f1f5f9;
+}
+
+.excelTd {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #e2e8f0;
+  vertical-align: middle;
+}
+
+.excelProductBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-align: left;
+}
+
+.excelProductBtn:hover {
+  color: #3b82f6;
+}
+
+.excelCellInput {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.excelCellInput .qtyInput {
+  width: 50px;
+  padding: 0.25rem 0.35rem;
+  font-size: 0.8rem;
+}
+
+.excelCellInput .qtyBtn {
+  padding: 0.2rem 0.4rem;
+  font-size: 0.9rem;
+}
+
+.excelSelect {
+  padding: 0.25rem 0.4rem;
+  font-size: 0.8rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  min-width: 70px;
+}
+
+.excelPriceCell {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.excelPriceCell .itemSellingPriceInput,
+.excelPriceCell input[type='number'] {
+  width: 70px;
+  padding: 0.25rem 0.4rem;
+  font-size: 0.8rem;
+}
+
+.excelRateSelect {
+  padding: 0.2rem 0.35rem;
+  font-size: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  max-width: 90px;
+}
+
+.excelRemoveBtn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  border: 1px solid #f87171;
+  background: #fef2f2;
+  color: #dc2626;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.excelRemoveBtn:hover:not(:disabled) {
+  background: #fee2e2;
+}
+
+.excelTd .itemAdditionalInput {
+  width: 55px;
+  padding: 0.25rem 0.35rem;
+  font-size: 0.8rem;
+}
+
+.excelTd .itemSchemeInputs {
+  gap: 0.2rem;
+}
+
+.excelTd .itemSchemeInputs input,
+.excelTd .itemSchemeInputs .itemAdditionalInput {
+  width: 45px;
+  padding: 0.2rem 0.3rem;
+  font-size: 0.75rem;
 }
 
 .cartItem {
@@ -1003,7 +1199,6 @@
   font-weight: 700;
   letter-spacing: 0.03em;
 }
-
 
 .itemDiscount {
   font-size: 0.8rem;
@@ -1490,7 +1685,8 @@
   max-height: calc(100vh - 200px);
   display: flex;
   flex-direction: column;
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 .detailModalHeader {
@@ -1500,7 +1696,11 @@
   align-items: center;
   padding: 1.5rem 1.75rem;
   border-bottom: 1px solid var(--border-color);
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(6, 182, 212, 0.05));
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.05),
+    rgba(6, 182, 212, 0.05)
+  );
 }
 
 .detailModalHeaderContent {
@@ -1653,7 +1853,11 @@
 }
 
 .detailModalPricingCard {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(6, 182, 212, 0.08));
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.08),
+    rgba(6, 182, 212, 0.08)
+  );
   border: 1px solid rgba(59, 130, 246, 0.2);
   display: flex;
   align-items: flex-start;
@@ -1663,7 +1867,11 @@
 }
 
 .detailModalPricingCard:hover {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(6, 182, 212, 0.12));
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.12),
+    rgba(6, 182, 212, 0.12)
+  );
   border-color: rgba(59, 130, 246, 0.4);
 }
 
@@ -1697,4 +1905,30 @@
 
 .editPriceLink:hover {
   text-decoration: underline;
+}
+
+.compareCell {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  font-size: 0.8rem;
+}
+
+.compareTop {
+  color: #64748b;
+}
+
+.compareBottom {
+  font-weight: 600;
+  color: #0f172a;
+}
+.itemSaleRowInline {
+  display: flex;
+  gap: 3rem;
+  align-items: flex-end;
+}
+
+.itemSaleRowInline .itemFieldGroup {
+  flex: 1;
+  min-width: 80px;
 }

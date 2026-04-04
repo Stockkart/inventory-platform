@@ -17,6 +17,10 @@ import type {
 } from '@inventory-platform/types';
 import styles from './dashboard.scan-sell.module.css';
 import { useNotify } from '@inventory-platform/store';
+import {
+  isScanSellHidePurchaseKey,
+  shouldSkipScanSellHidePurchaseKey,
+} from '@inventory-platform/ui';
 
 export function meta() {
   return [
@@ -433,6 +437,20 @@ export default function ScanSellPage() {
   const [additionalDiscountOverrides, setAdditionalDiscountOverrides] =
     useState<Record<string, number | null>>({});
   const [detailModalItem, setDetailModalItem] = useState<CartItem | null>(null);
+  const [cartViewMode, setCartViewMode] = useState<'list' | 'grid'>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('scan-sell-view-mode');
+      if (stored === 'list' || stored === 'grid') return stored;
+    }
+    return 'list';
+  });
+  /** When true, purchase scheme / purchase add. discount read-only rows are hidden in cart (sale inputs stay). */
+  const [hidePurchaseDetailsInSell, setHidePurchaseDetailsInSell] = useState(
+    () => {
+      if (typeof window === 'undefined') return false;
+      return localStorage.getItem('scan-sell-hide-purchase-details') === '1';
+    }
+  );
   const [pricingCache, setPricingCache] = useState<
     Record<string, PricingResponse>
   >({});
@@ -505,6 +523,24 @@ export default function ScanSellPage() {
       loadPricingRef.current(pricingId ?? undefined, invId);
     });
   }, [cartItemIds, cartItems, inventoryToPricingId]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!isScanSellHidePurchaseKey(e)) return;
+      if (shouldSkipScanSellHidePurchaseKey(document.activeElement)) return;
+      e.preventDefault();
+      setHidePurchaseDetailsInSell((v) => {
+        const next = !v;
+        localStorage.setItem(
+          'scan-sell-hide-purchase-details',
+          next ? '1' : '0'
+        );
+        return next;
+      });
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   const normalizeBillingMode = useCallback(
     (mode?: BillingMode | null): BillingMode =>
@@ -1906,11 +1942,314 @@ export default function ScanSellPage() {
               )}
             </div>
 
-            <div className={styles.cartItems}>
+            {/* View toggle: List (default) / Grid */}
+            {cartItems.length > 0 && (
+              <div className={styles.viewToggleWrap}>
+                <span className={styles.viewToggleLabel}>View:</span>
+                <div
+                  className={styles.viewToggleButtons}
+                  role="group"
+                  aria-label="Cart view mode"
+                >
+                  <button
+                    type="button"
+                    className={`${styles.viewToggleBtn} ${
+                      cartViewMode === 'list' ? styles.viewToggleBtnActive : ''
+                    }`}
+                    onClick={() => {
+                      setCartViewMode('list');
+                      localStorage.setItem('scan-sell-view-mode', 'list');
+                    }}
+                    title="List view"
+                    aria-pressed={cartViewMode === 'list'}
+                  >
+                    <span aria-hidden>☰</span> List
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.viewToggleBtn} ${
+                      cartViewMode === 'grid' ? styles.viewToggleBtnActive : ''
+                    }`}
+                    onClick={() => {
+                      setCartViewMode('grid');
+                      localStorage.setItem('scan-sell-view-mode', 'grid');
+                    }}
+                    title="Grid view"
+                    aria-pressed={cartViewMode === 'grid'}
+                  >
+                    <span aria-hidden>⊞</span> Grid
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div
+              className={`${styles.cartItems} ${
+                cartViewMode === 'grid' ? styles.cartItemsExcel : ''
+              }`}
+            >
               {isLoadingCart ? (
                 <div className={styles.loading}>Loading cart...</div>
               ) : cartItems.length === 0 ? (
                 <div className={styles.emptyCart}>Cart is empty</div>
+              ) : cartViewMode === 'grid' ? (
+                <div className={styles.excelTableWrap}>
+                  <table className={styles.excelTable}>
+                    <thead>
+                      <tr>
+                        <th className={styles.excelTh}>#</th>
+                        <th className={styles.excelTh}>Product</th>
+                        <th className={styles.excelTh}>Company</th>
+                        <th className={styles.excelTh}>Qty</th>
+                        <th className={styles.excelTh}>Unit</th>
+                        <th className={styles.excelTh}>Price</th>
+                        <th className={styles.excelTh}>Discount</th>
+                        <th className={styles.excelTh}>Scheme</th>
+                        <th className={styles.excelTh}>Total</th>
+                        <th className={styles.excelTh}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {cartItems.map((cartItem, idx) => {
+                        const isBaseUnitSelected =
+                          (cartItem.inventoryItem.baseUnit != null &&
+                            cartItem.unit ===
+                              cartItem.inventoryItem.baseUnit) ||
+                          cartItem.availableUnits.some(
+                            (u) => u.baseUnit && u.unit === cartItem.unit
+                          );
+                        const quantityInputValue = isBaseUnitSelected
+                          ? cartItem.baseQuantity
+                          : cartItem.quantity;
+                        const lineTotal = cartItem.price * cartItem.quantity;
+                        const formatPrice = (n: number) =>
+                          new Intl.NumberFormat('en-IN', {
+                            style: 'currency',
+                            currency: 'INR',
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          }).format(n);
+                        const pricingId =
+                          cartItem.inventoryItem.pricingId ??
+                          inventoryToPricingId[cartItem.inventoryItem.id];
+                        const pricing = pricingId
+                          ? pricingCache[pricingId]
+                          : undefined;
+                        const rateOpts = getRateOptions(
+                          cartItem.inventoryItem,
+                          pricing
+                        );
+                        const showRateDropdown =
+                          pricingId ||
+                          cartItem.inventoryItem.id ||
+                          rateOpts.length > 1;
+                        const matched = rateOpts.find(
+                          (o) => Math.abs(o.price - cartItem.price) < 0.01
+                        );
+                        const isLoading =
+                          pricingLoading[pricingId ?? ''] ||
+                          pricingLoading[`inv:${cartItem.inventoryItem.id}`];
+                        return (
+                          <tr
+                            key={cartItem.inventoryItem.id}
+                            className={styles.excelTr}
+                          >
+                            <td className={styles.excelTd}>{idx + 1}</td>
+                            <td className={styles.excelTd}>
+                              <button
+                                type="button"
+                                className={styles.excelProductBtn}
+                                onClick={() => setDetailModalItem(cartItem)}
+                              >
+                                {cartItem.inventoryItem.name || '—'}
+                              </button>
+                            </td>
+                            <td className={styles.excelTd}>
+                              {cartItem.inventoryItem.companyName || '—'}
+                            </td>
+                            <td className={styles.excelTd}>
+                              <div className={styles.excelCellInput}>
+                                <CartQuantityInput
+                                  value={quantityInputValue}
+                                  disabled={isUpdatingCart}
+                                  onCommit={async (newQty) => {
+                                    const delta = newQty - quantityInputValue;
+                                    if (delta !== 0) {
+                                      await handleUpdateQuantity(
+                                        cartItem.inventoryItem.id,
+                                        delta,
+                                        isBaseUnitSelected
+                                      );
+                                    }
+                                  }}
+                                />
+                              </div>
+                            </td>
+                            <td className={styles.excelTd}>
+                              <select
+                                className={styles.excelSelect}
+                                value={cartItem.unit}
+                                onChange={(e) =>
+                                  handleUnitChange(
+                                    cartItem.inventoryItem.id,
+                                    e.currentTarget.value
+                                  )
+                                }
+                                disabled={isUpdatingCart}
+                              >
+                                {(cartItem.availableUnits.length > 0
+                                  ? cartItem.availableUnits
+                                  : [{ unit: cartItem.unit, baseUnit: false }]
+                                ).map((uo) => (
+                                  <option
+                                    key={`${uo.unit}-${uo.baseUnit}`}
+                                    value={uo.unit}
+                                  >
+                                    {uo.unit}
+                                    {uo.baseUnit ? ' (base)' : ''}
+                                  </option>
+                                ))}
+                              </select>
+                            </td>
+                            <td className={styles.excelTd}>
+                              <div className={styles.excelPriceCell}>
+                                <CartSellingPriceInput
+                                  value={cartItem.price}
+                                  onCommit={(n) =>
+                                    handleSellingPriceChange(
+                                      cartItem.inventoryItem.id,
+                                      n
+                                    )
+                                  }
+                                  disabled={isUpdatingCart}
+                                />
+                                {showRateDropdown && (
+                                  <select
+                                    className={styles.excelRateSelect}
+                                    value={
+                                      matched ? matched.label : '__custom__'
+                                    }
+                                    onChange={(e) => {
+                                      const sel = e.target.value;
+                                      if (sel === '__custom__') return;
+                                      const opt = rateOpts.find(
+                                        (o) => o.label === sel
+                                      );
+                                      if (opt)
+                                        handleSellingPriceChange(
+                                          cartItem.inventoryItem.id,
+                                          opt.price
+                                        );
+                                    }}
+                                    onMouseDown={() =>
+                                      loadPricingOnDropdownClick(
+                                        cartItem.inventoryItem.pricingId ??
+                                          undefined,
+                                        cartItem.inventoryItem.id
+                                      )
+                                    }
+                                    disabled={isUpdatingCart || isLoading}
+                                  >
+                                    <option value="__custom__">Custom</option>
+                                    {rateOpts.map((opt) => (
+                                      <option
+                                        key={`${opt.label}-${opt.price}`}
+                                        value={opt.label}
+                                      >
+                                        {opt.label} ({formatPrice(opt.price)})
+                                      </option>
+                                    ))}
+                                  </select>
+                                )}
+                              </div>
+                            </td>
+                            <td className={styles.excelTd}>
+                              <div className={styles.compareCell}>
+                                {!hidePurchaseDetailsInSell && (
+                                  <div className={styles.compareTop}>
+                                    {(() => {
+                                      const v = getPurchaseAdditionalDiscount(
+                                        cartItem.inventoryItem
+                                      );
+                                      return v != null ? `${v}%` : '—';
+                                    })()}
+                                  </div>
+                                )}
+
+                                <div className={styles.compareBottom}>
+                                  <CartAdditionalDiscountInput
+                                    value={getEffectiveAdditionalDiscount(
+                                      cartItem.inventoryItem.id,
+                                      cartItem
+                                    )}
+                                    onCommit={(n) =>
+                                      handleAdditionalDiscountChange(
+                                        cartItem.inventoryItem.id,
+                                        n
+                                      )
+                                    }
+                                    disabled={isUpdatingCart}
+                                  />
+                                </div>
+                              </div>
+                            </td>
+                            <td className={styles.excelTd}>
+                              <div className={styles.compareCell}>
+                                {!hidePurchaseDetailsInSell && (
+                                  <div className={styles.compareTop}>
+                                    {formatPurchaseSchemeLabel(
+                                      cartItem.inventoryItem
+                                    )}
+                                  </div>
+                                )}
+
+                                <div className={styles.compareBottom}>
+                                  <CartSchemeInput
+                                    schemeType={cartItem.schemeType ?? null}
+                                    payFor={cartItem.schemePayFor ?? null}
+                                    free={cartItem.schemeFree ?? null}
+                                    percentage={
+                                      cartItem.schemePercentage ?? null
+                                    }
+                                    onCommitUnits={(pf, f) =>
+                                      handleSchemeChange(
+                                        cartItem.inventoryItem.id,
+                                        pf,
+                                        f
+                                      )
+                                    }
+                                    onCommitPercentage={(p) =>
+                                      handleSchemePercentageChange(
+                                        cartItem.inventoryItem.id,
+                                        p
+                                      )
+                                    }
+                                    disabled={isUpdatingCart}
+                                  />
+                                </div>
+                              </div>
+                            </td>
+                            <td className={styles.excelTd}>
+                              {formatPrice(lineTotal)}
+                            </td>
+                            <td className={styles.excelTd}>
+                              <button
+                                type="button"
+                                className={styles.excelRemoveBtn}
+                                onClick={() =>
+                                  handleRemoveItem(cartItem.inventoryItem.id)
+                                }
+                                disabled={isUpdatingCart}
+                              >
+                                Remove
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               ) : (
                 cartItems.map((cartItem) =>
                   (() => {
@@ -2080,104 +2419,161 @@ export default function ScanSellPage() {
                                   </span>
                                 </div>
                               </div>
-                              <div className={styles.itemPurchaseRow}>
-                                <div className={styles.itemFieldGroup}>
-                                  <label
-                                    className={styles.itemFieldLabel}
-                                    title="From product registration"
-                                  >
-                                    Purchase add. discount
-                                  </label>
-                                  <div className={styles.itemFieldInputWrap}>
-                                    <span
-                                      className={styles.itemFieldReadOnly}
-                                      aria-readonly="true"
+                              {/* {cartViewMode === 'list' ? (
+                                <div className={styles.itemPurchaseRow}>
+                                  <div className={styles.itemFieldGroup}>
+                                    <label
+                                      className={styles.itemFieldLabel}
+                                      title="From product registration"
                                     >
+                                      Purchase add. discount
+                                    </label>
+                                    <div className={styles.itemFieldInputWrap}>
+                                      <span
+                                        className={styles.itemFieldReadOnly}
+                                        aria-readonly="true"
+                                      >
+                                        {(() => {
+                                          const v =
+                                            getPurchaseAdditionalDiscount(
+                                              cartItem.inventoryItem
+                                            );
+                                          return v != null ? `${v}%` : '—';
+                                        })()}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className={styles.itemFieldGroup}>
+                                    <label
+                                      className={styles.itemFieldLabel}
+                                      title="From product registration"
+                                    >
+                                      Purchase scheme/deal
+                                    </label>
+                                    <div className={styles.itemFieldInputWrap}>
+                                      <span
+                                        className={styles.itemFieldReadOnly}
+                                        aria-readonly="true"
+                                      >
+                                        {formatPurchaseSchemeLabel(
+                                          cartItem.inventoryItem
+                                        )}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div
+                                  className={styles.itemPurchaseHoverWrap}
+                                  title="Hover to see purchase details"
+                                >
+                                  <span
+                                    className={styles.itemPurchaseHoverTrigger}
+                                  >
+                                    ℹ Purchase details
+                                  </span>
+                                  <div
+                                    className={styles.itemPurchaseHoverPopup}
+                                  >
+                                    <div
+                                      className={styles.itemPurchaseHoverRow}
+                                    >
+                                      <span>Purchase add. discount:</span>
+                                      <span>
+                                        {(() => {
+                                          const v =
+                                            getPurchaseAdditionalDiscount(
+                                              cartItem.inventoryItem
+                                            );
+                                          return v != null ? `${v}%` : '—';
+                                        })()}
+                                      </span>
+                                    </div>
+                                    <div
+                                      className={styles.itemPurchaseHoverRow}
+                                    >
+                                      <span>Purchase scheme/deal:</span>
+                                      <span>
+                                        {formatPurchaseSchemeLabel(
+                                          cartItem.inventoryItem
+                                        )}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              )} */}
+                              {/* <div className={styles.itemSaleRow}>
+                                <div className={styles.itemFieldGroup}>
+                                  <label className={styles.itemFieldLabel}>
+                                    Discount
+                                  </label>
+
+                                  <div className={styles.compareCell}>
+                                    <div className={styles.compareTop}>
                                       {(() => {
                                         const v = getPurchaseAdditionalDiscount(
                                           cartItem.inventoryItem
                                         );
                                         return v != null ? `${v}%` : '—';
                                       })()}
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className={styles.itemFieldGroup}>
-                                  <label
-                                    className={styles.itemFieldLabel}
-                                    title="From product registration"
-                                  >
-                                    Purchase scheme/deal
-                                  </label>
-                                  <div className={styles.itemFieldInputWrap}>
-                                    <span
-                                      className={styles.itemFieldReadOnly}
-                                      aria-readonly="true"
-                                    >
-                                      {formatPurchaseSchemeLabel(
-                                        cartItem.inventoryItem
-                                      )}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                              <div className={styles.itemSaleRow}>
-                                <div className={styles.itemFieldGroup}>
-                                  <label
-                                    className={styles.itemFieldLabel}
-                                    htmlFor={`add-disc-${cartItem.inventoryItem.id}`}
-                                    title="Positive = discount, negative = markup (e.g. -2% increases price)"
-                                  >
-                                    Sale add. discount
-                                  </label>
-                                  <div className={styles.itemFieldInputWrap}>
-                                    <CartAdditionalDiscountInput
-                                      id={`add-disc-${cartItem.inventoryItem.id}`}
-                                      value={getEffectiveAdditionalDiscount(
-                                        cartItem.inventoryItem.id,
-                                        cartItem
-                                      )}
-                                      onCommit={(num) =>
-                                        handleAdditionalDiscountChange(
+                                    </div>
+
+                                    <div className={styles.compareBottom}>
+                                      <CartAdditionalDiscountInput
+                                        value={getEffectiveAdditionalDiscount(
                                           cartItem.inventoryItem.id,
-                                          num
-                                        )
-                                      }
-                                      disabled={isUpdatingCart}
-                                    />
-                                    <span className={styles.itemFieldUnit}>
-                                      %
-                                    </span>
+                                          cartItem
+                                        )}
+                                        onCommit={(num) =>
+                                          handleAdditionalDiscountChange(
+                                            cartItem.inventoryItem.id,
+                                            num
+                                          )
+                                        }
+                                        disabled={isUpdatingCart}
+                                      />
+                                      <span className={styles.itemFieldUnit}>
+                                        %
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
                                 <div className={styles.itemFieldGroup}>
                                   <label className={styles.itemFieldLabel}>
-                                    Sale scheme/deal
+                                    Scheme
                                   </label>
-                                  <div className={styles.itemSchemeInputs}>
-                                    <CartSchemeInput
-                                      id={`scheme-${cartItem.inventoryItem.id}`}
-                                      schemeType={cartItem.schemeType ?? null}
-                                      payFor={cartItem.schemePayFor ?? null}
-                                      free={cartItem.schemeFree ?? null}
-                                      percentage={
-                                        cartItem.schemePercentage ?? null
-                                      }
-                                      onCommitUnits={(payFor, free) =>
-                                        handleSchemeChange(
-                                          cartItem.inventoryItem.id,
-                                          payFor,
-                                          free
-                                        )
-                                      }
-                                      onCommitPercentage={(perc) =>
-                                        handleSchemePercentageChange(
-                                          cartItem.inventoryItem.id,
-                                          perc
-                                        )
-                                      }
-                                      disabled={isUpdatingCart}
-                                    />
+
+                                  <div className={styles.compareCell}>
+                                    <div className={styles.compareTop}>
+                                      {formatPurchaseSchemeLabel(
+                                        cartItem.inventoryItem
+                                      )}
+                                    </div>
+
+                                    <div className={styles.compareBottom}>
+                                      <CartSchemeInput
+                                        schemeType={cartItem.schemeType ?? null}
+                                        payFor={cartItem.schemePayFor ?? null}
+                                        free={cartItem.schemeFree ?? null}
+                                        percentage={
+                                          cartItem.schemePercentage ?? null
+                                        }
+                                        onCommitUnits={(pf, f) =>
+                                          handleSchemeChange(
+                                            cartItem.inventoryItem.id,
+                                            pf,
+                                            f
+                                          )
+                                        }
+                                        onCommitPercentage={(p) =>
+                                          handleSchemePercentageChange(
+                                            cartItem.inventoryItem.id,
+                                            p
+                                          )
+                                        }
+                                        disabled={isUpdatingCart}
+                                      />
+                                    </div>
                                   </div>
                                 </div>
                               </div>
@@ -2213,6 +2609,123 @@ export default function ScanSellPage() {
                                     </option>
                                   ))}
                                 </select>
+                              </div> */}
+                              <div className={styles.itemSaleRowInline}>
+                                {/* Discount */}
+                                <div className={styles.itemFieldGroup}>
+                                  <label className={styles.itemFieldLabel}>
+                                    Disc
+                                  </label>
+
+                                  <div className={styles.compareCell}>
+                                    {!hidePurchaseDetailsInSell && (
+                                      <div className={styles.compareTop}>
+                                        {(() => {
+                                          const v =
+                                            getPurchaseAdditionalDiscount(
+                                              cartItem.inventoryItem
+                                            );
+                                          return v != null ? `${v}%` : '—';
+                                        })()}
+                                      </div>
+                                    )}
+
+                                    <div className={styles.compareBottom}>
+                                      <CartAdditionalDiscountInput
+                                        value={getEffectiveAdditionalDiscount(
+                                          cartItem.inventoryItem.id,
+                                          cartItem
+                                        )}
+                                        onCommit={(num) =>
+                                          handleAdditionalDiscountChange(
+                                            cartItem.inventoryItem.id,
+                                            num
+                                          )
+                                        }
+                                        disabled={isUpdatingCart}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Scheme */}
+                                <div className={styles.itemFieldGroup}>
+                                  <label className={styles.itemFieldLabel}>
+                                    Scheme
+                                  </label>
+
+                                  <div className={styles.compareCell}>
+                                    {!hidePurchaseDetailsInSell && (
+                                      <div className={styles.compareTop}>
+                                        {formatPurchaseSchemeLabel(
+                                          cartItem.inventoryItem
+                                        )}
+                                      </div>
+                                    )}
+
+                                    <div className={styles.compareBottom}>
+                                      <CartSchemeInput
+                                        schemeType={cartItem.schemeType ?? null}
+                                        payFor={cartItem.schemePayFor ?? null}
+                                        free={cartItem.schemeFree ?? null}
+                                        percentage={
+                                          cartItem.schemePercentage ?? null
+                                        }
+                                        onCommitUnits={(pf, f) =>
+                                          handleSchemeChange(
+                                            cartItem.inventoryItem.id,
+                                            pf,
+                                            f
+                                          )
+                                        }
+                                        onCommitPercentage={(p) =>
+                                          handleSchemePercentageChange(
+                                            cartItem.inventoryItem.id,
+                                            p
+                                          )
+                                        }
+                                        disabled={isUpdatingCart}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Unit */}
+                                <div className={styles.itemFieldGroup}>
+                                  <label className={styles.itemFieldLabel}>
+                                    Unit
+                                  </label>
+
+                                  <select
+                                    className={styles.itemUnitSelect}
+                                    value={cartItem.unit}
+                                    onChange={(e) =>
+                                      handleUnitChange(
+                                        cartItem.inventoryItem.id,
+                                        e.currentTarget.value
+                                      )
+                                    }
+                                    disabled={isUpdatingCart}
+                                  >
+                                    {(cartItem.availableUnits.length > 0
+                                      ? cartItem.availableUnits
+                                      : [
+                                          {
+                                            unit: cartItem.unit,
+                                            baseUnit: false,
+                                          },
+                                        ]
+                                    ).map((unitOption) => (
+                                      <option
+                                        key={`${unitOption.unit}-${unitOption.baseUnit}`}
+                                        value={unitOption.unit}
+                                      >
+                                        {unitOption.unit}
+                                        {unitOption.baseUnit ? ' (base)' : ''}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
                               </div>
                             </div>
                             <div className={styles.itemActions}>
@@ -2825,39 +3338,47 @@ export default function ScanSellPage() {
                           </div>
                         </div>
                       )}
-                      <div
-                        className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
-                      >
-                        <div className={styles.detailModalDetailIcon}>🏷️</div>
-                        <div className={styles.detailModalDetailContent}>
-                          <span className={styles.detailModalDetailLabel}>
-                            Purchase add. discount
-                          </span>
-                          <span className={styles.detailModalDetailValue}>
-                            {(() => {
-                              const v = getPurchaseAdditionalDiscount(
-                                detailModalItem.inventoryItem
-                              );
-                              return v != null ? `${v}%` : '—';
-                            })()}
-                          </span>
-                        </div>
-                      </div>
-                      <div
-                        className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
-                      >
-                        <div className={styles.detailModalDetailIcon}>🎁</div>
-                        <div className={styles.detailModalDetailContent}>
-                          <span className={styles.detailModalDetailLabel}>
-                            Purchase scheme/deal
-                          </span>
-                          <span className={styles.detailModalDetailValue}>
-                            {formatPurchaseSchemeLabel(
-                              detailModalItem.inventoryItem
-                            )}
-                          </span>
-                        </div>
-                      </div>
+                      {!hidePurchaseDetailsInSell && (
+                        <>
+                          <div
+                            className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
+                          >
+                            <div className={styles.detailModalDetailIcon}>
+                              🏷️
+                            </div>
+                            <div className={styles.detailModalDetailContent}>
+                              <span className={styles.detailModalDetailLabel}>
+                                Purchase add. discount
+                              </span>
+                              <span className={styles.detailModalDetailValue}>
+                                {(() => {
+                                  const v = getPurchaseAdditionalDiscount(
+                                    detailModalItem.inventoryItem
+                                  );
+                                  return v != null ? `${v}%` : '—';
+                                })()}
+                              </span>
+                            </div>
+                          </div>
+                          <div
+                            className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
+                          >
+                            <div className={styles.detailModalDetailIcon}>
+                              🎁
+                            </div>
+                            <div className={styles.detailModalDetailContent}>
+                              <span className={styles.detailModalDetailLabel}>
+                                Purchase scheme/deal
+                              </span>
+                              <span className={styles.detailModalDetailValue}>
+                                {formatPurchaseSchemeLabel(
+                                  detailModalItem.inventoryItem
+                                )}
+                              </span>
+                            </div>
+                          </div>
+                        </>
+                      )}
                       <div
                         className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
                       >

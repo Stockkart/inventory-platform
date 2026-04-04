@@ -1876,8 +1876,8 @@ export interface BulkPricingUpdateDto {
   updates: BulkPricingUpdateItem[];
 }
 
-/** Purchase scheme/deal from vendor. Object: schemeType, schemePayFor, schemeFree, schemePercentage */
-export interface PurchaseSchemeDto {
+/** Scheme/deal (purchase or sale): schemeType, schemePayFor, schemeFree, schemePercentage */
+export interface SchemeDto {
   schemeType?: string | null;
   schemePayFor?: number | null;
   schemeFree?: number | null;
@@ -1897,9 +1897,9 @@ export interface PricingResponse {
   /** Purchase add. discount % from vendor */
   purchaseAdditionalDiscount?: number | null;
   /** Purchase scheme/deal from vendor */
-  purchaseScheme?: PurchaseSchemeDto | null;
+  purchaseScheme?: SchemeDto | null;
   /** Sale scheme/deal (e.g. 7+1) */
-  saleScheme?: PurchaseSchemeDto | null;
+  saleScheme?: SchemeDto | null;
   sgst?: string | null;
   cgst?: string | null;
   createdAt?: string;
