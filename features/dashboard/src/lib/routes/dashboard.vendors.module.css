@@ -130,6 +130,33 @@
   color: var(--text-tertiary);
 }
 
+.actionsCol {
+  white-space: nowrap;
+  min-width: 11rem;
+}
+
+.rowActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.buyStockBtn {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #059669;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(5, 150, 105, 0.35);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.buyStockBtn:hover {
+  background: rgba(16, 185, 129, 0.22);
+}
+
 .editBtn {
   padding: 0.35rem 0.75rem;
   font-size: 0.85rem;

@@ -957,6 +957,10 @@
   overflow: auto;
 }
 
+[data-theme='dark'] .cartItemsExcel .excelTableWrap {
+  color-scheme: dark;
+}
+
 .excelTableWrap {
   overflow-x: auto;
   overflow-y: auto;
@@ -974,8 +978,9 @@
   padding: 0.5rem 0.6rem;
   text-align: left;
   font-weight: 600;
-  background: #e2e8f0;
-  border: 1px solid #cbd5e1;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
   white-space: nowrap;
   position: sticky;
   top: 0;
@@ -998,16 +1003,20 @@
 }
 
 .excelTr:nth-child(even) {
-  background: #f8fafc;
+  background: var(--bg-card);
 }
 
 .excelTr:hover {
-  background: #f1f5f9;
+  background: var(--hover-bg);
+}
+
+[data-theme='dark'] .excelTr:hover {
+  background: color-mix(in srgb, var(--bg-card) 85%, var(--text-primary) 15%);
 }
 
 .excelTd {
   padding: 0.4rem 0.6rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   vertical-align: middle;
 }
 
@@ -1022,7 +1031,7 @@
 }
 
 .excelProductBtn:hover {
-  color: #3b82f6;
+  color: var(--link-hover);
 }
 
 .excelCellInput {
@@ -1035,6 +1044,17 @@
   width: 50px;
   padding: 0.25rem 0.35rem;
   font-size: 0.8rem;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: none;
+  outline: none;
+  box-shadow: none;
+  border-radius: 6px;
+}
+
+.excelCellInput .qtyInput:focus {
+  outline: none;
+  box-shadow: 0 0 0 1px var(--border-hover);
 }
 
 .excelCellInput .qtyBtn {
@@ -1043,11 +1063,20 @@
 }
 
 .excelSelect {
-  padding: 0.25rem 0.4rem;
+  padding: 0.25rem 1.35rem 0.25rem 0.4rem;
   font-size: 0.8rem;
   border: 1px solid var(--border-color);
   border-radius: 4px;
   min-width: 70px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M3 4.5L6 8l3-3.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.35rem center;
+  background-size: 0.65rem;
 }
 
 .excelPriceCell {
@@ -1062,6 +1091,9 @@
   width: 70px;
   padding: 0.25rem 0.4rem;
   font-size: 0.8rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
 }
 
 .excelRateSelect {
@@ -1070,6 +1102,8 @@
   border: 1px solid var(--border-color);
   border-radius: 4px;
   max-width: 90px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .excelRemoveBtn {
@@ -1086,10 +1120,22 @@
   background: #fee2e2;
 }
 
+[data-theme='dark'] .excelRemoveBtn {
+  background: color-mix(in srgb, #dc2626 18%, transparent);
+  border-color: #f87171;
+  color: #fca5a5;
+}
+
+[data-theme='dark'] .excelRemoveBtn:hover:not(:disabled) {
+  background: color-mix(in srgb, #dc2626 28%, transparent);
+}
+
 .excelTd .itemAdditionalInput {
   width: 55px;
   padding: 0.25rem 0.35rem;
   font-size: 0.8rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .excelTd .itemSchemeInputs {
@@ -1101,6 +1147,8 @@
   width: 45px;
   padding: 0.2rem 0.3rem;
   font-size: 0.75rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .cartItem {
@@ -1184,6 +1232,41 @@
 .itemUnitMeta {
   font-size: 0.78rem;
   color: var(--text-tertiary);
+}
+
+.itemMetaRow {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.itemLineTotal {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.itemAmountValue {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-secondary, #f8fafc);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.itemActionAmount {
+  margin-top: 0.35rem;
+  margin-bottom: 0.2rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
 }
 
 .modeBadge {
@@ -1408,8 +1491,15 @@
 
 .itemActions {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 0.5rem;
+}
+
+.itemActionTopRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
 }
 
 /* Quantity stepper - unified control */
@@ -1487,7 +1577,7 @@
 
 .removeBtn {
   padding: 0.5rem 0.85rem;
-  margin-left: 0.25rem;
+  margin-left: 0;
   border: 1px solid transparent;
   border-radius: 8px;
   background: transparent;
@@ -1915,12 +2005,12 @@
 }
 
 .compareTop {
-  color: #64748b;
+  color: var(--text-tertiary);
 }
 
 .compareBottom {
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 .itemSaleRowInline {
   display: flex;

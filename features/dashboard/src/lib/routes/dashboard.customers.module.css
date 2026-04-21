@@ -130,6 +130,33 @@
   color: var(--text-tertiary);
 }
 
+.actionsCol {
+  white-space: nowrap;
+  min-width: 9rem;
+}
+
+.rowActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.sellBtn {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #7c3aed;
+  background: rgba(139, 92, 246, 0.12);
+  border: 1px solid rgba(124, 58, 237, 0.35);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.sellBtn:hover {
+  background: rgba(139, 92, 246, 0.22);
+}
+
 .editBtn {
   padding: 0.35rem 0.75rem;
   font-size: 0.85rem;

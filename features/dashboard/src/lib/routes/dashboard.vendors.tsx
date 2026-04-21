@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { vendorsApi } from '@inventory-platform/api';
 import { EditModal, VendorEditForm } from '@inventory-platform/ui';
 import type {
@@ -16,6 +17,7 @@ export function meta() {
 }
 
 export default function VendorsPage() {
+  const navigate = useNavigate();
   const [data, setData] = useState<VendorResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -147,6 +149,12 @@ export default function VendorsPage() {
     return addr.length > 50 ? addr.slice(0, 50) + '…' : addr;
   };
 
+  const goRegisterPurchaseFromVendor = (vendor: VendorResponse) => {
+    navigate('/dashboard/product-registration', {
+      state: { prefillVendor: vendor },
+    });
+  };
+
   if (loading && data.length === 0) {
     return (
       <div className={styles.container}>
@@ -203,7 +211,7 @@ export default function VendorsPage() {
               <th>Email</th>
               <th>Business Type</th>
               <th>GSTIN</th>
-              <th></th>
+              <th className={styles.actionsCol}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -224,13 +232,23 @@ export default function VendorsPage() {
                   <td>{v.businessType ?? '—'}</td>
                   <td>{v.gstinUin ?? '—'}</td>
                   <td>
-                    <button
-                      type="button"
-                      className={styles.editBtn}
-                      onClick={() => handleOpenEdit(v)}
-                    >
-                      Edit
-                    </button>
+                    <div className={styles.rowActions}>
+                      <button
+                        type="button"
+                        className={styles.buyStockBtn}
+                        onClick={() => goRegisterPurchaseFromVendor(v)}
+                        title="Open product registration with this vendor selected"
+                      >
+                        Buy product
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.editBtn}
+                        onClick={() => handleOpenEdit(v)}
+                      >
+                        Edit
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))

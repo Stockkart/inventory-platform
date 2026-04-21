@@ -1,5 +1,12 @@
-import { useState, useEffect, useRef, useCallback, ChangeEvent } from 'react';
-import { useNavigate, Link } from 'react-router';
+import {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useCallback,
+  ChangeEvent,
+} from 'react';
+import { useNavigate, useLocation, Link } from 'react-router';
 import {
   inventoryApi,
   cartApi,
@@ -14,6 +21,7 @@ import type {
   CartResponse,
   CheckoutItemResponse,
   PricingResponse,
+  CustomerResponse,
 } from '@inventory-platform/types';
 import styles from './dashboard.scan-sell.module.css';
 import { useNotify } from '@inventory-platform/store';
@@ -398,6 +406,9 @@ function CartSchemeInput({
 
 export default function ScanSellPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const scanSellCustomerPrefillRef = useRef<CustomerResponse | null>(null);
+  const scanSellCustomerPrefillConsumedRef = useRef(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<InventoryItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -437,6 +448,13 @@ export default function ScanSellPage() {
   const [additionalDiscountOverrides, setAdditionalDiscountOverrides] =
     useState<Record<string, number | null>>({});
   const [detailModalItem, setDetailModalItem] = useState<CartItem | null>(null);
+  const [detailModalFullItem, setDetailModalFullItem] =
+    useState<InventoryItem | null>(null);
+  const [detailModalFullItemLoading, setDetailModalFullItemLoading] =
+    useState(false);
+  const [detailModalFullItemError, setDetailModalFullItemError] = useState<
+    string | null
+  >(null);
   const [cartViewMode, setCartViewMode] = useState<'list' | 'grid'>(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('scan-sell-view-mode');
@@ -459,6 +477,40 @@ export default function ScanSellPage() {
   );
   const searchWrapperRef = useRef<HTMLDivElement>(null);
   const { error: notifyError } = useNotify;
+
+  useEffect(() => {
+    if (!detailModalItem) {
+      setDetailModalFullItem(null);
+      setDetailModalFullItemLoading(false);
+      setDetailModalFullItemError(null);
+      return;
+    }
+
+    let cancelled = false;
+    setDetailModalFullItemLoading(true);
+    setDetailModalFullItemError(null);
+    inventoryApi
+      .getById(detailModalItem.inventoryItem.id)
+      .then((inv) => {
+        if (cancelled) return;
+        setDetailModalFullItem(inv);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setDetailModalFullItem(null);
+        setDetailModalFullItemError(
+          err instanceof Error ? err.message : 'Failed to load product details'
+        );
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setDetailModalFullItemLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [detailModalItem]);
 
   const [inventoryToPricingId, setInventoryToPricingId] = useState<
     Record<string, string>
@@ -541,6 +593,22 @@ export default function ScanSellPage() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
+
+  useEffect(() => {
+    scanSellCustomerPrefillConsumedRef.current = false;
+  }, [location.key]);
+
+  useLayoutEffect(() => {
+    const raw = (
+      location.state as
+        | { prefillCustomer?: CustomerResponse }
+        | null
+        | undefined
+    )?.prefillCustomer;
+    if (!raw?.customerId) return;
+    scanSellCustomerPrefillRef.current = raw;
+    navigate(location.pathname, { replace: true, state: {} });
+  }, [location.state, location.pathname, navigate]);
 
   const normalizeBillingMode = useCallback(
     (mode?: BillingMode | null): BillingMode =>
@@ -713,6 +781,7 @@ export default function ScanSellPage() {
       // Only handle CREATED and PENDING statuses
       // If status is PENDING, redirect to checkout page
       if (cart.status === 'PENDING') {
+        scanSellCustomerPrefillRef.current = null;
         navigate('/dashboard/checkout');
         return;
       }
@@ -758,6 +827,43 @@ export default function ScanSellPage() {
       setIsLoadingCart(false);
     }
   };
+
+  useEffect(() => {
+    if (isLoadingCart) return;
+    const c = scanSellCustomerPrefillRef.current;
+    if (!c || scanSellCustomerPrefillConsumedRef.current) return;
+    scanSellCustomerPrefillConsumedRef.current = true;
+    scanSellCustomerPrefillRef.current = null;
+    setCustomerName(c.name ?? '');
+    setCustomerPhone(c.phone ?? '');
+    setCustomerEmail(c.email ?? '');
+    setCustomerAddress(c.address ?? '');
+    const gstin = c.gstin ?? '';
+    const dl = c.dlNo ?? '';
+    const pan = c.pan ?? c.panNo ?? '';
+    if (gstin || dl || pan) {
+      setIsRetailer(true);
+      setCustomerGstin(gstin);
+      setCustomerDlNo(dl);
+      setCustomerPan(pan);
+    } else {
+      setIsRetailer(false);
+      setCustomerGstin('');
+      setCustomerDlNo('');
+      setCustomerPan('');
+    }
+    if (c.userId && c.email) {
+      setLinkedUser({
+        userId: c.userId,
+        email: c.email,
+        name: c.name ?? '',
+      });
+    } else {
+      setLinkedUser(null);
+    }
+    setUserSearchMessage(null);
+    setCustomerSectionOpen(true);
+  }, [isLoadingCart]);
 
   /** Build CartItem[] from cart response, reusing existing inventoryItem when possible (no API calls). */
   const mergeCartResponseToItems = useCallback(
@@ -2002,10 +2108,10 @@ export default function ScanSellPage() {
                         <th className={styles.excelTh}>Company</th>
                         <th className={styles.excelTh}>Qty</th>
                         <th className={styles.excelTh}>Unit</th>
+                        <th className={styles.excelTh}>Amount</th>
                         <th className={styles.excelTh}>Price</th>
                         <th className={styles.excelTh}>Discount</th>
                         <th className={styles.excelTh}>Scheme</th>
-                        <th className={styles.excelTh}>Total</th>
                         <th className={styles.excelTh}>Actions</th>
                       </tr>
                     </thead>
@@ -2110,6 +2216,9 @@ export default function ScanSellPage() {
                                   </option>
                                 ))}
                               </select>
+                            </td>
+                            <td className={styles.excelTd}>
+                              {formatPrice(lineTotal)}
                             </td>
                             <td className={styles.excelTd}>
                               <div className={styles.excelPriceCell}>
@@ -2230,9 +2339,6 @@ export default function ScanSellPage() {
                               </div>
                             </td>
                             <td className={styles.excelTd}>
-                              {formatPrice(lineTotal)}
-                            </td>
-                            <td className={styles.excelTd}>
                               <button
                                 type="button"
                                 className={styles.excelRemoveBtn}
@@ -2289,11 +2395,14 @@ export default function ScanSellPage() {
                                 {cartItem.inventoryItem.companyName}
                               </span>
                             )}
-                            <span className={styles.itemUnitMeta}>
-                              {cartItem.baseQuantity}{' '}
-                              {cartItem.inventoryItem.baseUnit ?? 'base units'}{' '}
-                              ({cartItem.quantity} {cartItem.unit})
-                            </span>
+                            <div className={styles.itemMetaRow}>
+                              <span className={styles.itemUnitMeta}>
+                                {cartItem.baseQuantity}{' '}
+                                {cartItem.inventoryItem.baseUnit ??
+                                  'base units'}{' '}
+                                ({cartItem.quantity} {cartItem.unit})
+                              </span>
+                            </div>
                             {cartItem.inventoryItem.maximumRetailPrice >
                               cartItem.price && (
                               <span className={styles.itemDiscount}>
@@ -2419,197 +2528,6 @@ export default function ScanSellPage() {
                                   </span>
                                 </div>
                               </div>
-                              {/* {cartViewMode === 'list' ? (
-                                <div className={styles.itemPurchaseRow}>
-                                  <div className={styles.itemFieldGroup}>
-                                    <label
-                                      className={styles.itemFieldLabel}
-                                      title="From product registration"
-                                    >
-                                      Purchase add. discount
-                                    </label>
-                                    <div className={styles.itemFieldInputWrap}>
-                                      <span
-                                        className={styles.itemFieldReadOnly}
-                                        aria-readonly="true"
-                                      >
-                                        {(() => {
-                                          const v =
-                                            getPurchaseAdditionalDiscount(
-                                              cartItem.inventoryItem
-                                            );
-                                          return v != null ? `${v}%` : '—';
-                                        })()}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <div className={styles.itemFieldGroup}>
-                                    <label
-                                      className={styles.itemFieldLabel}
-                                      title="From product registration"
-                                    >
-                                      Purchase scheme/deal
-                                    </label>
-                                    <div className={styles.itemFieldInputWrap}>
-                                      <span
-                                        className={styles.itemFieldReadOnly}
-                                        aria-readonly="true"
-                                      >
-                                        {formatPurchaseSchemeLabel(
-                                          cartItem.inventoryItem
-                                        )}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div
-                                  className={styles.itemPurchaseHoverWrap}
-                                  title="Hover to see purchase details"
-                                >
-                                  <span
-                                    className={styles.itemPurchaseHoverTrigger}
-                                  >
-                                    ℹ Purchase details
-                                  </span>
-                                  <div
-                                    className={styles.itemPurchaseHoverPopup}
-                                  >
-                                    <div
-                                      className={styles.itemPurchaseHoverRow}
-                                    >
-                                      <span>Purchase add. discount:</span>
-                                      <span>
-                                        {(() => {
-                                          const v =
-                                            getPurchaseAdditionalDiscount(
-                                              cartItem.inventoryItem
-                                            );
-                                          return v != null ? `${v}%` : '—';
-                                        })()}
-                                      </span>
-                                    </div>
-                                    <div
-                                      className={styles.itemPurchaseHoverRow}
-                                    >
-                                      <span>Purchase scheme/deal:</span>
-                                      <span>
-                                        {formatPurchaseSchemeLabel(
-                                          cartItem.inventoryItem
-                                        )}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                              )} */}
-                              {/* <div className={styles.itemSaleRow}>
-                                <div className={styles.itemFieldGroup}>
-                                  <label className={styles.itemFieldLabel}>
-                                    Discount
-                                  </label>
-
-                                  <div className={styles.compareCell}>
-                                    <div className={styles.compareTop}>
-                                      {(() => {
-                                        const v = getPurchaseAdditionalDiscount(
-                                          cartItem.inventoryItem
-                                        );
-                                        return v != null ? `${v}%` : '—';
-                                      })()}
-                                    </div>
-
-                                    <div className={styles.compareBottom}>
-                                      <CartAdditionalDiscountInput
-                                        value={getEffectiveAdditionalDiscount(
-                                          cartItem.inventoryItem.id,
-                                          cartItem
-                                        )}
-                                        onCommit={(num) =>
-                                          handleAdditionalDiscountChange(
-                                            cartItem.inventoryItem.id,
-                                            num
-                                          )
-                                        }
-                                        disabled={isUpdatingCart}
-                                      />
-                                      <span className={styles.itemFieldUnit}>
-                                        %
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className={styles.itemFieldGroup}>
-                                  <label className={styles.itemFieldLabel}>
-                                    Scheme
-                                  </label>
-
-                                  <div className={styles.compareCell}>
-                                    <div className={styles.compareTop}>
-                                      {formatPurchaseSchemeLabel(
-                                        cartItem.inventoryItem
-                                      )}
-                                    </div>
-
-                                    <div className={styles.compareBottom}>
-                                      <CartSchemeInput
-                                        schemeType={cartItem.schemeType ?? null}
-                                        payFor={cartItem.schemePayFor ?? null}
-                                        free={cartItem.schemeFree ?? null}
-                                        percentage={
-                                          cartItem.schemePercentage ?? null
-                                        }
-                                        onCommitUnits={(pf, f) =>
-                                          handleSchemeChange(
-                                            cartItem.inventoryItem.id,
-                                            pf,
-                                            f
-                                          )
-                                        }
-                                        onCommitPercentage={(p) =>
-                                          handleSchemePercentageChange(
-                                            cartItem.inventoryItem.id,
-                                            p
-                                          )
-                                        }
-                                        disabled={isUpdatingCart}
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                              <div className={styles.itemFieldGroup}>
-                                <label
-                                  className={styles.itemFieldLabel}
-                                  htmlFor={`unit-${cartItem.inventoryItem.id}`}
-                                >
-                                  Unit
-                                </label>
-                                <select
-                                  id={`unit-${cartItem.inventoryItem.id}`}
-                                  className={styles.itemUnitSelect}
-                                  value={cartItem.unit}
-                                  onChange={(e) =>
-                                    handleUnitChange(
-                                      cartItem.inventoryItem.id,
-                                      e.currentTarget.value
-                                    )
-                                  }
-                                  disabled={isUpdatingCart}
-                                >
-                                  {(cartItem.availableUnits.length > 0
-                                    ? cartItem.availableUnits
-                                    : [{ unit: cartItem.unit, baseUnit: false }]
-                                  ).map((unitOption) => (
-                                    <option
-                                      key={`${unitOption.unit}-${unitOption.baseUnit}`}
-                                      value={unitOption.unit}
-                                    >
-                                      {unitOption.unit}
-                                      {unitOption.baseUnit ? ' (base)' : ''}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div> */}
                               <div className={styles.itemSaleRowInline}>
                                 {/* Discount */}
                                 <div className={styles.itemFieldGroup}>
@@ -2729,60 +2647,68 @@ export default function ScanSellPage() {
                               </div>
                             </div>
                             <div className={styles.itemActions}>
-                              <div className={styles.qtyStepper}>
-                                <button
-                                  className={styles.qtyBtn}
-                                  onClick={() =>
-                                    handleUpdateQuantity(
-                                      cartItem.inventoryItem.id,
-                                      -1,
-                                      isBaseUnitSelected
-                                    )
-                                  }
-                                  disabled={isUpdatingCart}
-                                  aria-label="Decrease quantity"
-                                >
-                                  −
-                                </button>
-                                <CartQuantityInput
-                                  value={quantityInputValue}
-                                  disabled={isUpdatingCart}
-                                  onCommit={async (newQty) => {
-                                    const delta = newQty - quantityInputValue;
-                                    if (delta !== 0) {
-                                      await handleUpdateQuantity(
+                              <div className={styles.itemActionTopRow}>
+                                <div className={styles.qtyStepper}>
+                                  <button
+                                    className={styles.qtyBtn}
+                                    onClick={() =>
+                                      handleUpdateQuantity(
                                         cartItem.inventoryItem.id,
-                                        delta,
+                                        -1,
                                         isBaseUnitSelected
-                                      );
+                                      )
                                     }
-                                  }}
-                                />
+                                    disabled={isUpdatingCart}
+                                    aria-label="Decrease quantity"
+                                  >
+                                    −
+                                  </button>
+                                  <CartQuantityInput
+                                    value={quantityInputValue}
+                                    disabled={isUpdatingCart}
+                                    onCommit={async (newQty) => {
+                                      const delta = newQty - quantityInputValue;
+                                      if (delta !== 0) {
+                                        await handleUpdateQuantity(
+                                          cartItem.inventoryItem.id,
+                                          delta,
+                                          isBaseUnitSelected
+                                        );
+                                      }
+                                    }}
+                                  />
+                                  <button
+                                    className={styles.qtyBtn}
+                                    onClick={() =>
+                                      handleUpdateQuantity(
+                                        cartItem.inventoryItem.id,
+                                        1,
+                                        isBaseUnitSelected
+                                      )
+                                    }
+                                    disabled={isUpdatingCart}
+                                    aria-label="Increase quantity"
+                                  >
+                                    +
+                                  </button>
+                                </div>
                                 <button
-                                  className={styles.qtyBtn}
+                                  type="button"
+                                  className={styles.removeBtn}
                                   onClick={() =>
-                                    handleUpdateQuantity(
-                                      cartItem.inventoryItem.id,
-                                      1,
-                                      isBaseUnitSelected
-                                    )
+                                    handleRemoveItem(cartItem.inventoryItem.id)
                                   }
                                   disabled={isUpdatingCart}
-                                  aria-label="Increase quantity"
                                 >
-                                  +
+                                  Remove
                                 </button>
                               </div>
-                              <button
-                                type="button"
-                                className={styles.removeBtn}
-                                onClick={() =>
-                                  handleRemoveItem(cartItem.inventoryItem.id)
-                                }
-                                disabled={isUpdatingCart}
-                              >
-                                Remove
-                              </button>
+                              <div className={styles.itemActionAmount}>
+                                ₹
+                                {(cartItem.price * cartItem.quantity).toFixed(
+                                  2
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -3159,7 +3085,8 @@ export default function ScanSellPage() {
             (i: CheckoutItemResponse) =>
               i.inventoryId === detailModalItem.inventoryItem.id
           );
-          const mrp = detailModalItem.inventoryItem.maximumRetailPrice;
+          const inv = detailModalFullItem ?? detailModalItem.inventoryItem;
+          const mrp = inv.maximumRetailPrice;
           const price = detailModalItem.price;
           const qty = detailModalItem.quantity;
           const addDisc = getEffectiveAdditionalDiscount(
@@ -3198,11 +3125,11 @@ export default function ScanSellPage() {
                         id="cart-detail-modal-title"
                         className={styles.detailModalTitle}
                       >
-                        {detailModalItem.inventoryItem.name || 'Product'}
+                        {inv.name || 'Product'}
                       </h3>
-                      {detailModalItem.inventoryItem.companyName && (
+                      {inv.companyName && (
                         <p className={styles.detailModalSubtitle}>
-                          {detailModalItem.inventoryItem.companyName}
+                          {inv.companyName}
                         </p>
                       )}
                     </div>
@@ -3230,6 +3157,32 @@ export default function ScanSellPage() {
                       </h4>
                     </div>
                     <div className={styles.detailModalDetailsGrid}>
+                      {detailModalFullItemLoading && (
+                        <div className={styles.detailModalDetailCard}>
+                          <div className={styles.detailModalDetailIcon}>⏳</div>
+                          <div className={styles.detailModalDetailContent}>
+                            <span className={styles.detailModalDetailLabel}>
+                              Loading full details
+                            </span>
+                            <span className={styles.detailModalDetailValue}>
+                              …
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      {detailModalFullItemError && (
+                        <div className={styles.detailModalDetailCard}>
+                          <div className={styles.detailModalDetailIcon}>⚠️</div>
+                          <div className={styles.detailModalDetailContent}>
+                            <span className={styles.detailModalDetailLabel}>
+                              Details
+                            </span>
+                            <span className={styles.detailModalDetailValue}>
+                              {detailModalFullItemError}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                       <div className={styles.detailModalDetailCard}>
                         <div className={styles.detailModalDetailIcon}>🏷️</div>
                         <div className={styles.detailModalDetailContent}>
@@ -3237,11 +3190,11 @@ export default function ScanSellPage() {
                             Product name
                           </span>
                           <span className={styles.detailModalDetailValue}>
-                            {detailModalItem.inventoryItem.name || '—'}
+                            {inv.name || '—'}
                           </span>
                         </div>
                       </div>
-                      {detailModalItem.inventoryItem.companyName && (
+                      {inv.companyName && (
                         <div className={styles.detailModalDetailCard}>
                           <div className={styles.detailModalDetailIcon}>🏢</div>
                           <div className={styles.detailModalDetailContent}>
@@ -3249,7 +3202,79 @@ export default function ScanSellPage() {
                               Company
                             </span>
                             <span className={styles.detailModalDetailValue}>
-                              {detailModalItem.inventoryItem.companyName}
+                              {inv.companyName}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      {inv.barcode && (
+                        <div className={styles.detailModalDetailCard}>
+                          <div className={styles.detailModalDetailIcon}>🏷️</div>
+                          <div className={styles.detailModalDetailContent}>
+                            <span className={styles.detailModalDetailLabel}>
+                              Barcode
+                            </span>
+                            <span className={styles.detailModalDetailValue}>
+                              {inv.barcode}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      {inv.location && (
+                        <div className={styles.detailModalDetailCard}>
+                          <div className={styles.detailModalDetailIcon}>📍</div>
+                          <div className={styles.detailModalDetailContent}>
+                            <span className={styles.detailModalDetailLabel}>
+                              Location
+                            </span>
+                            <span className={styles.detailModalDetailValue}>
+                              {inv.location}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      {(inv.hsn || inv.batchNo) && (
+                        <div className={styles.detailModalDetailCard}>
+                          <div className={styles.detailModalDetailIcon}>🧾</div>
+                          <div className={styles.detailModalDetailContent}>
+                            <span className={styles.detailModalDetailLabel}>
+                              HSN / Batch
+                            </span>
+                            <span className={styles.detailModalDetailValue}>
+                              {[inv.hsn, inv.batchNo]
+                                .filter(Boolean)
+                                .join(' / ')}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      {inv.expiryDate && (
+                        <div className={styles.detailModalDetailCard}>
+                          <div className={styles.detailModalDetailIcon}>📅</div>
+                          <div className={styles.detailModalDetailContent}>
+                            <span className={styles.detailModalDetailLabel}>
+                              Expiry
+                            </span>
+                            <span className={styles.detailModalDetailValue}>
+                              {
+                                new Date(inv.expiryDate)
+                                  .toISOString()
+                                  .split('T')[0]
+                              }
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      {(inv.currentCount != null ||
+                        inv.currentBaseCount != null) && (
+                        <div className={styles.detailModalDetailCard}>
+                          <div className={styles.detailModalDetailIcon}>📦</div>
+                          <div className={styles.detailModalDetailContent}>
+                            <span className={styles.detailModalDetailLabel}>
+                              Stock (current)
+                            </span>
+                            <span className={styles.detailModalDetailValue}>
+                              {inv.currentCount ?? inv.currentBaseCount ?? '—'}
                             </span>
                           </div>
                         </div>
@@ -3272,9 +3297,7 @@ export default function ScanSellPage() {
                             Billing mode
                           </span>
                           <span className={styles.detailModalDetailValue}>
-                            {normalizeBillingMode(
-                              detailModalItem.inventoryItem.billingMode
-                            )}
+                            {normalizeBillingMode(inv.billingMode)}
                           </span>
                         </div>
                       </div>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { customersApi } from '@inventory-platform/api';
 import { EditModal, CustomerEditForm } from '@inventory-platform/ui';
 import type {
@@ -16,6 +17,7 @@ export function meta() {
 }
 
 export default function CustomersPage() {
+  const navigate = useNavigate();
   const [data, setData] = useState<CustomerResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -140,6 +142,12 @@ export default function CustomersPage() {
     return addr.length > 50 ? addr.slice(0, 50) + '…' : addr;
   };
 
+  const goScanSellWithCustomer = (customer: CustomerResponse) => {
+    navigate('/dashboard/scan-sell', {
+      state: { prefillCustomer: customer },
+    });
+  };
+
   if (loading && data.length === 0) {
     return (
       <div className={styles.container}>
@@ -197,7 +205,7 @@ export default function CustomersPage() {
               <th>GSTIN</th>
               <th>DL No</th>
               <th>PAN</th>
-              <th></th>
+              <th className={styles.actionsCol}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -219,13 +227,23 @@ export default function CustomersPage() {
                   <td>{c.dlNo ?? '—'}</td>
                   <td>{c.panNo ?? c.pan ?? '—'}</td>
                   <td>
-                    <button
-                      type="button"
-                      className={styles.editBtn}
-                      onClick={() => handleOpenEdit(c)}
-                    >
-                      Edit
-                    </button>
+                    <div className={styles.rowActions}>
+                      <button
+                        type="button"
+                        className={styles.sellBtn}
+                        onClick={() => goScanSellWithCustomer(c)}
+                        title="Open Scan and Sell with this customer filled in"
+                      >
+                        Sell
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.editBtn}
+                        onClick={() => handleOpenEdit(c)}
+                      >
+                        Edit
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))

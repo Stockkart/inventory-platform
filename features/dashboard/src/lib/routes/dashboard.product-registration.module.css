@@ -736,11 +736,13 @@
   }
 }
 
-[data-theme='dark'] .input[type='date'] {
+[data-theme='dark'] .input[type='date'],
+[data-theme='dark'] .excelInputDate {
   color-scheme: dark;
 }
 
-[data-theme='light'] .input[type='date'] {
+[data-theme='light'] .input[type='date'],
+[data-theme='light'] .excelInputDate {
   color-scheme: light;
 }
 
@@ -998,6 +1000,10 @@
   border-radius: 8px;
 }
 
+[data-theme='dark'] .excelTableWrap {
+  color-scheme: dark;
+}
+
 .excelTable {
   width: 100%;
   border-collapse: collapse;
@@ -1009,8 +1015,9 @@
   padding: 0.5rem 0.6rem;
   text-align: left;
   font-weight: 600;
-  background: #e2e8f0;
-  border: 1px solid #cbd5e1;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
   white-space: nowrap;
   position: sticky;
   top: 0;
@@ -1022,16 +1029,20 @@
 }
 
 .excelTr:nth-child(even) {
-  background: #f8fafc;
+  background: var(--bg-card);
 }
 
 .excelTr:hover {
-  background: #f1f5f9;
+  background: var(--hover-bg);
+}
+
+[data-theme='dark'] .excelTr:hover {
+  background: color-mix(in srgb, var(--bg-card) 85%, var(--text-primary) 15%);
 }
 
 .excelTd {
   padding: 0.4rem 0.6rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   vertical-align: middle;
 }
 
@@ -1042,6 +1053,8 @@
   font-size: 0.85rem;
   border: 1px solid var(--border-color);
   border-radius: 4px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .excelInput:focus {
@@ -1055,6 +1068,8 @@
   font-size: 0.85rem;
   border: 1px solid var(--border-color);
   border-radius: 4px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .excelInputNarrow:focus {
@@ -1068,6 +1083,8 @@
   font-size: 0.85rem;
   border: 1px solid var(--border-color);
   border-radius: 4px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .excelInputDate:focus {
@@ -1079,12 +1096,19 @@
   width: 100%;
   min-width: 7.5rem;
   max-width: 11rem;
-  padding: 0.3rem 0.35rem;
+  padding: 0.3rem 1.35rem 0.3rem 0.35rem;
   font-size: 0.8rem;
   border: 1px solid var(--border-color);
   border-radius: 4px;
-  background: var(--bg-primary);
+  background-color: var(--bg-primary);
   color: var(--text-primary);
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M3 4.5L6 8l3-3.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.35rem center;
+  background-size: 0.65rem;
 }
 
 .excelSelect:focus {
@@ -1106,17 +1130,27 @@
   background: #fee2e2;
 }
 
+[data-theme='dark'] .excelRemoveBtn {
+  background: color-mix(in srgb, #dc2626 18%, transparent);
+  border-color: #f87171;
+  color: #fca5a5;
+}
+
+[data-theme='dark'] .excelRemoveBtn:hover:not(:disabled) {
+  background: color-mix(in srgb, #dc2626 28%, transparent);
+}
+
 .excelCellDash {
   display: inline-block;
   min-width: 1.25rem;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   text-align: center;
 }
 
 .gridViewFootnote {
   margin: 0.5rem 0 0;
   font-size: 0.8rem;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .addProductBtn {
