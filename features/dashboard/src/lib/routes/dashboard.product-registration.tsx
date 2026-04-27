@@ -68,9 +68,9 @@ function numOr0(v: number | null | undefined): number {
 }
 
 /**
- * Line subtotal = sum of qty × unit cost (costPrice, else priceToRetail).
- * Tax total = sum over lines of (line base × (SGST% + CGST%) / 100), when rates are present.
- * Assumes unit cost is pre-tax (typical B2B purchase); if OCR only gives inclusive amounts, totals are approximate.
+ * Line subtotal = sum of tax-exclusive line values.
+ * Tax total = sum of tax extracted from tax-inclusive line values.
+ * For OCR inputs, unit values are treated as tax-inclusive when GST rates exist.
  */
 function computeVendorInvoiceTotalsFromParseItems(
   items: ParseInvoiceItem[]
@@ -92,19 +92,51 @@ function computeVendorInvoiceTotalsFromParseItems(
         : Number.isFinite(ptr) && ptr > 0
           ? ptr
           : 0;
-    const lineBase = roundMoney(q * unit);
-    lineSubTotal += lineBase;
+    const lineGross = roundMoney(q * unit);
     const sgst = parseGstPercent(item.sgst ?? undefined);
     const cgst = parseGstPercent(item.cgst ?? undefined);
     const pct = sgst + cgst;
-    if (pct > 0 && lineBase > 0) {
-      taxTotal += roundMoney(lineBase * (pct / 100));
+    if (pct > 0 && lineGross > 0) {
+      const divisor = 1 + pct / 100;
+      const lineBase = roundMoney(lineGross / divisor);
+      const lineTax = roundMoney(lineGross - lineBase);
+      lineSubTotal += lineBase;
+      taxTotal += lineTax;
+    } else {
+      lineSubTotal += lineGross;
     }
   }
   return {
     lineSubTotal: roundMoney(lineSubTotal),
     taxTotal: roundMoney(taxTotal),
   };
+}
+
+function computeVendorInvoiceTotalFromFields(
+  lineSubTotal: string,
+  taxTotal: string,
+  shippingCharge: string,
+  otherCharges: string,
+  roundOff: string
+): string {
+  const values = [
+    lineSubTotal,
+    taxTotal,
+    shippingCharge,
+    otherCharges,
+    roundOff,
+  ];
+  const hasAnyValue = values.some((v) => v.trim() !== '');
+  if (!hasAnyValue) return '';
+
+  const total = roundMoney(
+    numOr0(optionalNumFromString(lineSubTotal)) +
+      numOr0(optionalNumFromString(taxTotal)) +
+      numOr0(optionalNumFromString(shippingCharge)) +
+      numOr0(optionalNumFromString(otherCharges)) +
+      numOr0(optionalNumFromString(roundOff))
+  );
+  return formatComputedAmount(total);
 }
 
 export function meta() {
@@ -230,17 +262,28 @@ export default function ProductRegistrationPage() {
     if (hasItems) {
       const { lineSubTotal, taxTotal } =
         computeVendorInvoiceTotalsFromParseItems(parsedItems);
-      const shipping = numOr0(v?.shippingCharge);
-      const other = numOr0(v?.otherCharges);
-      const roundOff = numOr0(v?.roundOff);
-      const invoiceTotal = roundMoney(
-        lineSubTotal + taxTotal + shipping + other + roundOff
-      );
       setVendorLineSubTotal(formatComputedAmount(lineSubTotal));
       setVendorTaxTotal(formatComputedAmount(taxTotal));
-      setVendorInvoiceTotal(formatComputedAmount(invoiceTotal));
     }
   };
+
+  useEffect(() => {
+    setVendorInvoiceTotal(
+      computeVendorInvoiceTotalFromFields(
+        vendorLineSubTotal,
+        vendorTaxTotal,
+        vendorShippingCharge,
+        vendorOtherCharges,
+        vendorRoundOff
+      )
+    );
+  }, [
+    vendorLineSubTotal,
+    vendorTaxTotal,
+    vendorShippingCharge,
+    vendorOtherCharges,
+    vendorRoundOff,
+  ]);
 
   // Take on credit (buyer owes vendor) - when true, ledger entry is created
   const [onCredit, setOnCredit] = useState<boolean>(false);
@@ -2012,9 +2055,9 @@ export default function ProductRegistrationPage() {
                       inputMode="decimal"
                       className={styles.input}
                       value={vendorInvoiceTotal}
-                      onChange={(e) => setVendorInvoiceTotal(e.target.value)}
                       placeholder="0"
                       disabled={isLoading}
+                      readOnly
                     />
                   </div>
                 </div>
