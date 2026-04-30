@@ -732,6 +732,7 @@ export interface VendorPurchaseInvoiceLineDto {
 export interface VendorPurchaseInvoiceSummary {
   id: string;
   vendorId: string;
+  vendorName?: string | null;
   invoiceNo: string;
   invoiceDate: string | null;
   invoiceTotal: number | null;
@@ -744,6 +745,7 @@ export interface VendorPurchaseInvoiceSummary {
 export interface VendorPurchaseInvoiceDetail {
   id: string;
   vendorId: string;
+  vendorName?: string | null;
   invoiceNo: string;
   invoiceDate: string | null;
   lineSubTotal: number | null;

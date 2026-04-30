@@ -101,6 +101,7 @@ export const API_ENDPOINTS = {
     PARSE_INVOICE: '/inventory/parse-invoice',
     PARSE_STOCK_SHEET: '/inventory/parse-stock-sheet',
     SEARCH: '/inventory/search',
+    BY_IDS: '/inventory/by-ids',
     LOTS: '/inventory/lots',
     LOW_STOCK: '/inventory/low-stock',
     BY_ID: (id: string) => `/inventory/${id}`,

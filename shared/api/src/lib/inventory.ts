@@ -103,6 +103,14 @@ export const inventoryApi = {
     return response.data;
   },
 
+  getByIds: async (inventoryIds: string[]): Promise<InventoryItem[]> => {
+    const response = await apiClient.post<ApiResponse<InventoryItem[]>>(
+      API_ENDPOINTS.INVENTORY.BY_IDS,
+      { inventoryIds }
+    );
+    return response.data ?? [];
+  },
+
   updateThreshold: async (
     inventoryId: string,
     thresholdCount: number
