@@ -13,10 +13,10 @@ import { useNotify } from '@inventory-platform/store';
 
 export function meta() {
   return [
-    { title: 'Return - StockKart' },
+    { title: 'Return to customer - StockKart' },
     {
       name: 'description',
-      content: 'Process returns for purchases',
+      content: 'Process customer purchase returns',
     },
   ];
 }
@@ -253,9 +253,9 @@ export default function RefundPage() {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <h2 className={styles.title}>Return Management</h2>
+        <h2 className={styles.title}>Return to customer</h2>
         <p className={styles.subtitle}>
-          Process returns for purchases and view return history
+          Process customer sale returns and view return history
         </p>
       </div>
 

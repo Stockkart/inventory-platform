@@ -13,6 +13,13 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
+function moneyOrDash(n: number | null | undefined): string {
+  if (n === null || n === undefined || Number.isNaN(n)) {
+    return '—';
+  }
+  return formatCurrency(n);
+}
+
 function formatDate(dateString: string): string {
   try {
     const date = new Date(dateString);
@@ -129,6 +136,41 @@ export function RefundHistoryList({ refreshTrigger }: RefundHistoryListProps) {
                 </div>
               )}
             </div>
+            {refund.refundedItems && refund.refundedItems.length > 0 ? (
+              <div className={styles.breakdownWrap}>
+                <div className={styles.breakdownTitle}>Returned items</div>
+                <div className={styles.breakdownScroll}>
+                  <table className={styles.breakdownTable}>
+                    <thead>
+                      <tr>
+                        <th scope="col">Product</th>
+                        <th scope="col">Qty</th>
+                        <th scope="col">Unit price</th>
+                        <th scope="col">Line refund</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {refund.refundedItems.map((row, idx) => (
+                        <tr key={`${row.inventoryId}-${idx}`}>
+                          <td>
+                            {row.name?.trim()
+                              ? row.name
+                              : row.inventoryId ?? '—'}
+                          </td>
+                          <td>{row.quantity}</td>
+                          <td>{moneyOrDash(row.priceToRetail)}</td>
+                          <td>{moneyOrDash(row.itemRefundAmount)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <p className={styles.breakdownLegacyNote}>
+                No line-by-line breakdown saved for this return (often older records).
+              </p>
+            )}
           </div>
         ))}
       </div>

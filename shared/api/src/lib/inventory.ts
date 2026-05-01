@@ -14,6 +14,10 @@ import type {
   InventoryItem,
   VendorPurchaseInvoiceDetail,
   VendorPurchaseInvoiceListResponse,
+  VendorPurchaseReturnPayload,
+  VendorPurchaseReturnResult,
+  VendorPurchaseReturnListDto,
+  GetVendorPurchaseReturnsParams,
   CreateInventoryCorrectionRequest,
   InventoryCorrection,
   InventoryCorrectionListResponse,
@@ -201,6 +205,30 @@ export const inventoryApi = {
     const response = await apiClient.get<
       ApiResponse<VendorPurchaseInvoiceDetail>
     >(API_ENDPOINTS.VENDOR_PURCHASE_INVOICES.BY_ID(id));
+    return response.data;
+  },
+
+  createVendorPurchaseReturn: async (
+    payload: VendorPurchaseReturnPayload
+  ): Promise<VendorPurchaseReturnResult> => {
+    const response = await apiClient.post<
+      ApiResponse<VendorPurchaseReturnResult>
+    >(API_ENDPOINTS.VENDOR_PURCHASE_RETURNS.BASE, payload);
+    return response.data;
+  },
+
+  listVendorPurchaseReturns: async (
+    params?: GetVendorPurchaseReturnsParams
+  ): Promise<VendorPurchaseReturnListDto> => {
+    const queryParams: Record<string, string> = {};
+    if (params?.page) queryParams.page = String(params.page);
+    if (params?.limit) queryParams.limit = String(params.limit);
+    const inv = params?.invoiceNo?.trim();
+    if (inv) queryParams.invoiceNo = inv;
+
+    const response = await apiClient.get<
+      ApiResponse<VendorPurchaseReturnListDto>
+    >(API_ENDPOINTS.VENDOR_PURCHASE_RETURNS.BASE, queryParams);
     return response.data;
   },
 

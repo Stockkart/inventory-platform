@@ -46,6 +46,7 @@ export default [
       './routes/dashboard.vendor-invoices.tsx'
     ),
     route('stock-corrections', './routes/dashboard.stock-corrections.tsx'),
+    route('vendor-return', './routes/dashboard.vendor-return.tsx'),
     route('refund', './routes/dashboard.refund.tsx'),
     route('credit-ledger', './routes/dashboard.credit-ledger.tsx'),
     route('price-edit/:pricingId', './routes/dashboard.price-edit.tsx'),

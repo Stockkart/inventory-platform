@@ -233,7 +233,13 @@ function InvoiceExpandedBody({
   );
 }
 
-export default function VendorInvoicesPage() {
+export type VendorInvoicesPageProps = {
+  embedded?: boolean;
+};
+
+export default function VendorInvoicesPage({
+  embedded = false,
+}: VendorInvoicesPageProps) {
   const [page, setPage] = useState(0);
   const [size] = useState(20);
   const [searchInput, setSearchInput] = useState('');
@@ -301,7 +307,11 @@ export default function VendorInvoicesPage() {
   }, []);
 
   const hydrateInventoryForInvoice = useCallback(
-    async (invoiceId: string, detail: VendorPurchaseInvoiceDetail) => {
+    async (
+      invoiceId: string,
+      detail: VendorPurchaseInvoiceDetail,
+      options?: { bypassCache?: boolean }
+    ) => {
       const ids = Array.from(
         new Set(
           (detail.lines ?? [])
@@ -311,7 +321,10 @@ export default function VendorInvoicesPage() {
       );
       if (ids.length === 0) return;
 
-      const idsToFetch = ids.filter((id) => !inventoryById[id]);
+      const bypass = options?.bypassCache === true;
+      const idsToFetch = bypass
+        ? ids
+        : ids.filter((id) => !inventoryById[id]);
       if (idsToFetch.length === 0) return;
 
       setInventoryLoadingByInvoice((prev) => ({ ...prev, [invoiceId]: true }));
@@ -401,14 +414,22 @@ export default function VendorInvoicesPage() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.hero}>
-        <h1 className={styles.heroTitle}>Vendor purchase invoices</h1>
-        <p className={styles.heroSubtitle}>
-          Supplier bills linked to stock-in registrations. Search by product, barcode,
-          invoice number, or vendor name. Expand a row to see line items and
-          totals.
+      {!embedded ? (
+        <header className={styles.hero}>
+          <h1 className={styles.heroTitle}>Vendor purchase invoices</h1>
+          <p className={styles.heroSubtitle}>
+            Supplier bills linked to stock-in registrations. Search by product, barcode,
+            invoice number, or vendor name. Expand a row to see line items and
+            totals. To return stock to a supplier, use{' '}
+            <strong>Return to vendor</strong> under Products &amp; Sales.
+          </p>
+        </header>
+      ) : (
+        <p className={styles.heroSubtitle} style={{ marginBottom: '1rem' }}>
+          Supplier bills (stock‑in). To return stock, use the <strong>Return to vendor</strong>{' '}
+          tab here in History.
         </p>
-      </header>
+      )}
 
       {error && (
         <div className={styles.alertError} role="alert">

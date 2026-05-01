@@ -155,6 +155,12 @@ export default function VendorsPage() {
     });
   };
 
+  const goReturnToVendor = (vendor: VendorResponse) => {
+    navigate('/dashboard/vendor-return', {
+      state: { prefillVendor: vendor },
+    });
+  };
+
   if (loading && data.length === 0) {
     return (
       <div className={styles.container}>
@@ -240,6 +246,14 @@ export default function VendorsPage() {
                         title="Open product registration with this vendor selected"
                       >
                         Buy product
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.returnBtn}
+                        onClick={() => goReturnToVendor(v)}
+                        title="Open Return to vendor for this supplier"
+                      >
+                        Return stock
                       </button>
                       <button
                         type="button"

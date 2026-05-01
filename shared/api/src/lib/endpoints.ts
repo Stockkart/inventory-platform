@@ -94,6 +94,11 @@ export const API_ENDPOINTS = {
     BY_ID: (id: string) => `/vendor-purchase-invoices/${id}`,
   },
 
+  /** Purchase returns → stock reduction + GSTR-2 CDNR/CDNUR */
+  VENDOR_PURCHASE_RETURNS: {
+    BASE: '/vendor-purchase-returns',
+  },
+
   INVENTORY_CORRECTIONS: {
     BASE: '/inventory-corrections',
     BY_ID: (id: string) => `/inventory-corrections/${id}`,

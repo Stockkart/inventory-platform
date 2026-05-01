@@ -770,6 +770,69 @@ export interface VendorPurchaseInvoiceListResponse {
   };
 }
 
+/** Return stock against a vendor purchase invoice (base units — same as inventory currentBaseCount). */
+export interface VendorPurchaseReturnItemPayload {
+  inventoryId: string;
+  baseQuantityReturned: number;
+}
+
+export interface VendorPurchaseReturnPayload {
+  vendorPurchaseInvoiceId: string;
+  items: VendorPurchaseReturnItemPayload[];
+  reason?: string | null;
+}
+
+export interface VendorPurchaseReturnResult {
+  returnId: string;
+  supplierCreditNoteNo: string;
+  vendorPurchaseInvoiceId: string;
+  returnAmount: number;
+  totalLinesReturned: number;
+  createdAt: string;
+}
+
+/** One inventory line on a supplier return record (history). */
+export interface VendorPurchaseReturnLineSummary {
+  inventoryId: string | null;
+  productName: string | null;
+  barcode: string | null;
+  baseQuantityReturned: number | null;
+  taxableValue: number | null;
+  centralGstAmount: number | null;
+  stateGstAmount: number | null;
+  lineNoteValue: number | null;
+}
+
+/** One row from GET /vendor-purchase-returns (supplier return history). */
+export interface VendorPurchaseReturnSummary {
+  returnId: string;
+  supplierCreditNoteNo: string;
+  vendorPurchaseInvoiceId: string;
+  invoiceNo: string | null;
+  vendorName: string | null;
+  returnAmount: number;
+  totalLinesReturned: number;
+  /** Per-line quantities and tax (empty when legacy records had no persisted lines). */
+  lines?: VendorPurchaseReturnLineSummary[];
+  reason: string | null;
+  createdAt: string;
+}
+
+export interface GetVendorPurchaseReturnsParams {
+  page?: number;
+  limit?: number;
+  /** Exact purchase invoice number on the vendor bill */
+  invoiceNo?: string;
+}
+
+export interface VendorPurchaseReturnListDto {
+  returns: VendorPurchaseReturnSummary[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 export type InventoryCorrectionStatus =
   | 'PENDING'
   | 'PARTIALLY_APPROVED'
@@ -1239,6 +1302,8 @@ export interface Refund {
   customerEmail: string | null;
   refundAmount: number;
   totalItemsRefunded: number;
+  /** Per SKU lines when stored on document (omit on very old refunds). */
+  refundedItems?: RefundedItem[] | null;
   reason: string | null;
   createdAt: string;
 }

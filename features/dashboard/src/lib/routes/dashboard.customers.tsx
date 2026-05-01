@@ -246,9 +246,9 @@ export default function CustomersPage() {
                         type="button"
                         className={styles.returnBtn}
                         onClick={() => goReturnWithCustomer(c)}
-                        title="Open Return with this customer filled in"
+                        title="Open Return to customer with this customer prefilled"
                       >
-                        Return
+                        Return to customer
                       </button>
                       <button
                         type="button"
