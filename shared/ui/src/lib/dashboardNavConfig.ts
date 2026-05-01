@@ -72,6 +72,11 @@ export const DASHBOARD_MENU_GROUPS: DashboardMenuGroup[] = [
         label: 'Vendor invoices',
         icon: '🧾',
       },
+      {
+        path: '/dashboard/stock-corrections',
+        label: 'Stock corrections',
+        icon: '🛠️',
+      },
     ],
   },
   {

@@ -236,6 +236,8 @@ function InvoiceExpandedBody({
 export default function VendorInvoicesPage() {
   const [page, setPage] = useState(0);
   const [size] = useState(20);
+  const [searchInput, setSearchInput] = useState('');
+  const [listQuery, setListQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalPages, setTotalPages] = useState(0);
@@ -260,7 +262,11 @@ export default function VendorInvoicesPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await inventoryApi.listVendorPurchaseInvoices(page, size);
+      const res = await inventoryApi.listVendorPurchaseInvoices(
+        page,
+        size,
+        listQuery || undefined
+      );
       setInvoices(res.invoices ?? []);
       setTotalPages(res.page?.totalPages ?? 0);
     } catch (e) {
@@ -268,10 +274,11 @@ export default function VendorInvoicesPage() {
         e instanceof Error ? e.message : 'Failed to load vendor invoices'
       );
       setInvoices([]);
+      setTotalPages(0);
     } finally {
       setLoading(false);
     }
-  }, [page, size]);
+  }, [page, size, listQuery]);
 
   useEffect(() => {
     loadList();
@@ -280,6 +287,18 @@ export default function VendorInvoicesPage() {
   useEffect(() => {
     setExpandedId(null);
   }, [page]);
+
+  const runSearch = useCallback(() => {
+    const q = searchInput.trim();
+    setPage(0);
+    setListQuery(q);
+  }, [searchInput]);
+
+  const clearSearch = useCallback(() => {
+    setSearchInput('');
+    setPage(0);
+    setListQuery('');
+  }, []);
 
   const hydrateInventoryForInvoice = useCallback(
     async (invoiceId: string, detail: VendorPurchaseInvoiceDetail) => {
@@ -385,8 +404,9 @@ export default function VendorInvoicesPage() {
       <header className={styles.hero}>
         <h1 className={styles.heroTitle}>Vendor purchase invoices</h1>
         <p className={styles.heroSubtitle}>
-          Supplier bills linked to stock-in registrations. Expand a row to see
-          line items and totals.
+          Supplier bills linked to stock-in registrations. Search by product, barcode,
+          invoice number, or vendor name. Expand a row to see line items and
+          totals.
         </p>
       </header>
 
@@ -397,12 +417,44 @@ export default function VendorInvoicesPage() {
       )}
 
       <div className={styles.surface}>
+        <div className={styles.searchBar}>
+          <input
+            type="search"
+            className={styles.searchInput}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') runSearch();
+            }}
+            placeholder="Product, barcode, invoice no, or vendor"
+            aria-label="Search invoices by product, barcode, invoice number, or vendor name"
+          />
+          <button type="button" className={styles.searchBtn} onClick={runSearch}>
+            Search
+          </button>
+          {listQuery ? (
+            <button
+              type="button"
+              className={styles.searchBtnSecondary}
+              onClick={clearSearch}
+            >
+              Clear
+            </button>
+          ) : null}
+          <p className={styles.searchHint}>
+            Same pattern is tried against invoice number, vendor name, and each line’s
+            product name and barcode (case-insensitive). Examples:{' '}
+            <code>paracetamol|dolo</code>, <code>INV-712</code>, <code>^HIMP</code>.
+            Invalid patterns return an error from the server.
+          </p>
+        </div>
         {loading ? (
           <div className={styles.stateMuted}>Loading…</div>
         ) : invoices.length === 0 ? (
           <div className={styles.stateMuted}>
-            No vendor invoices yet. When you register stock with invoice
-            details, they appear here.
+            {listQuery
+              ? 'No invoices match this search. Try a different pattern or clear the filter.'
+              : 'No vendor invoices yet. When you register stock with invoice details, they appear here.'}
           </div>
         ) : (
           <>

@@ -94,6 +94,15 @@ export const API_ENDPOINTS = {
     BY_ID: (id: string) => `/vendor-purchase-invoices/${id}`,
   },
 
+  INVENTORY_CORRECTIONS: {
+    BASE: '/inventory-corrections',
+    BY_ID: (id: string) => `/inventory-corrections/${id}`,
+    APPROVE_LINE: (id: string, lineId: string) =>
+      `/inventory-corrections/${id}/lines/${lineId}/approve`,
+    REJECT_LINE: (id: string, lineId: string) =>
+      `/inventory-corrections/${id}/lines/${lineId}/reject`,
+  },
+
   // Inventory endpoints
   INVENTORY: {
     BASE: '/inventory',

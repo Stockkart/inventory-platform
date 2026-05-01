@@ -770,6 +770,66 @@ export interface VendorPurchaseInvoiceListResponse {
   };
 }
 
+export type InventoryCorrectionStatus =
+  | 'PENDING'
+  | 'PARTIALLY_APPROVED'
+  | 'APPLIED'
+  | 'REJECTED';
+
+export type InventoryCorrectionLineStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface InventoryCorrectionLineRequest {
+  inventoryId: string;
+  requestedCurrentCount: number;
+}
+
+export interface CreateInventoryCorrectionRequest {
+  vendorPurchaseInvoiceId?: string | null;
+  invoiceNo?: string | null;
+  vendorId?: string | null;
+  vendorName?: string | null;
+  note?: string | null;
+  lines: InventoryCorrectionLineRequest[];
+}
+
+export interface InventoryCorrectionLine {
+  lineId: string;
+  inventoryId: string;
+  productName: string | null;
+  previousCurrentCount: number | null;
+  previousCurrentBaseCount: number | null;
+  requestedCurrentCount: number;
+  requestedCurrentBaseCount: number | null;
+  status: InventoryCorrectionLineStatus;
+  processedAt: string | null;
+  processedByUserId: string | null;
+  rejectionReason: string | null;
+}
+
+export interface InventoryCorrection {
+  id: string;
+  vendorPurchaseInvoiceId: string | null;
+  invoiceNo: string | null;
+  vendorId: string | null;
+  vendorName: string | null;
+  status: InventoryCorrectionStatus;
+  note: string | null;
+  createdAt: string;
+  createdByUserId: string | null;
+  updatedAt: string | null;
+  lines: InventoryCorrectionLine[];
+}
+
+export interface InventoryCorrectionListResponse {
+  corrections: InventoryCorrection[];
+  page: {
+    page: number;
+    size: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
 export interface ParseInvoiceItem {
   barcode: string;
   name: string;
