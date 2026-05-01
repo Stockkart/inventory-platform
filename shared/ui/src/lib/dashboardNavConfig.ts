@@ -39,7 +39,7 @@ export const DASHBOARD_MENU_GROUPS: DashboardMenuGroup[] = [
       },
       { path: '/dashboard/pricing', label: 'Pricing', icon: '💰' },
       { path: '/dashboard/scan-sell', label: 'Scan and Sell', icon: '📱' },
-      { path: '/dashboard/refund', label: 'Refund', icon: '↩️' },
+      { path: '/dashboard/refund', label: 'Return', icon: '↩️' },
     ],
   },
   {

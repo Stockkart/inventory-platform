@@ -1219,6 +1219,7 @@ export interface RefundedItem {
 
 export interface RefundResponse {
   refundId: string;
+  creditNoteNo?: string;
   purchaseId: string;
   refundedItems: RefundedItem[];
   refundAmount: number;
@@ -1228,6 +1229,8 @@ export interface RefundResponse {
 
 export interface Refund {
   refundId: string;
+  /** Display number for returns / GSTR-1 (e.g. CN-00001). */
+  creditNoteNo?: string;
   purchaseId: string;
   invoiceNo: string;
   customerId: string;

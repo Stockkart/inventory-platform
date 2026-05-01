@@ -57,7 +57,7 @@ export function RefundHistoryList({ refreshTrigger }: RefundHistoryListProps) {
       const errorMessage =
         err instanceof Error
           ? err.message
-          : 'Failed to load refund history. Please try again.';
+          : 'Failed to load return history. Please try again.';
       notifyError(errorMessage);
       setRefunds([]);
     } finally {
@@ -79,7 +79,7 @@ export function RefundHistoryList({ refreshTrigger }: RefundHistoryListProps) {
   if (isLoading && refunds.length === 0) {
     return (
       <div className={styles.container}>
-        <div className={styles.loading}>Loading refund history...</div>
+        <div className={styles.loading}>Loading return history...</div>
       </div>
     );
   }
@@ -87,7 +87,7 @@ export function RefundHistoryList({ refreshTrigger }: RefundHistoryListProps) {
   if (refunds.length === 0) {
     return (
       <div className={styles.container}>
-        <div className={styles.emptyState}>No refunds found.</div>
+        <div className={styles.emptyState}>No returns found.</div>
       </div>
     );
   }
@@ -99,7 +99,8 @@ export function RefundHistoryList({ refreshTrigger }: RefundHistoryListProps) {
           <div key={refund.refundId} className={styles.refundCard}>
             <div className={styles.refundHeader}>
               <div>
-                <strong>Refund ID:</strong> {refund.refundId}
+                <strong>Credit note:</strong>{' '}
+                {refund.creditNoteNo ?? refund.refundId}
               </div>
               <div>
                 <strong>Date:</strong> {formatDate(refund.createdAt)}
@@ -116,10 +117,10 @@ export function RefundHistoryList({ refreshTrigger }: RefundHistoryListProps) {
                 <strong>Phone:</strong> {refund.customerPhone}
               </div>
               <div>
-                <strong>Items Refunded:</strong> {refund.totalItemsRefunded}
+                <strong>Items Returned:</strong> {refund.totalItemsRefunded}
               </div>
               <div>
-                <strong>Refund Amount:</strong>{' '}
+                <strong>Return Amount:</strong>{' '}
                 {formatCurrency(refund.refundAmount)}
               </div>
               {refund.reason && (

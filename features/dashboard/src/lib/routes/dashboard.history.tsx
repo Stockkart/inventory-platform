@@ -8,7 +8,7 @@ export function meta() {
     { title: 'History - StockKart' },
     {
       name: 'description',
-      content: 'View purchase and refund history',
+      content: 'View purchase and return history',
     },
   ];
 }
@@ -23,7 +23,7 @@ export default function HistoryPage() {
       <div className={styles.header}>
         <h1 className={styles.title}>History</h1>
         <p className={styles.subtitle}>
-          View purchase and refund history for your shop
+          View purchase and return history for your shop
         </p>
       </div>
 
@@ -44,7 +44,7 @@ export default function HistoryPage() {
           }`}
           onClick={() => setActiveTab('refunds')}
         >
-          Refund History
+          Return History
         </button>
         <Link to="/dashboard/vendor-invoices" className={styles.tab}>
           Vendor stock-in

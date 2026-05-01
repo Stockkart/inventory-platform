@@ -1,6 +1,8 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
+import { useLocation } from 'react-router';
 import { refundsApi } from '@inventory-platform/api';
 import type {
+  CustomerResponse,
   Purchase,
   RefundItem,
   SearchPurchasesParams,
@@ -11,10 +13,10 @@ import { useNotify } from '@inventory-platform/store';
 
 export function meta() {
   return [
-    { title: 'Refund - StockKart' },
+    { title: 'Return - StockKart' },
     {
       name: 'description',
-      content: 'Process refunds for purchases',
+      content: 'Process returns for purchases',
     },
   ];
 }
@@ -44,6 +46,10 @@ function formatDate(dateString: string): string {
 }
 
 export default function RefundPage() {
+  const location = useLocation();
+  const state = location.state as
+    | { prefillCustomer?: CustomerResponse; prefillTab?: 'process' | 'history' }
+    | null;
   const [activeTab, setActiveTab] = useState<'process' | 'history'>('process');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,6 +74,21 @@ export default function RefundPage() {
   // Refresh refund history when a refund is processed (used by RefundHistoryList)
   const [refundHistoryRefreshTrigger, setRefundHistoryRefreshTrigger] =
     useState(0);
+
+  useEffect(() => {
+    if (!state?.prefillCustomer) return;
+    const { name, phone, email } = state.prefillCustomer;
+
+    setSearchParams((prev) => ({
+      ...prev,
+      customerName: name ?? '',
+      customerPhone: phone ?? '',
+      customerEmail: email ?? '',
+    }));
+    setActiveTab(state.prefillTab ?? 'process');
+    setError(null);
+    setSuccess(null);
+  }, [state]);
 
   const handleSearchChange = (
     field: keyof SearchPurchasesParams,
@@ -169,7 +190,7 @@ export default function RefundPage() {
     });
 
     if (!hasItems) {
-      notifyError('Please select at least one item to refund.');
+      notifyError('Please select at least one item to return.');
       return;
     }
 
@@ -184,9 +205,9 @@ export default function RefundPage() {
       });
 
       notifySuccess(
-        `Refund processed successfully! Refund Amount: ${formatCurrency(
+        `Return processed successfully! Return Amount: ${formatCurrency(
           response.refundAmount
-        )}. Refund ID: ${response.refundId}`
+        )}. Credit note: ${response.creditNoteNo ?? response.refundId}`
       );
 
       // Reset form and refresh refund history
@@ -198,7 +219,7 @@ export default function RefundPage() {
       const errorMessage =
         err instanceof Error
           ? err.message
-          : 'Failed to process refund. Please try again.';
+          : 'Failed to process return. Please try again.';
       notifyError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -232,9 +253,9 @@ export default function RefundPage() {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <h2 className={styles.title}>Refund Management</h2>
+        <h2 className={styles.title}>Return Management</h2>
         <p className={styles.subtitle}>
-          Process refunds for purchases and view refund history
+          Process returns for purchases and view return history
         </p>
       </div>
 
@@ -245,7 +266,7 @@ export default function RefundPage() {
           }`}
           onClick={() => handleTabChange('process')}
         >
-          Process Refund
+          Process Return
         </button>
         <button
           className={`${styles.tab} ${
@@ -253,7 +274,7 @@ export default function RefundPage() {
           }`}
           onClick={() => handleTabChange('history')}
         >
-          Refund History
+          Return History
         </button>
       </div>
 
@@ -390,7 +411,7 @@ export default function RefundPage() {
                     {selectedPurchase?.purchaseId === purchase.purchaseId && (
                       <div className={styles.refundSection}>
                         <h3 className={styles.sectionTitle}>
-                          Select Items to Refund
+                          Select Items to Return
                         </h3>
                         <div className={styles.purchaseInfo}>
                           <div>
@@ -415,7 +436,7 @@ export default function RefundPage() {
                                 <th>MRP</th>
                                 <th>Selling Price</th>
                                 <th>Purchased Qty</th>
-                                <th>Refund Qty</th>
+                                <th>Return Qty</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -455,7 +476,7 @@ export default function RefundPage() {
 
                         <div className={styles.refundSummary}>
                           <div className={styles.summaryRow}>
-                            <span>Estimated Refund Amount:</span>
+                            <span>Estimated Return Amount:</span>
                             <strong>
                               {formatCurrency(calculateRefundTotal())}
                             </strong>
@@ -467,7 +488,7 @@ export default function RefundPage() {
                           onClick={handleProcessRefund}
                           disabled={isLoading || calculateRefundTotal() === 0}
                         >
-                          {isLoading ? 'Processing...' : 'Process Refund'}
+                          {isLoading ? 'Processing...' : 'Process Return'}
                         </button>
                       </div>
                     )}
@@ -482,7 +503,7 @@ export default function RefundPage() {
       {activeTab === 'history' && (
         <div className={styles.content}>
           <div className={styles.historySection}>
-            <h3 className={styles.sectionTitle}>Refund History</h3>
+            <h3 className={styles.sectionTitle}>Return History</h3>
             <RefundHistoryList refreshTrigger={refundHistoryRefreshTrigger} />
           </div>
         </div>
