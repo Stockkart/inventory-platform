@@ -148,6 +148,12 @@ export default function CustomersPage() {
     });
   };
 
+  const goReturnWithCustomer = (customer: CustomerResponse) => {
+    navigate('/dashboard/refund', {
+      state: { prefillCustomer: customer, prefillTab: 'process' },
+    });
+  };
+
   if (loading && data.length === 0) {
     return (
       <div className={styles.container}>
@@ -235,6 +241,14 @@ export default function CustomersPage() {
                         title="Open Scan and Sell with this customer filled in"
                       >
                         Sell
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.returnBtn}
+                        onClick={() => goReturnWithCustomer(c)}
+                        title="Open Return to customer with this customer prefilled"
+                      >
+                        Return to customer
                       </button>
                       <button
                         type="button"

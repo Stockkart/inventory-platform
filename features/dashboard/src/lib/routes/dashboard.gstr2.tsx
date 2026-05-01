@@ -337,7 +337,8 @@ export function Gstr2Tab() {
                         <tr>
                           <th>Supplier GSTIN</th>
                           <th>Note No</th>
-                          <th>Date</th>
+                          <th>Note date</th>
+                          <th>Original invoice</th>
                           <th className={styles.numCol}>Note Value</th>
                           <th>Rate %</th>
                           <th className={styles.numCol}>Taxable Value</th>
@@ -351,6 +352,12 @@ export function Gstr2Tab() {
                             <td>{row.supplierGstin || '—'}</td>
                             <td>{row.noteNumber || '—'}</td>
                             <td>{formatDate(row.noteDate ?? '')}</td>
+                            <td>
+                              {(row.invoiceNo || '—') +
+                                (row.invoiceDate
+                                  ? ` (${formatDate(row.invoiceDate)})`
+                                  : '')}
+                            </td>
                             <td className={styles.numCol}>{formatCurrency(row.noteValue)}</td>
                             <td>{row.rate ?? '—'}%</td>
                             <td className={styles.numCol}>{formatCurrency(row.taxableValue)}</td>
@@ -376,7 +383,8 @@ export function Gstr2Tab() {
                       <thead>
                         <tr>
                           <th>Note No</th>
-                          <th>Date</th>
+                          <th>Note date</th>
+                          <th>Original invoice</th>
                           <th className={styles.numCol}>Note Value</th>
                           <th>Rate %</th>
                           <th className={styles.numCol}>Taxable Value</th>
@@ -387,6 +395,12 @@ export function Gstr2Tab() {
                           <tr key={i}>
                             <td>{row.noteNumber || '—'}</td>
                             <td>{formatDate(row.noteDate ?? '')}</td>
+                            <td>
+                              {(row.invoiceNo || '—') +
+                                (row.invoiceDate
+                                  ? ` (${formatDate(row.invoiceDate)})`
+                                  : '')}
+                            </td>
                             <td className={styles.numCol}>{formatCurrency(row.noteValue)}</td>
                             <td>{row.rate ?? '—'}%</td>
                             <td className={styles.numCol}>{formatCurrency(row.taxableValue)}</td>

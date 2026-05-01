@@ -39,7 +39,16 @@ export const DASHBOARD_MENU_GROUPS: DashboardMenuGroup[] = [
       },
       { path: '/dashboard/pricing', label: 'Pricing', icon: '💰' },
       { path: '/dashboard/scan-sell', label: 'Scan and Sell', icon: '📱' },
-      { path: '/dashboard/refund', label: 'Refund', icon: '↩️' },
+      {
+        path: '/dashboard/refund',
+        label: 'Return to customer',
+        icon: '↩️',
+      },
+      {
+        path: '/dashboard/vendor-return',
+        label: 'Return to vendor',
+        icon: '📤',
+      },
     ],
   },
   {
@@ -68,9 +77,9 @@ export const DASHBOARD_MENU_GROUPS: DashboardMenuGroup[] = [
       { path: '/dashboard/taxes', label: 'Taxes', icon: '📋' },
       { path: '/dashboard/history', label: 'History', icon: '📜' },
       {
-        path: '/dashboard/vendor-invoices',
-        label: 'Vendor invoices',
-        icon: '🧾',
+        path: '/dashboard/stock-corrections',
+        label: 'Stock corrections',
+        icon: '🛠️',
       },
     ],
   },

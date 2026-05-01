@@ -94,6 +94,20 @@ export const API_ENDPOINTS = {
     BY_ID: (id: string) => `/vendor-purchase-invoices/${id}`,
   },
 
+  /** Purchase returns → stock reduction + GSTR-2 CDNR/CDNUR */
+  VENDOR_PURCHASE_RETURNS: {
+    BASE: '/vendor-purchase-returns',
+  },
+
+  INVENTORY_CORRECTIONS: {
+    BASE: '/inventory-corrections',
+    BY_ID: (id: string) => `/inventory-corrections/${id}`,
+    APPROVE_LINE: (id: string, lineId: string) =>
+      `/inventory-corrections/${id}/lines/${lineId}/approve`,
+    REJECT_LINE: (id: string, lineId: string) =>
+      `/inventory-corrections/${id}/lines/${lineId}/reject`,
+  },
+
   // Inventory endpoints
   INVENTORY: {
     BASE: '/inventory',
@@ -101,6 +115,7 @@ export const API_ENDPOINTS = {
     PARSE_INVOICE: '/inventory/parse-invoice',
     PARSE_STOCK_SHEET: '/inventory/parse-stock-sheet',
     SEARCH: '/inventory/search',
+    BY_IDS: '/inventory/by-ids',
     LOTS: '/inventory/lots',
     LOW_STOCK: '/inventory/low-stock',
     BY_ID: (id: string) => `/inventory/${id}`,

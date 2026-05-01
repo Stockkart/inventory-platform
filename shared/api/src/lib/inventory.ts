@@ -14,6 +14,13 @@ import type {
   InventoryItem,
   VendorPurchaseInvoiceDetail,
   VendorPurchaseInvoiceListResponse,
+  VendorPurchaseReturnPayload,
+  VendorPurchaseReturnResult,
+  VendorPurchaseReturnListDto,
+  GetVendorPurchaseReturnsParams,
+  CreateInventoryCorrectionRequest,
+  InventoryCorrection,
+  InventoryCorrectionListResponse,
 } from '@inventory-platform/types';
 import axios from 'axios';
 
@@ -103,6 +110,14 @@ export const inventoryApi = {
     return response.data;
   },
 
+  getByIds: async (inventoryIds: string[]): Promise<InventoryItem[]> => {
+    const response = await apiClient.post<ApiResponse<InventoryItem[]>>(
+      API_ENDPOINTS.INVENTORY.BY_IDS,
+      { inventoryIds }
+    );
+    return response.data ?? [];
+  },
+
   updateThreshold: async (
     inventoryId: string,
     thresholdCount: number
@@ -170,14 +185,17 @@ export const inventoryApi = {
 
   listVendorPurchaseInvoices: async (
     page = 0,
-    size = 20
+    size = 20,
+    query?: string
   ): Promise<VendorPurchaseInvoiceListResponse> => {
-    const response = await apiClient.get<
-      ApiResponse<VendorPurchaseInvoiceListResponse>
-    >(API_ENDPOINTS.VENDOR_PURCHASE_INVOICES.BASE, {
+    const params: Record<string, string> = {
       page: String(page),
       size: String(size),
-    });
+    };
+    if (query && query.trim() !== '') params.q = query.trim();
+    const response = await apiClient.get<
+      ApiResponse<VendorPurchaseInvoiceListResponse>
+    >(API_ENDPOINTS.VENDOR_PURCHASE_INVOICES.BASE, params);
     return response.data;
   },
 
@@ -187,6 +205,80 @@ export const inventoryApi = {
     const response = await apiClient.get<
       ApiResponse<VendorPurchaseInvoiceDetail>
     >(API_ENDPOINTS.VENDOR_PURCHASE_INVOICES.BY_ID(id));
+    return response.data;
+  },
+
+  createVendorPurchaseReturn: async (
+    payload: VendorPurchaseReturnPayload
+  ): Promise<VendorPurchaseReturnResult> => {
+    const response = await apiClient.post<
+      ApiResponse<VendorPurchaseReturnResult>
+    >(API_ENDPOINTS.VENDOR_PURCHASE_RETURNS.BASE, payload);
+    return response.data;
+  },
+
+  listVendorPurchaseReturns: async (
+    params?: GetVendorPurchaseReturnsParams
+  ): Promise<VendorPurchaseReturnListDto> => {
+    const queryParams: Record<string, string> = {};
+    if (params?.page) queryParams.page = String(params.page);
+    if (params?.limit) queryParams.limit = String(params.limit);
+    const inv = params?.invoiceNo?.trim();
+    if (inv) queryParams.invoiceNo = inv;
+
+    const response = await apiClient.get<
+      ApiResponse<VendorPurchaseReturnListDto>
+    >(API_ENDPOINTS.VENDOR_PURCHASE_RETURNS.BASE, queryParams);
+    return response.data;
+  },
+
+  createInventoryCorrection: async (
+    payload: CreateInventoryCorrectionRequest
+  ): Promise<InventoryCorrection> => {
+    const response = await apiClient.post<ApiResponse<InventoryCorrection>>(
+      API_ENDPOINTS.INVENTORY_CORRECTIONS.BASE,
+      payload
+    );
+    return response.data;
+  },
+
+  listInventoryCorrections: async (
+    page = 0,
+    size = 20,
+    status?: string
+  ): Promise<InventoryCorrectionListResponse> => {
+    const params: Record<string, string> = {
+      page: String(page),
+      size: String(size),
+    };
+    if (status && status.trim() !== '') params.status = status;
+    const response = await apiClient.get<ApiResponse<InventoryCorrectionListResponse>>(
+      API_ENDPOINTS.INVENTORY_CORRECTIONS.BASE,
+      params
+    );
+    return response.data;
+  },
+
+  approveInventoryCorrectionLine: async (
+    correctionId: string,
+    lineId: string
+  ): Promise<InventoryCorrection> => {
+    const response = await apiClient.post<ApiResponse<InventoryCorrection>>(
+      API_ENDPOINTS.INVENTORY_CORRECTIONS.APPROVE_LINE(correctionId, lineId),
+      {}
+    );
+    return response.data;
+  },
+
+  rejectInventoryCorrectionLine: async (
+    correctionId: string,
+    lineId: string,
+    reason?: string
+  ): Promise<InventoryCorrection> => {
+    const response = await apiClient.post<ApiResponse<InventoryCorrection>>(
+      API_ENDPOINTS.INVENTORY_CORRECTIONS.REJECT_LINE(correctionId, lineId),
+      { reason: reason ?? null }
+    );
     return response.data;
   },
 };

@@ -732,6 +732,7 @@ export interface VendorPurchaseInvoiceLineDto {
 export interface VendorPurchaseInvoiceSummary {
   id: string;
   vendorId: string;
+  vendorName?: string | null;
   invoiceNo: string;
   invoiceDate: string | null;
   invoiceTotal: number | null;
@@ -744,6 +745,7 @@ export interface VendorPurchaseInvoiceSummary {
 export interface VendorPurchaseInvoiceDetail {
   id: string;
   vendorId: string;
+  vendorName?: string | null;
   invoiceNo: string;
   invoiceDate: string | null;
   lineSubTotal: number | null;
@@ -760,6 +762,132 @@ export interface VendorPurchaseInvoiceDetail {
 
 export interface VendorPurchaseInvoiceListResponse {
   invoices: VendorPurchaseInvoiceSummary[];
+  page: {
+    page: number;
+    size: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
+/** Return stock against a vendor purchase invoice (base units — same as inventory currentBaseCount). */
+export interface VendorPurchaseReturnItemPayload {
+  inventoryId: string;
+  baseQuantityReturned: number;
+}
+
+export interface VendorPurchaseReturnPayload {
+  vendorPurchaseInvoiceId: string;
+  items: VendorPurchaseReturnItemPayload[];
+  reason?: string | null;
+}
+
+export interface VendorPurchaseReturnResult {
+  returnId: string;
+  supplierCreditNoteNo: string;
+  vendorPurchaseInvoiceId: string;
+  returnAmount: number;
+  totalLinesReturned: number;
+  createdAt: string;
+}
+
+/** One inventory line on a supplier return record (history). */
+export interface VendorPurchaseReturnLineSummary {
+  inventoryId: string | null;
+  productName: string | null;
+  barcode: string | null;
+  /** Quantity in shelf / invoice (sell) units — preferred for display. */
+  displayQuantityReturned?: number | null;
+  /** Smallest-stock-unit qty when auditing (optional). */
+  baseQuantityReturned?: number | null;
+  taxableValue: number | null;
+  centralGstAmount: number | null;
+  stateGstAmount: number | null;
+  lineNoteValue: number | null;
+}
+
+/** One row from GET /vendor-purchase-returns (supplier return history). */
+export interface VendorPurchaseReturnSummary {
+  returnId: string;
+  supplierCreditNoteNo: string;
+  vendorPurchaseInvoiceId: string;
+  invoiceNo: string | null;
+  vendorName: string | null;
+  returnAmount: number;
+  totalLinesReturned: number;
+  /** Per-line quantities and tax (empty when legacy records had no persisted lines). */
+  lines?: VendorPurchaseReturnLineSummary[];
+  reason: string | null;
+  createdAt: string;
+}
+
+export interface GetVendorPurchaseReturnsParams {
+  page?: number;
+  limit?: number;
+  /** Exact purchase invoice number on the vendor bill */
+  invoiceNo?: string;
+}
+
+export interface VendorPurchaseReturnListDto {
+  returns: VendorPurchaseReturnSummary[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export type InventoryCorrectionStatus =
+  | 'PENDING'
+  | 'PARTIALLY_APPROVED'
+  | 'APPLIED'
+  | 'REJECTED';
+
+export type InventoryCorrectionLineStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface InventoryCorrectionLineRequest {
+  inventoryId: string;
+  requestedCurrentCount: number;
+}
+
+export interface CreateInventoryCorrectionRequest {
+  vendorPurchaseInvoiceId?: string | null;
+  invoiceNo?: string | null;
+  vendorId?: string | null;
+  vendorName?: string | null;
+  note?: string | null;
+  lines: InventoryCorrectionLineRequest[];
+}
+
+export interface InventoryCorrectionLine {
+  lineId: string;
+  inventoryId: string;
+  productName: string | null;
+  previousCurrentCount: number | null;
+  previousCurrentBaseCount: number | null;
+  requestedCurrentCount: number;
+  requestedCurrentBaseCount: number | null;
+  status: InventoryCorrectionLineStatus;
+  processedAt: string | null;
+  processedByUserId: string | null;
+  rejectionReason: string | null;
+}
+
+export interface InventoryCorrection {
+  id: string;
+  vendorPurchaseInvoiceId: string | null;
+  invoiceNo: string | null;
+  vendorId: string | null;
+  vendorName: string | null;
+  status: InventoryCorrectionStatus;
+  note: string | null;
+  createdAt: string;
+  createdByUserId: string | null;
+  updatedAt: string | null;
+  lines: InventoryCorrectionLine[];
+}
+
+export interface InventoryCorrectionListResponse {
+  corrections: InventoryCorrection[];
   page: {
     page: number;
     size: number;
@@ -1157,6 +1285,7 @@ export interface RefundedItem {
 
 export interface RefundResponse {
   refundId: string;
+  creditNoteNo?: string;
   purchaseId: string;
   refundedItems: RefundedItem[];
   refundAmount: number;
@@ -1166,6 +1295,8 @@ export interface RefundResponse {
 
 export interface Refund {
   refundId: string;
+  /** Display number for returns / GSTR-1 (e.g. CN-00001). */
+  creditNoteNo?: string;
   purchaseId: string;
   invoiceNo: string;
   customerId: string;
@@ -1174,6 +1305,8 @@ export interface Refund {
   customerEmail: string | null;
   refundAmount: number;
   totalItemsRefunded: number;
+  /** Per SKU lines when stored on document (omit on very old refunds). */
+  refundedItems?: RefundedItem[] | null;
   reason: string | null;
   createdAt: string;
 }

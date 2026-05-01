@@ -13,6 +13,13 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
+function moneyOrDash(n: number | null | undefined): string {
+  if (n === null || n === undefined || Number.isNaN(n)) {
+    return '—';
+  }
+  return formatCurrency(n);
+}
+
 function formatDate(dateString: string): string {
   try {
     const date = new Date(dateString);
@@ -57,7 +64,7 @@ export function RefundHistoryList({ refreshTrigger }: RefundHistoryListProps) {
       const errorMessage =
         err instanceof Error
           ? err.message
-          : 'Failed to load refund history. Please try again.';
+          : 'Failed to load return history. Please try again.';
       notifyError(errorMessage);
       setRefunds([]);
     } finally {
@@ -79,7 +86,7 @@ export function RefundHistoryList({ refreshTrigger }: RefundHistoryListProps) {
   if (isLoading && refunds.length === 0) {
     return (
       <div className={styles.container}>
-        <div className={styles.loading}>Loading refund history...</div>
+        <div className={styles.loading}>Loading return history...</div>
       </div>
     );
   }
@@ -87,7 +94,7 @@ export function RefundHistoryList({ refreshTrigger }: RefundHistoryListProps) {
   if (refunds.length === 0) {
     return (
       <div className={styles.container}>
-        <div className={styles.emptyState}>No refunds found.</div>
+        <div className={styles.emptyState}>No returns found.</div>
       </div>
     );
   }
@@ -99,7 +106,8 @@ export function RefundHistoryList({ refreshTrigger }: RefundHistoryListProps) {
           <div key={refund.refundId} className={styles.refundCard}>
             <div className={styles.refundHeader}>
               <div>
-                <strong>Refund ID:</strong> {refund.refundId}
+                <strong>Credit note:</strong>{' '}
+                {refund.creditNoteNo ?? refund.refundId}
               </div>
               <div>
                 <strong>Date:</strong> {formatDate(refund.createdAt)}
@@ -116,10 +124,10 @@ export function RefundHistoryList({ refreshTrigger }: RefundHistoryListProps) {
                 <strong>Phone:</strong> {refund.customerPhone}
               </div>
               <div>
-                <strong>Items Refunded:</strong> {refund.totalItemsRefunded}
+                <strong>Items Returned:</strong> {refund.totalItemsRefunded}
               </div>
               <div>
-                <strong>Refund Amount:</strong>{' '}
+                <strong>Return Amount:</strong>{' '}
                 {formatCurrency(refund.refundAmount)}
               </div>
               {refund.reason && (
@@ -128,6 +136,41 @@ export function RefundHistoryList({ refreshTrigger }: RefundHistoryListProps) {
                 </div>
               )}
             </div>
+            {refund.refundedItems && refund.refundedItems.length > 0 ? (
+              <div className={styles.breakdownWrap}>
+                <div className={styles.breakdownTitle}>Returned items</div>
+                <div className={styles.breakdownScroll}>
+                  <table className={styles.breakdownTable}>
+                    <thead>
+                      <tr>
+                        <th scope="col">Product</th>
+                        <th scope="col">Qty</th>
+                        <th scope="col">Unit price</th>
+                        <th scope="col">Line refund</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {refund.refundedItems.map((row, idx) => (
+                        <tr key={`${row.inventoryId}-${idx}`}>
+                          <td>
+                            {row.name?.trim()
+                              ? row.name
+                              : row.inventoryId ?? '—'}
+                          </td>
+                          <td>{row.quantity}</td>
+                          <td>{moneyOrDash(row.priceToRetail)}</td>
+                          <td>{moneyOrDash(row.itemRefundAmount)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <p className={styles.breakdownLegacyNote}>
+                No line-by-line breakdown saved for this return (often older records).
+              </p>
+            )}
           </div>
         ))}
       </div>

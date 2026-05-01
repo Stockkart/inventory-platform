@@ -68,9 +68,9 @@ function numOr0(v: number | null | undefined): number {
 }
 
 /**
- * Line subtotal = sum of qty × unit cost (costPrice, else priceToRetail).
- * Tax total = sum over lines of (line base × (SGST% + CGST%) / 100), when rates are present.
- * Assumes unit cost is pre-tax (typical B2B purchase); if OCR only gives inclusive amounts, totals are approximate.
+ * Line subtotal = sum of tax-exclusive line values (PTS/PTR × qty before GST).
+ * Tax total = SGST + CGST computed on top of that taxable (not reverse-calculated
+ * from a tax-inclusive lump). Matches typical purchase bills: line amount ex-GST + tax.
  */
 function computeVendorInvoiceTotalsFromParseItems(
   items: ParseInvoiceItem[]
@@ -83,28 +83,67 @@ function computeVendorInvoiceTotalsFromParseItems(
       qtyRaw != null && Number.isFinite(Number(qtyRaw))
         ? Math.max(0, Number(qtyRaw))
         : 0;
-    const cost =
+    // Purchase valuation: PTS (costPrice / stockist) when present — including 0.
+    // Do not fall through to PTR (retailer transfer) when PTS is intentionally 0;
+    // use PTR only if stockist price was omitted (matches OCR-only-PTR lines).
+    const pts =
       item.costPrice != null ? Number(item.costPrice) : Number.NaN;
     const ptr = Number(item.priceToRetail);
-    const unit =
-      Number.isFinite(cost) && cost > 0
-        ? cost
-        : Number.isFinite(ptr) && ptr > 0
-          ? ptr
-          : 0;
-    const lineBase = roundMoney(q * unit);
-    lineSubTotal += lineBase;
+    let unit = 0;
+    if (item.costPrice != null && Number.isFinite(pts) && pts >= 0) {
+      unit = pts;
+    } else if (Number.isFinite(ptr) && ptr > 0) {
+      unit = ptr;
+    }
+    const lineTaxableExclusive = roundMoney(q * unit);
     const sgst = parseGstPercent(item.sgst ?? undefined);
     const cgst = parseGstPercent(item.cgst ?? undefined);
     const pct = sgst + cgst;
-    if (pct > 0 && lineBase > 0) {
-      taxTotal += roundMoney(lineBase * (pct / 100));
+    if (pct > 0 && lineTaxableExclusive > 0) {
+      const cgstAmt = roundMoney(
+        (lineTaxableExclusive * cgst) / 100
+      );
+      const sgstAmt = roundMoney(
+        (lineTaxableExclusive * sgst) / 100
+      );
+      const lineTax = roundMoney(cgstAmt + sgstAmt);
+      lineSubTotal += lineTaxableExclusive;
+      taxTotal += lineTax;
+    } else {
+      lineSubTotal += lineTaxableExclusive;
     }
   }
   return {
     lineSubTotal: roundMoney(lineSubTotal),
     taxTotal: roundMoney(taxTotal),
   };
+}
+
+function computeVendorInvoiceTotalFromFields(
+  lineSubTotal: string,
+  taxTotal: string,
+  shippingCharge: string,
+  otherCharges: string,
+  roundOff: string
+): string {
+  const values = [
+    lineSubTotal,
+    taxTotal,
+    shippingCharge,
+    otherCharges,
+    roundOff,
+  ];
+  const hasAnyValue = values.some((v) => v.trim() !== '');
+  if (!hasAnyValue) return '';
+
+  const total = roundMoney(
+    numOr0(optionalNumFromString(lineSubTotal)) +
+      numOr0(optionalNumFromString(taxTotal)) +
+      numOr0(optionalNumFromString(shippingCharge)) +
+      numOr0(optionalNumFromString(otherCharges)) +
+      numOr0(optionalNumFromString(roundOff))
+  );
+  return formatComputedAmount(total);
 }
 
 export function meta() {
@@ -140,6 +179,46 @@ interface ProductFormData
   enableAdditionalSaleUnit?: boolean;
   rates?: PricingRate[];
   defaultRate?: string;
+}
+
+/** Parse numeric-ish form fields used for GST valuation (same precedence as OCR lines). */
+function numericProductMoney(v: number | string | undefined): number | null {
+  if (v === '' || v == null) return null;
+  const n = typeof v === 'number' ? v : Number(String(v).trim());
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Recompute supplier bill line subtotal + tax total from live product rows. */
+function computeVendorInvoiceTotalsFromProducts(
+  productRows: ProductFormData[],
+  billingModeForGst: BillingMode
+): { lineSubTotal: number; taxTotal: number } {
+  const items: ParseInvoiceItem[] = productRows.map((p) => {
+    const cost = numericProductMoney(p.costPrice);
+    const ptr = numericProductMoney(p.priceToRetail);
+    return {
+      barcode: '',
+      name: '',
+      businessType: 'pharmacy',
+      maximumRetailPrice: numericProductMoney(p.maximumRetailPrice) ?? 0,
+      costPrice: cost,
+      priceToRetail: ptr ?? 0,
+      count: p.count,
+      sgst:
+        billingModeForGst === 'BASIC'
+          ? ''
+          : typeof p.sgst === 'string'
+            ? p.sgst
+            : '',
+      cgst:
+        billingModeForGst === 'BASIC'
+          ? ''
+          : typeof p.cgst === 'string'
+            ? p.cgst
+            : '',
+    };
+  });
+  return computeVendorInvoiceTotalsFromParseItems(items);
 }
 
 export default function ProductRegistrationPage() {
@@ -230,17 +309,28 @@ export default function ProductRegistrationPage() {
     if (hasItems) {
       const { lineSubTotal, taxTotal } =
         computeVendorInvoiceTotalsFromParseItems(parsedItems);
-      const shipping = numOr0(v?.shippingCharge);
-      const other = numOr0(v?.otherCharges);
-      const roundOff = numOr0(v?.roundOff);
-      const invoiceTotal = roundMoney(
-        lineSubTotal + taxTotal + shipping + other + roundOff
-      );
       setVendorLineSubTotal(formatComputedAmount(lineSubTotal));
       setVendorTaxTotal(formatComputedAmount(taxTotal));
-      setVendorInvoiceTotal(formatComputedAmount(invoiceTotal));
     }
   };
+
+  useEffect(() => {
+    setVendorInvoiceTotal(
+      computeVendorInvoiceTotalFromFields(
+        vendorLineSubTotal,
+        vendorTaxTotal,
+        vendorShippingCharge,
+        vendorOtherCharges,
+        vendorRoundOff
+      )
+    );
+  }, [
+    vendorLineSubTotal,
+    vendorTaxTotal,
+    vendorShippingCharge,
+    vendorOtherCharges,
+    vendorRoundOff,
+  ]);
 
   // Take on credit (buyer owes vendor) - when true, ledger entry is created
   const [onCredit, setOnCredit] = useState<boolean>(false);
@@ -251,6 +341,28 @@ export default function ProductRegistrationPage() {
 
   // Multiple products state
   const [products, setProducts] = useState<ProductFormData[]>([]);
+
+  const prevRegisteredProductCountRef = useRef(0);
+
+  // Keep invoice line subtotal / tax in sync whenever product rows or GST mode change.
+  useEffect(() => {
+    const n = products.length;
+    if (n === 0) {
+      if (prevRegisteredProductCountRef.current > 0) {
+        setVendorLineSubTotal('');
+        setVendorTaxTotal('');
+      }
+      prevRegisteredProductCountRef.current = 0;
+      return;
+    }
+    prevRegisteredProductCountRef.current = n;
+    const { lineSubTotal, taxTotal } = computeVendorInvoiceTotalsFromProducts(
+      products,
+      billingMode
+    );
+    setVendorLineSubTotal(formatComputedAmount(lineSubTotal));
+    setVendorTaxTotal(formatComputedAmount(taxTotal));
+  }, [products, billingMode]);
 
   // Product view mode: list (accordion) or grid (Excel-style)
   const [productViewMode, setProductViewMode] = useState<'list' | 'grid'>(
@@ -1882,6 +1994,20 @@ export default function ProductRegistrationPage() {
                   history of what was bought on each bill. Leave blank to
                   register stock without an invoice record.
                 </p>
+                {products.length > 0 ? (
+                  <p
+                    className={styles.helperText}
+                    style={{ marginBottom: '0.75rem', fontSize: '0.85rem' }}
+                  >
+                    Amounts tracked here follow each row&apos;s{' '}
+                    <strong>PTS (price from stockist)</strong> × quantity when
+                    PTS is set; <strong>PTR</strong> is only used when PTS is
+                    empty.{' '}
+                    {billingMode !== 'BASIC'
+                      ? 'With CGST/SGST on the row, PTS × qty is taxable value (ex‑GST); tax is added on top for line subtotal + tax totals.'
+                      : null}
+                  </p>
+                ) : null}
                 <div className={styles.sharedInfoGrid}>
                   <div className={styles.formGroup}>
                     <label htmlFor="vendorInvoiceNo" className={styles.label}>
@@ -2012,9 +2138,9 @@ export default function ProductRegistrationPage() {
                       inputMode="decimal"
                       className={styles.input}
                       value={vendorInvoiceTotal}
-                      onChange={(e) => setVendorInvoiceTotal(e.target.value)}
                       placeholder="0"
                       disabled={isLoading}
+                      readOnly
                     />
                   </div>
                 </div>

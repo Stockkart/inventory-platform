@@ -1,6 +1,9 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect, useMemo } from 'react';
+import { useLocation } from 'react-router';
 import { refundsApi } from '@inventory-platform/api';
 import type {
+  CheckoutItemResponse,
+  CustomerResponse,
   Purchase,
   RefundItem,
   SearchPurchasesParams,
@@ -11,10 +14,10 @@ import { useNotify } from '@inventory-platform/store';
 
 export function meta() {
   return [
-    { title: 'Refund - StockKart' },
+    { title: 'Return to customer - StockKart' },
     {
       name: 'description',
-      content: 'Process refunds for purchases',
+      content: 'Process customer purchase returns',
     },
   ];
 }
@@ -26,6 +29,62 @@ function formatCurrency(value: number): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value);
+}
+
+function parseGstPct(rate: string | null | undefined): number {
+  if (rate == null) return 0;
+  const s = String(rate).trim().replace(/%/g, '');
+  if (!s) return 0;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/** GST column for a sale line (matches vendor return screen wording). */
+function formatGstRatesLabelForSaleLine(line: CheckoutItemResponse): string {
+  const cg = parseGstPct(line.cgst);
+  const sg = parseGstPct(line.sgst);
+  if (cg <= 0 && sg <= 0) {
+    return line.billingMode === 'BASIC' ? 'Basic' : '—';
+  }
+  if (cg > 0 && sg > 0) {
+    return `CGST ${cg}% + SGST ${sg}%`;
+  }
+  if (cg > 0) return `CGST ${cg}%`;
+  return `SGST ${sg}%`;
+}
+
+const roundMoney2 = (n: number) => Math.round(n * 100) / 100;
+
+/**
+ * Mirrors RefundService: credit = priceToRetail × return qty (per selling unit on the bill).
+ * Optional tooltip lines assume tax-inclusive SP for a notional GST split (display only).
+ */
+function estimateCustomerRefundLine(
+  returnQty: number,
+  line: CheckoutItemResponse
+): { total: number; title: string } | null {
+  if (returnQty <= 0) return null;
+  const unit = Number(line.priceToRetail);
+  if (!Number.isFinite(unit) || unit < 0) return null;
+  const total = roundMoney2(unit * returnQty);
+
+  const parts = [
+    `Refund ${formatCurrency(total)} (${formatCurrency(unit)} × ${returnQty}); matches processed return.`,
+  ];
+
+  const cg = parseGstPct(line.cgst);
+  const sg = parseGstPct(line.sgst);
+  const sumPct = cg + sg;
+  if (sumPct > 0) {
+    const taxable = roundMoney2(total / (1 + sumPct / 100));
+    const cgst = roundMoney2((taxable * cg) / 100);
+    const sgst = roundMoney2((taxable * sg) / 100);
+    parts.push(
+      `If SP includes GST — taxable ${formatCurrency(taxable)}, CGST ${formatCurrency(cgst)}, SGST ${formatCurrency(sgst)}`
+    );
+  }
+
+  return { total, title: parts.join(' · ') };
 }
 
 function formatDate(dateString: string): string {
@@ -44,6 +103,10 @@ function formatDate(dateString: string): string {
 }
 
 export default function RefundPage() {
+  const location = useLocation();
+  const state = location.state as
+    | { prefillCustomer?: CustomerResponse; prefillTab?: 'process' | 'history' }
+    | null;
   const [activeTab, setActiveTab] = useState<'process' | 'history'>('process');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,6 +131,21 @@ export default function RefundPage() {
   // Refresh refund history when a refund is processed (used by RefundHistoryList)
   const [refundHistoryRefreshTrigger, setRefundHistoryRefreshTrigger] =
     useState(0);
+
+  useEffect(() => {
+    if (!state?.prefillCustomer) return;
+    const { name, phone, email } = state.prefillCustomer;
+
+    setSearchParams((prev) => ({
+      ...prev,
+      customerName: name ?? '',
+      customerPhone: phone ?? '',
+      customerEmail: email ?? '',
+    }));
+    setActiveTab(state.prefillTab ?? 'process');
+    setError(null);
+    setSuccess(null);
+  }, [state]);
 
   const handleSearchChange = (
     field: keyof SearchPurchasesParams,
@@ -169,7 +247,7 @@ export default function RefundPage() {
     });
 
     if (!hasItems) {
-      notifyError('Please select at least one item to refund.');
+      notifyError('Please select at least one item to return.');
       return;
     }
 
@@ -184,9 +262,9 @@ export default function RefundPage() {
       });
 
       notifySuccess(
-        `Refund processed successfully! Refund Amount: ${formatCurrency(
+        `Return processed successfully! Return Amount: ${formatCurrency(
           response.refundAmount
-        )}. Refund ID: ${response.refundId}`
+        )}. Credit note: ${response.creditNoteNo ?? response.refundId}`
       );
 
       // Reset form and refresh refund history
@@ -198,7 +276,7 @@ export default function RefundPage() {
       const errorMessage =
         err instanceof Error
           ? err.message
-          : 'Failed to process refund. Please try again.';
+          : 'Failed to process return. Please try again.';
       notifyError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -211,30 +289,34 @@ export default function RefundPage() {
     setSuccess(null);
   };
 
-  const calculateRefundTotal = (): number => {
-    if (!selectedPurchase) return 0;
-
-    let total = 0;
-    Object.entries(refundItems).forEach(([inventoryId, item]) => {
-      if (item.quantity > 0) {
-        const purchaseItem = selectedPurchase.items.find(
-          (i) => i.inventoryId === inventoryId
-        );
-        if (purchaseItem) {
-          total += purchaseItem.priceToRetail * item.quantity;
-        }
+  const estimatedRefund = useMemo(() => {
+    if (!selectedPurchase) {
+      return { grandTotal: 0, linesWithQty: 0 };
+    }
+    let grand = 0;
+    let linesWithQty = 0;
+    for (const it of selectedPurchase.items) {
+      const ri = refundItems[it.inventoryId];
+      const q = ri?.quantity ?? 0;
+      if (q <= 0) continue;
+      const est = estimateCustomerRefundLine(q, it);
+      if (est && est.total > 0) {
+        grand += est.total;
+        linesWithQty += 1;
       }
-    });
-
-    return total;
-  };
+    }
+    return {
+      grandTotal: linesWithQty > 0 ? roundMoney2(grand) : 0,
+      linesWithQty,
+    };
+  }, [selectedPurchase, refundItems]);
 
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <h2 className={styles.title}>Refund Management</h2>
+        <h2 className={styles.title}>Return to customer</h2>
         <p className={styles.subtitle}>
-          Process refunds for purchases and view refund history
+          Process customer sale returns and view return history
         </p>
       </div>
 
@@ -245,7 +327,7 @@ export default function RefundPage() {
           }`}
           onClick={() => handleTabChange('process')}
         >
-          Process Refund
+          Process Return
         </button>
         <button
           className={`${styles.tab} ${
@@ -253,7 +335,7 @@ export default function RefundPage() {
           }`}
           onClick={() => handleTabChange('history')}
         >
-          Refund History
+          Return History
         </button>
       </div>
 
@@ -390,7 +472,7 @@ export default function RefundPage() {
                     {selectedPurchase?.purchaseId === purchase.purchaseId && (
                       <div className={styles.refundSection}>
                         <h3 className={styles.sectionTitle}>
-                          Select Items to Refund
+                          Select Items to Return
                         </h3>
                         <div className={styles.purchaseInfo}>
                           <div>
@@ -415,13 +497,22 @@ export default function RefundPage() {
                                 <th>MRP</th>
                                 <th>Selling Price</th>
                                 <th>Purchased Qty</th>
-                                <th>Refund Qty</th>
+                                <th>GST rates</th>
+                                <th className={styles.numericTh}>
+                                  Est. credit
+                                </th>
+                                <th>Return Qty</th>
                               </tr>
                             </thead>
                             <tbody>
                               {selectedPurchase.items.map((item) => {
                                 const refundItem =
                                   refundItems[item.inventoryId];
+                                const rq = refundItem?.quantity ?? 0;
+                                const lineEst =
+                                  rq > 0
+                                    ? estimateCustomerRefundLine(rq, item)
+                                    : null;
                                 return (
                                   <tr key={item.inventoryId}>
                                     <td>{item.name}</td>
@@ -430,6 +521,15 @@ export default function RefundPage() {
                                     </td>
                                     <td>{formatCurrency(item.priceToRetail)}</td>
                                     <td>{item.quantity}</td>
+                                    <td>{formatGstRatesLabelForSaleLine(item)}</td>
+                                    <td
+                                      className={styles.numericCell}
+                                      title={lineEst?.title}
+                                    >
+                                      {lineEst != null
+                                        ? formatCurrency(lineEst.total)
+                                        : '—'}
+                                    </td>
                                     <td>
                                       <input
                                         type="number"
@@ -455,19 +555,35 @@ export default function RefundPage() {
 
                         <div className={styles.refundSummary}>
                           <div className={styles.summaryRow}>
-                            <span>Estimated Refund Amount:</span>
+                            <span>Estimated return amount:</span>
                             <strong>
-                              {formatCurrency(calculateRefundTotal())}
+                              {formatCurrency(estimatedRefund.grandTotal)}
                             </strong>
                           </div>
                         </div>
+                        {estimatedRefund.linesWithQty > 0 ? (
+                          <p
+                            className={styles.returnEstimateBanner}
+                            role="status"
+                          >
+                            <strong>Estimated credit total:</strong>{' '}
+                            {formatCurrency(estimatedRefund.grandTotal)}
+                            <span className={styles.returnEstimateMuted}>
+                              Same as server: selling price × return qty per line.
+                              Hover “Est. credit” for a notional GST split when rates
+                              apply. Final amount is set when you process the return.
+                            </span>
+                          </p>
+                        ) : null}
 
                         <button
                           className={styles.processRefundBtn}
                           onClick={handleProcessRefund}
-                          disabled={isLoading || calculateRefundTotal() === 0}
+                          disabled={
+                            isLoading || estimatedRefund.grandTotal === 0
+                          }
                         >
-                          {isLoading ? 'Processing...' : 'Process Refund'}
+                          {isLoading ? 'Processing...' : 'Process Return'}
                         </button>
                       </div>
                     )}
@@ -482,7 +598,7 @@ export default function RefundPage() {
       {activeTab === 'history' && (
         <div className={styles.content}>
           <div className={styles.historySection}>
-            <h3 className={styles.sectionTitle}>Refund History</h3>
+            <h3 className={styles.sectionTitle}>Return History</h3>
             <RefundHistoryList refreshTrigger={refundHistoryRefreshTrigger} />
           </div>
         </div>

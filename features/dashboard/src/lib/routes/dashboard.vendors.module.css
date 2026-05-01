@@ -132,7 +132,7 @@
 
 .actionsCol {
   white-space: nowrap;
-  min-width: 11rem;
+  min-width: 15rem;
 }
 
 .rowActions {
@@ -155,6 +155,21 @@
 
 .buyStockBtn:hover {
   background: rgba(16, 185, 129, 0.22);
+}
+
+.returnBtn {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #b45309;
+  background: rgba(234, 88, 12, 0.12);
+  border: 1px solid rgba(180, 83, 9, 0.35);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.returnBtn:hover {
+  background: rgba(234, 88, 12, 0.22);
 }
 
 .editBtn {
