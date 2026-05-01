@@ -796,7 +796,10 @@ export interface VendorPurchaseReturnLineSummary {
   inventoryId: string | null;
   productName: string | null;
   barcode: string | null;
-  baseQuantityReturned: number | null;
+  /** Quantity in shelf / invoice (sell) units — preferred for display. */
+  displayQuantityReturned?: number | null;
+  /** Smallest-stock-unit qty when auditing (optional). */
+  baseQuantityReturned?: number | null;
   taxableValue: number | null;
   centralGstAmount: number | null;
   stateGstAmount: number | null;

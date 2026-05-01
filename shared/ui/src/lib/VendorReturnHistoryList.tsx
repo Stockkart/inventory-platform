@@ -20,6 +20,20 @@ function moneyOrDash(n: number | null | undefined): string {
   return formatCurrency(n);
 }
 
+/** Returned qty in invoice / shelf (sell) units only — never base units on this screen. */
+function formatReturnedDisplayQty(displayQuantityReturned: unknown): string {
+  const d =
+    typeof displayQuantityReturned === 'number' ? displayQuantityReturned : null;
+  if (d == null || Number.isNaN(d) || !Number.isFinite(d)) {
+    return '—';
+  }
+  const rounded = Math.round(d * 10000) / 10000;
+  if (Math.abs(rounded - Math.round(rounded)) < 1e-8) {
+    return String(Math.round(rounded));
+  }
+  return String(rounded);
+}
+
 function formatDate(dateString: string): string {
   try {
     const date = new Date(dateString);
@@ -183,7 +197,7 @@ export function VendorReturnHistoryList({
                           <tr>
                             <th scope="col">Product</th>
                             <th scope="col">Barcode</th>
-                            <th scope="col">Qty (base)</th>
+                            <th scope="col">Qty returned</th>
                             <th scope="col">Taxable</th>
                             <th scope="col">CGST</th>
                             <th scope="col">SGST/UTGST</th>
@@ -201,7 +215,7 @@ export function VendorReturnHistoryList({
                                   : line.inventoryId ?? '—'}
                               </td>
                               <td>{line.barcode ?? '—'}</td>
-                              <td>{line.baseQuantityReturned ?? '—'}</td>
+                              <td>{formatReturnedDisplayQty(line.displayQuantityReturned)}</td>
                               <td>{moneyOrDash(line.taxableValue)}</td>
                               <td>{moneyOrDash(line.centralGstAmount)}</td>
                               <td>{moneyOrDash(line.stateGstAmount)}</td>

@@ -47,35 +47,6 @@ function formatDate(iso: string | null | undefined): string {
   }
 }
 
-function formatCompactDate(iso: string | null | undefined): string {
-  if (!iso) return '—';
-  try {
-    return new Date(iso).toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  } catch {
-    return iso;
-  }
-}
-
-function formatGst(item: InventoryItem | undefined): string {
-  if (!item) return '—';
-  const sgst = item.sgst?.trim();
-  const cgst = item.cgst?.trim();
-  if (!sgst && !cgst) return '—';
-  return `SGST ${sgst || '0'} + CGST ${cgst || '0'}`;
-}
-
-function formatHsnSac(item: InventoryItem | undefined): string {
-  if (!item) return '—';
-  const hsn = item.hsn?.trim();
-  const sac = item.sac?.trim();
-  if (hsn && sac) return `${hsn} / ${sac}`;
-  return hsn || sac || '—';
-}
-
 /** Same factor semantics as VendorPurchaseReturnService.getDisplayToBaseFactor (pack size → base). */
 function getDisplayToBaseFactor(inv: InventoryItem | undefined): number {
   const f = inv?.unitConversions?.factor;
@@ -124,6 +95,118 @@ function maxReturnableBaseUnits(
   if (fromStoredBase != null) return fromStoredBase;
   if (typeof lineCount === 'number' && lineCount > 0) return lineCount;
   return 0;
+}
+
+/**
+ * Max units the cashier can enter in the same “sale” / POS unit as {@link InventoryItem.currentCount}.
+ * Mirrors the backend cap in base units, converted back to selling units for the UI.
+ */
+function maxReturnableSellUnits(
+  inv: InventoryItem | undefined,
+  lineCount: number | null | undefined
+): number {
+  const maxBase = maxReturnableBaseUnits(inv, lineCount);
+  if (maxBase <= 0) {
+    return 0;
+  }
+  const factor = Math.max(1, getDisplayToBaseFactor(inv));
+  const maxByBase = Math.floor(maxBase / factor);
+  if (
+    inv &&
+    typeof inv.currentCount === 'number' &&
+    Number.isFinite(inv.currentCount)
+  ) {
+    const sellCap = Math.max(0, Math.floor(Number(inv.currentCount)));
+    return Math.min(sellCap, maxByBase);
+  }
+  return maxByBase;
+}
+
+/** Convert sell-unit qty to canonical base qty for POST /vendor-purchase-returns. */
+function sellUnitsToBaseQuantity(inv: InventoryItem | undefined, sellQty: number): number {
+  const factor = getDisplayToBaseFactor(inv);
+  const f =
+    typeof factor === 'number' && factor > 0 && Number.isFinite(factor) ? factor : 1;
+  return Math.round(sellQty * f);
+}
+
+/** On-hand qty in selling units (floor); matches the shelf figure used to cap returns. */
+function currentSellQtyOnHand(inv: InventoryItem | undefined): number | null {
+  if (
+    !inv ||
+    typeof inv.currentCount !== 'number' ||
+    !Number.isFinite(inv.currentCount)
+  ) {
+    return null;
+  }
+  return Math.max(0, Math.floor(Number(inv.currentCount)));
+}
+
+function formatCurrentSellQtyDisplay(inv: InventoryItem | undefined): string {
+  const q = currentSellQtyOnHand(inv);
+  return q == null ? '—' : String(q);
+}
+
+function parseGstPct(rate: string | null | undefined): number {
+  if (rate == null) return 0;
+  const s = String(rate).trim().replace(/%/g, '');
+  if (!s) return 0;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function formatGstRatesLabel(inv: InventoryItem | undefined): string {
+  if (!inv) return '—';
+  const cg = parseGstPct(inv.cgst);
+  const sg = parseGstPct(inv.sgst);
+  if (cg <= 0 && sg <= 0) {
+    return inv.billingMode === 'BASIC' ? 'Basic' : '—';
+  }
+  if (cg > 0 && sg > 0) {
+    return `CGST ${cg}% + SGST ${sg}%`;
+  }
+  if (cg > 0) return `CGST ${cg}%`;
+  return `SGST ${sg}%`;
+}
+
+const roundMoney2 = (n: number) => Math.round(n * 100) / 100;
+
+/**
+ * Mirrors backend vendor return valuation: PTS/cost × sell qty (ex-GST),
+ * CGST/SGST computed on taxable ( VendorPurchaseReturnService ).
+ */
+function estimateDebitNoteLine(
+  sellQtyReturned: number,
+  unitCost: number | null | undefined,
+  invRow: InventoryItem | undefined
+): {
+  taxable: number;
+  cgst: number;
+  sgst: number;
+  total: number;
+} | null {
+  if (
+    sellQtyReturned <= 0 ||
+    unitCost == null ||
+    !Number.isFinite(unitCost) ||
+    unitCost < 0
+  ) {
+    return null;
+  }
+  const taxable = roundMoney2(sellQtyReturned * unitCost);
+  const cgRate = parseGstPct(invRow?.cgst);
+  const sgRate = parseGstPct(invRow?.sgst);
+  if (cgRate <= 0 && sgRate <= 0) {
+    return { taxable, cgst: 0, sgst: 0, total: taxable };
+  }
+  const cgst = roundMoney2((taxable * cgRate) / 100);
+  const sgst = roundMoney2((taxable * sgRate) / 100);
+  return {
+    taxable,
+    cgst,
+    sgst,
+    total: roundMoney2(taxable + cgst + sgst),
+  };
 }
 
 function readInventoryIdentity(item: InventoryItem): string | null {
@@ -311,6 +394,29 @@ export default function VendorReturnPage() {
     [detail]
   );
 
+  const returnDebitNoteEstimate = useMemo(() => {
+    let grand = 0;
+    let linesWithQty = 0;
+    for (const line of stockLines) {
+      const id = line.inventoryId!;
+      const raw = (qtyByInventoryId[id] ?? '').trim();
+      if (raw === '') continue;
+      const n = Number.parseInt(raw, 10);
+      if (!Number.isFinite(n) || n <= 0) continue;
+      const invRow = inventoryById[id];
+      const uc = Number(line.costPrice ?? invRow?.costPrice);
+      const est = estimateDebitNoteLine(n, uc, invRow);
+      if (est != null && est.total > 0) {
+        grand += est.total;
+        linesWithQty += 1;
+      }
+    }
+    return {
+      grandTotal: linesWithQty > 0 ? roundMoney2(grand) : 0,
+      linesWithQty,
+    };
+  }, [stockLines, inventoryById, qtyByInventoryId]);
+
   const submitReturn = async () => {
     if (!detail) {
       notifyError('Select an invoice first.');
@@ -328,23 +434,31 @@ export default function VendorReturnPage() {
         return;
       }
       const invRow = inventoryById[id];
-      const max = maxReturnableBaseUnits(invRow, line.count);
-      if (max <= 0) {
+      const maxSell = maxReturnableSellUnits(invRow, line.count);
+      const maxBase = maxReturnableBaseUnits(invRow, line.count);
+      if (maxSell <= 0 || maxBase <= 0) {
         notifyError(`No stock on hand for “${line.name}”.`);
         return;
       }
-      if (n > max) {
+      if (n > maxSell) {
         notifyError(
-          `Return qty for “${line.name}” cannot exceed ${max} (base units).`
+          `Return qty for “${line.name}” cannot exceed ${maxSell} selling units (on-hand cap).`
         );
         return;
       }
-      items.push({ inventoryId: id, baseQuantityReturned: n });
+      const baseQty = sellUnitsToBaseQuantity(invRow, n);
+      if (baseQty <= 0 || baseQty > maxBase) {
+        notifyError(
+          `Return qty for “${line.name}” is too large for current stock—try reducing the amount.`
+        );
+        return;
+      }
+      items.push({ inventoryId: id, baseQuantityReturned: baseQty });
     }
 
     if (items.length === 0) {
       notifyError(
-        'Enter a return quantity in base units for at least one line.'
+        'Enter a return quantity for at least one line.'
       );
       return;
     }
@@ -379,9 +493,9 @@ export default function VendorReturnPage() {
       <div className={refundStyles.header}>
         <h2 className={refundStyles.title}>Return stock to supplier</h2>
         <p className={refundStyles.subtitle}>
-          Find a vendor purchase invoice, then enter return quantities in base units
-          (same basis as inventory). Credit notes appear in GSTR‑2 CDNR / CDNUR for
-          the return month when applicable.
+          Find a supplier purchase invoice, then enter how many selling units you are
+          sending back—the same counting unit as stock on the shelf (like “Return to
+          customer”). Credit notes appear in GSTR‑2 CDNR / CDNUR when applicable.
         </p>
       </div>
 
@@ -538,7 +652,7 @@ export default function VendorReturnPage() {
                   {selected?.id === inv.id && detail && (
                     <div className={refundStyles.refundSection}>
                       <h3 className={refundStyles.sectionTitle}>
-                        Lines — return qty (base units)
+                        Select items to return
                       </h3>
                       <div className={refundStyles.purchaseInfo}>
                         <div>
@@ -560,131 +674,129 @@ export default function VendorReturnPage() {
                         <>
                           {hydrateBusy ? (
                             <p className={styles.hint} role="status">
-                              Loading batch, barcode, pricing, and GST from inventory…
+                              Loading shelf stock and pricing for this invoice…
                             </p>
                           ) : (
                             <p className={styles.hint}>
-                              Barcode, batch, HSN/SAC, and tax rates come from the stock
-                              lot; cost is invoice line price or inventory cost.{' '}
-                              <strong>Max return</strong> is capped by both base stock and
-                              sell stock (current count × pack factor from the lot), whichever
-                              is smaller.
+                              Quantities use the same <strong>selling unit</strong> as{' '}
+                              <strong>Current qty</strong> (shelf / POS). Return qty cannot
+                              exceed current qty when that figure is loaded; if base stock on
+                              the lot is tighter, the allowed maximum is lower than current
+                              qty. <strong>Est. debit note</strong> follows cost × return qty
+                              (ex-GST), with CGST/SGST added on top — matching the supplier
+                              credit note logic.
                             </p>
                           )}
-                          <div
-                            className={`${refundStyles.itemsTable} ${styles.detailsTableWrap}`}
-                          >
-                            <table className={styles.detailsTable}>
+                          <div className={refundStyles.itemsTable}>
+                            <table>
                               <thead>
                                 <tr>
-                                  <th>#</th>
-                                  <th>Product</th>
-                                  <th>Company</th>
-                                  <th>HSN / SAC</th>
-                                  <th>Barcode</th>
-                                  <th>Batch</th>
-                                  <th>Expiry</th>
-                                  <th className={styles.numericTh}>Qty (bill)</th>
-                                  <th className={styles.numericTh}>Cost</th>
-                                  <th className={styles.numericTh}>MRP</th>
-                                  <th className={styles.numericTh}>PTR</th>
-                                  <th>GST %</th>
-                                  <th className={styles.numericTh}>
-                                    Stock (sell)
-                                  </th>
-                                  <th className={styles.numericTh}>Stock (base)</th>
-                                  <th className={styles.numericTh}>Max return</th>
-                                  <th className={styles.numericTh}>
-                                    Return qty (base)
-                                  </th>
+                                  <th>Item name</th>
+                                  <th>MRP</th>
+                                  <th>Cost</th>
+                                  <th>Qty on bill</th>
+                                  <th>Current qty</th>
+                                  <th>GST rates</th>
+                                  <th className={styles.numericCell}>Est. debit note</th>
+                                  <th>Return qty</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 {stockLines.map((line) => {
                                   const id = line.inventoryId!;
                                   const invRow = inventoryById[id];
-                                  const max = maxReturnableBaseUnits(
-                                    invRow,
-                                    line.count
+                                  const maxSell = maxReturnableSellUnits(invRow, line.count);
+                                  const rqRaw = (qtyByInventoryId[id] ?? '').trim();
+                                  const rqParsed = Number.parseInt(rqRaw, 10);
+                                  const rq =
+                                    rqRaw !== '' &&
+                                    Number.isFinite(rqParsed) &&
+                                    rqParsed > 0
+                                      ? rqParsed
+                                      : 0;
+                                  const unitCostRaw = Number(
+                                    line.costPrice ?? invRow?.costPrice
                                   );
-                                  const barcode =
-                                    line.barcode ?? invRow?.barcode ?? null;
+                                  const debitEst =
+                                    rq > 0 &&
+                                    Number.isFinite(unitCostRaw) &&
+                                    unitCostRaw >= 0
+                                      ? estimateDebitNoteLine(rq, unitCostRaw, invRow)
+                                      : null;
+                                  const debitTitle =
+                                    debitEst != null
+                                      ? [
+                                          `Taxable ${formatMoney(debitEst.taxable)}`,
+                                          debitEst.cgst > 0 ||
+                                          debitEst.sgst > 0
+                                            ? `CGST ${formatMoney(debitEst.cgst)}, SGST ${formatMoney(debitEst.sgst)}`
+                                            : 'No GST on row',
+                                          `Total ${formatMoney(debitEst.total)}`,
+                                        ].join(' · ')
+                                      : undefined;
                                   return (
                                     <tr key={`${line.lineIndex}-${id}`}>
-                                      <td>{line.lineIndex + 1}</td>
+                                      <td>{line.name}</td>
+                                      <td>{formatMoney(invRow?.maximumRetailPrice)}</td>
                                       <td>
-                                        <div>{line.name}</div>
-                                        {invRow?.baseUnit?.trim() ? (
-                                          <div className={styles.baseUnitNote}>
-                                            Base unit: {invRow.baseUnit.trim()}
-                                          </div>
-                                        ) : null}
+                                        {formatMoney(
+                                          line.costPrice ?? invRow?.costPrice
+                                        )}
                                       </td>
-                                      <td className={styles.cellMuted}>
-                                        {invRow?.companyName?.trim() || '—'}
-                                      </td>
-                                      <td className={styles.cellMuted}>
-                                        {formatHsnSac(invRow)}
-                                      </td>
-                                      <td className={styles.cellMuted}>
-                                        {barcode ?? '—'}
-                                      </td>
-                                      <td className={styles.cellMuted}>
-                                        {invRow?.batchNo?.trim() || '—'}
-                                      </td>
-                                      <td className={styles.cellMuted}>
-                                        {formatCompactDate(invRow?.expiryDate)}
-                                      </td>
-                                      <td className={styles.numeric}>
-                                        {line.count ?? '—'}
-                                      </td>
-                                      <td className={styles.numeric}>
-                                        {formatMoney(line.costPrice ?? invRow?.costPrice)}
-                                      </td>
-                                      <td className={styles.numeric}>
-                                        {formatMoney(invRow?.maximumRetailPrice)}
-                                      </td>
-                                      <td className={styles.numeric}>
-                                        {formatMoney(invRow?.priceToRetail)}
-                                      </td>
-                                      <td className={styles.cellMuted}>
-                                        {formatGst(invRow)}
-                                      </td>
-                                      <td className={styles.numeric}>
-                                        {typeof invRow?.currentCount === 'number'
-                                          ? invRow.currentCount
+                                      <td>{line.count ?? '—'}</td>
+                                      <td>{formatCurrentSellQtyDisplay(invRow)}</td>
+                                      <td>{formatGstRatesLabel(invRow)}</td>
+                                      <td
+                                        className={styles.numericCell}
+                                        title={debitTitle}
+                                      >
+                                        {debitEst != null
+                                          ? formatMoney(debitEst.total)
                                           : '—'}
                                       </td>
-                                      <td className={styles.numeric}>
-                                        {typeof invRow?.currentBaseCount ===
-                                        'number'
-                                          ? invRow.currentBaseCount
-                                          : '—'}
-                                      </td>
-                                      <td className={styles.numeric}>
-                                        {max > 0 ? max : '—'}
-                                      </td>
-                                      <td className={styles.numeric}>
+                                      <td>
                                         <input
                                           type="number"
                                           min={0}
-                                          max={max > 0 ? max : undefined}
+                                          max={maxSell > 0 ? maxSell : undefined}
                                           className={refundStyles.quantityInput}
                                           inputMode="numeric"
                                           placeholder="0"
+                                          title={
+                                            maxSell > 0
+                                              ? `Maximum return: ${maxSell} (≤ current qty / stock)`
+                                              : undefined
+                                          }
                                           disabled={
                                             returnRecording ||
                                             detailBusy ||
-                                            max <= 0
+                                            maxSell <= 0
                                           }
                                           value={qtyByInventoryId[id] ?? ''}
-                                          onChange={(ev) =>
+                                          onChange={(ev) => {
+                                            const raw = ev.target.value.trim();
+                                            if (raw === '') {
+                                              setQtyByInventoryId((prev) => ({
+                                                ...prev,
+                                                [id]: '',
+                                              }));
+                                              return;
+                                            }
+                                            const num = Number.parseInt(raw, 10);
+                                            if (!Number.isFinite(num)) {
+                                              return;
+                                            }
+                                            const clampedLow = Math.max(0, num);
+                                            const capped =
+                                              maxSell > 0
+                                                ? Math.min(clampedLow, maxSell)
+                                                : clampedLow;
                                             setQtyByInventoryId((prev) => ({
                                               ...prev,
-                                              [id]: ev.target.value,
-                                            }))
-                                          }
-                                          aria-label={`Return quantity base units for ${line.name}`}
+                                              [id]: String(capped),
+                                            }));
+                                          }}
+                                          aria-label={`Return quantity selling units for ${line.name}; maximum ${maxSell}`}
                                         />
                                       </td>
                                     </tr>
@@ -693,6 +805,17 @@ export default function VendorReturnPage() {
                               </tbody>
                             </table>
                           </div>
+                          {returnDebitNoteEstimate.linesWithQty > 0 ? (
+                            <p className={styles.returnEstimateBanner} role="status">
+                              <strong>Estimated debit note total (incl. GST):</strong>{' '}
+                              {formatMoney(returnDebitNoteEstimate.grandTotal)}
+                              <span className={styles.returnEstimateMuted}>
+                                {' '}
+                                Per-line breakdown on hover · final amount set when you
+                                record the return.
+                              </span>
+                            </p>
+                          ) : null}
                         </>
                       )}
 
