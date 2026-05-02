@@ -8,6 +8,7 @@ import type {
   JournalEntryResponse,
   JournalLineResponse,
   JournalListEnvelope,
+  PostManualJournalDto,
   TrialBalanceLine,
 } from '@inventory-platform/types';
 
@@ -110,6 +111,15 @@ export const accountingApi = {
       return normalizeGlAccountResponse(inner as GlAccountResponse);
     }
     throw new Error('Invalid create account response');
+  },
+
+  postManualJournal: async (body: PostManualJournalDto): Promise<JournalEntryResponse> => {
+    const raw = await apiClient.post<unknown>(API_ENDPOINTS.ACCOUNTING.MANUAL_JOURNALS, body);
+    const inner = unwrapApiData<JournalEntryResponse>(raw);
+    if (!inner || typeof inner !== 'object') {
+      throw new Error('Invalid manual journal response');
+    }
+    return normalizeJournalEntry(inner as JournalEntryResponse);
   },
 
   trialBalance: async (): Promise<TrialBalanceLine[]> => {

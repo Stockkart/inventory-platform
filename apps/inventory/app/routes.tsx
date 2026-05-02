@@ -55,6 +55,7 @@ export default [
       './routes/dashboard.accounting._layout.tsx',
       [
         index('./routes/dashboard.accounting._index.tsx'),
+        route('manual-journal', './routes/dashboard.accounting.manual-journal.tsx'),
         route('accounts', './routes/dashboard.accounting.accounts.tsx'),
       ]
     ),

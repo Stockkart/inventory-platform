@@ -236,6 +236,16 @@
   background: rgba(255, 255, 255, 0.5);
 }
 
+.cardIntroLink {
+  font-weight: 600;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.cardIntroLink:hover {
+  text-decoration: underline;
+}
+
 /** Journal register: same `.table` base as trial balance; column tweaks below. */
 .journalRegisterTable td[rowspan],
 .journalRegisterTable td.journalTbSpanCell {
@@ -514,4 +524,202 @@ tr.journalTbRowHi td {
   font-size: 0.8125rem;
   line-height: 1.45;
   color: var(--text-secondary, #64748b);
+}
+
+.manualJournalIntro {
+  margin: 0;
+  padding: 0.35rem 1.125rem 1rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--text-secondary, #64748b);
+  border-bottom: 1px solid var(--border-color, rgba(148, 163, 184, 0.18));
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.manualJournalBackLink {
+  font-weight: 600;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.manualJournalBackLink:hover {
+  text-decoration: underline;
+}
+
+.manualJournalLoading {
+  margin: 0;
+  padding: 1rem 1.125rem 1.25rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary, #64748b);
+}
+
+.manualJournalForm {
+  padding: 1rem 1.125rem 1.15rem;
+}
+
+.manualJournalField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.85rem;
+}
+
+.manualJournalField label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary, #64748b);
+}
+
+.manualJournalField input {
+  padding: 0.45rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, rgba(148, 163, 184, 0.45));
+  font-size: 0.875rem;
+  background: var(--bg-primary, #fff);
+  color: var(--text-primary, #0f172a);
+}
+
+.manualJournalLinesWrap {
+  overflow-x: auto;
+  margin-bottom: 0.75rem;
+}
+
+.manualJournalTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.manualJournalTable th,
+.manualJournalTable td {
+  padding: 0.45rem 0.55rem;
+  border-bottom: 1px solid var(--border-color, rgba(148, 163, 184, 0.22));
+  vertical-align: middle;
+  text-align: left;
+}
+
+.manualJournalTable th {
+  font-weight: 600;
+  color: var(--text-secondary, #64748b);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.manualJournalTable tbody tr:nth-child(odd) {
+  background: rgba(248, 250, 252, 0.5);
+}
+
+.manualJournalTable td,
+.manualJournalTable th {
+  white-space: normal;
+}
+
+.mjAcctSelect {
+  width: 100%;
+  min-width: 10rem;
+  padding: 0.4rem 0.45rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, rgba(148, 163, 184, 0.45));
+  font-size: 0.8125rem;
+  background: var(--bg-primary, #fff);
+  color: var(--text-primary, #0f172a);
+}
+
+.mjAmtInput {
+  width: 100%;
+  padding: 0.4rem 0.45rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, rgba(148, 163, 184, 0.45));
+  font-size: 0.8125rem;
+  text-align: right;
+}
+
+.mjMemoInput {
+  width: 100%;
+  padding: 0.4rem 0.45rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, rgba(148, 163, 184, 0.45));
+  font-size: 0.8125rem;
+}
+
+.mjRowRemove {
+  padding: 0.15rem 0.35rem;
+  border-radius: 6px;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: rgba(254, 242, 242, 0.9);
+  color: #b91c1c;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.manualJournalToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  justify-content: flex-end;
+}
+
+.mjGhostBtn {
+  padding: 0.42rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, rgba(148, 163, 184, 0.45));
+  background: var(--card-bg, #fff);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text-primary, #0f172a);
+}
+
+.mjGhostBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mjSubmitBtn {
+  padding: 0.45rem 1.1rem;
+  border-radius: 10px;
+  border: none;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%);
+  color: #fff;
+}
+
+.mjSubmitBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.accountsGhostBtn {
+  padding: 0.38rem 0.72rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, rgba(148, 163, 184, 0.45));
+  background: rgba(248, 250, 252, 0.95);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text-primary, #0f172a);
+}
+
+.accountsGhostBtn:hover {
+  background: rgba(241, 245, 249, 1);
+}
+
+.accountsHeadingRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin-bottom: 0.75rem;
+}
+
+.accountsHeadingRow .accountsAddTitle {
+  margin: 0;
 }

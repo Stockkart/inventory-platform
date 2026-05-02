@@ -38,6 +38,10 @@ export {
   default as AccountingAccountsPage,
   meta as accountingAccountsMeta,
 } from './lib/routes/dashboard.accounting.accounts';
+export {
+  default as AccountingManualJournalPage,
+  meta as accountingManualJournalMeta,
+} from './lib/routes/dashboard.accounting.manual-journal';
 export { default as PlanStatusPage } from './lib/routes/dashboard.plan-status';
 export { default as PlanPaymentPage } from './lib/routes/dashboard.plan-payment';
 export { default as WhatsAppMarketingPage } from './lib/routes/dashboard.whatsapp-marketing';

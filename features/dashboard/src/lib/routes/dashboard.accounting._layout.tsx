@@ -7,8 +7,7 @@ export default function AccountingLayoutRoute() {
       <header className={styles.header}>
         <h1 className={styles.title}>Accounting</h1>
         <p className={styles.subtitle}>
-          Posted journals grouped by transaction, trial balance summaries, and the chart of
-          accounts for this shop.
+          Journals and trial balance, manual postings between accounts, and the chart for this shop.
         </p>
       </header>
 
@@ -21,6 +20,14 @@ export default function AccountingLayoutRoute() {
           }
         >
           Journals & trial balance
+        </NavLink>
+        <NavLink
+          to="/dashboard/accounting/manual-journal"
+          className={({ isActive }) =>
+            `${styles.accountingTab} ${isActive ? styles.accountingTabActive : ''}`
+          }
+        >
+          Manual journal
         </NavLink>
         <NavLink
           to="/dashboard/accounting/accounts"

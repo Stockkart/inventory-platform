@@ -1212,6 +1212,22 @@ export interface CreateGlAccountDto {
   active?: boolean;
 }
 
+export interface PostManualJournalLineDto {
+  accountCode: string;
+  debit?: number | null;
+  credit?: number | null;
+  memo?: string | null;
+}
+
+export interface PostManualJournalDto {
+  description: string;
+  /** ISO-8601 instant; omit for “now”. */
+  journalDate?: string | null;
+  /** Optional idempotency key; repeats return the existing journal. */
+  sourceKey?: string | null;
+  lines: PostManualJournalLineDto[];
+}
+
 export interface JournalLineResponse {
   lineNo: number;
   accountId: string;
@@ -1279,6 +1295,8 @@ export interface UpdateCartStatusDto {
   purchaseId: string;
   status: string;
   paymentMethod: string;
+  /** Sale completion: debit this asset GL (e.g. CASH or a manual bank). Omit for CASH. */
+  receiptGlAccountCode?: string;
 }
 
 // Purchase History types

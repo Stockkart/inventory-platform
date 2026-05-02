@@ -138,15 +138,30 @@ export default function AccountingAccountsPage() {
   return (
     <>
       <p className={styles.accountsIntro}>
-        Built-in accounts (cash, sales, GST, …) are created automatically. Totals below are posted
-        debits and credits per account (same scope as trial balance). For extra accounts pick your
-        own codes (for example BANK-HDFC); built-in codes like CASH or SALES are reserved.
+        Built-in accounts (cash, sales, GST, …) are created automatically. Add a{' '}
+        <strong>bank</strong> as a manual <strong>asset</strong> (use <strong>Bank template</strong>{' '}
+        for a <span className={styles.mono}>BANK-</span> code), then pick it at checkout or use a
+        manual journal to move from <span className={styles.mono}>CASH</span>. Reserved codes stay
+        blocked.
       </p>
 
       <section className={styles.accountsAddCard} aria-labelledby="add-account-heading">
-        <h2 id="add-account-heading" className={styles.accountsAddTitle}>
-          Add account
-        </h2>
+        <div className={styles.accountsHeadingRow}>
+          <h2 id="add-account-heading" className={styles.accountsAddTitle}>
+            Add account
+          </h2>
+          <button
+            type="button"
+            className={styles.accountsGhostBtn}
+            onClick={() => {
+              setNewType('ASSET');
+              setNewCode('BANK-');
+              setNewName('');
+            }}
+          >
+            Bank template
+          </button>
+        </div>
         <form className={styles.accountsForm} onSubmit={handleCreateAccount}>
           <div className={styles.accountsField}>
             <label htmlFor="gl-code">Code</label>
@@ -204,9 +219,12 @@ export default function AccountingAccountsPage() {
         <p className={styles.accountsHint}>
           Codes are stored in uppercase. Allowed: letters, digits, <code className={styles.mono}>.</code>,{' '}
           <code className={styles.mono}>_</code>, <code className={styles.mono}>-</code> (2–64
-          characters). Use the API{' '}
-          <code className={styles.mono}>/accounting/journals/manual</code>
-          {' '}for postings once the account exists.
+          characters). Post transfers on the{' '}
+          <strong>
+            Accounting → Manual journal
+          </strong>{' '}
+          tab or via REST{' '}
+          <code className={styles.mono}>/accounting/journals/manual</code>.
         </p>
       </section>
 

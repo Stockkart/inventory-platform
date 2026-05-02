@@ -138,7 +138,11 @@ export default function AccountingOverviewPage() {
           <section className={styles.card}>
             <h2 className={styles.cardHeading}>Journal entries</h2>
             <p className={styles.cardIntro}>
-              Each row is a ledger line. Chart descriptions sit under the account code or name.
+              Each row is a ledger line. Chart descriptions sit under the account code or name — use the{' '}
+              <Link to="/dashboard/accounting/manual-journal" className={styles.cardIntroLink}>
+                Manual journal
+              </Link>{' '}
+              tab for transfers between accounts.
             </p>
             {!journals.length ? (
               <p className={styles.empty}>
@@ -311,7 +315,11 @@ export default function AccountingOverviewPage() {
                   </table>
                 </div>
                 <p className={styles.journalFootnote}>
-                  Manual journals: <span className={styles.mono}>/accounting/journals/manual</span>
+                  Automated postings from Checkout and product registration.{' '}
+                  <Link className={styles.cardIntroLink} to="/dashboard/accounting/manual-journal">
+                    Manual journal
+                  </Link>{' '}
+                  tab covers transfers between accounts.
                 </p>
               </>
             )}
@@ -332,7 +340,8 @@ export default function AccountingOverviewPage() {
                   Purchase journals post from vendor product registration when amounts are positive
                   (invoice total, line subtotal + tax, or cost/PTR × qty). Stock cost posts to{' '}
                   <strong>PURCHASES</strong>; the vendor nominal is credited, not cash, until payment.
-                  Complete a checkout to generate a SALE journal (<strong>CASH</strong> debited there).
+                  Complete a checkout for a SALE journal — choose <strong>CASH</strong> or a bank
+                  account as the debit (receipt) side.
                 </p>
               </div>
             ) : (
