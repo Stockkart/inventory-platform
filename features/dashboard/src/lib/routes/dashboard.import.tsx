@@ -41,8 +41,6 @@ export default function ImportPage() {
   const [vendorSearchResults, setVendorSearchResults] = useState<Vendor[]>([]);
   const [_isSearchingVendor, setIsSearchingVendor] = useState(false);
   const [showVendorDropdown, setShowVendorDropdown] = useState(false);
-  const [onCredit, _setOnCredit] = useState(false);
-  const [selectedVendorShopId, _setSelectedVendorShopId] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { success: notifySuccess, error: notifyError } = useNotify;
 
@@ -160,17 +158,16 @@ export default function ImportPage() {
       const items = importTableItems.map(toBulkItem);
       const bulkData: BulkCreateInventoryDto = {
         vendorId: selectedVendor.vendorId,
-        onCredit,
-        ...(onCredit &&
-          selectedVendor.userId &&
-          selectedVendorShopId && { vendorShopId: selectedVendorShopId }),
         items,
       };
       const response = await inventoryApi.createBulk(bulkData);
       const created = response?.createdCount ?? response?.items?.length ?? 0;
       const regId = response?.vendorPurchaseInvoiceId ?? response?.lotId;
+      const jid = response?.accountingJournalEntryId;
       notifySuccess(
-        `Imported ${created} items!${regId ? ` Stock-in ID: ${regId}` : ''}`
+        `Imported ${created} items!${regId ? ` Stock-in ID: ${regId}` : ''}${
+          jid ? ' Purchase recorded in ledger — open Accounting to review.' : ''
+        }`
       );
       setImportTableItems([]);
       setSelectedVendor(null);

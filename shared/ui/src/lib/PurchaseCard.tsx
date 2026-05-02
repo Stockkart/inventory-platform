@@ -46,6 +46,8 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
         return '💳 Online';
       case 'CARD':
         return '💳 Card';
+      case 'CREDIT':
+        return '📒 Credit';
       default:
         return method;
     }

@@ -92,6 +92,8 @@ export const API_ENDPOINTS = {
   VENDOR_PURCHASE_INVOICES: {
     BASE: '/vendor-purchase-invoices',
     BY_ID: (id: string) => `/vendor-purchase-invoices/${id}`,
+    POST_PURCHASE_LEDGER: (id: string) =>
+      `/vendor-purchase-invoices/${id}/post-purchase-ledger`,
   },
 
   /** Purchase returns → stock reduction + GSTR-2 CDNR/CDNUR */
@@ -149,7 +151,6 @@ export const API_ENDPOINTS = {
     BASE: '/vendors',
     SEARCH: '/vendors/search',
     BY_ID: (id: string) => `/vendors/${id}`,
-    SHOPS: (vendorId: string) => `/vendors/${vendorId}/shops`,
   },
 
   // Customer endpoints
@@ -159,16 +160,20 @@ export const API_ENDPOINTS = {
     BY_ID: (id: string) => `/customers/${id}`,
   },
 
-  // Credit Ledger endpoints
-  LEDGER: {
-    BASE: '/ledger',
-    BALANCE: '/ledger/balance',
-    ENTRIES: '/ledger/entries',
-    RECEIVABLES: '/ledger/receivables',
-    CUSTOMER_RECEIVABLES: '/ledger/customer-receivables',
-    PAYABLES: '/ledger/payables',
-    PAYABLES_TO_SHOPS: '/ledger/payables-to-shops',
+  /** General ledger / subledger (`inventory-api/core/accounting`) */
+  ACCOUNTING: {
+    BASE: '/accounting',
+    CHART_BOOTSTRAP: '/accounting/chart/bootstrap',
+    GL_ACCOUNTS: '/accounting/gl-accounts',
+    MANUAL_JOURNALS: '/accounting/journals/manual',
+    JOURNALS: '/accounting/journals',
+    JOURNAL_BY_ID: (id: string) => `/accounting/journals/${id}`,
+    TRIAL_BALANCE: '/accounting/reports/trial-balance',
+    SHOP_SUMMARY: '/accounting/shop-summary',
+    SUBLEDGER_BALANCE: '/accounting/subledger/balance',
+    SUBLEDGER_ENTRIES: '/accounting/subledger/entries',
   },
+
   // Plan endpoints
   PLANS: {
     BASE: '/plans',

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { cartApi } from '@inventory-platform/api';
 import type { CartResponse } from '@inventory-platform/types';
 import { PrintInvoiceModal } from '@inventory-platform/ui';
@@ -110,7 +110,7 @@ export default function CheckoutPage() {
     );
   }
 
-  const handlePayment = async (method: 'CASH' | 'ONLINE' | 'CREDIT') => {
+  const handlePayment = async (method: 'CASH' | 'ONLINE') => {
     if (!checkoutData) {
       notifyError('Checkout data not available');
       return;
@@ -133,16 +133,15 @@ export default function CheckoutPage() {
         paymentMethod: method,
       };
 
-      await cartApi.updateStatus(statusPayload);
+      const completed = await cartApi.updateStatus(statusPayload);
 
-      // Update local checkout data status to COMPLETED
-      if (checkoutData) {
-        setCheckoutData({
-          ...checkoutData,
-          status: 'COMPLETED',
-          paymentMethod: method,
-        });
-      }
+      // Merge server totals + GL journal id after successful completion
+      setCheckoutData({
+        ...checkoutData,
+        ...completed,
+        status: 'COMPLETED',
+        paymentMethod: method,
+      });
 
       // Show success animation
       setShowSuccess(true);
@@ -251,7 +250,23 @@ export default function CheckoutPage() {
           <p className={styles.successMessage}>
             Your payment has been processed successfully.
           </p>
-          <p className={styles.successSubMessage}>Updating order status...</p>
+          {checkoutData.accountingJournalEntryId ? (
+            <p className={styles.successSubMessage}>
+              Sale recorded in the general ledger (
+              <Link
+                to={`/dashboard/accounting?highlight=${encodeURIComponent(checkoutData.accountingJournalEntryId)}`}
+                className={styles.successAccountingLink}
+              >
+                View journal
+              </Link>
+              ).
+            </p>
+          ) : (
+            <p className={styles.successSubMessage}>
+              If ledger posting fails silently, totals still apply—check Accounting for this
+              invoice.
+            </p>
+          )}
         </div>
       </div>
     );
@@ -265,6 +280,23 @@ export default function CheckoutPage() {
       </div>
 
       {error && <div className={styles.errorMessage}>{error}</div>}
+
+      {checkoutData.status === 'COMPLETED' &&
+        checkoutData.accountingJournalEntryId && (
+          <div className={styles.accountingBanner} role="status">
+            <span className={styles.accountingBannerText}>
+              This sale is posted to the ledger.
+            </span>
+            <Link
+              className={styles.accountingBannerLink}
+              to={`/dashboard/accounting?highlight=${encodeURIComponent(
+                checkoutData.accountingJournalEntryId
+              )}`}
+            >
+              Open journal →
+            </Link>
+          </div>
+        )}
 
       <div className={styles.container}>
         {/* Invoice Details */}
@@ -553,21 +585,6 @@ export default function CheckoutPage() {
                   💳
                 </span>
                 {isProcessingPayment ? 'Processing...' : 'Pay Online'}
-              </button>
-              <button
-                className={`${styles.paymentBtn} ${styles.creditBtn}`}
-                onClick={() => handlePayment('CREDIT')}
-                disabled={isProcessingPayment || isUpdating}
-                title={
-                  !checkoutData.customerId
-                    ? 'Add customer (search by phone in cart) to sell on credit'
-                    : 'Complete sale on credit – amount will be tracked in Credit Ledger'
-                }
-              >
-                <span role="img" aria-label="Credit">
-                  📒
-                </span>
-                {isProcessingPayment ? 'Processing...' : 'Sell on Credit'}
               </button>
             </div>
           </div>

@@ -84,11 +84,12 @@ export const DASHBOARD_MENU_GROUPS: DashboardMenuGroup[] = [
     ],
   },
   {
-    id: 'credit-ledger',
-    label: 'Credit & Ledger',
-    icon: '📒',
+    id: 'accounting',
+    label: 'Accounting',
+    icon: '🧾',
     items: [
-      { path: '/dashboard/credit-ledger', label: 'Credit Ledger', icon: '📒' },
+      { path: '/dashboard/accounting', label: 'Journals & trial balance', icon: '🧾' },
+      { path: '/dashboard/accounting/accounts', label: 'Chart of accounts', icon: '📒' },
     ],
   },
   {

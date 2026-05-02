@@ -6,7 +6,6 @@ import type {
   VendorListResponse,
   CreateVendorDto,
   UpdateVendorDto,
-  ShopMembership,
 } from '@inventory-platform/types';
 
 export const vendorsApi = {
@@ -66,17 +65,6 @@ export const vendorsApi = {
       API_ENDPOINTS.VENDORS.BY_ID(vendorId)
     );
     return response.data;
-  },
-
-  /**
-   * Get shops for a vendor when the vendor is a StockKart user.
-   * Used when assigning credit to vendor's shop in product registration.
-   */
-  getVendorShops: async (vendorId: string): Promise<ShopMembership[]> => {
-    const response = await apiClient.get<
-      ApiResponse<{ data: ShopMembership[] }>
-    >(API_ENDPOINTS.VENDORS.SHOPS(vendorId));
-    return response.data?.data ?? [];
   },
 };
 
