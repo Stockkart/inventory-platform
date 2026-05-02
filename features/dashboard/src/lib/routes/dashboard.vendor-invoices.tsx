@@ -5,6 +5,7 @@ import {
   useMemo,
   useState,
 } from 'react';
+import { Link } from 'react-router';
 import { inventoryApi } from '@inventory-platform/api';
 import type {
   InventoryItem,
@@ -12,6 +13,7 @@ import type {
   VendorPurchaseInvoiceSummary,
 } from '@inventory-platform/types';
 import styles from './dashboard.vendor-invoices.module.css';
+import { useNotify } from '@inventory-platform/store';
 
 export function meta() {
   return [
@@ -102,11 +104,15 @@ function InvoiceExpandedBody({
   inventoryById,
   inventoryLoading,
   inventoryWarning,
+  ledgerPosting,
+  onPostPurchaseLedger,
 }: {
   detail: VendorPurchaseInvoiceDetail;
   inventoryById: Record<string, InventoryItem>;
   inventoryLoading: boolean;
   inventoryWarning?: string;
+  ledgerPosting: boolean;
+  onPostPurchaseLedger: () => void;
 }) {
   const totals = useMemo(
     () => [
@@ -149,6 +155,34 @@ function InvoiceExpandedBody({
             <code className={styles.mono}>{detail.legacyLotId}</code>
           </p>
         ) : null}
+      </div>
+
+      <div className={styles.ledgerActions} role="status">
+        <span className={styles.ledgerActionsLabel}>General ledger:</span>
+        {detail.accountingJournalEntryId ? (
+          <Link
+            className={styles.ledgerLink}
+            to={`/dashboard/accounting?highlight=${encodeURIComponent(
+              detail.accountingJournalEntryId
+            )}`}
+          >
+            View purchase journal
+          </Link>
+        ) : (
+          <>
+            <span className={styles.ledgerHint}>
+              No PURCHASE journal yet for this invoice.
+            </span>
+            <button
+              type="button"
+              className={styles.ledgerBtn}
+              onClick={onPostPurchaseLedger}
+              disabled={ledgerPosting}
+            >
+              {ledgerPosting ? 'Posting…' : 'Post to ledger'}
+            </button>
+          </>
+        )}
       </div>
 
       <dl className={styles.amountGrid}>
@@ -240,6 +274,7 @@ export type VendorInvoicesPageProps = {
 export default function VendorInvoicesPage({
   embedded = false,
 }: VendorInvoicesPageProps) {
+  const { success: notifySuccess, error: notifyError } = useNotify;
   const [page, setPage] = useState(0);
   const [size] = useState(20);
   const [searchInput, setSearchInput] = useState('');
@@ -263,6 +298,9 @@ export default function VendorInvoicesPage({
   const [inventoryWarningByInvoice, setInventoryWarningByInvoice] = useState<
     Record<string, string>
   >({});
+  const [ledgerPostingInvoiceId, setLedgerPostingInvoiceId] = useState<
+    string | null
+  >(null);
 
   const loadList = useCallback(async () => {
     setLoading(true);
@@ -412,6 +450,47 @@ export default function VendorInvoicesPage({
     }
   };
 
+  const handlePostPurchaseLedger = useCallback(
+    async (invoiceId: string) => {
+      setLedgerPostingInvoiceId(invoiceId);
+      try {
+        const r = await inventoryApi.postVendorPurchaseLedger(invoiceId);
+        if (r.skipped) {
+          notifyError(
+            r.message?.trim() ||
+              'Ledger was not posted (payable amount was zero — check totals and qty × cost/PTR).'
+          );
+          return;
+        }
+        if (
+          r.accountingJournalEntryId &&
+          String(r.accountingJournalEntryId).trim() !== ''
+        ) {
+          const jid = String(r.accountingJournalEntryId).trim();
+          notifySuccess('Purchase recorded in general ledger.');
+          setDetailsById((prev) => {
+            const d = prev[invoiceId];
+            if (!d) return prev;
+            return {
+              ...prev,
+              [invoiceId]: {
+                ...d,
+                accountingJournalEntryId: jid,
+              },
+            };
+          });
+        }
+      } catch (e) {
+        notifyError(
+          e instanceof Error ? e.message : 'Failed to post purchase journal'
+        );
+      } finally {
+        setLedgerPostingInvoiceId(null);
+      }
+    },
+    [notifyError, notifySuccess]
+  );
+
   return (
     <div className={styles.page}>
       {!embedded ? (
@@ -420,8 +499,10 @@ export default function VendorInvoicesPage({
           <p className={styles.heroSubtitle}>
             Supplier bills linked to stock-in registrations. Search by product, barcode,
             invoice number, or vendor name. Expand a row to see line items and
-            totals. To return stock to a supplier, use{' '}
-            <strong>Return to vendor</strong> under Products &amp; Sales.
+            totals. If accounting was empty after stock-in (older build), use{' '}
+            <strong>Post to ledger</strong> on an expanded invoice.
+            To return stock to a supplier, use <strong>Return to vendor</strong> under Products
+            &amp; Sales.
           </p>
         </header>
       ) : (
@@ -591,6 +672,10 @@ export default function VendorInvoicesPage({
                                       inventoryLoadingByInvoice[inv.id] === true
                                     }
                                     inventoryWarning={inventoryWarningByInvoice[inv.id]}
+                                    ledgerPosting={ledgerPostingInvoiceId === inv.id}
+                                    onPostPurchaseLedger={() =>
+                                      handlePostPurchaseLedger(inv.id)
+                                    }
                                   />
                                 ) : null}
                               </div>

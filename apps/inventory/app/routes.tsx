@@ -48,9 +48,17 @@ export default [
     route('stock-corrections', './routes/dashboard.stock-corrections.tsx'),
     route('vendor-return', './routes/dashboard.vendor-return.tsx'),
     route('refund', './routes/dashboard.refund.tsx'),
-    route('credit-ledger', './routes/dashboard.credit-ledger.tsx'),
     route('price-edit/:pricingId', './routes/dashboard.price-edit.tsx'),
     route('taxes', './routes/dashboard.taxes.tsx'),
+    route(
+      'accounting',
+      './routes/dashboard.accounting._layout.tsx',
+      [
+        index('./routes/dashboard.accounting._index.tsx'),
+        route('manual-journal', './routes/dashboard.accounting.manual-journal.tsx'),
+        route('accounts', './routes/dashboard.accounting.accounts.tsx'),
+      ]
+    ),
     route('plan-payment', './routes/dashboard.plan-payment.tsx'),
     route('plan-status', './routes/dashboard.plan-status.tsx'),
     route('whatsapp-marketing', './routes/dashboard.whatsapp-marketing.tsx'),

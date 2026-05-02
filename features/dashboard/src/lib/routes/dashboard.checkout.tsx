@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router';
-import { cartApi } from '@inventory-platform/api';
-import type { CartResponse } from '@inventory-platform/types';
+import { Link, useNavigate } from 'react-router';
+import { accountingApi, cartApi } from '@inventory-platform/api';
+import type { CartResponse, GlAccountResponse } from '@inventory-platform/types';
 import { PrintInvoiceModal } from '@inventory-platform/ui';
 import styles from './dashboard.checkout.module.css';
 import { useNotify } from '@inventory-platform/store';
@@ -24,6 +24,8 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null);
   const [showPrintModal, setShowPrintModal] = useState(false);
   const cartLoadedRef = useRef(false);
+  const [receiptGlAccounts, setReceiptGlAccounts] = useState<GlAccountResponse[]>([]);
+  const [receiptGlCode, setReceiptGlCode] = useState('CASH');
 
   const loadCart = useCallback(async () => {
     setIsLoading(true);
@@ -82,6 +84,35 @@ export default function CheckoutPage() {
     }
   }, [loadCart]);
 
+  useEffect(() => {
+    if (!checkoutData || checkoutData.status !== 'PENDING') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        await accountingApi.bootstrapChart();
+        const list = await accountingApi.glAccounts();
+        if (cancelled) return;
+        const filtered = list
+          .filter(
+            (a) =>
+              a.active &&
+              String(a.accountType).toUpperCase() === 'ASSET' &&
+              a.code !== 'RECEIVABLES'
+          )
+          .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: 'base' }));
+        setReceiptGlAccounts(filtered);
+        setReceiptGlCode((prev) => (filtered.some((x) => x.code === prev) ? prev : 'CASH'));
+      } catch {
+        if (!cancelled) {
+          setReceiptGlAccounts([]);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [checkoutData?.purchaseId, checkoutData?.status]);
+
   if (isLoading) {
     return (
       <div className={styles.page}>
@@ -110,7 +141,7 @@ export default function CheckoutPage() {
     );
   }
 
-  const handlePayment = async (method: 'CASH' | 'ONLINE' | 'CREDIT') => {
+  const handlePayment = async (method: 'CASH' | 'ONLINE') => {
     if (!checkoutData) {
       notifyError('Checkout data not available');
       return;
@@ -131,18 +162,20 @@ export default function CheckoutPage() {
         purchaseId,
         status: 'COMPLETED',
         paymentMethod: method,
+        ...(receiptGlCode && receiptGlCode !== 'CASH'
+          ? { receiptGlAccountCode: receiptGlCode }
+          : {}),
       };
 
-      await cartApi.updateStatus(statusPayload);
+      const completed = await cartApi.updateStatus(statusPayload);
 
-      // Update local checkout data status to COMPLETED
-      if (checkoutData) {
-        setCheckoutData({
-          ...checkoutData,
-          status: 'COMPLETED',
-          paymentMethod: method,
-        });
-      }
+      // Merge server totals + GL journal id after successful completion
+      setCheckoutData({
+        ...checkoutData,
+        ...completed,
+        status: 'COMPLETED',
+        paymentMethod: method,
+      });
 
       // Show success animation
       setShowSuccess(true);
@@ -251,7 +284,23 @@ export default function CheckoutPage() {
           <p className={styles.successMessage}>
             Your payment has been processed successfully.
           </p>
-          <p className={styles.successSubMessage}>Updating order status...</p>
+          {checkoutData.accountingJournalEntryId ? (
+            <p className={styles.successSubMessage}>
+              Sale recorded in the general ledger (
+              <Link
+                to={`/dashboard/accounting?highlight=${encodeURIComponent(checkoutData.accountingJournalEntryId)}`}
+                className={styles.successAccountingLink}
+              >
+                View journal
+              </Link>
+              ).
+            </p>
+          ) : (
+            <p className={styles.successSubMessage}>
+              If ledger posting fails silently, totals still apply—check Accounting for this
+              invoice.
+            </p>
+          )}
         </div>
       </div>
     );
@@ -265,6 +314,23 @@ export default function CheckoutPage() {
       </div>
 
       {error && <div className={styles.errorMessage}>{error}</div>}
+
+      {checkoutData.status === 'COMPLETED' &&
+        checkoutData.accountingJournalEntryId && (
+          <div className={styles.accountingBanner} role="status">
+            <span className={styles.accountingBannerText}>
+              This sale is posted to the ledger.
+            </span>
+            <Link
+              className={styles.accountingBannerLink}
+              to={`/dashboard/accounting?highlight=${encodeURIComponent(
+                checkoutData.accountingJournalEntryId
+              )}`}
+            >
+              Open journal →
+            </Link>
+          </div>
+        )}
 
       <div className={styles.container}>
         {/* Invoice Details */}
@@ -533,6 +599,29 @@ export default function CheckoutPage() {
         {checkoutData.status !== 'COMPLETED' && (
           <div className={styles.paymentSection}>
             <h3 className={styles.sectionTitle}>Payment Options</h3>
+            {receiptGlAccounts.length > 0 && (
+              <div className={styles.receiptLedgerRow}>
+                <label htmlFor="checkout-receipt-gl">Record receipt in ledger</label>
+                <select
+                  id="checkout-receipt-gl"
+                  className={styles.receiptLedgerSelect}
+                  value={receiptGlCode}
+                  onChange={(ev) => setReceiptGlCode(ev.target.value)}
+                  disabled={isProcessingPayment || isUpdating}
+                >
+                  {receiptGlAccounts.map((a) => (
+                    <option key={a.code} value={a.code}>
+                      {a.code} — {a.name}
+                    </option>
+                  ))}
+                </select>
+                <p className={styles.receiptLedgerHint}>
+                  Checkout debits this asset for the invoice total (sales revenue and GST are credited as
+                  usual). Choose a bank account you added under Chart of accounts or keep{' '}
+                  <span className={styles.receiptLedgerMono}>CASH</span>.
+                </p>
+              </div>
+            )}
             <div className={styles.paymentButtons}>
               <button
                 className={`${styles.paymentBtn} ${styles.cashBtn}`}
@@ -553,21 +642,6 @@ export default function CheckoutPage() {
                   💳
                 </span>
                 {isProcessingPayment ? 'Processing...' : 'Pay Online'}
-              </button>
-              <button
-                className={`${styles.paymentBtn} ${styles.creditBtn}`}
-                onClick={() => handlePayment('CREDIT')}
-                disabled={isProcessingPayment || isUpdating}
-                title={
-                  !checkoutData.customerId
-                    ? 'Add customer (search by phone in cart) to sell on credit'
-                    : 'Complete sale on credit – amount will be tracked in Credit Ledger'
-                }
-              >
-                <span role="img" aria-label="Credit">
-                  📒
-                </span>
-                {isProcessingPayment ? 'Processing...' : 'Sell on Credit'}
               </button>
             </div>
           </div>
