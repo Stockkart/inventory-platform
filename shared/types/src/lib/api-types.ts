@@ -587,10 +587,6 @@ export interface CreateInventoryDto {
   reminderAt?: string;
   customReminders?: CustomReminderInput[];
   vendorId?: string;
-  /** When true, record this purchase as credit (buyer owes vendor). When false, treated as paid/cash. */
-  onCredit?: boolean | null;
-  /** When vendor is a StockKart user and purchase is on credit, assign to vendor's shop so they can see it. */
-  vendorShopId?: string | null;
   lotId?: string;
   hsn?: string;
   sac?: string;
@@ -683,10 +679,6 @@ export interface VendorPurchaseInvoicePayload {
 
 export interface BulkCreateInventoryDto {
   vendorId: string;
-  /** When true, record this purchase as credit (buyer owes vendor). */
-  onCredit?: boolean | null;
-  /** When vendor is a StockKart user and purchase is on credit, assign to vendor's shop. */
-  vendorShopId?: string | null;
   /** When set, persists invoice metadata and links created inventory rows. */
   vendorPurchaseInvoice?: VendorPurchaseInvoicePayload | null;
   items: BulkCreateInventoryItem[];
@@ -700,6 +692,8 @@ export interface BulkCreateInventoryResponse {
   totalCreated?: number;
   totalFailed?: number;
   vendorPurchaseInvoiceId?: string | null;
+  /** Set when bulk stock-in triggered a PURCHASE journal in the general ledger. */
+  accountingJournalEntryId?: string | null;
   items: Array<{
     id: string;
     lotId?: string;
@@ -757,7 +751,16 @@ export interface VendorPurchaseInvoiceDetail {
   createdAt: string | null;
   synthetic?: boolean | null;
   legacyLotId?: string | null;
+  /** GL journal id when posted (source key PRODUCT:PURCHASE_INV:&lt;this id&gt;). */
+  accountingJournalEntryId?: string | null;
   lines: VendorPurchaseInvoiceLineDto[];
+}
+
+/** Result of idempotent POST …/vendor-purchase-invoices/{id}/post-purchase-ledger */
+export interface PostPurchaseLedgerResultDto {
+  accountingJournalEntryId?: string | null;
+  skipped: boolean;
+  message?: string | null;
 }
 
 export interface VendorPurchaseInvoiceListResponse {
@@ -1147,6 +1150,7 @@ export interface CheckoutResponse {
   totalProfit?: number | null;
   marginPercent?: number | null;
   billingMode?: BillingMode;
+  accountingJournalEntryId?: string | null;
 }
 
 // Cart types
@@ -1181,6 +1185,96 @@ export interface CartResponse {
   totalProfit?: number | null;
   marginPercent?: number | null;
   billingMode?: BillingMode;
+  /** Present when checkout completed and a SALE journal was posted in the general ledger. */
+  accountingJournalEntryId?: string | null;
+}
+
+/** General ledger account type (matches Java {@code AccountType}). */
+export type GlAccountType = 'ASSET' | 'LIABILITY' | 'EQUITY' | 'REVENUE' | 'EXPENSE';
+
+export interface GlAccountResponse {
+  id: string;
+  code: string;
+  name: string;
+  accountType: GlAccountType | string;
+  systemAccount: boolean;
+  active: boolean;
+  /** Posted journal debits to this account (trial-balance scope). */
+  totalDebit: number;
+  /** Posted journal credits to this account (trial-balance scope). */
+  totalCredit: number;
+}
+
+export interface CreateGlAccountDto {
+  code: string;
+  name: string;
+  accountType: GlAccountType;
+  active?: boolean;
+}
+
+export interface PostManualJournalLineDto {
+  accountCode: string;
+  debit?: number | null;
+  credit?: number | null;
+  memo?: string | null;
+}
+
+export interface PostManualJournalDto {
+  description: string;
+  /** ISO-8601 instant; omit for “now”. */
+  journalDate?: string | null;
+  /** Optional idempotency key; repeats return the existing journal. */
+  sourceKey?: string | null;
+  lines: PostManualJournalLineDto[];
+}
+
+export interface JournalLineResponse {
+  lineNo: number;
+  accountId: string;
+  accountCode: string;
+  debit: number;
+  credit: number;
+  memo?: string | null;
+  partyType?: 'VENDOR' | 'CUSTOMER' | null;
+  partyId?: string | null;
+}
+
+export interface JournalEntryResponse {
+  id: string;
+  shopId: string;
+  journalDate: string;
+  postedAt: string;
+  description: string;
+  source: string;
+  sourceKey?: string | null;
+  totalDebitSum: number;
+  totalCreditSum: number;
+  postedByUserId?: string | null;
+  lines: JournalLineResponse[];
+}
+
+export interface JournalListEnvelope {
+  journals: JournalEntryResponse[];
+  page: number;
+  size: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+/** {@code GET /accounting/shop-summary} — effective tenant for GL queries */
+export interface AccountingShopSummary {
+  shopId: string;
+  /** Rows in {@code acct_gl_accounts} (bootstrap chart — not journal activity). */
+  chartAccountCount: number;
+  /** Rows in {@code acct_journal_entries}. */
+  journalEntryCount: number;
+}
+
+export interface TrialBalanceLine {
+  accountCode: string;
+  accountName: string;
+  debit: number;
+  credit: number;
 }
 
 export interface AddToCartDto {
@@ -1193,7 +1287,7 @@ export interface AddToCartDto {
   customerGstin?: string;
   customerDlNo?: string;
   customerPan?: string;
-  /** Links customer to a StockKart user. Enables credit sync; user sees "Amount to Pay" in their shop. */
+  /** Optional link to a registered StockKart user for this party. */
   customerUserId?: string;
 }
 
@@ -1201,6 +1295,8 @@ export interface UpdateCartStatusDto {
   purchaseId: string;
   status: string;
   paymentMethod: string;
+  /** Sale completion: debit this asset GL (e.g. CASH or a manual bank). Omit for CASH. */
+  receiptGlAccountCode?: string;
 }
 
 // Purchase History types
@@ -1405,117 +1501,6 @@ export interface LinkableUser {
   name: string;
 }
 
-// Credit Ledger types
-export type LedgerPartyType = 'VENDOR' | 'CUSTOMER';
-export type LedgerEntryType = 'DEBIT' | 'CREDIT';
-export type LedgerSource = 'PURCHASE' | 'SALE' | 'PAYMENT' | 'ADJUSTMENT';
-export type LedgerReferenceType =
-  | 'INVENTORY'
-  | 'PURCHASE'
-  | 'PAYMENT_RECEIPT'
-  | 'ADJUSTMENT';
-
-export interface LedgerEntry {
-  id: string;
-  shopId: string;
-  partyType: LedgerPartyType;
-  partyId: string;
-  /** Resolved vendor or customer name for display */
-  partyName?: string | null;
-  /** Resolved counterparty shop name (vendor's shop when assigned) */
-  counterpartyShopName?: string | null;
-  /** Display name for Party column: vendor/customer when we're buyer, buyer shop when we're vendor */
-  displayPartyName?: string | null;
-  /** Our role: BUYER (we owe), VENDOR (they owe us as vendor), or SELLER (customer owes us) */
-  roleInEntry?: 'BUYER' | 'VENDOR' | 'SELLER' | null;
-  counterpartyShopId?: string | null;
-  amount: number;
-  type: LedgerEntryType;
-  source: LedgerSource;
-  referenceId?: string | null;
-  referenceType?: LedgerReferenceType | null;
-  description?: string | null;
-  createdByUserId?: string | null;
-  createdAt: string;
-}
-
-export interface LedgerBalance {
-  shopId: string;
-  partyType: LedgerPartyType;
-  partyId: string;
-  balance: number;
-}
-
-export interface CreateLedgerEntryRequest {
-  partyType: LedgerPartyType;
-  partyId: string;
-  amount: number;
-  type: LedgerEntryType;
-  source: LedgerSource;
-  referenceId?: string | null;
-  referenceType?: LedgerReferenceType | null;
-  description?: string | null;
-}
-
-export interface LedgerEntriesResponse {
-  entries: LedgerEntry[];
-  page: number;
-  size: number;
-  totalItems: number;
-  totalPages: number;
-}
-
-/** Amount to collect from a buyer shop (when viewing from vendor's shop) */
-export interface ReceivableItem {
-  buyerShopId: string;
-  buyerShopName: string;
-  /** Display name for who has to pay: shop name and/or owner/contact name */
-  buyerPayerName?: string | null;
-  vendorId: string;
-  vendorName: string;
-  balance: number;
-}
-
-export interface ReceivablesResponse {
-  receivables: ReceivableItem[];
-}
-
-/** Amount to collect from a customer (when we sold to them on credit) */
-export interface CustomerReceivableItem {
-  customerId: string;
-  customerName: string;
-  customerPhone?: string | null;
-  balance: number;
-}
-
-export interface CustomerReceivablesResponse {
-  receivables: CustomerReceivableItem[];
-}
-
-/** Amount we owe to another shop (bought from them as customer on credit) */
-export interface PayableToShopItem {
-  sellerShopId: string;
-  sellerShopName: string;
-  customerId?: string | null;
-  balance: number;
-}
-
-export interface PayablesToShopsResponse {
-  payables: PayableToShopItem[];
-}
-
-/** Amount to pay to a vendor (when viewing from buyer's shop) */
-export interface PayableItem {
-  vendorId: string;
-  vendorName: string;
-  counterpartyShopName?: string | null;
-  balance: number;
-}
-
-export interface PayablesResponse {
-  payables: PayableItem[];
-}
-
 // Vendor types
 export type VendorBusinessType =
   | 'WHOLESALE'
@@ -1545,7 +1530,7 @@ export interface CreateVendorDto {
   address?: string;
   businessType: VendorBusinessType;
   gstinUin?: string;
-  /** Optional. Links vendor to a registered user (enables credit sync across shops). */
+  /** Optional. Links vendor to a registered user account. */
   userId?: string | null;
 }
 

@@ -1,5 +1,5 @@
 import { useState, FormEvent, useRef, useEffect, useLayoutEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router';
+import { Link, useNavigate, useLocation } from 'react-router';
 import { QRCodeSVG } from 'qrcode.react';
 import {
   inventoryApi,
@@ -25,7 +25,6 @@ import type {
   DiscountApplicable,
   SchemeType,
   BillingMode,
-  ShopMembership,
 } from '@inventory-platform/types';
 import {
   CustomRemindersSection,
@@ -228,6 +227,10 @@ export default function ProductRegistrationPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  /** GL journal id from last bulk save (PURCHASE), for Accounting deep link */
+  const [registrationLedgerId, setRegistrationLedgerId] = useState<
+    string | null
+  >(null);
   const { success: notifySuccess, error: notifyError } = useNotify;
 
   // QR Code Upload state
@@ -331,13 +334,6 @@ export default function ProductRegistrationPage() {
     vendorOtherCharges,
     vendorRoundOff,
   ]);
-
-  // Take on credit (buyer owes vendor) - when true, ledger entry is created
-  const [onCredit, setOnCredit] = useState<boolean>(false);
-  // When vendor is StockKart user: assign credit to their shop so they can see it
-  const [vendorShops, setVendorShops] = useState<ShopMembership[]>([]);
-  const [selectedVendorShopId, setSelectedVendorShopId] = useState<string>('');
-  const [isLoadingVendorShops, setIsLoadingVendorShops] = useState(false);
 
   // Multiple products state
   const [products, setProducts] = useState<ProductFormData[]>([]);
@@ -648,6 +644,7 @@ export default function ProductRegistrationPage() {
     setIsUploading(true);
     setError(null);
     setSuccess(null);
+    setRegistrationLedgerId(null);
     setUploadProgress('Compressing image...');
 
     try {
@@ -850,6 +847,7 @@ export default function ProductRegistrationPage() {
     );
     setError(null);
     setSuccess(null);
+    setRegistrationLedgerId(null);
   };
 
   const handleIntegerChange = (
@@ -887,6 +885,7 @@ export default function ProductRegistrationPage() {
     e.preventDefault();
     setError(null);
     setSuccess(null);
+    setRegistrationLedgerId(null);
     setIsLoading(true);
 
     try {
@@ -1287,10 +1286,6 @@ export default function ProductRegistrationPage() {
       // Create bulk request
       const bulkData: BulkCreateInventoryDto = {
         vendorId: selectedVendor.vendorId,
-        onCredit,
-        ...(onCredit &&
-          selectedVendor.userId &&
-          selectedVendorShopId && { vendorShopId: selectedVendorShopId }),
         ...(vendorPurchaseInvoice && { vendorPurchaseInvoice }),
         items,
       };
@@ -1309,6 +1304,12 @@ export default function ProductRegistrationPage() {
         const items = response?.items ?? [];
         const savedVendorInvoiceId =
           response?.vendorPurchaseInvoiceId ?? response?.lotId;
+        const ledgerJid =
+          response?.accountingJournalEntryId != null &&
+          String(response.accountingJournalEntryId).trim() !== ''
+            ? String(response.accountingJournalEntryId).trim()
+            : null;
+        setRegistrationLedgerId(ledgerJid);
 
         // If we have items or a positive createdCount, consider it successful
         if (createdCount > 0 || items.length > 0) {
@@ -1346,6 +1347,7 @@ export default function ProductRegistrationPage() {
             setVendorRoundOff('');
             setVendorInvoiceTotal('');
             setSuccess(null);
+            setRegistrationLedgerId(null);
           }, 5000);
         } else if (response) {
           // If response exists but no createdCount/items, still consider it success
@@ -1371,6 +1373,7 @@ export default function ProductRegistrationPage() {
             setVendorRoundOff('');
             setVendorInvoiceTotal('');
             setSuccess(null);
+            setRegistrationLedgerId(null);
           }, 5000);
         } else {
           notifyError('Failed to register products. No items were created.');
@@ -1430,19 +1433,6 @@ export default function ProductRegistrationPage() {
     setVendorSearchQuery(vendor.name);
     setShowVendorDropdown(false);
     setVendorSearchResults([]);
-    setSelectedVendorShopId('');
-    setVendorShops([]);
-    if (vendor.userId) {
-      setIsLoadingVendorShops(true);
-      vendorsApi
-        .getVendorShops(vendor.vendorId)
-        .then((shops) => {
-          setVendorShops(shops ?? []);
-          if (shops?.length === 1) setSelectedVendorShopId(shops[0].shopId);
-        })
-        .catch(() => setVendorShops([]))
-        .finally(() => setIsLoadingVendorShops(false));
-    }
   };
 
   useEffect(() => {
@@ -1566,13 +1556,11 @@ export default function ProductRegistrationPage() {
   };
 
   const handleClearVendor = () => {
+    setRegistrationLedgerId(null);
     setSelectedVendor(null);
     setVendorSearchQuery('');
     setVendorSearchResults([]);
     setShowVendorDropdown(false);
-    setVendorShops([]);
-    setSelectedVendorShopId('');
-    setOnCredit(false);
     setVendorInvoiceNo('');
     setVendorInvoiceDate('');
     setVendorLineSubTotal('');
@@ -1618,6 +1606,22 @@ export default function ProductRegistrationPage() {
       <div className={styles.formContainer}>
         {error && <div className={styles.errorMessage}>{error}</div>}
         {success && <div className={styles.successMessage}>{success}</div>}
+        {registrationLedgerId && (
+          <div className={styles.accountingLedgerBanner} role="status">
+            <span>
+              Vendor stock-in recorded in the general ledger (purchase / trade
+              payable).
+            </span>
+            <Link
+              className={styles.accountingLedgerLink}
+              to={`/dashboard/accounting?highlight=${encodeURIComponent(
+                registrationLedgerId
+              )}`}
+            >
+              View purchase journal →
+            </Link>
+          </div>
+        )}
 
         <form className={styles.form} onSubmit={handleSubmit}>
           <div className={styles.uploadSection}>
@@ -1893,66 +1897,6 @@ export default function ProductRegistrationPage() {
                       </span>
                     )}
                     <h4>{selectedVendor.name}</h4>
-                    <div className={styles.formGroup} style={{ marginTop: 12 }}>
-                      <label
-                        className={styles.label}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 8,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={onCredit}
-                          onChange={(e) => {
-                            setOnCredit(e.target.checked);
-                            if (!e.target.checked) setSelectedVendorShopId('');
-                          }}
-                          disabled={isLoading}
-                        />
-                        Take this purchase on credit (amount owed to vendor)
-                      </label>
-                    </div>
-                    {onCredit && selectedVendor.userId && (
-                      <div
-                        className={styles.formGroup}
-                        style={{ marginTop: 12 }}
-                      >
-                        <label className={styles.label}>
-                          Assign credit to vendor&apos;s shop
-                        </label>
-                        <select
-                          className={styles.input}
-                          value={selectedVendorShopId}
-                          onChange={(e) =>
-                            setSelectedVendorShopId(e.target.value)
-                          }
-                          disabled={isLoadingVendorShops || isLoading}
-                        >
-                          <option value="">
-                            — Not assigned (vendor won&apos;t see in their shop)
-                            —
-                          </option>
-                          {vendorShops.map((s) => (
-                            <option key={s.shopId} value={s.shopId}>
-                              {s.shopName}
-                            </option>
-                          ))}
-                        </select>
-                        <small
-                          style={{
-                            color: 'var(--text-secondary)',
-                            marginTop: 4,
-                            display: 'block',
-                          }}
-                        >
-                          When assigned, the vendor can see this pending amount
-                          when they log into that shop.
-                        </small>
-                      </div>
-                    )}
                     <p>
                       <strong>Phone:</strong> {selectedVendor.contactPhone}
                     </p>
@@ -3297,7 +3241,7 @@ export default function ProductRegistrationPage() {
                   style={{ marginBottom: 8, fontSize: 13, color: '#666' }}
                 >
                   If this vendor is a registered user, search by their email to
-                  link. Enables credit sync across shops.
+                  link the vendor record to their account.
                 </p>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <button

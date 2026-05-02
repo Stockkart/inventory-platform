@@ -20,6 +20,36 @@
   color: var(--text-secondary);
 }
 
+.accountingBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 1.25rem;
+  border-radius: 12px;
+  border: 1px solid rgba(14, 165, 233, 0.45);
+  background: rgba(14, 165, 233, 0.09);
+}
+
+.accountingBannerText {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.accountingBannerLink {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #0284c7;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.accountingBannerLink:hover {
+  text-decoration: underline;
+}
+
 .container {
   display: flex;
   flex-direction: column;
@@ -262,6 +292,41 @@
   padding: 2rem;
 }
 
+.receiptLedgerRow {
+  margin-bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-width: 28rem;
+}
+
+.receiptLedgerRow label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.receiptLedgerSelect {
+  padding: 0.5rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  font-size: 0.9rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.receiptLedgerHint {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.receiptLedgerMono {
+  font-family: ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
 .paymentButtons {
   display: flex;
   gap: 1rem;
@@ -306,18 +371,6 @@
   opacity: 0.9;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-}
-
-.creditBtn {
-  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
-  color: white;
-  border-color: #8b5cf6;
-}
-
-.creditBtn:hover {
-  opacity: 0.9;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 }
 
 /* Actions Section */
@@ -468,6 +521,16 @@
   font-size: 0.9rem;
   color: var(--text-tertiary);
   animation: fadeInUp 0.6s ease-out 0.7s both;
+}
+
+.successAccountingLink {
+  color: #0284c7;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.successAccountingLink:hover {
+  color: #0369a1;
 }
 
 /* Animations */
