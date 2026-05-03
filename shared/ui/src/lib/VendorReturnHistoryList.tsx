@@ -3,6 +3,7 @@ import { inventoryApi } from '@inventory-platform/api';
 import type { VendorPurchaseReturnSummary } from '@inventory-platform/types';
 import { useNotify } from '@inventory-platform/store';
 import styles from './RefundHistoryList.module.css';
+import { PaginationBar } from './PaginationBar';
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('en-IN', {
@@ -236,29 +237,14 @@ export function VendorReturnHistoryList({
             ))}
           </div>
 
-          {totalPages > 1 ? (
-            <div className={styles.pagination}>
-              <button
-                type="button"
-                className={styles.pageButton}
-                disabled={page === 1 || isLoading}
-                onClick={() => handlePageChange(page - 1)}
-              >
-                Previous
-              </button>
-              <span className={styles.pageInfo}>
-                Page {page} of {totalPages} ({total} total)
-              </span>
-              <button
-                type="button"
-                className={styles.pageButton}
-                disabled={page === totalPages || isLoading}
-                onClick={() => handlePageChange(page + 1)}
-              >
-                Next
-              </button>
-            </div>
-          ) : null}
+          <PaginationBar
+            page={page - 1}
+            totalPages={totalPages}
+            totalItems={total}
+            disabled={isLoading}
+            onPageChange={(p) => handlePageChange(p + 1)}
+            aria-label="Supplier return pages"
+          />
         </>
       )}
     </div>

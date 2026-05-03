@@ -3,6 +3,7 @@ import { refundsApi } from '@inventory-platform/api';
 import type { Refund } from '@inventory-platform/types';
 import { useNotify } from '@inventory-platform/store';
 import styles from './RefundHistoryList.module.css';
+import { PaginationBar } from './PaginationBar';
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('en-IN', {
@@ -175,27 +176,14 @@ export function RefundHistoryList({ refreshTrigger }: RefundHistoryListProps) {
         ))}
       </div>
 
-      {totalPages > 1 && (
-        <div className={styles.pagination}>
-          <button
-            className={styles.pageButton}
-            onClick={() => handlePageChange(page - 1)}
-            disabled={page === 1 || isLoading}
-          >
-            Previous
-          </button>
-          <span className={styles.pageInfo}>
-            Page {page} of {totalPages} ({total} total)
-          </span>
-          <button
-            className={styles.pageButton}
-            onClick={() => handlePageChange(page + 1)}
-            disabled={page === totalPages || isLoading}
-          >
-            Next
-          </button>
-        </div>
-      )}
+      <PaginationBar
+        page={page - 1}
+        totalPages={totalPages}
+        totalItems={total}
+        disabled={isLoading}
+        onPageChange={(p) => handlePageChange(p + 1)}
+        aria-label="Customer return pages"
+      />
     </div>
   );
 }

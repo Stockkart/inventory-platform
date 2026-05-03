@@ -2,6 +2,7 @@ import { useState, useEffect, FormEvent } from 'react';
 import { Link } from 'react-router';
 import { inventoryApi } from '@inventory-platform/api';
 import type { InventoryItem } from '@inventory-platform/types';
+import { PaginationBar } from '@inventory-platform/ui';
 import styles from './dashboard.pricing.module.css';
 
 export function meta() {
@@ -208,39 +209,17 @@ export default function PricingPage() {
               </table>
             </div>
 
-            {totalPages > 1 && (
-              <div className={styles.pagination}>
-                <button
-                  type="button"
-                  className={styles.pageBtn}
-                  disabled={page <= 0 || isLoading}
-                  onClick={() => handlePageChange(page - 1)}
-                >
-                  Previous
-                </button>
-                <span className={styles.pageInfo}>
-                  Page {page + 1} of {totalPages} · {totalItems} items
-                </span>
-                <button
-                  type="button"
-                  className={styles.pageBtn}
-                  disabled={page >= totalPages - 1 || isLoading}
-                  onClick={() => handlePageChange(page + 1)}
-                >
-                  Next
-                </button>
-                <select
-                  className={styles.pageSizeSelect}
-                  value={pageSize}
-                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                  disabled={isLoading}
-                >
-                  <option value={10}>10 / page</option>
-                  <option value={20}>20 / page</option>
-                  <option value={50}>50 / page</option>
-                </select>
-              </div>
-            )}
+            <PaginationBar
+              page={page}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              disabled={isLoading}
+              onPageChange={handlePageChange}
+              aria-label="Pricing table pages"
+              pageSize={pageSize}
+              pageSizeOptions={[10, 20, 50]}
+              onPageSizeChange={handlePageSizeChange}
+            />
           </>
         )}
       </section>

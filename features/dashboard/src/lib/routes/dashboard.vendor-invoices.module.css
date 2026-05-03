@@ -499,47 +499,6 @@
   color: var(--text-secondary);
 }
 
-.pagination {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  padding: 1rem 1.25rem;
-  border-top: 1px solid var(--border-color);
-  background: var(--bg-primary);
-}
-
-.pageBtn {
-  padding: 0.45rem 1rem;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-primary);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  color: var(--text-primary);
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease;
-}
-
-.pageBtn:hover:not(:disabled) {
-  border-color: #93c5fd;
-  background: var(--hover-bg);
-}
-
-.pageBtn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.pageIndicator {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
-}
-
 .srOnly {
   position: absolute;
   width: 1px;

@@ -7,6 +7,7 @@ import type {
   Vendor,
   BillingMode,
 } from '@inventory-platform/types';
+import { PaginationBar } from '@inventory-platform/ui';
 import { useNotify } from '@inventory-platform/store';
 import styles from './dashboard.import.module.css';
 
@@ -328,43 +329,16 @@ export default function ImportPage() {
               <div className={styles.tableHeader}>
                 <h3>Review ({importTableItems.length} items)</h3>
                 {importTableItems.length > importTablePageSize && (
-                  <div className={styles.pagination}>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setImportTablePage((p) => Math.max(0, p - 1))
-                      }
-                      disabled={importTablePage === 0}
-                    >
-                      ← Prev
-                    </button>
-                    <span>
-                      {importTablePage + 1} /{' '}
-                      {Math.ceil(importTableItems.length / importTablePageSize)}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setImportTablePage((p) =>
-                          Math.min(
-                            Math.ceil(
-                              importTableItems.length / importTablePageSize
-                            ) - 1,
-                            p + 1
-                          )
-                        )
-                      }
-                      disabled={
-                        importTablePage >=
-                        Math.ceil(
-                          importTableItems.length / importTablePageSize
-                        ) -
-                          1
-                      }
-                    >
-                      Next →
-                    </button>
-                  </div>
+                  <PaginationBar
+                    compact
+                    page={importTablePage}
+                    totalPages={Math.ceil(
+                      importTableItems.length / importTablePageSize
+                    )}
+                    totalItems={importTableItems.length}
+                    onPageChange={setImportTablePage}
+                    aria-label="Import preview pages"
+                  />
                 )}
               </div>
               <div className={styles.tableWrap}>

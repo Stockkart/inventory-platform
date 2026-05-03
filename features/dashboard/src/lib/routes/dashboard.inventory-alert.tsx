@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import styles from './dashboard.inventory-alert.module.css';
 import { inventoryApi } from '@inventory-platform/api';
-import { InventoryAlertDetails } from '@inventory-platform/ui';
+import { InventoryAlertDetails, PaginationBar } from '@inventory-platform/ui';
 import { useLocation } from 'react-router';
 
 export function meta() {
@@ -156,40 +156,20 @@ export default function InventoryAlertPage() {
             </div>
           ))}
         </div>
-        <div className={styles.paginationBar}>
-          <button
-            className={styles.pageBtn}
-            disabled={page === 0}
-            onClick={() => setPage((p) => p - 1)}
-          >
-            Previous
-          </button>
-
-          <span className={styles.pageInfo}>
-            Page {page + 1} of {totalPages} • {totalItems} items
-          </span>
-
-          <button
-            className={styles.pageBtn}
-            disabled={page >= totalPages - 1}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Next
-          </button>
-
-          <select
-            className={styles.pageSizeSelect}
-            value={size}
-            onChange={(e) => {
-              setPage(0);
-              setSize(Number(e.target.value));
-            }}
-          >
-            <option value={10}>10 / page</option>
-            <option value={20}>20 / page</option>
-            <option value={50}>50 / page</option>
-          </select>
-        </div>
+        <PaginationBar
+          page={page}
+          totalPages={Math.max(totalPages, 1)}
+          totalItems={totalItems}
+          disabled={loading}
+          onPageChange={setPage}
+          pageSize={size}
+          pageSizeOptions={[10, 20, 50]}
+          onPageSizeChange={(n) => {
+            setPage(0);
+            setSize(n);
+          }}
+          aria-label="Low stock alert pages"
+        />
       </div>
       <InventoryAlertDetails
         open={!!selected}

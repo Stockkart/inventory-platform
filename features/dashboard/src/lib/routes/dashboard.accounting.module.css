@@ -13,6 +13,7 @@
   font-weight: 700;
   margin: 0 0 0.35rem;
   letter-spacing: -0.02em;
+  color: var(--text-primary);
 }
 
 .subtitle {
@@ -43,14 +44,14 @@
 }
 
 .accountingTab:hover {
-  color: var(--text-primary, #0f172a);
-  background: rgba(148, 163, 184, 0.12);
+  color: var(--text-primary);
+  background: var(--hover-bg);
 }
 
 .accountingTabActive {
-  color: #2563eb;
-  background: rgba(59, 130, 246, 0.1);
-  border-color: rgba(59, 130, 246, 0.35);
+  color: var(--link-hover);
+  background: color-mix(in srgb, var(--link-hover) 14%, var(--bg-primary));
+  border-color: color-mix(in srgb, var(--link-hover) 38%, var(--border-color));
 }
 
 .accountsIntro {
@@ -65,14 +66,15 @@
   margin-bottom: 1.25rem;
   padding: 1rem 1.125rem;
   border-radius: 14px;
-  border: 1px solid var(--border-color, rgba(148, 163, 184, 0.35));
-  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
 }
 
 .accountsAddTitle {
   margin: 0 0 0.75rem;
   font-size: 1rem;
   font-weight: 600;
+  color: var(--text-primary);
 }
 
 .accountsForm {
@@ -97,15 +99,35 @@
   color: var(--text-secondary, #64748b);
 }
 
-.accountsField input,
-.accountsField select {
+.accountsField input {
   padding: 0.45rem 0.6rem;
   border-radius: 8px;
-  border: 1px solid var(--border-color, rgba(148, 163, 184, 0.45));
+  border: 1px solid var(--border-color);
   font-size: 0.875rem;
   min-width: 8rem;
-  background: var(--bg-primary, #fff);
-  color: var(--text-primary, #0f172a);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.accountsField select {
+  padding: 0.45rem 1.75rem 0.45rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  font-size: 0.875rem;
+  min-width: 8rem;
+  background-color: var(--bg-primary);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M3 4.5L6 8l3-3.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.45rem center;
+  color: var(--text-primary);
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+:global([data-theme='dark']) .accountsField input,
+:global([data-theme='dark']) .accountsField select {
+  color-scheme: dark;
 }
 
 .accountsFieldCheckbox {
@@ -143,8 +165,9 @@
   margin: 0 0 1rem;
   padding: 0.85rem 1rem;
   border-radius: 10px;
-  border: 1px solid rgba(100, 116, 139, 0.35);
-  background: rgba(248, 250, 252, 0.85);
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
   font-size: 0.875rem;
   line-height: 1.5;
 }
@@ -163,11 +186,17 @@
   margin: 0 0 1rem;
   padding: 0.75rem 1rem;
   border-radius: 10px;
-  border: 1px solid rgba(234, 179, 8, 0.65);
-  background: rgba(254, 252, 232, 0.95);
+  border: 1px solid color-mix(in srgb, #eab308 45%, var(--border-color));
+  background: color-mix(in srgb, #fde047 12%, var(--bg-primary));
   color: #854d0e;
   font-size: 0.875rem;
   line-height: 1.5;
+}
+
+:global([data-theme='dark']) .scopeWarning {
+  border-color: color-mix(in srgb, #facc15 40%, var(--border-color));
+  background: color-mix(in srgb, #eab308 16%, var(--bg-primary));
+  color: #fef08a;
 }
 
 .scopeWarning p {
@@ -178,18 +207,26 @@
   margin: 1rem 0;
   padding: 0.75rem 1rem;
   border-radius: 10px;
-  background: rgba(14, 165, 233, 0.12);
-  color: var(--text-primary, #0f172a);
+  background: color-mix(in srgb, #0ea5e9 14%, var(--bg-primary));
+  border: 1px solid color-mix(in srgb, #38bdf8 28%, var(--border-color));
+  color: var(--text-primary);
   font-size: 0.9rem;
 }
 
 .error {
   padding: 0.75rem 1rem;
   border-radius: 10px;
-  background: rgba(239, 68, 68, 0.12);
+  background: color-mix(in srgb, #dc2626 12%, var(--bg-primary));
   color: #b91c1c;
+  border: 1px solid color-mix(in srgb, #dc2626 28%, var(--border-color));
   margin-bottom: 1rem;
   font-size: 0.9rem;
+}
+
+:global([data-theme='dark']) .error {
+  background: color-mix(in srgb, #f87171 14%, var(--bg-primary));
+  color: #fecaca;
+  border-color: color-mix(in srgb, #f87171 35%, var(--border-color));
 }
 
 .overviewStack {
@@ -211,8 +248,8 @@
 }
 
 .card {
-  background: var(--card-bg, #fff);
-  border: 1px solid var(--border-color, rgba(148, 163, 184, 0.35));
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 14px;
   overflow: hidden;
 }
@@ -222,8 +259,9 @@
   font-weight: 600;
   margin: 0;
   padding: 1rem 1.125rem;
-  border-bottom: 1px solid var(--border-color, rgba(148, 163, 184, 0.25));
-  background: rgba(249, 250, 251, 0.8);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-muted);
+  color: var(--text-primary);
 }
 
 .cardIntro {
@@ -231,14 +269,14 @@
   padding: 0.35rem 1.125rem 0.9rem;
   font-size: 0.8125rem;
   line-height: 1.45;
-  color: var(--text-secondary, #64748b);
-  border-bottom: 1px solid var(--border-color, rgba(148, 163, 184, 0.18));
-  background: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-primary) 88%, var(--bg-muted));
 }
 
 .cardIntroLink {
   font-weight: 600;
-  color: #2563eb;
+  color: var(--link-hover);
   text-decoration: none;
 }
 
@@ -365,12 +403,12 @@
 }
 
 .journalTbGroupAlt td {
-  background: rgba(248, 250, 252, 0.82);
+  background: color-mix(in srgb, var(--bg-muted) 45%, transparent);
 }
 
 tr.journalTbRowHi td {
-  background: rgba(14, 165, 233, 0.11);
-  box-shadow: inset 0 0 0 1px rgba(14, 165, 233, 0.35);
+  background: color-mix(in srgb, var(--link-hover) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--link-hover) 38%, transparent);
 }
 
 .journalFootnote {
@@ -387,8 +425,8 @@ tr.journalTbRowHi td {
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.02em;
-  background: rgba(148, 163, 184, 0.2);
-  color: #475569;
+  background: color-mix(in srgb, var(--text-tertiary) 22%, transparent);
+  color: var(--text-secondary);
 }
 
 .journalCaption {
@@ -423,16 +461,21 @@ tr.journalTbRowHi td {
 
 .table th {
   font-weight: 600;
-  color: var(--text-secondary, #64748b);
+  color: var(--text-secondary);
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  background: color-mix(in srgb, var(--bg-muted) 55%, transparent);
+}
+
+.table td {
+  color: var(--text-primary);
 }
 
 .table tbody tr:nth-child(odd):not(.rowTotal):not(.rowHighlight):not(.tbGroupRow):not(
     [data-journal-register]
   ) {
-  background: rgba(248, 250, 252, 0.6);
+  background: color-mix(in srgb, var(--bg-muted) 35%, transparent);
 }
 
 .rowTotal td {
@@ -441,15 +484,15 @@ tr.journalTbRowHi td {
 }
 
 .tbGroupRow td {
-  background: rgba(241, 245, 249, 0.92);
-  color: var(--text-secondary, #64748b);
+  background: color-mix(in srgb, var(--bg-muted) 75%, var(--bg-card));
+  color: var(--text-secondary);
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   padding: 0.5rem 0.875rem;
-  border-top: 1px solid var(--border-color, rgba(148, 163, 184, 0.28));
-  border-bottom: 1px solid var(--border-color, rgba(148, 163, 184, 0.2));
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .tbGroupRow:first-child td {
@@ -457,9 +500,9 @@ tr.journalTbRowHi td {
 }
 
 .rowHighlight {
-  outline: 2px solid #0ea5e9;
+  outline: 2px solid var(--link-hover);
   outline-offset: 2px;
-  background: rgba(14, 165, 233, 0.1);
+  background: color-mix(in srgb, var(--link-hover) 12%, transparent);
   border-radius: 12px;
 }
 
@@ -491,6 +534,16 @@ tr.journalTbRowHi td {
   font-weight: 600;
   background: rgba(22, 163, 74, 0.15);
   color: #166534;
+}
+
+:global([data-theme='dark']) .pillSale {
+  background: color-mix(in srgb, #8b5cf6 26%, transparent);
+  color: #ddd6fe;
+}
+
+:global([data-theme='dark']) .pillPurchase {
+  background: color-mix(in srgb, #22c55e 24%, transparent);
+  color: #bbf7d0;
 }
 
 .recentList {
@@ -531,14 +584,14 @@ tr.journalTbRowHi td {
   padding: 0.35rem 1.125rem 1rem;
   font-size: 0.8125rem;
   line-height: 1.45;
-  color: var(--text-secondary, #64748b);
-  border-bottom: 1px solid var(--border-color, rgba(148, 163, 184, 0.18));
-  background: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-primary) 88%, var(--bg-muted));
 }
 
 .manualJournalBackLink {
   font-weight: 600;
-  color: #2563eb;
+  color: var(--link-hover);
   text-decoration: none;
 }
 
@@ -575,10 +628,14 @@ tr.journalTbRowHi td {
 .manualJournalField input {
   padding: 0.45rem 0.65rem;
   border-radius: 8px;
-  border: 1px solid var(--border-color, rgba(148, 163, 184, 0.45));
+  border: 1px solid var(--border-color);
   font-size: 0.875rem;
-  background: var(--bg-primary, #fff);
-  color: var(--text-primary, #0f172a);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+:global([data-theme='dark']) .manualJournalField input {
+  color-scheme: dark;
 }
 
 .manualJournalLinesWrap {
@@ -595,21 +652,26 @@ tr.journalTbRowHi td {
 .manualJournalTable th,
 .manualJournalTable td {
   padding: 0.45rem 0.55rem;
-  border-bottom: 1px solid var(--border-color, rgba(148, 163, 184, 0.22));
+  border-bottom: 1px solid var(--border-color);
   vertical-align: middle;
   text-align: left;
 }
 
+.manualJournalTable td {
+  color: var(--text-primary);
+}
+
 .manualJournalTable th {
   font-weight: 600;
-  color: var(--text-secondary, #64748b);
+  color: var(--text-secondary);
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
+  background: color-mix(in srgb, var(--bg-muted) 55%, transparent);
 }
 
 .manualJournalTable tbody tr:nth-child(odd) {
-  background: rgba(248, 250, 252, 0.5);
+  background: color-mix(in srgb, var(--bg-muted) 30%, transparent);
 }
 
 .manualJournalTable td,
@@ -620,40 +682,62 @@ tr.journalTbRowHi td {
 .mjAcctSelect {
   width: 100%;
   min-width: 10rem;
-  padding: 0.4rem 0.45rem;
+  padding: 0.4rem 2rem 0.4rem 0.45rem;
   border-radius: 8px;
-  border: 1px solid var(--border-color, rgba(148, 163, 184, 0.45));
+  border: 1px solid var(--border-color);
   font-size: 0.8125rem;
-  background: var(--bg-primary, #fff);
-  color: var(--text-primary, #0f172a);
+  background-color: var(--bg-primary);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M3 4.5L6 8l3-3.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.4rem center;
+  color: var(--text-primary);
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
 }
 
 .mjAmtInput {
   width: 100%;
   padding: 0.4rem 0.45rem;
   border-radius: 8px;
-  border: 1px solid var(--border-color, rgba(148, 163, 184, 0.45));
+  border: 1px solid var(--border-color);
   font-size: 0.8125rem;
   text-align: right;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .mjMemoInput {
   width: 100%;
   padding: 0.4rem 0.45rem;
   border-radius: 8px;
-  border: 1px solid var(--border-color, rgba(148, 163, 184, 0.45));
+  border: 1px solid var(--border-color);
   font-size: 0.8125rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+:global([data-theme='dark']) .mjAmtInput,
+:global([data-theme='dark']) .mjMemoInput,
+:global([data-theme='dark']) .mjAcctSelect {
+  color-scheme: dark;
 }
 
 .mjRowRemove {
   padding: 0.15rem 0.35rem;
   border-radius: 6px;
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  background: rgba(254, 242, 242, 0.9);
+  border: 1px solid color-mix(in srgb, #ef4444 45%, var(--border-color));
+  background: color-mix(in srgb, #dc2626 12%, var(--bg-primary));
   color: #b91c1c;
   font-size: 1rem;
   line-height: 1;
   cursor: pointer;
+}
+
+:global([data-theme='dark']) .mjRowRemove {
+  border-color: color-mix(in srgb, #f87171 45%, var(--border-color));
+  background: color-mix(in srgb, #dc2626 22%, var(--bg-primary));
+  color: #fecaca;
 }
 
 .manualJournalToolbar {
@@ -667,12 +751,16 @@ tr.journalTbRowHi td {
 .mjGhostBtn {
   padding: 0.42rem 0.85rem;
   border-radius: 8px;
-  border: 1px solid var(--border-color, rgba(148, 163, 184, 0.45));
-  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
-  color: var(--text-primary, #0f172a);
+  color: var(--text-primary);
+}
+
+.mjGhostBtn:hover:not(:disabled) {
+  background: var(--hover-bg);
 }
 
 .mjGhostBtn:disabled {
@@ -699,16 +787,16 @@ tr.journalTbRowHi td {
 .accountsGhostBtn {
   padding: 0.38rem 0.72rem;
   border-radius: 8px;
-  border: 1px solid var(--border-color, rgba(148, 163, 184, 0.45));
-  background: rgba(248, 250, 252, 0.95);
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
-  color: var(--text-primary, #0f172a);
+  color: var(--text-primary);
 }
 
 .accountsGhostBtn:hover {
-  background: rgba(241, 245, 249, 1);
+  background: var(--hover-bg);
 }
 
 .accountsHeadingRow {

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { customersApi } from '@inventory-platform/api';
-import { EditModal, CustomerEditForm } from '@inventory-platform/ui';
+import { EditModal, CustomerEditForm, PaginationBar } from '@inventory-platform/ui';
 import type {
   CustomerResponse,
   CreateCustomerDto,
@@ -210,7 +210,6 @@ export default function CustomersPage() {
               <th>Address</th>
               <th>GSTIN</th>
               <th>DL No</th>
-              <th>PAN</th>
               <th className={styles.actionsCol}>Actions</th>
             </tr>
           </thead>
@@ -231,7 +230,6 @@ export default function CustomersPage() {
                   <td>{formatAddress(c.address)}</td>
                   <td>{c.gstin ?? '—'}</td>
                   <td>{c.dlNo ?? '—'}</td>
-                  <td>{c.panNo ?? c.pan ?? '—'}</td>
                   <td>
                     <div className={styles.rowActions}>
                       <button
@@ -248,7 +246,7 @@ export default function CustomersPage() {
                         onClick={() => goReturnWithCustomer(c)}
                         title="Open Return to customer with this customer prefilled"
                       >
-                        Return to customer
+                        Return
                       </button>
                       <button
                         type="button"
@@ -266,39 +264,20 @@ export default function CustomersPage() {
         </table>
       </div>
 
-      <div className={styles.paginationBar}>
-        <button
-          type="button"
-          className={styles.pageBtn}
-          disabled={page === 0}
-          onClick={() => setPage((p) => p - 1)}
-        >
-          Previous
-        </button>
-        <span className={styles.pageInfo}>
-          Page {page + 1} of {Math.max(totalPages, 1)} • {total} total
-        </span>
-        <button
-          type="button"
-          className={styles.pageBtn}
-          disabled={totalPages <= 1 || page >= totalPages - 1}
-          onClick={() => setPage((p) => p + 1)}
-        >
-          Next
-        </button>
-        <select
-          className={styles.pageSizeSelect}
-          value={limit}
-          onChange={(e) => {
-            setPage(0);
-            setLimit(Number(e.target.value));
-          }}
-        >
-          <option value={10}>10 / page</option>
-          <option value={20}>20 / page</option>
-          <option value={50}>50 / page</option>
-        </select>
-      </div>
+      <PaginationBar
+        page={page}
+        totalPages={Math.max(totalPages, 1)}
+        totalItems={total}
+        disabled={loading}
+        onPageChange={setPage}
+        pageSize={limit}
+        pageSizeOptions={[10, 20, 50]}
+        onPageSizeChange={(n) => {
+          setPage(0);
+          setLimit(n);
+        }}
+        aria-label="Customer pages"
+      />
 
       {editModal && (
         <EditModal
