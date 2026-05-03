@@ -9,7 +9,11 @@ import type {
   ReminderDetail,
   ReminderInventorySummary,
 } from '@inventory-platform/types';
-import { ReminderForm, InventoryAlertDetails } from '@inventory-platform/ui';
+import {
+  ReminderForm,
+  InventoryAlertDetails,
+  PaginationBar,
+} from '@inventory-platform/ui';
 import styles from './dashboard.reminders.module.css';
 import { useNotify } from '@inventory-platform/store';
 
@@ -577,42 +581,19 @@ export default function RemindersPage() {
               })}
             </div>
             {!focusReminderId && (
-              <div className={styles.paginationBar}>
-                <button
-                  className={styles.pageBtn}
-                  disabled={page === 0}
-                  onClick={() => setPage(page - 1)}
-                >
-                  ‹ Prev
-                </button>
-
-                <span>
-                  Page {page + 1} of {totalPages}
-                </span>
-
-                <button
-                  className={styles.pageBtn}
-                  disabled={page + 1 >= totalPages}
-                  onClick={() => setPage(page + 1)}
-                >
-                  Next ›
-                </button>
-
-                <select
-                  className={styles.pageSizeSelect}
-                  value={size}
-                  onChange={(e) => {
-                    setSize(Number(e.target.value));
-                    setPage(0);
-                  }}
-                >
-                  {[5, 10, 20, 50].map((n) => (
-                    <option key={n} value={n}>
-                      {n}/page
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <PaginationBar
+                page={page}
+                totalPages={Math.max(totalPages, 1)}
+                disabled={isLoading}
+                onPageChange={setPage}
+                pageSize={size}
+                pageSizeOptions={[5, 10, 20, 50]}
+                onPageSizeChange={(n) => {
+                  setPage(0);
+                  setSize(n);
+                }}
+                aria-label="Reminder pages"
+              />
             )}
           </>
         )}

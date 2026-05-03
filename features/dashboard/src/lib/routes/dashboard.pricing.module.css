@@ -11,19 +11,19 @@
 .title {
   font-size: 1.75rem;
   font-weight: 700;
-  color: var(--text-primary, #111);
+  color: var(--text-primary);
   margin: 0 0 0.25rem;
 }
 
 .subtitle {
   font-size: 0.95rem;
-  color: var(--text-secondary, #666);
+  color: var(--text-secondary);
   margin: 0;
 }
 
 .searchSection {
-  background: var(--bg-card, #fff);
-  border: 1px solid var(--border-color, #e5e7eb);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 1.25rem;
   margin-bottom: 1.5rem;
@@ -44,14 +44,20 @@
   flex: 1;
   min-width: 200px;
   padding: 0.6rem 1rem;
-  border: 1px solid var(--border-color, #e5e7eb);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: 1rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .searchInput:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--link-hover);
+}
+
+:global([data-theme='dark']) .searchInput {
+  color-scheme: dark;
 }
 
 .searchBtn {
@@ -76,27 +82,34 @@
 .clearBtn {
   padding: 0.6rem 1rem;
   background: transparent;
-  border: 1px solid var(--border-color, #e5e7eb);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   cursor: pointer;
-  color: var(--text-secondary, #666);
+  color: var(--text-secondary);
 }
 
 .clearBtn:hover:not(:disabled) {
-  background: var(--hover-bg, #f9fafb);
+  background: var(--hover-bg);
 }
 
 .error {
   padding: 0.75rem 1rem;
-  background: #fef2f2;
-  color: #dc2626;
+  background: color-mix(in srgb, #dc2626 12%, var(--bg-primary));
+  color: #b91c1c;
+  border: 1px solid color-mix(in srgb, #dc2626 28%, var(--border-color));
   border-radius: 8px;
   margin-bottom: 1rem;
 }
 
+:global([data-theme='dark']) .error {
+  background: color-mix(in srgb, #f87171 14%, var(--bg-primary));
+  color: #fecaca;
+  border-color: color-mix(in srgb, #f87171 35%, var(--border-color));
+}
+
 .resultsSection {
-  background: var(--bg-card, #fff);
-  border: 1px solid var(--border-color, #e5e7eb);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 1.25rem;
 }
@@ -111,19 +124,19 @@
 
 .resultsCount {
   font-size: 0.9rem;
-  color: var(--text-secondary, #666);
+  color: var(--text-secondary);
 }
 
 .legacyHint {
   font-size: 0.85rem;
-  color: var(--text-tertiary, #9ca3af);
+  color: var(--text-tertiary);
 }
 
 .loading,
 .empty {
   padding: 2rem;
   text-align: center;
-  color: var(--text-secondary, #666);
+  color: var(--text-secondary);
 }
 
 .empty p {
@@ -143,7 +156,11 @@
 .table td {
   padding: 0.75rem 1rem;
   text-align: left;
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.table td {
+  color: var(--text-primary);
 }
 
 .table th {
@@ -151,12 +168,12 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--text-secondary, #6b7280);
-  background: var(--bg-muted, #f9fafb);
+  color: var(--text-secondary);
+  background: var(--bg-muted);
 }
 
 .table tbody tr:hover {
-  background: var(--hover-bg, #f9fafb);
+  background: var(--hover-bg);
 }
 
 .numCol {
@@ -178,7 +195,7 @@
 }
 
 .editLink {
-  color: #3b82f6;
+  color: var(--link-hover);
   text-decoration: none;
   font-weight: 500;
 }
@@ -189,46 +206,6 @@
 
 .noPricing {
   font-size: 0.85rem;
-  color: var(--text-tertiary, #9ca3af);
+  color: var(--text-tertiary);
 }
 
-.pagination {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-color, #e5e7eb);
-  flex-wrap: wrap;
-}
-
-.pageBtn {
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--border-color, #e5e7eb);
-  border-radius: 6px;
-  background: var(--bg-primary, #fff);
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.pageBtn:hover:not(:disabled) {
-  background: var(--hover-bg, #f9fafb);
-}
-
-.pageBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.pageInfo {
-  font-size: 0.9rem;
-  color: var(--text-secondary, #666);
-}
-
-.pageSizeSelect {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--border-color, #e5e7eb);
-  border-radius: 6px;
-  font-size: 0.9rem;
-  margin-left: auto;
-}

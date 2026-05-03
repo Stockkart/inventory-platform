@@ -187,48 +187,6 @@
   background: rgba(59, 130, 246, 0.2);
 }
 
-.paginationBar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-color);
-}
-
-.pageBtn {
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  cursor: pointer;
-}
-
-.pageBtn:hover:not(:disabled) {
-  background: var(--hover-bg, rgba(0, 0, 0, 0.05));
-}
-
-.pageBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.pageInfo {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-}
-
-.pageSizeSelect {
-  padding: 0.45rem 0.75rem;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  cursor: pointer;
-}
-
 /* Modal */
 .modalBackdrop {
   position: fixed;

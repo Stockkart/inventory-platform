@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { purchasesApi } from '@inventory-platform/api';
 import type { Purchase } from '@inventory-platform/types';
+import { PaginationBar } from './PaginationBar';
 import { PurchaseCard } from './PurchaseCard';
 import styles from './PurchaseList.module.css';
 import { useNotify } from '@inventory-platform/store';
@@ -125,27 +126,14 @@ export function PurchaseList({ onPurchaseChange }: PurchaseListProps) {
         </div>
       )}
 
-      {totalPages > 1 && (
-        <div className={styles.pagination}>
-          <button
-            className={styles.pageButton}
-            onClick={() => handlePageChange(page - 1)}
-            disabled={page === 1 || isLoading}
-          >
-            Previous
-          </button>
-          <div className={styles.pageInfo}>
-            Page {page} of {totalPages}
-          </div>
-          <button
-            className={styles.pageButton}
-            onClick={() => handlePageChange(page + 1)}
-            disabled={page === totalPages || isLoading}
-          >
-            Next
-          </button>
-        </div>
-      )}
+      <PaginationBar
+        page={page - 1}
+        totalPages={totalPages}
+        totalItems={total}
+        disabled={isLoading}
+        onPageChange={(p) => handlePageChange(p + 1)}
+        aria-label="Sale history pages"
+      />
     </div>
   );
 }

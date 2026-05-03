@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { inventoryApi, cartApi } from '@inventory-platform/api';
 import type { BillingMode, InventoryItem } from '@inventory-platform/types';
-import { InventoryAlertDetails } from '@inventory-platform/ui';
+import { InventoryAlertDetails, PaginationBar } from '@inventory-platform/ui';
 import styles from './dashboard.product-search.module.css';
 import { useNotify } from '@inventory-platform/store';
 
@@ -449,41 +449,17 @@ export default function ProductSearchPage() {
                 </div>
               ))}
             </div>
-            {searchTotalPages > 1 && (
-              <div className={styles.paginationBar}>
-                <button
-                  className={styles.pageBtn}
-                  disabled={searchPage === 0 || isLoading}
-                  onClick={() => handleSearch(undefined, searchPage - 1)}
-                >
-                  Previous
-                </button>
-                <span className={styles.pageInfo}>
-                  Page {searchPage + 1} of {searchTotalPages} •{' '}
-                  {searchTotalItems} items
-                </span>
-                <button
-                  className={styles.pageBtn}
-                  disabled={searchPage >= searchTotalPages - 1 || isLoading}
-                  onClick={() => handleSearch(undefined, searchPage + 1)}
-                >
-                  Next
-                </button>
-                <select
-                  className={styles.pageSizeSelect}
-                  value={searchPageSize}
-                  onChange={(e) => {
-                    const newSize = Number(e.target.value);
-                    handleSearch(undefined, 0, newSize);
-                  }}
-                  disabled={isLoading}
-                >
-                  <option value={10}>10 / page</option>
-                  <option value={20}>20 / page</option>
-                  <option value={50}>50 / page</option>
-                </select>
-              </div>
-            )}
+            <PaginationBar
+              page={searchPage}
+              totalPages={Math.max(searchTotalPages, 1)}
+              totalItems={searchTotalItems}
+              disabled={isLoading}
+              onPageChange={(p) => handleSearch(undefined, p)}
+              pageSize={searchPageSize}
+              pageSizeOptions={[10, 20, 50]}
+              onPageSizeChange={(n) => handleSearch(undefined, 0, n)}
+              aria-label="Product search results pages"
+            />
           </>
         )}
       </div>

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { vendorsApi } from '@inventory-platform/api';
-import { EditModal, VendorEditForm } from '@inventory-platform/ui';
+import { EditModal, VendorEditForm, PaginationBar } from '@inventory-platform/ui';
 import type {
   VendorResponse,
   CreateVendorDto,
@@ -245,7 +245,7 @@ export default function VendorsPage() {
                         onClick={() => goRegisterPurchaseFromVendor(v)}
                         title="Open product registration with this vendor selected"
                       >
-                        Buy product
+                        Buy
                       </button>
                       <button
                         type="button"
@@ -253,7 +253,7 @@ export default function VendorsPage() {
                         onClick={() => goReturnToVendor(v)}
                         title="Open Return to vendor for this supplier"
                       >
-                        Return stock
+                        Return
                       </button>
                       <button
                         type="button"
@@ -271,39 +271,20 @@ export default function VendorsPage() {
         </table>
       </div>
 
-      <div className={styles.paginationBar}>
-        <button
-          type="button"
-          className={styles.pageBtn}
-          disabled={page === 0}
-          onClick={() => setPage((p) => p - 1)}
-        >
-          Previous
-        </button>
-        <span className={styles.pageInfo}>
-          Page {page + 1} of {Math.max(totalPages, 1)} • {total} total
-        </span>
-        <button
-          type="button"
-          className={styles.pageBtn}
-          disabled={totalPages <= 1 || page >= totalPages - 1}
-          onClick={() => setPage((p) => p + 1)}
-        >
-          Next
-        </button>
-        <select
-          className={styles.pageSizeSelect}
-          value={limit}
-          onChange={(e) => {
-            setPage(0);
-            setLimit(Number(e.target.value));
-          }}
-        >
-          <option value={10}>10 / page</option>
-          <option value={20}>20 / page</option>
-          <option value={50}>50 / page</option>
-        </select>
-      </div>
+      <PaginationBar
+        page={page}
+        totalPages={Math.max(totalPages, 1)}
+        totalItems={total}
+        disabled={loading}
+        onPageChange={setPage}
+        pageSize={limit}
+        pageSizeOptions={[10, 20, 50]}
+        onPageSizeChange={(n) => {
+          setPage(0);
+          setLimit(n);
+        }}
+        aria-label="Vendor pages"
+      />
 
       {editModal && (
         <EditModal

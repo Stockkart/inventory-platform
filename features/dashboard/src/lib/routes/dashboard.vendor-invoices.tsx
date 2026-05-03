@@ -13,6 +13,7 @@ import type {
   VendorPurchaseInvoiceSummary,
 } from '@inventory-platform/types';
 import styles from './dashboard.vendor-invoices.module.css';
+import { PaginationBar } from '@inventory-platform/ui';
 import { useNotify } from '@inventory-platform/store';
 
 export function meta() {
@@ -689,28 +690,12 @@ export default function VendorInvoicesPage({
               </table>
             </div>
 
-            <nav className={styles.pagination} aria-label="Invoice pages">
-              <button
-                type="button"
-                className={styles.pageBtn}
-                disabled={page <= 0}
-                onClick={() => setPage((p) => Math.max(0, p - 1))}
-              >
-                Previous
-              </button>
-              <span className={styles.pageIndicator}>
-                Page {page + 1}
-                {totalPages > 0 ? ` of ${totalPages}` : ''}
-              </span>
-              <button
-                type="button"
-                className={styles.pageBtn}
-                disabled={page + 1 >= totalPages}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                Next
-              </button>
-            </nav>
+            <PaginationBar
+              page={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              aria-label="Invoice pages"
+            />
           </>
         )}
       </div>

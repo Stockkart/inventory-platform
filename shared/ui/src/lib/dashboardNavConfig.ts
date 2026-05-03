@@ -39,16 +39,6 @@ export const DASHBOARD_MENU_GROUPS: DashboardMenuGroup[] = [
       },
       { path: '/dashboard/pricing', label: 'Pricing', icon: '💰' },
       { path: '/dashboard/scan-sell', label: 'Scan and Sell', icon: '📱' },
-      {
-        path: '/dashboard/refund',
-        label: 'Return to customer',
-        icon: '↩️',
-      },
-      {
-        path: '/dashboard/vendor-return',
-        label: 'Return to vendor',
-        icon: '📤',
-      },
     ],
   },
   {
@@ -88,8 +78,16 @@ export const DASHBOARD_MENU_GROUPS: DashboardMenuGroup[] = [
     label: 'Accounting',
     icon: '🧾',
     items: [
-      { path: '/dashboard/accounting', label: 'Journals & trial balance', icon: '🧾' },
-      { path: '/dashboard/accounting/accounts', label: 'Chart of accounts', icon: '📒' },
+      {
+        path: '/dashboard/accounting',
+        label: 'Journals & trial balance',
+        icon: '🧾',
+      },
+      {
+        path: '/dashboard/accounting/accounts',
+        label: 'Chart of accounts',
+        icon: '📒',
+      },
     ],
   },
   {
@@ -99,6 +97,23 @@ export const DASHBOARD_MENU_GROUPS: DashboardMenuGroup[] = [
     items: [
       { path: '/dashboard/customers', label: 'Customer', icon: '👥' },
       { path: '/dashboard/vendors', label: 'Vendor', icon: '🚚' },
+    ],
+  },
+  {
+    id: 'returns',
+    label: 'Returns',
+    icon: '↩️',
+    items: [
+      {
+        path: '/dashboard/refund',
+        label: 'Return to customer',
+        icon: '↩️',
+      },
+      {
+        path: '/dashboard/vendor-return',
+        label: 'Return to vendor',
+        icon: '📤',
+      },
     ],
   },
   {

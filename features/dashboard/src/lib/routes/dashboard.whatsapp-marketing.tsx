@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { customersApi } from '@inventory-platform/api';
-import { EditModal } from '@inventory-platform/ui';
+import { EditModal, PaginationBar } from '@inventory-platform/ui';
 import type { CustomerResponse } from '@inventory-platform/types';
 import styles from './dashboard.whatsapp-marketing.module.css';
 
@@ -258,37 +258,20 @@ export default function WhatsAppMarketingPage() {
             )}
           </div>
 
-          <div className={styles.paginationBar}>
-            <button
-              type="button"
-              className={styles.pageBtn}
-              disabled={page === 0}
-              onClick={() => setPage((p) => p - 1)}
-            >
-              Previous
-            </button>
-            <span className={styles.pageInfo}>Page {page + 1}</span>
-            <button
-              type="button"
-              className={styles.pageBtn}
-              disabled={customers.length < limit}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Next
-            </button>
-            <select
-              className={styles.pageSizeSelect}
-              value={limit}
-              onChange={(e) => {
-                setPage(0);
-                setLimit(Number(e.target.value));
-              }}
-            >
-              <option value={20}>20 / page</option>
-              <option value={50}>50 / page</option>
-              <option value={100}>100 / page</option>
-            </select>
-          </div>
+          <PaginationBar
+            page={page}
+            prevDisabled={page === 0}
+            nextDisabled={customers.length < limit}
+            disabled={loading}
+            onPageChange={setPage}
+            pageSize={limit}
+            pageSizeOptions={[20, 50, 100]}
+            onPageSizeChange={(n) => {
+              setPage(0);
+              setLimit(n);
+            }}
+            aria-label="Marketing customer picker pages"
+          />
         </section>
       </div>
 
