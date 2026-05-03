@@ -2237,29 +2237,39 @@ export default function ProductRegistrationPage() {
                     <tr>
                       <th className={styles.excelTh}>#</th>
                       <th className={styles.excelTh}>Barcode</th>
-                      <th className={styles.excelTh}>Product</th>
-                      <th className={styles.excelTh}>Company</th>
-                      <th className={styles.excelTh}>Count</th>
-                      <th className={styles.excelTh}>Packaging</th>
-                      <th className={styles.excelTh}>Expiry</th>
-                      <th className={styles.excelTh}>Location</th>
+                      <th className={styles.excelTh}>Product *</th>
+                      <th className={styles.excelTh}>Company *</th>
+                      <th className={styles.excelTh}>Count *</th>
+                      <th className={styles.excelTh}>Packaging *</th>
+                      <th className={styles.excelTh}>Expiry *</th>
+                      <th className={styles.excelTh}>Location *</th>
                       {billingMode !== 'BASIC' && (
                         <>
                           <th className={styles.excelTh}>HSN</th>
                           <th className={styles.excelTh}>Batch</th>
                         </>
                       )}
-                      <th className={styles.excelTh}>Cost</th>
-                      <th className={styles.excelTh}>PTR</th>
-                      <th className={styles.excelTh}>MRP</th>
+                      <th className={styles.excelTh}>PTS *</th>
+                      <th className={styles.excelTh}>PTR *</th>
+                      <th className={styles.excelTh}>MRP *</th>
                       <th className={styles.excelTh}>Sale deal type</th>
-                      <th className={styles.excelTh}>Sale scheme</th>
+                      <th
+                        className={styles.excelTh}
+                        title='When deal type is Percentage, scheme % is required.'
+                      >
+                        Sale scheme
+                      </th>
                       <th className={styles.excelTh}>Sale disc %</th>
                       <th className={styles.excelTh}>Purchase deal type</th>
                       <th className={styles.excelTh}>Purchase scheme</th>
                       <th className={styles.excelTh}>Purchase disc %</th>
                       <th className={styles.excelTh}>Item type</th>
-                      <th className={styles.excelTh}>°</th>
+                      <th
+                        className={styles.excelTh}
+                        title="Required when item type is Temperature for the item"
+                      >
+                        ° *
+                      </th>
                       <th className={styles.excelTh}>Disc appl.</th>
                       <th className={styles.excelTh}>Purch. date</th>
                       {billingMode === 'REGULAR' && (
@@ -2305,6 +2315,7 @@ export default function ProductRegistrationPage() {
                               )
                             }
                             disabled={isLoading}
+                            required
                           />
                         </td>
                         <td className={styles.excelTd}>
@@ -2321,12 +2332,14 @@ export default function ProductRegistrationPage() {
                               )
                             }
                             disabled={isLoading}
+                            required
                           />
                         </td>
                         <td className={styles.excelTd}>
                           <input
                             type="text"
                             inputMode="numeric"
+                            pattern="[0-9]*"
                             className={styles.excelInputNarrow}
                             placeholder="0"
                             value={product.count === 0 ? '' : product.count}
@@ -2338,12 +2351,14 @@ export default function ProductRegistrationPage() {
                               )
                             }
                             disabled={isLoading}
+                            required
                           />
                         </td>
                         <td className={styles.excelTd}>
                           <input
                             type="text"
                             inputMode="decimal"
+                            pattern="[0-9]*\.?[0-9]*"
                             className={styles.excelInputNarrow}
                             placeholder="1 x _"
                             value={
@@ -2360,6 +2375,7 @@ export default function ProductRegistrationPage() {
                               )
                             }
                             disabled={isLoading}
+                            required
                           />
                         </td>
                         <td className={styles.excelTd}>
@@ -2383,6 +2399,7 @@ export default function ProductRegistrationPage() {
                               );
                             }}
                             disabled={isLoading}
+                            required
                           />
                         </td>
                         <td className={styles.excelTd}>
@@ -2399,6 +2416,7 @@ export default function ProductRegistrationPage() {
                               )
                             }
                             disabled={isLoading}
+                            required
                           />
                         </td>
                         {billingMode !== 'BASIC' && (
@@ -2441,8 +2459,9 @@ export default function ProductRegistrationPage() {
                           <input
                             type="text"
                             inputMode="decimal"
+                            pattern="[0-9]*\.?[0-9]*"
                             className={styles.excelInputNarrow}
-                            placeholder="0"
+                            placeholder="PTS"
                             value={
                               product.costPrice === 0 ? '' : product.costPrice
                             }
@@ -2454,14 +2473,16 @@ export default function ProductRegistrationPage() {
                               )
                             }
                             disabled={isLoading}
+                            required
                           />
                         </td>
                         <td className={styles.excelTd}>
                           <input
                             type="text"
                             inputMode="decimal"
+                            pattern="[0-9]*\.?[0-9]*"
                             className={styles.excelInputNarrow}
-                            placeholder="0"
+                            placeholder="PTR"
                             value={
                               product.priceToRetail === 0
                                 ? ''
@@ -2475,14 +2496,16 @@ export default function ProductRegistrationPage() {
                               )
                             }
                             disabled={isLoading}
+                            required
                           />
                         </td>
                         <td className={styles.excelTd}>
                           <input
                             type="text"
                             inputMode="decimal"
+                            pattern="[0-9]*\.?[0-9]*"
                             className={styles.excelInputNarrow}
-                            placeholder="0"
+                            placeholder="MRP"
                             value={
                               product.maximumRetailPrice === 0
                                 ? ''
@@ -2496,6 +2519,7 @@ export default function ProductRegistrationPage() {
                               )
                             }
                             disabled={isLoading}
+                            required
                           />
                         </td>
                         <td className={styles.excelTd}>
@@ -2526,7 +2550,15 @@ export default function ProductRegistrationPage() {
                           </select>
                         </td>
                         <td className={styles.excelTd}>
+                          <label
+                            className={styles.srOnly}
+                            htmlFor={`grid-sale-scheme-${product.id}`}
+                          >
+                            Sale scheme (e.g. 10+2 or 10%; required when deal
+                            type is Percentage)
+                          </label>
                           <input
+                            id={`grid-sale-scheme-${product.id}`}
                             type="text"
                             className={styles.excelInputNarrow}
                             placeholder="e.g. 10+2"
@@ -2543,6 +2575,10 @@ export default function ProductRegistrationPage() {
                                     product.schemeFree ?? 0
                                   }`
                                 : '')
+                            }
+                            required={
+                              (product.schemeType ?? 'FIXED_UNITS') ===
+                              'PERCENTAGE'
                             }
                             onChange={(e) => {
                               const v = e.target.value;
@@ -2942,6 +2978,8 @@ export default function ProductRegistrationPage() {
                         <td className={styles.excelTd}>
                           {product.itemType === 'DEGREE' ? (
                             <input
+                              id={`grid-item-degree-${product.id}`}
+                              aria-label="Temperature or degree value"
                               type="number"
                               className={styles.excelInputNarrow}
                               placeholder="°"
@@ -2952,6 +2990,7 @@ export default function ProductRegistrationPage() {
                                   ? product.itemTypeDegree
                                   : ''
                               }
+                              required
                               onChange={(e) => {
                                 const val = e.target.value;
                                 if (val === '') {
@@ -3096,8 +3135,9 @@ export default function ProductRegistrationPage() {
                   </tbody>
                 </table>
                 <p className={styles.gridViewFootnote}>
-                  Optional rate tiers and custom reminders are editable in list
-                  view.
+                  Columns marked * match required fields. Use list view for
+                  optional rate tiers, default rate, description, and
+                  reminders.
                 </p>
               </div>
             ) : (
