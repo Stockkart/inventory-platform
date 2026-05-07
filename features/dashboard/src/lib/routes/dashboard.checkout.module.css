@@ -327,6 +327,177 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Split sale — customer pays part now, rest on Credit balances */
+.splitSellPanel {
+  margin-bottom: 1.35rem;
+  padding: 1rem 1.15rem;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--border-color, #e2e8f0) 82%, #059669 18%);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--bg-secondary, #f8fafc) 95%, rgba(5, 150, 105, 0.05)) 0%,
+    var(--bg-card, #fff) 100%
+  );
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.splitSellHead {
+  margin-bottom: 0.85rem;
+}
+
+.splitSellTitle {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.splitSellIntro {
+  margin: 0.35rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.splitSellSummary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.splitSellRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}
+
+.splitSellRowStrong {
+  padding-bottom: 0.45rem;
+  margin-bottom: 0.15rem;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.splitSellRowMuted {
+  opacity: 0.92;
+}
+
+.splitSellAmt {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.splitSellRowHighlight {
+  padding-top: 0.5rem;
+  margin-top: 0.1rem;
+  border-top: 1px dashed var(--border-color);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.splitSellCreditDue {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #047857;
+}
+
+[data-theme='dark'] .splitSellCreditDue {
+  color: #6ee7b7;
+}
+
+.splitSellField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.splitSellLabel {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.splitSellInput {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  font-size: 1rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.splitSellBullets {
+  margin: 0.15rem 0 0;
+  padding: 0 0 0 1.1rem;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.splitSellBullets li {
+  margin-bottom: 0.28rem;
+}
+
+.splitSellBullets li:last-child {
+  margin-bottom: 0;
+}
+
+.splitSellBullets strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.splitSellInput:focus {
+  outline: none;
+  border-color: #059669;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #059669 22%, transparent);
+}
+
+.splitSellFoot {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.splitSellFootMuted {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.splitSellError {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #b91c1c;
+}
+
+.splitSellLink {
+  color: #047857;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.splitSellLink:hover {
+  text-decoration: underline;
+}
+
+[data-theme='dark'] .splitSellLink {
+  color: #6ee7b7;
+}
+
 .paymentButtons {
   display: flex;
   gap: 1rem;
@@ -371,6 +542,18 @@
   opacity: 0.9;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.creditBtn {
+  background: linear-gradient(135deg, #9333ea 0%, #7c3aed 100%);
+  color: white;
+  border-color: #7c3aed;
+}
+
+.creditBtn:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
 }
 
 /* Actions Section */

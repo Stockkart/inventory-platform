@@ -174,6 +174,14 @@ export const API_ENDPOINTS = {
     SUBLEDGER_ENTRIES: '/accounting/subledger/entries',
   },
 
+  CREDIT: {
+    BASE: '/credit',
+    CHARGE: '/credit/charge',
+    SETTLEMENT: '/credit/settlement',
+    ACCOUNTS: '/credit/accounts',
+    ENTRIES: (accountId: string) => `/credit/accounts/${accountId}/entries`,
+  },
+
   // Plan endpoints
   PLANS: {
     BASE: '/plans',
