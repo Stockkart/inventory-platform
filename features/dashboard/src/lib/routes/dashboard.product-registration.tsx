@@ -279,6 +279,8 @@ export default function ProductRegistrationPage() {
   const [vendorOtherCharges, setVendorOtherCharges] = useState('');
   const [vendorRoundOff, setVendorRoundOff] = useState('');
   const [vendorInvoiceTotal, setVendorInvoiceTotal] = useState('');
+  const [vendorPaymentMethod, setVendorPaymentMethod] = useState('CASH');
+  const [vendorPaidAmount, setVendorPaidAmount] = useState('');
 
   /**
    * Apply OCR header + optional line-derived totals. When `parsedItems` has
@@ -334,6 +336,24 @@ export default function ProductRegistrationPage() {
     vendorOtherCharges,
     vendorRoundOff,
   ]);
+
+  const vendorInvoiceTotalNum = optionalNumFromString(vendorInvoiceTotal) ?? 0;
+  /** Matches InventoryService.resolveVendorPaidNow — blank paid field = full immediate pay for Cash/Online */
+  const vendorEffectivePaidNowNum = (() => {
+    const total = vendorInvoiceTotalNum;
+    const paid = optionalNumFromString(vendorPaidAmount);
+    if (vendorPaymentMethod === 'CREDIT') {
+      return paid ?? 0;
+    }
+    if (paid !== undefined && paid >= 0) {
+      return paid;
+    }
+    return total;
+  })();
+  const vendorCreditLedgerOutstandingNum = Math.max(
+    vendorInvoiceTotalNum - vendorEffectivePaidNowNum,
+    0
+  );
 
   // Multiple products state
   const [products, setProducts] = useState<ProductFormData[]>([]);
@@ -1264,7 +1284,19 @@ export default function ProductRegistrationPage() {
       });
 
       let vendorPurchaseInvoice: VendorPurchaseInvoicePayload | undefined;
-      if (trimmedInvNo) {
+      const hasVendorHeaderInput =
+        Boolean(trimmedInvNo) ||
+        Boolean(vendorInvoiceDate.trim()) ||
+        optionalNumFromString(vendorLineSubTotal) !== undefined ||
+        optionalNumFromString(vendorTaxTotal) !== undefined ||
+        optionalNumFromString(vendorShippingCharge) !== undefined ||
+        optionalNumFromString(vendorOtherCharges) !== undefined ||
+        optionalNumFromString(vendorRoundOff) !== undefined ||
+        optionalNumFromString(vendorInvoiceTotal) !== undefined ||
+        vendorPaymentMethod !== 'CASH' ||
+        optionalNumFromString(vendorPaidAmount) !== undefined;
+
+      if (hasVendorHeaderInput) {
         vendorPurchaseInvoice = { invoiceNo: trimmedInvNo };
         if (vendorInvoiceDate.trim()) {
           vendorPurchaseInvoice.invoiceDate = `${vendorInvoiceDate.trim()}T00:00:00.000Z`;
@@ -1281,6 +1313,9 @@ export default function ProductRegistrationPage() {
         if (ro !== undefined) vendorPurchaseInvoice.roundOff = ro;
         const it = optionalNumFromString(vendorInvoiceTotal);
         if (it !== undefined) vendorPurchaseInvoice.invoiceTotal = it;
+        vendorPurchaseInvoice.paymentMethod = vendorPaymentMethod;
+        const pa = optionalNumFromString(vendorPaidAmount);
+        if (pa !== undefined) vendorPurchaseInvoice.paidAmount = pa;
       }
 
       // Create bulk request
@@ -1346,6 +1381,8 @@ export default function ProductRegistrationPage() {
             setVendorOtherCharges('');
             setVendorRoundOff('');
             setVendorInvoiceTotal('');
+            setVendorPaymentMethod('CASH');
+            setVendorPaidAmount('');
             setSuccess(null);
             setRegistrationLedgerId(null);
           }, 5000);
@@ -1372,6 +1409,8 @@ export default function ProductRegistrationPage() {
             setVendorOtherCharges('');
             setVendorRoundOff('');
             setVendorInvoiceTotal('');
+            setVendorPaymentMethod('CASH');
+            setVendorPaidAmount('');
             setSuccess(null);
             setRegistrationLedgerId(null);
           }, 5000);
@@ -1569,6 +1608,8 @@ export default function ProductRegistrationPage() {
     setVendorOtherCharges('');
     setVendorRoundOff('');
     setVendorInvoiceTotal('');
+    setVendorPaymentMethod('CASH');
+    setVendorPaidAmount('');
     setVendorFormData({
       name: '',
       contactEmail: '',
@@ -2086,6 +2127,141 @@ export default function ProductRegistrationPage() {
                       disabled={isLoading}
                       readOnly
                     />
+                  </div>
+                  <div className={styles.vendorPaymentPanel}>
+                    <div className={styles.vendorPaymentPanelHead}>
+                      <span className={styles.vendorPaymentPanelTitle}>
+                        Payment to vendor
+                      </span>
+                      <p className={styles.vendorPaymentPanelIntro}>
+                        Choose how the bill was settled. Anything not covered
+                        immediately is recorded as payable in{' '}
+                        <strong>Credit balances</strong> for this vendor.
+                      </p>
+                    </div>
+                    <span className={styles.vendorPaymentFieldLabel} id="vendorPaymentMethodLabel">
+                      How was this invoice paid?
+                    </span>
+                    <div
+                      className={styles.paymentModeSeg}
+                      role="radiogroup"
+                      aria-labelledby="vendorPaymentMethodLabel"
+                    >
+                      {(
+                        [
+                          ['CASH', 'Cash'],
+                          ['ONLINE', 'Online'],
+                          ['CREDIT', 'Credit'],
+                        ] as const
+                      ).map(([value, label]) => (
+                        <button
+                          key={value}
+                          type="button"
+                          role="radio"
+                          aria-checked={vendorPaymentMethod === value}
+                          className={
+                            vendorPaymentMethod === value
+                              ? styles.paymentModeSegBtnActive
+                              : styles.paymentModeSegBtn
+                          }
+                          onClick={() => setVendorPaymentMethod(value)}
+                          disabled={isLoading}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label htmlFor="vendorPaidAmount" className={styles.label}>
+                        {vendorPaymentMethod === 'CREDIT'
+                          ? 'Paid to vendor now'
+                          : 'Partial amount paid now'}
+                      </label>
+                      <input
+                        id="vendorPaidAmount"
+                        type="text"
+                        inputMode="decimal"
+                        className={styles.input}
+                        value={vendorPaidAmount}
+                        onChange={(e) => setVendorPaidAmount(e.target.value)}
+                        placeholder={
+                          vendorPaymentMethod === 'CREDIT'
+                            ? '0 if the full bill is on credit'
+                            : 'Leave empty if the full invoice was paid'
+                        }
+                        disabled={isLoading}
+                        aria-describedby="vendorPaidAmountHint"
+                      />
+                      <p
+                        id="vendorPaidAmountHint"
+                        className={styles.vendorPaymentFieldHint}
+                      >
+                        {vendorPaymentMethod === 'CREDIT'
+                          ? 'Whatever is left after this amount becomes the balance you owe the vendor in Credit balances.'
+                          : 'Optional: use this when you only paid part of the bill in cash or online; the rest is tracked on credit.'}
+                      </p>
+                    </div>
+                    <div
+                      className={
+                        vendorCreditLedgerOutstandingNum > 0
+                          ? styles.vendorPaymentSummary
+                          : styles.vendorPaymentSummaryMuted
+                      }
+                      aria-live="polite"
+                    >
+                      <div className={styles.vendorPaymentSummaryRow}>
+                        <span>Invoice total</span>
+                        <span className={styles.vendorPaymentSummaryValue}>
+                          ₹
+                          {Number.isFinite(vendorInvoiceTotalNum)
+                            ? vendorInvoiceTotalNum.toFixed(2)
+                            : '0.00'}
+                        </span>
+                      </div>
+                      <div className={styles.vendorPaymentSummaryRow}>
+                        <span>Counted as paid now</span>
+                        <span className={styles.vendorPaymentSummaryValue}>
+                          ₹
+                          {Number.isFinite(vendorEffectivePaidNowNum)
+                            ? vendorEffectivePaidNowNum.toFixed(2)
+                            : '0.00'}
+                        </span>
+                      </div>
+                      <div
+                        className={`${styles.vendorPaymentSummaryRow} ${styles.vendorPaymentSummaryHighlight}`}
+                      >
+                        <span>Credit balance</span>
+                        <span
+                          className={
+                            vendorCreditLedgerOutstandingNum > 0
+                              ? styles.vendorPaymentSummaryDue
+                              : styles.vendorPaymentSummaryValue
+                          }
+                        >
+                          ₹
+                          {Number.isFinite(vendorCreditLedgerOutstandingNum)
+                            ? vendorCreditLedgerOutstandingNum.toFixed(2)
+                            : '0.00'}
+                        </span>
+                      </div>
+                      {vendorInvoiceTotalNum <= 0 ? (
+                        <p className={styles.vendorPaymentSummaryFoot}>
+                          Enter line amounts or invoice total above to preview
+                          the split.
+                        </p>
+                      ) : vendorCreditLedgerOutstandingNum <= 0 ? (
+                        <p className={styles.vendorPaymentSummaryFoot}>
+                          No payable balance from this bill — nothing is posted
+                          to Credit balances.
+                        </p>
+                      ) : (
+                        <p className={styles.vendorPaymentSummaryFoot}>
+                          This unpaid amount is what you&apos;ll settle later
+                          in Credit balances (supports partial payments over
+                          time).
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

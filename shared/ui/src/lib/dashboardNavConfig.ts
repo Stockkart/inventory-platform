@@ -88,6 +88,7 @@ export const DASHBOARD_MENU_GROUPS: DashboardMenuGroup[] = [
         label: 'Chart of accounts',
         icon: '📒',
       },
+      { path: '/dashboard/credit', label: 'Credit balances', icon: '🤝' },
     ],
   },
   {

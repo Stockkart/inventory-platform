@@ -50,6 +50,7 @@ export default [
     route('refund', './routes/dashboard.refund.tsx'),
     route('price-edit/:pricingId', './routes/dashboard.price-edit.tsx'),
     route('taxes', './routes/dashboard.taxes.tsx'),
+    route('credit', './routes/dashboard.credit.tsx'),
     route(
       'accounting',
       './routes/dashboard.accounting._layout.tsx',

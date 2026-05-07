@@ -675,6 +675,8 @@ export interface VendorPurchaseInvoicePayload {
   otherCharges?: number | null;
   roundOff?: number | null;
   invoiceTotal?: number | null;
+  paymentMethod?: string | null;
+  paidAmount?: number | null;
 }
 
 export interface BulkCreateInventoryDto {
@@ -694,6 +696,8 @@ export interface BulkCreateInventoryResponse {
   vendorPurchaseInvoiceId?: string | null;
   /** Set when bulk stock-in triggered a PURCHASE journal in the general ledger. */
   accountingJournalEntryId?: string | null;
+  /** Set when stock-in leaves payable due in credit ledger. */
+  creditEntryId?: string | null;
   items: Array<{
     id: string;
     lotId?: string;
@@ -1151,6 +1155,7 @@ export interface CheckoutResponse {
   marginPercent?: number | null;
   billingMode?: BillingMode;
   accountingJournalEntryId?: string | null;
+  creditEntryId?: string | null;
 }
 
 // Cart types
@@ -1187,6 +1192,8 @@ export interface CartResponse {
   billingMode?: BillingMode;
   /** Present when checkout completed and a SALE journal was posted in the general ledger. */
   accountingJournalEntryId?: string | null;
+  /** Present when checkout completion left a customer due in credit ledger. */
+  creditEntryId?: string | null;
 }
 
 /** General ledger account type (matches Java {@code AccountType}). */
@@ -1277,6 +1284,58 @@ export interface TrialBalanceLine {
   credit: number;
 }
 
+export type CreditPartyType = 'VENDOR' | 'CUSTOMER';
+export type CreditEntryType = 'CHARGE' | 'SETTLEMENT' | 'ADJUSTMENT';
+export type CreditDirection = 'INCREASE_DUE' | 'DECREASE_DUE';
+export type CreditBalanceStatus = 'CLEAR' | 'DUE' | 'ADVANCE';
+
+export interface CreditAccountResponse {
+  id: string;
+  partyType: CreditPartyType;
+  partyId: string;
+  partyDisplayName: string;
+  partyPhone?: string | null;
+  currentBalance: number;
+  status: CreditBalanceStatus;
+  updatedAt?: string;
+  lastEntryAt?: string;
+}
+
+export interface CreditEntryResponse {
+  id: string;
+  accountId: string;
+  entryType: CreditEntryType;
+  direction: CreditDirection;
+  amount: number;
+  balanceAfter: number;
+  note?: string | null;
+  referenceType?: string | null;
+  referenceId?: string | null;
+  sourceKey?: string | null;
+  createdByUserId?: string | null;
+  createdAt: string;
+}
+
+export interface CreditEntriesPageResponse {
+  entries: CreditEntryResponse[];
+  page: number;
+  size: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+export interface CreateCreditEntryDto {
+  partyType: CreditPartyType;
+  partyId: string;
+  partyDisplayName: string;
+  partyPhone?: string;
+  amount: number;
+  note?: string;
+  referenceType?: string;
+  referenceId?: string;
+  sourceKey?: string;
+}
+
 export interface AddToCartDto {
   businessType: string;
   items: CheckoutItem[];
@@ -1297,6 +1356,8 @@ export interface UpdateCartStatusDto {
   paymentMethod: string;
   /** Sale completion: debit this asset GL (e.g. CASH or a manual bank). Omit for CASH. */
   receiptGlAccountCode?: string;
+  /** Optional paid-now amount for split credit checkout (remaining goes to due). */
+  creditPaidAmount?: number;
 }
 
 // Purchase History types
