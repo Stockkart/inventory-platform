@@ -51,4 +51,38 @@ export const gstr1Api = {
 
     return { blob: response.data, filename };
   },
+
+  /**
+   * Download GSTR-1 as offline-return JSON (gstin/fp/b2b/b2cs/hsn/doc_issue layout).
+   */
+  downloadOfflineReturnJson: async (
+    period: string
+  ): Promise<{ blob: Blob; filename: string }> => {
+    const token =
+      typeof window !== 'undefined'
+        ? localStorage.getItem('auth_token')
+        : null;
+
+    const response = await axios.get(
+      `${API_BASE_URL}${API_ENDPOINTS.TAXATION.GSTR1_OFFLINE_DOWNLOAD}?period=${encodeURIComponent(period)}`,
+      {
+        responseType: 'blob',
+        headers: {
+          Authorization: token ? `Bearer ${token}` : '',
+        },
+      }
+    );
+
+    const contentDisposition = response.headers['content-disposition'];
+    const parts = period.split('-');
+    const fpFallback =
+      parts.length === 2 ? `${parts[1].padStart(2, '0')}${parts[0]}` : period.replace(/\D/g, '');
+    let filename = `GSTR1_${fpFallback}.json`;
+    if (contentDisposition) {
+      const match = /filename="?([^";\n]+)"?/.exec(contentDisposition);
+      if (match) filename = match[1].trim();
+    }
+
+    return { blob: response.data, filename };
+  },
 };
