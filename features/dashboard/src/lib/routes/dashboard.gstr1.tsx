@@ -56,6 +56,7 @@ export function Gstr1Tab() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<(typeof TABS)[number]['id']>('b2b');
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isDownloadingOfflineJson, setIsDownloadingOfflineJson] = useState(false);
 
   const fetchReport = useCallback(async () => {
     setIsLoading(true);
@@ -89,6 +90,23 @@ export function Gstr1Tab() {
       setError(err instanceof Error ? err.message : 'Failed to download Excel');
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  const handleDownloadOfflineJson = async () => {
+    setIsDownloadingOfflineJson(true);
+    try {
+      const { blob, filename } = await gstr1Api.downloadOfflineReturnJson(period);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to download GST offline JSON');
+    } finally {
+      setIsDownloadingOfflineJson(false);
     }
   };
 
@@ -145,14 +163,29 @@ export function Gstr1Tab() {
               disabled={isLoading}
             />
           </div>
-          <button
-            type="button"
-            className={styles.downloadBtn}
-            onClick={handleDownload}
-            disabled={isLoading || isDownloading}
-          >
-            {isDownloading ? 'Downloading…' : '📥 Download Excel'}
-          </button>
+          <div className={styles.downloadButtons}>
+            <button
+              type="button"
+              className={styles.downloadBtn}
+              onClick={handleDownload}
+              disabled={isLoading || isDownloading || isDownloadingOfflineJson}
+            >
+              {isDownloading ? 'Downloading…' : '📥 Download Excel'}
+            </button>
+            <button
+              type="button"
+              className={`${styles.downloadBtn} ${styles.downloadOfflineJsonAlt}`}
+              onClick={handleDownloadOfflineJson}
+              disabled={
+                isLoading || isDownloading || isDownloadingOfflineJson
+              }
+              title="GST utility / portal layout (gstin, fp, b2b, b2cs, hsn, doc_issue)"
+            >
+              {isDownloadingOfflineJson
+                ? 'Preparing JSON…'
+                : '📄 Download offline JSON'}
+            </button>
+          </div>
         </div>
       </header>
 

@@ -216,6 +216,8 @@ export const API_ENDPOINTS = {
   TAXATION: {
     GSTR1: '/taxation/gstr1',
     GSTR1_DOWNLOAD: '/taxation/gstr1/download',
+    /** Offline utility / portal style JSON file */
+    GSTR1_OFFLINE_DOWNLOAD: '/taxation/gstr1/download/offline-return',
     GSTR2: '/taxation/gstr2',
     GSTR2_DOWNLOAD: '/taxation/gstr2/download',
     GSTR3B: '/taxation/gstr3b',

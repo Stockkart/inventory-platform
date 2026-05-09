@@ -67,6 +67,13 @@
   color-scheme: dark;
 }
 
+.downloadButtons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .downloadBtn {
   padding: 0.6rem 1.25rem;
   background: linear-gradient(135deg, #059669 0%, #10b981 100%);
@@ -87,6 +94,17 @@
 .downloadBtn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.downloadOfflineJsonAlt {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 2px solid var(--border-color);
+}
+
+.downloadOfflineJsonAlt:hover:not(:disabled) {
+  border-color: #059669;
+  color: #047857;
 }
 
 .error {
