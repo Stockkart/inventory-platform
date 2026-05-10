@@ -933,6 +933,11 @@
   margin-bottom: 0;
 }
 
+.sectionTitleCount {
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
 .productsHeaderRight {
   display: flex;
   align-items: center;
@@ -1269,6 +1274,16 @@
   transition: transform 0.2s;
   width: 1rem;
   display: inline-block;
+}
+
+.accordionRowIndex {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 1.75rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
 }
 
 .accordionSubtitle {

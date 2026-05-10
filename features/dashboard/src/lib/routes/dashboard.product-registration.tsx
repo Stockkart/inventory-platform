@@ -67,9 +67,10 @@ function numOr0(v: number | null | undefined): number {
 }
 
 /**
- * Line subtotal = sum of tax-exclusive line values (PTS/PTR × qty before GST).
- * Tax total = SGST + CGST computed on top of that taxable (not reverse-calculated
- * from a tax-inclusive lump). Matches typical purchase bills: line amount ex-GST + tax.
+ * Parsed OCR line subtotal = sum of tax-exclusive line values (PTS/PTR × qty before GST).
+ * Tax total = SGST + CGST on that taxable. Product-grid header "Line subtotal" is gross
+ * PTS×qty; tax on rows is computed on the net taxable after schemes (see
+ * computeVendorInvoiceTotalsFromProducts).
  */
 function computeVendorInvoiceTotalsFromParseItems(
   items: ParseInvoiceItem[]
@@ -180,6 +181,99 @@ interface ProductFormData
   defaultRate?: string;
 }
 
+/** Compact grid/field: "", "10+2", "12%"; lone "10" only when `finalize` (blur). */
+type SchemeCompactParse =
+  | { mode: 'empty' }
+  | { mode: 'percentage'; pct: number }
+  | { mode: 'fixed'; payFor: number; free: number };
+
+function parseSchemeCompactRaw(
+  raw: string,
+  opts: { finalize?: boolean } = {}
+): SchemeCompactParse | null {
+  const t = raw.trim();
+  if (t === '') return { mode: 'empty' };
+  if (t.endsWith('%')) {
+    const n = parseFloat(t.slice(0, -1).trim());
+    if (!Number.isFinite(n) || n < 0 || n > 100) return null;
+    return { mode: 'percentage', pct: n };
+  }
+  const plusIdx = t.indexOf('+');
+  if (plusIdx >= 0) {
+    const left = parseInt(t.slice(0, plusIdx).trim(), 10);
+    const rightStr = t.slice(plusIdx + 1).trim();
+    if (rightStr === '') return null;
+    const right = parseInt(rightStr, 10);
+    if (
+      !Number.isFinite(left) ||
+      !Number.isFinite(right) ||
+      left < 0 ||
+      right < 0
+    ) {
+      return null;
+    }
+    return { mode: 'fixed', payFor: left, free: right };
+  }
+  if (opts.finalize) {
+    const single = parseInt(t.trim(), 10);
+    if (Number.isFinite(single) && single >= 0) {
+      return { mode: 'fixed', payFor: single, free: 0 };
+    }
+  }
+  return null;
+}
+
+function applyPurchaseSchemeCompactParse(
+  productId: string,
+  parsed: SchemeCompactParse,
+  patch: (id: string, field: keyof ProductFormData, value: unknown) => void
+): void {
+  if (parsed.mode === 'empty') {
+    patch(productId, 'purchaseSchemePayFor', null);
+    patch(productId, 'purchaseSchemeFree', null);
+    patch(productId, 'purchaseSchemePercentage', null);
+    return;
+  }
+  if (parsed.mode === 'percentage') {
+    patch(productId, 'purchaseSchemeType', 'PERCENTAGE');
+    patch(productId, 'purchaseSchemePercentage', parsed.pct);
+    patch(productId, 'purchaseSchemePayFor', null);
+    patch(productId, 'purchaseSchemeFree', null);
+    return;
+  }
+  patch(productId, 'purchaseSchemeType', 'FIXED_UNITS');
+  patch(productId, 'purchaseSchemePayFor', parsed.payFor);
+  patch(productId, 'purchaseSchemeFree', parsed.free);
+  patch(productId, 'purchaseSchemePercentage', null);
+}
+
+function applySaleSchemeCompactParse(
+  productId: string,
+  parsed: SchemeCompactParse,
+  patch: (id: string, field: keyof ProductFormData, value: unknown) => void
+): void {
+  if (parsed.mode === 'empty') {
+    patch(productId, 'schemePayFor', null);
+    patch(productId, 'schemeFree', null);
+    patch(productId, 'schemePercentage', null);
+    patch(productId, 'scheme', null);
+    return;
+  }
+  if (parsed.mode === 'percentage') {
+    patch(productId, 'schemeType', 'PERCENTAGE');
+    patch(productId, 'schemePercentage', parsed.pct);
+    patch(productId, 'schemePayFor', null);
+    patch(productId, 'schemeFree', null);
+    patch(productId, 'scheme', null);
+    return;
+  }
+  patch(productId, 'schemeType', 'FIXED_UNITS');
+  patch(productId, 'schemePayFor', parsed.payFor);
+  patch(productId, 'schemeFree', parsed.free);
+  patch(productId, 'schemePercentage', null);
+  patch(productId, 'scheme', null);
+}
+
 /** Parse numeric-ish form fields used for GST valuation (same precedence as OCR lines). */
 function numericProductMoney(v: number | string | undefined): number | null {
   if (v === '' || v == null) return null;
@@ -187,37 +281,240 @@ function numericProductMoney(v: number | string | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-/** Recompute supplier bill line subtotal + tax total from live product rows. */
+/** GST amount on tax-exclusive taxable value for one line (REGULAR mode). */
+function computeLineGstTotal(
+  taxableExclusive: number,
+  sgstRaw: string | undefined,
+  cgstRaw: string | undefined,
+  billingModeForGst: BillingMode
+): number {
+  if (!(taxableExclusive > 0) || billingModeForGst === 'BASIC') return 0;
+  const sgst = parseGstPercent(sgstRaw);
+  const cgst = parseGstPercent(cgstRaw);
+  const pct = sgst + cgst;
+  if (pct <= 0) return 0;
+  const cgstAmt = roundMoney((taxableExclusive * cgst) / 100);
+  const sgstAmt = roundMoney((taxableExclusive * sgst) / 100);
+  return roundMoney(cgstAmt + sgstAmt);
+}
+
+/** PTS-first unit for purchase valuation (aligned with OCR / grid rules). */
+function getPurchaseUnitPriceForTotals(p: ProductFormData): number {
+  const cost = numericProductMoney(p.costPrice);
+  const ptr = numericProductMoney(p.priceToRetail);
+  if (cost != null && Number.isFinite(cost) && cost >= 0) return cost;
+  if (ptr != null && Number.isFinite(ptr) && ptr > 0) return ptr;
+  return 0;
+}
+
+/** Tax-exclusive line value before purchase scheme / purchase add-on discount. */
+function grossPurchaseTaxableExclusive(p: ProductFormData): number {
+  const q = Math.max(0, Number(p.count) || 0);
+  const unit = getPurchaseUnitPriceForTotals(p);
+  return roundMoney(q * unit);
+}
+
+function structuralPurchaseDeal(p: ProductFormData): boolean {
+  const pst = p.purchaseSchemeType ?? 'FIXED_UNITS';
+  if (pst === 'PERCENTAGE') {
+    const x = p.purchaseSchemePercentage;
+    return x != null && Number.isFinite(Number(x)) && Number(x) > 0;
+  }
+  const pf = p.purchaseSchemePayFor ?? 0;
+  const fr = p.purchaseSchemeFree ?? 0;
+  return pf > 0 && pf + fr > 0;
+}
+
+function structuralSaleDeal(p: ProductFormData): boolean {
+  const st = p.schemeType ?? 'FIXED_UNITS';
+  if (st === 'PERCENTAGE') {
+    const x = p.schemePercentage;
+    return x != null && Number.isFinite(Number(x)) && Number(x) > 0;
+  }
+  const pf = p.schemePayFor ?? 0;
+  const fr = p.schemeFree ?? 0;
+  return pf > 0 && pf + fr > 0;
+}
+
+function taxableAfterSchemeParts(
+  q: number,
+  unit: number,
+  schemeType: SchemeType,
+  percentage: number | null | undefined,
+  payFor: number,
+  free: number
+): number {
+  if (schemeType === 'PERCENTAGE') {
+    const pct =
+      percentage != null && Number.isFinite(Number(percentage))
+        ? Number(percentage)
+        : 0;
+    const u =
+      pct > 0 && pct <= 100 ? roundMoney(unit * (1 - pct / 100)) : unit;
+    return roundMoney(q * u);
+  }
+  let billableQ = q;
+  if (payFor > 0 && payFor + free > 0) {
+    billableQ = roundMoney((q * payFor) / (payFor + free));
+  }
+  return roundMoney(billableQ * unit);
+}
+
+function applyAdditionalPctDiscount(
+  taxable: number,
+  pctRaw: number | null | undefined
+): number {
+  const pad =
+    pctRaw != null && Number.isFinite(Number(pctRaw)) ? Number(pctRaw) : 0;
+  if (pad > 0 && pad <= 100) {
+    return roundMoney(taxable * (1 - pad / 100));
+  }
+  return taxable;
+}
+
+/**
+ * Tax-exclusive amount after vendor-style netting: purchase scheme/discount wins if filled;
+ * otherwise sale scheme/discount ("Sale deal" row) affects the supplier-bill preview the same way.
+ * Both purchase add. % and sale add. % apply sequentially when set.
+ */
+function netPurchaseTaxableExclusiveAfterDeals(p: ProductFormData): number {
+  const q = Math.max(0, Number(p.count) || 0);
+  const unit = getPurchaseUnitPriceForTotals(p);
+  if (q <= 0 || unit <= 0) return 0;
+
+  let taxable: number;
+  if (structuralPurchaseDeal(p)) {
+    taxable = taxableAfterSchemeParts(
+      q,
+      unit,
+      p.purchaseSchemeType ?? 'FIXED_UNITS',
+      p.purchaseSchemePercentage,
+      p.purchaseSchemePayFor ?? 0,
+      p.purchaseSchemeFree ?? 0
+    );
+  } else if (structuralSaleDeal(p)) {
+    taxable = taxableAfterSchemeParts(
+      q,
+      unit,
+      p.schemeType ?? 'FIXED_UNITS',
+      p.schemePercentage,
+      p.schemePayFor ?? 0,
+      p.schemeFree ?? 0
+    );
+  } else {
+    taxable = roundMoney(q * unit);
+  }
+
+  taxable = applyAdditionalPctDiscount(taxable, p.purchaseAdditionalDiscount);
+  taxable = applyAdditionalPctDiscount(taxable, p.saleAdditionalDiscount);
+
+  return taxable;
+}
+
+/**
+ * Tax-exclusive amount after **purchase** scheme (percentage or 10+2) and **purchase add. %** only.
+ * Does not apply sale scheme or sale add. discount. Total discount in UI = gross ex-GST − this.
+ */
+function netPurchaseTaxableExclusivePurchaseTermsOnly(
+  p: ProductFormData
+): number {
+  const q = Math.max(0, Number(p.count) || 0);
+  const unit = getPurchaseUnitPriceForTotals(p);
+  if (q <= 0 || unit <= 0) return 0;
+
+  let taxable: number;
+  if (structuralPurchaseDeal(p)) {
+    taxable = taxableAfterSchemeParts(
+      q,
+      unit,
+      p.purchaseSchemeType ?? 'FIXED_UNITS',
+      p.purchaseSchemePercentage,
+      p.purchaseSchemePayFor ?? 0,
+      p.purchaseSchemeFree ?? 0
+    );
+  } else {
+    taxable = roundMoney(q * unit);
+  }
+
+  taxable = applyAdditionalPctDiscount(taxable, p.purchaseAdditionalDiscount);
+  return taxable;
+}
+
+/**
+ * Supplier bill totals from rows: gross = PTS×qty before schemes; net = after all deals (incl. sale
+ * fallback) for invoice; GST on that net. **Total discount** = ex-GST gap from purchase scheme +
+ * purchase add. % only (no GST component). lineSubTotal = gross; netLineSubTotal = full net line
+ * for payable.
+ */
 function computeVendorInvoiceTotalsFromProducts(
   productRows: ProductFormData[],
   billingModeForGst: BillingMode
-): { lineSubTotal: number; taxTotal: number } {
-  const items: ParseInvoiceItem[] = productRows.map((p) => {
-    const cost = numericProductMoney(p.costPrice);
-    const ptr = numericProductMoney(p.priceToRetail);
-    return {
-      barcode: '',
-      name: '',
-      businessType: 'pharmacy',
-      maximumRetailPrice: numericProductMoney(p.maximumRetailPrice) ?? 0,
-      costPrice: cost,
-      priceToRetail: ptr ?? 0,
-      count: p.count,
-      sgst:
-        billingModeForGst === 'BASIC'
-          ? ''
-          : typeof p.sgst === 'string'
-            ? p.sgst
-            : '',
-      cgst:
-        billingModeForGst === 'BASIC'
-          ? ''
-          : typeof p.cgst === 'string'
-            ? p.cgst
-            : '',
-    };
-  });
-  return computeVendorInvoiceTotalsFromParseItems(items);
+): {
+  lineSubTotal: number;
+  netLineSubTotal: number;
+  taxTotal: number;
+  totalPurchaseDiscount: number;
+} {
+  let grossLine = 0;
+  let netLine = 0;
+  let grossTaxSum = 0;
+  let netTaxSum = 0;
+  let purchaseTermsLine = 0;
+
+  for (const p of productRows) {
+    const grossTaxable = grossPurchaseTaxableExclusive(p);
+    const netTaxable = netPurchaseTaxableExclusiveAfterDeals(p);
+    const purchaseTermsTaxable =
+      netPurchaseTaxableExclusivePurchaseTermsOnly(p);
+
+    const sgstStr =
+      billingModeForGst === 'BASIC'
+        ? ''
+        : typeof p.sgst === 'string'
+          ? p.sgst
+          : '';
+    const cgstStr =
+      billingModeForGst === 'BASIC'
+        ? ''
+        : typeof p.cgst === 'string'
+          ? p.cgst
+          : '';
+
+    grossLine += grossTaxable;
+    netLine += netTaxable;
+    purchaseTermsLine += purchaseTermsTaxable;
+    grossTaxSum += computeLineGstTotal(
+      grossTaxable,
+      sgstStr,
+      cgstStr,
+      billingModeForGst
+    );
+    netTaxSum += computeLineGstTotal(
+      netTaxable,
+      sgstStr,
+      cgstStr,
+      billingModeForGst
+    );
+  }
+
+  grossLine = roundMoney(grossLine);
+  netLine = roundMoney(netLine);
+  grossTaxSum = roundMoney(grossTaxSum);
+  netTaxSum = roundMoney(netTaxSum);
+  purchaseTermsLine = roundMoney(purchaseTermsLine);
+
+  /** Ex-GST only: savings from purchase scheme + purchase add. % vs full PTS×qty. */
+  const totalPurchaseDiscountExGst = Math.max(
+    0,
+    roundMoney(grossLine - purchaseTermsLine)
+  );
+
+  return {
+    lineSubTotal: grossLine,
+    netLineSubTotal: netLine,
+    taxTotal: netTaxSum,
+    totalPurchaseDiscount: totalPurchaseDiscountExGst,
+  };
 }
 
 export default function ProductRegistrationPage() {
@@ -274,7 +571,11 @@ export default function ProductRegistrationPage() {
   const [vendorInvoiceNo, setVendorInvoiceNo] = useState('');
   const [vendorInvoiceDate, setVendorInvoiceDate] = useState('');
   const [vendorLineSubTotal, setVendorLineSubTotal] = useState('');
+  /** Tax-exclusive line sum after schemes (used for invoice total; gross is in vendorLineSubTotal). */
+  const [vendorNetLineSubTotal, setVendorNetLineSubTotal] = useState('');
   const [vendorTaxTotal, setVendorTaxTotal] = useState('');
+  const [vendorTotalPurchaseDiscount, setVendorTotalPurchaseDiscount] =
+    useState('');
   const [vendorShippingCharge, setVendorShippingCharge] = useState('');
   const [vendorOtherCharges, setVendorOtherCharges] = useState('');
   const [vendorRoundOff, setVendorRoundOff] = useState('');
@@ -305,7 +606,10 @@ export default function ProductRegistrationPage() {
       if (v.otherCharges != null) setVendorOtherCharges(String(v.otherCharges));
       if (v.roundOff != null) setVendorRoundOff(String(v.roundOff));
       if (!hasItems) {
-        if (v.lineSubTotal != null) setVendorLineSubTotal(String(v.lineSubTotal));
+        if (v.lineSubTotal != null) {
+          setVendorLineSubTotal(String(v.lineSubTotal));
+          setVendorNetLineSubTotal('');
+        }
         if (v.taxTotal != null) setVendorTaxTotal(String(v.taxTotal));
         if (v.invoiceTotal != null) setVendorInvoiceTotal(String(v.invoiceTotal));
       }
@@ -316,13 +620,18 @@ export default function ProductRegistrationPage() {
         computeVendorInvoiceTotalsFromParseItems(parsedItems);
       setVendorLineSubTotal(formatComputedAmount(lineSubTotal));
       setVendorTaxTotal(formatComputedAmount(taxTotal));
+      setVendorNetLineSubTotal('');
     }
   };
 
   useEffect(() => {
+    const lineForInvoiceTotal =
+      vendorNetLineSubTotal.trim() !== ''
+        ? vendorNetLineSubTotal
+        : vendorLineSubTotal;
     setVendorInvoiceTotal(
       computeVendorInvoiceTotalFromFields(
-        vendorLineSubTotal,
+        lineForInvoiceTotal,
         vendorTaxTotal,
         vendorShippingCharge,
         vendorOtherCharges,
@@ -331,6 +640,7 @@ export default function ProductRegistrationPage() {
     );
   }, [
     vendorLineSubTotal,
+    vendorNetLineSubTotal,
     vendorTaxTotal,
     vendorShippingCharge,
     vendorOtherCharges,
@@ -366,18 +676,22 @@ export default function ProductRegistrationPage() {
     if (n === 0) {
       if (prevRegisteredProductCountRef.current > 0) {
         setVendorLineSubTotal('');
+        setVendorNetLineSubTotal('');
         setVendorTaxTotal('');
+        setVendorTotalPurchaseDiscount('');
       }
       prevRegisteredProductCountRef.current = 0;
       return;
     }
     prevRegisteredProductCountRef.current = n;
-    const { lineSubTotal, taxTotal } = computeVendorInvoiceTotalsFromProducts(
-      products,
-      billingMode
-    );
+    const { lineSubTotal, netLineSubTotal, taxTotal, totalPurchaseDiscount } =
+      computeVendorInvoiceTotalsFromProducts(products, billingMode);
     setVendorLineSubTotal(formatComputedAmount(lineSubTotal));
+    setVendorNetLineSubTotal(formatComputedAmount(netLineSubTotal));
     setVendorTaxTotal(formatComputedAmount(taxTotal));
+    setVendorTotalPurchaseDiscount(
+      formatComputedAmount(totalPurchaseDiscount)
+    );
   }, [products, billingMode]);
 
   // Product view mode: list (accordion) or grid (Excel-style)
@@ -395,17 +709,6 @@ export default function ProductRegistrationPage() {
   const [gridSchemeDrafts, setGridSchemeDrafts] = useState<
     Record<string, { sale?: string; purchase?: string }>
   >({});
-
-  const purchaseDateFieldMin = (() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 30);
-    return d.toISOString().split('T')[0];
-  })();
-  const purchaseDateFieldMax = (() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 30);
-    return d.toISOString().split('T')[0];
-  })();
 
   // Image upload state
   const [isUploading, setIsUploading] = useState(false);
@@ -449,7 +752,6 @@ export default function ProductRegistrationPage() {
     itemType: 'NORMAL',
     itemTypeDegree: undefined,
     discountApplicable: undefined,
-    purchaseDate: new Date().toISOString().split('T')[0] + 'T00:00:00.000Z',
     baseUnit: 'BASE UNIT',
     conversionUnit: 'SALE UNIT',
     conversionFactor: 0,
@@ -555,7 +857,6 @@ export default function ProductRegistrationPage() {
       itemType: item.itemType ?? 'NORMAL',
       itemTypeDegree: item.itemTypeDegree,
       discountApplicable: item.discountApplicable,
-      purchaseDate: item.purchaseDate || undefined,
       baseUnit: item.baseUnit?.trim()
         ? item.baseUnit.trim().toUpperCase()
         : 'BASE UNIT',
@@ -918,9 +1219,16 @@ export default function ProductRegistrationPage() {
         return;
       }
 
+      const trimmedVendorInvoiceDate = vendorInvoiceDate.trim();
+      if (trimmedVendorInvoiceDate.length < 10) {
+        notifyError('Invoice date is required.');
+        setIsLoading(false);
+        return;
+      }
+
       const trimmedInvNo = vendorInvoiceNo.trim();
       const hasInvoiceExtra =
-        vendorInvoiceDate.trim() !== '' ||
+        trimmedVendorInvoiceDate !== '' ||
         optionalNumFromString(vendorLineSubTotal) !== undefined ||
         optionalNumFromString(vendorTaxTotal) !== undefined ||
         optionalNumFromString(vendorShippingCharge) !== undefined ||
@@ -1042,33 +1350,6 @@ export default function ProductRegistrationPage() {
           return;
         }
 
-        if (product.purchaseDate) {
-          const purchase = new Date(product.purchaseDate);
-          const now = new Date();
-          const daysPast =
-            (now.getTime() - purchase.getTime()) / (1000 * 60 * 60 * 24);
-          const daysFuture =
-            (purchase.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-          if (daysPast > 30) {
-            notifyError(
-              `Product "${
-                product.name || 'Unnamed'
-              }": Purchase date must not be older than 30 days`
-            );
-            setIsLoading(false);
-            return;
-          }
-          if (daysFuture > 30) {
-            notifyError(
-              `Product "${
-                product.name || 'Unnamed'
-              }": Purchase date must not be more than 30 days in the future`
-            );
-            setIsLoading(false);
-            return;
-          }
-        }
-
         const schemeType = product.schemeType ?? 'FIXED_UNITS';
         if (schemeType === 'PERCENTAGE') {
           if (
@@ -1113,6 +1394,32 @@ export default function ProductRegistrationPage() {
             setIsLoading(false);
             return;
           }
+        }
+      }
+
+      const resolvedBulkPurchaseDate =
+        `${trimmedVendorInvoiceDate.slice(0, 10)}T00:00:00Z`;
+
+      {
+        const purchase = new Date(resolvedBulkPurchaseDate);
+        const now = new Date();
+        const daysPast =
+          (now.getTime() - purchase.getTime()) / (1000 * 60 * 60 * 24);
+        const daysFuture =
+          (purchase.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+        if (daysPast > 30) {
+          notifyError(
+            'Purchase date (from invoice date) must not be older than 30 days.'
+          );
+          setIsLoading(false);
+          return;
+        }
+        if (daysFuture > 30) {
+          notifyError(
+            'Purchase date (from invoice date) must not be more than 30 days in the future.'
+          );
+          setIsLoading(false);
+          return;
         }
       }
 
@@ -1258,17 +1565,7 @@ export default function ProductRegistrationPage() {
           ...(product.discountApplicable != null
             ? { discountApplicable: product.discountApplicable }
             : {}),
-          ...(product.purchaseDate
-            ? {
-                purchaseDate:
-                  product.purchaseDate.includes('T') &&
-                  product.purchaseDate.includes('Z')
-                    ? product.purchaseDate
-                    : `${String(product.purchaseDate)
-                        .trim()
-                        .slice(0, 10)}T00:00:00Z`,
-              }
-            : {}),
+          purchaseDate: resolvedBulkPurchaseDate,
           ...(validRates.length > 0
             ? {
                 rates: validRates.map((r) => ({
@@ -1286,7 +1583,7 @@ export default function ProductRegistrationPage() {
       let vendorPurchaseInvoice: VendorPurchaseInvoicePayload | undefined;
       const hasVendorHeaderInput =
         Boolean(trimmedInvNo) ||
-        Boolean(vendorInvoiceDate.trim()) ||
+        Boolean(trimmedVendorInvoiceDate) ||
         optionalNumFromString(vendorLineSubTotal) !== undefined ||
         optionalNumFromString(vendorTaxTotal) !== undefined ||
         optionalNumFromString(vendorShippingCharge) !== undefined ||
@@ -1298,9 +1595,8 @@ export default function ProductRegistrationPage() {
 
       if (hasVendorHeaderInput) {
         vendorPurchaseInvoice = { invoiceNo: trimmedInvNo };
-        if (vendorInvoiceDate.trim()) {
-          vendorPurchaseInvoice.invoiceDate = `${vendorInvoiceDate.trim()}T00:00:00.000Z`;
-        }
+        vendorPurchaseInvoice.invoiceDate =
+          `${trimmedVendorInvoiceDate.slice(0, 10)}T00:00:00.000Z`;
         const ls = optionalNumFromString(vendorLineSubTotal);
         if (ls !== undefined) vendorPurchaseInvoice.lineSubTotal = ls;
         const tt = optionalNumFromString(vendorTaxTotal);
@@ -1969,34 +2265,19 @@ export default function ProductRegistrationPage() {
                 style={{ marginTop: '1.25rem' }}
               >
                 <h4 className={styles.subsectionTitle}>
-                  Vendor purchase invoice (optional)
+                  Vendor purchase invoice
                 </h4>
                 <p
                   className={styles.helperText}
                   style={{ marginBottom: '0.75rem' }}
                 >
-                  Add the supplier&apos;s invoice number and amounts to keep a
-                  history of what was bought on each bill. Leave blank to
-                  register stock without an invoice record.
+                  Invoice number and date are required. Other amounts are
+                  optional.
                 </p>
-                {products.length > 0 ? (
-                  <p
-                    className={styles.helperText}
-                    style={{ marginBottom: '0.75rem', fontSize: '0.85rem' }}
-                  >
-                    Amounts tracked here follow each row&apos;s{' '}
-                    <strong>PTS (price from stockist)</strong> × quantity when
-                    PTS is set; <strong>PTR</strong> is only used when PTS is
-                    empty.{' '}
-                    {billingMode !== 'BASIC'
-                      ? 'With CGST/SGST on the row, PTS × qty is taxable value (ex‑GST); tax is added on top for line subtotal + tax totals.'
-                      : null}
-                  </p>
-                ) : null}
                 <div className={styles.sharedInfoGrid}>
                   <div className={styles.formGroup}>
                     <label htmlFor="vendorInvoiceNo" className={styles.label}>
-                      Invoice number
+                      Invoice number *
                     </label>
                     <input
                       id="vendorInvoiceNo"
@@ -2005,6 +2286,8 @@ export default function ProductRegistrationPage() {
                       value={vendorInvoiceNo}
                       onChange={(e) => setVendorInvoiceNo(e.target.value)}
                       placeholder="e.g. INV-2024-001"
+                      required
+                      aria-required="true"
                       disabled={isLoading}
                     />
                   </div>
@@ -2013,7 +2296,7 @@ export default function ProductRegistrationPage() {
                       htmlFor="vendorInvoiceDate"
                       className={styles.label}
                     >
-                      Invoice date
+                      Invoice date *
                     </label>
                     <input
                       id="vendorInvoiceDate"
@@ -2021,6 +2304,9 @@ export default function ProductRegistrationPage() {
                       className={styles.input}
                       value={vendorInvoiceDate}
                       onChange={(e) => setVendorInvoiceDate(e.target.value)}
+                      required
+                      aria-required="true"
+                      title="Used as the purchase date on each product line when registering stock."
                       disabled={isLoading}
                     />
                   </div>
@@ -2054,6 +2340,30 @@ export default function ProductRegistrationPage() {
                       value={vendorTaxTotal}
                       onChange={(e) => setVendorTaxTotal(e.target.value)}
                       placeholder="0"
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label
+                      htmlFor="vendorTotalPurchaseDiscount"
+                      className={styles.label}
+                      title="Ex-GST; purchase scheme + purchase add. %"
+                    >
+                      Total discount{' '}
+                      <span style={{ fontWeight: 400, opacity: 0.85 }}>
+                        (purchase scheme + purchase add. %)
+                      </span>
+                    </label>
+                    <input
+                      id="vendorTotalPurchaseDiscount"
+                      type="text"
+                      inputMode="decimal"
+                      className={styles.input}
+                      value={vendorTotalPurchaseDiscount}
+                      readOnly
+                      placeholder="0"
+                      title="Ex-GST; purchase terms only"
+                      aria-readonly="true"
                       disabled={isLoading}
                     />
                   </div>
@@ -2314,7 +2624,15 @@ export default function ProductRegistrationPage() {
               </div>
             )}
             <div className={styles.productsHeader}>
-              <h3 className={styles.sectionTitle}>Products</h3>
+              <h3 className={styles.sectionTitle}>
+                Products
+                {products.length > 0 ? (
+                  <span className={styles.sectionTitleCount}>
+                    {' '}
+                    ({products.length})
+                  </span>
+                ) : null}
+              </h3>
               <div className={styles.productsHeaderRight}>
                 {products.length > 0 && (
                   <div className={styles.viewToggleWrap}>
@@ -2447,7 +2765,6 @@ export default function ProductRegistrationPage() {
                         ° *
                       </th>
                       <th className={styles.excelTh}>Disc appl.</th>
-                      <th className={styles.excelTh}>Purch. date</th>
                       {billingMode === 'REGULAR' && (
                         <>
                           <th className={styles.excelTh}>CGST %</th>
@@ -2765,11 +3082,40 @@ export default function ProductRegistrationPage() {
                                   sale: v,
                                 },
                               }));
+                              const parsed = parseSchemeCompactRaw(v);
+                              if (parsed !== null) {
+                                applySaleSchemeCompactParse(
+                                  product.id,
+                                  parsed,
+                                  handleProductChange
+                                );
+                                setGridSchemeDrafts((prev) => {
+                                  const next = { ...prev };
+                                  const cur = next[product.id];
+                                  if (cur?.sale !== undefined) {
+                                    const { sale: _, ...rest } = cur;
+                                    if (Object.keys(rest).length) {
+                                      next[product.id] = rest;
+                                    } else {
+                                      delete next[product.id];
+                                    }
+                                  }
+                                  return next;
+                                });
+                              }
                             }}
-                            onBlur={() => {
-                              const raw = (
-                                gridSchemeDrafts[product.id]?.sale ?? ''
-                              ).trim();
+                            onBlur={(e) => {
+                              const raw = e.target.value.trim();
+                              const parsed = parseSchemeCompactRaw(raw, {
+                                finalize: true,
+                              });
+                              if (parsed !== null) {
+                                applySaleSchemeCompactParse(
+                                  product.id,
+                                  parsed,
+                                  handleProductChange
+                                );
+                              }
                               setGridSchemeDrafts((prev) => {
                                 const next = { ...prev };
                                 const cur = next[product.id];
@@ -2783,88 +3129,6 @@ export default function ProductRegistrationPage() {
                                 }
                                 return next;
                               });
-                              if (raw === '') {
-                                handleProductChange(
-                                  product.id,
-                                  'schemePayFor',
-                                  null
-                                );
-                                handleProductChange(
-                                  product.id,
-                                  'schemeFree',
-                                  null
-                                );
-                                handleProductChange(
-                                  product.id,
-                                  'schemePercentage',
-                                  null
-                                );
-                                return;
-                              }
-                              if (raw.endsWith('%')) {
-                                const num = parseFloat(raw.slice(0, -1));
-                                if (!isNaN(num) && num > 0 && num <= 100) {
-                                  handleProductChange(
-                                    product.id,
-                                    'schemeType',
-                                    'PERCENTAGE'
-                                  );
-                                  handleProductChange(
-                                    product.id,
-                                    'schemePercentage',
-                                    num
-                                  );
-                                  handleProductChange(
-                                    product.id,
-                                    'schemePayFor',
-                                    null
-                                  );
-                                  handleProductChange(
-                                    product.id,
-                                    'schemeFree',
-                                    null
-                                  );
-                                }
-                                return;
-                              }
-                              const plusIdx = raw.indexOf('+');
-                              if (plusIdx >= 0) {
-                                const left = parseInt(
-                                  raw.slice(0, plusIdx).trim(),
-                                  10
-                                );
-                                const right = parseInt(
-                                  raw.slice(plusIdx + 1).trim(),
-                                  10
-                                );
-                                if (
-                                  !isNaN(left) &&
-                                  !isNaN(right) &&
-                                  left >= 0 &&
-                                  right >= 0
-                                ) {
-                                  handleProductChange(
-                                    product.id,
-                                    'schemeType',
-                                    'FIXED_UNITS'
-                                  );
-                                  handleProductChange(
-                                    product.id,
-                                    'schemePayFor',
-                                    left
-                                  );
-                                  handleProductChange(
-                                    product.id,
-                                    'schemeFree',
-                                    right
-                                  );
-                                  handleProductChange(
-                                    product.id,
-                                    'schemePercentage',
-                                    null
-                                  );
-                                }
-                              }
                             }}
                             disabled={isLoading}
                           />
@@ -2976,11 +3240,40 @@ export default function ProductRegistrationPage() {
                                   purchase: v,
                                 },
                               }));
+                              const parsed = parseSchemeCompactRaw(v);
+                              if (parsed !== null) {
+                                applyPurchaseSchemeCompactParse(
+                                  product.id,
+                                  parsed,
+                                  handleProductChange
+                                );
+                                setGridSchemeDrafts((prev) => {
+                                  const next = { ...prev };
+                                  const cur = next[product.id];
+                                  if (cur?.purchase !== undefined) {
+                                    const { purchase: _, ...rest } = cur;
+                                    if (Object.keys(rest).length) {
+                                      next[product.id] = rest;
+                                    } else {
+                                      delete next[product.id];
+                                    }
+                                  }
+                                  return next;
+                                });
+                              }
                             }}
-                            onBlur={() => {
-                              const raw = (
-                                gridSchemeDrafts[product.id]?.purchase ?? ''
-                              ).trim();
+                            onBlur={(e) => {
+                              const raw = e.target.value.trim();
+                              const parsed = parseSchemeCompactRaw(raw, {
+                                finalize: true,
+                              });
+                              if (parsed !== null) {
+                                applyPurchaseSchemeCompactParse(
+                                  product.id,
+                                  parsed,
+                                  handleProductChange
+                                );
+                              }
                               setGridSchemeDrafts((prev) => {
                                 const next = { ...prev };
                                 const cur = next[product.id];
@@ -2994,88 +3287,6 @@ export default function ProductRegistrationPage() {
                                 }
                                 return next;
                               });
-                              if (raw === '') {
-                                handleProductChange(
-                                  product.id,
-                                  'purchaseSchemePayFor',
-                                  null
-                                );
-                                handleProductChange(
-                                  product.id,
-                                  'purchaseSchemeFree',
-                                  null
-                                );
-                                handleProductChange(
-                                  product.id,
-                                  'purchaseSchemePercentage',
-                                  null
-                                );
-                                return;
-                              }
-                              if (raw.endsWith('%')) {
-                                const num = parseFloat(raw.slice(0, -1));
-                                if (!isNaN(num) && num >= 0 && num <= 100) {
-                                  handleProductChange(
-                                    product.id,
-                                    'purchaseSchemeType',
-                                    'PERCENTAGE'
-                                  );
-                                  handleProductChange(
-                                    product.id,
-                                    'purchaseSchemePercentage',
-                                    num
-                                  );
-                                  handleProductChange(
-                                    product.id,
-                                    'purchaseSchemePayFor',
-                                    null
-                                  );
-                                  handleProductChange(
-                                    product.id,
-                                    'purchaseSchemeFree',
-                                    null
-                                  );
-                                }
-                                return;
-                              }
-                              const plusIdx = raw.indexOf('+');
-                              if (plusIdx >= 0) {
-                                const left = parseInt(
-                                  raw.slice(0, plusIdx).trim(),
-                                  10
-                                );
-                                const right = parseInt(
-                                  raw.slice(plusIdx + 1).trim(),
-                                  10
-                                );
-                                if (
-                                  !isNaN(left) &&
-                                  !isNaN(right) &&
-                                  left >= 0 &&
-                                  right >= 0
-                                ) {
-                                  handleProductChange(
-                                    product.id,
-                                    'purchaseSchemeType',
-                                    'FIXED_UNITS'
-                                  );
-                                  handleProductChange(
-                                    product.id,
-                                    'purchaseSchemePayFor',
-                                    left
-                                  );
-                                  handleProductChange(
-                                    product.id,
-                                    'purchaseSchemeFree',
-                                    right
-                                  );
-                                  handleProductChange(
-                                    product.id,
-                                    'purchaseSchemePercentage',
-                                    null
-                                  );
-                                }
-                              }
                             }}
                             disabled={isLoading}
                           />
@@ -3225,38 +3436,6 @@ export default function ProductRegistrationPage() {
                             <option value="DISCOUNT_AND_SCHEME">Both</option>
                           </select>
                         </td>
-                        <td className={styles.excelTd}>
-                          <input
-                            type="date"
-                            className={styles.excelInputDate}
-                            min={purchaseDateFieldMin}
-                            max={purchaseDateFieldMax}
-                            value={
-                              product.purchaseDate
-                                ? new Date(product.purchaseDate)
-                                    .toISOString()
-                                    .split('T')[0]
-                                : ''
-                            }
-                            onChange={(e) => {
-                              const dateValue = e.target.value;
-                              if (dateValue) {
-                                handleProductChange(
-                                  product.id,
-                                  'purchaseDate',
-                                  `${dateValue}T00:00:00.000Z`
-                                );
-                              } else {
-                                handleProductChange(
-                                  product.id,
-                                  'purchaseDate',
-                                  undefined
-                                );
-                              }
-                            }}
-                            disabled={isLoading}
-                          />
-                        </td>
                         {billingMode === 'REGULAR' && (
                           <>
                             <td className={styles.excelTd}>
@@ -3324,6 +3503,7 @@ export default function ProductRegistrationPage() {
                     product={product}
                     billingMode={billingMode}
                     index={index}
+                    totalProductCount={products.length}
                     onToggle={() => handleToggleProduct(product.id)}
                     onRemove={() => handleRemoveProduct(product.id)}
                     onChange={handleProductChange}
@@ -3727,6 +3907,7 @@ interface ProductAccordionProps {
   product: ProductFormData;
   billingMode: BillingMode;
   index: number;
+  totalProductCount: number;
   onToggle: () => void;
   onRemove: () => void;
   onChange: (
@@ -3746,6 +3927,7 @@ function ProductAccordion({
   product,
   billingMode,
   index,
+  totalProductCount,
   onToggle,
   onRemove,
   onChange,
@@ -3826,31 +4008,6 @@ function ProductAccordion({
       onChange(product.id, 'scheme', null);
     }
   };
-  const commitPurchaseSchemeFixed = () => {
-    const raw = purchaseSchemeFixedDraft.trim();
-    if (raw === '') {
-      onChange(product.id, 'purchaseSchemePayFor', null);
-      onChange(product.id, 'purchaseSchemeFree', null);
-      return;
-    }
-    const plusIdx = raw.indexOf('+');
-    if (plusIdx === -1) {
-      const num = parseInt(raw, 10);
-      if (!isNaN(num) && num >= 0) {
-        onChange(product.id, 'purchaseSchemePayFor', num);
-        onChange(product.id, 'purchaseSchemeFree', 0);
-      }
-      return;
-    }
-    const leftStr = raw.slice(0, plusIdx).trim();
-    const rightStr = raw.slice(plusIdx + 1).trim();
-    const left = leftStr === '' ? 0 : parseInt(leftStr, 10);
-    const right = rightStr === '' ? 0 : parseInt(rightStr, 10);
-    if (!isNaN(left) && !isNaN(right) && left >= 0 && right >= 0) {
-      onChange(product.id, 'purchaseSchemePayFor', left);
-      onChange(product.id, 'purchaseSchemeFree', right);
-    }
-  };
 
   return (
     <div className={styles.productAccordion}>
@@ -3858,6 +4015,12 @@ function ProductAccordion({
         <div className={styles.accordionTitle}>
           <span className={styles.accordionIcon}>
             {product.isExpanded ? '▼' : '▶'}
+          </span>
+          <span
+            className={styles.accordionRowIndex}
+            title={`${index + 1} of ${totalProductCount}`}
+          >
+            {index + 1}
           </span>
           <span>{productTitle}</span>
           {product.barcode && (
@@ -4264,11 +4427,32 @@ function ProductAccordion({
                   className={styles.input}
                   placeholder="Optional, from vendor"
                   value={purchaseSchemeFixedDraft}
-                  onChange={(e) => setPurchaseSchemeFixedDraft(e.target.value)}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setPurchaseSchemeFixedDraft(v);
+                    const parsed = parseSchemeCompactRaw(v);
+                    if (parsed !== null) {
+                      applyPurchaseSchemeCompactParse(
+                        product.id,
+                        parsed,
+                        onChange
+                      );
+                    }
+                  }}
                   onFocus={() => setPurchaseSchemeFixedFocused(true)}
-                  onBlur={() => {
+                  onBlur={(e) => {
                     setPurchaseSchemeFixedFocused(false);
-                    commitPurchaseSchemeFixed();
+                    const raw = e.target.value.trim();
+                    const parsed = parseSchemeCompactRaw(raw, {
+                      finalize: true,
+                    });
+                    if (parsed !== null) {
+                      applyPurchaseSchemeCompactParse(
+                        product.id,
+                        parsed,
+                        onChange
+                      );
+                    }
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -4420,49 +4604,6 @@ function ProductAccordion({
                     disabled={isLoading}
                   />
                 </div>
-                <div className={styles.formGroup}>
-                  <label
-                    htmlFor={`purchaseDate-${product.id}`}
-                    className={styles.label}
-                  >
-                    Purchase date
-                  </label>
-                  <input
-                    type="date"
-                    id={`purchaseDate-${product.id}`}
-                    className={styles.input}
-                    min={(() => {
-                      const d = new Date();
-                      d.setDate(d.getDate() - 30);
-                      return d.toISOString().split('T')[0];
-                    })()}
-                    max={(() => {
-                      const d = new Date();
-                      d.setDate(d.getDate() + 30);
-                      return d.toISOString().split('T')[0];
-                    })()}
-                    value={
-                      product.purchaseDate
-                        ? new Date(product.purchaseDate)
-                            .toISOString()
-                            .split('T')[0]
-                        : ''
-                    }
-                    onChange={(e) => {
-                      const dateValue = e.target.value;
-                      if (dateValue) {
-                        onChange(
-                          product.id,
-                          'purchaseDate',
-                          `${dateValue}T00:00:00.000Z`
-                        );
-                      } else {
-                        onChange(product.id, 'purchaseDate', undefined);
-                      }
-                    }}
-                    disabled={isLoading}
-                  />
-                </div>
               </div>
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
@@ -4531,49 +4672,6 @@ function ProductAccordion({
                     Both discount and scheme/deal applicable
                   </option>
                 </select>
-              </div>
-              <div className={styles.formGroup}>
-                <label
-                  htmlFor={`purchaseDate-${product.id}`}
-                  className={styles.label}
-                >
-                  Purchase date
-                </label>
-                <input
-                  type="date"
-                  id={`purchaseDate-${product.id}`}
-                  className={styles.input}
-                  min={(() => {
-                    const d = new Date();
-                    d.setDate(d.getDate() - 30);
-                    return d.toISOString().split('T')[0];
-                  })()}
-                  max={(() => {
-                    const d = new Date();
-                    d.setDate(d.getDate() + 30);
-                    return d.toISOString().split('T')[0];
-                  })()}
-                  value={
-                    product.purchaseDate
-                      ? new Date(product.purchaseDate)
-                          .toISOString()
-                          .split('T')[0]
-                      : ''
-                  }
-                  onChange={(e) => {
-                    const dateValue = e.target.value;
-                    if (dateValue) {
-                      onChange(
-                        product.id,
-                        'purchaseDate',
-                        `${dateValue}T00:00:00.000Z`
-                      );
-                    } else {
-                      onChange(product.id, 'purchaseDate', undefined);
-                    }
-                  }}
-                  disabled={isLoading}
-                />
               </div>
             </div>
           )}
