@@ -1822,9 +1822,8 @@
 /* Vendor invoice — payment split (credit ledger) */
 
 .vendorPaymentPanel {
-  grid-column: 1 / -1;
-  margin-top: 0.35rem;
-  padding: 1rem 1.1rem;
+  margin-top: 1.5rem;
+  padding: 1.25rem 1.25rem;
   border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--border-color) 88%, #3b82f6 12%);
   background: linear-gradient(
@@ -1841,6 +1840,11 @@
   font-size: 1rem;
   font-weight: 600;
   color: var(--text-primary);
+}
+
+.requiredMark {
+  color: #ef4444;
+  font-weight: 400;
 }
 
 .vendorPaymentPanelIntro {
@@ -1862,21 +1866,26 @@
   color: var(--text-secondary);
 }
 
+.paymentModeGroup {
+  margin-bottom: 0.75rem;
+}
+
 .paymentModeSeg {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.45rem;
 }
 
 .paymentModeSegBtn,
 .paymentModeSegBtnActive {
-  flex: 1;
-  min-width: 5.75rem;
-  padding: 0.56rem 0.85rem;
-  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 0.4rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  border-radius: 10px;
-  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  border: 1.5px solid var(--border-color);
   cursor: pointer;
   transition:
     border-color 0.15s ease,
@@ -1891,27 +1900,28 @@
 
 .paymentModeSegBtn:hover:not(:disabled) {
   border-color: #3b82f6;
+  background: color-mix(in srgb, #3b82f6 5%, var(--bg-primary));
 }
 
 .paymentModeSegBtn:focus-visible {
   outline: none;
   box-shadow:
     0 0 0 2px var(--bg-card),
-    0 0 0 5px color-mix(in srgb, #3b82f6 45%, transparent);
+    0 0 0 4px color-mix(in srgb, #3b82f6 40%, transparent);
 }
 
 .paymentModeSegBtnActive:focus-visible {
   outline: none;
   box-shadow:
     0 0 0 2px var(--bg-card),
-    0 0 0 5px color-mix(in srgb, #3b82f6 45%, transparent);
+    0 0 0 4px color-mix(in srgb, #3b82f6 40%, transparent);
 }
 
 .paymentModeSegBtnActive {
   border-color: #3b82f6;
-  background: color-mix(in srgb, #3b82f6 14%, var(--bg-primary));
-  color: var(--text-primary);
-  box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 22%, transparent);
+  background: color-mix(in srgb, #3b82f6 10%, var(--bg-primary));
+  color: #1d4ed8;
+  box-shadow: 0 0 0 1px color-mix(in srgb, #3b82f6 30%, transparent);
 }
 
 .paymentModeSegBtn:disabled,
@@ -1920,15 +1930,78 @@
   cursor: not-allowed;
 }
 
+.paymentModeDivider {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.6rem 0;
+}
+
+.paymentModeDividerLine {
+  flex: 1;
+  height: 1px;
+  background: var(--border-color);
+}
+
+.paymentModeDividerText {
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary, #9ca3af);
+}
+
+.vendorSplitInputs {
+  background: color-mix(in srgb, var(--bg-secondary, #f8fafc) 60%, transparent);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.vendorSplitRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.45rem;
+}
+
+.vendorSplitRow:last-of-type {
+  margin-bottom: 0;
+}
+
+.vendorSplitLabel {
+  flex: 0 0 8rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.vendorSplitInput {
+  flex: 1;
+  padding: 0.48rem 0.7rem;
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  font-size: 0.88rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.vendorSplitInput:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2.5px color-mix(in srgb, #3b82f6 15%, transparent);
+}
+
 .vendorPaymentPanel .formGroup {
   margin-bottom: 0;
 }
 
 .vendorPaymentFieldHint {
-  font-size: 0.8rem;
-  line-height: 1.48;
-  color: var(--text-secondary);
-  margin: 0.4rem 0 0 0;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--text-tertiary, #9ca3af);
+  margin: 0.35rem 0 0 0;
 }
 
 .vendorPaymentSummary,

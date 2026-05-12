@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { cartApi } from '@inventory-platform/api';
-import type { CartResponse } from '@inventory-platform/types';
+import { cartApi, accountingApi } from '@inventory-platform/api';
+import type { CartResponse, GlAccountResponse, PaymentMethod } from '@inventory-platform/types';
 import { PrintInvoiceModal } from '@inventory-platform/ui';
 import styles from './dashboard.checkout.module.css';
 import { useNotify } from '@inventory-platform/store';
@@ -24,7 +24,11 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null);
   const [showPrintModal, setShowPrintModal] = useState(false);
   const cartLoadedRef = useRef(false);
-  const [creditPaidNow, setCreditPaidNow] = useState('');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('CASH');
+  const [splitCashAmount, setSplitCashAmount] = useState('');
+  const [splitOnlineAmount, setSplitOnlineAmount] = useState('');
+  const [bankAccounts, setBankAccounts] = useState<GlAccountResponse[]>([]);
+  const [selectedBankCode, setSelectedBankCode] = useState('');
 
   const loadCart = useCallback(async () => {
     setIsLoading(true);
@@ -83,28 +87,29 @@ export default function CheckoutPage() {
     }
   }, [loadCart]);
 
-  const grandTotalNum = checkoutData?.grandTotal ?? 0;
-  const splitPreview = useMemo(() => {
-    const raw = creditPaidNow.trim().replace(/,/g, '');
-    if (raw === '') {
-      return { kind: 'empty' as const };
-    }
-    const paid = Number(raw);
-    if (!Number.isFinite(paid) || paid < 0) {
-      return { kind: 'invalid' as const };
-    }
-    if (paid > grandTotalNum) {
-      return { kind: 'over' as const };
-    }
-    return {
-      kind: 'ok' as const,
-      paid,
-      remainder: Math.max(0, grandTotalNum - paid),
-    };
-  }, [creditPaidNow, grandTotalNum]);
+  useEffect(() => {
+    (async () => {
+      try {
+        const all = await accountingApi.glAccounts();
+        const banks = all.filter(
+          (a) => a.accountType === 'ASSET' && a.code.toUpperCase().startsWith('BANK')
+        );
+        setBankAccounts(banks);
+        if (banks.length === 1) {
+          setSelectedBankCode(banks[0].code);
+        }
+      } catch {
+        /* non-critical — user can still pay without bank selection */
+      }
+    })();
+  }, []);
 
-  const splitInvalidForPay =
-    splitPreview.kind === 'over' || splitPreview.kind === 'invalid';
+  const needsBankSelection =
+    selectedPaymentMethod === 'ONLINE' ||
+    selectedPaymentMethod === 'CASH_ONLINE' ||
+    selectedPaymentMethod === 'ONLINE_CREDIT';
+
+  const grandTotalNum = checkoutData?.grandTotal ?? 0;
 
   if (isLoading) {
     return (
@@ -134,7 +139,7 @@ export default function CheckoutPage() {
     );
   }
 
-  const handlePayment = async (method: 'CASH' | 'ONLINE' | 'CREDIT') => {
+  const handlePayment = async (method: PaymentMethod) => {
     if (!checkoutData) {
       notifyError('Checkout data not available');
       return;
@@ -150,26 +155,57 @@ export default function CheckoutPage() {
         throw new Error('Purchase ID not found in checkout data');
       }
 
-      const paidNow =
-        creditPaidNow.trim() === '' ? undefined : Number(creditPaidNow.trim());
-      if (paidNow != null && (!Number.isFinite(paidNow) || paidNow < 0)) {
-        throw new Error('Paid-now amount must be a valid number >= 0');
-      }
-      if (paidNow != null && paidNow > (checkoutData.grandTotal ?? 0)) {
-        throw new Error('Paid-now amount cannot exceed grand total');
+      const total = checkoutData.grandTotal ?? 0;
+
+      let paidNow: number | undefined;
+      let splitAmounts: Record<string, number> | undefined;
+
+      if (method === 'CASH_ONLINE') {
+        const cashAmt = Number(splitCashAmount.trim());
+        const onlineAmt = Number(splitOnlineAmount.trim());
+        if (!Number.isFinite(cashAmt) || !Number.isFinite(onlineAmt) || cashAmt < 0 || onlineAmt < 0) {
+          throw new Error('Enter valid cash and online amounts');
+        }
+        if (Math.abs(cashAmt + onlineAmt - total) > 0.01) {
+          throw new Error('Cash + Online amounts must equal the invoice total');
+        }
+        splitAmounts = { CASH: cashAmt, ONLINE: onlineAmt };
+        paidNow = total;
+      } else if (method === 'ONLINE_CREDIT') {
+        const onlineAmt = Number(splitOnlineAmount.trim() || '0');
+        if (!Number.isFinite(onlineAmt) || onlineAmt < 0) {
+          throw new Error('Enter a valid online amount');
+        }
+        if (onlineAmt > total) {
+          throw new Error('Online amount cannot exceed total');
+        }
+        splitAmounts = { ONLINE: onlineAmt, CREDIT: total - onlineAmt };
+        paidNow = onlineAmt;
+      } else if (method === 'CREDIT_CASH') {
+        const cashAmt = Number(splitCashAmount.trim() || '0');
+        if (!Number.isFinite(cashAmt) || cashAmt < 0) {
+          throw new Error('Enter a valid cash amount');
+        }
+        if (cashAmt > total) {
+          throw new Error('Cash amount cannot exceed total');
+        }
+        splitAmounts = { CASH: cashAmt, CREDIT: total - cashAmt };
+        paidNow = cashAmt;
+      } else if (method === 'CREDIT') {
+        paidNow = 0;
       }
 
-      // Call update status API with status COMPLETED and payment method
       const statusPayload = {
         purchaseId,
         status: 'COMPLETED',
         paymentMethod: method,
         ...(paidNow != null ? { creditPaidAmount: paidNow } : {}),
+        ...(splitAmounts ? { splitAmounts } : {}),
+        ...(selectedBankCode ? { bankGlAccountCode: selectedBankCode } : {}),
       };
 
       const completed = await cartApi.updateStatus(statusPayload);
 
-      // Merge server totals + GL journal id after successful completion
       setCheckoutData({
         ...checkoutData,
         ...completed,
@@ -177,11 +213,9 @@ export default function CheckoutPage() {
         paymentMethod: method,
       });
 
-      // Show success animation
       setShowSuccess(true);
       setIsProcessingPayment(false);
 
-      // After showing success overlay, hide it (don't call loadCart as it will return 404 for COMPLETED)
       setTimeout(() => {
         setShowSuccess(false);
       }, 3000);
@@ -600,134 +634,175 @@ export default function CheckoutPage() {
           <div className={styles.paymentSection}>
             <h3 className={styles.sectionTitle}>Payment Options</h3>
 
-            <div className={styles.splitSellPanel}>
-              <div className={styles.splitSellHead}>
-                <span className={styles.splitSellTitle}>Split sale</span>
-                <p className={styles.splitSellIntro}>
-                  Part paid today, rest on <strong>Credit balances</strong> (<strong>Owes you</strong>
-                  ).
-                </p>
-              </div>
-              <div className={styles.splitSellSummary}>
-                <div className={`${styles.splitSellRow} ${styles.splitSellRowStrong}`}>
-                  <span>Invoice total</span>
-                  <span className={styles.splitSellAmt}>₹{grandTotalNum.toFixed(2)}</span>
-                </div>
-                <div className={styles.splitSellField}>
-                  <label className={styles.splitSellLabel} htmlFor="checkout-paid-now">
-                    Paid now
-                  </label>
-                  <input
-                    id="checkout-paid-now"
-                    className={styles.splitSellInput}
-                    inputMode="decimal"
-                    placeholder="Leave empty unless splitting"
-                    title="Leave empty for full payment with Cash/Online, or full credit with Sell on credit. Enter part of the total to split."
-                    value={creditPaidNow}
-                    onChange={(ev) => setCreditPaidNow(ev.target.value)}
-                    disabled={isProcessingPayment || isUpdating}
-                    aria-describedby="checkout-split-hint"
-                  />
-                  <ul id="checkout-split-hint" className={styles.splitSellBullets}>
-                    <li>
-                      <strong>Cash / Online</strong> — empty field = whole invoice paid today.
-                    </li>
-                    <li>
-                      <strong>Split</strong> — enter what they pay now; the remainder shows below.
-                    </li>
-                    <li>
-                      <strong>Sell on credit</strong> — empty = all on credit; or enter a deposit
-                      now.
-                    </li>
-                  </ul>
-                </div>
-                <div
-                  className={
-                    splitPreview.kind === 'ok' && splitPreview.remainder > 0
-                      ? `${styles.splitSellRow} ${styles.splitSellRowHighlight}`
-                      : `${styles.splitSellRow} ${styles.splitSellRowMuted}`
-                  }
-                >
-                  <span>Credit remainder</span>
-                  <span
+            <div className={styles.paymentModeGroup}>
+              <span className={styles.paymentModeGroupLabel}>Payment method</span>
+              <div className={styles.paymentModeSeg}>
+                {([
+                  ['CASH', 'Cash'],
+                  ['ONLINE', 'Online'],
+                  ['CREDIT', 'Credit'],
+                ] as const).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
                     className={
-                      splitPreview.kind === 'ok' && splitPreview.remainder > 0
-                        ? styles.splitSellCreditDue
-                        : styles.splitSellAmt
+                      selectedPaymentMethod === value
+                        ? styles.paymentModeSegBtnActive
+                        : styles.paymentModeSegBtn
                     }
+                    onClick={() => setSelectedPaymentMethod(value)}
+                    disabled={isProcessingPayment || isUpdating}
                   >
-                    {splitPreview.kind === 'empty' && '—'}
-                    {splitPreview.kind === 'invalid' && '—'}
-                    {splitPreview.kind === 'over' && '—'}
-                    {splitPreview.kind === 'ok' && `₹${splitPreview.remainder.toFixed(2)}`}
-                  </span>
-                </div>
-                {splitPreview.kind === 'over' && (
-                  <p className={styles.splitSellError} role="alert">
-                    Paid now cannot exceed the invoice total (₹{grandTotalNum.toFixed(2)}).
-                  </p>
-                )}
-                {splitPreview.kind === 'invalid' && creditPaidNow.trim() !== '' && (
-                  <p className={styles.splitSellError} role="alert">
-                    Enter a valid amount, or leave the field empty.
-                  </p>
-                )}
-                {splitPreview.kind === 'ok' && splitPreview.remainder > 0 && (
-                  <p className={styles.splitSellFoot}>
-                    <Link className={styles.splitSellLink} to="/dashboard/credit">
-                      Credit balances
-                    </Link>
-                    · <strong>Owes you</strong> ₹{splitPreview.remainder.toFixed(2)}
-                  </p>
-                )}
-                {splitPreview.kind === 'ok' && splitPreview.remainder === 0 && splitPreview.paid > 0 && (
-                  <p className={styles.splitSellFootMuted}>
-                    No balance on credit — paid amount covers this invoice.
-                  </p>
-                )}
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div className={styles.paymentModeDivider}>
+                <span className={styles.paymentModeDividerLine} />
+                <span className={styles.paymentModeDividerText}>or split</span>
+                <span className={styles.paymentModeDividerLine} />
+              </div>
+              <div className={styles.paymentModeSeg}>
+                {([
+                  ['CASH_ONLINE', 'Cash + Online'],
+                  ['ONLINE_CREDIT', 'Online + Credit'],
+                  ['CREDIT_CASH', 'Credit + Cash'],
+                ] as const).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={
+                      selectedPaymentMethod === value
+                        ? styles.paymentModeSegBtnActive
+                        : styles.paymentModeSegBtn
+                    }
+                    onClick={() => setSelectedPaymentMethod(value)}
+                    disabled={isProcessingPayment || isUpdating}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
             </div>
 
-            <div className={styles.receiptLedgerRow}>
-              <label>Receipt account</label>
-              <p className={styles.receiptLedgerHint}>
-                Customer paid-now amount is recorded in{' '}
-                <span className={styles.receiptLedgerMono}>CASH</span> by default. Any unpaid split
-                amount posts to receivables.
-              </p>
-            </div>
-            <div className={styles.paymentButtons}>
-              <button
-                className={`${styles.paymentBtn} ${styles.cashBtn}`}
-                onClick={() => handlePayment('CASH')}
-                disabled={isProcessingPayment || isUpdating || splitInvalidForPay}
-              >
-                <span role="img" aria-label="Cash">
-                  💵
-                </span>
-                {isProcessingPayment ? 'Processing...' : 'Pay in Cash'}
-              </button>
-              <button
-                className={`${styles.paymentBtn} ${styles.onlineBtn}`}
-                onClick={() => handlePayment('ONLINE')}
-                disabled={isProcessingPayment || isUpdating || splitInvalidForPay}
-              >
-                <span role="img" aria-label="Online Payment">
-                  💳
-                </span>
-                {isProcessingPayment ? 'Processing...' : 'Pay Online'}
-              </button>
-              <button
-                className={`${styles.paymentBtn} ${styles.creditBtn}`}
-                onClick={() => handlePayment('CREDIT')}
-                disabled={isProcessingPayment || isUpdating || splitInvalidForPay}
-              >
-                <span role="img" aria-label="Credit Sale">
-                  🤝
-                </span>
-                {isProcessingPayment ? 'Processing...' : 'Sell on Credit'}
-              </button>
-            </div>
+            {needsBankSelection && bankAccounts.length > 0 && (
+              <div className={styles.bankSelectGroup}>
+                <label className={styles.bankSelectLabel} htmlFor="checkout-bank-select">
+                  Bank account for online payment
+                </label>
+                <select
+                  id="checkout-bank-select"
+                  className={styles.bankSelect}
+                  value={selectedBankCode}
+                  onChange={(e) => setSelectedBankCode(e.target.value)}
+                  disabled={isProcessingPayment || isUpdating}
+                >
+                  <option value="">Select bank account</option>
+                  {bankAccounts.map((b) => (
+                    <option key={b.id} value={b.code}>
+                      {b.code} — {b.name}
+                    </option>
+                  ))}
+                </select>
+                {!selectedBankCode && (
+                  <p className={styles.bankSelectHint}>
+                    Select which bank account receives the online payment.
+                    Create bank accounts in Accounting &gt; Chart of accounts.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {selectedPaymentMethod === 'CASH_ONLINE' && (
+              <div className={styles.splitAmountPanel}>
+                <div className={styles.splitAmountRow}>
+                  <label className={styles.splitAmountLabel} htmlFor="co-cash">Cash</label>
+                  <input
+                    id="co-cash"
+                    className={styles.splitAmountInput}
+                    type="text"
+                    inputMode="decimal"
+                    value={splitCashAmount}
+                    onChange={(e) => setSplitCashAmount(e.target.value)}
+                    placeholder="0"
+                    disabled={isProcessingPayment || isUpdating}
+                  />
+                </div>
+                <div className={styles.splitAmountRow}>
+                  <label className={styles.splitAmountLabel} htmlFor="co-online">Online</label>
+                  <input
+                    id="co-online"
+                    className={styles.splitAmountInput}
+                    type="text"
+                    inputMode="decimal"
+                    value={splitOnlineAmount}
+                    onChange={(e) => setSplitOnlineAmount(e.target.value)}
+                    placeholder="0"
+                    disabled={isProcessingPayment || isUpdating}
+                  />
+                </div>
+                <p className={styles.splitAmountHint}>
+                  Must sum to ₹{grandTotalNum.toFixed(2)}
+                </p>
+              </div>
+            )}
+
+            {selectedPaymentMethod === 'ONLINE_CREDIT' && (
+              <div className={styles.splitAmountPanel}>
+                <div className={styles.splitAmountRow}>
+                  <label className={styles.splitAmountLabel} htmlFor="oc-online">Online (paid now)</label>
+                  <input
+                    id="oc-online"
+                    className={styles.splitAmountInput}
+                    type="text"
+                    inputMode="decimal"
+                    value={splitOnlineAmount}
+                    onChange={(e) => setSplitOnlineAmount(e.target.value)}
+                    placeholder="0"
+                    disabled={isProcessingPayment || isUpdating}
+                  />
+                </div>
+                <p className={styles.splitAmountHint}>
+                  Remainder ₹{(grandTotalNum - (Number(splitOnlineAmount) || 0)).toFixed(2)} goes to credit
+                </p>
+              </div>
+            )}
+
+            {selectedPaymentMethod === 'CREDIT_CASH' && (
+              <div className={styles.splitAmountPanel}>
+                <div className={styles.splitAmountRow}>
+                  <label className={styles.splitAmountLabel} htmlFor="cc-cash">Cash (paid now)</label>
+                  <input
+                    id="cc-cash"
+                    className={styles.splitAmountInput}
+                    type="text"
+                    inputMode="decimal"
+                    value={splitCashAmount}
+                    onChange={(e) => setSplitCashAmount(e.target.value)}
+                    placeholder="0"
+                    disabled={isProcessingPayment || isUpdating}
+                  />
+                </div>
+                <p className={styles.splitAmountHint}>
+                  Remainder ₹{(grandTotalNum - (Number(splitCashAmount) || 0)).toFixed(2)} goes to credit
+                </p>
+              </div>
+            )}
+
+            <button
+              className={styles.completeBtn}
+              onClick={() => handlePayment(selectedPaymentMethod)}
+              disabled={isProcessingPayment || isUpdating}
+            >
+              {isProcessingPayment ? 'Processing...' : `Complete — ${
+                selectedPaymentMethod === 'CASH' ? 'Cash' :
+                selectedPaymentMethod === 'ONLINE' ? 'Online' :
+                selectedPaymentMethod === 'CREDIT' ? 'Credit' :
+                selectedPaymentMethod === 'CASH_ONLINE' ? 'Cash + Online' :
+                selectedPaymentMethod === 'ONLINE_CREDIT' ? 'Online + Credit' :
+                'Credit + Cash'
+              }`}
+            </button>
           </div>
         )}
 

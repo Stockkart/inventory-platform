@@ -285,6 +285,16 @@
 }
 
 /** Journal register: same `.table` base as trial balance; column tweaks below. */
+.journalRegisterTable {
+  table-layout: fixed;
+}
+
+.journalRegisterTable th:nth-child(1) { width: 7.5rem; }
+.journalRegisterTable th:nth-child(2) { width: 6rem; }
+/* 3rd column (Reference) takes remaining space — no explicit width */
+.journalRegisterTable th:nth-child(4) { width: 14rem; }
+.journalRegisterTable th:nth-child(5) { width: 13rem; }
+
 .journalRegisterTable td[rowspan],
 .journalRegisterTable td.journalTbSpanCell {
   vertical-align: top;
@@ -298,6 +308,7 @@
 .journalRegisterTable th:nth-child(5) {
   white-space: normal;
   word-break: break-word;
+  overflow: hidden;
 }
 
 .journalMetaHint {
@@ -356,19 +367,62 @@
 }
 
 .journalAcctCell {
-  max-width: 15rem;
   vertical-align: top;
+  overflow: hidden;
 }
 
 .journalAcctPrimary {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   font-weight: 600;
   font-size: 0.8125rem;
   line-height: 1.3;
 }
 
+.directionBadgeIn,
+.directionBadgeOut {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.05rem 0.35rem;
+  border-radius: 4px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.directionBadgeIn {
+  background: color-mix(in srgb, #22c55e 14%, transparent);
+  color: #16a34a;
+  border: 1px solid color-mix(in srgb, #22c55e 22%, transparent);
+}
+
+.directionBadgeOut {
+  background: color-mix(in srgb, #ef4444 14%, transparent);
+  color: #dc2626;
+  border: 1px solid color-mix(in srgb, #ef4444 22%, transparent);
+}
+
+:global([data-theme='dark']) .directionBadgeIn {
+  background: color-mix(in srgb, #22c55e 18%, transparent);
+  color: #4ade80;
+  border-color: color-mix(in srgb, #22c55e 28%, transparent);
+}
+
+:global([data-theme='dark']) .directionBadgeOut {
+  background: color-mix(in srgb, #ef4444 18%, transparent);
+  color: #f87171;
+  border-color: color-mix(in srgb, #ef4444 28%, transparent);
+}
+
 .journalAcctSub {
-  display: block;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
   margin-top: 0.12rem;
   font-size: 0.7rem;
   line-height: 1.35;
@@ -377,14 +431,11 @@
 }
 
 .journalMemoCell {
-  max-width: 12rem;
   font-size: 0.78rem;
   line-height: 1.35;
   color: var(--text-primary, #0f172a);
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
   overflow: hidden;
+  word-break: break-word;
 }
 
 .journalTbHead {

@@ -48,6 +48,12 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
         return '💳 Card';
       case 'CREDIT':
         return '📒 Credit';
+      case 'CASH_ONLINE':
+        return '💵💳 Cash + Online';
+      case 'ONLINE_CREDIT':
+        return '💳📒 Online + Credit';
+      case 'CREDIT_CASH':
+        return '📒💵 Credit + Cash';
       default:
         return method;
     }

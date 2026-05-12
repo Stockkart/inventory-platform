@@ -677,6 +677,10 @@ export interface VendorPurchaseInvoicePayload {
   invoiceTotal?: number | null;
   paymentMethod?: string | null;
   paidAmount?: number | null;
+  /** For combination modes: breakdown per sub-method e.g. { CASH: 600, ONLINE: 400 } */
+  splitAmounts?: Record<string, number> | null;
+  /** User-selected bank GL account for online payments (e.g. "BANK-AXIS"). Falls back to BANK. */
+  bankGlAccountCode?: string | null;
 }
 
 export interface BulkCreateInventoryDto {
@@ -1184,6 +1188,7 @@ export interface CartResponse {
   customerPan?: string;
   customerId?: string;
   paymentMethod?: string;
+  splitAmounts?: Record<string, number> | null;
   totalCost?: number | null;
   revenueBeforeTax?: number | null;
   revenueAfterTax?: number | null;
@@ -1350,14 +1355,26 @@ export interface AddToCartDto {
   customerUserId?: string;
 }
 
+export type PaymentMethod =
+  | 'CASH'
+  | 'ONLINE'
+  | 'CREDIT'
+  | 'CASH_ONLINE'
+  | 'ONLINE_CREDIT'
+  | 'CREDIT_CASH';
+
 export interface UpdateCartStatusDto {
   purchaseId: string;
   status: string;
-  paymentMethod: string;
+  paymentMethod: PaymentMethod;
   /** Sale completion: debit this asset GL (e.g. CASH or a manual bank). Omit for CASH. */
   receiptGlAccountCode?: string;
   /** Optional paid-now amount for split credit checkout (remaining goes to due). */
   creditPaidAmount?: number;
+  /** For combination modes: breakdown per sub-method e.g. { CASH: 600, ONLINE: 400 } */
+  splitAmounts?: Record<string, number>;
+  /** User-selected bank GL account for online payments (e.g. "BANK-AXIS"). Falls back to BANK. */
+  bankGlAccountCode?: string;
 }
 
 // Purchase History types
@@ -1378,6 +1395,7 @@ export interface Purchase {
   soldAt: string;
   status: string;
   paymentMethod: string;
+  splitAmounts?: Record<string, number> | null;
   customerName: string | null;
   customerAddress: string | null;
   customerPhone: string | null;

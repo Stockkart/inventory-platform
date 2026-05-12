@@ -292,268 +292,218 @@
   padding: 2rem;
 }
 
-.receiptLedgerRow {
-  margin-bottom: 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  max-width: 28rem;
+/* Payment mode selector — 3-column grid */
+.paymentModeGroup {
+  margin-bottom: 1rem;
 }
 
-.receiptLedgerRow label {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.receiptLedgerSelect {
-  padding: 0.5rem 0.65rem;
-  border-radius: 10px;
-  border: 1px solid var(--border-color);
-  font-size: 0.9rem;
-  background: var(--bg-primary);
-  color: var(--text-primary);
-}
-
-.receiptLedgerHint {
-  margin: 0;
-  font-size: 0.76rem;
-  line-height: 1.45;
-  color: var(--text-secondary);
-}
-
-.receiptLedgerMono {
-  font-family: ui-monospace, monospace;
-  font-variant-numeric: tabular-nums;
-}
-
-/* Split sale — customer pays part now, rest on Credit balances */
-.splitSellPanel {
-  margin-bottom: 1.35rem;
-  padding: 1rem 1.15rem;
-  border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--border-color, #e2e8f0) 82%, #059669 18%);
-  background: linear-gradient(
-    165deg,
-    color-mix(in srgb, var(--bg-secondary, #f8fafc) 95%, rgba(5, 150, 105, 0.05)) 0%,
-    var(--bg-card, #fff) 100%
-  );
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.splitSellHead {
-  margin-bottom: 0.85rem;
-}
-
-.splitSellTitle {
+.paymentModeGroupLabel {
   display: block;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.splitSellIntro {
-  margin: 0.35rem 0 0;
-  font-size: 0.8125rem;
-  line-height: 1.45;
+  margin-bottom: 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--text-secondary);
 }
 
-.splitSellSummary {
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
+.paymentModeSeg {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.45rem;
 }
 
-.splitSellRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 0.75rem;
-  font-size: 0.88rem;
-  color: var(--text-secondary);
-}
-
-.splitSellRowStrong {
-  padding-bottom: 0.45rem;
-  margin-bottom: 0.15rem;
-  border-bottom: 1px solid var(--border-color);
-  color: var(--text-primary);
-}
-
-.splitSellRowMuted {
-  opacity: 0.92;
-}
-
-.splitSellAmt {
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-primary);
-}
-
-.splitSellRowHighlight {
-  padding-top: 0.5rem;
-  margin-top: 0.1rem;
-  border-top: 1px dashed var(--border-color);
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.splitSellCreditDue {
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: #047857;
-}
-
-[data-theme='dark'] .splitSellCreditDue {
-  color: #6ee7b7;
-}
-
-.splitSellField {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  min-width: 0;
-}
-
-.splitSellLabel {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.splitSellInput {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 0.65rem 0.75rem;
-  border-radius: 10px;
-  border: 1px solid var(--border-color);
-  font-size: 1rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  background: var(--bg-primary);
-  color: var(--text-primary);
-}
-
-.splitSellBullets {
-  margin: 0.15rem 0 0;
-  padding: 0 0 0 1.1rem;
-  font-size: 0.76rem;
-  line-height: 1.45;
-  color: var(--text-secondary);
-}
-
-.splitSellBullets li {
-  margin-bottom: 0.28rem;
-}
-
-.splitSellBullets li:last-child {
-  margin-bottom: 0;
-}
-
-.splitSellBullets strong {
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-.splitSellInput:focus {
-  outline: none;
-  border-color: #059669;
-  box-shadow: 0 0 0 3px color-mix(in srgb, #059669 22%, transparent);
-}
-
-.splitSellFoot {
-  margin: 0;
-  font-size: 0.78rem;
-  line-height: 1.45;
-  color: var(--text-secondary);
-}
-
-.splitSellFootMuted {
-  margin: 0;
-  font-size: 0.76rem;
-  color: var(--text-secondary);
-  font-style: italic;
-}
-
-.splitSellError {
-  margin: 0;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #b91c1c;
-}
-
-.splitSellLink {
-  color: #047857;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.splitSellLink:hover {
-  text-decoration: underline;
-}
-
-[data-theme='dark'] .splitSellLink {
-  color: #6ee7b7;
-}
-
-.paymentButtons {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.paymentBtn {
-  flex: 1;
-  min-width: 200px;
-  padding: 1.25rem 2rem;
-  border: 2px solid var(--border-color);
-  border-radius: 12px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
+.paymentModeSegBtn,
+.paymentModeSegBtnActive {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  padding: 0.6rem 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1.5px solid var(--border-color);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
-.cashBtn {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-  border-color: #10b981;
+.paymentModeSegBtn {
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
-.cashBtn:hover {
-  opacity: 0.9;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-}
-
-.onlineBtn {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  color: white;
+.paymentModeSegBtn:hover:not(:disabled) {
   border-color: #3b82f6;
+  background: color-mix(in srgb, #3b82f6 5%, var(--bg-primary));
 }
 
-.onlineBtn:hover {
-  opacity: 0.9;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+.paymentModeSegBtn:focus-visible,
+.paymentModeSegBtnActive:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--bg-card),
+    0 0 0 4px color-mix(in srgb, #3b82f6 40%, transparent);
 }
 
-.creditBtn {
-  background: linear-gradient(135deg, #9333ea 0%, #7c3aed 100%);
-  color: white;
-  border-color: #7c3aed;
+.paymentModeSegBtnActive {
+  border-color: #3b82f6;
+  background: color-mix(in srgb, #3b82f6 10%, var(--bg-primary));
+  color: #1d4ed8;
+  box-shadow: 0 0 0 1px color-mix(in srgb, #3b82f6 30%, transparent);
 }
 
-.creditBtn:hover {
-  opacity: 0.9;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+.paymentModeSegBtn:disabled,
+.paymentModeSegBtnActive:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.paymentModeDivider {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.6rem 0;
+}
+
+.paymentModeDividerLine {
+  flex: 1;
+  height: 1px;
+  background: var(--border-color);
+}
+
+.paymentModeDividerText {
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary, #9ca3af);
+}
+
+/* Bank account selector for online payments */
+.bankSelectGroup {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.bankSelectLabel {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.bankSelect {
+  padding: 0.55rem 2rem 0.55rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  font-size: 0.88rem;
+  background-color: var(--bg-primary);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M3 4.5L6 8l3-3.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  color: var(--text-primary);
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.bankSelect:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2.5px color-mix(in srgb, #3b82f6 15%, transparent);
+}
+
+:global([data-theme='dark']) .bankSelect {
+  color-scheme: dark;
+}
+
+.bankSelectHint {
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.4;
+  color: var(--text-tertiary, #9ca3af);
+}
+
+/* Split amount inputs for combo modes */
+.splitAmountPanel {
+  background: color-mix(in srgb, var(--bg-secondary, #f8fafc) 60%, transparent);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.splitAmountRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.45rem;
+}
+
+.splitAmountRow:last-of-type {
+  margin-bottom: 0;
+}
+
+.splitAmountLabel {
+  flex: 0 0 8rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.splitAmountInput {
+  flex: 1;
+  padding: 0.48rem 0.7rem;
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  font-size: 0.88rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.splitAmountInput:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2.5px color-mix(in srgb, #3b82f6 15%, transparent);
+}
+
+.splitAmountHint {
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--text-tertiary, #9ca3af);
+  margin: 0.35rem 0 0 0;
+}
+
+/* Complete payment button */
+.completeBtn {
+  width: 100%;
+  padding: 0.85rem 1.5rem;
+  border-radius: 10px;
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%);
+  color: #fff;
+  transition:
+    opacity 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.completeBtn:hover:not(:disabled) {
+  opacity: 0.92;
+  box-shadow: 0 4px 14px color-mix(in srgb, #2563eb 28%, transparent);
+}
+
+.completeBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 /* Actions Section */
@@ -792,12 +742,8 @@
     font-size: 0.85rem;
   }
 
-  .paymentButtons {
-    flex-direction: column;
-  }
-
-  .paymentBtn {
-    width: 100%;
+  .paymentModeSeg {
+    gap: 0.35rem;
   }
 
   .successContainer {

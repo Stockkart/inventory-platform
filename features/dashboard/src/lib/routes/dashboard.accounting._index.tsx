@@ -253,6 +253,12 @@ export default function AccountingOverviewPage() {
                           const sub = vendor
                             ? ''
                             : (gl?.name?.trim() ? gl.name.trim() : '');
+                          const isCashOrBank =
+                            ln.accountCode === 'CASH' ||
+                            (ln.accountCode ?? '').toUpperCase().startsWith('BANK');
+                          const cashDirection: 'in' | 'out' | null = isCashOrBank
+                            ? (ln.debit && Number(ln.debit) > 0 ? 'in' : ln.credit && Number(ln.credit) > 0 ? 'out' : null)
+                            : null;
                           const tip =
                             [acctLabel, gl?.name].filter((s) => s && String(s).trim()).join(' — ') ||
                             undefined;
@@ -285,6 +291,12 @@ export default function AccountingOverviewPage() {
                                   }
                                 >
                                   {acctLabel}
+                                  {cashDirection === 'in' && (
+                                    <span className={styles.directionBadgeIn}>IN</span>
+                                  )}
+                                  {cashDirection === 'out' && (
+                                    <span className={styles.directionBadgeOut}>OUT</span>
+                                  )}
                                 </span>
                                 {sub && sub !== acctLabel ? (
                                   <span

@@ -6,10 +6,12 @@ import {
   vendorsApi,
   uploadApi,
   usersApi,
+  accountingApi,
 } from '@inventory-platform/api';
 import type {
   CreateInventoryDto,
   CustomReminderInput,
+  GlAccountResponse,
   LinkableUser,
   Vendor,
   VendorResponse,
@@ -580,8 +582,12 @@ export default function ProductRegistrationPage() {
   const [vendorOtherCharges, setVendorOtherCharges] = useState('');
   const [vendorRoundOff, setVendorRoundOff] = useState('');
   const [vendorInvoiceTotal, setVendorInvoiceTotal] = useState('');
-  const [vendorPaymentMethod, setVendorPaymentMethod] = useState('CASH');
+  const [vendorPaymentMethod, setVendorPaymentMethod] = useState('');
   const [vendorPaidAmount, setVendorPaidAmount] = useState('');
+  const [vendorSplitCashAmount, setVendorSplitCashAmount] = useState('');
+  const [vendorSplitOnlineAmount, setVendorSplitOnlineAmount] = useState('');
+  const [vendorBankAccounts, setVendorBankAccounts] = useState<GlAccountResponse[]>([]);
+  const [vendorSelectedBankCode, setVendorSelectedBankCode] = useState('');
 
   /**
    * Apply OCR header + optional line-derived totals. When `parsedItems` has
@@ -648,13 +654,63 @@ export default function ProductRegistrationPage() {
   ]);
 
   const vendorInvoiceTotalNum = optionalNumFromString(vendorInvoiceTotal) ?? 0;
+
+  const vendorPaymentMethodHasCredit =
+    vendorPaymentMethod === 'CREDIT' ||
+    vendorPaymentMethod === 'ONLINE_CREDIT' ||
+    vendorPaymentMethod === 'CREDIT_CASH';
+
+  const vendorPaymentMethodIsCombo =
+    vendorPaymentMethod === 'CASH_ONLINE' ||
+    vendorPaymentMethod === 'ONLINE_CREDIT' ||
+    vendorPaymentMethod === 'CREDIT_CASH';
+
+  const vendorPaymentMethodSelected = vendorPaymentMethod !== '';
+
+  const vendorNeedsBankSelection =
+    vendorPaymentMethod === 'ONLINE' ||
+    vendorPaymentMethod === 'CASH_ONLINE' ||
+    vendorPaymentMethod === 'ONLINE_CREDIT';
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const all = await accountingApi.glAccounts();
+        const banks = all.filter(
+          (a) => a.accountType === 'ASSET' && a.code.toUpperCase().startsWith('BANK')
+        );
+        setVendorBankAccounts(banks);
+        if (banks.length === 1) {
+          setVendorSelectedBankCode(banks[0].code);
+        }
+      } catch {
+        /* non-critical */
+      }
+    })();
+  }, []);
+
   /** Matches InventoryService.resolveVendorPaidNow — blank paid field = full immediate pay for Cash/Online */
   const vendorEffectivePaidNowNum = (() => {
     const total = vendorInvoiceTotalNum;
-    const paid = optionalNumFromString(vendorPaidAmount);
+    if (!vendorPaymentMethodSelected) {
+      return 0;
+    }
+    if (vendorPaymentMethod === 'CASH_ONLINE') {
+      return total;
+    }
+    if (vendorPaymentMethod === 'ONLINE_CREDIT') {
+      const onlineAmt = optionalNumFromString(vendorSplitOnlineAmount);
+      return onlineAmt ?? 0;
+    }
+    if (vendorPaymentMethod === 'CREDIT_CASH') {
+      const cashAmt = optionalNumFromString(vendorSplitCashAmount);
+      return cashAmt ?? 0;
+    }
     if (vendorPaymentMethod === 'CREDIT') {
+      const paid = optionalNumFromString(vendorPaidAmount);
       return paid ?? 0;
     }
+    const paid = optionalNumFromString(vendorPaidAmount);
     if (paid !== undefined && paid >= 0) {
       return paid;
     }
@@ -1226,6 +1282,12 @@ export default function ProductRegistrationPage() {
         return;
       }
 
+      if (!vendorPaymentMethodSelected) {
+        notifyError('Please select a payment method.');
+        setIsLoading(false);
+        return;
+      }
+
       const trimmedInvNo = vendorInvoiceNo.trim();
       const hasInvoiceExtra =
         trimmedVendorInvoiceDate !== '' ||
@@ -1590,8 +1652,10 @@ export default function ProductRegistrationPage() {
         optionalNumFromString(vendorOtherCharges) !== undefined ||
         optionalNumFromString(vendorRoundOff) !== undefined ||
         optionalNumFromString(vendorInvoiceTotal) !== undefined ||
-        vendorPaymentMethod !== 'CASH' ||
-        optionalNumFromString(vendorPaidAmount) !== undefined;
+        vendorPaymentMethodSelected ||
+        optionalNumFromString(vendorPaidAmount) !== undefined ||
+        optionalNumFromString(vendorSplitCashAmount) !== undefined ||
+        optionalNumFromString(vendorSplitOnlineAmount) !== undefined;
 
       if (hasVendorHeaderInput) {
         vendorPurchaseInvoice = { invoiceNo: trimmedInvNo };
@@ -1610,8 +1674,26 @@ export default function ProductRegistrationPage() {
         const it = optionalNumFromString(vendorInvoiceTotal);
         if (it !== undefined) vendorPurchaseInvoice.invoiceTotal = it;
         vendorPurchaseInvoice.paymentMethod = vendorPaymentMethod;
-        const pa = optionalNumFromString(vendorPaidAmount);
-        if (pa !== undefined) vendorPurchaseInvoice.paidAmount = pa;
+        if (vendorPaymentMethod === 'CASH_ONLINE') {
+          const cashAmt = optionalNumFromString(vendorSplitCashAmount) ?? 0;
+          const onlineAmt = optionalNumFromString(vendorSplitOnlineAmount) ?? 0;
+          vendorPurchaseInvoice.splitAmounts = { CASH: cashAmt, ONLINE: onlineAmt };
+          vendorPurchaseInvoice.paidAmount = cashAmt + onlineAmt;
+        } else if (vendorPaymentMethod === 'ONLINE_CREDIT') {
+          const onlineAmt = optionalNumFromString(vendorSplitOnlineAmount) ?? 0;
+          vendorPurchaseInvoice.splitAmounts = { ONLINE: onlineAmt, CREDIT: vendorInvoiceTotalNum - onlineAmt };
+          vendorPurchaseInvoice.paidAmount = onlineAmt;
+        } else if (vendorPaymentMethod === 'CREDIT_CASH') {
+          const cashAmt = optionalNumFromString(vendorSplitCashAmount) ?? 0;
+          vendorPurchaseInvoice.splitAmounts = { CASH: cashAmt, CREDIT: vendorInvoiceTotalNum - cashAmt };
+          vendorPurchaseInvoice.paidAmount = cashAmt;
+        } else {
+          const pa = optionalNumFromString(vendorPaidAmount);
+          if (pa !== undefined) vendorPurchaseInvoice.paidAmount = pa;
+        }
+        if (vendorSelectedBankCode) {
+          vendorPurchaseInvoice.bankGlAccountCode = vendorSelectedBankCode;
+        }
       }
 
       // Create bulk request
@@ -2437,141 +2519,6 @@ export default function ProductRegistrationPage() {
                       disabled={isLoading}
                       readOnly
                     />
-                  </div>
-                  <div className={styles.vendorPaymentPanel}>
-                    <div className={styles.vendorPaymentPanelHead}>
-                      <span className={styles.vendorPaymentPanelTitle}>
-                        Payment to vendor
-                      </span>
-                      <p className={styles.vendorPaymentPanelIntro}>
-                        Choose how the bill was settled. Anything not covered
-                        immediately is recorded as payable in{' '}
-                        <strong>Credit balances</strong> for this vendor.
-                      </p>
-                    </div>
-                    <span className={styles.vendorPaymentFieldLabel} id="vendorPaymentMethodLabel">
-                      How was this invoice paid?
-                    </span>
-                    <div
-                      className={styles.paymentModeSeg}
-                      role="radiogroup"
-                      aria-labelledby="vendorPaymentMethodLabel"
-                    >
-                      {(
-                        [
-                          ['CASH', 'Cash'],
-                          ['ONLINE', 'Online'],
-                          ['CREDIT', 'Credit'],
-                        ] as const
-                      ).map(([value, label]) => (
-                        <button
-                          key={value}
-                          type="button"
-                          role="radio"
-                          aria-checked={vendorPaymentMethod === value}
-                          className={
-                            vendorPaymentMethod === value
-                              ? styles.paymentModeSegBtnActive
-                              : styles.paymentModeSegBtn
-                          }
-                          onClick={() => setVendorPaymentMethod(value)}
-                          disabled={isLoading}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                    <div className={styles.formGroup}>
-                      <label htmlFor="vendorPaidAmount" className={styles.label}>
-                        {vendorPaymentMethod === 'CREDIT'
-                          ? 'Paid to vendor now'
-                          : 'Partial amount paid now'}
-                      </label>
-                      <input
-                        id="vendorPaidAmount"
-                        type="text"
-                        inputMode="decimal"
-                        className={styles.input}
-                        value={vendorPaidAmount}
-                        onChange={(e) => setVendorPaidAmount(e.target.value)}
-                        placeholder={
-                          vendorPaymentMethod === 'CREDIT'
-                            ? '0 if the full bill is on credit'
-                            : 'Leave empty if the full invoice was paid'
-                        }
-                        disabled={isLoading}
-                        aria-describedby="vendorPaidAmountHint"
-                      />
-                      <p
-                        id="vendorPaidAmountHint"
-                        className={styles.vendorPaymentFieldHint}
-                      >
-                        {vendorPaymentMethod === 'CREDIT'
-                          ? 'Whatever is left after this amount becomes the balance you owe the vendor in Credit balances.'
-                          : 'Optional: use this when you only paid part of the bill in cash or online; the rest is tracked on credit.'}
-                      </p>
-                    </div>
-                    <div
-                      className={
-                        vendorCreditLedgerOutstandingNum > 0
-                          ? styles.vendorPaymentSummary
-                          : styles.vendorPaymentSummaryMuted
-                      }
-                      aria-live="polite"
-                    >
-                      <div className={styles.vendorPaymentSummaryRow}>
-                        <span>Invoice total</span>
-                        <span className={styles.vendorPaymentSummaryValue}>
-                          ₹
-                          {Number.isFinite(vendorInvoiceTotalNum)
-                            ? vendorInvoiceTotalNum.toFixed(2)
-                            : '0.00'}
-                        </span>
-                      </div>
-                      <div className={styles.vendorPaymentSummaryRow}>
-                        <span>Counted as paid now</span>
-                        <span className={styles.vendorPaymentSummaryValue}>
-                          ₹
-                          {Number.isFinite(vendorEffectivePaidNowNum)
-                            ? vendorEffectivePaidNowNum.toFixed(2)
-                            : '0.00'}
-                        </span>
-                      </div>
-                      <div
-                        className={`${styles.vendorPaymentSummaryRow} ${styles.vendorPaymentSummaryHighlight}`}
-                      >
-                        <span>Credit balance</span>
-                        <span
-                          className={
-                            vendorCreditLedgerOutstandingNum > 0
-                              ? styles.vendorPaymentSummaryDue
-                              : styles.vendorPaymentSummaryValue
-                          }
-                        >
-                          ₹
-                          {Number.isFinite(vendorCreditLedgerOutstandingNum)
-                            ? vendorCreditLedgerOutstandingNum.toFixed(2)
-                            : '0.00'}
-                        </span>
-                      </div>
-                      {vendorInvoiceTotalNum <= 0 ? (
-                        <p className={styles.vendorPaymentSummaryFoot}>
-                          Enter line amounts or invoice total above to preview
-                          the split.
-                        </p>
-                      ) : vendorCreditLedgerOutstandingNum <= 0 ? (
-                        <p className={styles.vendorPaymentSummaryFoot}>
-                          No payable balance from this bill — nothing is posted
-                          to Credit balances.
-                        </p>
-                      ) : (
-                        <p className={styles.vendorPaymentSummaryFoot}>
-                          This unpaid amount is what you&apos;ll settle later
-                          in Credit balances (supports partial payments over
-                          time).
-                        </p>
-                      )}
-                    </div>
                   </div>
                 </div>
               </div>
@@ -3524,6 +3471,258 @@ export default function ProductRegistrationPage() {
               </div>
             )}
           </div>
+
+          {products.length > 0 && (
+            <div className={styles.vendorPaymentPanel}>
+              <div className={styles.vendorPaymentPanelHead}>
+                <span className={styles.vendorPaymentPanelTitle}>
+                  Payment to vendor <span className={styles.requiredMark}>*</span>
+                </span>
+                <p className={styles.vendorPaymentPanelIntro}>
+                  Choose how the bill was settled. Anything not covered
+                  immediately is recorded as payable in{' '}
+                  <strong>Credit balances</strong> for this vendor.
+                </p>
+              </div>
+
+              <div className={styles.paymentModeGroup}>
+                <div
+                  className={styles.paymentModeSeg}
+                  role="radiogroup"
+                  aria-label="Payment method"
+                >
+                  {(
+                    [
+                      ['CASH', 'Cash'],
+                      ['ONLINE', 'Online'],
+                      ['CREDIT', 'Credit'],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      role="radio"
+                      aria-checked={vendorPaymentMethod === value}
+                      className={
+                        vendorPaymentMethod === value
+                          ? styles.paymentModeSegBtnActive
+                          : styles.paymentModeSegBtn
+                      }
+                      onClick={() => setVendorPaymentMethod(value)}
+                      disabled={isLoading}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <div className={styles.paymentModeDivider}>
+                  <span className={styles.paymentModeDividerLine} />
+                  <span className={styles.paymentModeDividerText}>or split</span>
+                  <span className={styles.paymentModeDividerLine} />
+                </div>
+                <div
+                  className={styles.paymentModeSeg}
+                  role="radiogroup"
+                  aria-label="Split payment method"
+                >
+                  {(
+                    [
+                      ['CASH_ONLINE', 'Cash + Online'],
+                      ['ONLINE_CREDIT', 'Online + Credit'],
+                      ['CREDIT_CASH', 'Credit + Cash'],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      role="radio"
+                      aria-checked={vendorPaymentMethod === value}
+                      className={
+                        vendorPaymentMethod === value
+                          ? styles.paymentModeSegBtnActive
+                          : styles.paymentModeSegBtn
+                      }
+                      onClick={() => setVendorPaymentMethod(value)}
+                      disabled={isLoading}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {vendorNeedsBankSelection && vendorBankAccounts.length > 0 && (
+                <div className={styles.vendorSplitInputs}>
+                  <div className={styles.vendorSplitRow}>
+                    <label htmlFor="vendorBankSelect" className={styles.vendorSplitLabel}>
+                      Bank account
+                    </label>
+                    <select
+                      id="vendorBankSelect"
+                      className={styles.vendorSplitInput}
+                      value={vendorSelectedBankCode}
+                      onChange={(e) => setVendorSelectedBankCode(e.target.value)}
+                      disabled={isLoading}
+                    >
+                      <option value="">Select bank</option>
+                      {vendorBankAccounts.map((b) => (
+                        <option key={b.id} value={b.code}>
+                          {b.code} — {b.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {!vendorSelectedBankCode && (
+                    <p className={styles.vendorPaymentFieldHint}>
+                      Select which bank account the online payment goes through.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {vendorPaymentMethod === 'CASH_ONLINE' && (
+                <div className={styles.vendorSplitInputs}>
+                  <div className={styles.vendorSplitRow}>
+                    <label htmlFor="vendorSplitCashAmount" className={styles.vendorSplitLabel}>
+                      Cash
+                    </label>
+                    <input
+                      id="vendorSplitCashAmount"
+                      type="text"
+                      inputMode="decimal"
+                      className={styles.vendorSplitInput}
+                      value={vendorSplitCashAmount}
+                      onChange={(e) => setVendorSplitCashAmount(e.target.value)}
+                      placeholder="₹ 0"
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <div className={styles.vendorSplitRow}>
+                    <label htmlFor="vendorSplitOnlineAmount" className={styles.vendorSplitLabel}>
+                      Online
+                    </label>
+                    <input
+                      id="vendorSplitOnlineAmount"
+                      type="text"
+                      inputMode="decimal"
+                      className={styles.vendorSplitInput}
+                      value={vendorSplitOnlineAmount}
+                      onChange={(e) => setVendorSplitOnlineAmount(e.target.value)}
+                      placeholder="₹ 0"
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <p className={styles.vendorPaymentFieldHint}>
+                    Must sum to ₹{vendorInvoiceTotalNum.toFixed(2)}
+                  </p>
+                </div>
+              )}
+              {vendorPaymentMethod === 'ONLINE_CREDIT' && (
+                <div className={styles.vendorSplitInputs}>
+                  <div className={styles.vendorSplitRow}>
+                    <label htmlFor="vendorSplitOnlineAmount" className={styles.vendorSplitLabel}>
+                      Online (paid now)
+                    </label>
+                    <input
+                      id="vendorSplitOnlineAmount"
+                      type="text"
+                      inputMode="decimal"
+                      className={styles.vendorSplitInput}
+                      value={vendorSplitOnlineAmount}
+                      onChange={(e) => setVendorSplitOnlineAmount(e.target.value)}
+                      placeholder="₹ 0"
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <p className={styles.vendorPaymentFieldHint}>
+                    Remainder goes to Credit balances.
+                  </p>
+                </div>
+              )}
+              {vendorPaymentMethod === 'CREDIT_CASH' && (
+                <div className={styles.vendorSplitInputs}>
+                  <div className={styles.vendorSplitRow}>
+                    <label htmlFor="vendorSplitCashAmount" className={styles.vendorSplitLabel}>
+                      Cash (paid now)
+                    </label>
+                    <input
+                      id="vendorSplitCashAmount"
+                      type="text"
+                      inputMode="decimal"
+                      className={styles.vendorSplitInput}
+                      value={vendorSplitCashAmount}
+                      onChange={(e) => setVendorSplitCashAmount(e.target.value)}
+                      placeholder="₹ 0"
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <p className={styles.vendorPaymentFieldHint}>
+                    Remainder goes to Credit balances.
+                  </p>
+                </div>
+              )}
+              {!vendorPaymentMethodIsCombo && vendorPaymentMethod === 'CREDIT' && (
+                <div className={styles.vendorSplitInputs}>
+                  <div className={styles.vendorSplitRow}>
+                    <label htmlFor="vendorPaidAmount" className={styles.vendorSplitLabel}>
+                      Paid to vendor now
+                    </label>
+                    <input
+                      id="vendorPaidAmount"
+                      type="text"
+                      inputMode="decimal"
+                      className={styles.vendorSplitInput}
+                      value={vendorPaidAmount}
+                      onChange={(e) => setVendorPaidAmount(e.target.value)}
+                      placeholder="₹ 0 (full bill on credit)"
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <p className={styles.vendorPaymentFieldHint}>
+                    Leave empty or enter 0 if the full amount is on credit.
+                  </p>
+                </div>
+              )}
+
+              <div
+                className={
+                  vendorCreditLedgerOutstandingNum > 0
+                    ? styles.vendorPaymentSummary
+                    : styles.vendorPaymentSummaryMuted
+                }
+                aria-live="polite"
+              >
+                <div className={styles.vendorPaymentSummaryRow}>
+                  <span>Invoice total</span>
+                  <span className={styles.vendorPaymentSummaryValue}>
+                    ₹
+                    {Number.isFinite(vendorInvoiceTotalNum)
+                      ? vendorInvoiceTotalNum.toFixed(2)
+                      : '0.00'}
+                  </span>
+                </div>
+                <div className={styles.vendorPaymentSummaryRow}>
+                  <span>Paid now</span>
+                  <span className={styles.vendorPaymentSummaryValue}>
+                    ₹
+                    {Number.isFinite(vendorEffectivePaidNowNum)
+                      ? vendorEffectivePaidNowNum.toFixed(2)
+                      : '0.00'}
+                  </span>
+                </div>
+                {vendorCreditLedgerOutstandingNum > 0 && (
+                  <div
+                    className={`${styles.vendorPaymentSummaryRow} ${styles.vendorPaymentSummaryHighlight}`}
+                  >
+                    <span>Credit balance (due)</span>
+                    <span className={styles.vendorPaymentSummaryDue}>
+                      ₹{vendorCreditLedgerOutstandingNum.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {products.length > 0 && (
             <div className={styles.formActions}>
