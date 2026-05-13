@@ -694,8 +694,6 @@ export interface BulkCreateInventoryResponse {
   totalCreated?: number;
   totalFailed?: number;
   vendorPurchaseInvoiceId?: string | null;
-  /** Set when bulk stock-in triggered a PURCHASE journal in the general ledger. */
-  accountingJournalEntryId?: string | null;
   /** Set when stock-in leaves payable due in credit ledger. */
   creditEntryId?: string | null;
   items: Array<{
@@ -755,16 +753,7 @@ export interface VendorPurchaseInvoiceDetail {
   createdAt: string | null;
   synthetic?: boolean | null;
   legacyLotId?: string | null;
-  /** GL journal id when posted (source key PRODUCT:PURCHASE_INV:&lt;this id&gt;). */
-  accountingJournalEntryId?: string | null;
   lines: VendorPurchaseInvoiceLineDto[];
-}
-
-/** Result of idempotent POST …/vendor-purchase-invoices/{id}/post-purchase-ledger */
-export interface PostPurchaseLedgerResultDto {
-  accountingJournalEntryId?: string | null;
-  skipped: boolean;
-  message?: string | null;
 }
 
 export interface VendorPurchaseInvoiceListResponse {
@@ -1154,7 +1143,6 @@ export interface CheckoutResponse {
   totalProfit?: number | null;
   marginPercent?: number | null;
   billingMode?: BillingMode;
-  accountingJournalEntryId?: string | null;
   creditEntryId?: string | null;
 }
 
@@ -1190,98 +1178,8 @@ export interface CartResponse {
   totalProfit?: number | null;
   marginPercent?: number | null;
   billingMode?: BillingMode;
-  /** Present when checkout completed and a SALE journal was posted in the general ledger. */
-  accountingJournalEntryId?: string | null;
   /** Present when checkout completion left a customer due in credit ledger. */
   creditEntryId?: string | null;
-}
-
-/** General ledger account type (matches Java {@code AccountType}). */
-export type GlAccountType = 'ASSET' | 'LIABILITY' | 'EQUITY' | 'REVENUE' | 'EXPENSE';
-
-export interface GlAccountResponse {
-  id: string;
-  code: string;
-  name: string;
-  accountType: GlAccountType | string;
-  systemAccount: boolean;
-  active: boolean;
-  /** Posted journal debits to this account (trial-balance scope). */
-  totalDebit: number;
-  /** Posted journal credits to this account (trial-balance scope). */
-  totalCredit: number;
-}
-
-export interface CreateGlAccountDto {
-  code: string;
-  name: string;
-  accountType: GlAccountType;
-  active?: boolean;
-}
-
-export interface PostManualJournalLineDto {
-  accountCode: string;
-  debit?: number | null;
-  credit?: number | null;
-  memo?: string | null;
-}
-
-export interface PostManualJournalDto {
-  description: string;
-  /** ISO-8601 instant; omit for “now”. */
-  journalDate?: string | null;
-  /** Optional idempotency key; repeats return the existing journal. */
-  sourceKey?: string | null;
-  lines: PostManualJournalLineDto[];
-}
-
-export interface JournalLineResponse {
-  lineNo: number;
-  accountId: string;
-  accountCode: string;
-  debit: number;
-  credit: number;
-  memo?: string | null;
-  partyType?: 'VENDOR' | 'CUSTOMER' | null;
-  partyId?: string | null;
-}
-
-export interface JournalEntryResponse {
-  id: string;
-  shopId: string;
-  journalDate: string;
-  postedAt: string;
-  description: string;
-  source: string;
-  sourceKey?: string | null;
-  totalDebitSum: number;
-  totalCreditSum: number;
-  postedByUserId?: string | null;
-  lines: JournalLineResponse[];
-}
-
-export interface JournalListEnvelope {
-  journals: JournalEntryResponse[];
-  page: number;
-  size: number;
-  totalItems: number;
-  totalPages: number;
-}
-
-/** {@code GET /accounting/shop-summary} — effective tenant for GL queries */
-export interface AccountingShopSummary {
-  shopId: string;
-  /** Rows in {@code acct_gl_accounts} (bootstrap chart — not journal activity). */
-  chartAccountCount: number;
-  /** Rows in {@code acct_journal_entries}. */
-  journalEntryCount: number;
-}
-
-export interface TrialBalanceLine {
-  accountCode: string;
-  accountName: string;
-  debit: number;
-  credit: number;
 }
 
 export type CreditPartyType = 'VENDOR' | 'CUSTOMER';
@@ -1354,8 +1252,6 @@ export interface UpdateCartStatusDto {
   purchaseId: string;
   status: string;
   paymentMethod: string;
-  /** Sale completion: debit this asset GL (e.g. CASH or a manual bank). Omit for CASH. */
-  receiptGlAccountCode?: string;
   /** Optional paid-now amount for split credit checkout (remaining goes to due). */
   creditPaidAmount?: number;
 }

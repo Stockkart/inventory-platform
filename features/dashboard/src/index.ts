@@ -30,19 +30,6 @@ export { default as VendorReturnPage } from './lib/routes/dashboard.vendor-retur
 export { default as PriceEditPage } from './lib/routes/dashboard.price-edit';
 export { default as TaxesPage } from './lib/routes/dashboard.taxes';
 export { default as CreditPage, meta as creditMeta } from './lib/routes/dashboard.credit';
-export { default as AccountingLayoutRoute } from './lib/routes/dashboard.accounting._layout';
-export {
-  default as AccountingOverviewPage,
-  meta as accountingOverviewMeta,
-} from './lib/routes/dashboard.accounting._index';
-export {
-  default as AccountingAccountsPage,
-  meta as accountingAccountsMeta,
-} from './lib/routes/dashboard.accounting.accounts';
-export {
-  default as AccountingManualJournalPage,
-  meta as accountingManualJournalMeta,
-} from './lib/routes/dashboard.accounting.manual-journal';
 export { default as PlanStatusPage } from './lib/routes/dashboard.plan-status';
 export { default as PlanPaymentPage } from './lib/routes/dashboard.plan-payment';
 export { default as WhatsAppMarketingPage } from './lib/routes/dashboard.whatsapp-marketing';

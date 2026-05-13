@@ -74,20 +74,10 @@ export const DASHBOARD_MENU_GROUPS: DashboardMenuGroup[] = [
     ],
   },
   {
-    id: 'accounting',
-    label: 'Accounting',
-    icon: '🧾',
+    id: 'credit',
+    label: 'Credit',
+    icon: '🤝',
     items: [
-      {
-        path: '/dashboard/accounting',
-        label: 'Journals & trial balance',
-        icon: '🧾',
-      },
-      {
-        path: '/dashboard/accounting/accounts',
-        label: 'Chart of accounts',
-        icon: '📒',
-      },
       { path: '/dashboard/credit', label: 'Credit balances', icon: '🤝' },
     ],
   },

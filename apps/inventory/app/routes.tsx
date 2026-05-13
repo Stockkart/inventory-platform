@@ -51,15 +51,6 @@ export default [
     route('price-edit/:pricingId', './routes/dashboard.price-edit.tsx'),
     route('taxes', './routes/dashboard.taxes.tsx'),
     route('credit', './routes/dashboard.credit.tsx'),
-    route(
-      'accounting',
-      './routes/dashboard.accounting._layout.tsx',
-      [
-        index('./routes/dashboard.accounting._index.tsx'),
-        route('manual-journal', './routes/dashboard.accounting.manual-journal.tsx'),
-        route('accounts', './routes/dashboard.accounting.accounts.tsx'),
-      ]
-    ),
     route('plan-payment', './routes/dashboard.plan-payment.tsx'),
     route('plan-status', './routes/dashboard.plan-status.tsx'),
     route('whatsapp-marketing', './routes/dashboard.whatsapp-marketing.tsx'),

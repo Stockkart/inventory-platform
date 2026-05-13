@@ -169,7 +169,6 @@ export default function CheckoutPage() {
 
       const completed = await cartApi.updateStatus(statusPayload);
 
-      // Merge server totals + GL journal id after successful completion
       setCheckoutData({
         ...checkoutData,
         ...completed,
@@ -284,23 +283,6 @@ export default function CheckoutPage() {
           <p className={styles.successMessage}>
             Your payment has been processed successfully.
           </p>
-          {checkoutData.accountingJournalEntryId ? (
-            <p className={styles.successSubMessage}>
-              Sale recorded in the general ledger (
-              <Link
-                to={`/dashboard/accounting?highlight=${encodeURIComponent(checkoutData.accountingJournalEntryId)}`}
-                className={styles.successAccountingLink}
-              >
-                View journal
-              </Link>
-              ).
-            </p>
-          ) : (
-            <p className={styles.successSubMessage}>
-              If ledger posting fails silently, totals still apply—check Accounting for this
-              invoice.
-            </p>
-          )}
         </div>
       </div>
     );
@@ -314,23 +296,6 @@ export default function CheckoutPage() {
       </div>
 
       {error && <div className={styles.errorMessage}>{error}</div>}
-
-      {checkoutData.status === 'COMPLETED' &&
-        checkoutData.accountingJournalEntryId && (
-          <div className={styles.accountingBanner} role="status">
-            <span className={styles.accountingBannerText}>
-              This sale is posted to the ledger.
-            </span>
-            <Link
-              className={styles.accountingBannerLink}
-              to={`/dashboard/accounting?highlight=${encodeURIComponent(
-                checkoutData.accountingJournalEntryId
-              )}`}
-            >
-              Open journal →
-            </Link>
-          </div>
-        )}
 
       <div className={styles.container}>
         {/* Invoice Details */}

@@ -92,8 +92,6 @@ export const API_ENDPOINTS = {
   VENDOR_PURCHASE_INVOICES: {
     BASE: '/vendor-purchase-invoices',
     BY_ID: (id: string) => `/vendor-purchase-invoices/${id}`,
-    POST_PURCHASE_LEDGER: (id: string) =>
-      `/vendor-purchase-invoices/${id}/post-purchase-ledger`,
   },
 
   /** Purchase returns → stock reduction + GSTR-2 CDNR/CDNUR */
@@ -158,20 +156,6 @@ export const API_ENDPOINTS = {
     BASE: '/customers',
     SEARCH: '/customers/search',
     BY_ID: (id: string) => `/customers/${id}`,
-  },
-
-  /** General ledger / subledger (`inventory-api/core/accounting`) */
-  ACCOUNTING: {
-    BASE: '/accounting',
-    CHART_BOOTSTRAP: '/accounting/chart/bootstrap',
-    GL_ACCOUNTS: '/accounting/gl-accounts',
-    MANUAL_JOURNALS: '/accounting/journals/manual',
-    JOURNALS: '/accounting/journals',
-    JOURNAL_BY_ID: (id: string) => `/accounting/journals/${id}`,
-    TRIAL_BALANCE: '/accounting/reports/trial-balance',
-    SHOP_SUMMARY: '/accounting/shop-summary',
-    SUBLEDGER_BALANCE: '/accounting/subledger/balance',
-    SUBLEDGER_ENTRIES: '/accounting/subledger/entries',
   },
 
   CREDIT: {

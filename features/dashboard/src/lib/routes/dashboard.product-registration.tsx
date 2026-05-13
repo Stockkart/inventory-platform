@@ -1,5 +1,5 @@
 import { useState, FormEvent, useRef, useEffect, useLayoutEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router';
+import { useNavigate, useLocation } from 'react-router';
 import { QRCodeSVG } from 'qrcode.react';
 import {
   inventoryApi,
@@ -227,10 +227,6 @@ export default function ProductRegistrationPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  /** GL journal id from last bulk save (PURCHASE), for Accounting deep link */
-  const [registrationLedgerId, setRegistrationLedgerId] = useState<
-    string | null
-  >(null);
   const { success: notifySuccess, error: notifyError } = useNotify;
 
   // QR Code Upload state
@@ -664,7 +660,6 @@ export default function ProductRegistrationPage() {
     setIsUploading(true);
     setError(null);
     setSuccess(null);
-    setRegistrationLedgerId(null);
     setUploadProgress('Compressing image...');
 
     try {
@@ -867,7 +862,6 @@ export default function ProductRegistrationPage() {
     );
     setError(null);
     setSuccess(null);
-    setRegistrationLedgerId(null);
   };
 
   const handleIntegerChange = (
@@ -905,7 +899,6 @@ export default function ProductRegistrationPage() {
     e.preventDefault();
     setError(null);
     setSuccess(null);
-    setRegistrationLedgerId(null);
     setIsLoading(true);
 
     try {
@@ -1339,12 +1332,6 @@ export default function ProductRegistrationPage() {
         const items = response?.items ?? [];
         const savedVendorInvoiceId =
           response?.vendorPurchaseInvoiceId ?? response?.lotId;
-        const ledgerJid =
-          response?.accountingJournalEntryId != null &&
-          String(response.accountingJournalEntryId).trim() !== ''
-            ? String(response.accountingJournalEntryId).trim()
-            : null;
-        setRegistrationLedgerId(ledgerJid);
 
         // If we have items or a positive createdCount, consider it successful
         if (createdCount > 0 || items.length > 0) {
@@ -1384,7 +1371,6 @@ export default function ProductRegistrationPage() {
             setVendorPaymentMethod('CASH');
             setVendorPaidAmount('');
             setSuccess(null);
-            setRegistrationLedgerId(null);
           }, 5000);
         } else if (response) {
           // If response exists but no createdCount/items, still consider it success
@@ -1412,7 +1398,6 @@ export default function ProductRegistrationPage() {
             setVendorPaymentMethod('CASH');
             setVendorPaidAmount('');
             setSuccess(null);
-            setRegistrationLedgerId(null);
           }, 5000);
         } else {
           notifyError('Failed to register products. No items were created.');
@@ -1595,7 +1580,6 @@ export default function ProductRegistrationPage() {
   };
 
   const handleClearVendor = () => {
-    setRegistrationLedgerId(null);
     setSelectedVendor(null);
     setVendorSearchQuery('');
     setVendorSearchResults([]);
@@ -1647,22 +1631,6 @@ export default function ProductRegistrationPage() {
       <div className={styles.formContainer}>
         {error && <div className={styles.errorMessage}>{error}</div>}
         {success && <div className={styles.successMessage}>{success}</div>}
-        {registrationLedgerId && (
-          <div className={styles.accountingLedgerBanner} role="status">
-            <span>
-              Vendor stock-in recorded in the general ledger (purchase / trade
-              payable).
-            </span>
-            <Link
-              className={styles.accountingLedgerLink}
-              to={`/dashboard/accounting?highlight=${encodeURIComponent(
-                registrationLedgerId
-              )}`}
-            >
-              View purchase journal →
-            </Link>
-          </div>
-        )}
 
         <form className={styles.form} onSubmit={handleSubmit}>
           <div className={styles.uploadSection}>
