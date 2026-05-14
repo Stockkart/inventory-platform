@@ -30,6 +30,54 @@ export { default as VendorReturnPage } from './lib/routes/dashboard.vendor-retur
 export { default as PriceEditPage } from './lib/routes/dashboard.price-edit';
 export { default as TaxesPage } from './lib/routes/dashboard.taxes';
 export { default as CreditPage, meta as creditMeta } from './lib/routes/dashboard.credit';
+export {
+  default as AccountingOverviewPage,
+  meta as accountingOverviewMeta,
+} from './lib/routes/dashboard.accounting';
+export {
+  default as AccountingJournalPage,
+  meta as accountingJournalMeta,
+} from './lib/routes/dashboard.accounting.journal';
+export {
+  default as AccountingJournalNewPage,
+  meta as accountingJournalNewMeta,
+} from './lib/routes/dashboard.accounting.journal.new';
+export {
+  default as AccountingJournalDetailPage,
+  meta as accountingJournalDetailMeta,
+} from './lib/routes/dashboard.accounting.journal.$entryId';
+export {
+  default as AccountingLedgerPage,
+  meta as accountingLedgerMeta,
+} from './lib/routes/dashboard.accounting.ledger';
+export {
+  default as AccountingLedgerByAccountPage,
+  meta as accountingLedgerByAccountMeta,
+} from './lib/routes/dashboard.accounting.ledger.$accountId';
+export {
+  default as AccountingTrialBalancePage,
+  meta as accountingTrialBalanceMeta,
+} from './lib/routes/dashboard.accounting.trial-balance';
+export {
+  default as AccountingChartOfAccountsPage,
+  meta as accountingChartOfAccountsMeta,
+} from './lib/routes/dashboard.accounting.chart-of-accounts';
+export {
+  default as AccountingVendorsPage,
+  meta as accountingVendorsMeta,
+} from './lib/routes/dashboard.accounting.vendors';
+export {
+  default as AccountingVendorStatementPage,
+  meta as accountingVendorStatementMeta,
+} from './lib/routes/dashboard.accounting.vendors.$partyRefId';
+export {
+  default as AccountingCustomersPage,
+  meta as accountingCustomersMeta,
+} from './lib/routes/dashboard.accounting.customers';
+export {
+  default as AccountingCustomerStatementPage,
+  meta as accountingCustomerStatementMeta,
+} from './lib/routes/dashboard.accounting.customers.$partyRefId';
 export { default as PlanStatusPage } from './lib/routes/dashboard.plan-status';
 export { default as PlanPaymentPage } from './lib/routes/dashboard.plan-payment';
 export { default as WhatsAppMarketingPage } from './lib/routes/dashboard.whatsapp-marketing';

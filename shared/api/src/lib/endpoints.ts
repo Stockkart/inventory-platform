@@ -196,6 +196,22 @@ export const API_ENDPOINTS = {
     BULK_UPDATE: '/pricing/bulk-update',
   },
 
+  // Accounting endpoints (chart of accounts, journals, ledger, reports)
+  ACCOUNTING: {
+    BASE: '/accounting',
+    ACCOUNTS: '/accounting/accounts',
+    ACCOUNT_BY_ID: (id: string) => `/accounting/accounts/${id}`,
+    JOURNAL: '/accounting/journal-entries',
+    JOURNAL_BY_ID: (id: string) => `/accounting/journal-entries/${id}`,
+    JOURNAL_REVERSE: (id: string) => `/accounting/journal-entries/${id}/reverse`,
+    LEDGER: (accountId: string) => `/accounting/ledger/${accountId}`,
+    PARTIES: '/accounting/parties',
+    PARTY_STATEMENT: (type: string, partyRefId: string) =>
+      `/accounting/parties/${type}/${partyRefId}/statement`,
+    TRIAL_BALANCE: '/accounting/reports/trial-balance',
+    BACKFILL: '/accounting/admin/backfill',
+  },
+
   // Taxation endpoints (GSTR-1, GSTR-2, GSTR-3B)
   TAXATION: {
     GSTR1: '/taxation/gstr1',

@@ -51,6 +51,42 @@ export default [
     route('price-edit/:pricingId', './routes/dashboard.price-edit.tsx'),
     route('taxes', './routes/dashboard.taxes.tsx'),
     route('credit', './routes/dashboard.credit.tsx'),
+    route('accounting', './routes/dashboard.accounting.tsx'),
+    route('accounting/journal', './routes/dashboard.accounting.journal.tsx'),
+    route(
+      'accounting/journal/new',
+      './routes/dashboard.accounting.journal.new.tsx'
+    ),
+    route(
+      'accounting/journal/:entryId',
+      './routes/dashboard.accounting.journal.$entryId.tsx'
+    ),
+    route('accounting/ledger', './routes/dashboard.accounting.ledger.tsx'),
+    route(
+      'accounting/ledger/:accountId',
+      './routes/dashboard.accounting.ledger.$accountId.tsx'
+    ),
+    route('accounting/vendors', './routes/dashboard.accounting.vendors.tsx'),
+    route(
+      'accounting/vendors/:partyRefId',
+      './routes/dashboard.accounting.vendors.$partyRefId.tsx'
+    ),
+    route(
+      'accounting/customers',
+      './routes/dashboard.accounting.customers.tsx'
+    ),
+    route(
+      'accounting/customers/:partyRefId',
+      './routes/dashboard.accounting.customers.$partyRefId.tsx'
+    ),
+    route(
+      'accounting/trial-balance',
+      './routes/dashboard.accounting.trial-balance.tsx'
+    ),
+    route(
+      'accounting/chart-of-accounts',
+      './routes/dashboard.accounting.chart-of-accounts.tsx'
+    ),
     route('plan-payment', './routes/dashboard.plan-payment.tsx'),
     route('plan-status', './routes/dashboard.plan-status.tsx'),
     route('whatsapp-marketing', './routes/dashboard.whatsapp-marketing.tsx'),
