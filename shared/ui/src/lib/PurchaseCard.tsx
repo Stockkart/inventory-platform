@@ -3,6 +3,7 @@ import type { Purchase } from '@inventory-platform/types';
 import { PrintInvoiceModal } from './PrintInvoiceModal';
 import styles from './PurchaseCard.module.css';
 import { useNotify } from '@inventory-platform/store';
+import { formatPaymentMethod, formatPaymentSplit } from './paymentMethod';
 
 interface PurchaseCardProps {
   purchase: Purchase;
@@ -38,20 +39,11 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
     }
   };
 
-  const getPaymentMethodLabel = (method: string): string => {
-    switch (method.toUpperCase()) {
-      case 'CASH':
-        return '💵 Cash';
-      case 'ONLINE':
-        return '💳 Online';
-      case 'CARD':
-        return '💳 Card';
-      case 'CREDIT':
-        return '📒 Credit';
-      default:
-        return method;
-    }
-  };
+  const paymentSplitLine = formatPaymentSplit({
+    cashAmount: purchase.cashAmount ?? undefined,
+    onlineAmount: purchase.onlineAmount ?? undefined,
+    creditAmount: purchase.creditAmount ?? undefined,
+  });
 
   return (
     <div className={styles.card}>
@@ -279,7 +271,13 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
         <div className={styles.detailRow}>
           <span className={styles.label}>Payment Method:</span>
           <span className={styles.value}>
-            {getPaymentMethodLabel(purchase.paymentMethod)}
+            {formatPaymentMethod(purchase.paymentMethod)}
+            {paymentSplitLine ? (
+              <>
+                <br />
+                <small>{paymentSplitLine}</small>
+              </>
+            ) : null}
           </span>
         </div>
         <div className={styles.detailRow}>

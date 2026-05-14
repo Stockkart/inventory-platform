@@ -8,6 +8,39 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
+/**
+ * Canonical payment methods supported by Sales (checkout) and Purchase Registration.
+ *
+ * Single-tender:
+ * - CASH / ONLINE / CREDIT
+ *
+ * Two-tender splits (the first tender is the primary one used for accounting
+ * reporting; the credit slice, when present, is always the remainder that
+ * posts to the credit ledger):
+ * - CASH_ONLINE   (no credit; both legs paid now)
+ * - ONLINE_CREDIT (online leg paid now, credit leg posts to ledger)
+ * - CREDIT_CASH   (cash leg paid now, credit leg posts to ledger)
+ */
+export type PaymentMethod =
+  | 'CASH'
+  | 'ONLINE'
+  | 'CREDIT'
+  | 'CASH_ONLINE'
+  | 'ONLINE_CREDIT'
+  | 'CREDIT_CASH';
+
+/**
+ * Per-tender split for a payment. The sum of the three values must equal the
+ * grand / invoice total (rounded to 2 decimals). The active PaymentMethod
+ * dictates which buckets are allowed to be non-zero — see
+ * `validatePaymentSplit` in the shared UI package.
+ */
+export interface PaymentSplit {
+  cashAmount: number;
+  onlineAmount: number;
+  creditAmount: number;
+}
+
 export interface PaginatedResponse<T> {
   data: T[];
   total: number;
@@ -675,7 +708,23 @@ export interface VendorPurchaseInvoicePayload {
   otherCharges?: number | null;
   roundOff?: number | null;
   invoiceTotal?: number | null;
-  paymentMethod?: string | null;
+  /**
+   * Canonical PaymentMethod (one of the 6 values). For backward compatibility
+   * this stays `string` on the wire — older callers may still send 'CASH' /
+   * 'ONLINE' / 'CREDIT' with `paidAmount` only.
+   */
+  paymentMethod?: PaymentMethod | string | null;
+  /** Amount paid in cash now (new split-aware field). */
+  cashAmount?: number | null;
+  /** Amount paid online now (new split-aware field). */
+  onlineAmount?: number | null;
+  /** Amount that posts to the vendor credit ledger (new split-aware field). */
+  creditAmount?: number | null;
+  /**
+   * Legacy single "paid now" amount. Servers should prefer the explicit
+   * cash/online/credit split when present; kept for back-compat.
+   * @deprecated use `cashAmount`/`onlineAmount`/`creditAmount` instead.
+   */
   paidAmount?: number | null;
 }
 
@@ -1085,7 +1134,13 @@ export interface CheckoutItem {
 
 export interface CreateCheckoutDto {
   businessType: string;
-  paymentMethod: string;
+  paymentMethod: PaymentMethod | string;
+  /** Amount paid in cash now (new split-aware field). */
+  cashAmount?: number;
+  /** Amount paid online now (new split-aware field). */
+  onlineAmount?: number;
+  /** Amount that posts to the customer credit ledger (new split-aware field). */
+  creditAmount?: number;
   items: CheckoutItem[];
 }
 
@@ -1135,7 +1190,13 @@ export interface CheckoutResponse {
   taxTotal: number;
   discountTotal: number;
   grandTotal: number;
-  paymentMethod: string;
+  paymentMethod: PaymentMethod | string;
+  /** Amount paid in cash now (split-aware). */
+  cashAmount?: number | null;
+  /** Amount paid online now (split-aware). */
+  onlineAmount?: number | null;
+  /** Amount posted to the credit ledger (split-aware). */
+  creditAmount?: number | null;
   status: string;
   totalCost?: number | null;
   revenueBeforeTax?: number | null;
@@ -1171,7 +1232,13 @@ export interface CartResponse {
   customerDlNo?: string;
   customerPan?: string;
   customerId?: string;
-  paymentMethod?: string;
+  paymentMethod?: PaymentMethod | string;
+  /** Amount paid in cash now (split-aware). Absent on legacy completed rows. */
+  cashAmount?: number | null;
+  /** Amount paid online now (split-aware). Absent on legacy completed rows. */
+  onlineAmount?: number | null;
+  /** Amount posted to the credit ledger (split-aware). Absent on legacy rows. */
+  creditAmount?: number | null;
   totalCost?: number | null;
   revenueBeforeTax?: number | null;
   revenueAfterTax?: number | null;
@@ -1251,8 +1318,20 @@ export interface AddToCartDto {
 export interface UpdateCartStatusDto {
   purchaseId: string;
   status: string;
-  paymentMethod: string;
-  /** Optional paid-now amount for split credit checkout (remaining goes to due). */
+  /** Canonical PaymentMethod (one of the 6 values). */
+  paymentMethod: PaymentMethod | string;
+  /** Amount paid in cash now (new split-aware field). */
+  cashAmount?: number;
+  /** Amount paid online now (new split-aware field). */
+  onlineAmount?: number;
+  /** Amount that posts to the customer credit ledger (new split-aware field). */
+  creditAmount?: number;
+  /**
+   * Legacy paid-now amount on a CREDIT sale (the rest went to the ledger).
+   * Kept for back-compat with older servers; new clients should send the
+   * explicit cash/online/credit split.
+   * @deprecated use `cashAmount`/`onlineAmount`/`creditAmount` instead.
+   */
   creditPaidAmount?: number;
 }
 
@@ -1273,7 +1352,13 @@ export interface Purchase {
   grandTotal: number;
   soldAt: string;
   status: string;
-  paymentMethod: string;
+  paymentMethod: PaymentMethod | string;
+  /** Amount paid in cash now (split-aware). Absent on legacy completed rows. */
+  cashAmount?: number | null;
+  /** Amount paid online now (split-aware). Absent on legacy completed rows. */
+  onlineAmount?: number | null;
+  /** Amount posted to the credit ledger (split-aware). Absent on legacy rows. */
+  creditAmount?: number | null;
   customerName: string | null;
   customerAddress: string | null;
   customerPhone: string | null;

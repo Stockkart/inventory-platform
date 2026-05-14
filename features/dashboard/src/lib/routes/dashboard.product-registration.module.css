@@ -83,12 +83,21 @@
   font-family: inherit;
 }
 
+.paymentBottomSlot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-color);
+}
+
 .formActions {
   display: flex;
   gap: 1rem;
   justify-content: flex-end;
-  margin-top: 2rem;
-  padding-top: 1.5rem;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
   border-top: 1px solid var(--border-color);
 }
 
