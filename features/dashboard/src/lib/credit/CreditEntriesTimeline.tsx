@@ -25,6 +25,11 @@ export function CreditEntriesTimeline({ entries }: Props) {
               {e.txnDate ? ` · ${e.txnDate}` : ''}
             </div>
           ) : null}
+          {e.sourceKey ? (
+            <div className={styles.timelineMeta}>
+              Books: {e.sourceKey.split(':')[0]?.replace(/_/g, ' ') ?? e.sourceKey}
+            </div>
+          ) : null}
           <div className={styles.timelineMeta}>{e.note || '—'}</div>
         </div>
       ))}
