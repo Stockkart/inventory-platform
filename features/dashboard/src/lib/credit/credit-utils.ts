@@ -1,4 +1,8 @@
-import type { CreditAccountResponse, CreditPartyType } from '@inventory-platform/types';
+import type {
+  CreditAccountResponse,
+  CreditEntryResponse,
+  CreditPartyType,
+} from '@inventory-platform/types';
 
 export function formatMoney(n: number): string {
   return new Intl.NumberFormat('en-IN', {
@@ -89,6 +93,51 @@ export function todayLocalDate(): string {
 }
 
 /** Wording for tabs, hints, and primary buttons by customer vs vendor credit. */
+/** Headline + subtitle for one ledger row on the Credit page. */
+export function formatCreditLedgerEntry(
+  entry: CreditEntryResponse,
+  partyType: CreditPartyType
+): { title: string; subtitle: string } {
+  const isReturnRow =
+    entry.entryType === 'RETURN' ||
+    (entry.sourceKey?.toUpperCase().startsWith('RETURN:CREDIT:') ?? false);
+  const isVendor = partyType === 'VENDOR';
+
+  if (isReturnRow) {
+    const viaReturn =
+      entry.referenceType === 'VENDOR_RETURN' || isVendor
+        ? 'Purchase return'
+        : 'Sales return';
+    return {
+      title: viaReturn,
+      subtitle: isVendor
+        ? 'Credit applied — you owe this vendor less (same as recording a payment on account).'
+        : 'Credit applied — customer owes you less.',
+    };
+  }
+
+  if (entry.entryType === 'SETTLEMENT') {
+    return {
+      title: isVendor ? 'You paid them' : 'They paid you',
+      subtitle: entry.paymentMethod
+        ? `Settlement · ${entry.paymentMethod}`
+        : 'Settlement',
+    };
+  }
+
+  if (entry.entryType === 'CHARGE') {
+    return {
+      title: isVendor ? 'You owe more' : 'They owe more',
+      subtitle: 'Charge on credit',
+    };
+  }
+
+  return {
+    title: entry.entryType,
+    subtitle: entry.note?.trim() || '—',
+  };
+}
+
 export function creditActionCopy(partyType: CreditPartyType) {
   if (partyType === 'CUSTOMER') {
     return {

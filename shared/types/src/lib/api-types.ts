@@ -825,6 +825,10 @@ export interface VendorPurchaseReturnPayload {
   vendorPurchaseInvoiceId: string;
   items: VendorPurchaseReturnItemPayload[];
   reason?: string | null;
+  paymentMethod: PaymentMethod | string;
+  cashAmount?: number;
+  onlineAmount?: number;
+  creditAmount?: number;
 }
 
 export interface VendorPurchaseReturnResult {
@@ -1250,7 +1254,7 @@ export interface CartResponse {
 }
 
 export type CreditPartyType = 'VENDOR' | 'CUSTOMER';
-export type CreditEntryType = 'CHARGE' | 'SETTLEMENT' | 'ADJUSTMENT';
+export type CreditEntryType = 'CHARGE' | 'SETTLEMENT' | 'RETURN' | 'ADJUSTMENT';
 export type CreditDirection = 'INCREASE_DUE' | 'DECREASE_DUE';
 export type CreditBalanceStatus = 'CLEAR' | 'DUE' | 'ADVANCE';
 
@@ -1427,6 +1431,11 @@ export interface RefundItem {
 export interface CreateRefundDto {
   purchaseId: string;
   items: RefundItem[];
+  reason?: string | null;
+  paymentMethod: PaymentMethod | string;
+  cashAmount?: number;
+  onlineAmount?: number;
+  creditAmount?: number;
 }
 
 export interface RefundedItem {

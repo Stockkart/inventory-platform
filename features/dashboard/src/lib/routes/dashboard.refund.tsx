@@ -1,14 +1,24 @@
-import { useState, FormEvent, useEffect, useMemo } from 'react';
+import { useState, FormEvent, useEffect, useMemo, useCallback } from 'react';
 import { useLocation } from 'react-router';
 import { refundsApi } from '@inventory-platform/api';
 import type {
   CheckoutItemResponse,
   CustomerResponse,
+  PaymentMethod,
+  PaymentSplit,
   Purchase,
   RefundItem,
   SearchPurchasesParams,
 } from '@inventory-platform/types';
-import { RefundHistoryList } from '@inventory-platform/ui';
+import {
+  PaginationBar,
+  PaymentMethodSplit,
+  RefundHistoryList,
+  emptyPaymentSplit,
+  isCreditMethod,
+  roundMoney,
+  validatePaymentSplit,
+} from '@inventory-platform/ui';
 import styles from './dashboard.refund.module.css';
 import { useNotify } from '@inventory-platform/store';
 
@@ -120,6 +130,16 @@ export default function RefundPage() {
     customerName: '',
     invoiceNo: '',
   });
+  const [appliedSearch, setAppliedSearch] = useState<SearchPurchasesParams>({
+    customerEmail: '',
+    customerPhone: '',
+    customerName: '',
+    invoiceNo: '',
+  });
+  const [page, setPage] = useState(0);
+  const [pageSize] = useState(20);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalItems, setTotalItems] = useState(0);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(
     null
@@ -131,17 +151,24 @@ export default function RefundPage() {
   // Refresh refund history when a refund is processed (used by RefundHistoryList)
   const [refundHistoryRefreshTrigger, setRefundHistoryRefreshTrigger] =
     useState(0);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
+  const [paymentSplit, setPaymentSplit] = useState<PaymentSplit>(() =>
+    emptyPaymentSplit()
+  );
 
   useEffect(() => {
     if (!state?.prefillCustomer) return;
     const { name, phone, email } = state.prefillCustomer;
-
-    setSearchParams((prev) => ({
-      ...prev,
+    const next = {
       customerName: name ?? '',
       customerPhone: phone ?? '',
       customerEmail: email ?? '',
-    }));
+      invoiceNo: '',
+    };
+
+    setSearchParams(next);
+    setAppliedSearch(next);
+    setPage(0);
     setActiveTab(state.prefillTab ?? 'process');
     setError(null);
     setSuccess(null);
@@ -155,38 +182,82 @@ export default function RefundPage() {
     setError(null);
   };
 
-  const handleSearchPurchases = async (e: FormEvent) => {
-    e.preventDefault();
+  const hasActiveSearch = Boolean(
+    appliedSearch.customerEmail?.trim() ||
+      appliedSearch.customerPhone?.trim() ||
+      appliedSearch.customerName?.trim() ||
+      appliedSearch.invoiceNo?.trim()
+  );
+
+  const loadPurchases = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    setSuccess(null);
-    setSelectedPurchase(null);
-    setRefundItems({});
-
     try {
       const response = await refundsApi.searchPurchases({
-        ...searchParams,
-        page: 1,
-        limit: 20,
+        ...appliedSearch,
+        page: page + 1,
+        limit: pageSize,
       });
       setPurchases(response.purchases);
-      if (response.purchases.length === 0) {
-        notifyError('No purchases found with the given criteria.');
-      }
+      setTotalPages(response.totalPages);
+      setTotalItems(response.total);
     } catch (err) {
       const errorMessage =
         err instanceof Error
           ? err.message
-          : 'Failed to search purchases. Please try again.';
+          : 'Failed to load purchases. Please try again.';
       notifyError(errorMessage);
       setPurchases([]);
+      setTotalPages(0);
+      setTotalItems(0);
     } finally {
       setIsLoading(false);
     }
+  }, [appliedSearch, notifyError, page, pageSize]);
+
+  useEffect(() => {
+    if (activeTab !== 'process') return;
+    void loadPurchases();
+  }, [activeTab, loadPurchases]);
+
+  useEffect(() => {
+    setSelectedPurchase(null);
+    setRefundItems({});
+    setPaymentMethod(null);
+    setPaymentSplit(emptyPaymentSplit());
+  }, [page]);
+
+  const handleSearchPurchases = (e: FormEvent) => {
+    e.preventDefault();
+    setSuccess(null);
+    setSelectedPurchase(null);
+    setRefundItems({});
+    setPaymentMethod(null);
+    setPaymentSplit(emptyPaymentSplit());
+    setAppliedSearch({ ...searchParams });
+    setPage(0);
+  };
+
+  const clearSearch = () => {
+    const empty = {
+      customerEmail: '',
+      customerPhone: '',
+      customerName: '',
+      invoiceNo: '',
+    };
+    setSearchParams(empty);
+    setAppliedSearch(empty);
+    setSelectedPurchase(null);
+    setRefundItems({});
+    setPaymentMethod(null);
+    setPaymentSplit(emptyPaymentSplit());
+    setPage(0);
   };
 
   const handleSelectPurchase = (purchase: Purchase) => {
     setSelectedPurchase(purchase);
+    setPaymentMethod(null);
+    setPaymentSplit(emptyPaymentSplit());
     // Initialize refund items with max quantities
     const items: Record<string, { quantity: number; maxQuantity: number }> = {};
     purchase.items.forEach((item) => {
@@ -251,6 +322,21 @@ export default function RefundPage() {
       return;
     }
 
+    const returnTotal = estimatedRefund.grandTotal;
+    if (returnTotal <= 0) {
+      notifyError('Enter return quantities to set a refund total.');
+      return;
+    }
+    if (!paymentMethod) {
+      notifyError('Choose how to refund the customer (cash, online, credit, or mixed).');
+      return;
+    }
+    const payCheck = validatePaymentSplit(paymentMethod, paymentSplit, returnTotal);
+    if (!payCheck.ok) {
+      notifyError(payCheck.message);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     setSuccess(null);
@@ -259,6 +345,10 @@ export default function RefundPage() {
       const response = await refundsApi.create({
         purchaseId: selectedPurchase.purchaseId,
         items: itemsToRefund,
+        paymentMethod,
+        cashAmount: paymentSplit.cashAmount,
+        onlineAmount: paymentSplit.onlineAmount,
+        creditAmount: paymentSplit.creditAmount,
       });
 
       notifySuccess(
@@ -267,11 +357,13 @@ export default function RefundPage() {
         )}. Credit note: ${response.creditNoteNo ?? response.refundId}`
       );
 
-      // Reset form and refresh refund history
+      // Reset form and refresh lists
       setSelectedPurchase(null);
       setRefundItems({});
-      setPurchases([]);
+      setPaymentMethod(null);
+      setPaymentSplit(emptyPaymentSplit());
       setRefundHistoryRefreshTrigger((t) => t + 1);
+      void loadPurchases();
     } catch (err) {
       const errorMessage =
         err instanceof Error
@@ -311,6 +403,15 @@ export default function RefundPage() {
     };
   }, [selectedPurchase, refundItems]);
 
+  const returnTotalNum = roundMoney(estimatedRefund.grandTotal);
+  const refundPaymentValidation = validatePaymentSplit(
+    paymentMethod,
+    paymentSplit,
+    returnTotalNum
+  );
+  const canProcessReturn =
+    returnTotalNum > 0 && refundPaymentValidation.ok && !isLoading;
+
   return (
     <div className={styles.page}>
       <div className={styles.header}>
@@ -345,7 +446,10 @@ export default function RefundPage() {
       {activeTab === 'process' && (
         <div className={styles.content}>
           <div className={styles.searchSection}>
-            <h3 className={styles.sectionTitle}>Search Purchase</h3>
+            <h3 className={styles.sectionTitle}>Search purchase</h3>
+            <p className={styles.subtitle} style={{ marginBottom: '1rem' }}>
+              Recent sales load automatically. Use the fields below to narrow the list.
+            </p>
             <form
               onSubmit={handleSearchPurchases}
               className={styles.searchForm}
@@ -423,14 +527,36 @@ export default function RefundPage() {
                 className={styles.searchBtn}
                 disabled={isLoading}
               >
-                {isLoading ? 'Searching...' : 'Search Purchases'}
+                {isLoading ? 'Searching...' : 'Search purchases'}
               </button>
+              {hasActiveSearch ? (
+                <button
+                  type="button"
+                  className={styles.searchBtn}
+                  disabled={isLoading}
+                  onClick={clearSearch}
+                  style={{ marginLeft: '0.5rem' }}
+                >
+                  Clear
+                </button>
+              ) : null}
             </form>
           </div>
 
-          {purchases.length > 0 && (
-            <div className={styles.purchasesSection}>
-              <h3 className={styles.sectionTitle}>Select Purchase</h3>
+          <div className={styles.purchasesSection}>
+            <h3 className={styles.sectionTitle}>
+              {hasActiveSearch ? 'Matching sales' : 'Recent sales'}
+            </h3>
+            {isLoading ? (
+              <p className={styles.loading}>Loading purchases…</p>
+            ) : purchases.length === 0 ? (
+              <p className={styles.emptyState}>
+                {hasActiveSearch
+                  ? 'No sales matched your search. Try different criteria or clear the search.'
+                  : 'No sales yet.'}
+              </p>
+            ) : (
+              <>
               <div className={styles.purchasesList}>
                 {purchases.map((purchase) => (
                   <div key={purchase.purchaseId}>
@@ -576,12 +702,35 @@ export default function RefundPage() {
                           </p>
                         ) : null}
 
+                        {estimatedRefund.linesWithQty > 0 ? (
+                          <div className={styles.returnPaymentSection}>
+                            <PaymentMethodSplit
+                              context="sale"
+                              title="How are you refunding?"
+                              intro="Choose cash, online, credit (reduces what they owe), or a mix. This drives accounting — not the original sale payment."
+                              total={returnTotalNum}
+                              value={{ method: paymentMethod, split: paymentSplit }}
+                              onChange={(next) => {
+                                setPaymentMethod(next.method);
+                                setPaymentSplit(next.split);
+                              }}
+                              disabled={isLoading}
+                            />
+                            {paymentMethod &&
+                            isCreditMethod(paymentMethod) &&
+                            paymentSplit.creditAmount > 0 ? (
+                              <p className={styles.returnPaymentHint}>
+                                ₹{paymentSplit.creditAmount.toFixed(2)} reduces
+                                customer credit (they owe you less).
+                              </p>
+                            ) : null}
+                          </div>
+                        ) : null}
+
                         <button
                           className={styles.processRefundBtn}
                           onClick={handleProcessRefund}
-                          disabled={
-                            isLoading || estimatedRefund.grandTotal === 0
-                          }
+                          disabled={!canProcessReturn}
                         >
                           {isLoading ? 'Processing...' : 'Process Return'}
                         </button>
@@ -590,8 +739,17 @@ export default function RefundPage() {
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+              <PaginationBar
+                page={page}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                onPageChange={setPage}
+                disabled={isLoading}
+                aria-label="Sale pages"
+              />
+              </>
+            )}
+          </div>
         </div>
       )}
 

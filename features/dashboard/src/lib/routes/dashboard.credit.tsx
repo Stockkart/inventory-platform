@@ -26,19 +26,28 @@ export default function CreditPage() {
 
   const selected = useMemo(() => accounts.find((a) => a.id === selectedId) ?? null, [accounts, selectedId]);
 
+  const BALANCE_EPS = 0.0001;
+
   const pendingAccounts = useMemo(
-    () => accounts.filter((a) => a.currentBalance > 0).sort(accountSort),
+    () => accounts.filter((a) => a.currentBalance > BALANCE_EPS).sort(accountSort),
+    [accounts]
+  );
+
+  /** Vendor credit / customer advance — balance went negative after returns or over-payment. */
+  const favourAccounts = useMemo(
+    () => accounts.filter((a) => a.currentBalance < -BALANCE_EPS).sort(accountSort),
     [accounts]
   );
 
   async function refreshAccounts(preferredId?: string | null) {
     const rows = (await creditApi.accounts()).sort(accountSort);
     setAccounts(rows);
-    const pending = rows.filter((a) => a.currentBalance > 0);
+    const pending = rows.filter((a) => a.currentBalance > BALANCE_EPS);
+    const inFavour = rows.filter((a) => a.currentBalance < -BALANCE_EPS);
     const nextId =
       preferredId && rows.some((r) => r.id === preferredId)
         ? preferredId
-        : pending[0]?.id ?? null;
+        : pending[0]?.id ?? inFavour[0]?.id ?? rows[0]?.id ?? null;
     setSelectedId(nextId);
     return nextId;
   }
@@ -102,12 +111,15 @@ export default function CreditPage() {
             <CreditPartiesSidebar
               allAccounts={accounts}
               pendingAccounts={pendingAccounts}
+              favourAccounts={favourAccounts}
               selectedId={selectedId}
               onSelect={setSelectedId}
               pendingListEmptyMessage={
                 accounts.length === 0
                   ? 'No credit accounts yet. Add a charge or settlement first.'
-                  : 'No outstanding dues right now.'
+                  : favourAccounts.length > 0
+                    ? 'No amounts due right now. See “In your favour” below (e.g. supplier credit from returns).'
+                    : 'No outstanding dues right now.'
               }
             />
           </section>
@@ -128,7 +140,10 @@ export default function CreditPage() {
                   onSubmitSettlement={(b) => submit('settlement', b)}
                 />
                 <h3 className={styles.timelineTitle}>Ledger timeline</h3>
-                <CreditEntriesTimeline entries={entries} />
+                <CreditEntriesTimeline
+                  entries={entries}
+                  partyType={selected.partyType}
+                />
               </>
             ) : (
               <p className={styles.empty}>
