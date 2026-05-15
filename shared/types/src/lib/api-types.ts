@@ -1277,6 +1277,9 @@ export interface CreditEntryResponse {
   referenceType?: string | null;
   referenceId?: string | null;
   sourceKey?: string | null;
+  paymentMethod?: string | null;
+  bankRef?: string | null;
+  txnDate?: string | null;
   createdByUserId?: string | null;
   createdAt: string;
 }
@@ -1289,6 +1292,14 @@ export interface CreditEntriesPageResponse {
   totalPages: number;
 }
 
+/** Tender used when posting a settlement (required on settlement API). */
+export type CreditSettlementPaymentMethod =
+  | 'CASH'
+  | 'UPI'
+  | 'BANK'
+  | 'CARD'
+  | 'ADJUSTMENT';
+
 export interface CreateCreditEntryDto {
   partyType: CreditPartyType;
   partyId: string;
@@ -1299,6 +1310,11 @@ export interface CreateCreditEntryDto {
   referenceType?: string;
   referenceId?: string;
   sourceKey?: string;
+  /** Required for {@code POST /credit/settlement}. */
+  paymentMethod?: CreditSettlementPaymentMethod;
+  bankRef?: string;
+  /** Business date (yyyy-mm-dd); defaults to today on the server. */
+  txnDate?: string;
 }
 
 export interface AddToCartDto {

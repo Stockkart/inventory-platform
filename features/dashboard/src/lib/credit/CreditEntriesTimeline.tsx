@@ -18,6 +18,13 @@ export function CreditEntriesTimeline({ entries }: Props) {
           <div className={styles.timelineMeta}>
             Amount: Rs {formatMoney(e.amount)} · Balance after: Rs {formatMoney(e.balanceAfter)}
           </div>
+          {e.entryType === 'SETTLEMENT' && e.paymentMethod ? (
+            <div className={styles.timelineMeta}>
+              Paid via {e.paymentMethod}
+              {e.bankRef ? ` · ${e.bankRef}` : ''}
+              {e.txnDate ? ` · ${e.txnDate}` : ''}
+            </div>
+          ) : null}
           <div className={styles.timelineMeta}>{e.note || '—'}</div>
         </div>
       ))}
