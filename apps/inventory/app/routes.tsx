@@ -87,6 +87,18 @@ export default [
       'accounting/chart-of-accounts',
       './routes/dashboard.accounting.chart-of-accounts.tsx'
     ),
+    route(
+      'accounting/opening-balances',
+      './routes/dashboard.accounting.opening-balances.tsx'
+    ),
+    route(
+      'accounting/reports/profit-and-loss',
+      './routes/dashboard.accounting.reports.profit-and-loss.tsx'
+    ),
+    route(
+      'accounting/reports/balance-sheet',
+      './routes/dashboard.accounting.reports.balance-sheet.tsx'
+    ),
     route('plan-payment', './routes/dashboard.plan-payment.tsx'),
     route('plan-status', './routes/dashboard.plan-status.tsx'),
     route('whatsapp-marketing', './routes/dashboard.whatsapp-marketing.tsx'),

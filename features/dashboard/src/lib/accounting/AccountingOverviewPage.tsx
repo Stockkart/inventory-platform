@@ -7,16 +7,12 @@ import type {
   TrialBalanceResponse,
 } from '@inventory-platform/types';
 import { AccountingTabs } from './AccountingTabs';
+import { ACCOUNT_CODES } from './accountingConstants';
+import { JOURNAL_TEMPLATES } from './journalTemplates';
 import { formatDate, formatMoney } from './format';
 import styles from './accounting.module.css';
 
-const CODES = {
-  CASH: '1100',
-  BANK: '1110',
-  SUNDRY_DEBTORS: '1200',
-  SUNDRY_CREDITORS: '2100',
-  INVENTORY: '1300',
-};
+const CODES = ACCOUNT_CODES;
 
 function pickBalance(tb: TrialBalanceResponse | null, code: string): number {
   if (!tb) return 0;
@@ -157,6 +153,42 @@ export function AccountingOverviewPage() {
           tone="warning"
           loading={loading}
         />
+      </div>
+
+      <div className={styles.card} style={{ marginTop: '0.75rem' }}>
+        <h2 className={styles.title} style={{ fontSize: '1.05rem', marginBottom: '0.65rem' }}>
+          Quick journal templates
+        </h2>
+        <div className={styles.quickActionGrid}>
+          {JOURNAL_TEMPLATES.filter((t) => t.id !== 'BLANK').map((t) => (
+            <Link
+              key={t.id}
+              to={`/dashboard/accounting/journal/new?template=${t.id.toLowerCase().replace(/_/g, '-')}`}
+              className={styles.quickActionCard}
+            >
+              <strong>{t.label}</strong>
+              <span>{t.description}</span>
+            </Link>
+          ))}
+          <Link to="/dashboard/accounting/opening-balances" className={styles.quickActionCard}>
+            <strong>Opening balances</strong>
+            <span>One-time wizard for starting balances</span>
+          </Link>
+          <Link
+            to="/dashboard/accounting/reports/profit-and-loss"
+            className={styles.quickActionCard}
+          >
+            <strong>Profit & Loss</strong>
+            <span>Revenue and expenses for a period</span>
+          </Link>
+          <Link
+            to="/dashboard/accounting/reports/balance-sheet"
+            className={styles.quickActionCard}
+          >
+            <strong>Balance sheet</strong>
+            <span>Assets, liabilities, and equity</span>
+          </Link>
+        </div>
       </div>
 
       <div className={styles.card}>

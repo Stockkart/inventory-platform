@@ -63,6 +63,18 @@ export {
   meta as accountingChartOfAccountsMeta,
 } from './lib/routes/dashboard.accounting.chart-of-accounts';
 export {
+  default as AccountingOpeningBalancesPage,
+  meta as accountingOpeningBalancesMeta,
+} from './lib/routes/dashboard.accounting.opening-balances';
+export {
+  default as AccountingProfitAndLossPage,
+  meta as accountingProfitAndLossMeta,
+} from './lib/routes/dashboard.accounting.reports.profit-and-loss';
+export {
+  default as AccountingBalanceSheetPage,
+  meta as accountingBalanceSheetMeta,
+} from './lib/routes/dashboard.accounting.reports.balance-sheet';
+export {
   default as AccountingVendorsPage,
   meta as accountingVendorsMeta,
 } from './lib/routes/dashboard.accounting.vendors';

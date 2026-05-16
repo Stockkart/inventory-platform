@@ -5,13 +5,16 @@ import type {
   AccountingPartyType,
   BackfillResult,
   CreateAccountRequest,
+  BalanceSheetResponse,
   CreateJournalEntryRequest,
   JournalEntriesPageResponse,
   JournalEntryResponse,
   JournalSource,
   LedgerPageResponse,
+  OpeningBalanceRequest,
   PartyStatementResponse,
   PartySummariesResponse,
+  ProfitAndLossResponse,
   ReverseJournalRequest,
   TrialBalanceResponse,
   UpdateAccountRequest,
@@ -60,6 +63,37 @@ function normalizeLedgerPage(page: LedgerPageResponse): LedgerPageResponse {
       credit: asNum(row.credit),
       balanceAfter: asNum(row.balanceAfter),
     })),
+  };
+}
+
+function normalizeFinancialLines(
+  lines: ProfitAndLossResponse['revenueLines'] | undefined
+): ProfitAndLossResponse['revenueLines'] {
+  return (lines ?? []).map((l) => ({ ...l, amount: asNum(l.amount) }));
+}
+
+function normalizeProfitAndLoss(pl: ProfitAndLossResponse): ProfitAndLossResponse {
+  return {
+    ...pl,
+    totalRevenue: asNum(pl.totalRevenue),
+    totalExpense: asNum(pl.totalExpense),
+    netProfit: asNum(pl.netProfit),
+    revenueLines: normalizeFinancialLines(pl.revenueLines),
+    expenseLines: normalizeFinancialLines(pl.expenseLines),
+  };
+}
+
+function normalizeBalanceSheet(bs: BalanceSheetResponse): BalanceSheetResponse {
+  return {
+    ...bs,
+    totalAssets: asNum(bs.totalAssets),
+    totalLiabilities: asNum(bs.totalLiabilities),
+    totalEquity: asNum(bs.totalEquity),
+    totalLiabilitiesAndEquity: asNum(bs.totalLiabilitiesAndEquity),
+    imbalance: asNum(bs.imbalance),
+    assets: normalizeFinancialLines(bs.assets),
+    liabilities: normalizeFinancialLines(bs.liabilities),
+    equity: normalizeFinancialLines(bs.equity),
   };
 }
 
@@ -306,6 +340,70 @@ export const accountingApi = {
       return { asOf: today, rows: [], totalDebit: 0, totalCredit: 0 };
     }
     return normalizeTrialBalance(inner);
+  },
+
+  profitAndLoss: async (from: string, to: string): Promise<ProfitAndLossResponse> => {
+    const raw = await apiClient.get<unknown>(
+      API_ENDPOINTS.ACCOUNTING.PROFIT_AND_LOSS,
+      toQuery({ from, to })
+    );
+    const inner = unwrap<ProfitAndLossResponse>(raw);
+    if (!inner) {
+      return {
+        from,
+        to,
+        revenueLines: [],
+        expenseLines: [],
+        totalRevenue: 0,
+        totalExpense: 0,
+        netProfit: 0,
+      };
+    }
+    return normalizeProfitAndLoss(inner);
+  },
+
+  balanceSheet: async (asOf?: string): Promise<BalanceSheetResponse> => {
+    const raw = await apiClient.get<unknown>(
+      API_ENDPOINTS.ACCOUNTING.BALANCE_SHEET,
+      toQuery({ asOf })
+    );
+    const inner = unwrap<BalanceSheetResponse>(raw);
+    if (!inner) {
+      const today = (asOf ?? new Date().toISOString().slice(0, 10)) as string;
+      return {
+        asOf: today,
+        assets: [],
+        liabilities: [],
+        equity: [],
+        totalAssets: 0,
+        totalLiabilities: 0,
+        totalEquity: 0,
+        totalLiabilitiesAndEquity: 0,
+        imbalance: 0,
+      };
+    }
+    return normalizeBalanceSheet(inner);
+  },
+
+  postOpeningBalance: async (
+    body: OpeningBalanceRequest
+  ): Promise<JournalEntryResponse> => {
+    const raw = await apiClient.post<unknown>(
+      API_ENDPOINTS.ACCOUNTING.OPENING_BALANCES,
+      body
+    );
+    const inner = unwrap<JournalEntryResponse>(raw);
+    if (!inner) throw new Error('Invalid response posting opening balances');
+    return normalizeJournalEntry(inner);
+  },
+
+  openingBalanceStatus: async (): Promise<JournalEntryResponse | null> => {
+    const raw = await apiClient.get<unknown>(
+      API_ENDPOINTS.ACCOUNTING.OPENING_BALANCES_STATUS
+    );
+    const inner = unwrap<JournalEntryResponse | null>(raw);
+    if (!inner) return null;
+    return normalizeJournalEntry(inner);
   },
 
   backfill: async (

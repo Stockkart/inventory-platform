@@ -2754,6 +2754,42 @@ export interface BackfillResult {
   failed: number;
 }
 
+export interface FinancialReportLineDto {
+  accountId: string;
+  accountCode: string;
+  accountName: string;
+  accountType: AccountType;
+  amount: number;
+}
+
+export interface ProfitAndLossResponse {
+  from: string;
+  to: string;
+  revenueLines: FinancialReportLineDto[];
+  expenseLines: FinancialReportLineDto[];
+  totalRevenue: number;
+  totalExpense: number;
+  netProfit: number;
+}
+
+export interface BalanceSheetResponse {
+  asOf: string;
+  assets: FinancialReportLineDto[];
+  liabilities: FinancialReportLineDto[];
+  equity: FinancialReportLineDto[];
+  totalAssets: number;
+  totalLiabilities: number;
+  totalEquity: number;
+  totalLiabilitiesAndEquity: number;
+  imbalance: number;
+}
+
+export interface OpeningBalanceRequest {
+  txnDate?: string;
+  narration?: string;
+  lines: CreateJournalLineRequest[];
+}
+
 export interface PartySummaryRow {
   partyType: AccountingPartyType;
   partyRefId: string;
