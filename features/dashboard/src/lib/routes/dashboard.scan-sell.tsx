@@ -2377,19 +2377,21 @@ export default function ScanSellPage() {
                       >
                         <div className={styles.itemInfo}>
                           <div className={styles.itemHeader}>
-                            <button
-                              type="button"
-                              className={styles.itemNameButton}
-                              onClick={() => setDetailModalItem(cartItem)}
-                              aria-label="View pricing details"
-                            >
-                              {cartItem.inventoryItem.name || 'Unnamed Product'}
-                            </button>
-                            <span className={styles.modeBadge}>
-                              {normalizeBillingMode(
-                                cartItem.inventoryItem.billingMode
-                              )}
-                            </span>
+                            <div className={styles.itemHeaderTop}>
+                              <button
+                                type="button"
+                                className={styles.itemNameButton}
+                                onClick={() => setDetailModalItem(cartItem)}
+                                aria-label="View pricing details"
+                              >
+                                {cartItem.inventoryItem.name || 'Unnamed Product'}
+                              </button>
+                              <span className={styles.modeBadge}>
+                                {normalizeBillingMode(
+                                  cartItem.inventoryItem.billingMode
+                                )}
+                              </span>
+                            </div>
                             {cartItem.inventoryItem.companyName && (
                               <span className={styles.itemCompany}>
                                 {cartItem.inventoryItem.companyName}
@@ -2425,7 +2427,7 @@ export default function ScanSellPage() {
                                 >
                                   Price
                                 </label>
-                                <div className={styles.itemFieldInputWrap}>
+                                <div className={styles.itemPriceBlock}>
                                   <CartSellingPriceInput
                                     id={`price-${cartItem.inventoryItem.id}`}
                                     value={cartItem.price}
@@ -2437,6 +2439,9 @@ export default function ScanSellPage() {
                                     }
                                     disabled={isUpdatingCart}
                                   />
+                                  <span className={styles.itemFieldUnit}>
+                                    per {cartItem.unit}
+                                  </span>
                                   {(() => {
                                     const pricingId =
                                       cartItem.inventoryItem.pricingId ??
@@ -2477,6 +2482,9 @@ export default function ScanSellPage() {
                                       isLoading && rateOpts.length === 0
                                         ? '__custom__'
                                         : selectValue;
+                                    const selectedOpt = rateOpts.find(
+                                      (o) => o.label === displayValue
+                                    );
                                     return (
                                       <select
                                         className={styles.itemRateSelect}
@@ -2502,10 +2510,12 @@ export default function ScanSellPage() {
                                           );
                                         }}
                                         disabled={isUpdatingCart || isLoading}
-                                        title={
+                                        aria-label={
                                           isLoading
-                                            ? 'Loading rates…'
-                                            : 'Select rate'
+                                            ? 'Loading rates'
+                                            : selectedOpt
+                                              ? `Rate: ${selectedOpt.label}, ${formatPrice(selectedOpt.price)}`
+                                              : 'Select selling rate'
                                         }
                                       >
                                         <option value="__custom__">
@@ -2516,16 +2526,12 @@ export default function ScanSellPage() {
                                             key={`${opt.label}-${opt.price}`}
                                             value={opt.label}
                                           >
-                                            {opt.label} (
-                                            {formatPrice(opt.price)})
+                                            {opt.label} · {formatPrice(opt.price)}
                                           </option>
                                         ))}
                                       </select>
                                     );
                                   })()}
-                                  <span className={styles.itemFieldUnit}>
-                                    /{cartItem.unit}
-                                  </span>
                                 </div>
                               </div>
                               <div className={styles.itemSaleRowInline}>

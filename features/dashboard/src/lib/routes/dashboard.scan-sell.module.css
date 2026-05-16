@@ -1158,16 +1158,11 @@
   gap: 1rem;
   padding: 0.85rem 0;
   border-bottom: 1px solid var(--border-color);
-  transition: background 0.15s;
   min-width: 0;
 }
 
 .cartItem:last-child {
   border-bottom: none;
-}
-
-.cartItem:hover {
-  background: var(--hover-bg);
 }
 
 .itemInfo {
@@ -1291,20 +1286,15 @@
 
 /* Edit fields: row1 Price (full width), row2 Add.Discount + Scheme + Unit */
 .itemEditFields {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  align-items: end;
-  gap: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
   padding: 0.75rem 1rem;
   background: var(--bg-secondary, #f8fafc);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   min-width: 0;
   width: 100%;
-}
-
-.itemEditFields .itemFieldGroup:first-child {
-  grid-column: 1 / -1;
 }
 
 /* Purchase row: full-width row, fields in a line */
@@ -1348,9 +1338,48 @@
   min-width: 0;
 }
 
+.itemPriceBlock {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0.45rem 0.6rem;
+  min-width: 0;
+  width: 100%;
+}
+
+.itemPriceBlock .itemSellingPriceInput {
+  width: 5.25rem;
+  flex: 0 0 auto;
+}
+
+.itemPriceBlock .itemFieldUnit {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.itemPriceBlock .itemRateSelect {
+  flex: 1 1 8rem;
+  min-width: 7rem;
+  max-width: none;
+}
+
+@media (max-width: 480px) {
+  .itemPriceBlock {
+    flex-wrap: wrap;
+  }
+
+  .itemPriceBlock .itemRateSelect {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+}
+
 .itemFieldUnit {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--text-tertiary);
+  white-space: nowrap;
 }
 
 /* Read-only value display (purchase values during sale) */
@@ -1396,27 +1425,32 @@
 }
 
 .itemSellingPriceInput {
-  width: 90px;
+  width: 6.5rem;
+  flex-shrink: 0;
 }
 
 .itemAdditionalInput {
-  width: 90px;
+  width: 100%;
+  max-width: 7rem;
 }
 
 .itemSchemeInputs .itemAdditionalInput {
-  width: 90px;
+  width: 100%;
+  max-width: 7rem;
 }
 
 .itemRateSelect {
-  padding: 0.35rem 0.5rem;
+  padding: 0.4rem 0.55rem;
   border: 1px solid var(--border-color);
   border-radius: 6px;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: var(--text-primary);
   background: var(--bg-primary);
-  width: 75px;
-  min-width: 75px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   cursor: pointer;
+  text-overflow: ellipsis;
 }
 
 .itemRateSelect:focus {
@@ -1437,19 +1471,9 @@
   font-size: 0.82rem;
   color: var(--text-primary);
   background: var(--bg-primary);
-  width: 90px;
-}
-
-@media (max-width: 1200px) {
-  .itemEditFields {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 768px) {
-  .itemEditFields {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .itemUnitSelect:focus {
@@ -1459,7 +1483,9 @@
 }
 
 .itemSellingPriceInput:hover:not(:disabled):not(:focus),
-.itemAdditionalInput:hover:not(:disabled):not(:focus) {
+.itemAdditionalInput:hover:not(:disabled):not(:focus),
+.itemRateSelect:hover:not(:disabled):not(:focus),
+.itemUnitSelect:hover:not(:disabled):not(:focus) {
   border-color: var(--border-hover, #94a3b8);
 }
 
@@ -1949,19 +1975,39 @@
 
 .compareTop {
   color: var(--text-tertiary);
+  font-size: 0.72rem;
+  line-height: 1.2;
+  margin-bottom: 0.15rem;
 }
 
 .compareBottom {
   font-weight: 600;
   color: var(--text-primary);
 }
+.itemEditFields .itemSaleRowInline {
+  grid-column: 1 / -1;
+}
+
 .itemSaleRowInline {
-  display: flex;
-  gap: 3rem;
-  align-items: flex-end;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem 1rem;
+  align-items: end;
 }
 
 .itemSaleRowInline .itemFieldGroup {
-  flex: 1;
-  min-width: 80px;
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .itemSaleRowInline {
+    grid-template-columns: 1fr;
+  }
+}
+
+.itemHeaderTop {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.65rem;
 }
