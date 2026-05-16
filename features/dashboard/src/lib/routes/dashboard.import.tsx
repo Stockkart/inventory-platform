@@ -164,11 +164,8 @@ export default function ImportPage() {
       const response = await inventoryApi.createBulk(bulkData);
       const created = response?.createdCount ?? response?.items?.length ?? 0;
       const regId = response?.vendorPurchaseInvoiceId ?? response?.lotId;
-      const jid = response?.accountingJournalEntryId;
       notifySuccess(
-        `Imported ${created} items!${regId ? ` Stock-in ID: ${regId}` : ''}${
-          jid ? ' Purchase recorded in ledger — open Accounting to review.' : ''
-        }`
+        `Imported ${created} items!${regId ? ` Stock-in ID: ${regId}` : ''}`
       );
       setImportTableItems([]);
       setSelectedVendor(null);

@@ -1,0 +1,287 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid color-mix(in srgb, var(--border-color, #e2e8f0) 70%, transparent);
+  border-radius: 14px;
+  background: var(--card-bg, #fff);
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary, #0f172a);
+  letter-spacing: -0.005em;
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+}
+
+.titleRequired {
+  color: #dc2626;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.intro {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-secondary, #64748b);
+}
+
+.totalRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.78rem;
+  color: var(--text-secondary, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.totalValue {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-primary, #0f172a);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  text-transform: none;
+}
+
+.chipGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--border-color, #e2e8f0) 80%, transparent);
+  border-radius: 999px;
+  background: var(--card-bg, #fff);
+  color: var(--text-secondary, #475569);
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.005em;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease,
+    color 0.15s ease;
+  white-space: nowrap;
+}
+
+.chip:hover {
+  border-color: color-mix(in srgb, var(--border-color, #cbd5e1) 35%, var(--text-primary, #0f172a) 65%);
+  color: var(--text-primary, #0f172a);
+}
+
+.chip:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.chipActive {
+  composes: chip;
+  border-color: var(--text-primary, #0f172a);
+  background: var(--text-primary, #0f172a);
+  color: var(--card-bg, #fff);
+  font-weight: 600;
+}
+
+.chipActive:hover {
+  background: var(--text-primary, #0f172a);
+  color: var(--card-bg, #fff);
+  border-color: var(--text-primary, #0f172a);
+}
+
+.placeholder {
+  margin: 0;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary, #64748b);
+  border: 1px dashed color-mix(in srgb, var(--border-color, #e2e8f0) 80%, transparent);
+  border-radius: 10px;
+  background: transparent;
+}
+
+.legs {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.legsTwo {
+  composes: legs;
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 30rem) {
+  .legsTwo {
+    grid-template-columns: 1fr;
+  }
+}
+
+.legField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.legLabel {
+  display: inline-flex;
+  align-items: center;
+}
+
+.legBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.legBadgeCash {
+  background: color-mix(in srgb, #10b981 10%, transparent);
+  color: #047857;
+}
+
+.legBadgeOnline {
+  background: color-mix(in srgb, #3b82f6 10%, transparent);
+  color: #1d4ed8;
+}
+
+.legBadgeCredit {
+  background: color-mix(in srgb, #d97706 12%, transparent);
+  color: #b45309;
+}
+
+.legInputRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.legCurrency {
+  position: absolute;
+  left: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-secondary, #64748b);
+  pointer-events: none;
+}
+
+.legInput {
+  flex: 1;
+  padding: 0.55rem 0.7rem 0.55rem 1.55rem;
+  border: 1px solid color-mix(in srgb, var(--border-color, #e2e8f0) 75%, transparent);
+  border-radius: 8px;
+  background: var(--card-bg, #fff);
+  color: var(--text-primary, #0f172a);
+  font-size: 0.95rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.legInput:focus {
+  outline: none;
+  border-color: var(--text-primary, #0f172a);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--text-primary, #0f172a) 12%, transparent);
+}
+
+.legInput:disabled {
+  background: color-mix(in srgb, var(--card-bg, #fff) 94%, transparent);
+  color: var(--text-secondary, #64748b);
+  cursor: not-allowed;
+}
+
+.summary {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--border-color, #e2e8f0) 60%, transparent);
+  background: color-mix(in srgb, var(--bg-primary, #f8fafc) 60%, transparent);
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.82rem;
+}
+
+.summaryLabel {
+  color: var(--text-secondary, #64748b);
+}
+
+.summaryAmt {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary, #0f172a);
+  letter-spacing: -0.01em;
+}
+
+.summaryCreditHighlight {
+  border-color: color-mix(in srgb, #d97706 35%, var(--border-color, #e2e8f0));
+  background: color-mix(in srgb, #f59e0b 6%, var(--card-bg, #fff));
+}
+
+.summaryCreditHighlight .summaryAmt {
+  color: #b45309;
+}
+
+.error {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #dc2626;
+}
+
+[data-theme='dark'] .panel {
+  background: var(--card-bg, #0f172a);
+}
+
+[data-theme='dark'] .chip {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--border-color, #334155) 80%, transparent);
+  color: var(--text-secondary, #cbd5e1);
+}
+
+[data-theme='dark'] .chip:hover {
+  color: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+[data-theme='dark'] .chipActive {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #f8fafc;
+}
+
+[data-theme='dark'] .summary {
+  background: color-mix(in srgb, #0f172a 92%, transparent);
+}
+
+[data-theme='dark'] .summaryCreditHighlight {
+  background: color-mix(in srgb, #f59e0b 14%, transparent);
+}
+
+[data-theme='dark'] .summaryCreditHighlight .summaryAmt {
+  color: #fbbf24;
+}

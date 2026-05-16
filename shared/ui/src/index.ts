@@ -27,6 +27,8 @@ export * from './lib/ShopUsersList';
 export * from './lib/JoinRequestCard';
 export * from './lib/JoinRequestList';
 export * from './lib/PurchaseCard';
+export * from './lib/PaymentMethodSplit';
+export * from './lib/paymentMethod';
 export * from './lib/PurchaseList';
 export * from './lib/RefundHistoryList';
 export * from './lib/VendorReturnHistoryList';

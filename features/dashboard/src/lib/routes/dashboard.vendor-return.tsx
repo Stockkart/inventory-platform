@@ -7,7 +7,16 @@ import type {
   VendorPurchaseInvoiceSummary,
   VendorResponse,
 } from '@inventory-platform/types';
-import { VendorReturnHistoryList } from '@inventory-platform/ui';
+import type { PaymentMethod, PaymentSplit } from '@inventory-platform/types';
+import {
+  PaginationBar,
+  PaymentMethodSplit,
+  VendorReturnHistoryList,
+  emptyPaymentSplit,
+  isCreditMethod,
+  roundMoney,
+  validatePaymentSplit,
+} from '@inventory-platform/ui';
 import { useNotify } from '@inventory-platform/store';
 import refundStyles from './dashboard.refund.module.css';
 import styles from './dashboard.vendor-return.module.css';
@@ -267,6 +276,13 @@ export default function VendorReturnPage() {
   const [vendorName, setVendorName] = useState('');
   const [invoiceNo, setInvoiceNo] = useState('');
   const [productOrBarcode, setProductOrBarcode] = useState('');
+  const [appliedInvoiceNo, setAppliedInvoiceNo] = useState('');
+  const [appliedVendorName, setAppliedVendorName] = useState('');
+  const [appliedProductOrBarcode, setAppliedProductOrBarcode] = useState('');
+  const [page, setPage] = useState(0);
+  const [pageSize] = useState(20);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalItems, setTotalItems] = useState(0);
 
   const [invoices, setInvoices] = useState<VendorPurchaseInvoiceSummary[]>([]);
   const [selected, setSelected] = useState<VendorPurchaseInvoiceSummary | null>(
@@ -280,13 +296,21 @@ export default function VendorReturnPage() {
     Record<string, string>
   >({});
   const [reason, setReason] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
+  const [paymentSplit, setPaymentSplit] = useState<PaymentSplit>(() =>
+    emptyPaymentSplit()
+  );
   const [detailBusy, setDetailBusy] = useState(false);
   const [hydrateBusy, setHydrateBusy] = useState(false);
 
   useEffect(() => {
     if (!state?.prefillVendor) return;
     const v = state.prefillVendor.name?.trim();
-    if (v) setVendorName(v);
+    if (v) {
+      setVendorName(v);
+      setAppliedVendorName(v);
+      setPage(0);
+    }
   }, [state]);
 
   const resetSelection = () => {
@@ -294,6 +318,8 @@ export default function VendorReturnPage() {
     setDetail(null);
     setQtyByInventoryId({});
     setReason('');
+    setPaymentMethod(null);
+    setPaymentSplit(emptyPaymentSplit());
   };
 
   const hydrateInventoryForDetail = useCallback(
@@ -334,46 +360,87 @@ export default function VendorReturnPage() {
     [inventoryById, notifyError]
   );
 
-  const handleSearch = async (e: FormEvent) => {
-    e.preventDefault();
-    const inv = invoiceNo.trim();
-    const ven = vendorName.trim();
-    const prod = productOrBarcode.trim();
-    if (!inv && !ven && !prod) {
-      notifyError('Enter invoice number, vendor name, or a product/barcode hint.');
-      return;
-    }
+  const loadInvoices = useCallback(async () => {
+    const inv = appliedInvoiceNo.trim();
+    const ven = appliedVendorName.trim();
+    const prod = appliedProductOrBarcode.trim();
+    const hasFilter = Boolean(inv || ven || prod);
 
     setSearchLoading(true);
-    resetSelection();
     try {
-      const q = buildInvoiceSearchPattern(inv, ven, prod);
-      const response = await inventoryApi.listVendorPurchaseInvoices(
-        0,
-        100,
-        q
-      );
-      const rows = applySummaryFilters(response.invoices ?? [], inv, ven);
+      const response = hasFilter
+        ? await inventoryApi.listVendorPurchaseInvoices(
+            page,
+            pageSize,
+            buildInvoiceSearchPattern(inv, ven, prod)
+          )
+        : await inventoryApi.listVendorPurchaseInvoices(page, pageSize);
+      const rows = hasFilter
+        ? applySummaryFilters(response.invoices ?? [], inv, ven)
+        : (response.invoices ?? []);
       setInvoices(rows);
-      if (rows.length === 0) {
-        notifyError(
-          'No purchase invoices matched. Try broader text or see Regex tips under History → Purchase history.'
-        );
-      }
+      setTotalPages(response.page?.totalPages ?? 0);
+      setTotalItems(response.page?.totalItems ?? 0);
     } catch (err) {
       notifyError(
-        err instanceof Error ? err.message : 'Failed to search invoices.'
+        err instanceof Error ? err.message : 'Failed to load purchase invoices.'
       );
       setInvoices([]);
+      setTotalPages(0);
+      setTotalItems(0);
     } finally {
       setSearchLoading(false);
     }
+  }, [
+    appliedInvoiceNo,
+    appliedProductOrBarcode,
+    appliedVendorName,
+    notifyError,
+    page,
+    pageSize,
+  ]);
+
+  useEffect(() => {
+    if (activeTab !== 'process') return;
+    void loadInvoices();
+  }, [activeTab, loadInvoices]);
+
+  useEffect(() => {
+    resetSelection();
+  }, [page]);
+
+  const handleSearch = (e: FormEvent) => {
+    e.preventDefault();
+    resetSelection();
+    setAppliedInvoiceNo(invoiceNo);
+    setAppliedVendorName(vendorName);
+    setAppliedProductOrBarcode(productOrBarcode);
+    setPage(0);
   };
+
+  const clearSearch = () => {
+    setInvoiceNo('');
+    setVendorName('');
+    setProductOrBarcode('');
+    setAppliedInvoiceNo('');
+    setAppliedVendorName('');
+    setAppliedProductOrBarcode('');
+    resetSelection();
+    setPage(0);
+  };
+
+  const hasActiveSearch = Boolean(
+    appliedInvoiceNo.trim() ||
+      appliedVendorName.trim() ||
+      appliedProductOrBarcode.trim()
+  );
 
   const selectInvoice = async (inv: VendorPurchaseInvoiceSummary) => {
     setSelected(inv);
     setQtyByInventoryId({});
     setReason('');
+    setPaymentMethod(null);
+    setPaymentSplit(emptyPaymentSplit());
     setDetail(null);
     setDetailBusy(true);
     try {
@@ -416,6 +483,18 @@ export default function VendorReturnPage() {
       linesWithQty,
     };
   }, [stockLines, inventoryById, qtyByInventoryId]);
+
+  const returnTotalNum = roundMoney(returnDebitNoteEstimate.grandTotal);
+  const vendorRefundPaymentValidation = validatePaymentSplit(
+    paymentMethod,
+    paymentSplit,
+    returnTotalNum
+  );
+  const canRecordReturn =
+    returnTotalNum > 0 &&
+    vendorRefundPaymentValidation.ok &&
+    !returnRecording &&
+    !detailBusy;
 
   const submitReturn = async () => {
     if (!detail) {
@@ -463,19 +542,44 @@ export default function VendorReturnPage() {
       return;
     }
 
+    const returnTotal = returnDebitNoteEstimate.grandTotal;
+    if (returnTotal <= 0) {
+      notifyError('Enter return quantities to set a debit note total.');
+      return;
+    }
+    if (!paymentMethod) {
+      notifyError(
+        'Choose how the supplier is refunding you (cash, online, credit, or mixed).'
+      );
+      return;
+    }
+    const payCheck = validatePaymentSplit(
+      paymentMethod,
+      paymentSplit,
+      returnTotal
+    );
+    if (!payCheck.ok) {
+      notifyError(payCheck.message ?? 'Invalid return payment split.');
+      return;
+    }
+
     setReturnRecording(true);
     try {
       const res = await inventoryApi.createVendorPurchaseReturn({
         vendorPurchaseInvoiceId: detail.id,
         items,
         reason: reason.trim() || undefined,
+        paymentMethod,
+        cashAmount: paymentSplit.cashAmount,
+        onlineAmount: paymentSplit.onlineAmount,
+        creditAmount: paymentSplit.creditAmount,
       });
       success(
         `Return recorded. Supplier credit note: ${res.supplierCreditNoteNo}. Amount: ${formatMoney(res.returnAmount)}`
       );
       setHistoryRefreshTrigger((t) => t + 1);
       resetSelection();
-      setInvoices([]);
+      void loadInvoices();
     } catch (err) {
       notifyError(
         err instanceof Error ? err.message : 'Failed to record vendor return.'
@@ -534,10 +638,9 @@ export default function VendorReturnPage() {
         <div className={refundStyles.searchSection}>
           <h3 className={refundStyles.sectionTitle}>Search purchase invoice</h3>
           <p className={styles.hint}>
-            Search uses the same rules as History → Purchase history (Java regex against invoice
-            number, supplier name, and line names/barcodes). Enter at least one field.
-            When invoice number is set, any product/barcode field is omitted from the
-            server search—use Vendor invoices for Regex across multiple cues.
+            Recent supplier purchase invoices load automatically. Narrow the list with
+            search (same Java regex rules as History → Purchase history). When invoice
+            number is set, product/barcode is omitted from the server search.
           </p>
           <form onSubmit={handleSearch} className={refundStyles.searchForm}>
             <div className={refundStyles.formRow}>
@@ -591,6 +694,17 @@ export default function VendorReturnPage() {
             >
               {searchLoading ? 'Searching…' : 'Search invoices'}
             </button>
+            {hasActiveSearch ? (
+              <button
+                type="button"
+                className={refundStyles.searchBtn}
+                disabled={searchLoading}
+                onClick={clearSearch}
+                style={{ marginLeft: '0.5rem' }}
+              >
+                Clear
+              </button>
+            ) : null}
           </form>
         </div>
 
@@ -600,9 +714,20 @@ export default function VendorReturnPage() {
           </p>
         ) : null}
 
-        {invoices.length > 0 && (
-          <div className={refundStyles.purchasesSection}>
-            <h3 className={refundStyles.sectionTitle}>Select invoice</h3>
+        <div className={refundStyles.purchasesSection}>
+          <h3 className={refundStyles.sectionTitle}>
+            {hasActiveSearch ? 'Matching invoices' : 'Recent purchase invoices'}
+          </h3>
+          {searchLoading ? (
+            <p className={refundStyles.loading}>Loading invoices…</p>
+          ) : invoices.length === 0 ? (
+            <p className={refundStyles.emptyState}>
+              {hasActiveSearch
+                ? 'No purchase invoices matched. Try broader text or clear the search.'
+                : 'No supplier purchase invoices yet.'}
+            </p>
+          ) : (
+            <>
             <div className={refundStyles.purchasesList}>
               {invoices.map((inv) => (
                 <div key={inv.id}>
@@ -831,14 +956,35 @@ export default function VendorReturnPage() {
                         />
                       </label>
 
+                      {returnDebitNoteEstimate.linesWithQty > 0 ? (
+                        <div className={refundStyles.returnPaymentSection}>
+                          <PaymentMethodSplit
+                            context="purchase"
+                            title="How are you receiving the refund?"
+                            intro="Cash or online = money back now. Credit = reduces what you owe this vendor. Independent of how you paid the original invoice."
+                            total={returnTotalNum}
+                            value={{ method: paymentMethod, split: paymentSplit }}
+                            onChange={(next) => {
+                              setPaymentMethod(next.method);
+                              setPaymentSplit(next.split);
+                            }}
+                            disabled={returnRecording || detailBusy}
+                          />
+                          {paymentMethod &&
+                          isCreditMethod(paymentMethod) &&
+                          paymentSplit.creditAmount > 0 ? (
+                            <p className={refundStyles.returnPaymentHint}>
+                              ₹{paymentSplit.creditAmount.toFixed(2)} reduces vendor
+                              credit (you owe them less).
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : null}
+
                       <button
                         type="button"
                         className={refundStyles.processRefundBtn}
-                        disabled={
-                          returnRecording ||
-                          stockLines.length === 0 ||
-                          detailBusy
-                        }
+                        disabled={!canRecordReturn || stockLines.length === 0}
                         onClick={() => void submitReturn()}
                       >
                         {returnRecording
@@ -850,8 +996,17 @@ export default function VendorReturnPage() {
                 </div>
               ))}
             </div>
-          </div>
-        )}
+            <PaginationBar
+              page={page}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              onPageChange={setPage}
+              disabled={searchLoading}
+              aria-label="Purchase invoice pages"
+            />
+            </>
+          )}
+        </div>
       </div>
       )}
     </div>

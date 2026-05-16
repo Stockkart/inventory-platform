@@ -14,7 +14,6 @@ import type {
   InventoryItem,
   VendorPurchaseInvoiceDetail,
   VendorPurchaseInvoiceListResponse,
-  PostPurchaseLedgerResultDto,
   VendorPurchaseReturnPayload,
   VendorPurchaseReturnResult,
   VendorPurchaseReturnListDto,
@@ -207,16 +206,6 @@ export const inventoryApi = {
       ApiResponse<VendorPurchaseInvoiceDetail>
     >(API_ENDPOINTS.VENDOR_PURCHASE_INVOICES.BY_ID(id));
     return response.data;
-  },
-
-  /** Idempotent PURCHASE journal for this stock-in (creates journal or returns existing). */
-  postVendorPurchaseLedger: async (
-    invoiceId: string
-  ): Promise<PostPurchaseLedgerResultDto> => {
-    const response = await apiClient.post<
-      ApiResponse<PostPurchaseLedgerResultDto>
-    >(API_ENDPOINTS.VENDOR_PURCHASE_INVOICES.POST_PURCHASE_LEDGER(invoiceId));
-    return response.data as PostPurchaseLedgerResultDto;
   },
 
   createVendorPurchaseReturn: async (

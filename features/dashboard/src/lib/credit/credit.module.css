@@ -64,6 +64,10 @@
 [data-theme='dark'] .balPay .accountBalAmt { color: #fde68a; }
 .timeline { display: grid; gap: 0.55rem; }
 .timelineRow { border: 1px solid var(--border-color, rgba(148, 163, 184, 0.28)); border-radius: 10px; padding: 0.55rem 0.65rem; }
+.timelineRowReturn {
+  border-color: rgba(16, 185, 129, 0.45);
+  background: rgba(16, 185, 129, 0.06);
+}
 .timelineHead { display: flex; justify-content: space-between; gap: 0.75rem; font-size: 0.82rem; }
 .timelineMeta { font-size: 0.78rem; color: var(--text-secondary, #64748b); margin-top: 0.15rem; }
 .empty { color: var(--text-secondary, #64748b); margin: 0; padding: 0.5rem 0; }

@@ -7,6 +7,7 @@ import styles from './credit.module.css';
 type Props = {
   allAccounts: CreditAccountResponse[];
   pendingAccounts: CreditAccountResponse[];
+  favourAccounts: CreditAccountResponse[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   /** Message when the “Due now” list has no rows (depends on shop-wide empty vs none due). */
@@ -16,6 +17,7 @@ type Props = {
 export function CreditPartiesSidebar({
   allAccounts,
   pendingAccounts,
+  favourAccounts,
   selectedId,
   onSelect,
   pendingListEmptyMessage,
@@ -100,6 +102,22 @@ export function CreditPartiesSidebar({
         onSelect={onSelect}
         emptyMessage={pendingListEmptyMessage}
       />
+
+      {favourAccounts.length > 0 ? (
+        <>
+          <h3 className={styles.sidebarSubheading}>In your favour</h3>
+          <p className={styles.sidebarHint}>
+            Often from a <strong>return on credit</strong> when you had little or no payable left
+            — the supplier owes you (vendor credit) or the customer paid ahead.
+          </p>
+          <CreditAccountList
+            accounts={favourAccounts}
+            selectedId={selectedId}
+            onSelect={onSelect}
+            emptyMessage=""
+          />
+        </>
+      ) : null}
     </div>
   );
 }

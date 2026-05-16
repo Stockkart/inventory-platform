@@ -92,8 +92,6 @@ export const API_ENDPOINTS = {
   VENDOR_PURCHASE_INVOICES: {
     BASE: '/vendor-purchase-invoices',
     BY_ID: (id: string) => `/vendor-purchase-invoices/${id}`,
-    POST_PURCHASE_LEDGER: (id: string) =>
-      `/vendor-purchase-invoices/${id}/post-purchase-ledger`,
   },
 
   /** Purchase returns → stock reduction + GSTR-2 CDNR/CDNUR */
@@ -160,20 +158,6 @@ export const API_ENDPOINTS = {
     BY_ID: (id: string) => `/customers/${id}`,
   },
 
-  /** General ledger / subledger (`inventory-api/core/accounting`) */
-  ACCOUNTING: {
-    BASE: '/accounting',
-    CHART_BOOTSTRAP: '/accounting/chart/bootstrap',
-    GL_ACCOUNTS: '/accounting/gl-accounts',
-    MANUAL_JOURNALS: '/accounting/journals/manual',
-    JOURNALS: '/accounting/journals',
-    JOURNAL_BY_ID: (id: string) => `/accounting/journals/${id}`,
-    TRIAL_BALANCE: '/accounting/reports/trial-balance',
-    SHOP_SUMMARY: '/accounting/shop-summary',
-    SUBLEDGER_BALANCE: '/accounting/subledger/balance',
-    SUBLEDGER_ENTRIES: '/accounting/subledger/entries',
-  },
-
   CREDIT: {
     BASE: '/credit',
     CHARGE: '/credit/charge',
@@ -210,6 +194,26 @@ export const API_ENDPOINTS = {
   PRICING: {
     BY_ID: (pricingId: string) => `/pricing/${pricingId}`,
     BULK_UPDATE: '/pricing/bulk-update',
+  },
+
+  // Accounting endpoints (chart of accounts, journals, ledger, reports)
+  ACCOUNTING: {
+    BASE: '/accounting',
+    ACCOUNTS: '/accounting/accounts',
+    ACCOUNT_BY_ID: (id: string) => `/accounting/accounts/${id}`,
+    JOURNAL: '/accounting/journal-entries',
+    JOURNAL_BY_ID: (id: string) => `/accounting/journal-entries/${id}`,
+    JOURNAL_REVERSE: (id: string) => `/accounting/journal-entries/${id}/reverse`,
+    LEDGER: (accountId: string) => `/accounting/ledger/${accountId}`,
+    PARTIES: '/accounting/parties',
+    PARTY_STATEMENT: (type: string, partyRefId: string) =>
+      `/accounting/parties/${type}/${partyRefId}/statement`,
+    TRIAL_BALANCE: '/accounting/reports/trial-balance',
+    PROFIT_AND_LOSS: '/accounting/reports/profit-and-loss',
+    BALANCE_SHEET: '/accounting/reports/balance-sheet',
+    OPENING_BALANCES: '/accounting/opening-balances',
+    OPENING_BALANCES_STATUS: '/accounting/opening-balances/status',
+    BACKFILL: '/accounting/admin/backfill',
   },
 
   // Taxation endpoints (GSTR-1, GSTR-2, GSTR-3B)

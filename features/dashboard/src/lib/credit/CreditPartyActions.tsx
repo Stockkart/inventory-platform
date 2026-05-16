@@ -1,8 +1,13 @@
 import { useEffect, useState } from 'react';
-import type { CreateCreditEntryDto, CreditAccountResponse } from '@inventory-platform/types';
+import type {
+  CreateCreditEntryDto,
+  CreditAccountResponse,
+  CreditSettlementPaymentMethod,
+} from '@inventory-platform/types';
 import {
   creditActionCopy,
   presentCreditBalance,
+  todayLocalDate,
   type CreditBalanceTone,
 } from './credit-utils';
 import styles from './credit.module.css';
@@ -33,6 +38,10 @@ export function CreditPartyActions({
   const [note, setNote] = useState('');
   const [referenceType, setReferenceType] = useState('');
   const [referenceId, setReferenceId] = useState('');
+  const [paymentMethod, setPaymentMethod] =
+    useState<CreditSettlementPaymentMethod>('CASH');
+  const [bankRef, setBankRef] = useState('');
+  const [txnDate, setTxnDate] = useState(todayLocalDate());
 
   const copy = creditActionCopy(account.partyType);
   const bal = presentCreditBalance(account);
@@ -43,11 +52,14 @@ export function CreditPartyActions({
     setNote('');
     setReferenceType('');
     setReferenceId('');
+    setPaymentMethod('CASH');
+    setBankRef('');
+    setTxnDate(todayLocalDate());
   }, [account.id]);
 
   function buildBody(): CreateCreditEntryDto {
     const amt = Number(amount.trim().replace(/,/g, ''));
-    return {
+    const base: CreateCreditEntryDto = {
       partyType: account.partyType,
       partyId: account.partyId,
       partyDisplayName: account.partyDisplayName,
@@ -57,6 +69,12 @@ export function CreditPartyActions({
       referenceType: referenceType.trim() || undefined,
       referenceId: referenceId.trim() || undefined,
     };
+    base.txnDate = txnDate || todayLocalDate();
+    if (mode === 'settlement') {
+      base.paymentMethod = paymentMethod;
+      base.bankRef = bankRef.trim() || undefined;
+    }
+    return base;
   }
 
   async function handleSubmit(ev: React.FormEvent) {
@@ -74,6 +92,7 @@ export function CreditPartyActions({
     setNote('');
     setReferenceType('');
     setReferenceId('');
+    setBankRef('');
   }
 
   const partyKindLabel = account.partyType === 'VENDOR' ? 'Vendor' : 'Customer';
@@ -154,6 +173,61 @@ export function CreditPartyActions({
             required
           />
         </div>
+
+        <div className={styles.compactField}>
+          <label className={styles.compactLabel} htmlFor="credit-party-txn-date">
+            Date
+          </label>
+          <input
+            id="credit-party-txn-date"
+            type="date"
+            className={styles.compactInput}
+            value={txnDate}
+            onChange={(e) => setTxnDate(e.target.value)}
+            disabled={submitting}
+            required
+          />
+        </div>
+
+        {mode === 'settlement' ? (
+          <>
+            <div className={styles.compactField}>
+              <label className={styles.compactLabel} htmlFor="credit-party-method">
+                Payment method
+              </label>
+              <select
+                id="credit-party-method"
+                className={styles.compactInput}
+                value={paymentMethod}
+                onChange={(e) =>
+                  setPaymentMethod(e.target.value as CreditSettlementPaymentMethod)
+                }
+                disabled={submitting}
+                required
+              >
+                <option value="CASH">Cash</option>
+                <option value="UPI">UPI</option>
+                <option value="BANK">Bank transfer</option>
+                <option value="CARD">Card</option>
+                <option value="ADJUSTMENT">Adjustment / write-off</option>
+              </select>
+            </div>
+            <div className={styles.compactField}>
+              <label className={styles.compactLabel} htmlFor="credit-party-bank-ref">
+                Reference <span className={styles.optionalMark}>(optional)</span>
+              </label>
+              <input
+                id="credit-party-bank-ref"
+                type="text"
+                className={styles.compactInput}
+                value={bankRef}
+                onChange={(e) => setBankRef(e.target.value)}
+                placeholder="UTR, cheque no., etc."
+                disabled={submitting}
+              />
+            </div>
+          </>
+        ) : null}
 
         <div className={styles.compactField}>
           <label className={styles.compactLabel} htmlFor="credit-party-note">

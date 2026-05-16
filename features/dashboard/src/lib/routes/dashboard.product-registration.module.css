@@ -83,12 +83,21 @@
   font-family: inherit;
 }
 
+.paymentBottomSlot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-color);
+}
+
 .formActions {
   display: flex;
   gap: 1rem;
   justify-content: flex-end;
-  margin-top: 2rem;
-  padding-top: 1.5rem;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
   border-top: 1px solid var(--border-color);
 }
 
@@ -149,32 +158,6 @@
   color: #059669;
   margin-bottom: 1.5rem;
   font-size: 0.9rem;
-}
-
-.accountingLedgerBanner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  padding: 0.75rem 1.1rem;
-  margin-bottom: 1.25rem;
-  border-radius: 10px;
-  border: 1px solid rgba(22, 163, 74, 0.4);
-  background: rgba(22, 163, 74, 0.08);
-  font-size: 0.92rem;
-  color: var(--text-primary, #0f172a);
-}
-
-.accountingLedgerLink {
-  font-weight: 600;
-  color: #15803d;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.accountingLedgerLink:hover {
-  text-decoration: underline;
 }
 
 .reminderSection {

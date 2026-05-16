@@ -8,6 +8,39 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
+/**
+ * Canonical payment methods supported by Sales (checkout) and Purchase Registration.
+ *
+ * Single-tender:
+ * - CASH / ONLINE / CREDIT
+ *
+ * Two-tender splits (the first tender is the primary one used for accounting
+ * reporting; the credit slice, when present, is always the remainder that
+ * posts to the credit ledger):
+ * - CASH_ONLINE   (no credit; both legs paid now)
+ * - ONLINE_CREDIT (online leg paid now, credit leg posts to ledger)
+ * - CREDIT_CASH   (cash leg paid now, credit leg posts to ledger)
+ */
+export type PaymentMethod =
+  | 'CASH'
+  | 'ONLINE'
+  | 'CREDIT'
+  | 'CASH_ONLINE'
+  | 'ONLINE_CREDIT'
+  | 'CREDIT_CASH';
+
+/**
+ * Per-tender split for a payment. The sum of the three values must equal the
+ * grand / invoice total (rounded to 2 decimals). The active PaymentMethod
+ * dictates which buckets are allowed to be non-zero — see
+ * `validatePaymentSplit` in the shared UI package.
+ */
+export interface PaymentSplit {
+  cashAmount: number;
+  onlineAmount: number;
+  creditAmount: number;
+}
+
 export interface PaginatedResponse<T> {
   data: T[];
   total: number;
@@ -675,7 +708,23 @@ export interface VendorPurchaseInvoicePayload {
   otherCharges?: number | null;
   roundOff?: number | null;
   invoiceTotal?: number | null;
-  paymentMethod?: string | null;
+  /**
+   * Canonical PaymentMethod (one of the 6 values). For backward compatibility
+   * this stays `string` on the wire — older callers may still send 'CASH' /
+   * 'ONLINE' / 'CREDIT' with `paidAmount` only.
+   */
+  paymentMethod?: PaymentMethod | string | null;
+  /** Amount paid in cash now (new split-aware field). */
+  cashAmount?: number | null;
+  /** Amount paid online now (new split-aware field). */
+  onlineAmount?: number | null;
+  /** Amount that posts to the vendor credit ledger (new split-aware field). */
+  creditAmount?: number | null;
+  /**
+   * Legacy single "paid now" amount. Servers should prefer the explicit
+   * cash/online/credit split when present; kept for back-compat.
+   * @deprecated use `cashAmount`/`onlineAmount`/`creditAmount` instead.
+   */
   paidAmount?: number | null;
 }
 
@@ -694,8 +743,6 @@ export interface BulkCreateInventoryResponse {
   totalCreated?: number;
   totalFailed?: number;
   vendorPurchaseInvoiceId?: string | null;
-  /** Set when bulk stock-in triggered a PURCHASE journal in the general ledger. */
-  accountingJournalEntryId?: string | null;
   /** Set when stock-in leaves payable due in credit ledger. */
   creditEntryId?: string | null;
   items: Array<{
@@ -755,16 +802,7 @@ export interface VendorPurchaseInvoiceDetail {
   createdAt: string | null;
   synthetic?: boolean | null;
   legacyLotId?: string | null;
-  /** GL journal id when posted (source key PRODUCT:PURCHASE_INV:&lt;this id&gt;). */
-  accountingJournalEntryId?: string | null;
   lines: VendorPurchaseInvoiceLineDto[];
-}
-
-/** Result of idempotent POST …/vendor-purchase-invoices/{id}/post-purchase-ledger */
-export interface PostPurchaseLedgerResultDto {
-  accountingJournalEntryId?: string | null;
-  skipped: boolean;
-  message?: string | null;
 }
 
 export interface VendorPurchaseInvoiceListResponse {
@@ -787,6 +825,10 @@ export interface VendorPurchaseReturnPayload {
   vendorPurchaseInvoiceId: string;
   items: VendorPurchaseReturnItemPayload[];
   reason?: string | null;
+  paymentMethod: PaymentMethod | string;
+  cashAmount?: number;
+  onlineAmount?: number;
+  creditAmount?: number;
 }
 
 export interface VendorPurchaseReturnResult {
@@ -1096,7 +1138,13 @@ export interface CheckoutItem {
 
 export interface CreateCheckoutDto {
   businessType: string;
-  paymentMethod: string;
+  paymentMethod: PaymentMethod | string;
+  /** Amount paid in cash now (new split-aware field). */
+  cashAmount?: number;
+  /** Amount paid online now (new split-aware field). */
+  onlineAmount?: number;
+  /** Amount that posts to the customer credit ledger (new split-aware field). */
+  creditAmount?: number;
   items: CheckoutItem[];
 }
 
@@ -1146,7 +1194,13 @@ export interface CheckoutResponse {
   taxTotal: number;
   discountTotal: number;
   grandTotal: number;
-  paymentMethod: string;
+  paymentMethod: PaymentMethod | string;
+  /** Amount paid in cash now (split-aware). */
+  cashAmount?: number | null;
+  /** Amount paid online now (split-aware). */
+  onlineAmount?: number | null;
+  /** Amount posted to the credit ledger (split-aware). */
+  creditAmount?: number | null;
   status: string;
   totalCost?: number | null;
   revenueBeforeTax?: number | null;
@@ -1154,7 +1208,6 @@ export interface CheckoutResponse {
   totalProfit?: number | null;
   marginPercent?: number | null;
   billingMode?: BillingMode;
-  accountingJournalEntryId?: string | null;
   creditEntryId?: string | null;
 }
 
@@ -1183,109 +1236,25 @@ export interface CartResponse {
   customerDlNo?: string;
   customerPan?: string;
   customerId?: string;
-  paymentMethod?: string;
+  paymentMethod?: PaymentMethod | string;
+  /** Amount paid in cash now (split-aware). Absent on legacy completed rows. */
+  cashAmount?: number | null;
+  /** Amount paid online now (split-aware). Absent on legacy completed rows. */
+  onlineAmount?: number | null;
+  /** Amount posted to the credit ledger (split-aware). Absent on legacy rows. */
+  creditAmount?: number | null;
   totalCost?: number | null;
   revenueBeforeTax?: number | null;
   revenueAfterTax?: number | null;
   totalProfit?: number | null;
   marginPercent?: number | null;
   billingMode?: BillingMode;
-  /** Present when checkout completed and a SALE journal was posted in the general ledger. */
-  accountingJournalEntryId?: string | null;
   /** Present when checkout completion left a customer due in credit ledger. */
   creditEntryId?: string | null;
 }
 
-/** General ledger account type (matches Java {@code AccountType}). */
-export type GlAccountType = 'ASSET' | 'LIABILITY' | 'EQUITY' | 'REVENUE' | 'EXPENSE';
-
-export interface GlAccountResponse {
-  id: string;
-  code: string;
-  name: string;
-  accountType: GlAccountType | string;
-  systemAccount: boolean;
-  active: boolean;
-  /** Posted journal debits to this account (trial-balance scope). */
-  totalDebit: number;
-  /** Posted journal credits to this account (trial-balance scope). */
-  totalCredit: number;
-}
-
-export interface CreateGlAccountDto {
-  code: string;
-  name: string;
-  accountType: GlAccountType;
-  active?: boolean;
-}
-
-export interface PostManualJournalLineDto {
-  accountCode: string;
-  debit?: number | null;
-  credit?: number | null;
-  memo?: string | null;
-}
-
-export interface PostManualJournalDto {
-  description: string;
-  /** ISO-8601 instant; omit for “now”. */
-  journalDate?: string | null;
-  /** Optional idempotency key; repeats return the existing journal. */
-  sourceKey?: string | null;
-  lines: PostManualJournalLineDto[];
-}
-
-export interface JournalLineResponse {
-  lineNo: number;
-  accountId: string;
-  accountCode: string;
-  debit: number;
-  credit: number;
-  memo?: string | null;
-  partyType?: 'VENDOR' | 'CUSTOMER' | null;
-  partyId?: string | null;
-}
-
-export interface JournalEntryResponse {
-  id: string;
-  shopId: string;
-  journalDate: string;
-  postedAt: string;
-  description: string;
-  source: string;
-  sourceKey?: string | null;
-  totalDebitSum: number;
-  totalCreditSum: number;
-  postedByUserId?: string | null;
-  lines: JournalLineResponse[];
-}
-
-export interface JournalListEnvelope {
-  journals: JournalEntryResponse[];
-  page: number;
-  size: number;
-  totalItems: number;
-  totalPages: number;
-}
-
-/** {@code GET /accounting/shop-summary} — effective tenant for GL queries */
-export interface AccountingShopSummary {
-  shopId: string;
-  /** Rows in {@code acct_gl_accounts} (bootstrap chart — not journal activity). */
-  chartAccountCount: number;
-  /** Rows in {@code acct_journal_entries}. */
-  journalEntryCount: number;
-}
-
-export interface TrialBalanceLine {
-  accountCode: string;
-  accountName: string;
-  debit: number;
-  credit: number;
-}
-
 export type CreditPartyType = 'VENDOR' | 'CUSTOMER';
-export type CreditEntryType = 'CHARGE' | 'SETTLEMENT' | 'ADJUSTMENT';
+export type CreditEntryType = 'CHARGE' | 'SETTLEMENT' | 'RETURN' | 'ADJUSTMENT';
 export type CreditDirection = 'INCREASE_DUE' | 'DECREASE_DUE';
 export type CreditBalanceStatus = 'CLEAR' | 'DUE' | 'ADVANCE';
 
@@ -1312,6 +1281,9 @@ export interface CreditEntryResponse {
   referenceType?: string | null;
   referenceId?: string | null;
   sourceKey?: string | null;
+  paymentMethod?: string | null;
+  bankRef?: string | null;
+  txnDate?: string | null;
   createdByUserId?: string | null;
   createdAt: string;
 }
@@ -1324,6 +1296,14 @@ export interface CreditEntriesPageResponse {
   totalPages: number;
 }
 
+/** Tender used when posting a settlement (required on settlement API). */
+export type CreditSettlementPaymentMethod =
+  | 'CASH'
+  | 'UPI'
+  | 'BANK'
+  | 'CARD'
+  | 'ADJUSTMENT';
+
 export interface CreateCreditEntryDto {
   partyType: CreditPartyType;
   partyId: string;
@@ -1334,6 +1314,11 @@ export interface CreateCreditEntryDto {
   referenceType?: string;
   referenceId?: string;
   sourceKey?: string;
+  /** Required for {@code POST /credit/settlement}. */
+  paymentMethod?: CreditSettlementPaymentMethod;
+  bankRef?: string;
+  /** Business date (yyyy-mm-dd); defaults to today on the server. */
+  txnDate?: string;
 }
 
 export interface AddToCartDto {
@@ -1353,10 +1338,20 @@ export interface AddToCartDto {
 export interface UpdateCartStatusDto {
   purchaseId: string;
   status: string;
-  paymentMethod: string;
-  /** Sale completion: debit this asset GL (e.g. CASH or a manual bank). Omit for CASH. */
-  receiptGlAccountCode?: string;
-  /** Optional paid-now amount for split credit checkout (remaining goes to due). */
+  /** Canonical PaymentMethod (one of the 6 values). */
+  paymentMethod: PaymentMethod | string;
+  /** Amount paid in cash now (new split-aware field). */
+  cashAmount?: number;
+  /** Amount paid online now (new split-aware field). */
+  onlineAmount?: number;
+  /** Amount that posts to the customer credit ledger (new split-aware field). */
+  creditAmount?: number;
+  /**
+   * Legacy paid-now amount on a CREDIT sale (the rest went to the ledger).
+   * Kept for back-compat with older servers; new clients should send the
+   * explicit cash/online/credit split.
+   * @deprecated use `cashAmount`/`onlineAmount`/`creditAmount` instead.
+   */
   creditPaidAmount?: number;
 }
 
@@ -1377,7 +1372,13 @@ export interface Purchase {
   grandTotal: number;
   soldAt: string;
   status: string;
-  paymentMethod: string;
+  paymentMethod: PaymentMethod | string;
+  /** Amount paid in cash now (split-aware). Absent on legacy completed rows. */
+  cashAmount?: number | null;
+  /** Amount paid online now (split-aware). Absent on legacy completed rows. */
+  onlineAmount?: number | null;
+  /** Amount posted to the credit ledger (split-aware). Absent on legacy rows. */
+  creditAmount?: number | null;
   customerName: string | null;
   customerAddress: string | null;
   customerPhone: string | null;
@@ -1430,6 +1431,11 @@ export interface RefundItem {
 export interface CreateRefundDto {
   purchaseId: string;
   items: RefundItem[];
+  reason?: string | null;
+  paymentMethod: PaymentMethod | string;
+  cashAmount?: number;
+  onlineAmount?: number;
+  creditAmount?: number;
 }
 
 export interface RefundedItem {
@@ -2581,4 +2587,259 @@ export interface Gstr3bReportResponse {
   section4?: Gstr3bSection4Dto;
   section5?: Gstr3bSection5Dto;
   section61?: Gstr3bSection61Dto;
+}
+
+// Accounting module --------------------------------------------------------
+
+export type AccountType =
+  | 'ASSET'
+  | 'LIABILITY'
+  | 'EQUITY'
+  | 'REVENUE'
+  | 'EXPENSE';
+
+export type NormalBalance = 'DEBIT' | 'CREDIT';
+
+export type AccountingPartyType = 'CUSTOMER' | 'VENDOR' | 'SHOP';
+
+export type JournalSource =
+  | 'OPENING_BALANCE'
+  | 'VENDOR_PURCHASE_INVOICE'
+  | 'VENDOR_PURCHASE_RETURN'
+  | 'SALE'
+  | 'SALES_RETURN'
+  | 'CUSTOMER_SETTLEMENT'
+  | 'VENDOR_PAYMENT'
+  | 'INVENTORY_CORRECTION'
+  | 'MANUAL'
+  | 'REVERSAL';
+
+export type JournalStatus = 'POSTED' | 'REVERSED' | 'VOID';
+
+export interface AccountResponse {
+  id: string;
+  code: string;
+  name: string;
+  type: AccountType;
+  normalBalance: NormalBalance;
+  parentCode?: string | null;
+  system: boolean;
+  active: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateAccountRequest {
+  code: string;
+  name: string;
+  type: AccountType;
+  normalBalance?: NormalBalance;
+}
+
+export interface UpdateAccountRequest {
+  name?: string;
+  active?: boolean;
+}
+
+export interface JournalLineResponse {
+  lineIndex: number;
+  accountId: string;
+  accountCode: string;
+  accountName: string;
+  debit: number;
+  credit: number;
+  partyType?: AccountingPartyType | null;
+  partyRefId?: string | null;
+  partyDisplayName?: string | null;
+  memo?: string | null;
+}
+
+export interface JournalEntryResponse {
+  id: string;
+  entryNo: string;
+  txnDate: string;
+  postedAt: string;
+  sourceType: JournalSource;
+  sourceId?: string | null;
+  status: JournalStatus;
+  reversesEntryId?: string | null;
+  reversedByEntryId?: string | null;
+  narration?: string | null;
+  lines: JournalLineResponse[];
+  totalDebit: number;
+  totalCredit: number;
+  createdByUserId?: string | null;
+}
+
+export interface JournalEntriesPageResponse {
+  entries: JournalEntryResponse[];
+  page: number;
+  size: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+export interface CreateJournalLineRequest {
+  accountCode?: string;
+  accountId?: string;
+  debit?: number;
+  credit?: number;
+  partyType?: AccountingPartyType;
+  partyRefId?: string;
+  partyDisplayName?: string;
+  memo?: string;
+}
+
+export interface CreateJournalEntryRequest {
+  txnDate?: string;
+  narration?: string;
+  lines: CreateJournalLineRequest[];
+}
+
+export interface ReverseJournalRequest {
+  reason?: string;
+}
+
+export interface LedgerEntryResponse {
+  id: string;
+  journalEntryId: string;
+  journalEntryNo: string;
+  sourceType: JournalSource;
+  sourceId?: string | null;
+  txnDate: string;
+  postedAt: string;
+  debit: number;
+  credit: number;
+  balanceAfter: number;
+  partyType?: AccountingPartyType | null;
+  partyRefId?: string | null;
+  partyDisplayName?: string | null;
+  narration?: string | null;
+}
+
+export interface LedgerPageResponse {
+  account: AccountResponse;
+  entries: LedgerEntryResponse[];
+  page: number;
+  size: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+export interface TrialBalanceRow {
+  accountId: string;
+  accountCode: string;
+  accountName: string;
+  accountType: AccountType;
+  normalBalance: NormalBalance;
+  debitTurnover: number;
+  creditTurnover: number;
+  debitBalance: number;
+  creditBalance: number;
+}
+
+export interface TrialBalanceResponse {
+  asOf: string;
+  rows: TrialBalanceRow[];
+  totalDebit: number;
+  totalCredit: number;
+}
+
+export interface BackfillResult {
+  processed: number;
+  posted: number;
+  /** Re-posted invoices (only non-zero when force=true was passed). */
+  reposted: number;
+  skipped: number;
+  failed: number;
+}
+
+export interface FinancialReportLineDto {
+  accountId: string;
+  accountCode: string;
+  accountName: string;
+  accountType: AccountType;
+  amount: number;
+}
+
+export interface ProfitAndLossResponse {
+  from: string;
+  to: string;
+  revenueLines: FinancialReportLineDto[];
+  expenseLines: FinancialReportLineDto[];
+  totalRevenue: number;
+  totalExpense: number;
+  netProfit: number;
+}
+
+export interface BalanceSheetResponse {
+  asOf: string;
+  assets: FinancialReportLineDto[];
+  liabilities: FinancialReportLineDto[];
+  equity: FinancialReportLineDto[];
+  totalAssets: number;
+  totalLiabilities: number;
+  totalEquity: number;
+  totalLiabilitiesAndEquity: number;
+  imbalance: number;
+}
+
+export interface OpeningBalanceRequest {
+  txnDate?: string;
+  narration?: string;
+  lines: CreateJournalLineRequest[];
+}
+
+export interface PartySummaryRow {
+  partyType: AccountingPartyType;
+  partyRefId: string;
+  partyDisplayName: string | null;
+  debitTurnover: number;
+  creditTurnover: number;
+  /** Positive = we owe vendor (VENDOR) / customer owes us (CUSTOMER). */
+  balance: number;
+  lastTxnDate: string | null;
+  txnCount: number;
+}
+
+export interface PartySummariesResponse {
+  partyType: AccountingPartyType;
+  from: string | null;
+  to: string | null;
+  asOf: string;
+  parties: PartySummaryRow[];
+  totalDebit: number;
+  totalCredit: number;
+  totalBalance: number;
+}
+
+export interface PartyStatementEntryResponse {
+  id: string;
+  journalEntryId: string;
+  journalEntryNo: string;
+  sourceType: JournalSource;
+  sourceId: string | null;
+  txnDate: string;
+  postedAt: string;
+  accountId: string;
+  accountCode: string;
+  accountName: string;
+  debit: number;
+  credit: number;
+  /** Party-oriented running balance after this entry. */
+  balanceAfter: number;
+  narration: string | null;
+}
+
+export interface PartyStatementResponse {
+  partyType: AccountingPartyType;
+  partyRefId: string;
+  partyDisplayName: string | null;
+  openingBalance: number;
+  closingBalance: number;
+  entries: PartyStatementEntryResponse[];
+  page: number;
+  size: number;
+  totalItems: number;
+  totalPages: number;
 }

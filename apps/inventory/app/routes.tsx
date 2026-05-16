@@ -51,14 +51,53 @@ export default [
     route('price-edit/:pricingId', './routes/dashboard.price-edit.tsx'),
     route('taxes', './routes/dashboard.taxes.tsx'),
     route('credit', './routes/dashboard.credit.tsx'),
+    route('accounting', './routes/dashboard.accounting.tsx'),
+    route('accounting/journal', './routes/dashboard.accounting.journal.tsx'),
     route(
-      'accounting',
-      './routes/dashboard.accounting._layout.tsx',
-      [
-        index('./routes/dashboard.accounting._index.tsx'),
-        route('manual-journal', './routes/dashboard.accounting.manual-journal.tsx'),
-        route('accounts', './routes/dashboard.accounting.accounts.tsx'),
-      ]
+      'accounting/journal/new',
+      './routes/dashboard.accounting.journal.new.tsx'
+    ),
+    route(
+      'accounting/journal/:entryId',
+      './routes/dashboard.accounting.journal.$entryId.tsx'
+    ),
+    route('accounting/ledger', './routes/dashboard.accounting.ledger.tsx'),
+    route(
+      'accounting/ledger/:accountId',
+      './routes/dashboard.accounting.ledger.$accountId.tsx'
+    ),
+    route('accounting/vendors', './routes/dashboard.accounting.vendors.tsx'),
+    route(
+      'accounting/vendors/:partyRefId',
+      './routes/dashboard.accounting.vendors.$partyRefId.tsx'
+    ),
+    route(
+      'accounting/customers',
+      './routes/dashboard.accounting.customers.tsx'
+    ),
+    route(
+      'accounting/customers/:partyRefId',
+      './routes/dashboard.accounting.customers.$partyRefId.tsx'
+    ),
+    route(
+      'accounting/trial-balance',
+      './routes/dashboard.accounting.trial-balance.tsx'
+    ),
+    route(
+      'accounting/chart-of-accounts',
+      './routes/dashboard.accounting.chart-of-accounts.tsx'
+    ),
+    route(
+      'accounting/opening-balances',
+      './routes/dashboard.accounting.opening-balances.tsx'
+    ),
+    route(
+      'accounting/reports/profit-and-loss',
+      './routes/dashboard.accounting.reports.profit-and-loss.tsx'
+    ),
+    route(
+      'accounting/reports/balance-sheet',
+      './routes/dashboard.accounting.reports.balance-sheet.tsx'
     ),
     route('plan-payment', './routes/dashboard.plan-payment.tsx'),
     route('plan-status', './routes/dashboard.plan-status.tsx'),

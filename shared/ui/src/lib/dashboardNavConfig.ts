@@ -74,21 +74,45 @@ export const DASHBOARD_MENU_GROUPS: DashboardMenuGroup[] = [
     ],
   },
   {
+    id: 'credit',
+    label: 'Credit',
+    icon: '🤝',
+    items: [
+      { path: '/dashboard/credit', label: 'Credit balances', icon: '🤝' },
+    ],
+  },
+  {
     id: 'accounting',
     label: 'Accounting',
-    icon: '🧾',
+    icon: '📚',
     items: [
+      { path: '/dashboard/accounting', label: 'Overview', icon: '📊' },
       {
-        path: '/dashboard/accounting',
-        label: 'Journals & trial balance',
+        path: '/dashboard/accounting/journal',
+        label: 'Journal Entries',
+        icon: '📝',
+      },
+      { path: '/dashboard/accounting/ledger', label: 'Ledger', icon: '📒' },
+      {
+        path: '/dashboard/accounting/vendors',
+        label: 'Vendors',
+        icon: '🚚',
+      },
+      {
+        path: '/dashboard/accounting/customers',
+        label: 'Customers',
         icon: '🧾',
       },
       {
-        path: '/dashboard/accounting/accounts',
-        label: 'Chart of accounts',
-        icon: '📒',
+        path: '/dashboard/accounting/trial-balance',
+        label: 'Trial Balance',
+        icon: '⚖️',
       },
-      { path: '/dashboard/credit', label: 'Credit balances', icon: '🤝' },
+      {
+        path: '/dashboard/accounting/chart-of-accounts',
+        label: 'Chart of Accounts',
+        icon: '🗂️',
+      },
     ],
   },
   {
@@ -159,6 +183,13 @@ export const CASHIER_HIDDEN_DASHBOARD_PATHS = [
   '/dashboard/shop-users',
   '/dashboard/invitations',
   '/dashboard/join-requests',
+  '/dashboard/accounting',
+  '/dashboard/accounting/journal',
+  '/dashboard/accounting/ledger',
+  '/dashboard/accounting/vendors',
+  '/dashboard/accounting/customers',
+  '/dashboard/accounting/trial-balance',
+  '/dashboard/accounting/chart-of-accounts',
 ];
 
 export type DashboardNavRow = DashboardMenuItem & { groupLabel: string };
