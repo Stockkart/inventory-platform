@@ -559,7 +559,7 @@ export default function VendorReturnPage() {
       returnTotal
     );
     if (!payCheck.ok) {
-      notifyError(payCheck.message);
+      notifyError(payCheck.message ?? 'Invalid return payment split.');
       return;
     }
 

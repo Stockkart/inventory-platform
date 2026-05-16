@@ -333,7 +333,7 @@ export default function RefundPage() {
     }
     const payCheck = validatePaymentSplit(paymentMethod, paymentSplit, returnTotal);
     if (!payCheck.ok) {
-      notifyError(payCheck.message);
+      notifyError(payCheck.message ?? 'Invalid refund payment split.');
       return;
     }
 
