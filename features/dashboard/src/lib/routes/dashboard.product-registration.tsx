@@ -193,37 +193,161 @@ function numericProductMoney(v: number | string | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+type PurchaseSchemeFields = Pick<
+  ProductFormData,
+  | 'purchaseSchemeType'
+  | 'purchaseSchemePayFor'
+  | 'purchaseSchemeFree'
+  | 'purchaseSchemePercentage'
+  | 'purchaseAdditionalDiscount'
+>;
+
+/** Parse grid/list draft: "10+2", "8 + 2", "15%". */
+function parsePurchaseSchemeDraft(raw: string): PurchaseSchemeFields | null {
+  const t = raw.trim();
+  if (!t) return null;
+  if (t.endsWith('%')) {
+    const num = parseFloat(t.slice(0, -1));
+    if (!isNaN(num) && num >= 0 && num <= 100) {
+      return {
+        purchaseSchemeType: 'PERCENTAGE',
+        purchaseSchemePercentage: num,
+        purchaseSchemePayFor: null,
+        purchaseSchemeFree: null,
+        purchaseAdditionalDiscount: null,
+      };
+    }
+    return null;
+  }
+  const plusIdx = t.indexOf('+');
+  if (plusIdx >= 0) {
+    const left = parseInt(t.slice(0, plusIdx).trim(), 10);
+    const right = parseInt(t.slice(plusIdx + 1).trim(), 10);
+    if (!isNaN(left) && !isNaN(right) && left >= 0 && right >= 0) {
+      return {
+        purchaseSchemeType: 'FIXED_UNITS',
+        purchaseSchemePayFor: left,
+        purchaseSchemeFree: right,
+        purchaseSchemePercentage: null,
+        purchaseAdditionalDiscount: null,
+      };
+    }
+  }
+  return null;
+}
+
+/**
+ * Apply vendor purchase scheme + additional discount to a tax-exclusive line.
+ * FIXED_UNITS "8+2" → pay 8/10 of line (20% off). PERCENTAGE → price × (1 − pct/100).
+ */
+function applyPurchaseDiscountsToLine(
+  lineTaxableExclusive: number,
+  scheme: PurchaseSchemeFields
+): number {
+  if (lineTaxableExclusive <= 0) return 0;
+  let line = lineTaxableExclusive;
+  const schemeType = scheme.purchaseSchemeType ?? 'FIXED_UNITS';
+
+  if (schemeType === 'PERCENTAGE') {
+    const pct = scheme.purchaseSchemePercentage;
+    if (pct != null && pct > 0) {
+      line = roundMoney(line * (1 - pct / 100));
+    }
+  } else {
+    const payFor = scheme.purchaseSchemePayFor;
+    const free = scheme.purchaseSchemeFree;
+    if (payFor != null && payFor > 0 && free != null && free >= 0) {
+      const sum = payFor + free;
+      if (sum > 0) {
+        line = roundMoney((line * payFor) / sum);
+      }
+    }
+  }
+
+  const addDisc = scheme.purchaseAdditionalDiscount;
+  if (addDisc != null && addDisc !== 0) {
+    line = roundMoney(line * (1 - addDisc / 100));
+  }
+  return line;
+}
+
+function resolvePurchaseSchemeForTotals(
+  product: ProductFormData,
+  purchaseDraft?: string
+): PurchaseSchemeFields {
+  const parsed = purchaseDraft ? parsePurchaseSchemeDraft(purchaseDraft) : null;
+  if (parsed) {
+    return {
+      ...parsed,
+      purchaseAdditionalDiscount: product.purchaseAdditionalDiscount,
+    };
+  }
+  return {
+    purchaseSchemeType: product.purchaseSchemeType,
+    purchaseSchemePayFor: product.purchaseSchemePayFor,
+    purchaseSchemeFree: product.purchaseSchemeFree,
+    purchaseSchemePercentage: product.purchaseSchemePercentage,
+    purchaseAdditionalDiscount: product.purchaseAdditionalDiscount,
+  };
+}
+
 /** Recompute supplier bill line subtotal + tax total from live product rows. */
 function computeVendorInvoiceTotalsFromProducts(
   productRows: ProductFormData[],
-  billingModeForGst: BillingMode
+  billingModeForGst: BillingMode,
+  schemeDrafts?: Record<string, { sale?: string; purchase?: string }>
 ): { lineSubTotal: number; taxTotal: number } {
-  const items: ParseInvoiceItem[] = productRows.map((p) => {
-    const cost = numericProductMoney(p.costPrice);
+  let lineSubTotal = 0;
+  let taxTotal = 0;
+
+  for (const p of productRows) {
+    const qtyRaw = p.count;
+    const q =
+      qtyRaw != null && Number.isFinite(Number(qtyRaw))
+        ? Math.max(0, Number(qtyRaw))
+        : 0;
+    const pts = numericProductMoney(p.costPrice);
     const ptr = numericProductMoney(p.priceToRetail);
-    return {
-      barcode: '',
-      name: '',
-      businessType: 'pharmacy',
-      maximumRetailPrice: numericProductMoney(p.maximumRetailPrice) ?? 0,
-      costPrice: cost,
-      priceToRetail: ptr ?? 0,
-      count: p.count,
-      sgst:
-        billingModeForGst === 'BASIC'
-          ? ''
-          : typeof p.sgst === 'string'
-            ? p.sgst
-            : '',
-      cgst:
-        billingModeForGst === 'BASIC'
-          ? ''
-          : typeof p.cgst === 'string'
-            ? p.cgst
-            : '',
-    };
-  });
-  return computeVendorInvoiceTotalsFromParseItems(items);
+    let unit = 0;
+    if (pts != null && pts >= 0) {
+      unit = pts;
+    } else if (ptr != null && ptr > 0) {
+      unit = ptr;
+    }
+
+    const scheme = resolvePurchaseSchemeForTotals(
+      p,
+      schemeDrafts?.[p.id]?.purchase
+    );
+    const lineTaxableExclusive = applyPurchaseDiscountsToLine(
+      roundMoney(q * unit),
+      scheme
+    );
+
+    const sgst =
+      billingModeForGst === 'BASIC'
+        ? 0
+        : parseGstPercent(typeof p.sgst === 'string' ? p.sgst : undefined);
+    const cgst =
+      billingModeForGst === 'BASIC'
+        ? 0
+        : parseGstPercent(typeof p.cgst === 'string' ? p.cgst : undefined);
+    const pct = sgst + cgst;
+
+    if (pct > 0 && lineTaxableExclusive > 0) {
+      const cgstAmt = roundMoney((lineTaxableExclusive * cgst) / 100);
+      const sgstAmt = roundMoney((lineTaxableExclusive * sgst) / 100);
+      lineSubTotal += lineTaxableExclusive;
+      taxTotal += roundMoney(cgstAmt + sgstAmt);
+    } else {
+      lineSubTotal += lineTaxableExclusive;
+    }
+  }
+
+  return {
+    lineSubTotal: roundMoney(lineSubTotal),
+    taxTotal: roundMoney(taxTotal),
+  };
 }
 
 export default function ProductRegistrationPage() {
@@ -354,6 +478,11 @@ export default function ProductRegistrationPage() {
   // Multiple products state
   const [products, setProducts] = useState<ProductFormData[]>([]);
 
+  // Grid view: draft values for scheme fields (user can type "10+2" or "15%")
+  const [gridSchemeDrafts, setGridSchemeDrafts] = useState<
+    Record<string, { sale?: string; purchase?: string }>
+  >({});
+
   const prevRegisteredProductCountRef = useRef(0);
 
   // Keep invoice line subtotal / tax in sync whenever product rows or GST mode change.
@@ -370,11 +499,12 @@ export default function ProductRegistrationPage() {
     prevRegisteredProductCountRef.current = n;
     const { lineSubTotal, taxTotal } = computeVendorInvoiceTotalsFromProducts(
       products,
-      billingMode
+      billingMode,
+      gridSchemeDrafts
     );
     setVendorLineSubTotal(formatComputedAmount(lineSubTotal));
     setVendorTaxTotal(formatComputedAmount(taxTotal));
-  }, [products, billingMode]);
+  }, [products, billingMode, gridSchemeDrafts]);
 
   // Product view mode: list (accordion) or grid (Excel-style)
   const [productViewMode, setProductViewMode] = useState<'list' | 'grid'>(
@@ -386,11 +516,6 @@ export default function ProductRegistrationPage() {
       return 'list';
     }
   );
-
-  // Grid view: draft values for scheme fields (user can type "10+2" or "15%")
-  const [gridSchemeDrafts, setGridSchemeDrafts] = useState<
-    Record<string, { sale?: string; purchase?: string }>
-  >({});
 
   const purchaseDateFieldMin = (() => {
     const d = new Date();
@@ -2849,70 +2974,28 @@ export default function ProductRegistrationPage() {
                                 );
                                 return;
                               }
-                              if (raw.endsWith('%')) {
-                                const num = parseFloat(raw.slice(0, -1));
-                                if (!isNaN(num) && num >= 0 && num <= 100) {
-                                  handleProductChange(
-                                    product.id,
-                                    'purchaseSchemeType',
-                                    'PERCENTAGE'
-                                  );
-                                  handleProductChange(
-                                    product.id,
-                                    'purchaseSchemePercentage',
-                                    num
-                                  );
-                                  handleProductChange(
-                                    product.id,
-                                    'purchaseSchemePayFor',
-                                    null
-                                  );
-                                  handleProductChange(
-                                    product.id,
-                                    'purchaseSchemeFree',
-                                    null
-                                  );
-                                }
-                                return;
-                              }
-                              const plusIdx = raw.indexOf('+');
-                              if (plusIdx >= 0) {
-                                const left = parseInt(
-                                  raw.slice(0, plusIdx).trim(),
-                                  10
-                                );
-                                const right = parseInt(
-                                  raw.slice(plusIdx + 1).trim(),
-                                  10
-                                );
-                                if (
-                                  !isNaN(left) &&
-                                  !isNaN(right) &&
-                                  left >= 0 &&
-                                  right >= 0
-                                ) {
-                                  handleProductChange(
-                                    product.id,
-                                    'purchaseSchemeType',
-                                    'FIXED_UNITS'
-                                  );
-                                  handleProductChange(
-                                    product.id,
-                                    'purchaseSchemePayFor',
-                                    left
-                                  );
-                                  handleProductChange(
-                                    product.id,
-                                    'purchaseSchemeFree',
-                                    right
-                                  );
-                                  handleProductChange(
-                                    product.id,
-                                    'purchaseSchemePercentage',
-                                    null
-                                  );
-                                }
-                              }
+                              const parsed = parsePurchaseSchemeDraft(raw);
+                              if (!parsed) return;
+                              handleProductChange(
+                                product.id,
+                                'purchaseSchemeType',
+                                parsed.purchaseSchemeType ?? 'FIXED_UNITS'
+                              );
+                              handleProductChange(
+                                product.id,
+                                'purchaseSchemePercentage',
+                                parsed.purchaseSchemePercentage
+                              );
+                              handleProductChange(
+                                product.id,
+                                'purchaseSchemePayFor',
+                                parsed.purchaseSchemePayFor
+                              );
+                              handleProductChange(
+                                product.id,
+                                'purchaseSchemeFree',
+                                parsed.purchaseSchemeFree
+                              );
                             }}
                             disabled={isLoading}
                           />
@@ -4137,7 +4220,28 @@ function ProductAccordion({
                   className={styles.input}
                   placeholder="Optional, from vendor"
                   value={purchaseSchemeFixedDraft}
-                  onChange={(e) => setPurchaseSchemeFixedDraft(e.target.value)}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setPurchaseSchemeFixedDraft(v);
+                    const parsed = parsePurchaseSchemeDraft(v);
+                    if (
+                      parsed?.purchaseSchemeType === 'FIXED_UNITS' &&
+                      v.includes('+')
+                    ) {
+                      onChange(product.id, 'purchaseSchemeType', 'FIXED_UNITS');
+                      onChange(
+                        product.id,
+                        'purchaseSchemePayFor',
+                        parsed.purchaseSchemePayFor
+                      );
+                      onChange(
+                        product.id,
+                        'purchaseSchemeFree',
+                        parsed.purchaseSchemeFree
+                      );
+                      onChange(product.id, 'purchaseSchemePercentage', null);
+                    }
+                  }}
                   onFocus={() => setPurchaseSchemeFixedFocused(true)}
                   onBlur={() => {
                     setPurchaseSchemeFixedFocused(false);
