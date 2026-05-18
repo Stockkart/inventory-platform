@@ -13,6 +13,7 @@ import type {
   ProcessJoinRequestResponse,
   ShopDetailResponse,
   UpdateShopDto,
+  BusinessProfileResponse,
 } from '@inventory-platform/types';
 
 export const shopsApi = {
@@ -84,6 +85,14 @@ export const shopsApi = {
     const response = await apiClient.patch<ApiResponse<ShopDetailResponse>>(
       API_ENDPOINTS.SHOPS.ACTIVE_SHOP,
       data
+    );
+    return response.data;
+  },
+
+  /** Business profile for the active shop (field rules, modules, strategies). */
+  getBusinessProfile: async (): Promise<BusinessProfileResponse> => {
+    const response = await apiClient.get<ApiResponse<BusinessProfileResponse>>(
+      API_ENDPOINTS.SHOPS.BUSINESS_PROFILE
     );
     return response.data;
   },

@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router';
 import { QRCodeSVG } from 'qrcode.react';
 import {
   inventoryApi,
+  shopsApi,
   vendorsApi,
   uploadApi,
   usersApi,
@@ -27,6 +28,12 @@ import type {
   BillingMode,
   PaymentMethod,
   PaymentSplit,
+  BusinessProfileResponse,
+  isProfileFieldRequired,
+  isProfileFieldVisible,
+  isProfileModuleEnabled,
+  profileFieldLabel,
+  validateProductRegistrationFields,
 } from '@inventory-platform/types';
 import {
   CustomRemindersSection,
@@ -410,6 +417,24 @@ export default function ProductRegistrationPage() {
     emptyPaymentSplit()
   );
 
+  const [businessProfile, setBusinessProfile] =
+    useState<BusinessProfileResponse | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    shopsApi
+      .getBusinessProfile()
+      .then((profile) => {
+        if (!cancelled) setBusinessProfile(profile);
+      })
+      .catch(() => {
+        /* fallback validators use pharmacy defaults when profile is null */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   /**
    * Apply OCR header + optional line-derived totals. When `parsedItems` has
    * rows, line subtotal, tax total, and invoice total are computed from items
@@ -544,7 +569,7 @@ export default function ProductRegistrationPage() {
     maximumRetailPrice: 0,
     costPrice: 0,
     priceToRetail: 0,
-    businessType: 'pharmacy',
+    businessType: 'PHARMACEUTICAL',
     location: '',
     count: 0,
     expiryDate: '',
@@ -620,7 +645,7 @@ export default function ProductRegistrationPage() {
       maximumRetailPrice: item.maximumRetailPrice || 0,
       costPrice: item.costPrice || 0,
       priceToRetail: item.priceToRetail || 0,
-      businessType: item.businessType?.toLowerCase() || 'pharmacy',
+      businessType: item.businessType?.toUpperCase() || 'PHARMACEUTICAL',
       location: item.location || '',
       count: item.count || 0,
       expiryDate: item.expiryDate || '',
@@ -1060,102 +1085,31 @@ export default function ProductRegistrationPage() {
         return;
       }
 
-      // Validate all products
+      // Validate all products (rules from business profile)
       for (const product of products) {
-        if (
-          !product.name ||
-          !product.companyName ||
-          !product.location ||
-          !product.expiryDate
-        ) {
-          notifyError(
-            `Product "${product.name || 'Unnamed'}" is missing required fields`
-          );
-          setIsLoading(false);
-          return;
-        }
-
-        if (product.count <= 0) {
-          notifyError(
-            `Product "${
-              product.name || 'Unnamed'
-            }" count must be greater than 0`
-          );
-          setIsLoading(false);
-          return;
-        }
-
-        const normalizedConversionFactor =
-          Number(product.conversionFactor) || 0;
-        if (
-          !Number.isFinite(normalizedConversionFactor) ||
-          normalizedConversionFactor <= 0
-        ) {
-          notifyError(
-            `Product "${
-              product.name || 'Unnamed'
-            }": packaging factor is required and must be greater than 0`
-          );
-          setIsLoading(false);
-          return;
-        }
-
-        const ptr = Number(product.priceToRetail);
-        const cost = Number(product.costPrice);
-        const mrp = Number(product.maximumRetailPrice);
-        if (!Number.isFinite(ptr) || ptr <= 0) {
-          notifyError(
-            `Product "${
-              product.name || 'Unnamed'
-            }": PTR (price to retail) is required and must be greater than 0`
-          );
-          setIsLoading(false);
-          return;
-        }
-        if (!Number.isFinite(cost) || cost <= 0) {
-          notifyError(
-            `Product "${
-              product.name || 'Unnamed'
-            }": cost (PTS) is required and must be greater than 0`
-          );
-          setIsLoading(false);
-          return;
-        }
-        if (!Number.isFinite(mrp) || mrp <= 0) {
-          notifyError(
-            `Product "${
-              product.name || 'Unnamed'
-            }": MRP is required and must be greater than 0`
-          );
-          setIsLoading(false);
-          return;
-        }
-
-        if (
-          product.itemType === 'DEGREE' &&
-          (product.itemTypeDegree == null ||
-            product.itemTypeDegree <= 0 ||
-            !Number.isInteger(product.itemTypeDegree))
-        ) {
-          notifyError(
-            `Product "${
-              product.name || 'Unnamed'
-            }": when itemType is DEGREE, itemTypeDegree must be present and greater than zero`
-          );
-          setIsLoading(false);
-          return;
-        }
-
-        if (
-          billingMode === 'BASIC' &&
-          ((product.sgst && product.sgst.trim()) ||
-            (product.cgst && product.cgst.trim()))
-        ) {
-          notifyError(
-            `Product "${
-              product.name || 'Unnamed'
-            }": SGST/CGST must not be provided when billingMode is BASIC`
-          );
+        const profileError = validateProductRegistrationFields(
+          {
+            name: product.name,
+            companyName: product.companyName,
+            location: product.location,
+            count: product.count,
+            expiryDate: product.expiryDate,
+            batchNo: product.batchNo,
+            maximumRetailPrice: Number(product.maximumRetailPrice),
+            costPrice: Number(product.costPrice),
+            priceToRetail: Number(product.priceToRetail),
+            itemType: product.itemType,
+            itemTypeDegree: product.itemTypeDegree,
+            sgst: product.sgst,
+            cgst: product.cgst,
+            purchaseDate: product.purchaseDate,
+            conversionFactor: product.conversionFactor,
+          },
+          businessProfile,
+          billingMode
+        );
+        if (profileError) {
+          notifyError(profileError);
           setIsLoading(false);
           return;
         }
@@ -1185,6 +1139,10 @@ export default function ProductRegistrationPage() {
             setIsLoading(false);
             return;
           }
+        }
+
+        if (!isProfileModuleEnabled(businessProfile, 'schemes')) {
+          continue;
         }
 
         const schemeType = product.schemeType ?? 'FIXED_UNITS';
@@ -1296,7 +1254,7 @@ export default function ProductRegistrationPage() {
           maximumRetailPrice: Number(product.maximumRetailPrice) || 0,
           costPrice: Number(product.costPrice) || 0,
           priceToRetail: Number(product.priceToRetail) || 0,
-          businessType: product.businessType.toUpperCase(),
+          businessType: (product.businessType || 'PHARMACEUTICAL').toUpperCase(),
           location: product.location,
           count: product.count,
           baseUnit: 'BASE UNIT',
@@ -3242,6 +3200,7 @@ export default function ProductRegistrationPage() {
                   <ProductAccordion
                     key={product.id}
                     product={product}
+                    businessProfile={businessProfile}
                     billingMode={billingMode}
                     index={index}
                     onToggle={() => handleToggleProduct(product.id)}
@@ -3681,6 +3640,7 @@ export default function ProductRegistrationPage() {
 // Product Accordion Component
 interface ProductAccordionProps {
   product: ProductFormData;
+  businessProfile: BusinessProfileResponse | null;
   billingMode: BillingMode;
   index: number;
   onToggle: () => void;
@@ -3700,6 +3660,7 @@ interface ProductAccordionProps {
 
 function ProductAccordion({
   product,
+  businessProfile,
   billingMode,
   index,
   onToggle,
@@ -3960,7 +3921,8 @@ function ProductAccordion({
                 htmlFor={`expiryDate-${product.id}`}
                 className={styles.label}
               >
-                Expiry Date *
+                {profileFieldLabel(businessProfile, 'inventory', 'expiryDate', 'Expiry Date')}
+                {isProfileFieldRequired(businessProfile, 'inventory', 'expiryDate') ? ' *' : ''}
               </label>
               <input
                 type="date"
@@ -3981,7 +3943,7 @@ function ProductAccordion({
                     onChange(product.id, 'expiryDate', '');
                   }
                 }}
-                required
+                required={isProfileFieldRequired(businessProfile, 'inventory', 'expiryDate')}
                 disabled={isLoading}
               />
             </div>
@@ -4008,8 +3970,11 @@ function ProductAccordion({
           </div>
 
           {/* Additional Product Information */}
-          {billingMode !== 'BASIC' && (
+          {(billingMode !== 'BASIC' ||
+            isProfileFieldVisible(businessProfile, 'inventory', 'batchNo')) && (
             <div className={styles.formRow}>
+              {billingMode !== 'BASIC' &&
+                isProfileFieldVisible(businessProfile, 'inventory', 'hsn') && (
               <div className={styles.formGroup}>
                 <label htmlFor={`hsn-${product.id}`} className={styles.label}>
                   HSN Code
@@ -4024,12 +3989,15 @@ function ProductAccordion({
                   disabled={isLoading}
                 />
               </div>
+              )}
+              {isProfileFieldVisible(businessProfile, 'inventory', 'batchNo') && (
               <div className={styles.formGroup}>
                 <label
                   htmlFor={`batchNo-${product.id}`}
                   className={styles.label}
                 >
-                  Batch Number
+                  {profileFieldLabel(businessProfile, 'inventory', 'batchNo', 'Batch Number')}
+                  {isProfileFieldRequired(businessProfile, 'inventory', 'batchNo') ? ' *' : ''}
                 </label>
                 <input
                   type="text"
@@ -4040,12 +4008,15 @@ function ProductAccordion({
                   onChange={(e) =>
                     onChange(product.id, 'batchNo', e.target.value)
                   }
+                  required={isProfileFieldRequired(businessProfile, 'inventory', 'batchNo')}
                   disabled={isLoading}
                 />
               </div>
+              )}
             </div>
           )}
 
+          {isProfileModuleEnabled(businessProfile, 'schemes') && (
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label
@@ -4138,6 +4109,8 @@ function ProductAccordion({
               </div>
             )}
           </div>
+
+          )}
 
           <div className={styles.formRow}>
             <div className={styles.formGroup}>

@@ -65,6 +65,7 @@ export const API_ENDPOINTS = {
   SHOPS: {
     REGISTER: '/shops/register',
     ACTIVE_SHOP: '/shops/active-shop',
+    BUSINESS_PROFILE: '/shops/business-profile',
     BY_OWNER_EMAIL: '/shops/by-owner-email',
     JOIN_REQUEST: '/shops/join-request',
     JOIN_REQUESTS: '/shops/join-requests',
