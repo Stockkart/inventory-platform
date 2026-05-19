@@ -517,17 +517,6 @@ export default function ProductRegistrationPage() {
     }
   );
 
-  const purchaseDateFieldMin = (() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 30);
-    return d.toISOString().split('T')[0];
-  })();
-  const purchaseDateFieldMax = (() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 30);
-    return d.toISOString().split('T')[0];
-  })();
-
   // Image upload state
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<string>('');
@@ -570,7 +559,6 @@ export default function ProductRegistrationPage() {
     itemType: 'NORMAL',
     itemTypeDegree: undefined,
     discountApplicable: undefined,
-    purchaseDate: new Date().toISOString().split('T')[0] + 'T00:00:00.000Z',
     baseUnit: 'BASE UNIT',
     conversionUnit: 'SALE UNIT',
     conversionFactor: 0,
@@ -676,7 +664,6 @@ export default function ProductRegistrationPage() {
       itemType: item.itemType ?? 'NORMAL',
       itemTypeDegree: item.itemTypeDegree,
       discountApplicable: item.discountApplicable,
-      purchaseDate: item.purchaseDate || undefined,
       baseUnit: item.baseUnit?.trim()
         ? item.baseUnit.trim().toUpperCase()
         : 'BASE UNIT',
@@ -1060,6 +1047,30 @@ export default function ProductRegistrationPage() {
         return;
       }
 
+      const purchaseDateFromInvoice = vendorInvoiceDate.trim()
+        ? `${vendorInvoiceDate.trim().slice(0, 10)}T00:00:00.000Z`
+        : undefined;
+      if (purchaseDateFromInvoice) {
+        const purchase = new Date(purchaseDateFromInvoice);
+        const now = new Date();
+        const daysPast =
+          (now.getTime() - purchase.getTime()) / (1000 * 60 * 60 * 24);
+        const daysFuture =
+          (purchase.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+        if (daysPast > 30) {
+          notifyError('Invoice date must not be older than 30 days');
+          setIsLoading(false);
+          return;
+        }
+        if (daysFuture > 30) {
+          notifyError(
+            'Invoice date must not be more than 30 days in the future'
+          );
+          setIsLoading(false);
+          return;
+        }
+      }
+
       // Validate all products
       for (const product of products) {
         if (
@@ -1158,33 +1169,6 @@ export default function ProductRegistrationPage() {
           );
           setIsLoading(false);
           return;
-        }
-
-        if (product.purchaseDate) {
-          const purchase = new Date(product.purchaseDate);
-          const now = new Date();
-          const daysPast =
-            (now.getTime() - purchase.getTime()) / (1000 * 60 * 60 * 24);
-          const daysFuture =
-            (purchase.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-          if (daysPast > 30) {
-            notifyError(
-              `Product "${
-                product.name || 'Unnamed'
-              }": Purchase date must not be older than 30 days`
-            );
-            setIsLoading(false);
-            return;
-          }
-          if (daysFuture > 30) {
-            notifyError(
-              `Product "${
-                product.name || 'Unnamed'
-              }": Purchase date must not be more than 30 days in the future`
-            );
-            setIsLoading(false);
-            return;
-          }
         }
 
         const schemeType = product.schemeType ?? 'FIXED_UNITS';
@@ -1376,16 +1360,8 @@ export default function ProductRegistrationPage() {
           ...(product.discountApplicable != null
             ? { discountApplicable: product.discountApplicable }
             : {}),
-          ...(product.purchaseDate
-            ? {
-                purchaseDate:
-                  product.purchaseDate.includes('T') &&
-                  product.purchaseDate.includes('Z')
-                    ? product.purchaseDate
-                    : `${String(product.purchaseDate)
-                        .trim()
-                        .slice(0, 10)}T00:00:00Z`,
-              }
+          ...(purchaseDateFromInvoice
+            ? { purchaseDate: purchaseDateFromInvoice }
             : {}),
           ...(validRates.length > 0
             ? {
@@ -2409,7 +2385,6 @@ export default function ProductRegistrationPage() {
                         ° *
                       </th>
                       <th className={styles.excelTh}>Disc appl.</th>
-                      <th className={styles.excelTh}>Purch. date</th>
                       {billingMode === 'REGULAR' && (
                         <>
                           <th className={styles.excelTh}>CGST %</th>
@@ -3144,38 +3119,6 @@ export default function ProductRegistrationPage() {
                             <option value="SCHEME">Scheme</option>
                             <option value="DISCOUNT_AND_SCHEME">Both</option>
                           </select>
-                        </td>
-                        <td className={styles.excelTd}>
-                          <input
-                            type="date"
-                            className={styles.excelInputDate}
-                            min={purchaseDateFieldMin}
-                            max={purchaseDateFieldMax}
-                            value={
-                              product.purchaseDate
-                                ? new Date(product.purchaseDate)
-                                    .toISOString()
-                                    .split('T')[0]
-                                : ''
-                            }
-                            onChange={(e) => {
-                              const dateValue = e.target.value;
-                              if (dateValue) {
-                                handleProductChange(
-                                  product.id,
-                                  'purchaseDate',
-                                  `${dateValue}T00:00:00.000Z`
-                                );
-                              } else {
-                                handleProductChange(
-                                  product.id,
-                                  'purchaseDate',
-                                  undefined
-                                );
-                              }
-                            }}
-                            disabled={isLoading}
-                          />
                         </td>
                         {billingMode === 'REGULAR' && (
                           <>
@@ -4175,6 +4118,17 @@ function ProductAccordion({
                 disabled={isLoading}
               />
             </div>
+            <div className={styles.formGroup} aria-hidden="true">
+              <span className={styles.label} style={{ visibility: 'hidden' }}>
+                .
+              </span>
+              <span
+                className={styles.input}
+                style={{ visibility: 'hidden', display: 'block' }}
+              >
+                .
+              </span>
+            </div>
           </div>
 
           {/* Purchase (from vendor) - for comparison at sale */}
@@ -4291,6 +4245,9 @@ function ProductAccordion({
                 />
               </div>
             )}
+          </div>
+
+          <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label
                 htmlFor={`purchaseAdditionalDiscount-${product.id}`}
@@ -4330,9 +4287,6 @@ function ProductAccordion({
                 disabled={isLoading}
               />
             </div>
-          </div>
-
-          <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label
                 htmlFor={`itemType-${product.id}`}
@@ -4361,199 +4315,85 @@ function ProductAccordion({
             </div>
           </div>
 
-          {product.itemType === 'DEGREE' ? (
-            <>
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label
-                    htmlFor={`itemTypeDegree-${product.id}`}
-                    className={styles.label}
-                  >
-                    Temperature / Degree *
-                  </label>
-                  <input
-                    type="number"
-                    id={`itemTypeDegree-${product.id}`}
-                    className={styles.input}
-                    placeholder="e.g. 8, 24"
-                    min={1}
-                    step={1}
-                    value={
-                      product.itemTypeDegree != null
-                        ? product.itemTypeDegree
-                        : ''
-                    }
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val === '') {
-                        onChange(product.id, 'itemTypeDegree', undefined);
-                      } else {
-                        const num = parseInt(val, 10);
-                        if (!isNaN(num) && num > 0 && Number.isInteger(num)) {
-                          onChange(product.id, 'itemTypeDegree', num);
-                        }
-                      }
-                    }}
-                    disabled={isLoading}
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label
-                    htmlFor={`purchaseDate-${product.id}`}
-                    className={styles.label}
-                  >
-                    Purchase date
-                  </label>
-                  <input
-                    type="date"
-                    id={`purchaseDate-${product.id}`}
-                    className={styles.input}
-                    min={(() => {
-                      const d = new Date();
-                      d.setDate(d.getDate() - 30);
-                      return d.toISOString().split('T')[0];
-                    })()}
-                    max={(() => {
-                      const d = new Date();
-                      d.setDate(d.getDate() + 30);
-                      return d.toISOString().split('T')[0];
-                    })()}
-                    value={
-                      product.purchaseDate
-                        ? new Date(product.purchaseDate)
-                            .toISOString()
-                            .split('T')[0]
-                        : ''
-                    }
-                    onChange={(e) => {
-                      const dateValue = e.target.value;
-                      if (dateValue) {
-                        onChange(
-                          product.id,
-                          'purchaseDate',
-                          `${dateValue}T00:00:00.000Z`
-                        );
-                      } else {
-                        onChange(product.id, 'purchaseDate', undefined);
-                      }
-                    }}
-                    disabled={isLoading}
-                  />
-                </div>
-              </div>
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label
-                    htmlFor={`discountApplicable-${product.id}`}
-                    className={styles.label}
-                  >
-                    Discount applicable
-                  </label>
-                  <select
-                    id={`discountApplicable-${product.id}`}
-                    className={styles.input}
-                    value={product.discountApplicable ?? ''}
-                    onChange={(e) => {
-                      const val = e.target.value as DiscountApplicable | '';
-                      onChange(
-                        product.id,
-                        'discountApplicable',
-                        val === '' ? undefined : (val as DiscountApplicable)
-                      );
-                    }}
-                    disabled={isLoading}
-                  >
-                    <option value="">— Select —</option>
-                    <option value="DISCOUNT">Discount applicable</option>
-                    <option value="SCHEME">Scheme/Deal applicable</option>
-                    <option value="DISCOUNT_AND_SCHEME">
-                      Both discount and scheme/deal applicable
-                    </option>
-                  </select>
-                </div>
-                <div className={styles.formGroup} aria-hidden="true">
-                  <span style={{ visibility: 'hidden', userSelect: 'none' }}>
-                    .
-                  </span>
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className={styles.formRow}>
+          <div className={styles.formRow}>
+            {product.itemType === 'DEGREE' ? (
               <div className={styles.formGroup}>
                 <label
-                  htmlFor={`discountApplicable-${product.id}`}
+                  htmlFor={`itemTypeDegree-${product.id}`}
                   className={styles.label}
                 >
-                  Discount applicable
-                </label>
-                <select
-                  id={`discountApplicable-${product.id}`}
-                  className={styles.input}
-                  value={product.discountApplicable ?? ''}
-                  onChange={(e) => {
-                    const val = e.target.value as DiscountApplicable | '';
-                    onChange(
-                      product.id,
-                      'discountApplicable',
-                      val === '' ? undefined : (val as DiscountApplicable)
-                    );
-                  }}
-                  disabled={isLoading}
-                >
-                  <option value="">— Select —</option>
-                  <option value="DISCOUNT">Discount applicable</option>
-                  <option value="SCHEME">Scheme/Deal applicable</option>
-                  <option value="DISCOUNT_AND_SCHEME">
-                    Both discount and scheme/deal applicable
-                  </option>
-                </select>
-              </div>
-              <div className={styles.formGroup}>
-                <label
-                  htmlFor={`purchaseDate-${product.id}`}
-                  className={styles.label}
-                >
-                  Purchase date
+                  Temperature / Degree *
                 </label>
                 <input
-                  type="date"
-                  id={`purchaseDate-${product.id}`}
+                  type="number"
+                  id={`itemTypeDegree-${product.id}`}
                   className={styles.input}
-                  min={(() => {
-                    const d = new Date();
-                    d.setDate(d.getDate() - 30);
-                    return d.toISOString().split('T')[0];
-                  })()}
-                  max={(() => {
-                    const d = new Date();
-                    d.setDate(d.getDate() + 30);
-                    return d.toISOString().split('T')[0];
-                  })()}
+                  placeholder="e.g. 8, 24"
+                  min={1}
+                  step={1}
                   value={
-                    product.purchaseDate
-                      ? new Date(product.purchaseDate)
-                          .toISOString()
-                          .split('T')[0]
+                    product.itemTypeDegree != null
+                      ? product.itemTypeDegree
                       : ''
                   }
                   onChange={(e) => {
-                    const dateValue = e.target.value;
-                    if (dateValue) {
-                      onChange(
-                        product.id,
-                        'purchaseDate',
-                        `${dateValue}T00:00:00.000Z`
-                      );
+                    const val = e.target.value;
+                    if (val === '') {
+                      onChange(product.id, 'itemTypeDegree', undefined);
                     } else {
-                      onChange(product.id, 'purchaseDate', undefined);
+                      const num = parseInt(val, 10);
+                      if (!isNaN(num) && num > 0 && Number.isInteger(num)) {
+                        onChange(product.id, 'itemTypeDegree', num);
+                      }
                     }
                   }}
                   disabled={isLoading}
                 />
               </div>
+            ) : (
+              <div className={styles.formGroup} aria-hidden="true">
+                <span className={styles.label} style={{ visibility: 'hidden' }}>
+                  .
+                </span>
+                <span
+                  className={styles.input}
+                  style={{ visibility: 'hidden', display: 'block' }}
+                >
+                  .
+                </span>
+              </div>
+            )}
+            <div className={styles.formGroup}>
+              <label
+                htmlFor={`discountApplicable-${product.id}`}
+                className={styles.label}
+              >
+                Discount applicable
+              </label>
+              <select
+                id={`discountApplicable-${product.id}`}
+                className={styles.input}
+                value={product.discountApplicable ?? ''}
+                onChange={(e) => {
+                  const val = e.target.value as DiscountApplicable | '';
+                  onChange(
+                    product.id,
+                    'discountApplicable',
+                    val === '' ? undefined : (val as DiscountApplicable)
+                  );
+                }}
+                disabled={isLoading}
+              >
+                <option value="">— Select —</option>
+                <option value="DISCOUNT">Discount applicable</option>
+                <option value="SCHEME">Scheme/Deal applicable</option>
+                <option value="DISCOUNT_AND_SCHEME">
+                  Both discount and scheme/deal applicable
+                </option>
+              </select>
             </div>
-          )}
+          </div>
+
 
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
