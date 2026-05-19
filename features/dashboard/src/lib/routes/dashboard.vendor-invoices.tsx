@@ -118,6 +118,10 @@ function InvoiceExpandedBody({
       { label: 'Tax total', value: formatMoney(detail.taxTotal) },
       { label: 'Shipping', value: formatMoney(detail.shippingCharge) },
       { label: 'Other charges', value: formatMoney(detail.otherCharges) },
+      {
+        label: 'Overall discount',
+        value: formatMoney(detail.overallDiscount),
+      },
       { label: 'Round off', value: formatMoney(detail.roundOff) },
       { label: 'Invoice total', value: formatMoney(detail.invoiceTotal) },
     ],

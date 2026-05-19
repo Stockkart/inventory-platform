@@ -706,6 +706,8 @@ export interface VendorPurchaseInvoicePayload {
   taxTotal?: number | null;
   shippingCharge?: number | null;
   otherCharges?: number | null;
+  /** Bill-level discount (₹), subtracted from invoice total. */
+  overallDiscount?: number | null;
   roundOff?: number | null;
   invoiceTotal?: number | null;
   /**
@@ -797,6 +799,7 @@ export interface VendorPurchaseInvoiceDetail {
   taxTotal: number | null;
   shippingCharge: number | null;
   otherCharges: number | null;
+  overallDiscount: number | null;
   roundOff: number | null;
   invoiceTotal: number | null;
   createdAt: string | null;

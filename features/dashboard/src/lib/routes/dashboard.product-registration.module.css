@@ -789,9 +789,18 @@
 
 .sharedInfoGrid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
   align-items: start;
+}
+
+.sharedInfoGrid > * {
+  min-width: 0;
+}
+
+/** Summary field on its own row (odd number of invoice inputs). */
+.sharedInfoGridSpanFull {
+  grid-column: 1 / -1;
 }
 
 .sharedFieldWrap {

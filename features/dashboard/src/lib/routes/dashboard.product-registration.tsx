@@ -129,6 +129,7 @@ function computeVendorInvoiceTotalFromFields(
   taxTotal: string,
   shippingCharge: string,
   otherCharges: string,
+  overallDiscount: string,
   roundOff: string
 ): string {
   const values = [
@@ -136,6 +137,7 @@ function computeVendorInvoiceTotalFromFields(
     taxTotal,
     shippingCharge,
     otherCharges,
+    overallDiscount,
     roundOff,
   ];
   const hasAnyValue = values.some((v) => v.trim() !== '');
@@ -146,9 +148,10 @@ function computeVendorInvoiceTotalFromFields(
       numOr0(optionalNumFromString(taxTotal)) +
       numOr0(optionalNumFromString(shippingCharge)) +
       numOr0(optionalNumFromString(otherCharges)) +
-      numOr0(optionalNumFromString(roundOff))
+      numOr0(optionalNumFromString(roundOff)) -
+      numOr0(optionalNumFromString(overallDiscount))
   );
-  return formatComputedAmount(total);
+  return formatComputedAmount(Math.max(0, total));
 }
 
 export function meta() {
@@ -403,6 +406,7 @@ export default function ProductRegistrationPage() {
   const [vendorTaxTotal, setVendorTaxTotal] = useState('');
   const [vendorShippingCharge, setVendorShippingCharge] = useState('');
   const [vendorOtherCharges, setVendorOtherCharges] = useState('');
+  const [vendorOverallDiscount, setVendorOverallDiscount] = useState('');
   const [vendorRoundOff, setVendorRoundOff] = useState('');
   const [vendorInvoiceTotal, setVendorInvoiceTotal] = useState('');
   const [vendorPaymentMethod, setVendorPaymentMethod] = useState<PaymentMethod | null>(null);
@@ -454,6 +458,7 @@ export default function ProductRegistrationPage() {
         vendorTaxTotal,
         vendorShippingCharge,
         vendorOtherCharges,
+        vendorOverallDiscount,
         vendorRoundOff
       )
     );
@@ -462,6 +467,7 @@ export default function ProductRegistrationPage() {
     vendorTaxTotal,
     vendorShippingCharge,
     vendorOtherCharges,
+    vendorOverallDiscount,
     vendorRoundOff,
   ]);
 
@@ -1030,6 +1036,7 @@ export default function ProductRegistrationPage() {
         optionalNumFromString(vendorTaxTotal) !== undefined ||
         optionalNumFromString(vendorShippingCharge) !== undefined ||
         optionalNumFromString(vendorOtherCharges) !== undefined ||
+        optionalNumFromString(vendorOverallDiscount) !== undefined ||
         optionalNumFromString(vendorRoundOff) !== undefined ||
         optionalNumFromString(vendorInvoiceTotal) !== undefined;
       if (hasInvoiceExtra && !trimmedInvNo) {
@@ -1038,6 +1045,29 @@ export default function ProductRegistrationPage() {
         );
         setIsLoading(false);
         return;
+      }
+
+      const overallDisc = optionalNumFromString(vendorOverallDiscount);
+      if (overallDisc !== undefined && overallDisc < 0) {
+        notifyError('Overall discount cannot be negative.');
+        setIsLoading(false);
+        return;
+      }
+      if (overallDisc !== undefined && overallDisc > 0) {
+        const preDiscountTotal = roundMoney(
+          numOr0(optionalNumFromString(vendorLineSubTotal)) +
+            numOr0(optionalNumFromString(vendorTaxTotal)) +
+            numOr0(optionalNumFromString(vendorShippingCharge)) +
+            numOr0(optionalNumFromString(vendorOtherCharges)) +
+            numOr0(optionalNumFromString(vendorRoundOff))
+        );
+        if (overallDisc > preDiscountTotal) {
+          notifyError(
+            'Overall discount cannot exceed line subtotal + tax + shipping + other charges + round off.'
+          );
+          setIsLoading(false);
+          return;
+        }
       }
 
       // Validate at least one product exists
@@ -1401,6 +1431,8 @@ export default function ProductRegistrationPage() {
       if (sh !== undefined) vendorPurchaseInvoice.shippingCharge = sh;
       const oc = optionalNumFromString(vendorOtherCharges);
       if (oc !== undefined) vendorPurchaseInvoice.otherCharges = oc;
+      const od = optionalNumFromString(vendorOverallDiscount);
+      if (od !== undefined) vendorPurchaseInvoice.overallDiscount = od;
       const ro = optionalNumFromString(vendorRoundOff);
       if (ro !== undefined) vendorPurchaseInvoice.roundOff = ro;
       const it = optionalNumFromString(vendorInvoiceTotal);
@@ -1471,6 +1503,7 @@ export default function ProductRegistrationPage() {
             setVendorTaxTotal('');
             setVendorShippingCharge('');
             setVendorOtherCharges('');
+            setVendorOverallDiscount('');
             setVendorRoundOff('');
             setVendorInvoiceTotal('');
             setVendorPaymentMethod(null);
@@ -1498,6 +1531,7 @@ export default function ProductRegistrationPage() {
             setVendorTaxTotal('');
             setVendorShippingCharge('');
             setVendorOtherCharges('');
+            setVendorOverallDiscount('');
             setVendorRoundOff('');
             setVendorInvoiceTotal('');
             setVendorPaymentMethod(null);
@@ -1695,6 +1729,7 @@ export default function ProductRegistrationPage() {
     setVendorTaxTotal('');
     setVendorShippingCharge('');
     setVendorOtherCharges('');
+    setVendorOverallDiscount('');
     setVendorRoundOff('');
     setVendorInvoiceTotal('');
     setVendorPaymentMethod(null);
@@ -2169,6 +2204,26 @@ export default function ProductRegistrationPage() {
                     />
                   </div>
                   <div className={styles.formGroup}>
+                    <label
+                      htmlFor="vendorOverallDiscount"
+                      className={styles.label}
+                    >
+                      Overall discount
+                    </label>
+                    <input
+                      id="vendorOverallDiscount"
+                      type="text"
+                      inputMode="decimal"
+                      className={styles.input}
+                      value={vendorOverallDiscount}
+                      onChange={(e) =>
+                        setVendorOverallDiscount(e.target.value)
+                      }
+                      placeholder="0"
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
                     <label htmlFor="vendorRoundOff" className={styles.label}>
                       Round off
                     </label>
@@ -2183,7 +2238,9 @@ export default function ProductRegistrationPage() {
                       disabled={isLoading}
                     />
                   </div>
-                  <div className={styles.formGroup}>
+                  <div
+                    className={`${styles.formGroup} ${styles.sharedInfoGridSpanFull}`}
+                  >
                     <label
                       htmlFor="vendorInvoiceTotal"
                       className={styles.label}
