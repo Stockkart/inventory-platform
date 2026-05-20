@@ -387,6 +387,71 @@ function parsePurchaseSchemeDraft(raw: string): PurchaseSchemeFields | null {
   return null;
 }
 
+type SaleSchemeFields = Pick<
+  ProductFormData,
+  'schemeType' | 'schemePayFor' | 'schemeFree' | 'schemePercentage'
+>;
+
+/** Parse grid/list draft: "10+2", "8 + 2", "15%". */
+function parseSaleSchemeDraft(raw: string): SaleSchemeFields | null {
+  const t = raw.trim();
+  if (!t) return null;
+  if (t.endsWith('%')) {
+    const num = parseFloat(t.slice(0, -1));
+    if (!isNaN(num) && num >= 0 && num <= 100) {
+      return {
+        schemeType: 'PERCENTAGE',
+        schemePercentage: num,
+        schemePayFor: null,
+        schemeFree: null,
+      };
+    }
+    return null;
+  }
+  const plusIdx = t.indexOf('+');
+  if (plusIdx >= 0) {
+    const left = parseInt(t.slice(0, plusIdx).trim(), 10);
+    const right = parseInt(t.slice(plusIdx + 1).trim(), 10);
+    if (!isNaN(left) && !isNaN(right) && left >= 0 && right >= 0) {
+      return {
+        schemeType: 'FIXED_UNITS',
+        schemePayFor: left,
+        schemeFree: right,
+        schemePercentage: null,
+      };
+    }
+  }
+  return null;
+}
+
+/** Draft values for grid "fill all rows" row (only non-empty fields are applied). */
+interface GridBulkFillDraft {
+  barcode?: string;
+  name?: string;
+  companyName?: string;
+  count?: string;
+  conversionFactor?: string;
+  expiryDate?: string;
+  location?: string;
+  hsn?: string;
+  batchNo?: string;
+  costPrice?: string;
+  priceToRetail?: string;
+  maximumRetailPrice?: string;
+  schemeType?: SchemeType | '';
+  saleScheme?: string;
+  saleAdditionalDiscount?: string;
+  purchaseSchemeType?: SchemeType | '';
+  purchaseScheme?: string;
+  purchaseAdditionalDiscount?: string;
+  itemType?: ItemType | '';
+  itemTypeDegree?: string;
+  discountApplicable?: DiscountApplicable | '';
+  purchaseDate?: string;
+  cgst?: string;
+  sgst?: string;
+}
+
 /**
  * Apply vendor purchase scheme + additional discount to a tax-exclusive line.
  * FIXED_UNITS "8+2" → pay 8/10 of line (20% off). PERCENTAGE → price × (1 − pct/100).
@@ -678,6 +743,9 @@ export default function ProductRegistrationPage() {
       .then(setPackagingUnits)
       .catch(() => setPackagingUnits([]));
   }, []);
+
+  // Grid view: column values to apply to every product row
+  const [gridBulkFill, setGridBulkFill] = useState<GridBulkFillDraft>({});
 
   // Grid view: draft values for scheme fields (user can type "10+2" or "15%")
   const [gridSchemeDrafts, setGridSchemeDrafts] = useState<
@@ -1287,6 +1355,145 @@ export default function ProductRegistrationPage() {
     handleProductChange(productId, field as keyof ProductFormData, value);
   };
 
+  const handleGridBulkFillChange = (
+    field: keyof GridBulkFillDraft,
+    value: GridBulkFillDraft[keyof GridBulkFillDraft]
+  ) => {
+    setGridBulkFill((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleApplyGridBulkFill = () => {
+    const b = gridBulkFill;
+    const trim = (s?: string) => (s ?? '').trim();
+    const hasText = (s?: string) => trim(s).length > 0;
+
+    const appliedSaleScheme = hasText(b.saleScheme);
+    const appliedPurchaseScheme = hasText(b.purchaseScheme);
+
+    setProducts((prev) =>
+      prev.map((product) => {
+        let next: ProductFormData = { ...product };
+
+        if (hasText(b.name)) next = { ...next, name: trim(b.name) };
+        if (hasText(b.companyName)) {
+          next = { ...next, companyName: trim(b.companyName) };
+        }
+        if (hasText(b.count)) {
+          const n = parseInt(trim(b.count), 10);
+          if (!isNaN(n) && n > 0) next = { ...next, count: n };
+        }
+        if (hasText(b.conversionFactor)) {
+          const f = parseFloat(trim(b.conversionFactor));
+          if (!isNaN(f) && f > 0) next = { ...next, conversionFactor: f };
+        }
+        if (hasText(b.expiryDate)) {
+          next = { ...next, expiryDate: `${trim(b.expiryDate)}T00:00:00Z` };
+        }
+        if (hasText(b.location)) next = { ...next, location: trim(b.location) };
+
+        if (b.schemeType) {
+          next = {
+            ...next,
+            schemeType: b.schemeType,
+            ...(b.schemeType === 'PERCENTAGE'
+              ? { schemePayFor: null, schemeFree: null }
+              : { schemePercentage: null }),
+          };
+        }
+        if (appliedSaleScheme) {
+          const parsed = parseSaleSchemeDraft(trim(b.saleScheme));
+          if (parsed) next = { ...next, ...parsed };
+        }
+
+        if (b.saleAdditionalDiscount !== undefined && b.saleAdditionalDiscount !== '') {
+          const n = parseFloat(trim(b.saleAdditionalDiscount));
+          if (!isNaN(n) && n >= 0 && n <= 100) {
+            next = { ...next, saleAdditionalDiscount: n };
+          }
+        }
+
+        if (b.purchaseSchemeType) {
+          next = {
+            ...next,
+            purchaseSchemeType: b.purchaseSchemeType,
+            ...(b.purchaseSchemeType === 'PERCENTAGE'
+              ? { purchaseSchemePayFor: null, purchaseSchemeFree: null }
+              : { purchaseSchemePercentage: null }),
+          };
+        }
+        if (appliedPurchaseScheme) {
+          const parsed = parsePurchaseSchemeDraft(trim(b.purchaseScheme));
+          if (parsed) {
+            next = {
+              ...next,
+              purchaseSchemeType: parsed.purchaseSchemeType ?? 'FIXED_UNITS',
+              purchaseSchemePercentage: parsed.purchaseSchemePercentage,
+              purchaseSchemePayFor: parsed.purchaseSchemePayFor,
+              purchaseSchemeFree: parsed.purchaseSchemeFree,
+            };
+          }
+        }
+
+        if (
+          b.purchaseAdditionalDiscount !== undefined &&
+          b.purchaseAdditionalDiscount !== ''
+        ) {
+          const n = parseFloat(trim(b.purchaseAdditionalDiscount));
+          if (!isNaN(n) && n >= 0 && n <= 100) {
+            next = { ...next, purchaseAdditionalDiscount: n };
+          }
+        }
+
+        if (b.itemType) {
+          next = { ...next, itemType: b.itemType };
+          if (b.itemType !== 'DEGREE') {
+            next = { ...next, itemTypeDegree: undefined };
+          }
+        }
+        if (hasText(b.itemTypeDegree)) {
+          const deg = parseInt(trim(b.itemTypeDegree), 10);
+          if (!isNaN(deg) && deg > 0 && Number.isInteger(deg)) {
+            next = { ...next, itemType: 'DEGREE', itemTypeDegree: deg };
+          }
+        }
+
+        if (b.discountApplicable) {
+          next = { ...next, discountApplicable: b.discountApplicable };
+        }
+
+        if (hasText(b.purchaseDate)) {
+          next = {
+            ...next,
+            purchaseDate: `${trim(b.purchaseDate)}T00:00:00.000Z`,
+          };
+        }
+
+        if (hasText(b.cgst)) next = { ...next, cgst: trim(b.cgst) };
+        if (hasText(b.sgst)) next = { ...next, sgst: trim(b.sgst) };
+
+        return next;
+      })
+    );
+
+    if (appliedSaleScheme || appliedPurchaseScheme) {
+      setGridSchemeDrafts((prev) => {
+        const next = { ...prev };
+        for (const id of Object.keys(next)) {
+          const cur = next[id];
+          if (!cur) continue;
+          const updated = { ...cur };
+          if (appliedSaleScheme) delete updated.sale;
+          if (appliedPurchaseScheme) delete updated.purchase;
+          if (Object.keys(updated).length === 0) delete next[id];
+          else next[id] = updated;
+        }
+        return next;
+      });
+    }
+
+    notifySuccess('Updated all rows with the values you entered above.');
+  };
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
@@ -1400,50 +1607,52 @@ export default function ProductRegistrationPage() {
           return;
         }
 
-        if (!product.baseUnit?.trim()) {
-          notifyError(
-            `Product "${
-              product.name || 'Unnamed'
-            }": packaging unit is required (e.g. 1 × 50 TBS)`
+        if (productViewMode !== 'grid') {
+          if (!product.baseUnit?.trim()) {
+            notifyError(
+              `Product "${
+                product.name || 'Unnamed'
+              }": packaging unit is required (e.g. 1 × 50 TBS)`
+            );
+            setIsLoading(false);
+            return;
+          }
+          const baseUqcForValidation = resolvePackagingUqc(
+            product.baseUnit,
+            packagingUnits
           );
-          setIsLoading(false);
-          return;
-        }
-        const baseUqcForValidation = resolvePackagingUqc(
-          product.baseUnit,
-          packagingUnits
-        );
-        if (!baseUqcForValidation) {
-          notifyError(
-            `Product "${
-              product.name || 'Unnamed'
-            }": select a valid packaging unit from the list`
+          if (!baseUqcForValidation) {
+            notifyError(
+              `Product "${
+                product.name || 'Unnamed'
+              }": select a valid packaging unit from the list`
+            );
+            setIsLoading(false);
+            return;
+          }
+          const unitDef = packagingUnits.find(
+            (u) => u.uqc === baseUqcForValidation
           );
-          setIsLoading(false);
-          return;
-        }
-        const unitDef = packagingUnits.find(
-          (u) => u.uqc === baseUqcForValidation
-        );
-        const displayFactor = packagingFactorForDisplay(
-          product.unitsPerPack ?? product.conversionFactor
-        );
-        const normalizedUnitsPerPack = packagingFactorToUnitsPerPack(
-          displayFactor,
-          unitDef
-        );
-        if (
-          unitDef?.allowsUnitsPerPack &&
-          unitDef.sellUnitRule === 'PACK_ONLY' &&
-          normalizedUnitsPerPack <= 0
-        ) {
-          notifyError(
-            `Product "${
-              product.name || 'Unnamed'
-            }": enter pack size after 1 × (e.g. 1 × 100 ${unitDef.uqc})`
+          const displayFactor = packagingFactorForDisplay(
+            product.unitsPerPack ?? product.conversionFactor
           );
-          setIsLoading(false);
-          return;
+          const normalizedUnitsPerPack = packagingFactorToUnitsPerPack(
+            displayFactor,
+            unitDef
+          );
+          if (
+            unitDef?.allowsUnitsPerPack &&
+            unitDef.sellUnitRule === 'PACK_ONLY' &&
+            normalizedUnitsPerPack <= 0
+          ) {
+            notifyError(
+              `Product "${
+                product.name || 'Unnamed'
+              }": enter pack size after 1 × (e.g. 1 × 100 ${unitDef.uqc})`
+            );
+            setIsLoading(false);
+            return;
+          }
         }
 
         const ptr = Number(product.priceToRetail);
@@ -2747,7 +2956,7 @@ export default function ProductRegistrationPage() {
                       <th className={styles.excelTh}>Product *</th>
                       <th className={styles.excelTh}>Company *</th>
                       <th className={styles.excelTh}>Count *</th>
-                      <th className={styles.excelTh}>Packaging *</th>
+                      <th className={styles.excelTh}>Packaging</th>
                       <th className={styles.excelTh}>Expiry *</th>
                       <th className={styles.excelTh}>Location *</th>
                       {billingMode !== 'BASIC' && (
@@ -2786,6 +2995,16 @@ export default function ProductRegistrationPage() {
                       )}
                       <th className={styles.excelTh}>Actions</th>
                     </tr>
+                    <GridBulkFillRow
+                      bulk={gridBulkFill}
+                      billingMode={billingMode}
+                      isLoading={isLoading}
+                      purchaseDateFieldMin={purchaseDateFieldMin}
+                      purchaseDateFieldMax={purchaseDateFieldMax}
+                      onBulkChange={handleGridBulkFillChange}
+                      onApply={handleApplyGridBulkFill}
+                      styles={styles}
+                    />
                   </thead>
                   <tbody>
                     {products.map((product, idx) => (
@@ -2895,7 +3114,6 @@ export default function ProductRegistrationPage() {
                               );
                             }}
                             disabled={isLoading}
-                            required
                           />
                         </td>
                         <td className={styles.excelTd}>
@@ -3580,9 +3798,11 @@ export default function ProductRegistrationPage() {
                   </tbody>
                 </table>
                 <p className={styles.gridViewFootnote}>
-                  Columns marked * match required fields. Use list view for
-                  optional rate tiers, default rate, description, and
-                  reminders.
+                  Use the fill row above to copy the same value into every row
+                  (only columns you type in are updated). Packaging is optional
+                  in grid view (defaults to 1× on save). Columns marked * match
+                  required fields. Use list view for rate tiers, description,
+                  and reminders.
                 </p>
               </div>
             ) : (
@@ -4026,6 +4246,325 @@ export default function ProductRegistrationPage() {
         </div>
       )}
     </div>
+  );
+}
+
+interface GridBulkFillRowProps {
+  bulk: GridBulkFillDraft;
+  billingMode: BillingMode;
+  isLoading: boolean;
+  purchaseDateFieldMin: string;
+  purchaseDateFieldMax: string;
+  onBulkChange: (
+    field: keyof GridBulkFillDraft,
+    value: GridBulkFillDraft[keyof GridBulkFillDraft]
+  ) => void;
+  onApply: () => void;
+  styles: typeof import('./dashboard.product-registration.module.css');
+}
+
+function GridBulkFillRow({
+  bulk,
+  billingMode,
+  isLoading,
+  purchaseDateFieldMin,
+  purchaseDateFieldMax,
+  onBulkChange,
+  onApply,
+  styles,
+}: GridBulkFillRowProps) {
+  return (
+    <tr className={styles.excelBulkRow}>
+      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <span className={styles.excelBulkLabel}>Fill all</span>
+        <button
+          type="button"
+          className={styles.excelBulkApplyBtn}
+          onClick={onApply}
+          disabled={isLoading}
+          title="Apply filled values to every product row"
+        >
+          Apply to all
+        </button>
+      </th>
+      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <span
+          className={styles.excelBulkDisabled}
+          title="Barcode must be set per row"
+        >
+          —
+        </span>
+      </th>
+      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <input
+          type="text"
+          className={styles.excelInput}
+          placeholder="Product"
+          value={bulk.name ?? ''}
+          onChange={(e) => onBulkChange('name', e.target.value)}
+          disabled={isLoading}
+        />
+      </th>
+      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <input
+          type="text"
+          className={styles.excelInput}
+          placeholder="Company"
+          value={bulk.companyName ?? ''}
+          onChange={(e) => onBulkChange('companyName', e.target.value)}
+          disabled={isLoading}
+        />
+      </th>
+      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <input
+          type="text"
+          inputMode="numeric"
+          className={styles.excelInputNarrow}
+          placeholder="Count"
+          value={bulk.count ?? ''}
+          onChange={(e) => onBulkChange('count', e.target.value)}
+          disabled={isLoading}
+        />
+      </th>
+      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <input
+          type="text"
+          inputMode="decimal"
+          className={styles.excelInputNarrow}
+          placeholder="1 x _"
+          value={bulk.conversionFactor ?? ''}
+          onChange={(e) => onBulkChange('conversionFactor', e.target.value)}
+          disabled={isLoading}
+        />
+      </th>
+      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <input
+          type="date"
+          className={styles.excelInputDate}
+          value={bulk.expiryDate ?? ''}
+          onChange={(e) => onBulkChange('expiryDate', e.target.value)}
+          disabled={isLoading}
+        />
+      </th>
+      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <input
+          type="text"
+          className={styles.excelInput}
+          placeholder="Location"
+          value={bulk.location ?? ''}
+          onChange={(e) => onBulkChange('location', e.target.value)}
+          disabled={isLoading}
+        />
+      </th>
+      {billingMode !== 'BASIC' && (
+        <>
+          <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+            <span
+              className={styles.excelBulkDisabled}
+              title="HSN must be set per row"
+            >
+              —
+            </span>
+          </th>
+          <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+            <span
+              className={styles.excelBulkDisabled}
+              title="Batch must be set per row"
+            >
+              —
+            </span>
+          </th>
+        </>
+      )}
+      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <span
+          className={styles.excelBulkDisabled}
+          title="PTS must be set per row"
+        >
+          —
+        </span>
+      </th>
+      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <span
+          className={styles.excelBulkDisabled}
+          title="PTR must be set per row"
+        >
+          —
+        </span>
+      </th>
+      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <span
+          className={styles.excelBulkDisabled}
+          title="MRP must be set per row"
+        >
+          —
+        </span>
+      </th>
+      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <select
+          className={styles.excelSelect}
+          value={bulk.schemeType ?? ''}
+          onChange={(e) =>
+            onBulkChange('schemeType', e.target.value as SchemeType | '')
+          }
+          disabled={isLoading}
+        >
+          <option value="">—</option>
+          <option value="FIXED_UNITS">Free units</option>
+          <option value="PERCENTAGE">Percentage</option>
+        </select>
+      </th>
+      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <input
+          type="text"
+          className={styles.excelInputNarrow}
+          placeholder="e.g. 10+2"
+          value={bulk.saleScheme ?? ''}
+          onChange={(e) => onBulkChange('saleScheme', e.target.value)}
+          disabled={isLoading}
+        />
+      </th>
+      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <input
+          type="number"
+          className={styles.excelInputNarrow}
+          placeholder="—"
+          step="0.01"
+          min={0}
+          max={100}
+          value={bulk.saleAdditionalDiscount ?? ''}
+          onChange={(e) =>
+            onBulkChange('saleAdditionalDiscount', e.target.value)
+          }
+          disabled={isLoading}
+        />
+      </th>
+      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <select
+          className={styles.excelSelect}
+          value={bulk.purchaseSchemeType ?? ''}
+          onChange={(e) =>
+            onBulkChange(
+              'purchaseSchemeType',
+              e.target.value as SchemeType | ''
+            )
+          }
+          disabled={isLoading}
+        >
+          <option value="">—</option>
+          <option value="FIXED_UNITS">Free units</option>
+          <option value="PERCENTAGE">Percentage</option>
+        </select>
+      </th>
+      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <input
+          type="text"
+          className={styles.excelInputNarrow}
+          placeholder="e.g. 10+2"
+          value={bulk.purchaseScheme ?? ''}
+          onChange={(e) => onBulkChange('purchaseScheme', e.target.value)}
+          disabled={isLoading}
+        />
+      </th>
+      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <input
+          type="number"
+          className={styles.excelInputNarrow}
+          placeholder="—"
+          step="0.01"
+          min={0}
+          max={100}
+          value={bulk.purchaseAdditionalDiscount ?? ''}
+          onChange={(e) =>
+            onBulkChange('purchaseAdditionalDiscount', e.target.value)
+          }
+          disabled={isLoading}
+        />
+      </th>
+      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <select
+          className={styles.excelSelect}
+          value={bulk.itemType ?? ''}
+          onChange={(e) =>
+            onBulkChange('itemType', e.target.value as ItemType | '')
+          }
+          disabled={isLoading}
+        >
+          <option value="">—</option>
+          <option value="NORMAL">Normal</option>
+          <option value="COSTLY">Costly</option>
+          <option value="DEGREE">Temp / °</option>
+        </select>
+      </th>
+      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <input
+          type="number"
+          className={styles.excelInputNarrow}
+          placeholder="°"
+          min={1}
+          step={1}
+          value={bulk.itemTypeDegree ?? ''}
+          onChange={(e) => onBulkChange('itemTypeDegree', e.target.value)}
+          disabled={isLoading}
+        />
+      </th>
+      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <select
+          className={styles.excelSelect}
+          value={bulk.discountApplicable ?? ''}
+          onChange={(e) =>
+            onBulkChange(
+              'discountApplicable',
+              e.target.value as DiscountApplicable | ''
+            )
+          }
+          disabled={isLoading}
+        >
+          <option value="">—</option>
+          <option value="DISCOUNT">Discount</option>
+          <option value="SCHEME">Scheme</option>
+          <option value="DISCOUNT_AND_SCHEME">Both</option>
+        </select>
+      </th>
+      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <input
+          type="date"
+          className={styles.excelInputDate}
+          min={purchaseDateFieldMin}
+          max={purchaseDateFieldMax}
+          value={bulk.purchaseDate ?? ''}
+          onChange={(e) => onBulkChange('purchaseDate', e.target.value)}
+          disabled={isLoading}
+        />
+      </th>
+      {billingMode === 'REGULAR' && (
+        <>
+          <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+            <input
+              type="text"
+              inputMode="decimal"
+              className={styles.excelInputNarrow}
+              placeholder="CGST"
+              value={bulk.cgst ?? ''}
+              onChange={(e) => onBulkChange('cgst', e.target.value)}
+              disabled={isLoading}
+            />
+          </th>
+          <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+            <input
+              type="text"
+              inputMode="decimal"
+              className={styles.excelInputNarrow}
+              placeholder="SGST"
+              value={bulk.sgst ?? ''}
+              onChange={(e) => onBulkChange('sgst', e.target.value)}
+              disabled={isLoading}
+            />
+          </th>
+        </>
+      )}
+      <th className={`${styles.excelTh} ${styles.excelBulkTh}`} />
+    </tr>
   );
 }
 
