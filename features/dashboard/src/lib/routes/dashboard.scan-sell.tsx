@@ -80,6 +80,54 @@ interface CartItem {
   schemePercentage?: number | null;
 }
 
+function resolveInventoryBaseUnit(
+  inv: Pick<
+    InventoryItem,
+    'baseUnit' | 'uqc' | 'unitConversions' | 'packUnitUqc'
+  >,
+  availableUnits?: AvailableUnit[]
+): string {
+  const direct = inv.baseUnit?.trim();
+  if (direct) return direct;
+  const fromAvail = availableUnits?.find((u) => u.baseUnit)?.unit?.trim();
+  if (fromAvail) return fromAvail;
+  if (inv.uqc?.trim()) return inv.uqc.trim();
+  return 'UNT';
+}
+
+/** e.g. "1 BTL = 50 MLT" when pack conversion is configured. */
+function formatPackConversionLabel(
+  inv: Pick<
+    InventoryItem,
+    'baseUnit' | 'uqc' | 'unitConversions' | 'unitsPerPack' | 'packUnitUqc'
+  >,
+  availableUnits?: AvailableUnit[]
+): string | null {
+  const base = resolveInventoryBaseUnit(inv, availableUnits);
+  const packUnit =
+    inv.unitConversions?.unit?.trim() ?? inv.packUnitUqc?.trim() ?? null;
+  const factor =
+    inv.unitConversions?.factor ?? inv.unitsPerPack ?? null;
+  if (!packUnit || factor == null || factor <= 1) return null;
+  if (packUnit.toUpperCase() === base.toUpperCase()) return null;
+  return `1 ${packUnit} = ${factor} ${base}`;
+}
+
+function formatCartPackagingMeta(cartItem: CartItem): string {
+  const inv = cartItem.inventoryItem;
+  const units = cartItem.availableUnits;
+  const conv = formatPackConversionLabel(inv, units);
+  const base = resolveInventoryBaseUnit(inv, units);
+  const qty = cartItem.quantity;
+  const unit = cartItem.unit;
+  const baseQty = cartItem.baseQuantity;
+  const line =
+    baseQty !== qty || unit.toUpperCase() !== base.toUpperCase()
+      ? `${qty} ${unit} (${baseQty} ${base})`
+      : `${qty} ${unit}`;
+  return conv ? `${conv} · ${line}` : line;
+}
+
 /** Format purchase scheme from inventory (registration) for read-only display. Uses purchase* when present (from API). */
 function formatPurchaseSchemeLabel(inv: InventoryItem): string {
   const schemeType = inv.purchaseSchemeType ?? inv.schemeType;
@@ -651,17 +699,37 @@ export default function ScanSellPage() {
     return fallback;
   };
 
+  /** First add defaults to sale/pack unit when a pack conversion exists (e.g. 1 PAC, not 1 TBS). */
   const getDefaultUnit = (item: InventoryItem): string => {
-    if (item.unitConversions?.unit) {
-      return item.unitConversions.unit;
-    }
     const availableUnits = getAvailableUnitsFromInventory(item);
-    return (
-      availableUnits.find((u) => !u.baseUnit)?.unit ??
-      availableUnits[0]?.unit ??
-      item.baseUnit ??
-      'UNIT'
-    );
+    const base = resolveInventoryBaseUnit(item, availableUnits);
+    const packUnit =
+      item.unitConversions?.unit?.trim() ??
+      item.packUnitUqc?.trim() ??
+      availableUnits.find((u) => !u.baseUnit)?.unit?.trim() ??
+      null;
+    const packFactor =
+      item.unitConversions?.factor ?? item.unitsPerPack ?? null;
+
+    if (item.sellUnitRule === 'PACK_ONLY') {
+      if (packUnit) return packUnit;
+      if (item.packUnitUqc) return item.packUnitUqc;
+      if (item.unitConversions?.unit) return item.unitConversions.unit;
+    }
+
+    if (
+      packUnit &&
+      packFactor != null &&
+      packFactor > 1 &&
+      packUnit.toUpperCase() !== base.toUpperCase()
+    ) {
+      return packUnit;
+    }
+
+    if (item.baseUnit?.trim()) return item.baseUnit.trim();
+    const nonBase = availableUnits.find((u) => !u.baseUnit)?.unit;
+    if (nonBase) return nonBase;
+    return availableUnits[0]?.unit ?? item.uqc ?? 'UNT';
   };
 
   // Product search for dropdown (only on Enter or Search button)
@@ -878,8 +946,14 @@ export default function ScanSellPage() {
             ? resItem.availableUnits
             : existing?.availableUnits) ?? [];
         const inferredBaseUnit =
-          availableUnits.find((u) => u.baseUnit)?.unit ??
-          existing?.inventoryItem.baseUnit ??
+          resItem.baseUnit?.trim() ??
+          existing?.inventoryItem.baseUnit?.trim() ??
+          availableUnits.find((u) => u.baseUnit)?.unit?.trim() ??
+          null;
+        const packUnitUqc =
+          resItem.packUnitUqc?.trim() ??
+          existing?.inventoryItem.packUnitUqc?.trim() ??
+          existing?.inventoryItem.unitConversions?.unit?.trim() ??
           null;
         const saleUnit =
           resItem.saleUnit ??
@@ -915,12 +989,14 @@ export default function ScanSellPage() {
               billingMode: normalizeBillingMode(
                 resItem.billingMode ?? existing.inventoryItem.billingMode
               ),
-              baseUnit: inferredBaseUnit,
+              baseUnit: inferredBaseUnit ?? existing.inventoryItem.baseUnit,
+              packUnitUqc: packUnitUqc ?? existing.inventoryItem.packUnitUqc,
               availableUnits,
               unitConversions:
-                saleUnit !== inferredBaseUnit && unitFactor > 1
-                  ? { unit: saleUnit, factor: unitFactor }
-                  : existing.inventoryItem.unitConversions ?? null,
+                existing.inventoryItem.unitConversions ??
+                (packUnitUqc && unitFactor > 1
+                  ? { unit: packUnitUqc, factor: unitFactor }
+                  : null),
               purchaseAdditionalDiscount:
                 resItem.purchaseAdditionalDiscount ??
                 existing.inventoryItem.purchaseAdditionalDiscount ??
@@ -962,10 +1038,11 @@ export default function ScanSellPage() {
               billingMode: normalizeBillingMode(
                 resItem.billingMode ?? cart.billingMode
               ),
-              baseUnit: inferredBaseUnit,
+              baseUnit: inferredBaseUnit ?? undefined,
+              packUnitUqc: packUnitUqc ?? undefined,
               unitConversions:
-                saleUnit !== inferredBaseUnit && unitFactor > 1
-                  ? { unit: saleUnit, factor: unitFactor }
+                packUnitUqc && unitFactor > 1
+                  ? { unit: packUnitUqc, factor: unitFactor }
                   : null,
               availableUnits,
               pricingId: resItem.pricingId ?? undefined,
@@ -1612,19 +1689,30 @@ export default function ScanSellPage() {
         );
         const preservedBaseQty = Math.max(
           1,
-          toNumber(item.baseQuantity, item.quantity)
+          toNumber(
+            item.baseQuantity,
+            item.quantity * Math.max(1, item.unitFactor)
+          )
         );
         const nextQty =
           nextFactor > 0
             ? Number((preservedBaseQty / nextFactor).toFixed(3))
             : preservedBaseQty;
-        return {
+        // Keep line total: price is always per selected unit (PAC ₹120 → TBS ₹12 when qty 10).
+        const lineTotal = item.price * item.quantity;
+        const nextPrice =
+          nextQty > 0
+            ? Math.round((lineTotal / nextQty) * 100) / 100
+            : item.price;
+        const next = {
           ...item,
           unit,
           unitFactor: nextFactor,
           baseQuantity: preservedBaseQty,
           quantity: nextQty,
+          price: nextPrice,
         };
+        return next;
       });
       syncCartToAPI(updatedItems);
       return updatedItems;
@@ -2117,13 +2205,16 @@ export default function ScanSellPage() {
                     </thead>
                     <tbody>
                       {cartItems.map((cartItem, idx) => {
+                        const isPackOnlySale =
+                          cartItem.inventoryItem.sellUnitRule === 'PACK_ONLY';
                         const isBaseUnitSelected =
-                          (cartItem.inventoryItem.baseUnit != null &&
+                          !isPackOnlySale &&
+                          ((cartItem.inventoryItem.baseUnit != null &&
                             cartItem.unit ===
                               cartItem.inventoryItem.baseUnit) ||
-                          cartItem.availableUnits.some(
-                            (u) => u.baseUnit && u.unit === cartItem.unit
-                          );
+                            cartItem.availableUnits.some(
+                              (u) => u.baseUnit && u.unit === cartItem.unit
+                            ));
                         const quantityInputValue = isBaseUnitSelected
                           ? cartItem.baseQuantity
                           : cartItem.quantity;
@@ -2201,7 +2292,11 @@ export default function ScanSellPage() {
                                     e.currentTarget.value
                                   )
                                 }
-                                disabled={isUpdatingCart}
+                                disabled={
+                                  isUpdatingCart ||
+                                  cartItem.inventoryItem.sellUnitRule ===
+                                    'PACK_ONLY'
+                                }
                               >
                                 {(cartItem.availableUnits.length > 0
                                   ? cartItem.availableUnits
@@ -2399,10 +2494,7 @@ export default function ScanSellPage() {
                             )}
                             <div className={styles.itemMetaRow}>
                               <span className={styles.itemUnitMeta}>
-                                {cartItem.baseQuantity}{' '}
-                                {cartItem.inventoryItem.baseUnit ??
-                                  'base units'}{' '}
-                                ({cartItem.quantity} {cartItem.unit})
+                                {formatCartPackagingMeta(cartItem)}
                               </span>
                             </div>
                             {cartItem.inventoryItem.maximumRetailPrice >

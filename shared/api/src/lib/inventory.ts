@@ -21,10 +21,18 @@ import type {
   CreateInventoryCorrectionRequest,
   InventoryCorrection,
   InventoryCorrectionListResponse,
+  PackagingUnit,
 } from '@inventory-platform/types';
 import axios from 'axios';
 
 export const inventoryApi = {
+  listPackagingUnits: async (): Promise<PackagingUnit[]> => {
+    const response = await apiClient.get<ApiResponse<PackagingUnit[]>>(
+      API_ENDPOINTS.INVENTORY.PACKAGING_UNITS
+    );
+    return response.data ?? [];
+  },
+
   create: async (data: CreateInventoryDto): Promise<InventoryResponse> => {
     const response = await apiClient.post<ApiResponse<InventoryResponse>>(
       API_ENDPOINTS.INVENTORY.BASE,

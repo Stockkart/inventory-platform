@@ -24,6 +24,8 @@ import type {
   ItemType,
   DiscountApplicable,
   SchemeType,
+  PurchaseSchemeInputType,
+  PackagingUnit,
   BillingMode,
   PaymentMethod,
   PaymentSplit,
@@ -39,6 +41,12 @@ import {
   validatePaymentSplit,
 } from '@inventory-platform/ui';
 import { useNotify } from '@inventory-platform/store';
+import {
+  PackagingUnitInput,
+  packagingFactorForDisplay,
+  packagingFactorToUnitsPerPack,
+  resolvePackagingUqc,
+} from './PackagingFactorInput';
 import styles from './dashboard.product-registration.module.css';
 
 function optionalNumFromString(s: string): number | undefined {
@@ -129,6 +137,7 @@ function computeVendorInvoiceTotalFromFields(
   taxTotal: string,
   shippingCharge: string,
   otherCharges: string,
+  overallDiscount: string,
   roundOff: string
 ): string {
   const values = [
@@ -136,6 +145,7 @@ function computeVendorInvoiceTotalFromFields(
     taxTotal,
     shippingCharge,
     otherCharges,
+    overallDiscount,
     roundOff,
   ];
   const hasAnyValue = values.some((v) => v.trim() !== '');
@@ -146,9 +156,10 @@ function computeVendorInvoiceTotalFromFields(
       numOr0(optionalNumFromString(taxTotal)) +
       numOr0(optionalNumFromString(shippingCharge)) +
       numOr0(optionalNumFromString(otherCharges)) +
-      numOr0(optionalNumFromString(roundOff))
+      numOr0(optionalNumFromString(roundOff)) -
+      numOr0(optionalNumFromString(overallDiscount))
   );
-  return formatComputedAmount(total);
+  return formatComputedAmount(Math.max(0, total));
 }
 
 export function meta() {
@@ -174,14 +185,17 @@ interface ProductFormData
   sgst?: string;
   cgst?: string;
   saleAdditionalDiscount?: number | null;
-  purchaseSchemeType?: SchemeType;
+  purchaseSchemeType?: PurchaseSchemeInputType;
   purchaseSchemePayFor?: number | null;
   purchaseSchemeFree?: number | null;
   purchaseSchemePercentage?: number | null;
+  /** Free units from vendor (e.g. 60 on 540 paid). Count becomes total received; invoice uses billable + ratio. */
+  purchaseSchemeFreeQty?: number | null;
   purchaseAdditionalDiscount?: number | null;
-  conversionUnit?: string;
+  /** GST UQC base unit (from packaging-units catalog). */
+  unitsPerPack?: number;
+  /** @deprecated Use unitsPerPack — kept for grid/OCR row mapping. */
   conversionFactor?: number;
-  enableAdditionalSaleUnit?: boolean;
   rates?: PricingRate[];
   defaultRate?: string;
 }
@@ -199,8 +213,107 @@ type PurchaseSchemeFields = Pick<
   | 'purchaseSchemePayFor'
   | 'purchaseSchemeFree'
   | 'purchaseSchemePercentage'
+  | 'purchaseSchemeFreeQty'
   | 'purchaseAdditionalDiscount'
 >;
+
+function gcdInt(a: number, b: number): number {
+  let x = Math.abs(Math.trunc(a));
+  let y = Math.abs(Math.trunc(b));
+  while (y > 0) {
+    const t = y;
+    y = x % y;
+    x = t;
+  }
+  return x || 1;
+}
+
+/** e.g. paid 540 + free 60 → 9 + 1 */
+function schemeRatioFromPaidAndFree(
+  paid: number,
+  freeQty: number
+): { payFor: number; free: number } {
+  const g = gcdInt(paid, freeQty);
+  return { payFor: Math.max(1, paid / g), free: freeQty / g };
+}
+
+/** Billable qty before applying a new free-quantity scheme (count may already be total). */
+function billableCountForPurchaseFreeQty(product: {
+  count?: number;
+  purchaseSchemeFreeQty?: number | null;
+}): number {
+  const count = Math.max(0, Number(product.count) || 0);
+  const prevFree = product.purchaseSchemeFreeQty;
+  if (prevFree != null && prevFree > 0 && count >= prevFree) {
+    return Math.max(0, count - prevFree);
+  }
+  return count;
+}
+
+function buildPurchaseFreeQuantityPatch(
+  product: ProductFormData,
+  freeQty: number
+): Partial<ProductFormData> | null {
+  if (freeQty <= 0 || !Number.isFinite(freeQty)) return null;
+  const billable = billableCountForPurchaseFreeQty(product);
+  if (billable <= 0) return null;
+  const { payFor, free } = schemeRatioFromPaidAndFree(billable, freeQty);
+  return {
+    count: billable + freeQty,
+    purchaseSchemeFreeQty: freeQty,
+    purchaseSchemeType: 'FIXED_UNITS',
+    purchaseSchemePayFor: payFor,
+    purchaseSchemeFree: free,
+    purchaseSchemePercentage: null,
+  };
+}
+
+/** Display pay + free ratio (e.g. 4 + 1) for purchase scheme inputs. */
+function formatPurchaseSchemeRatioDisplay(
+  payFor: number | null | undefined,
+  free: number | null | undefined
+): string {
+  if (payFor == null && free == null) return '';
+  return `${payFor ?? 0} + ${free ?? 0}`;
+}
+
+function formatPurchaseSchemeDealForDisplay(
+  product: Pick<
+    ProductFormData,
+    | 'purchaseSchemeType'
+    | 'purchaseSchemePercentage'
+    | 'purchaseSchemePayFor'
+    | 'purchaseSchemeFree'
+  >
+): string {
+  if ((product.purchaseSchemeType ?? 'FIXED_UNITS') === 'PERCENTAGE') {
+    return product.purchaseSchemePercentage != null
+      ? `${product.purchaseSchemePercentage}%`
+      : '';
+  }
+  return formatPurchaseSchemeRatioDisplay(
+    product.purchaseSchemePayFor,
+    product.purchaseSchemeFree
+  );
+}
+
+function clearPurchaseSchemePatch(
+  product: ProductFormData
+): Partial<ProductFormData> {
+  const patch: Partial<ProductFormData> = {
+    purchaseSchemePayFor: null,
+    purchaseSchemeFree: null,
+    purchaseSchemePercentage: null,
+    purchaseSchemeFreeQty: null,
+  };
+  const prevFree = product.purchaseSchemeFreeQty;
+  if (prevFree != null && prevFree > 0) {
+    const count = Math.max(0, Number(product.count) || 0);
+    const billable = count - prevFree;
+    if (billable >= 0) patch.count = billable;
+  }
+  return patch;
+}
 
 /** Parse grid/list draft: "10+2", "8 + 2", "15%". */
 function parsePurchaseSchemeDraft(raw: string): PurchaseSchemeFields | null {
@@ -271,6 +384,47 @@ function applyPurchaseDiscountsToLine(
   return line;
 }
 
+/**
+ * Tax-exclusive purchase line.
+ * Free-quantity flow: count is total received (e.g. 100); billable = count − freeQty (80);
+ * line = billable × unit only — free units are the scheme, not an extra % off billable.
+ * Deal-ratio / % flows: discount via applyPurchaseDiscountsToLine on gross or billable.
+ */
+function purchaseLineTaxableExclusive(
+  count: number,
+  unit: number,
+  scheme: PurchaseSchemeFields
+): number {
+  const gross = roundMoney(count * unit);
+  if (gross <= 0) return 0;
+
+  const freeQty = scheme.purchaseSchemeFreeQty;
+  const schemeType = scheme.purchaseSchemeType ?? 'FIXED_UNITS';
+
+  if (
+    freeQty != null &&
+    freeQty > 0 &&
+    schemeType !== 'PERCENTAGE' &&
+    schemeType !== 'FREE_QUANTITY'
+  ) {
+    const billable =
+      count >= freeQty
+        ? count - freeQty
+        : Math.max(
+            0,
+            Math.round(
+              (count *
+                (scheme.purchaseSchemePayFor ?? 0)) /
+                ((scheme.purchaseSchemePayFor ?? 0) +
+                  (scheme.purchaseSchemeFree ?? 0))
+            )
+          );
+    return roundMoney(Math.max(0, billable) * unit);
+  }
+
+  return applyPurchaseDiscountsToLine(gross, scheme);
+}
+
 function resolvePurchaseSchemeForTotals(
   product: ProductFormData,
   purchaseDraft?: string
@@ -287,6 +441,7 @@ function resolvePurchaseSchemeForTotals(
     purchaseSchemePayFor: product.purchaseSchemePayFor,
     purchaseSchemeFree: product.purchaseSchemeFree,
     purchaseSchemePercentage: product.purchaseSchemePercentage,
+    purchaseSchemeFreeQty: product.purchaseSchemeFreeQty,
     purchaseAdditionalDiscount: product.purchaseAdditionalDiscount,
   };
 }
@@ -319,10 +474,7 @@ function computeVendorInvoiceTotalsFromProducts(
       p,
       schemeDrafts?.[p.id]?.purchase
     );
-    const lineTaxableExclusive = applyPurchaseDiscountsToLine(
-      roundMoney(q * unit),
-      scheme
-    );
+    const lineTaxableExclusive = purchaseLineTaxableExclusive(q, unit, scheme);
 
     const sgst =
       billingModeForGst === 'BASIC'
@@ -403,6 +555,7 @@ export default function ProductRegistrationPage() {
   const [vendorTaxTotal, setVendorTaxTotal] = useState('');
   const [vendorShippingCharge, setVendorShippingCharge] = useState('');
   const [vendorOtherCharges, setVendorOtherCharges] = useState('');
+  const [vendorOverallDiscount, setVendorOverallDiscount] = useState('');
   const [vendorRoundOff, setVendorRoundOff] = useState('');
   const [vendorInvoiceTotal, setVendorInvoiceTotal] = useState('');
   const [vendorPaymentMethod, setVendorPaymentMethod] = useState<PaymentMethod | null>(null);
@@ -454,6 +607,7 @@ export default function ProductRegistrationPage() {
         vendorTaxTotal,
         vendorShippingCharge,
         vendorOtherCharges,
+        vendorOverallDiscount,
         vendorRoundOff
       )
     );
@@ -462,6 +616,7 @@ export default function ProductRegistrationPage() {
     vendorTaxTotal,
     vendorShippingCharge,
     vendorOtherCharges,
+    vendorOverallDiscount,
     vendorRoundOff,
   ]);
 
@@ -477,6 +632,14 @@ export default function ProductRegistrationPage() {
 
   // Multiple products state
   const [products, setProducts] = useState<ProductFormData[]>([]);
+  const [packagingUnits, setPackagingUnits] = useState<PackagingUnit[]>([]);
+
+  useEffect(() => {
+    inventoryApi
+      .listPackagingUnits()
+      .then(setPackagingUnits)
+      .catch(() => setPackagingUnits([]));
+  }, []);
 
   // Grid view: draft values for scheme fields (user can type "10+2" or "15%")
   const [gridSchemeDrafts, setGridSchemeDrafts] = useState<
@@ -517,17 +680,6 @@ export default function ProductRegistrationPage() {
     }
   );
 
-  const purchaseDateFieldMin = (() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 30);
-    return d.toISOString().split('T')[0];
-  })();
-  const purchaseDateFieldMax = (() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 30);
-    return d.toISOString().split('T')[0];
-  })();
-
   // Image upload state
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<string>('');
@@ -565,16 +717,15 @@ export default function ProductRegistrationPage() {
     purchaseSchemePayFor: null,
     purchaseSchemeFree: null,
     purchaseSchemePercentage: null,
+    purchaseSchemeFreeQty: null,
     purchaseAdditionalDiscount: null,
     billingMode,
     itemType: 'NORMAL',
     itemTypeDegree: undefined,
     discountApplicable: undefined,
-    purchaseDate: new Date().toISOString().split('T')[0] + 'T00:00:00.000Z',
-    baseUnit: 'BASE UNIT',
-    conversionUnit: 'SALE UNIT',
+    baseUnit: '',
+    unitsPerPack: 0,
     conversionFactor: 0,
-    enableAdditionalSaleUnit: true,
     rates: [],
     defaultRate: '',
   });
@@ -669,6 +820,7 @@ export default function ProductRegistrationPage() {
       purchaseSchemePercentage:
         (item as { purchaseSchemePercentage?: number | null })
           .purchaseSchemePercentage ?? null,
+      purchaseSchemeFreeQty: null,
       purchaseAdditionalDiscount:
         (item as { purchaseAdditionalDiscount?: number | null })
           .purchaseAdditionalDiscount ?? null,
@@ -676,15 +828,11 @@ export default function ProductRegistrationPage() {
       itemType: item.itemType ?? 'NORMAL',
       itemTypeDegree: item.itemTypeDegree,
       discountApplicable: item.discountApplicable,
-      purchaseDate: item.purchaseDate || undefined,
       baseUnit: item.baseUnit?.trim()
         ? item.baseUnit.trim().toUpperCase()
-        : 'BASE UNIT',
-      conversionUnit: item.unitConversions?.unit?.trim()
-        ? item.unitConversions.unit.trim().toUpperCase()
-        : 'SALE UNIT',
+        : '',
+      unitsPerPack: item.unitConversions?.factor ?? 0,
       conversionFactor: item.unitConversions?.factor ?? 0,
-      enableAdditionalSaleUnit: true,
       rates: item.rates ?? [],
       defaultRate: item.defaultRate ?? '',
     };
@@ -989,6 +1137,17 @@ export default function ProductRegistrationPage() {
     setSuccess(null);
   };
 
+  const handleApplyPurchasePatch = (
+    productId: string,
+    patch: Partial<ProductFormData>
+  ) => {
+    setProducts((prev) =>
+      prev.map((p) => (p.id === productId ? { ...p, ...patch } : p))
+    );
+    setError(null);
+    setSuccess(null);
+  };
+
   const handleIntegerChange = (
     productId: string,
     field: string,
@@ -1043,6 +1202,7 @@ export default function ProductRegistrationPage() {
         optionalNumFromString(vendorTaxTotal) !== undefined ||
         optionalNumFromString(vendorShippingCharge) !== undefined ||
         optionalNumFromString(vendorOtherCharges) !== undefined ||
+        optionalNumFromString(vendorOverallDiscount) !== undefined ||
         optionalNumFromString(vendorRoundOff) !== undefined ||
         optionalNumFromString(vendorInvoiceTotal) !== undefined;
       if (hasInvoiceExtra && !trimmedInvNo) {
@@ -1053,11 +1213,58 @@ export default function ProductRegistrationPage() {
         return;
       }
 
+      const overallDisc = optionalNumFromString(vendorOverallDiscount);
+      if (overallDisc !== undefined && overallDisc < 0) {
+        notifyError('Overall discount cannot be negative.');
+        setIsLoading(false);
+        return;
+      }
+      if (overallDisc !== undefined && overallDisc > 0) {
+        const preDiscountTotal = roundMoney(
+          numOr0(optionalNumFromString(vendorLineSubTotal)) +
+            numOr0(optionalNumFromString(vendorTaxTotal)) +
+            numOr0(optionalNumFromString(vendorShippingCharge)) +
+            numOr0(optionalNumFromString(vendorOtherCharges)) +
+            numOr0(optionalNumFromString(vendorRoundOff))
+        );
+        if (overallDisc > preDiscountTotal) {
+          notifyError(
+            'Overall discount cannot exceed line subtotal + tax + shipping + other charges + round off.'
+          );
+          setIsLoading(false);
+          return;
+        }
+      }
+
       // Validate at least one product exists
       if (products.length === 0) {
         notifyError('Please add at least one product to register.');
         setIsLoading(false);
         return;
+      }
+
+      const purchaseDateFromInvoice = vendorInvoiceDate.trim()
+        ? `${vendorInvoiceDate.trim().slice(0, 10)}T00:00:00.000Z`
+        : undefined;
+      if (purchaseDateFromInvoice) {
+        const purchase = new Date(purchaseDateFromInvoice);
+        const now = new Date();
+        const daysPast =
+          (now.getTime() - purchase.getTime()) / (1000 * 60 * 60 * 24);
+        const daysFuture =
+          (purchase.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+        if (daysPast > 30) {
+          notifyError('Invoice date must not be older than 30 days');
+          setIsLoading(false);
+          return;
+        }
+        if (daysFuture > 30) {
+          notifyError(
+            'Invoice date must not be more than 30 days in the future'
+          );
+          setIsLoading(false);
+          return;
+        }
       }
 
       // Validate all products
@@ -1085,16 +1292,47 @@ export default function ProductRegistrationPage() {
           return;
         }
 
-        const normalizedConversionFactor =
-          Number(product.conversionFactor) || 0;
+        if (!product.baseUnit?.trim()) {
+          notifyError(
+            `Product "${
+              product.name || 'Unnamed'
+            }": packaging unit is required (e.g. 1 × 50 TBS)`
+          );
+          setIsLoading(false);
+          return;
+        }
+        const baseUqcForValidation = resolvePackagingUqc(
+          product.baseUnit,
+          packagingUnits
+        );
+        if (!baseUqcForValidation) {
+          notifyError(
+            `Product "${
+              product.name || 'Unnamed'
+            }": select a valid packaging unit from the list`
+          );
+          setIsLoading(false);
+          return;
+        }
+        const unitDef = packagingUnits.find(
+          (u) => u.uqc === baseUqcForValidation
+        );
+        const displayFactor = packagingFactorForDisplay(
+          product.unitsPerPack ?? product.conversionFactor
+        );
+        const normalizedUnitsPerPack = packagingFactorToUnitsPerPack(
+          displayFactor,
+          unitDef
+        );
         if (
-          !Number.isFinite(normalizedConversionFactor) ||
-          normalizedConversionFactor <= 0
+          unitDef?.allowsUnitsPerPack &&
+          unitDef.sellUnitRule === 'PACK_ONLY' &&
+          normalizedUnitsPerPack <= 0
         ) {
           notifyError(
             `Product "${
               product.name || 'Unnamed'
-            }": packaging factor is required and must be greater than 0`
+            }": enter pack size after 1 × (e.g. 1 × 100 ${unitDef.uqc})`
           );
           setIsLoading(false);
           return;
@@ -1158,33 +1396,6 @@ export default function ProductRegistrationPage() {
           );
           setIsLoading(false);
           return;
-        }
-
-        if (product.purchaseDate) {
-          const purchase = new Date(product.purchaseDate);
-          const now = new Date();
-          const daysPast =
-            (now.getTime() - purchase.getTime()) / (1000 * 60 * 60 * 24);
-          const daysFuture =
-            (purchase.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-          if (daysPast > 30) {
-            notifyError(
-              `Product "${
-                product.name || 'Unnamed'
-              }": Purchase date must not be older than 30 days`
-            );
-            setIsLoading(false);
-            return;
-          }
-          if (daysFuture > 30) {
-            notifyError(
-              `Product "${
-                product.name || 'Unnamed'
-              }": Purchase date must not be more than 30 days in the future`
-            );
-            setIsLoading(false);
-            return;
-          }
         }
 
         const schemeType = product.schemeType ?? 'FIXED_UNITS';
@@ -1286,6 +1497,9 @@ export default function ProductRegistrationPage() {
               })
             : null;
 
+        const unitsPerPackForApi =
+          Number(product.unitsPerPack ?? product.conversionFactor) || 0;
+
         return {
           ...(product.barcode?.trim()
             ? { barcode: product.barcode.trim() }
@@ -1299,11 +1513,10 @@ export default function ProductRegistrationPage() {
           businessType: product.businessType.toUpperCase(),
           location: product.location,
           count: product.count,
-          baseUnit: 'BASE UNIT',
-          unitConversions: {
-            unit: 'SALE UNIT',
-            factor: Number(product.conversionFactor) || 1,
-          },
+          baseUnit: resolvePackagingUqc(product.baseUnit ?? '', packagingUnits),
+          ...(unitsPerPackForApi > 0
+            ? { unitsPerPack: unitsPerPackForApi }
+            : {}),
           expiryDate: product.expiryDate
             ? product.expiryDate.includes('T') &&
               product.expiryDate.includes('Z')
@@ -1345,7 +1558,8 @@ export default function ProductRegistrationPage() {
           ...(product.purchaseSchemeType != null ||
           product.purchaseSchemePayFor != null ||
           product.purchaseSchemeFree != null ||
-          product.purchaseSchemePercentage != null
+          product.purchaseSchemePercentage != null ||
+          product.purchaseSchemeFreeQty != null
             ? (product.purchaseSchemeType ?? 'FIXED_UNITS') === 'PERCENTAGE'
               ? {
                   purchaseSchemeType: 'PERCENTAGE' as const,
@@ -1376,16 +1590,8 @@ export default function ProductRegistrationPage() {
           ...(product.discountApplicable != null
             ? { discountApplicable: product.discountApplicable }
             : {}),
-          ...(product.purchaseDate
-            ? {
-                purchaseDate:
-                  product.purchaseDate.includes('T') &&
-                  product.purchaseDate.includes('Z')
-                    ? product.purchaseDate
-                    : `${String(product.purchaseDate)
-                        .trim()
-                        .slice(0, 10)}T00:00:00Z`,
-              }
+          ...(purchaseDateFromInvoice
+            ? { purchaseDate: purchaseDateFromInvoice }
             : {}),
           ...(validRates.length > 0
             ? {
@@ -1425,6 +1631,8 @@ export default function ProductRegistrationPage() {
       if (sh !== undefined) vendorPurchaseInvoice.shippingCharge = sh;
       const oc = optionalNumFromString(vendorOtherCharges);
       if (oc !== undefined) vendorPurchaseInvoice.otherCharges = oc;
+      const od = optionalNumFromString(vendorOverallDiscount);
+      if (od !== undefined) vendorPurchaseInvoice.overallDiscount = od;
       const ro = optionalNumFromString(vendorRoundOff);
       if (ro !== undefined) vendorPurchaseInvoice.roundOff = ro;
       const it = optionalNumFromString(vendorInvoiceTotal);
@@ -1495,6 +1703,7 @@ export default function ProductRegistrationPage() {
             setVendorTaxTotal('');
             setVendorShippingCharge('');
             setVendorOtherCharges('');
+            setVendorOverallDiscount('');
             setVendorRoundOff('');
             setVendorInvoiceTotal('');
             setVendorPaymentMethod(null);
@@ -1522,6 +1731,7 @@ export default function ProductRegistrationPage() {
             setVendorTaxTotal('');
             setVendorShippingCharge('');
             setVendorOtherCharges('');
+            setVendorOverallDiscount('');
             setVendorRoundOff('');
             setVendorInvoiceTotal('');
             setVendorPaymentMethod(null);
@@ -1719,6 +1929,7 @@ export default function ProductRegistrationPage() {
     setVendorTaxTotal('');
     setVendorShippingCharge('');
     setVendorOtherCharges('');
+    setVendorOverallDiscount('');
     setVendorRoundOff('');
     setVendorInvoiceTotal('');
     setVendorPaymentMethod(null);
@@ -2193,6 +2404,26 @@ export default function ProductRegistrationPage() {
                     />
                   </div>
                   <div className={styles.formGroup}>
+                    <label
+                      htmlFor="vendorOverallDiscount"
+                      className={styles.label}
+                    >
+                      Overall discount
+                    </label>
+                    <input
+                      id="vendorOverallDiscount"
+                      type="text"
+                      inputMode="decimal"
+                      className={styles.input}
+                      value={vendorOverallDiscount}
+                      onChange={(e) =>
+                        setVendorOverallDiscount(e.target.value)
+                      }
+                      placeholder="0"
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
                     <label htmlFor="vendorRoundOff" className={styles.label}>
                       Round off
                     </label>
@@ -2207,7 +2438,9 @@ export default function ProductRegistrationPage() {
                       disabled={isLoading}
                     />
                   </div>
-                  <div className={styles.formGroup}>
+                  <div
+                    className={`${styles.formGroup} ${styles.sharedInfoGridSpanFull}`}
+                  >
                     <label
                       htmlFor="vendorInvoiceTotal"
                       className={styles.label}
@@ -2409,7 +2642,6 @@ export default function ProductRegistrationPage() {
                         ° *
                       </th>
                       <th className={styles.excelTh}>Disc appl.</th>
-                      <th className={styles.excelTh}>Purch. date</th>
                       {billingMode === 'REGULAR' && (
                         <>
                           <th className={styles.excelTh}>CGST %</th>
@@ -2493,25 +2725,39 @@ export default function ProductRegistrationPage() {
                           />
                         </td>
                         <td className={styles.excelTd}>
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            pattern="[0-9]*\.?[0-9]*"
-                            className={styles.excelInputNarrow}
-                            placeholder="1 x _"
-                            value={
-                              product.conversionFactor &&
-                              product.conversionFactor > 0
-                                ? product.conversionFactor
-                                : ''
-                            }
-                            onChange={(e) =>
-                              handleDecimalChange(
+                          <PackagingUnitInput
+                            label=""
+                            compact
+                            baseUnit={product.baseUnit ?? ''}
+                            factor={packagingFactorForDisplay(
+                              product.unitsPerPack ??
+                                product.conversionFactor
+                            )}
+                            packagingUnits={packagingUnits}
+                            onChange={(uqc, f) => {
+                              const def = packagingUnits.find(
+                                (u) => u.uqc === uqc
+                              );
+                              const upp = packagingFactorToUnitsPerPack(
+                                f,
+                                def
+                              );
+                              handleProductChange(
+                                product.id,
+                                'baseUnit',
+                                uqc
+                              );
+                              handleProductChange(
+                                product.id,
+                                'unitsPerPack',
+                                upp
+                              );
+                              handleProductChange(
                                 product.id,
                                 'conversionFactor',
-                                e.target.value
-                              )
-                            }
+                                upp
+                              );
+                            }}
                             disabled={isLoading}
                             required
                           />
@@ -2879,34 +3125,45 @@ export default function ProductRegistrationPage() {
                             className={styles.excelSelect}
                             value={product.purchaseSchemeType ?? 'FIXED_UNITS'}
                             onChange={(e) => {
-                              const val = e.target.value as SchemeType;
-                              handleProductChange(
-                                product.id,
-                                'purchaseSchemeType',
-                                val
-                              );
+                              const val = e.target
+                                .value as PurchaseSchemeInputType;
                               if (val === 'PERCENTAGE') {
-                                handleProductChange(
-                                  product.id,
-                                  'purchaseSchemePayFor',
-                                  null
-                                );
-                                handleProductChange(
-                                  product.id,
-                                  'purchaseSchemeFree',
-                                  null
-                                );
+                                handleApplyPurchasePatch(product.id, {
+                                  purchaseSchemeType: 'PERCENTAGE',
+                                  purchaseSchemePercentage:
+                                    product.purchaseSchemePercentage ?? null,
+                                  ...clearPurchaseSchemePatch(product),
+                                });
+                              } else if (val === 'FREE_QUANTITY') {
+                                const billable =
+                                  billableCountForPurchaseFreeQty(product);
+                                handleApplyPurchasePatch(product.id, {
+                                  purchaseSchemeType: 'FREE_QUANTITY',
+                                  purchaseSchemePayFor: null,
+                                  purchaseSchemeFree: null,
+                                  purchaseSchemePercentage: null,
+                                  purchaseSchemeFreeQty: null,
+                                  ...(product.purchaseSchemeFreeQty != null
+                                    ? { count: billable }
+                                    : {}),
+                                });
                               } else {
-                                handleProductChange(
-                                  product.id,
-                                  'purchaseSchemePercentage',
-                                  null
-                                );
+                                const billable =
+                                  billableCountForPurchaseFreeQty(product);
+                                handleApplyPurchasePatch(product.id, {
+                                  purchaseSchemeType: 'FIXED_UNITS',
+                                  purchaseSchemePercentage: null,
+                                  purchaseSchemeFreeQty: null,
+                                  ...(product.purchaseSchemeFreeQty != null
+                                    ? { count: billable }
+                                    : {}),
+                                });
                               }
                             }}
                             disabled={isLoading}
                           >
-                            <option value="FIXED_UNITS">Free units</option>
+                            <option value="FIXED_UNITS">Deal ratio</option>
+                            <option value="FREE_QUANTITY">Free quantity</option>
                             <option value="PERCENTAGE">Percentage</option>
                           </select>
                         </td>
@@ -2914,7 +3171,12 @@ export default function ProductRegistrationPage() {
                           <input
                             type="text"
                             className={styles.excelInputNarrow}
-                            placeholder="e.g. 10+2"
+                            placeholder={
+                              (product.purchaseSchemeType ?? 'FIXED_UNITS') ===
+                              'FREE_QUANTITY'
+                                ? 'e.g. 60'
+                                : 'e.g. 10 + 2 or 4 + 1'
+                            }
                             value={
                               gridSchemeDrafts[product.id]?.purchase ??
                               ((product.purchaseSchemeType ?? 'FIXED_UNITS') ===
@@ -2922,12 +3184,7 @@ export default function ProductRegistrationPage() {
                                 ? product.purchaseSchemePercentage != null
                                   ? `${product.purchaseSchemePercentage}%`
                                   : ''
-                                : product.purchaseSchemePayFor != null ||
-                                  product.purchaseSchemeFree != null
-                                ? `${product.purchaseSchemePayFor ?? 0}+${
-                                    product.purchaseSchemeFree ?? 0
-                                  }`
-                                : '')
+                                : formatPurchaseSchemeDealForDisplay(product))
                             }
                             onChange={(e) => {
                               const v = e.target.value;
@@ -2957,45 +3214,34 @@ export default function ProductRegistrationPage() {
                                 return next;
                               });
                               if (raw === '') {
-                                handleProductChange(
+                                handleApplyPurchasePatch(
                                   product.id,
-                                  'purchaseSchemePayFor',
-                                  null
+                                  clearPurchaseSchemePatch(product)
                                 );
-                                handleProductChange(
-                                  product.id,
-                                  'purchaseSchemeFree',
-                                  null
-                                );
-                                handleProductChange(
-                                  product.id,
-                                  'purchaseSchemePercentage',
-                                  null
-                                );
+                                return;
+                              }
+                              if (
+                                (product.purchaseSchemeType ?? 'FIXED_UNITS') ===
+                                'FREE_QUANTITY'
+                              ) {
+                                const freeQty = parseInt(raw, 10);
+                                if (!isNaN(freeQty) && freeQty >= 0) {
+                                  const patch = buildPurchaseFreeQuantityPatch(
+                                    product,
+                                    freeQty
+                                  );
+                                  if (patch) {
+                                    handleApplyPurchasePatch(product.id, patch);
+                                  }
+                                }
                                 return;
                               }
                               const parsed = parsePurchaseSchemeDraft(raw);
                               if (!parsed) return;
-                              handleProductChange(
-                                product.id,
-                                'purchaseSchemeType',
-                                parsed.purchaseSchemeType ?? 'FIXED_UNITS'
-                              );
-                              handleProductChange(
-                                product.id,
-                                'purchaseSchemePercentage',
-                                parsed.purchaseSchemePercentage
-                              );
-                              handleProductChange(
-                                product.id,
-                                'purchaseSchemePayFor',
-                                parsed.purchaseSchemePayFor
-                              );
-                              handleProductChange(
-                                product.id,
-                                'purchaseSchemeFree',
-                                parsed.purchaseSchemeFree
-                              );
+                              handleApplyPurchasePatch(product.id, {
+                                ...parsed,
+                                purchaseSchemeFreeQty: null,
+                              });
                             }}
                             disabled={isLoading}
                           />
@@ -3145,38 +3391,6 @@ export default function ProductRegistrationPage() {
                             <option value="DISCOUNT_AND_SCHEME">Both</option>
                           </select>
                         </td>
-                        <td className={styles.excelTd}>
-                          <input
-                            type="date"
-                            className={styles.excelInputDate}
-                            min={purchaseDateFieldMin}
-                            max={purchaseDateFieldMax}
-                            value={
-                              product.purchaseDate
-                                ? new Date(product.purchaseDate)
-                                    .toISOString()
-                                    .split('T')[0]
-                                : ''
-                            }
-                            onChange={(e) => {
-                              const dateValue = e.target.value;
-                              if (dateValue) {
-                                handleProductChange(
-                                  product.id,
-                                  'purchaseDate',
-                                  `${dateValue}T00:00:00.000Z`
-                                );
-                              } else {
-                                handleProductChange(
-                                  product.id,
-                                  'purchaseDate',
-                                  undefined
-                                );
-                              }
-                            }}
-                            disabled={isLoading}
-                          />
-                        </td>
                         {billingMode === 'REGULAR' && (
                           <>
                             <td className={styles.excelTd}>
@@ -3242,11 +3456,13 @@ export default function ProductRegistrationPage() {
                   <ProductAccordion
                     key={product.id}
                     product={product}
+                    packagingUnits={packagingUnits}
                     billingMode={billingMode}
                     index={index}
                     onToggle={() => handleToggleProduct(product.id)}
                     onRemove={() => handleRemoveProduct(product.id)}
                     onChange={handleProductChange}
+                    onApplyPurchasePatch={handleApplyPurchasePatch}
                     onIntegerChange={handleIntegerChange}
                     onDecimalChange={handleDecimalChange}
                     onCustomRemindersChange={(reminders) =>
@@ -3681,6 +3897,7 @@ export default function ProductRegistrationPage() {
 // Product Accordion Component
 interface ProductAccordionProps {
   product: ProductFormData;
+  packagingUnits: PackagingUnit[];
   billingMode: BillingMode;
   index: number;
   onToggle: () => void;
@@ -3689,6 +3906,10 @@ interface ProductAccordionProps {
     productId: string,
     field: keyof ProductFormData,
     value: ProductFormData[keyof ProductFormData]
+  ) => void;
+  onApplyPurchasePatch: (
+    productId: string,
+    patch: Partial<ProductFormData>
   ) => void;
   onIntegerChange: (productId: string, field: string, value: string) => void;
   onDecimalChange: (productId: string, field: string, value: string) => void;
@@ -3700,11 +3921,13 @@ interface ProductAccordionProps {
 
 function ProductAccordion({
   product,
+  packagingUnits,
   billingMode,
   index,
   onToggle,
   onRemove,
   onChange,
+  onApplyPurchasePatch,
   onIntegerChange,
   onDecimalChange,
   onCustomRemindersChange,
@@ -3721,12 +3944,8 @@ function ProductAccordion({
     if (p.scheme != null && p.scheme !== undefined) return `1 + ${p.scheme}`;
     return '';
   };
-  const formatPurchaseSchemeFixed = (p: ProductFormData): string => {
-    if (p.purchaseSchemePayFor != null || p.purchaseSchemeFree != null) {
-      return `${p.purchaseSchemePayFor ?? 0} + ${p.purchaseSchemeFree ?? 0}`;
-    }
-    return '';
-  };
+  const formatPurchaseSchemeFixed = (p: ProductFormData): string =>
+    formatPurchaseSchemeDealForDisplay(p);
 
   const [schemeFixedDraft, setSchemeFixedDraft] = useState('');
   const [schemeFixedFocused, setSchemeFixedFocused] = useState(false);
@@ -3751,6 +3970,8 @@ function ProductAccordion({
     product.id,
     product.purchaseSchemePayFor,
     product.purchaseSchemeFree,
+    product.purchaseSchemeFreeQty,
+    product.purchaseSchemeType,
     purchaseSchemeFixedFocused,
   ]);
 
@@ -3785,16 +4006,28 @@ function ProductAccordion({
   const commitPurchaseSchemeFixed = () => {
     const raw = purchaseSchemeFixedDraft.trim();
     if (raw === '') {
-      onChange(product.id, 'purchaseSchemePayFor', null);
-      onChange(product.id, 'purchaseSchemeFree', null);
+      onApplyPurchasePatch(product.id, clearPurchaseSchemePatch(product));
+      return;
+    }
+    if ((product.purchaseSchemeType ?? 'FIXED_UNITS') === 'FREE_QUANTITY') {
+      const freeQty = parseInt(raw, 10);
+      if (!isNaN(freeQty) && freeQty >= 0) {
+        const patch = buildPurchaseFreeQuantityPatch(product, freeQty);
+        if (patch) onApplyPurchasePatch(product.id, patch);
+      }
       return;
     }
     const plusIdx = raw.indexOf('+');
     if (plusIdx === -1) {
       const num = parseInt(raw, 10);
       if (!isNaN(num) && num >= 0) {
-        onChange(product.id, 'purchaseSchemePayFor', num);
-        onChange(product.id, 'purchaseSchemeFree', 0);
+        onApplyPurchasePatch(product.id, {
+          purchaseSchemePayFor: num,
+          purchaseSchemeFree: 0,
+          purchaseSchemeFreeQty: null,
+          purchaseSchemeType: 'FIXED_UNITS',
+          purchaseSchemePercentage: null,
+        });
       }
       return;
     }
@@ -3803,10 +4036,22 @@ function ProductAccordion({
     const left = leftStr === '' ? 0 : parseInt(leftStr, 10);
     const right = rightStr === '' ? 0 : parseInt(rightStr, 10);
     if (!isNaN(left) && !isNaN(right) && left >= 0 && right >= 0) {
-      onChange(product.id, 'purchaseSchemePayFor', left);
-      onChange(product.id, 'purchaseSchemeFree', right);
+      onApplyPurchasePatch(product.id, {
+        purchaseSchemePayFor: left,
+        purchaseSchemeFree: right,
+        purchaseSchemeFreeQty: null,
+        purchaseSchemeType: 'FIXED_UNITS',
+        purchaseSchemePercentage: null,
+      });
     }
   };
+
+  const purchaseSchemeType =
+    product.purchaseSchemeType ?? 'FIXED_UNITS';
+  const purchaseSchemePaidFreeHint =
+    product.purchaseSchemeFreeQty != null
+      ? `${billableCountForPurchaseFreeQty(product)} paid + ${product.purchaseSchemeFreeQty} free`
+      : null;
 
   return (
     <div className={styles.productAccordion}>
@@ -3914,45 +4159,44 @@ function ProductAccordion({
             </div>
           </div>
 
-          <div className={styles.formRow}>
-            <div className={styles.formGroup}>
-              <label
-                htmlFor={`conversionFactor-${product.id}`}
-                className={styles.label}
-              >
-                Packaging Details
-              </label>
-              <div className={styles.factorInputWrap}>
-                <span className={styles.factorPrefix} aria-hidden="true">
-                  1 *{' '}
-                </span>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  pattern="[0-9]*\.?[0-9]*"
-                  id={`conversionFactor-${product.id}`}
-                  className={styles.factorInput}
-                  placeholder="e.g. 10"
-                  value={
-                    product.conversionFactor && product.conversionFactor > 0
-                      ? product.conversionFactor
-                      : ''
-                  }
-                  onChange={(e) =>
-                    onDecimalChange(
-                      product.id,
-                      'conversionFactor',
-                      e.target.value
-                    )
-                  }
+          {(() => {
+            const baseUqc = product.baseUnit?.trim()
+              ? resolvePackagingUqc(product.baseUnit, packagingUnits)
+              : '';
+            const def = packagingUnits.find((u) => u.uqc === baseUqc);
+            const factor = packagingFactorForDisplay(
+              product.unitsPerPack ?? product.conversionFactor
+            );
+            const packHint = def
+              ? `${def.registrationHint}${
+                  def.sellUnitRule === 'PACK_ONLY'
+                    ? ` · Sold in full ${def.defaultPackUqc ?? 'pack'} only.`
+                    : ''
+                } · e.g. 1 × 50 tablets, 1 × 100 ml`
+              : 'e.g. 1 × 50 tablets — GST UQC unit after the number';
+            const applyPackaging = (uqc: string, f: number) => {
+              const nextDef = packagingUnits.find((u) => u.uqc === uqc);
+              const upp = packagingFactorToUnitsPerPack(f, nextDef);
+              onChange(product.id, 'baseUnit', uqc);
+              onChange(product.id, 'unitsPerPack', upp);
+              onChange(product.id, 'conversionFactor', upp);
+            };
+            return (
+              <div className={styles.formRow}>
+                <PackagingUnitInput
+                  id={`packaging-${product.id}`}
+                  label="Packaging"
+                  baseUnit={baseUqc}
+                  factor={factor}
+                  packagingUnits={packagingUnits}
+                  onChange={applyPackaging}
                   disabled={isLoading}
+                  required
+                  hint={packHint}
                 />
               </div>
-              <span className={styles.unitHint}>
-                1 sale unit = factor × base unit
-              </span>
-            </div>
-          </div>
+            );
+          })()}
 
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
@@ -4175,6 +4419,17 @@ function ProductAccordion({
                 disabled={isLoading}
               />
             </div>
+            <div className={styles.formGroup} aria-hidden="true">
+              <span className={styles.label} style={{ visibility: 'hidden' }}>
+                .
+              </span>
+              <span
+                className={styles.input}
+                style={{ visibility: 'hidden', display: 'block' }}
+              >
+                .
+              </span>
+            </div>
           </div>
 
           {/* Purchase (from vendor) - for comparison at sale */}
@@ -4191,71 +4446,46 @@ function ProductAccordion({
                 className={styles.input}
                 value={product.purchaseSchemeType ?? 'FIXED_UNITS'}
                 onChange={(e) => {
-                  const val = e.target.value as SchemeType;
-                  onChange(product.id, 'purchaseSchemeType', val);
+                  const val = e.target.value as PurchaseSchemeInputType;
                   if (val === 'PERCENTAGE') {
-                    onChange(product.id, 'purchaseSchemePayFor', null);
-                    onChange(product.id, 'purchaseSchemeFree', null);
+                    onApplyPurchasePatch(product.id, {
+                      purchaseSchemeType: 'PERCENTAGE',
+                      purchaseSchemePercentage:
+                        product.purchaseSchemePercentage ?? null,
+                      ...clearPurchaseSchemePatch(product),
+                    });
+                  } else if (val === 'FREE_QUANTITY') {
+                    const billable = billableCountForPurchaseFreeQty(product);
+                    onApplyPurchasePatch(product.id, {
+                      purchaseSchemeType: 'FREE_QUANTITY',
+                      purchaseSchemePayFor: null,
+                      purchaseSchemeFree: null,
+                      purchaseSchemePercentage: null,
+                      purchaseSchemeFreeQty: null,
+                      ...(product.purchaseSchemeFreeQty != null
+                        ? { count: billable }
+                        : {}),
+                    });
                   } else {
-                    onChange(product.id, 'purchaseSchemePercentage', null);
+                    const billable = billableCountForPurchaseFreeQty(product);
+                    onApplyPurchasePatch(product.id, {
+                      purchaseSchemeType: 'FIXED_UNITS',
+                      purchaseSchemePercentage: null,
+                      purchaseSchemeFreeQty: null,
+                      ...(product.purchaseSchemeFreeQty != null
+                        ? { count: billable }
+                        : {}),
+                    });
                   }
                 }}
                 disabled={isLoading}
               >
-                <option value="FIXED_UNITS">Free units</option>
+                <option value="FIXED_UNITS">Deal ratio</option>
+                <option value="FREE_QUANTITY">Free quantity</option>
                 <option value="PERCENTAGE">Percentage</option>
               </select>
             </div>
-            {(product.purchaseSchemeType ?? 'FIXED_UNITS') === 'FIXED_UNITS' ? (
-              <div className={styles.formGroup}>
-                <label
-                  htmlFor={`purchase-scheme-fixed-${product.id}`}
-                  className={styles.label}
-                >
-                  Purchase scheme/deal (e.g. 10 + 2)
-                </label>
-                <input
-                  type="text"
-                  id={`purchase-scheme-fixed-${product.id}`}
-                  className={styles.input}
-                  placeholder="Optional, from vendor"
-                  value={purchaseSchemeFixedDraft}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setPurchaseSchemeFixedDraft(v);
-                    const parsed = parsePurchaseSchemeDraft(v);
-                    if (
-                      parsed?.purchaseSchemeType === 'FIXED_UNITS' &&
-                      v.includes('+')
-                    ) {
-                      onChange(product.id, 'purchaseSchemeType', 'FIXED_UNITS');
-                      onChange(
-                        product.id,
-                        'purchaseSchemePayFor',
-                        parsed.purchaseSchemePayFor
-                      );
-                      onChange(
-                        product.id,
-                        'purchaseSchemeFree',
-                        parsed.purchaseSchemeFree
-                      );
-                      onChange(product.id, 'purchaseSchemePercentage', null);
-                    }
-                  }}
-                  onFocus={() => setPurchaseSchemeFixedFocused(true)}
-                  onBlur={() => {
-                    setPurchaseSchemeFixedFocused(false);
-                    commitPurchaseSchemeFixed();
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.currentTarget.blur();
-                    }
-                  }}
-                  disabled={isLoading}
-                />
-              </div>
-            ) : (
+            {purchaseSchemeType === 'PERCENTAGE' ? (
               <div className={styles.formGroup}>
                 <label
                   htmlFor={`purchaseSchemePercentage-${product.id}`}
@@ -4290,7 +4520,67 @@ function ProductAccordion({
                   disabled={isLoading}
                 />
               </div>
+            ) : (
+              <div className={styles.formGroup}>
+                <label
+                  htmlFor={`purchase-scheme-fixed-${product.id}`}
+                  className={styles.label}
+                >
+                  {purchaseSchemeType === 'FREE_QUANTITY'
+                    ? 'Free quantity (e.g. 60 on 540 paid)'
+                    : 'Purchase scheme/deal'}
+                </label>
+                <input
+                  type="text"
+                  id={`purchase-scheme-fixed-${product.id}`}
+                  className={styles.input}
+                  placeholder={
+                    purchaseSchemeType === 'FREE_QUANTITY'
+                      ? 'e.g. 60'
+                      : 'e.g. 10 + 2 or 4 + 1'
+                  }
+                  value={purchaseSchemeFixedDraft}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setPurchaseSchemeFixedDraft(v);
+                    if (purchaseSchemeType !== 'FREE_QUANTITY') {
+                      const parsed = parsePurchaseSchemeDraft(v);
+                      if (
+                        parsed?.purchaseSchemeType === 'FIXED_UNITS' &&
+                        v.includes('+')
+                      ) {
+                        onApplyPurchasePatch(product.id, {
+                          ...parsed,
+                          purchaseSchemeFreeQty: null,
+                        });
+                      }
+                    }
+                  }}
+                  onFocus={() => setPurchaseSchemeFixedFocused(true)}
+                  onBlur={() => {
+                    setPurchaseSchemeFixedFocused(false);
+                    commitPurchaseSchemeFixed();
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.currentTarget.blur();
+                    }
+                  }}
+                  disabled={isLoading}
+                />
+                {purchaseSchemePaidFreeHint ? (
+                  <span
+                    className={styles.label}
+                    style={{ fontWeight: 400, marginTop: '0.25rem' }}
+                  >
+                    {purchaseSchemePaidFreeHint}
+                  </span>
+                ) : null}
+              </div>
             )}
+          </div>
+
+          <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label
                 htmlFor={`purchaseAdditionalDiscount-${product.id}`}
@@ -4330,9 +4620,6 @@ function ProductAccordion({
                 disabled={isLoading}
               />
             </div>
-          </div>
-
-          <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label
                 htmlFor={`itemType-${product.id}`}
@@ -4361,199 +4648,85 @@ function ProductAccordion({
             </div>
           </div>
 
-          {product.itemType === 'DEGREE' ? (
-            <>
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label
-                    htmlFor={`itemTypeDegree-${product.id}`}
-                    className={styles.label}
-                  >
-                    Temperature / Degree *
-                  </label>
-                  <input
-                    type="number"
-                    id={`itemTypeDegree-${product.id}`}
-                    className={styles.input}
-                    placeholder="e.g. 8, 24"
-                    min={1}
-                    step={1}
-                    value={
-                      product.itemTypeDegree != null
-                        ? product.itemTypeDegree
-                        : ''
-                    }
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val === '') {
-                        onChange(product.id, 'itemTypeDegree', undefined);
-                      } else {
-                        const num = parseInt(val, 10);
-                        if (!isNaN(num) && num > 0 && Number.isInteger(num)) {
-                          onChange(product.id, 'itemTypeDegree', num);
-                        }
-                      }
-                    }}
-                    disabled={isLoading}
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label
-                    htmlFor={`purchaseDate-${product.id}`}
-                    className={styles.label}
-                  >
-                    Purchase date
-                  </label>
-                  <input
-                    type="date"
-                    id={`purchaseDate-${product.id}`}
-                    className={styles.input}
-                    min={(() => {
-                      const d = new Date();
-                      d.setDate(d.getDate() - 30);
-                      return d.toISOString().split('T')[0];
-                    })()}
-                    max={(() => {
-                      const d = new Date();
-                      d.setDate(d.getDate() + 30);
-                      return d.toISOString().split('T')[0];
-                    })()}
-                    value={
-                      product.purchaseDate
-                        ? new Date(product.purchaseDate)
-                            .toISOString()
-                            .split('T')[0]
-                        : ''
-                    }
-                    onChange={(e) => {
-                      const dateValue = e.target.value;
-                      if (dateValue) {
-                        onChange(
-                          product.id,
-                          'purchaseDate',
-                          `${dateValue}T00:00:00.000Z`
-                        );
-                      } else {
-                        onChange(product.id, 'purchaseDate', undefined);
-                      }
-                    }}
-                    disabled={isLoading}
-                  />
-                </div>
-              </div>
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label
-                    htmlFor={`discountApplicable-${product.id}`}
-                    className={styles.label}
-                  >
-                    Discount applicable
-                  </label>
-                  <select
-                    id={`discountApplicable-${product.id}`}
-                    className={styles.input}
-                    value={product.discountApplicable ?? ''}
-                    onChange={(e) => {
-                      const val = e.target.value as DiscountApplicable | '';
-                      onChange(
-                        product.id,
-                        'discountApplicable',
-                        val === '' ? undefined : (val as DiscountApplicable)
-                      );
-                    }}
-                    disabled={isLoading}
-                  >
-                    <option value="">— Select —</option>
-                    <option value="DISCOUNT">Discount applicable</option>
-                    <option value="SCHEME">Scheme/Deal applicable</option>
-                    <option value="DISCOUNT_AND_SCHEME">
-                      Both discount and scheme/deal applicable
-                    </option>
-                  </select>
-                </div>
-                <div className={styles.formGroup} aria-hidden="true">
-                  <span style={{ visibility: 'hidden', userSelect: 'none' }}>
-                    .
-                  </span>
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className={styles.formRow}>
+          <div className={styles.formRow}>
+            {product.itemType === 'DEGREE' ? (
               <div className={styles.formGroup}>
                 <label
-                  htmlFor={`discountApplicable-${product.id}`}
+                  htmlFor={`itemTypeDegree-${product.id}`}
                   className={styles.label}
                 >
-                  Discount applicable
-                </label>
-                <select
-                  id={`discountApplicable-${product.id}`}
-                  className={styles.input}
-                  value={product.discountApplicable ?? ''}
-                  onChange={(e) => {
-                    const val = e.target.value as DiscountApplicable | '';
-                    onChange(
-                      product.id,
-                      'discountApplicable',
-                      val === '' ? undefined : (val as DiscountApplicable)
-                    );
-                  }}
-                  disabled={isLoading}
-                >
-                  <option value="">— Select —</option>
-                  <option value="DISCOUNT">Discount applicable</option>
-                  <option value="SCHEME">Scheme/Deal applicable</option>
-                  <option value="DISCOUNT_AND_SCHEME">
-                    Both discount and scheme/deal applicable
-                  </option>
-                </select>
-              </div>
-              <div className={styles.formGroup}>
-                <label
-                  htmlFor={`purchaseDate-${product.id}`}
-                  className={styles.label}
-                >
-                  Purchase date
+                  Temperature / Degree *
                 </label>
                 <input
-                  type="date"
-                  id={`purchaseDate-${product.id}`}
+                  type="number"
+                  id={`itemTypeDegree-${product.id}`}
                   className={styles.input}
-                  min={(() => {
-                    const d = new Date();
-                    d.setDate(d.getDate() - 30);
-                    return d.toISOString().split('T')[0];
-                  })()}
-                  max={(() => {
-                    const d = new Date();
-                    d.setDate(d.getDate() + 30);
-                    return d.toISOString().split('T')[0];
-                  })()}
+                  placeholder="e.g. 8, 24"
+                  min={1}
+                  step={1}
                   value={
-                    product.purchaseDate
-                      ? new Date(product.purchaseDate)
-                          .toISOString()
-                          .split('T')[0]
+                    product.itemTypeDegree != null
+                      ? product.itemTypeDegree
                       : ''
                   }
                   onChange={(e) => {
-                    const dateValue = e.target.value;
-                    if (dateValue) {
-                      onChange(
-                        product.id,
-                        'purchaseDate',
-                        `${dateValue}T00:00:00.000Z`
-                      );
+                    const val = e.target.value;
+                    if (val === '') {
+                      onChange(product.id, 'itemTypeDegree', undefined);
                     } else {
-                      onChange(product.id, 'purchaseDate', undefined);
+                      const num = parseInt(val, 10);
+                      if (!isNaN(num) && num > 0 && Number.isInteger(num)) {
+                        onChange(product.id, 'itemTypeDegree', num);
+                      }
                     }
                   }}
                   disabled={isLoading}
                 />
               </div>
+            ) : (
+              <div className={styles.formGroup} aria-hidden="true">
+                <span className={styles.label} style={{ visibility: 'hidden' }}>
+                  .
+                </span>
+                <span
+                  className={styles.input}
+                  style={{ visibility: 'hidden', display: 'block' }}
+                >
+                  .
+                </span>
+              </div>
+            )}
+            <div className={styles.formGroup}>
+              <label
+                htmlFor={`discountApplicable-${product.id}`}
+                className={styles.label}
+              >
+                Discount applicable
+              </label>
+              <select
+                id={`discountApplicable-${product.id}`}
+                className={styles.input}
+                value={product.discountApplicable ?? ''}
+                onChange={(e) => {
+                  const val = e.target.value as DiscountApplicable | '';
+                  onChange(
+                    product.id,
+                    'discountApplicable',
+                    val === '' ? undefined : (val as DiscountApplicable)
+                  );
+                }}
+                disabled={isLoading}
+              >
+                <option value="">— Select —</option>
+                <option value="DISCOUNT">Discount applicable</option>
+                <option value="SCHEME">Scheme/Deal applicable</option>
+                <option value="DISCOUNT_AND_SCHEME">
+                  Both discount and scheme/deal applicable
+                </option>
+              </select>
             </div>
-          )}
+          </div>
+
 
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
