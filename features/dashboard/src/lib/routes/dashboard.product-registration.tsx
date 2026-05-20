@@ -25,6 +25,7 @@ import type {
   DiscountApplicable,
   SchemeType,
   PurchaseSchemeInputType,
+  PackagingUnit,
   BillingMode,
   PaymentMethod,
   PaymentSplit,
@@ -40,6 +41,12 @@ import {
   validatePaymentSplit,
 } from '@inventory-platform/ui';
 import { useNotify } from '@inventory-platform/store';
+import {
+  PackagingUnitInput,
+  packagingFactorForDisplay,
+  packagingFactorToUnitsPerPack,
+  resolvePackagingUqc,
+} from './PackagingFactorInput';
 import styles from './dashboard.product-registration.module.css';
 
 function optionalNumFromString(s: string): number | undefined {
@@ -185,9 +192,10 @@ interface ProductFormData
   /** Free units from vendor (e.g. 60 on 540 paid). Count becomes total received; invoice uses billable + ratio. */
   purchaseSchemeFreeQty?: number | null;
   purchaseAdditionalDiscount?: number | null;
-  conversionUnit?: string;
+  /** GST UQC base unit (from packaging-units catalog). */
+  unitsPerPack?: number;
+  /** @deprecated Use unitsPerPack — kept for grid/OCR row mapping. */
   conversionFactor?: number;
-  enableAdditionalSaleUnit?: boolean;
   rates?: PricingRate[];
   defaultRate?: string;
 }
@@ -624,6 +632,14 @@ export default function ProductRegistrationPage() {
 
   // Multiple products state
   const [products, setProducts] = useState<ProductFormData[]>([]);
+  const [packagingUnits, setPackagingUnits] = useState<PackagingUnit[]>([]);
+
+  useEffect(() => {
+    inventoryApi
+      .listPackagingUnits()
+      .then(setPackagingUnits)
+      .catch(() => setPackagingUnits([]));
+  }, []);
 
   // Grid view: draft values for scheme fields (user can type "10+2" or "15%")
   const [gridSchemeDrafts, setGridSchemeDrafts] = useState<
@@ -707,10 +723,9 @@ export default function ProductRegistrationPage() {
     itemType: 'NORMAL',
     itemTypeDegree: undefined,
     discountApplicable: undefined,
-    baseUnit: 'BASE UNIT',
-    conversionUnit: 'SALE UNIT',
+    baseUnit: '',
+    unitsPerPack: 0,
     conversionFactor: 0,
-    enableAdditionalSaleUnit: true,
     rates: [],
     defaultRate: '',
   });
@@ -815,12 +830,9 @@ export default function ProductRegistrationPage() {
       discountApplicable: item.discountApplicable,
       baseUnit: item.baseUnit?.trim()
         ? item.baseUnit.trim().toUpperCase()
-        : 'BASE UNIT',
-      conversionUnit: item.unitConversions?.unit?.trim()
-        ? item.unitConversions.unit.trim().toUpperCase()
-        : 'SALE UNIT',
+        : '',
+      unitsPerPack: item.unitConversions?.factor ?? 0,
       conversionFactor: item.unitConversions?.factor ?? 0,
-      enableAdditionalSaleUnit: true,
       rates: item.rates ?? [],
       defaultRate: item.defaultRate ?? '',
     };
@@ -1280,16 +1292,47 @@ export default function ProductRegistrationPage() {
           return;
         }
 
-        const normalizedConversionFactor =
-          Number(product.conversionFactor) || 0;
+        if (!product.baseUnit?.trim()) {
+          notifyError(
+            `Product "${
+              product.name || 'Unnamed'
+            }": packaging unit is required (e.g. 1 × 50 TBS)`
+          );
+          setIsLoading(false);
+          return;
+        }
+        const baseUqcForValidation = resolvePackagingUqc(
+          product.baseUnit,
+          packagingUnits
+        );
+        if (!baseUqcForValidation) {
+          notifyError(
+            `Product "${
+              product.name || 'Unnamed'
+            }": select a valid packaging unit from the list`
+          );
+          setIsLoading(false);
+          return;
+        }
+        const unitDef = packagingUnits.find(
+          (u) => u.uqc === baseUqcForValidation
+        );
+        const displayFactor = packagingFactorForDisplay(
+          product.unitsPerPack ?? product.conversionFactor
+        );
+        const normalizedUnitsPerPack = packagingFactorToUnitsPerPack(
+          displayFactor,
+          unitDef
+        );
         if (
-          !Number.isFinite(normalizedConversionFactor) ||
-          normalizedConversionFactor <= 0
+          unitDef?.allowsUnitsPerPack &&
+          unitDef.sellUnitRule === 'PACK_ONLY' &&
+          normalizedUnitsPerPack <= 0
         ) {
           notifyError(
             `Product "${
               product.name || 'Unnamed'
-            }": packaging factor is required and must be greater than 0`
+            }": enter pack size after 1 × (e.g. 1 × 100 ${unitDef.uqc})`
           );
           setIsLoading(false);
           return;
@@ -1454,6 +1497,9 @@ export default function ProductRegistrationPage() {
               })
             : null;
 
+        const unitsPerPackForApi =
+          Number(product.unitsPerPack ?? product.conversionFactor) || 0;
+
         return {
           ...(product.barcode?.trim()
             ? { barcode: product.barcode.trim() }
@@ -1467,11 +1513,10 @@ export default function ProductRegistrationPage() {
           businessType: product.businessType.toUpperCase(),
           location: product.location,
           count: product.count,
-          baseUnit: 'BASE UNIT',
-          unitConversions: {
-            unit: 'SALE UNIT',
-            factor: Number(product.conversionFactor) || 1,
-          },
+          baseUnit: resolvePackagingUqc(product.baseUnit ?? '', packagingUnits),
+          ...(unitsPerPackForApi > 0
+            ? { unitsPerPack: unitsPerPackForApi }
+            : {}),
           expiryDate: product.expiryDate
             ? product.expiryDate.includes('T') &&
               product.expiryDate.includes('Z')
@@ -2680,25 +2725,39 @@ export default function ProductRegistrationPage() {
                           />
                         </td>
                         <td className={styles.excelTd}>
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            pattern="[0-9]*\.?[0-9]*"
-                            className={styles.excelInputNarrow}
-                            placeholder="1 x _"
-                            value={
-                              product.conversionFactor &&
-                              product.conversionFactor > 0
-                                ? product.conversionFactor
-                                : ''
-                            }
-                            onChange={(e) =>
-                              handleDecimalChange(
+                          <PackagingUnitInput
+                            label=""
+                            compact
+                            baseUnit={product.baseUnit ?? ''}
+                            factor={packagingFactorForDisplay(
+                              product.unitsPerPack ??
+                                product.conversionFactor
+                            )}
+                            packagingUnits={packagingUnits}
+                            onChange={(uqc, f) => {
+                              const def = packagingUnits.find(
+                                (u) => u.uqc === uqc
+                              );
+                              const upp = packagingFactorToUnitsPerPack(
+                                f,
+                                def
+                              );
+                              handleProductChange(
+                                product.id,
+                                'baseUnit',
+                                uqc
+                              );
+                              handleProductChange(
+                                product.id,
+                                'unitsPerPack',
+                                upp
+                              );
+                              handleProductChange(
                                 product.id,
                                 'conversionFactor',
-                                e.target.value
-                              )
-                            }
+                                upp
+                              );
+                            }}
                             disabled={isLoading}
                             required
                           />
@@ -3397,6 +3456,7 @@ export default function ProductRegistrationPage() {
                   <ProductAccordion
                     key={product.id}
                     product={product}
+                    packagingUnits={packagingUnits}
                     billingMode={billingMode}
                     index={index}
                     onToggle={() => handleToggleProduct(product.id)}
@@ -3837,6 +3897,7 @@ export default function ProductRegistrationPage() {
 // Product Accordion Component
 interface ProductAccordionProps {
   product: ProductFormData;
+  packagingUnits: PackagingUnit[];
   billingMode: BillingMode;
   index: number;
   onToggle: () => void;
@@ -3860,6 +3921,7 @@ interface ProductAccordionProps {
 
 function ProductAccordion({
   product,
+  packagingUnits,
   billingMode,
   index,
   onToggle,
@@ -4097,45 +4159,44 @@ function ProductAccordion({
             </div>
           </div>
 
-          <div className={styles.formRow}>
-            <div className={styles.formGroup}>
-              <label
-                htmlFor={`conversionFactor-${product.id}`}
-                className={styles.label}
-              >
-                Packaging Details
-              </label>
-              <div className={styles.factorInputWrap}>
-                <span className={styles.factorPrefix} aria-hidden="true">
-                  1 *{' '}
-                </span>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  pattern="[0-9]*\.?[0-9]*"
-                  id={`conversionFactor-${product.id}`}
-                  className={styles.factorInput}
-                  placeholder="e.g. 10"
-                  value={
-                    product.conversionFactor && product.conversionFactor > 0
-                      ? product.conversionFactor
-                      : ''
-                  }
-                  onChange={(e) =>
-                    onDecimalChange(
-                      product.id,
-                      'conversionFactor',
-                      e.target.value
-                    )
-                  }
+          {(() => {
+            const baseUqc = product.baseUnit?.trim()
+              ? resolvePackagingUqc(product.baseUnit, packagingUnits)
+              : '';
+            const def = packagingUnits.find((u) => u.uqc === baseUqc);
+            const factor = packagingFactorForDisplay(
+              product.unitsPerPack ?? product.conversionFactor
+            );
+            const packHint = def
+              ? `${def.registrationHint}${
+                  def.sellUnitRule === 'PACK_ONLY'
+                    ? ` · Sold in full ${def.defaultPackUqc ?? 'pack'} only.`
+                    : ''
+                } · e.g. 1 × 50 tablets, 1 × 100 ml`
+              : 'e.g. 1 × 50 tablets — GST UQC unit after the number';
+            const applyPackaging = (uqc: string, f: number) => {
+              const nextDef = packagingUnits.find((u) => u.uqc === uqc);
+              const upp = packagingFactorToUnitsPerPack(f, nextDef);
+              onChange(product.id, 'baseUnit', uqc);
+              onChange(product.id, 'unitsPerPack', upp);
+              onChange(product.id, 'conversionFactor', upp);
+            };
+            return (
+              <div className={styles.formRow}>
+                <PackagingUnitInput
+                  id={`packaging-${product.id}`}
+                  label="Packaging"
+                  baseUnit={baseUqc}
+                  factor={factor}
+                  packagingUnits={packagingUnits}
+                  onChange={applyPackaging}
                   disabled={isLoading}
+                  required
+                  hint={packHint}
                 />
               </div>
-              <span className={styles.unitHint}>
-                1 sale unit = factor × base unit
-              </span>
-            </div>
-          </div>
+            );
+          })()}
 
           <div className={styles.formRow}>
             <div className={styles.formGroup}>

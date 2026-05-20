@@ -606,6 +606,20 @@ export interface AvailableUnit {
   baseUnit: boolean;
 }
 
+/** GST UQC sell behaviour (from GET /inventory/packaging-units). */
+export type SellUnitRule = 'FRACTIONAL_BASE' | 'PACK_ONLY';
+
+export interface PackagingUnit {
+  uqc: string;
+  label: string;
+  category: string;
+  sellUnitRule: SellUnitRule;
+  defaultPackUqc: string | null;
+  allowsUnitsPerPack: boolean;
+  registrationHint: string;
+  sellHint: string;
+}
+
 export interface CreateInventoryDto {
   barcode?: string;
   name: string;
@@ -641,6 +655,8 @@ export interface CreateInventoryDto {
   billingMode?: BillingMode;
   purchaseDate?: string;
   baseUnit?: string;
+  /** Base units per pack (e.g. 50 tablets, 100 ML). Server builds unitConversions. */
+  unitsPerPack?: number | null;
   unitConversions?: UnitConversion | null;
 }
 
@@ -693,6 +709,7 @@ export interface BulkCreateInventoryItem {
   billingMode?: BillingMode;
   purchaseDate?: string;
   baseUnit?: string;
+  unitsPerPack?: number | null;
   unitConversions?: UnitConversion | null;
   /** Optional. Array of custom rates { name, price }. */
   rates?: Array<{ name: string; price: number }> | null;
@@ -1030,7 +1047,11 @@ export interface InventoryItem {
   billingMode?: BillingMode;
   purchaseDate?: string;
   baseUnit?: string | null;
+  uqc?: string | null;
   unitConversions?: UnitConversion | null;
+  unitsPerPack?: number | null;
+  packUnitUqc?: string | null;
+  sellUnitRule?: SellUnitRule | null;
   availableUnits?: AvailableUnit[] | null;
   receivedBaseCount?: number | null;
   soldBaseCount?: number | null;
@@ -1160,6 +1181,8 @@ export interface CheckoutItemResponse {
   name: string;
   quantity: number;
   saleUnit?: string | null;
+  baseUnit?: string | null;
+  packUnitUqc?: string | null;
   baseQuantity?: number | null;
   unitFactor?: number | null;
   availableUnits?: AvailableUnit[] | null;
