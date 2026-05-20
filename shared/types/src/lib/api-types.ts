@@ -990,6 +990,11 @@ export interface ParseInvoiceItem {
   schemeFree?: number | null;
   schemeType?: SchemeType;
   schemePercentage?: number | null;
+  purchaseSchemeType?: SchemeType | null;
+  purchaseSchemePayFor?: number | null;
+  purchaseSchemeFree?: number | null;
+  purchaseSchemePercentage?: number | null;
+  purchaseAdditionalDiscount?: number | null;
   sgst?: string | null;
   cgst?: string | null;
   saleAdditionalDiscount?: number | null;

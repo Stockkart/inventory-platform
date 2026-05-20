@@ -780,25 +780,56 @@ export default function ProductRegistrationPage() {
       customReminders,
       hsn: item.hsn || '',
       batchNo: item.batchNo || '',
-      scheme:
-        item.scheme != null
-          ? (typeof item.scheme === 'number'
-              ? item.scheme
-              : parseInt(String(item.scheme), 10)) || null
-          : null,
-      schemePayFor:
-        item.schemePayFor != null
-          ? (typeof item.schemePayFor === 'number'
-              ? item.schemePayFor
-              : parseInt(String(item.schemePayFor), 10)) || null
-          : null,
-      schemeFree:
-        item.schemeFree != null
-          ? (typeof item.schemeFree === 'number'
-              ? item.schemeFree
-              : parseInt(String(item.schemeFree), 10)) || null
-          : null,
-      schemeType: item.schemeType ?? 'FIXED_UNITS',
+      ...(() => {
+        const fromApi =
+          item.schemePayFor != null ||
+          item.schemeFree != null ||
+          item.purchaseSchemePayFor != null ||
+          item.purchaseSchemeFree != null;
+        if (fromApi) {
+          return {
+            scheme: null,
+            schemePayFor: item.schemePayFor ?? item.purchaseSchemePayFor ?? null,
+            schemeFree: item.schemeFree ?? item.purchaseSchemeFree ?? null,
+            schemeType: (item.schemeType ?? 'FIXED_UNITS') as SchemeType,
+            purchaseSchemeType: (item.purchaseSchemeType ??
+              'FIXED_UNITS') as PurchaseSchemeInputType,
+            purchaseSchemePayFor:
+              item.purchaseSchemePayFor ?? item.schemePayFor ?? null,
+            purchaseSchemeFree:
+              item.purchaseSchemeFree ?? item.schemeFree ?? null,
+          };
+        }
+        const draft =
+          typeof item.scheme === 'string' ? item.scheme : null;
+        const parsed = draft ? parsePurchaseSchemeDraft(draft) : null;
+        if (parsed) {
+          return {
+            scheme: null,
+            schemePayFor: parsed.purchaseSchemePayFor,
+            schemeFree: parsed.purchaseSchemeFree,
+            schemeType: 'FIXED_UNITS' as SchemeType,
+            purchaseSchemeType: parsed.purchaseSchemeType,
+            purchaseSchemePayFor: parsed.purchaseSchemePayFor,
+            purchaseSchemeFree: parsed.purchaseSchemeFree,
+          };
+        }
+        return {
+          scheme:
+            item.scheme != null
+              ? typeof item.scheme === 'number'
+                ? item.scheme
+                : parseInt(String(item.scheme), 10) || null
+              : null,
+          schemePayFor: null,
+          schemeFree: null,
+          schemeType: (item.schemeType ?? 'FIXED_UNITS') as SchemeType,
+          purchaseSchemeType: (item.purchaseSchemeType ??
+            'FIXED_UNITS') as PurchaseSchemeInputType,
+          purchaseSchemePayFor: item.purchaseSchemePayFor ?? null,
+          purchaseSchemeFree: item.purchaseSchemeFree ?? null,
+        };
+      })(),
       schemePercentage:
         item.schemePercentage != null
           ? (typeof item.schemePercentage === 'number'
@@ -808,22 +839,9 @@ export default function ProductRegistrationPage() {
       sgst: billingMode === 'BASIC' ? '' : item.sgst || '',
       cgst: billingMode === 'BASIC' ? '' : item.cgst || '',
       saleAdditionalDiscount: item.saleAdditionalDiscount ?? null,
-      purchaseSchemeType:
-        (item as { purchaseSchemeType?: SchemeType }).purchaseSchemeType ??
-        'FIXED_UNITS',
-      purchaseSchemePayFor:
-        (item as { purchaseSchemePayFor?: number | null })
-          .purchaseSchemePayFor ?? null,
-      purchaseSchemeFree:
-        (item as { purchaseSchemeFree?: number | null }).purchaseSchemeFree ??
-        null,
-      purchaseSchemePercentage:
-        (item as { purchaseSchemePercentage?: number | null })
-          .purchaseSchemePercentage ?? null,
+      purchaseSchemePercentage: item.purchaseSchemePercentage ?? null,
       purchaseSchemeFreeQty: null,
-      purchaseAdditionalDiscount:
-        (item as { purchaseAdditionalDiscount?: number | null })
-          .purchaseAdditionalDiscount ?? null,
+      purchaseAdditionalDiscount: item.purchaseAdditionalDiscount ?? null,
       billingMode,
       itemType: item.itemType ?? 'NORMAL',
       itemTypeDegree: item.itemTypeDegree,
