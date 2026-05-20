@@ -148,12 +148,26 @@ export const inventoryApi = {
   },
 
   parseInvoice: async (imageFile: File): Promise<ParseInvoiceResponse> => {
+    return inventoryApi.parseInvoices([imageFile]);
+  },
+
+  /** Parse one or more invoice photos (multi-page bills); items are merged in upload order. */
+  parseInvoices: async (imageFiles: File[]): Promise<ParseInvoiceResponse> => {
+    if (!imageFiles.length) {
+      throw new Error('At least one image is required');
+    }
     const token = localStorage.getItem('auth_token');
     const API_BASE_URL =
       import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
     const formData = new FormData();
-    formData.append('image', imageFile);
+    if (imageFiles.length === 1) {
+      formData.append('image', imageFiles[0]);
+    } else {
+      for (const file of imageFiles) {
+        formData.append('images', file);
+      }
+    }
 
     const response = await axios.post<ApiResponse<ParseInvoiceResponse>>(
       `${API_BASE_URL}${API_ENDPOINTS.INVENTORY.PARSE_INVOICE}`,

@@ -990,6 +990,11 @@ export interface ParseInvoiceItem {
   schemeFree?: number | null;
   schemeType?: SchemeType;
   schemePercentage?: number | null;
+  purchaseSchemeType?: SchemeType | null;
+  purchaseSchemePayFor?: number | null;
+  purchaseSchemeFree?: number | null;
+  purchaseSchemePercentage?: number | null;
+  purchaseAdditionalDiscount?: number | null;
   sgst?: string | null;
   cgst?: string | null;
   saleAdditionalDiscount?: number | null;
@@ -999,6 +1004,7 @@ export interface ParseInvoiceItem {
   billingMode?: BillingMode;
   purchaseDate?: string | null;
   baseUnit?: string | null;
+  unitsPerPack?: number | null;
   unitConversions?: UnitConversion | null;
   rates?: Array<{ name: string; price: number }> | null;
   defaultRate?: string | null;

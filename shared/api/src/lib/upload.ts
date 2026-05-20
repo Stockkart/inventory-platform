@@ -49,8 +49,22 @@ export const uploadApi = {
    * No authentication required
    */
   uploadImage: async (token: string, imageFile: File): Promise<string> => {
+    return uploadApi.uploadImages(token, [imageFile]);
+  },
+
+  /** Upload one or more invoice photos from mobile (multi-page bill). */
+  uploadImages: async (token: string, imageFiles: File[]): Promise<string> => {
+    if (!imageFiles.length) {
+      throw new Error('At least one image is required');
+    }
     const formData = new FormData();
-    formData.append('image', imageFile);
+    if (imageFiles.length === 1) {
+      formData.append('image', imageFiles[0]);
+    } else {
+      for (const file of imageFiles) {
+        formData.append('images', file);
+      }
+    }
 
     const response = await axios.post<ApiResponse<string>>(
       `${MOBILE_BASE_URL}${API_ENDPOINTS.UPLOAD.UPLOAD_IMAGE(token)}`,
