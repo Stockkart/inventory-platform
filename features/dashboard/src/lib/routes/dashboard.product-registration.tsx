@@ -721,7 +721,9 @@ export default function ProductRegistrationPage() {
   // Image upload state
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<string>('');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const MAX_INVOICE_IMAGES = 20;
+  const MAX_INVOICE_IMAGE_BYTES = 10 * 1024 * 1024;
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const createEmptyProduct = (): ProductFormData => ({
@@ -970,37 +972,77 @@ export default function ProductRegistrationPage() {
     });
   };
 
+  const validateInvoiceImageFile = (file: File, label: string): boolean => {
+    if (!file.type.startsWith('image/')) {
+      notifyError(`${label}: must be an image file`);
+      return false;
+    }
+    if (file.size > MAX_INVOICE_IMAGE_BYTES) {
+      notifyError(`${label}: must be less than 10 MB`);
+      return false;
+    }
+    return true;
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (!file.type.startsWith('image/')) {
-        notifyError('Please select an image file');
-        return;
+    const picked = e.target.files ? Array.from(e.target.files) : [];
+    if (picked.length === 0) return;
+
+    const valid: File[] = [];
+    for (let i = 0; i < picked.length; i++) {
+      const file = picked[i];
+      if (!validateInvoiceImageFile(file, file.name || `Image ${i + 1}`)) {
+        continue;
       }
-      if (file.size > 10 * 1024 * 1024) {
-        notifyError('File size must be less than 10MB');
-        return;
+      valid.push(file);
+    }
+    if (valid.length === 0) return;
+
+    setSelectedFiles((prev) => {
+      const merged = [...prev, ...valid];
+      if (merged.length > MAX_INVOICE_IMAGES) {
+        notifyError(`You can upload at most ${MAX_INVOICE_IMAGES} images`);
+        return prev;
       }
-      setSelectedFile(file);
-      setError(null);
+      return merged;
+    });
+    setError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
+  const handleRemoveSelectedFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleUploadInvoice = async () => {
-    if (!selectedFile) {
-      notifyError('Please select an image file');
+    if (selectedFiles.length === 0) {
+      notifyError('Please select at least one image');
       return;
     }
 
     setIsUploading(true);
     setError(null);
     setSuccess(null);
-    setUploadProgress('Compressing image...');
 
     try {
-      const compressedFile = await compressImage(selectedFile);
-      setUploadProgress('Uploading and parsing invoice...');
-      const response = await inventoryApi.parseInvoice(compressedFile);
+      const compressedFiles: File[] = [];
+      for (let i = 0; i < selectedFiles.length; i++) {
+        setUploadProgress(
+          selectedFiles.length === 1
+            ? 'Compressing image...'
+            : `Compressing image ${i + 1} of ${selectedFiles.length}...`
+        );
+        compressedFiles.push(await compressImage(selectedFiles[i]));
+      }
+
+      setUploadProgress(
+        selectedFiles.length === 1
+          ? 'Uploading and parsing invoice...'
+          : `Parsing ${selectedFiles.length} images...`
+      );
+      const response = await inventoryApi.parseInvoices(compressedFiles);
 
       if (response && response.items && response.items.length > 0) {
         const parsedProducts = response.items.map(transformParsedItemToProduct);
@@ -1009,17 +1051,21 @@ export default function ProductRegistrationPage() {
           response.vendorPurchaseInvoice,
           response.items
         );
+        const pageNote =
+          selectedFiles.length > 1
+            ? ` from ${selectedFiles.length} images`
+            : '';
         notifySuccess(
-          `✅ Successfully parsed invoice! Found ${response.totalItems} item(s).`
+          `Successfully parsed invoice${pageNote}! Found ${response.totalItems} item(s).`
         );
         scrollToProducts(response.totalItems);
-        setSelectedFile(null);
+        setSelectedFiles([]);
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
       } else {
         notifyError(
-          'No items found in the invoice image. Please try a different image.'
+          'No items found in the invoice image(s). Please try different photos.'
         );
       }
     } catch (err) {
@@ -1035,7 +1081,7 @@ export default function ProductRegistrationPage() {
   };
 
   const handleClearUpload = () => {
-    setSelectedFile(null);
+    setSelectedFiles([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -2080,13 +2126,14 @@ export default function ProductRegistrationPage() {
                     Upload from this device
                   </span>
                   <span className={styles.uploadOptionSubtitle}>
-                    Choose image file from computer
+                    Choose one or more photos (multi-page invoice)
                   </span>
                 </div>
                 <input
                   ref={fileInputRef}
                   type="file"
                   accept="image/*"
+                  multiple
                   onChange={handleFileSelect}
                   className={styles.fileInput}
                   id="invoice-upload"
@@ -2097,20 +2144,21 @@ export default function ProductRegistrationPage() {
                     htmlFor="invoice-upload"
                     className={styles.fileInputLabel}
                   >
-                    {selectedFile ? (
-                      <div className={styles.fileInfo}>
+                    {selectedFiles.length > 0 ? (
+                      <div className={styles.fileListSummary}>
                         <span
                           className={styles.fileIcon}
                           role="img"
-                          aria-label="File icon"
+                          aria-label="Files selected"
                         >
                           📄
                         </span>
-                        <span className={styles.fileName}>
-                          {selectedFile.name}
+                        <span className={styles.fileListCount}>
+                          {selectedFiles.length} image
+                          {selectedFiles.length === 1 ? '' : 's'} selected
                         </span>
-                        <span className={styles.fileSize}>
-                          ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                        <span className={styles.fileListHint}>
+                          Click to add more
                         </span>
                       </div>
                     ) : (
@@ -2122,10 +2170,35 @@ export default function ProductRegistrationPage() {
                         >
                           📤
                         </span>
-                        <span>Click to browse files</span>
+                        <span>Click to browse images</span>
                       </div>
                     )}
                   </label>
+
+                  {selectedFiles.length > 0 && (
+                    <ul className={styles.fileList}>
+                      {selectedFiles.map((file, index) => (
+                        <li key={`${file.name}-${index}`} className={styles.fileListItem}>
+                          <span className={styles.fileName} title={file.name}>
+                            {index + 1}. {file.name}
+                          </span>
+                          <span className={styles.fileSize}>
+                            ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                          </span>
+                          {!isUploading && (
+                            <button
+                              type="button"
+                              className={styles.fileRemoveBtn}
+                              onClick={() => handleRemoveSelectedFile(index)}
+                              aria-label={`Remove ${file.name}`}
+                            >
+                              ×
+                            </button>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
 
                   {isUploading && (
                     <div className={styles.uploadProgress}>
@@ -2136,7 +2209,7 @@ export default function ProductRegistrationPage() {
                     </div>
                   )}
 
-                  {selectedFile && !isUploading && (
+                  {selectedFiles.length > 0 && !isUploading && (
                     <div className={styles.uploadActions}>
                       <button
                         type="button"
@@ -2151,7 +2224,8 @@ export default function ProductRegistrationPage() {
                         >
                           🚀
                         </span>
-                        Parse Invoice
+                        Parse{' '}
+                        {selectedFiles.length > 1 ? 'Invoices' : 'Invoice'}
                       </button>
                       <button
                         type="button"
@@ -3886,8 +3960,8 @@ export default function ProductRegistrationPage() {
                 )}
                 <div style={{ textAlign: 'center' }}>
                   <p style={{ marginBottom: '12px', fontWeight: 500 }}>
-                    Scan this QR code with your mobile device to upload the
-                    invoice image.
+                    Scan this QR code with your mobile device to upload one or
+                    more invoice photos (multi-page bills).
                   </p>
                   <p
                     style={{
@@ -3922,7 +3996,7 @@ export default function ProductRegistrationPage() {
                         marginTop: '8px',
                       }}
                     >
-                      Image is being uploaded...
+                      Invoice photo(s) are being uploaded...
                     </p>
                   )}
                   {uploadStatus === 'PROCESSING' && (

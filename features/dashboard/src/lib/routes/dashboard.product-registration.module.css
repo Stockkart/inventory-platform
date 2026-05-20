@@ -1884,6 +1884,67 @@
   white-space: nowrap;
 }
 
+.fileListSummary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  width: 100%;
+}
+
+.fileListCount {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.fileListHint {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.fileList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.fileListItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  background: rgba(59, 130, 246, 0.06);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.fileListItem .fileName {
+  flex: 1;
+  min-width: 0;
+  font-weight: 500;
+}
+
+.fileRemoveBtn {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0.25rem;
+}
+
+.fileRemoveBtn:hover {
+  color: #dc2626;
+}
+
 .uploadPlaceholder {
   display: flex;
   flex-direction: column;

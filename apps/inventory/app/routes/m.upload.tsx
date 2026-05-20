@@ -4,6 +4,9 @@ import { uploadApi } from '@inventory-platform/api';
 import type { UploadStatus } from '@inventory-platform/types';
 import styles from './m.upload.module.css';
 
+const MAX_INVOICE_IMAGES = 20;
+const MAX_INVOICE_IMAGE_BYTES = 10 * 1024 * 1024;
+
 export function meta() {
   return [
     { title: 'Upload Invoice - StockKart' },
@@ -23,11 +26,11 @@ export default function MobileUploadPage() {
   const [isValid, setIsValid] = useState(false);
   const [tokenStatus, setTokenStatus] = useState<UploadStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState('');
 
-  // Validate token on mount
   useEffect(() => {
     const validateToken = async () => {
       if (!token) {
@@ -40,8 +43,6 @@ export default function MobileUploadPage() {
         const response = await uploadApi.validateUploadToken(token);
         setTokenStatus(response.status);
 
-        // Token is valid if status is PENDING (ready for upload)
-        // Other statuses indicate the token is in use, expired, or failed
         if (response.status === 'PENDING') {
           setIsValid(true);
           setError(null);
@@ -63,7 +64,6 @@ export default function MobileUploadPage() {
           );
           setIsValid(false);
         } else {
-          // UPLOADING or PROCESSING - token is in use
           setError(
             'This upload token is currently in use. Please wait for it to complete or scan a new QR code.'
           );
@@ -137,28 +137,53 @@ export default function MobileUploadPage() {
     });
   };
 
+  const validateFile = (file: File, label: string): boolean => {
+    if (!file.type.startsWith('image/')) {
+      setError(`${label}: must be an image`);
+      return false;
+    }
+    if (file.size > MAX_INVOICE_IMAGE_BYTES) {
+      setError(`${label}: must be less than 10 MB`);
+      return false;
+    }
+    return true;
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        setError('Please select an image file');
-        return;
+    const picked = e.target.files ? Array.from(e.target.files) : [];
+    if (picked.length === 0) return;
+
+    const valid: File[] = [];
+    for (let i = 0; i < picked.length; i++) {
+      const file = picked[i];
+      if (validateFile(file, file.name || `Image ${i + 1}`)) {
+        valid.push(file);
       }
-      // Validate file size (max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        setError('File size must be less than 10MB');
-        return;
+    }
+    if (valid.length === 0) return;
+
+    setSelectedFiles((prev) => {
+      const merged = [...prev, ...valid];
+      if (merged.length > MAX_INVOICE_IMAGES) {
+        setError(`You can upload at most ${MAX_INVOICE_IMAGES} images`);
+        return prev;
       }
-      setSelectedFile(file);
-      setError(null);
-      setUploadSuccess(false);
+      return merged;
+    });
+    setError(null);
+    setUploadSuccess(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
+  const handleRemoveFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleUpload = async () => {
-    if (!selectedFile || !token) {
-      setError('Please select an image file');
+    if (selectedFiles.length === 0 || !token) {
+      setError('Please select at least one image');
       return;
     }
 
@@ -167,10 +192,24 @@ export default function MobileUploadPage() {
     setUploadSuccess(false);
 
     try {
-      const compressedFile = await compressImage(selectedFile);
-      await uploadApi.uploadImage(token, compressedFile);
+      const compressed: File[] = [];
+      for (let i = 0; i < selectedFiles.length; i++) {
+        setUploadProgress(
+          selectedFiles.length === 1
+            ? 'Compressing...'
+            : `Compressing ${i + 1} of ${selectedFiles.length}...`
+        );
+        compressed.push(await compressImage(selectedFiles[i]));
+      }
+
+      setUploadProgress(
+        selectedFiles.length === 1
+          ? 'Uploading...'
+          : `Uploading ${selectedFiles.length} images...`
+      );
+      await uploadApi.uploadImages(token, compressed);
       setUploadSuccess(true);
-      setSelectedFile(null);
+      setSelectedFiles([]);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -178,19 +217,22 @@ export default function MobileUploadPage() {
       const errorMessage =
         err instanceof Error
           ? err.message
-          : 'Failed to upload image. Please try again.';
+          : 'Failed to upload image(s). Please try again.';
       setError(errorMessage);
     } finally {
       setIsUploading(false);
+      setUploadProgress('');
     }
   };
 
-  const handleCameraCapture = () => {
-    if (fileInputRef.current) {
+  const openFilePicker = (capture?: boolean) => {
+    if (!fileInputRef.current) return;
+    if (capture) {
       fileInputRef.current.setAttribute('capture', 'environment');
-      fileInputRef.current.setAttribute('accept', 'image/*');
-      fileInputRef.current.click();
+    } else {
+      fileInputRef.current.removeAttribute('capture');
     }
+    fileInputRef.current.click();
   };
 
   if (isValidating) {
@@ -249,17 +291,17 @@ export default function MobileUploadPage() {
         <div className={styles.header}>
           <h1>📄 Upload Invoice</h1>
           <p className={styles.subtitle}>
-            Select an image file or take a photo of your invoice
+            Add one or more photos (multi-page invoice)
           </p>
         </div>
 
         {uploadSuccess && (
           <div className={styles.successMessage}>
             <div className={styles.successIcon}>✅</div>
-            <p>Image uploaded successfully! Processing...</p>
+            <p>Uploaded successfully! Processing on desktop...</p>
             <p className={styles.successSubtext}>
-              You can close this page. The desktop application will receive the
-              parsed data.
+              You can close this page. The desktop app will receive all parsed
+              items.
             </p>
           </div>
         )}
@@ -274,28 +316,47 @@ export default function MobileUploadPage() {
               ref={fileInputRef}
               type="file"
               accept="image/*"
+              multiple
               onChange={handleFileSelect}
               className={styles.fileInput}
               id="invoice-upload"
               disabled={isUploading}
             />
 
-            {selectedFile ? (
+            {selectedFiles.length > 0 ? (
               <div className={styles.filePreview}>
-                <div className={styles.fileInfo}>
-                  <span className={styles.fileIcon}>📄</span>
-                  <div className={styles.fileDetails}>
-                    <span className={styles.fileName}>{selectedFile.name}</span>
-                    <span className={styles.fileSize}>
-                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                    </span>
-                  </div>
-                </div>
-                {selectedFile.type.startsWith('image/') && (
+                <p className={styles.fileListTitle}>
+                  {selectedFiles.length} image
+                  {selectedFiles.length === 1 ? '' : 's'} ready
+                </p>
+                <ul className={styles.fileList}>
+                  {selectedFiles.map((file, index) => (
+                    <li
+                      key={`${file.name}-${index}`}
+                      className={styles.fileListItem}
+                    >
+                      <span className={styles.fileName}>{file.name}</span>
+                      <span className={styles.fileSize}>
+                        ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                      </span>
+                      {!isUploading && (
+                        <button
+                          type="button"
+                          className={styles.fileRemoveBtn}
+                          onClick={() => handleRemoveFile(index)}
+                          aria-label={`Remove ${file.name}`}
+                        >
+                          ×
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                {selectedFiles[0]?.type.startsWith('image/') && (
                   <div className={styles.imagePreview}>
                     <img
-                      src={URL.createObjectURL(selectedFile)}
-                      alt="Preview"
+                      src={URL.createObjectURL(selectedFiles[0])}
+                      alt="Preview of first page"
                       className={styles.previewImage}
                     />
                   </div>
@@ -310,20 +371,29 @@ export default function MobileUploadPage() {
                     {isUploading ? (
                       <>
                         <span className={styles.spinnerSmall}></span>
-                        Uploading...
+                        {uploadProgress || 'Uploading...'}
                       </>
                     ) : (
                       <>
                         <span>📤</span>
-                        Upload Image
+                        Upload{' '}
+                        {selectedFiles.length > 1 ? `${selectedFiles.length} pages` : 'invoice'}
                       </>
                     )}
                   </button>
                   <button
                     type="button"
                     className={styles.changeFileBtn}
+                    onClick={() => openFilePicker(false)}
+                    disabled={isUploading}
+                  >
+                    Add more
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.changeFileBtn}
                     onClick={() => {
-                      setSelectedFile(null);
+                      setSelectedFiles([]);
                       setError(null);
                       if (fileInputRef.current) {
                         fileInputRef.current.value = '';
@@ -331,7 +401,7 @@ export default function MobileUploadPage() {
                     }}
                     disabled={isUploading}
                   >
-                    Change File
+                    Clear all
                   </button>
                 </div>
               </div>
@@ -339,16 +409,17 @@ export default function MobileUploadPage() {
               <div className={styles.uploadOptions}>
                 <label htmlFor="invoice-upload" className={styles.uploadLabel}>
                   <div className={styles.uploadIcon}>📁</div>
-                  <span>Choose from Gallery</span>
+                  <span>Choose from gallery</span>
+                  <span className={styles.uploadHint}>Select multiple pages</span>
                 </label>
                 <button
                   type="button"
                   className={styles.cameraBtn}
-                  onClick={handleCameraCapture}
+                  onClick={() => openFilePicker(true)}
                   disabled={isUploading}
                 >
                   <span className={styles.cameraIcon}>📷</span>
-                  <span>Take Photo</span>
+                  <span>Take photo</span>
                 </button>
               </div>
             )}
