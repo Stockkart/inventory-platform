@@ -887,8 +887,14 @@ export default function ProductRegistrationPage() {
       baseUnit: item.baseUnit?.trim()
         ? item.baseUnit.trim().toUpperCase()
         : '',
-      unitsPerPack: item.unitConversions?.factor ?? 0,
-      conversionFactor: item.unitConversions?.factor ?? 0,
+      unitsPerPack:
+        item.unitsPerPack ??
+        item.unitConversions?.factor ??
+        0,
+      conversionFactor:
+        item.unitsPerPack ??
+        item.unitConversions?.factor ??
+        0,
       rates: item.rates ?? [],
       defaultRate: item.defaultRate ?? '',
     };

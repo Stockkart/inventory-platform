@@ -1004,6 +1004,7 @@ export interface ParseInvoiceItem {
   billingMode?: BillingMode;
   purchaseDate?: string | null;
   baseUnit?: string | null;
+  unitsPerPack?: number | null;
   unitConversions?: UnitConversion | null;
   rates?: Array<{ name: string; price: number }> | null;
   defaultRate?: string | null;
