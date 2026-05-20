@@ -3003,7 +3003,6 @@ export default function ProductRegistrationPage() {
                       purchaseDateFieldMax={purchaseDateFieldMax}
                       onBulkChange={handleGridBulkFillChange}
                       onApply={handleApplyGridBulkFill}
-                      styles={styles}
                     />
                   </thead>
                   <tbody>
@@ -4260,7 +4259,6 @@ interface GridBulkFillRowProps {
     value: GridBulkFillDraft[keyof GridBulkFillDraft]
   ) => void;
   onApply: () => void;
-  styles: typeof import('./dashboard.product-registration.module.css');
 }
 
 function GridBulkFillRow({
@@ -4271,7 +4269,6 @@ function GridBulkFillRow({
   purchaseDateFieldMax,
   onBulkChange,
   onApply,
-  styles,
 }: GridBulkFillRowProps) {
   return (
     <tr className={styles.excelBulkRow}>
