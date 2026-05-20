@@ -53,6 +53,12 @@
   gap: 0.625rem;
 }
 
+.formGroupBare {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
 .label {
   font-size: 0.9rem;
   font-weight: 500;
@@ -221,7 +227,7 @@
   border: 1px solid var(--border-color);
   border-radius: 8px;
   background: var(--bg-primary);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .factorPrefix {
@@ -230,6 +236,70 @@
   color: var(--text-secondary);
   user-select: none;
   flex-shrink: 0;
+}
+
+.factorTimes {
+  padding: 0 0.35rem;
+  font-size: 1rem;
+  color: var(--text-secondary);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.factorQtyInput {
+  width: 4.5rem;
+  flex-shrink: 0;
+  padding: 0.75rem 0.5rem 0.75rem 1rem;
+  border: none;
+  font-size: 1rem;
+  color: var(--text-primary);
+  background: transparent;
+  text-align: right;
+}
+
+.factorQtyInput:focus {
+  outline: none;
+}
+
+.factorUnitReadonly {
+  flex: 1;
+  min-width: 0;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.factorInputWrapCompact {
+  font-size: 0.875rem;
+}
+
+.factorInputWrapCompact .factorPrefix,
+.factorInputWrapCompact .factorTimes {
+  font-size: 0.875rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.factorInputWrapCompact .factorInput,
+.factorInputWrapCompact .factorQtyInput,
+.factorInputWrapCompact .factorUnitReadonly {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.factorInputWrapCompact .factorQtyInput {
+  width: 3.25rem;
+}
+
+.packagingCellStack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 10rem;
 }
 
 .factorInput {
@@ -253,6 +323,87 @@
 .factorInputWrap:focus-within {
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.factorUnitWrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
+}
+
+.factorUnitToggle {
+  flex-shrink: 0;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  padding: 0 0.65rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.factorUnitToggle:hover:not(:disabled) {
+  color: var(--text-primary);
+  background: var(--hover-bg);
+}
+
+.factorUnitToggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.unitDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 1100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.unitDropdownItem {
+  padding: 0.6rem 0.85rem;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.unitDropdownItem:last-child {
+  border-bottom: none;
+}
+
+.unitDropdownItem:hover,
+.unitDropdownItemActive {
+  background: var(--hover-bg);
+}
+
+.unitDropdownEmpty {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.85rem;
+  color: var(--text-tertiary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  z-index: 1100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .ratesSection {
@@ -789,9 +940,18 @@
 
 .sharedInfoGrid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
   align-items: start;
+}
+
+.sharedInfoGrid > * {
+  min-width: 0;
+}
+
+/** Summary field on its own row (odd number of invoice inputs). */
+.sharedInfoGridSpanFull {
+  grid-column: 1 / -1;
 }
 
 .sharedFieldWrap {
@@ -1212,7 +1372,7 @@
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  overflow: hidden;
+  overflow: visible;
   transition: all 0.2s;
 }
 

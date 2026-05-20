@@ -103,7 +103,6 @@ export interface ProductRegistrationValidationInput {
   sgst?: string;
   cgst?: string;
   purchaseDate?: string;
-  conversionFactor?: number;
 }
 
 /** Returns an error message or null if valid. */
@@ -133,11 +132,6 @@ export function validateProductRegistrationFields(
 
   if (product.count <= 0) {
     return `Product "${title}" count must be greater than 0`;
-  }
-
-  const factor = Number(product.conversionFactor) || 0;
-  if (!Number.isFinite(factor) || factor <= 0) {
-    return `Product "${title}": packaging factor is required and must be greater than 0`;
   }
 
   const ptr = Number(product.priceToRetail);

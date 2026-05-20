@@ -119,6 +119,7 @@ export const API_ENDPOINTS = {
     BY_IDS: '/inventory/by-ids',
     LOTS: '/inventory/lots',
     LOW_STOCK: '/inventory/low-stock',
+    PACKAGING_UNITS: '/inventory/packaging-units',
     BY_ID: (id: string) => `/inventory/${id}`,
   },
 
