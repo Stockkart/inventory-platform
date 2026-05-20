@@ -256,16 +256,54 @@ function buildPurchaseFreeQuantityPatch(
 ): Partial<ProductFormData> | null {
   if (freeQty <= 0 || !Number.isFinite(freeQty)) return null;
   const billable = billableCountForPurchaseFreeQty(product);
-  if (billable <= 0) return null;
-  const { payFor, free } = schemeRatioFromPaidAndFree(billable, freeQty);
+  if (billable > 0) {
+    const { payFor, free } = schemeRatioFromPaidAndFree(billable, freeQty);
+    return {
+      count: billable + freeQty,
+      purchaseSchemeFreeQty: freeQty,
+      purchaseSchemeType: 'FIXED_UNITS',
+      purchaseSchemePayFor: payFor,
+      purchaseSchemeFree: free,
+      purchaseSchemePercentage: null,
+    };
+  }
+  // count was 0: entire stock is free → 0 + x (e.g. 0 + 60)
   return {
-    count: billable + freeQty,
+    count: freeQty,
     purchaseSchemeFreeQty: freeQty,
     purchaseSchemeType: 'FIXED_UNITS',
-    purchaseSchemePayFor: payFor,
-    purchaseSchemeFree: free,
+    purchaseSchemePayFor: 0,
+    purchaseSchemeFree: freeQty,
     purchaseSchemePercentage: null,
   };
+}
+
+/** Apply Free quantity input: plain "60" or explicit "0+60" / "0 + 60". */
+function applyPurchaseFreeQuantityFromRaw(
+  product: ProductFormData,
+  raw: string
+): Partial<ProductFormData> | null {
+  const t = raw.trim();
+  if (!t) return null;
+  if (t.includes('+')) {
+    const parsed = parsePurchaseSchemeDraft(t);
+    if (parsed?.purchaseSchemeType !== 'FIXED_UNITS') return null;
+    const pay = parsed.purchaseSchemePayFor ?? 0;
+    const free = parsed.purchaseSchemeFree ?? 0;
+    if (pay < 0 || free < 0 || (pay === 0 && free === 0)) return null;
+    const billable = billableCountForPurchaseFreeQty(product);
+    return {
+      count: billable + pay + free,
+      purchaseSchemeFreeQty: free,
+      purchaseSchemeType: 'FIXED_UNITS',
+      purchaseSchemePayFor: pay,
+      purchaseSchemeFree: free,
+      purchaseSchemePercentage: null,
+    };
+  }
+  const freeQty = parseInt(t, 10);
+  if (isNaN(freeQty) || freeQty < 0) return null;
+  return buildPurchaseFreeQuantityPatch(product, freeQty);
 }
 
 /** Display pay + free ratio (e.g. 4 + 1) for purchase scheme inputs. */
@@ -3192,7 +3230,9 @@ export default function ProductRegistrationPage() {
                             placeholder={
                               (product.purchaseSchemeType ?? 'FIXED_UNITS') ===
                               'FREE_QUANTITY'
-                                ? 'e.g. 60'
+                                ? (Number(product.count) || 0) > 0
+                                  ? 'e.g. 60'
+                                  : 'e.g. 60 or 0 + 60'
                                 : 'e.g. 10 + 2 or 4 + 1'
                             }
                             value={
@@ -3242,15 +3282,12 @@ export default function ProductRegistrationPage() {
                                 (product.purchaseSchemeType ?? 'FIXED_UNITS') ===
                                 'FREE_QUANTITY'
                               ) {
-                                const freeQty = parseInt(raw, 10);
-                                if (!isNaN(freeQty) && freeQty >= 0) {
-                                  const patch = buildPurchaseFreeQuantityPatch(
-                                    product,
-                                    freeQty
-                                  );
-                                  if (patch) {
-                                    handleApplyPurchasePatch(product.id, patch);
-                                  }
+                                const patch = applyPurchaseFreeQuantityFromRaw(
+                                  product,
+                                  raw
+                                );
+                                if (patch) {
+                                  handleApplyPurchasePatch(product.id, patch);
                                 }
                                 return;
                               }
@@ -4028,11 +4065,8 @@ function ProductAccordion({
       return;
     }
     if ((product.purchaseSchemeType ?? 'FIXED_UNITS') === 'FREE_QUANTITY') {
-      const freeQty = parseInt(raw, 10);
-      if (!isNaN(freeQty) && freeQty >= 0) {
-        const patch = buildPurchaseFreeQuantityPatch(product, freeQty);
-        if (patch) onApplyPurchasePatch(product.id, patch);
-      }
+      const patch = applyPurchaseFreeQuantityFromRaw(product, raw);
+      if (patch) onApplyPurchasePatch(product.id, patch);
       return;
     }
     const plusIdx = raw.indexOf('+');
@@ -4066,10 +4100,24 @@ function ProductAccordion({
 
   const purchaseSchemeType =
     product.purchaseSchemeType ?? 'FIXED_UNITS';
-  const purchaseSchemePaidFreeHint =
-    product.purchaseSchemeFreeQty != null
-      ? `${billableCountForPurchaseFreeQty(product)} paid + ${product.purchaseSchemeFreeQty} free`
-      : null;
+  const purchaseSchemePaidFreeHint = (() => {
+    const billable = billableCountForPurchaseFreeQty(product);
+    if (product.purchaseSchemeFreeQty != null) {
+      return billable > 0
+        ? `${billable} paid + ${product.purchaseSchemeFreeQty} free`
+        : `0 paid + ${product.purchaseSchemeFreeQty} free`;
+    }
+    if (
+      product.purchaseSchemePayFor != null ||
+      product.purchaseSchemeFree != null
+    ) {
+      return formatPurchaseSchemeRatioDisplay(
+        product.purchaseSchemePayFor,
+        product.purchaseSchemeFree
+      );
+    }
+    return null;
+  })();
 
   return (
     <div className={styles.productAccordion}>
@@ -4554,7 +4602,9 @@ function ProductAccordion({
                   className={styles.input}
                   placeholder={
                     purchaseSchemeType === 'FREE_QUANTITY'
-                      ? 'e.g. 60'
+                      ? (Number(product.count) || 0) > 0
+                        ? 'e.g. 60'
+                        : 'e.g. 60 or 0 + 60'
                       : 'e.g. 10 + 2 or 4 + 1'
                   }
                   value={purchaseSchemeFixedDraft}
