@@ -592,6 +592,8 @@ export type ItemType = 'NORMAL' | 'COSTLY' | 'DEGREE';
 export type DiscountApplicable = 'DISCOUNT' | 'SCHEME' | 'DISCOUNT_AND_SCHEME';
 
 export type SchemeType = 'FIXED_UNITS' | 'PERCENTAGE';
+/** Purchase registration: free units on top of billable count (UI; persisted as FIXED_UNITS + ratio). */
+export type PurchaseSchemeInputType = SchemeType | 'FREE_QUANTITY';
 export type BillingMode = 'REGULAR' | 'BASIC';
 
 export interface UnitConversion {

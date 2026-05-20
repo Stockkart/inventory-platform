@@ -24,6 +24,7 @@ import type {
   ItemType,
   DiscountApplicable,
   SchemeType,
+  PurchaseSchemeInputType,
   BillingMode,
   PaymentMethod,
   PaymentSplit,
@@ -177,10 +178,12 @@ interface ProductFormData
   sgst?: string;
   cgst?: string;
   saleAdditionalDiscount?: number | null;
-  purchaseSchemeType?: SchemeType;
+  purchaseSchemeType?: PurchaseSchemeInputType;
   purchaseSchemePayFor?: number | null;
   purchaseSchemeFree?: number | null;
   purchaseSchemePercentage?: number | null;
+  /** Free units from vendor (e.g. 60 on 540 paid). Count becomes total received; invoice uses billable + ratio. */
+  purchaseSchemeFreeQty?: number | null;
   purchaseAdditionalDiscount?: number | null;
   conversionUnit?: string;
   conversionFactor?: number;
@@ -202,8 +205,107 @@ type PurchaseSchemeFields = Pick<
   | 'purchaseSchemePayFor'
   | 'purchaseSchemeFree'
   | 'purchaseSchemePercentage'
+  | 'purchaseSchemeFreeQty'
   | 'purchaseAdditionalDiscount'
 >;
+
+function gcdInt(a: number, b: number): number {
+  let x = Math.abs(Math.trunc(a));
+  let y = Math.abs(Math.trunc(b));
+  while (y > 0) {
+    const t = y;
+    y = x % y;
+    x = t;
+  }
+  return x || 1;
+}
+
+/** e.g. paid 540 + free 60 → 9 + 1 */
+function schemeRatioFromPaidAndFree(
+  paid: number,
+  freeQty: number
+): { payFor: number; free: number } {
+  const g = gcdInt(paid, freeQty);
+  return { payFor: Math.max(1, paid / g), free: freeQty / g };
+}
+
+/** Billable qty before applying a new free-quantity scheme (count may already be total). */
+function billableCountForPurchaseFreeQty(product: {
+  count?: number;
+  purchaseSchemeFreeQty?: number | null;
+}): number {
+  const count = Math.max(0, Number(product.count) || 0);
+  const prevFree = product.purchaseSchemeFreeQty;
+  if (prevFree != null && prevFree > 0 && count >= prevFree) {
+    return Math.max(0, count - prevFree);
+  }
+  return count;
+}
+
+function buildPurchaseFreeQuantityPatch(
+  product: ProductFormData,
+  freeQty: number
+): Partial<ProductFormData> | null {
+  if (freeQty <= 0 || !Number.isFinite(freeQty)) return null;
+  const billable = billableCountForPurchaseFreeQty(product);
+  if (billable <= 0) return null;
+  const { payFor, free } = schemeRatioFromPaidAndFree(billable, freeQty);
+  return {
+    count: billable + freeQty,
+    purchaseSchemeFreeQty: freeQty,
+    purchaseSchemeType: 'FIXED_UNITS',
+    purchaseSchemePayFor: payFor,
+    purchaseSchemeFree: free,
+    purchaseSchemePercentage: null,
+  };
+}
+
+/** Display pay + free ratio (e.g. 4 + 1) for purchase scheme inputs. */
+function formatPurchaseSchemeRatioDisplay(
+  payFor: number | null | undefined,
+  free: number | null | undefined
+): string {
+  if (payFor == null && free == null) return '';
+  return `${payFor ?? 0} + ${free ?? 0}`;
+}
+
+function formatPurchaseSchemeDealForDisplay(
+  product: Pick<
+    ProductFormData,
+    | 'purchaseSchemeType'
+    | 'purchaseSchemePercentage'
+    | 'purchaseSchemePayFor'
+    | 'purchaseSchemeFree'
+  >
+): string {
+  if ((product.purchaseSchemeType ?? 'FIXED_UNITS') === 'PERCENTAGE') {
+    return product.purchaseSchemePercentage != null
+      ? `${product.purchaseSchemePercentage}%`
+      : '';
+  }
+  return formatPurchaseSchemeRatioDisplay(
+    product.purchaseSchemePayFor,
+    product.purchaseSchemeFree
+  );
+}
+
+function clearPurchaseSchemePatch(
+  product: ProductFormData
+): Partial<ProductFormData> {
+  const patch: Partial<ProductFormData> = {
+    purchaseSchemePayFor: null,
+    purchaseSchemeFree: null,
+    purchaseSchemePercentage: null,
+    purchaseSchemeFreeQty: null,
+  };
+  const prevFree = product.purchaseSchemeFreeQty;
+  if (prevFree != null && prevFree > 0) {
+    const count = Math.max(0, Number(product.count) || 0);
+    const billable = count - prevFree;
+    if (billable >= 0) patch.count = billable;
+  }
+  return patch;
+}
 
 /** Parse grid/list draft: "10+2", "8 + 2", "15%". */
 function parsePurchaseSchemeDraft(raw: string): PurchaseSchemeFields | null {
@@ -274,6 +376,47 @@ function applyPurchaseDiscountsToLine(
   return line;
 }
 
+/**
+ * Tax-exclusive purchase line.
+ * Free-quantity flow: count is total received (e.g. 100); billable = count − freeQty (80);
+ * line = billable × unit only — free units are the scheme, not an extra % off billable.
+ * Deal-ratio / % flows: discount via applyPurchaseDiscountsToLine on gross or billable.
+ */
+function purchaseLineTaxableExclusive(
+  count: number,
+  unit: number,
+  scheme: PurchaseSchemeFields
+): number {
+  const gross = roundMoney(count * unit);
+  if (gross <= 0) return 0;
+
+  const freeQty = scheme.purchaseSchemeFreeQty;
+  const schemeType = scheme.purchaseSchemeType ?? 'FIXED_UNITS';
+
+  if (
+    freeQty != null &&
+    freeQty > 0 &&
+    schemeType !== 'PERCENTAGE' &&
+    schemeType !== 'FREE_QUANTITY'
+  ) {
+    const billable =
+      count >= freeQty
+        ? count - freeQty
+        : Math.max(
+            0,
+            Math.round(
+              (count *
+                (scheme.purchaseSchemePayFor ?? 0)) /
+                ((scheme.purchaseSchemePayFor ?? 0) +
+                  (scheme.purchaseSchemeFree ?? 0))
+            )
+          );
+    return roundMoney(Math.max(0, billable) * unit);
+  }
+
+  return applyPurchaseDiscountsToLine(gross, scheme);
+}
+
 function resolvePurchaseSchemeForTotals(
   product: ProductFormData,
   purchaseDraft?: string
@@ -290,6 +433,7 @@ function resolvePurchaseSchemeForTotals(
     purchaseSchemePayFor: product.purchaseSchemePayFor,
     purchaseSchemeFree: product.purchaseSchemeFree,
     purchaseSchemePercentage: product.purchaseSchemePercentage,
+    purchaseSchemeFreeQty: product.purchaseSchemeFreeQty,
     purchaseAdditionalDiscount: product.purchaseAdditionalDiscount,
   };
 }
@@ -322,10 +466,7 @@ function computeVendorInvoiceTotalsFromProducts(
       p,
       schemeDrafts?.[p.id]?.purchase
     );
-    const lineTaxableExclusive = applyPurchaseDiscountsToLine(
-      roundMoney(q * unit),
-      scheme
-    );
+    const lineTaxableExclusive = purchaseLineTaxableExclusive(q, unit, scheme);
 
     const sgst =
       billingModeForGst === 'BASIC'
@@ -560,6 +701,7 @@ export default function ProductRegistrationPage() {
     purchaseSchemePayFor: null,
     purchaseSchemeFree: null,
     purchaseSchemePercentage: null,
+    purchaseSchemeFreeQty: null,
     purchaseAdditionalDiscount: null,
     billingMode,
     itemType: 'NORMAL',
@@ -663,6 +805,7 @@ export default function ProductRegistrationPage() {
       purchaseSchemePercentage:
         (item as { purchaseSchemePercentage?: number | null })
           .purchaseSchemePercentage ?? null,
+      purchaseSchemeFreeQty: null,
       purchaseAdditionalDiscount:
         (item as { purchaseAdditionalDiscount?: number | null })
           .purchaseAdditionalDiscount ?? null,
@@ -977,6 +1120,17 @@ export default function ProductRegistrationPage() {
   ) => {
     setProducts((prev) =>
       prev.map((p) => (p.id === productId ? { ...p, [field]: value } : p))
+    );
+    setError(null);
+    setSuccess(null);
+  };
+
+  const handleApplyPurchasePatch = (
+    productId: string,
+    patch: Partial<ProductFormData>
+  ) => {
+    setProducts((prev) =>
+      prev.map((p) => (p.id === productId ? { ...p, ...patch } : p))
     );
     setError(null);
     setSuccess(null);
@@ -1359,7 +1513,8 @@ export default function ProductRegistrationPage() {
           ...(product.purchaseSchemeType != null ||
           product.purchaseSchemePayFor != null ||
           product.purchaseSchemeFree != null ||
-          product.purchaseSchemePercentage != null
+          product.purchaseSchemePercentage != null ||
+          product.purchaseSchemeFreeQty != null
             ? (product.purchaseSchemeType ?? 'FIXED_UNITS') === 'PERCENTAGE'
               ? {
                   purchaseSchemeType: 'PERCENTAGE' as const,
@@ -2911,34 +3066,45 @@ export default function ProductRegistrationPage() {
                             className={styles.excelSelect}
                             value={product.purchaseSchemeType ?? 'FIXED_UNITS'}
                             onChange={(e) => {
-                              const val = e.target.value as SchemeType;
-                              handleProductChange(
-                                product.id,
-                                'purchaseSchemeType',
-                                val
-                              );
+                              const val = e.target
+                                .value as PurchaseSchemeInputType;
                               if (val === 'PERCENTAGE') {
-                                handleProductChange(
-                                  product.id,
-                                  'purchaseSchemePayFor',
-                                  null
-                                );
-                                handleProductChange(
-                                  product.id,
-                                  'purchaseSchemeFree',
-                                  null
-                                );
+                                handleApplyPurchasePatch(product.id, {
+                                  purchaseSchemeType: 'PERCENTAGE',
+                                  purchaseSchemePercentage:
+                                    product.purchaseSchemePercentage ?? null,
+                                  ...clearPurchaseSchemePatch(product),
+                                });
+                              } else if (val === 'FREE_QUANTITY') {
+                                const billable =
+                                  billableCountForPurchaseFreeQty(product);
+                                handleApplyPurchasePatch(product.id, {
+                                  purchaseSchemeType: 'FREE_QUANTITY',
+                                  purchaseSchemePayFor: null,
+                                  purchaseSchemeFree: null,
+                                  purchaseSchemePercentage: null,
+                                  purchaseSchemeFreeQty: null,
+                                  ...(product.purchaseSchemeFreeQty != null
+                                    ? { count: billable }
+                                    : {}),
+                                });
                               } else {
-                                handleProductChange(
-                                  product.id,
-                                  'purchaseSchemePercentage',
-                                  null
-                                );
+                                const billable =
+                                  billableCountForPurchaseFreeQty(product);
+                                handleApplyPurchasePatch(product.id, {
+                                  purchaseSchemeType: 'FIXED_UNITS',
+                                  purchaseSchemePercentage: null,
+                                  purchaseSchemeFreeQty: null,
+                                  ...(product.purchaseSchemeFreeQty != null
+                                    ? { count: billable }
+                                    : {}),
+                                });
                               }
                             }}
                             disabled={isLoading}
                           >
-                            <option value="FIXED_UNITS">Free units</option>
+                            <option value="FIXED_UNITS">Deal ratio</option>
+                            <option value="FREE_QUANTITY">Free quantity</option>
                             <option value="PERCENTAGE">Percentage</option>
                           </select>
                         </td>
@@ -2946,7 +3112,12 @@ export default function ProductRegistrationPage() {
                           <input
                             type="text"
                             className={styles.excelInputNarrow}
-                            placeholder="e.g. 10+2"
+                            placeholder={
+                              (product.purchaseSchemeType ?? 'FIXED_UNITS') ===
+                              'FREE_QUANTITY'
+                                ? 'e.g. 60'
+                                : 'e.g. 10 + 2 or 4 + 1'
+                            }
                             value={
                               gridSchemeDrafts[product.id]?.purchase ??
                               ((product.purchaseSchemeType ?? 'FIXED_UNITS') ===
@@ -2954,12 +3125,7 @@ export default function ProductRegistrationPage() {
                                 ? product.purchaseSchemePercentage != null
                                   ? `${product.purchaseSchemePercentage}%`
                                   : ''
-                                : product.purchaseSchemePayFor != null ||
-                                  product.purchaseSchemeFree != null
-                                ? `${product.purchaseSchemePayFor ?? 0}+${
-                                    product.purchaseSchemeFree ?? 0
-                                  }`
-                                : '')
+                                : formatPurchaseSchemeDealForDisplay(product))
                             }
                             onChange={(e) => {
                               const v = e.target.value;
@@ -2989,45 +3155,34 @@ export default function ProductRegistrationPage() {
                                 return next;
                               });
                               if (raw === '') {
-                                handleProductChange(
+                                handleApplyPurchasePatch(
                                   product.id,
-                                  'purchaseSchemePayFor',
-                                  null
+                                  clearPurchaseSchemePatch(product)
                                 );
-                                handleProductChange(
-                                  product.id,
-                                  'purchaseSchemeFree',
-                                  null
-                                );
-                                handleProductChange(
-                                  product.id,
-                                  'purchaseSchemePercentage',
-                                  null
-                                );
+                                return;
+                              }
+                              if (
+                                (product.purchaseSchemeType ?? 'FIXED_UNITS') ===
+                                'FREE_QUANTITY'
+                              ) {
+                                const freeQty = parseInt(raw, 10);
+                                if (!isNaN(freeQty) && freeQty >= 0) {
+                                  const patch = buildPurchaseFreeQuantityPatch(
+                                    product,
+                                    freeQty
+                                  );
+                                  if (patch) {
+                                    handleApplyPurchasePatch(product.id, patch);
+                                  }
+                                }
                                 return;
                               }
                               const parsed = parsePurchaseSchemeDraft(raw);
                               if (!parsed) return;
-                              handleProductChange(
-                                product.id,
-                                'purchaseSchemeType',
-                                parsed.purchaseSchemeType ?? 'FIXED_UNITS'
-                              );
-                              handleProductChange(
-                                product.id,
-                                'purchaseSchemePercentage',
-                                parsed.purchaseSchemePercentage
-                              );
-                              handleProductChange(
-                                product.id,
-                                'purchaseSchemePayFor',
-                                parsed.purchaseSchemePayFor
-                              );
-                              handleProductChange(
-                                product.id,
-                                'purchaseSchemeFree',
-                                parsed.purchaseSchemeFree
-                              );
+                              handleApplyPurchasePatch(product.id, {
+                                ...parsed,
+                                purchaseSchemeFreeQty: null,
+                              });
                             }}
                             disabled={isLoading}
                           />
@@ -3247,6 +3402,7 @@ export default function ProductRegistrationPage() {
                     onToggle={() => handleToggleProduct(product.id)}
                     onRemove={() => handleRemoveProduct(product.id)}
                     onChange={handleProductChange}
+                    onApplyPurchasePatch={handleApplyPurchasePatch}
                     onIntegerChange={handleIntegerChange}
                     onDecimalChange={handleDecimalChange}
                     onCustomRemindersChange={(reminders) =>
@@ -3690,6 +3846,10 @@ interface ProductAccordionProps {
     field: keyof ProductFormData,
     value: ProductFormData[keyof ProductFormData]
   ) => void;
+  onApplyPurchasePatch: (
+    productId: string,
+    patch: Partial<ProductFormData>
+  ) => void;
   onIntegerChange: (productId: string, field: string, value: string) => void;
   onDecimalChange: (productId: string, field: string, value: string) => void;
   onCustomRemindersChange: (reminders: CustomReminderInput[]) => void;
@@ -3705,6 +3865,7 @@ function ProductAccordion({
   onToggle,
   onRemove,
   onChange,
+  onApplyPurchasePatch,
   onIntegerChange,
   onDecimalChange,
   onCustomRemindersChange,
@@ -3721,12 +3882,8 @@ function ProductAccordion({
     if (p.scheme != null && p.scheme !== undefined) return `1 + ${p.scheme}`;
     return '';
   };
-  const formatPurchaseSchemeFixed = (p: ProductFormData): string => {
-    if (p.purchaseSchemePayFor != null || p.purchaseSchemeFree != null) {
-      return `${p.purchaseSchemePayFor ?? 0} + ${p.purchaseSchemeFree ?? 0}`;
-    }
-    return '';
-  };
+  const formatPurchaseSchemeFixed = (p: ProductFormData): string =>
+    formatPurchaseSchemeDealForDisplay(p);
 
   const [schemeFixedDraft, setSchemeFixedDraft] = useState('');
   const [schemeFixedFocused, setSchemeFixedFocused] = useState(false);
@@ -3751,6 +3908,8 @@ function ProductAccordion({
     product.id,
     product.purchaseSchemePayFor,
     product.purchaseSchemeFree,
+    product.purchaseSchemeFreeQty,
+    product.purchaseSchemeType,
     purchaseSchemeFixedFocused,
   ]);
 
@@ -3785,16 +3944,28 @@ function ProductAccordion({
   const commitPurchaseSchemeFixed = () => {
     const raw = purchaseSchemeFixedDraft.trim();
     if (raw === '') {
-      onChange(product.id, 'purchaseSchemePayFor', null);
-      onChange(product.id, 'purchaseSchemeFree', null);
+      onApplyPurchasePatch(product.id, clearPurchaseSchemePatch(product));
+      return;
+    }
+    if ((product.purchaseSchemeType ?? 'FIXED_UNITS') === 'FREE_QUANTITY') {
+      const freeQty = parseInt(raw, 10);
+      if (!isNaN(freeQty) && freeQty >= 0) {
+        const patch = buildPurchaseFreeQuantityPatch(product, freeQty);
+        if (patch) onApplyPurchasePatch(product.id, patch);
+      }
       return;
     }
     const plusIdx = raw.indexOf('+');
     if (plusIdx === -1) {
       const num = parseInt(raw, 10);
       if (!isNaN(num) && num >= 0) {
-        onChange(product.id, 'purchaseSchemePayFor', num);
-        onChange(product.id, 'purchaseSchemeFree', 0);
+        onApplyPurchasePatch(product.id, {
+          purchaseSchemePayFor: num,
+          purchaseSchemeFree: 0,
+          purchaseSchemeFreeQty: null,
+          purchaseSchemeType: 'FIXED_UNITS',
+          purchaseSchemePercentage: null,
+        });
       }
       return;
     }
@@ -3803,10 +3974,22 @@ function ProductAccordion({
     const left = leftStr === '' ? 0 : parseInt(leftStr, 10);
     const right = rightStr === '' ? 0 : parseInt(rightStr, 10);
     if (!isNaN(left) && !isNaN(right) && left >= 0 && right >= 0) {
-      onChange(product.id, 'purchaseSchemePayFor', left);
-      onChange(product.id, 'purchaseSchemeFree', right);
+      onApplyPurchasePatch(product.id, {
+        purchaseSchemePayFor: left,
+        purchaseSchemeFree: right,
+        purchaseSchemeFreeQty: null,
+        purchaseSchemeType: 'FIXED_UNITS',
+        purchaseSchemePercentage: null,
+      });
     }
   };
+
+  const purchaseSchemeType =
+    product.purchaseSchemeType ?? 'FIXED_UNITS';
+  const purchaseSchemePaidFreeHint =
+    product.purchaseSchemeFreeQty != null
+      ? `${billableCountForPurchaseFreeQty(product)} paid + ${product.purchaseSchemeFreeQty} free`
+      : null;
 
   return (
     <div className={styles.productAccordion}>
@@ -4202,71 +4385,46 @@ function ProductAccordion({
                 className={styles.input}
                 value={product.purchaseSchemeType ?? 'FIXED_UNITS'}
                 onChange={(e) => {
-                  const val = e.target.value as SchemeType;
-                  onChange(product.id, 'purchaseSchemeType', val);
+                  const val = e.target.value as PurchaseSchemeInputType;
                   if (val === 'PERCENTAGE') {
-                    onChange(product.id, 'purchaseSchemePayFor', null);
-                    onChange(product.id, 'purchaseSchemeFree', null);
+                    onApplyPurchasePatch(product.id, {
+                      purchaseSchemeType: 'PERCENTAGE',
+                      purchaseSchemePercentage:
+                        product.purchaseSchemePercentage ?? null,
+                      ...clearPurchaseSchemePatch(product),
+                    });
+                  } else if (val === 'FREE_QUANTITY') {
+                    const billable = billableCountForPurchaseFreeQty(product);
+                    onApplyPurchasePatch(product.id, {
+                      purchaseSchemeType: 'FREE_QUANTITY',
+                      purchaseSchemePayFor: null,
+                      purchaseSchemeFree: null,
+                      purchaseSchemePercentage: null,
+                      purchaseSchemeFreeQty: null,
+                      ...(product.purchaseSchemeFreeQty != null
+                        ? { count: billable }
+                        : {}),
+                    });
                   } else {
-                    onChange(product.id, 'purchaseSchemePercentage', null);
+                    const billable = billableCountForPurchaseFreeQty(product);
+                    onApplyPurchasePatch(product.id, {
+                      purchaseSchemeType: 'FIXED_UNITS',
+                      purchaseSchemePercentage: null,
+                      purchaseSchemeFreeQty: null,
+                      ...(product.purchaseSchemeFreeQty != null
+                        ? { count: billable }
+                        : {}),
+                    });
                   }
                 }}
                 disabled={isLoading}
               >
-                <option value="FIXED_UNITS">Free units</option>
+                <option value="FIXED_UNITS">Deal ratio</option>
+                <option value="FREE_QUANTITY">Free quantity</option>
                 <option value="PERCENTAGE">Percentage</option>
               </select>
             </div>
-            {(product.purchaseSchemeType ?? 'FIXED_UNITS') === 'FIXED_UNITS' ? (
-              <div className={styles.formGroup}>
-                <label
-                  htmlFor={`purchase-scheme-fixed-${product.id}`}
-                  className={styles.label}
-                >
-                  Purchase scheme/deal (e.g. 10 + 2)
-                </label>
-                <input
-                  type="text"
-                  id={`purchase-scheme-fixed-${product.id}`}
-                  className={styles.input}
-                  placeholder="Optional, from vendor"
-                  value={purchaseSchemeFixedDraft}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setPurchaseSchemeFixedDraft(v);
-                    const parsed = parsePurchaseSchemeDraft(v);
-                    if (
-                      parsed?.purchaseSchemeType === 'FIXED_UNITS' &&
-                      v.includes('+')
-                    ) {
-                      onChange(product.id, 'purchaseSchemeType', 'FIXED_UNITS');
-                      onChange(
-                        product.id,
-                        'purchaseSchemePayFor',
-                        parsed.purchaseSchemePayFor
-                      );
-                      onChange(
-                        product.id,
-                        'purchaseSchemeFree',
-                        parsed.purchaseSchemeFree
-                      );
-                      onChange(product.id, 'purchaseSchemePercentage', null);
-                    }
-                  }}
-                  onFocus={() => setPurchaseSchemeFixedFocused(true)}
-                  onBlur={() => {
-                    setPurchaseSchemeFixedFocused(false);
-                    commitPurchaseSchemeFixed();
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.currentTarget.blur();
-                    }
-                  }}
-                  disabled={isLoading}
-                />
-              </div>
-            ) : (
+            {purchaseSchemeType === 'PERCENTAGE' ? (
               <div className={styles.formGroup}>
                 <label
                   htmlFor={`purchaseSchemePercentage-${product.id}`}
@@ -4300,6 +4458,63 @@ function ProductAccordion({
                   }}
                   disabled={isLoading}
                 />
+              </div>
+            ) : (
+              <div className={styles.formGroup}>
+                <label
+                  htmlFor={`purchase-scheme-fixed-${product.id}`}
+                  className={styles.label}
+                >
+                  {purchaseSchemeType === 'FREE_QUANTITY'
+                    ? 'Free quantity (e.g. 60 on 540 paid)'
+                    : 'Purchase scheme/deal'}
+                </label>
+                <input
+                  type="text"
+                  id={`purchase-scheme-fixed-${product.id}`}
+                  className={styles.input}
+                  placeholder={
+                    purchaseSchemeType === 'FREE_QUANTITY'
+                      ? 'e.g. 60'
+                      : 'e.g. 10 + 2 or 4 + 1'
+                  }
+                  value={purchaseSchemeFixedDraft}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setPurchaseSchemeFixedDraft(v);
+                    if (purchaseSchemeType !== 'FREE_QUANTITY') {
+                      const parsed = parsePurchaseSchemeDraft(v);
+                      if (
+                        parsed?.purchaseSchemeType === 'FIXED_UNITS' &&
+                        v.includes('+')
+                      ) {
+                        onApplyPurchasePatch(product.id, {
+                          ...parsed,
+                          purchaseSchemeFreeQty: null,
+                        });
+                      }
+                    }
+                  }}
+                  onFocus={() => setPurchaseSchemeFixedFocused(true)}
+                  onBlur={() => {
+                    setPurchaseSchemeFixedFocused(false);
+                    commitPurchaseSchemeFixed();
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.currentTarget.blur();
+                    }
+                  }}
+                  disabled={isLoading}
+                />
+                {purchaseSchemePaidFreeHint ? (
+                  <span
+                    className={styles.label}
+                    style={{ fontWeight: 400, marginTop: '0.25rem' }}
+                  >
+                    {purchaseSchemePaidFreeHint}
+                  </span>
+                ) : null}
               </div>
             )}
           </div>
