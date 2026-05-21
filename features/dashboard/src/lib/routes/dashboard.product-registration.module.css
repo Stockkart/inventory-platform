@@ -2129,9 +2129,7 @@
   border-radius: 10px;
   border: 1px solid var(--border-color);
   cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease,
+  transition: border-color 0.15s ease, background 0.15s ease,
     box-shadow 0.15s ease;
 }
 
@@ -2146,15 +2144,13 @@
 
 .paymentModeSegBtn:focus-visible {
   outline: none;
-  box-shadow:
-    0 0 0 2px var(--bg-card),
+  box-shadow: 0 0 0 2px var(--bg-card),
     0 0 0 5px color-mix(in srgb, #3b82f6 45%, transparent);
 }
 
 .paymentModeSegBtnActive:focus-visible {
   outline: none;
-  box-shadow:
-    0 0 0 2px var(--bg-card),
+  box-shadow: 0 0 0 2px var(--bg-card),
     0 0 0 5px color-mix(in srgb, #3b82f6 45%, transparent);
 }
 
@@ -2237,4 +2233,39 @@
   font-size: 0.775rem;
   line-height: 1.48;
   color: var(--text-secondary);
+}
+
+.bulkEditSection {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 1px dashed var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+}
+
+.bulkEditHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.bulkEditTitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.bulkEditHint {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.bulkApplyBtn {
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  font-weight: 600;
 }
