@@ -214,7 +214,16 @@ export default function OnboardingPage() {
       //   setError(null);
       //   return;
     } else if (step === 'businessDetails') {
-      // Business details are all optional, skip validation and move to next step or submit
+      if (isPharmacyProfile) {
+        if (!formData.dlNo.trim()) {
+          notifyError('Drug License No (DL No) is required');
+          return;
+        }
+        if (!formData.fssai.trim()) {
+          notifyError('FSSAI is required');
+          return;
+        }
+      }
       if (currentStep === STEPS.length - 1) {
         handleSubmit();
       } else {
@@ -260,10 +269,22 @@ export default function OnboardingPage() {
 
   const handleSubmit = async () => {
     setError(null);
+
+    const profileId = formData.businessProfileId?.trim() || 'pharmacy';
+    if (profileId === 'pharmacy') {
+      if (!formData.dlNo.trim()) {
+        notifyError('Drug License No (DL No) is required');
+        return;
+      }
+      if (!formData.fssai.trim()) {
+        notifyError('FSSAI is required');
+        return;
+      }
+    }
+
     setIsLoading(true);
 
     try {
-      const profileId = formData.businessProfileId?.trim() || 'pharmacy';
       const response = await shopsApi.register({
         name: formData.name,
         businessId: profileId,
@@ -501,7 +522,7 @@ export default function OnboardingPage() {
                   style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}
                 >
                   {isPharmacyProfile
-                    ? 'Drug license is required for pharmacy shops. Other fields are optional.'
+                    ? 'Drug License No and FSSAI are required for pharmacy shops. Other fields are optional.'
                     : 'These fields are optional. You can skip this step or fill them later.'}
                 </p>
                 <div className={styles.formRow}>
@@ -523,7 +544,7 @@ export default function OnboardingPage() {
                   {isPharmacyProfile && (
                     <div className={styles.formGroup}>
                       <label htmlFor="fssai" className={styles.label}>
-                        FSSAI
+                        FSSAI *
                       </label>
                       <input
                         type="text"
