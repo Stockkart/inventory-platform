@@ -3,7 +3,6 @@ import { API_ENDPOINTS } from './endpoints';
 import type {
   ApiResponse,
   BusinessProfile,
-  BusinessProfileOption,
   RegisterShopDto,
   RegisterShopResponse,
   RequestJoinShopDto,
@@ -25,8 +24,8 @@ export const shopsApi = {
     return response.data;
   },
 
-  listBusinessProfiles: async (): Promise<BusinessProfileOption[]> => {
-    const response = await apiClient.get<ApiResponse<BusinessProfileOption[]>>(
+  listBusinessProfiles: async (): Promise<BusinessProfile[]> => {
+    const response = await apiClient.get<ApiResponse<BusinessProfile[]>>(
       API_ENDPOINTS.SHOPS.BUSINESS_PROFILES
     );
     return response.data;

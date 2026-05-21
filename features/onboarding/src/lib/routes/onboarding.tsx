@@ -1,11 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { useAuthStore } from '@inventory-platform/store';
 import { shopsApi } from '@inventory-platform/api';
 import type {
-  BusinessProfileOption,
+  BusinessProfile,
+  FieldDefinition,
   OnboardingStep,
+  ShopRegisterFormValues,
   ShopType,
+} from '@inventory-platform/types';
+import {
+  SHOP_REGISTER_EXTRA_FIELD_KEYS,
+  getVisibleShopEntityFields,
+  isShopFieldRequired,
+  shopDetailsStepHint,
+  validateShopEntityFields,
 } from '@inventory-platform/types';
 import styles from './onboarding.module.css';
 import { useNotify } from '@inventory-platform/store';
@@ -40,6 +49,91 @@ const SHOP_TYPES: { value: ShopType; label: string }[] = [
   { value: 'WHOLESALER', label: 'Wholesaler' },
 ];
 
+const EXTRA_SHOP_FIELD_LABELS: Record<string, string> = {
+  panNo: 'PAN No',
+  sgst: 'SGST (%)',
+  cgst: 'CGST (%)',
+};
+
+function chunkFields<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+}
+
+function ShopRegisterFieldInput({
+  field,
+  value,
+  onChange,
+  disabled,
+  labelClassName,
+  inputClassName,
+}: {
+  field: FieldDefinition;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  disabled: boolean;
+  labelClassName: string;
+  inputClassName: string;
+}) {
+  const label = field.label?.trim() || field.key;
+  return (
+    <div className={styles.formGroup}>
+      <label htmlFor={field.key} className={labelClassName}>
+        {label}
+        {isShopFieldRequired(field) ? ' *' : ''}
+      </label>
+      <input
+        type="text"
+        id={field.key}
+        name={field.key}
+        className={inputClassName}
+        placeholder={`Enter ${label}`}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+      />
+    </div>
+  );
+}
+
+function ShopRegisterExtraFieldInput({
+  fieldKey,
+  value,
+  onChange,
+  disabled,
+  labelClassName,
+  inputClassName,
+}: {
+  fieldKey: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  disabled: boolean;
+  labelClassName: string;
+  inputClassName: string;
+}) {
+  const label = EXTRA_SHOP_FIELD_LABELS[fieldKey] ?? fieldKey;
+  return (
+    <div className={styles.formGroup}>
+      <label htmlFor={fieldKey} className={labelClassName}>
+        {label}
+      </label>
+      <input
+        type="text"
+        id={fieldKey}
+        name={fieldKey}
+        className={inputClassName}
+        placeholder={`Enter ${label}`}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+      />
+    </div>
+  );
+}
+
 export function meta() {
   return [
     { title: 'Onboarding - StockKart' },
@@ -56,7 +150,7 @@ export default function OnboardingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { error: notifyError } = useNotify;
-  const [profileOptions, setProfileOptions] = useState<BusinessProfileOption[]>([]);
+  const [profileCatalog, setProfileCatalog] = useState<BusinessProfile[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     businessProfileId: 'pharmacy',
@@ -102,21 +196,68 @@ export default function OnboardingPage() {
   useEffect(() => {
     shopsApi
       .listBusinessProfiles()
-      .then((options) => {
-        setProfileOptions(options);
-        if (options.length > 0 && !options.some((o) => o.id === formData.businessProfileId)) {
-          setFormData((prev) => ({ ...prev, businessProfileId: options[0].id }));
+      .then((profiles) => {
+        setProfileCatalog(profiles);
+        if (
+          profiles.length > 0 &&
+          !profiles.some((p) => p.id === formData.businessProfileId)
+        ) {
+          setFormData((prev) => ({ ...prev, businessProfileId: profiles[0].id }));
         }
       })
       .catch(() => {
-        setProfileOptions([
-          { id: 'pharmacy', name: 'Pharmacy / Medical' },
-          { id: 'sports-shop', name: 'Sports Shop' },
-        ]);
+        setProfileCatalog([]);
       });
   }, []);
 
-  const isPharmacyProfile = formData.businessProfileId === 'pharmacy';
+  const selectedProfile = useMemo(
+    () => profileCatalog.find((p) => p.id === formData.businessProfileId) ?? null,
+    [profileCatalog, formData.businessProfileId]
+  );
+
+  const visibleShopFields = useMemo(
+    () => getVisibleShopEntityFields(selectedProfile),
+    [selectedProfile]
+  );
+
+  const shopRegisterFormValues = useMemo<ShopRegisterFormValues>(
+    () => ({
+      dlNo: formData.dlNo,
+      gstinNo: formData.gstinNo,
+      fssai: formData.fssai,
+      panNo: formData.panNo,
+      sgst: formData.sgst,
+      cgst: formData.cgst,
+    }),
+    [
+      formData.dlNo,
+      formData.gstinNo,
+      formData.fssai,
+      formData.panNo,
+      formData.sgst,
+      formData.cgst,
+    ]
+  );
+
+  const extraShopFieldKeys = useMemo(
+    () =>
+      SHOP_REGISTER_EXTRA_FIELD_KEYS.filter(
+        (key) => !visibleShopFields.some((f) => f.key === key)
+      ),
+    [visibleShopFields]
+  );
+
+  const validateSelectedProfileShopFields = (): boolean => {
+    const message = validateShopEntityFields(
+      selectedProfile,
+      shopRegisterFormValues
+    );
+    if (message) {
+      notifyError(message);
+      return false;
+    }
+    return true;
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -214,15 +355,8 @@ export default function OnboardingPage() {
       //   setError(null);
       //   return;
     } else if (step === 'businessDetails') {
-      if (isPharmacyProfile) {
-        if (!formData.dlNo.trim()) {
-          notifyError('Drug License No (DL No) is required');
-          return;
-        }
-        if (!formData.fssai.trim()) {
-          notifyError('FSSAI is required');
-          return;
-        }
+      if (!validateSelectedProfileShopFields()) {
+        return;
       }
       if (currentStep === STEPS.length - 1) {
         handleSubmit();
@@ -270,18 +404,11 @@ export default function OnboardingPage() {
   const handleSubmit = async () => {
     setError(null);
 
-    const profileId = formData.businessProfileId?.trim() || 'pharmacy';
-    if (profileId === 'pharmacy') {
-      if (!formData.dlNo.trim()) {
-        notifyError('Drug License No (DL No) is required');
-        return;
-      }
-      if (!formData.fssai.trim()) {
-        notifyError('FSSAI is required');
-        return;
-      }
+    if (!validateSelectedProfileShopFields()) {
+      return;
     }
 
+    const profileId = formData.businessProfileId?.trim() || 'pharmacy';
     setIsLoading(true);
 
     try {
@@ -521,110 +648,38 @@ export default function OnboardingPage() {
                   className={styles.subtitle}
                   style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}
                 >
-                  {isPharmacyProfile
-                    ? 'Drug License No and FSSAI are required for pharmacy shops. Other fields are optional.'
-                    : 'These fields are optional. You can skip this step or fill them later.'}
+                  {shopDetailsStepHint(selectedProfile)}
                 </p>
-                <div className={styles.formRow}>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="gstinNo" className={styles.label}>
-                      GSTIN No
-                    </label>
-                    <input
-                      type="text"
-                      id="gstinNo"
-                      name="gstinNo"
-                      className={styles.input}
-                      placeholder="Enter the GSTIN No"
-                      value={getCurrentValue('gstinNo')}
-                      onChange={handleChange}
-                      disabled={isLoading}
-                    />
-                  </div>
-                  {isPharmacyProfile && (
-                    <div className={styles.formGroup}>
-                      <label htmlFor="fssai" className={styles.label}>
-                        FSSAI *
-                      </label>
-                      <input
-                        type="text"
-                        id="fssai"
-                        name="fssai"
-                        className={styles.input}
-                        placeholder="Enter the FSSAI"
-                        value={getCurrentValue('fssai')}
+                {chunkFields(visibleShopFields, 2).map((row, rowIndex) => (
+                  <div key={`shop-field-row-${rowIndex}`} className={styles.formRow}>
+                    {row.map((field) => (
+                      <ShopRegisterFieldInput
+                        key={field.key}
+                        field={field}
+                        value={getCurrentValue(field.key)}
                         onChange={handleChange}
                         disabled={isLoading}
+                        labelClassName={styles.label}
+                        inputClassName={styles.input}
                       />
-                    </div>
-                  )}
-                </div>
-                <div className={styles.formRow}>
-                  {isPharmacyProfile && (
-                    <div className={styles.formGroup}>
-                      <label htmlFor="dlNo" className={styles.label}>
-                        Drug License No (DL No) *
-                      </label>
-                      <input
-                        type="text"
-                        id="dlNo"
-                        name="dlNo"
-                        className={styles.input}
-                        placeholder="Enter the DL No"
-                        value={getCurrentValue('dlNo')}
+                    ))}
+                  </div>
+                ))}
+                {extraShopFieldKeys.length > 0 && (
+                  <div className={styles.formRow}>
+                    {extraShopFieldKeys.map((key) => (
+                      <ShopRegisterExtraFieldInput
+                        key={key}
+                        fieldKey={key}
+                        value={getCurrentValue(key)}
                         onChange={handleChange}
                         disabled={isLoading}
+                        labelClassName={styles.label}
+                        inputClassName={styles.input}
                       />
-                    </div>
-                  )}
-                  <div className={styles.formGroup}>
-                    <label htmlFor="panNo" className={styles.label}>
-                      PAN No
-                    </label>
-                    <input
-                      type="text"
-                      id="panNo"
-                      name="panNo"
-                      className={styles.input}
-                      placeholder="Enter the PAN No"
-                      value={getCurrentValue('panNo')}
-                      onChange={handleChange}
-                      disabled={isLoading}
-                    />
+                    ))}
                   </div>
-                </div>
-                <div className={styles.formRow}>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="sgst" className={styles.label}>
-                      SGST (%)
-                    </label>
-                    <input
-                      type="text"
-                      id="sgst"
-                      name="sgst"
-                      className={styles.input}
-                      placeholder="Enter the SGST (%)"
-                      value={getCurrentValue('sgst')}
-                      onChange={handleChange}
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="cgst" className={styles.label}>
-                      CGST (%)
-                    </label>
-                    <input
-                      type="text"
-                      id="cgst"
-                      name="cgst"
-                      className={styles.input}
-                      placeholder="Enter the CGST (%)"
-                      value={getCurrentValue('cgst')}
-                      onChange={handleChange}
-                      disabled={isLoading}
-                    />
-                  </div>
-                </div>
+                )}
               </>
             ) : STEPS[currentStep] === 'businessProfile' ? (
               <div className={styles.formGroup}>
@@ -639,9 +694,9 @@ export default function OnboardingPage() {
                   onChange={handleChange}
                   disabled={isLoading}
                 >
-                  {profileOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.name}
+                  {profileCatalog.map((profile) => (
+                    <option key={profile.id} value={profile.id}>
+                      {profile.name}
                     </option>
                   ))}
                 </select>
