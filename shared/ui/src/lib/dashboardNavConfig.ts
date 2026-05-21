@@ -42,35 +42,12 @@ export const DASHBOARD_MENU_GROUPS: DashboardMenuGroup[] = [
     ],
   },
   {
-    id: 'reminders-alerts',
-    label: 'Reminders & Alerts',
-    icon: '🔔',
+    id: 'contact',
+    label: 'Contact',
+    icon: '📇',
     items: [
-      { path: '/dashboard/reminders', label: 'Reminder', icon: '📅' },
-      {
-        path: '/dashboard/inventory-alert',
-        label: 'Inventory Low Alert',
-        icon: '🔔',
-      },
-    ],
-  },
-  {
-    id: 'analytics-history',
-    label: 'Reports & Analytics',
-    icon: '📈',
-    items: [
-      {
-        path: '/dashboard/analytics',
-        label: 'Analytics Dashboard',
-        icon: '📈',
-      },
-      { path: '/dashboard/taxes', label: 'Taxes', icon: '📋' },
-      { path: '/dashboard/history', label: 'History', icon: '📜' },
-      {
-        path: '/dashboard/stock-corrections',
-        label: 'Stock corrections',
-        icon: '🛠️',
-      },
+      { path: '/dashboard/customers', label: 'Customer', icon: '👥' },
+      { path: '/dashboard/vendors', label: 'Vendor', icon: '🚚' },
     ],
   },
   {
@@ -116,15 +93,6 @@ export const DASHBOARD_MENU_GROUPS: DashboardMenuGroup[] = [
     ],
   },
   {
-    id: 'contact',
-    label: 'Contact',
-    icon: '📇',
-    items: [
-      { path: '/dashboard/customers', label: 'Customer', icon: '👥' },
-      { path: '/dashboard/vendors', label: 'Vendor', icon: '🚚' },
-    ],
-  },
-  {
     id: 'returns',
     label: 'Returns',
     icon: '↩️',
@@ -138,6 +106,38 @@ export const DASHBOARD_MENU_GROUPS: DashboardMenuGroup[] = [
         path: '/dashboard/vendor-return',
         label: 'Return to vendor',
         icon: '📤',
+      },
+    ],
+  },
+  {
+    id: 'analytics-history',
+    label: 'Reports & Analytics',
+    icon: '📈',
+    items: [
+      {
+        path: '/dashboard/analytics',
+        label: 'Analytics Dashboard',
+        icon: '📈',
+      },
+      { path: '/dashboard/taxes', label: 'Taxes', icon: '📋' },
+      { path: '/dashboard/history', label: 'History', icon: '📜' },
+      {
+        path: '/dashboard/stock-corrections',
+        label: 'Stock corrections',
+        icon: '🛠️',
+      },
+    ],
+  },
+  {
+    id: 'reminders-alerts',
+    label: 'Reminders & Alerts',
+    icon: '🔔',
+    items: [
+      { path: '/dashboard/reminders', label: 'Reminder', icon: '📅' },
+      {
+        path: '/dashboard/inventory-alert',
+        label: 'Inventory Low Alert',
+        icon: '🔔',
       },
     ],
   },
