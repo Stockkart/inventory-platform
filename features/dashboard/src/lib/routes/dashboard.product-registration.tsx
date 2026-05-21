@@ -605,6 +605,18 @@ function computeVendorInvoiceTotalsFromProducts(
   };
 }
 
+function getPurchaseDateFieldMin(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 30);
+  return d.toISOString().split('T')[0];
+}
+
+function getPurchaseDateFieldMax(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 30);
+  return d.toISOString().split('T')[0];
+}
+
 export default function ProductRegistrationPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -2987,6 +2999,7 @@ export default function ProductRegistrationPage() {
                         ° *
                       </th>
                       <th className={styles.excelTh}>Disc appl.</th>
+                      <th className={styles.excelTh}>Purch. date</th>
                       {billingMode === 'REGULAR' && (
                         <>
                           <th className={styles.excelTh}>CGST %</th>
@@ -2999,8 +3012,6 @@ export default function ProductRegistrationPage() {
                       bulk={gridBulkFill}
                       billingMode={billingMode}
                       isLoading={isLoading}
-                      purchaseDateFieldMin={purchaseDateFieldMin}
-                      purchaseDateFieldMax={purchaseDateFieldMax}
                       onBulkChange={handleGridBulkFillChange}
                       onApply={handleApplyGridBulkFill}
                     />
@@ -3743,6 +3754,38 @@ export default function ProductRegistrationPage() {
                             <option value="DISCOUNT_AND_SCHEME">Both</option>
                           </select>
                         </td>
+                        <td className={styles.excelTd}>
+                          <input
+                            type="date"
+                            className={styles.excelInputDate}
+                            min={getPurchaseDateFieldMin()}
+                            max={getPurchaseDateFieldMax()}
+                            value={
+                              product.purchaseDate
+                                ? new Date(product.purchaseDate)
+                                    .toISOString()
+                                    .split('T')[0]
+                                : ''
+                            }
+                            onChange={(e) => {
+                              const dateValue = e.target.value;
+                              if (dateValue) {
+                                handleProductChange(
+                                  product.id,
+                                  'purchaseDate',
+                                  `${dateValue}T00:00:00.000Z`
+                                );
+                              } else {
+                                handleProductChange(
+                                  product.id,
+                                  'purchaseDate',
+                                  undefined
+                                );
+                              }
+                            }}
+                            disabled={isLoading}
+                          />
+                        </td>
                         {billingMode === 'REGULAR' && (
                           <>
                             <td className={styles.excelTd}>
@@ -4252,8 +4295,6 @@ interface GridBulkFillRowProps {
   bulk: GridBulkFillDraft;
   billingMode: BillingMode;
   isLoading: boolean;
-  purchaseDateFieldMin: string;
-  purchaseDateFieldMax: string;
   onBulkChange: (
     field: keyof GridBulkFillDraft,
     value: GridBulkFillDraft[keyof GridBulkFillDraft]
@@ -4265,8 +4306,6 @@ function GridBulkFillRow({
   bulk,
   billingMode,
   isLoading,
-  purchaseDateFieldMin,
-  purchaseDateFieldMax,
   onBulkChange,
   onApply,
 }: GridBulkFillRowProps) {
@@ -4527,8 +4566,8 @@ function GridBulkFillRow({
         <input
           type="date"
           className={styles.excelInputDate}
-          min={purchaseDateFieldMin}
-          max={purchaseDateFieldMax}
+          min={getPurchaseDateFieldMin()}
+          max={getPurchaseDateFieldMax()}
           value={bulk.purchaseDate ?? ''}
           onChange={(e) => onBulkChange('purchaseDate', e.target.value)}
           disabled={isLoading}
