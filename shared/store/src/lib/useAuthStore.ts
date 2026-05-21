@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { authApi, apiClient, usersApi } from '@inventory-platform/api';
 import type { LoginDto, SignupDto } from '@inventory-platform/types';
 import type { AuthState } from '@inventory-platform/types';
+import { useBusinessProfileStore } from './useBusinessProfileStore';
 
 function deriveShopFromUser(user: { shopId: string | null; shops?: Array<{ shopId: string; shopName: string }> } | null): { name?: string } | null {
   if (!user?.shopId || !user.shops?.length) return null;
@@ -84,6 +85,7 @@ export const useAuthStore = create<AuthState>()(
         } catch {
           // Continue with logout even if API call fails
         } finally {
+          useBusinessProfileStore.getState().clearProfile();
           set({
             user: null,
             token: null,
@@ -135,6 +137,7 @@ export const useAuthStore = create<AuthState>()(
           const user = await authApi.getCurrentUser();
           const shop = deriveShopFromUser(user) ?? null;
           apiClient.setShopId(shopId);
+          await useBusinessProfileStore.getState().loadProfile();
           set({
             user,
             shop,

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
-import { useAuthStore } from '@inventory-platform/store';
+import { useAuthStore, useBusinessProfileStore } from '@inventory-platform/store';
 import type { DashboardLayoutProps } from '@inventory-platform/types';
 import styles from './DashboardLayout.module.css';
 import { ThemeToggle } from './ThemeToggle';
@@ -55,6 +55,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, shop, logout, isLoading } = useAuthStore();
+  const { profile: businessProfile, loadProfile } = useBusinessProfileStore();
 
   //const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(() =>
@@ -82,9 +83,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const modLabel = useMemo(() => getDashboardModLabel(), []);
 
+  useEffect(() => {
+    if (user?.shopId) {
+      void loadProfile();
+    }
+  }, [user?.shopId, loadProfile]);
+
   const navRowsForPalette = useMemo(
-    () => getDashboardNavRowsForRole(user?.role),
-    [user?.role]
+    () => getDashboardNavRowsForRole(user?.role, businessProfile),
+    [user?.role, businessProfile]
   );
 
   const favoritesNav = useMemo(
@@ -166,8 +173,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const currentPath = location.pathname;
 
   const filteredMenuGroups = useMemo(
-    () => getDashboardMenuGroupsForRole(user?.role),
-    [user?.role]
+    () => getDashboardMenuGroupsForRole(user?.role, businessProfile),
+    [user?.role, businessProfile]
   );
 
   useEffect(() => {

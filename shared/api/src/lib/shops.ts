@@ -2,6 +2,8 @@ import { apiClient } from './client';
 import { API_ENDPOINTS } from './endpoints';
 import type {
   ApiResponse,
+  BusinessProfile,
+  BusinessProfileOption,
   RegisterShopDto,
   RegisterShopResponse,
   RequestJoinShopDto,
@@ -16,6 +18,20 @@ import type {
 } from '@inventory-platform/types';
 
 export const shopsApi = {
+  getBusinessProfile: async (): Promise<BusinessProfile> => {
+    const response = await apiClient.get<ApiResponse<BusinessProfile>>(
+      API_ENDPOINTS.SHOPS.BUSINESS_PROFILE
+    );
+    return response.data;
+  },
+
+  listBusinessProfiles: async (): Promise<BusinessProfileOption[]> => {
+    const response = await apiClient.get<ApiResponse<BusinessProfileOption[]>>(
+      API_ENDPOINTS.SHOPS.BUSINESS_PROFILES
+    );
+    return response.data;
+  },
+
   register: async (data: RegisterShopDto): Promise<RegisterShopResponse> => {
     const response = await apiClient.post<{ success: boolean; data: RegisterShopResponse }>(
       API_ENDPOINTS.SHOPS.REGISTER,

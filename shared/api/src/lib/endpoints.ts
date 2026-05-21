@@ -64,6 +64,8 @@ export const API_ENDPOINTS = {
   // Shop endpoints
   SHOPS: {
     REGISTER: '/shops/register',
+    BUSINESS_PROFILE: '/shops/business-profile',
+    BUSINESS_PROFILES: '/shops/business-profiles',
     ACTIVE_SHOP: '/shops/active-shop',
     BY_OWNER_EMAIL: '/shops/by-owner-email',
     JOIN_REQUEST: '/shops/join-request',

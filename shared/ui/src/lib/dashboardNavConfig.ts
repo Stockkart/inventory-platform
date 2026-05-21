@@ -1,3 +1,5 @@
+import type { BusinessProfile } from '@inventory-platform/types';
+
 export type DashboardMenuItem = {
   path: string;
   label: string;
@@ -179,6 +181,26 @@ export const DASHBOARD_MENU_GROUPS: DashboardMenuGroup[] = [
   },
 ];
 
+/** Dashboard paths gated by `modules.*` flags on the business profile. */
+export const MODULE_NAV_PATHS: Record<string, string[]> = {
+  gstrReports: ['/dashboard/taxes'],
+  expiryReminders: ['/dashboard/reminders'],
+  customReminders: ['/dashboard/reminders'],
+  accounting: [
+    '/dashboard/accounting',
+    '/dashboard/accounting/journal',
+    '/dashboard/accounting/ledger',
+    '/dashboard/accounting/vendors',
+    '/dashboard/accounting/customers',
+    '/dashboard/accounting/trial-balance',
+    '/dashboard/accounting/chart-of-accounts',
+  ],
+  credit: ['/dashboard/credit'],
+  whatsappMarketing: ['/dashboard/whatsapp-marketing'],
+  lowStockAlerts: ['/dashboard/inventory-alert'],
+  stockCorrections: ['/dashboard/stock-corrections'],
+};
+
 export const CASHIER_HIDDEN_DASHBOARD_PATHS = [
   '/dashboard/shop-users',
   '/dashboard/invitations',
@@ -194,34 +216,55 @@ export const CASHIER_HIDDEN_DASHBOARD_PATHS = [
 
 export type DashboardNavRow = DashboardMenuItem & { groupLabel: string };
 
-/** Sidebar groups for the signed-in user's role (cashier sees a subset). */
-export function getDashboardMenuGroupsForRole(
-  role: string | undefined
-): DashboardMenuGroup[] {
+function isPathAllowedByProfile(path: string, profile: BusinessProfile | null | undefined): boolean {
+  if (!profile) {
+    return true;
+  }
+  const navHidden = profile.ui?.navHidden ?? [];
+  if (navHidden.includes(path)) {
+    return false;
+  }
+  for (const [moduleKey, paths] of Object.entries(MODULE_NAV_PATHS)) {
+    if (paths.includes(path) && !profile.modules[moduleKey]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function filterMenuItems(
+  items: DashboardMenuItem[],
+  role: string | undefined,
+  profile: BusinessProfile | null | undefined
+): DashboardMenuItem[] {
   const isCashier = role === 'CASHIER';
+  return items.filter((item) => {
+    if (isCashier && CASHIER_HIDDEN_DASHBOARD_PATHS.includes(item.path)) {
+      return false;
+    }
+    return isPathAllowedByProfile(item.path, profile);
+  });
+}
+
+/** Sidebar groups for role + optional business profile (modules / navHidden). */
+export function getDashboardMenuGroupsForRole(
+  role: string | undefined,
+  profile?: BusinessProfile | null
+): DashboardMenuGroup[] {
   return DASHBOARD_MENU_GROUPS.map((group) => ({
     ...group,
-    items: isCashier
-      ? group.items.filter(
-          (item) => !CASHIER_HIDDEN_DASHBOARD_PATHS.includes(item.path)
-        )
-      : group.items,
+    items: filterMenuItems(group.items, role, profile),
   })).filter((group) => group.items.length > 0);
 }
 
-/** Flattened nav for the signed-in user's role (cashier sees a subset). */
+/** Flattened nav for role + optional business profile. */
 export function getDashboardNavRowsForRole(
-  role: string | undefined
+  role: string | undefined,
+  profile?: BusinessProfile | null
 ): DashboardNavRow[] {
-  const isCashier = role === 'CASHIER';
   const rows: DashboardNavRow[] = [];
-  for (const group of DASHBOARD_MENU_GROUPS) {
-    const items = isCashier
-      ? group.items.filter(
-          (item) => !CASHIER_HIDDEN_DASHBOARD_PATHS.includes(item.path)
-        )
-      : group.items;
-    for (const item of items) {
+  for (const group of getDashboardMenuGroupsForRole(role, profile)) {
+    for (const item of group.items) {
       rows.push({ ...item, groupLabel: group.label });
     }
   }

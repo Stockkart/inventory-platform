@@ -1,5 +1,6 @@
 // Central export for all Zustand stores
 export { useAuthStore } from './lib/useAuthStore';
+export { useBusinessProfileStore } from './lib/useBusinessProfileStore';
 export { useProductStore } from './lib/useProductStore';
 export { useCartStore } from './lib/useCartStore';
 export { useOrderStore } from './lib/useOrderStore';

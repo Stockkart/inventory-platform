@@ -2,12 +2,17 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { useAuthStore } from '@inventory-platform/store';
 import { shopsApi } from '@inventory-platform/api';
-import type { OnboardingStep, ShopType } from '@inventory-platform/types';
+import type {
+  BusinessProfileOption,
+  OnboardingStep,
+  ShopType,
+} from '@inventory-platform/types';
 import styles from './onboarding.module.css';
 import { useNotify } from '@inventory-platform/store';
 
 const STEPS: OnboardingStep[] = [
   'name',
+  'businessProfile',
   'shopType',
   'tagline',
   // 'businessId',
@@ -19,6 +24,7 @@ const STEPS: OnboardingStep[] = [
 
 const STEP_LABELS: Record<OnboardingStep, string> = {
   name: 'Shop Name',
+  businessProfile: 'Business Type',
   shopType: 'Shop Type',
   // businessId: 'Business ID',
   contactPhone: 'Mobile number',
@@ -50,8 +56,10 @@ export default function OnboardingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { error: notifyError } = useNotify;
+  const [profileOptions, setProfileOptions] = useState<BusinessProfileOption[]>([]);
   const [formData, setFormData] = useState({
     name: '',
+    businessProfileId: 'pharmacy',
     shopType: '' as ShopType | '',
     // businessId: 'Pharmacy',
     location: {
@@ -91,12 +99,35 @@ export default function OnboardingPage() {
     }
   }, [isAuthenticated, user, navigate, formData.contactEmail]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    shopsApi
+      .listBusinessProfiles()
+      .then((options) => {
+        setProfileOptions(options);
+        if (options.length > 0 && !options.some((o) => o.id === formData.businessProfileId)) {
+          setFormData((prev) => ({ ...prev, businessProfileId: options[0].id }));
+        }
+      })
+      .catch(() => {
+        setProfileOptions([
+          { id: 'pharmacy', name: 'Pharmacy / Medical' },
+          { id: 'sports-shop', name: 'Sports Shop' },
+        ]);
+      });
+  }, []);
+
+  const isPharmacyProfile = formData.businessProfileId === 'pharmacy';
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     const step = STEPS[currentStep];
 
     if (step === 'name') {
       setFormData({ ...formData, name: value });
+    } else if (step === 'businessProfile' || name === 'businessProfileId') {
+      setFormData({ ...formData, businessProfileId: value });
       // } else if (step === 'businessId') {
       //   // Business ID is fixed, don't allow changes
       //   return;
@@ -126,6 +157,7 @@ export default function OnboardingPage() {
   const getCurrentValue = (fieldName?: string): string => {
     const step = STEPS[currentStep];
     if (step === 'name') return formData.name;
+    if (step === 'businessProfile') return formData.businessProfileId;
     if (step === 'shopType') return formData.shopType;
     // if (step === 'businessId') return formData.businessId;
     if (step === 'contactPhone') return formData.contactPhone;
@@ -145,8 +177,12 @@ export default function OnboardingPage() {
   const handleContinue = () => {
     const step = STEPS[currentStep];
 
-    // Validate shopType step
-    if (step === 'shopType') {
+    if (step === 'businessProfile') {
+      if (!formData.businessProfileId?.trim()) {
+        notifyError('Please select a business type');
+        return;
+      }
+    } else if (step === 'shopType') {
       if (!formData.shopType || !['RETAILER', 'DISTRIBUTOR', 'WHOLESALER'].includes(formData.shopType)) {
         notifyError('Please select a shop type');
         return;
@@ -227,9 +263,11 @@ export default function OnboardingPage() {
     setIsLoading(true);
 
     try {
+      const profileId = formData.businessProfileId?.trim() || 'pharmacy';
       const response = await shopsApi.register({
         name: formData.name,
-        businessId: 'pharmacy',
+        businessId: profileId,
+        businessProfileId: profileId,
         location: {
           primaryAddress: formData.location.primaryAddress,
           secondaryAddress: formData.location.secondaryAddress || undefined,
@@ -462,8 +500,9 @@ export default function OnboardingPage() {
                   className={styles.subtitle}
                   style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}
                 >
-                  These fields are optional. You can skip this step or fill them
-                  later.
+                  {isPharmacyProfile
+                    ? 'Drug license is required for pharmacy shops. Other fields are optional.'
+                    : 'These fields are optional. You can skip this step or fill them later.'}
                 </p>
                 <div className={styles.formRow}>
                   <div className={styles.formGroup}>
@@ -481,38 +520,42 @@ export default function OnboardingPage() {
                       disabled={isLoading}
                     />
                   </div>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="fssai" className={styles.label}>
-                      FSSAI
-                    </label>
-                    <input
-                      type="text"
-                      id="fssai"
-                      name="fssai"
-                      className={styles.input}
-                      placeholder="Enter the FSSAI"
-                      value={getCurrentValue('fssai')}
-                      onChange={handleChange}
-                      disabled={isLoading}
-                    />
-                  </div>
+                  {isPharmacyProfile && (
+                    <div className={styles.formGroup}>
+                      <label htmlFor="fssai" className={styles.label}>
+                        FSSAI
+                      </label>
+                      <input
+                        type="text"
+                        id="fssai"
+                        name="fssai"
+                        className={styles.input}
+                        placeholder="Enter the FSSAI"
+                        value={getCurrentValue('fssai')}
+                        onChange={handleChange}
+                        disabled={isLoading}
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className={styles.formRow}>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="dlNo" className={styles.label}>
-                      Drug License No (DL No)
-                    </label>
-                    <input
-                      type="text"
-                      id="dlNo"
-                      name="dlNo"
-                      className={styles.input}
-                      placeholder="Enter the DL No"
-                      value={getCurrentValue('dlNo')}
-                      onChange={handleChange}
-                      disabled={isLoading}
-                    />
-                  </div>
+                  {isPharmacyProfile && (
+                    <div className={styles.formGroup}>
+                      <label htmlFor="dlNo" className={styles.label}>
+                        Drug License No (DL No) *
+                      </label>
+                      <input
+                        type="text"
+                        id="dlNo"
+                        name="dlNo"
+                        className={styles.input}
+                        placeholder="Enter the DL No"
+                        value={getCurrentValue('dlNo')}
+                        onChange={handleChange}
+                        disabled={isLoading}
+                      />
+                    </div>
+                  )}
                   <div className={styles.formGroup}>
                     <label htmlFor="panNo" className={styles.label}>
                       PAN No
@@ -562,6 +605,26 @@ export default function OnboardingPage() {
                   </div>
                 </div>
               </>
+            ) : STEPS[currentStep] === 'businessProfile' ? (
+              <div className={styles.formGroup}>
+                <label htmlFor="businessProfileId" className={styles.label}>
+                  Business Type *
+                </label>
+                <select
+                  id="businessProfileId"
+                  name="businessProfileId"
+                  className={styles.input}
+                  value={getCurrentValue()}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                >
+                  {profileOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             ) : STEPS[currentStep] === 'shopType' ? (
               <div className={styles.formGroup}>
                 <label className={styles.label}>Shop Type *</label>

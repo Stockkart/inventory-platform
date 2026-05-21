@@ -93,6 +93,9 @@ export default function ShopsPage() {
                   {s.relationship && (
                     <span className={styles.relationship}>{s.relationship}</span>
                   )}
+                  {s.businessProfileName && (
+                    <span className={styles.relationship}>{s.businessProfileName}</span>
+                  )}
                 </div>
                 {isActive ? (
                   <span className={styles.activeBadge}>Current shop</span>

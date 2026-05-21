@@ -97,6 +97,8 @@ export interface ShopMembership {
   role: string;
   relationship: 'OWNER' | 'INVITED' | null;
   joinedAt: string;
+  businessProfileId?: string;
+  businessProfileName?: string;
 }
 
 export interface User {
@@ -493,6 +495,7 @@ export type ShopType = 'RETAILER' | 'DISTRIBUTOR' | 'WHOLESALER';
 export interface RegisterShopDto {
   name: string;
   businessId: string;
+  businessProfileId?: string;
   location: Location;
   contactEmail: string;
   contactPhone: string;
@@ -509,10 +512,13 @@ export interface RegisterShopDto {
 export interface RegisterShopResponse {
   shopId: string;
   status: string;
+  businessProfileId?: string;
 }
 
 export interface ShopDetailResponse {
   shopId: string;
+  businessProfileId?: string;
+  businessProfileName?: string;
   name: string;
   tagline?: string | null;
   location?: Location | null;
