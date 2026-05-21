@@ -236,7 +236,9 @@ export function InventoryAlertDetails({
   };
 
   const handleSave = async () => {
-    const inventoryDocumentId = resolveInventoryDocumentId(item);
+    if (!item) return;
+    const currentItem = item;
+    const inventoryDocumentId = resolveInventoryDocumentId(currentItem);
     if (!inventoryDocumentId) {
       notifyError('Cannot save: missing inventory id');
       return;
@@ -244,28 +246,28 @@ export function InventoryAlertDetails({
     setIsSaving(true);
     try {
       const payload: UpdateInventoryRequest = {};
-      if (editForm.name !== undefined && editForm.name !== item.name)
+      if (editForm.name !== undefined && editForm.name !== currentItem.name)
         payload.name = String(editForm.name) || undefined;
-      if (editForm.barcode !== undefined && editForm.barcode !== item.barcode)
+      if (editForm.barcode !== undefined && editForm.barcode !== currentItem.barcode)
         payload.barcode = String(editForm.barcode) || undefined;
       if (
         editForm.description !== undefined &&
-        editForm.description !== item.description
+        editForm.description !== currentItem.description
       )
         payload.description = String(editForm.description) || undefined;
       if (
         editForm.companyName !== undefined &&
-        editForm.companyName !== item.companyName
+        editForm.companyName !== currentItem.companyName
       )
         payload.companyName = String(editForm.companyName) || undefined;
       if (
         editForm.location !== undefined &&
-        editForm.location !== item.location
+        editForm.location !== currentItem.location
       )
         payload.location = String(editForm.location) || undefined;
-      if (editForm.hsn !== undefined && editForm.hsn !== item.hsn)
+      if (editForm.hsn !== undefined && editForm.hsn !== currentItem.hsn)
         payload.hsn = String(editForm.hsn) || undefined;
-      if (editForm.batchNo !== undefined && editForm.batchNo !== item.batchNo)
+      if (editForm.batchNo !== undefined && editForm.batchNo !== currentItem.batchNo)
         payload.batchNo = String(editForm.batchNo) || undefined;
       const mrp =
         editForm.maximumRetailPrice != null &&
@@ -281,25 +283,25 @@ export function InventoryAlertDetails({
         String(editForm.priceToRetail).trim() !== ''
           ? parseFloat(String(editForm.priceToRetail))
           : NaN;
-      if (!Number.isNaN(mrp) && mrp !== item.maximumRetailPrice)
+      if (!Number.isNaN(mrp) && mrp !== currentItem.maximumRetailPrice)
         payload.maximumRetailPrice = mrp;
-      if (!Number.isNaN(cost) && cost !== item.costPrice)
+      if (!Number.isNaN(cost) && cost !== currentItem.costPrice)
         payload.costPrice = cost;
-      if (!Number.isNaN(ptr) && ptr !== item.priceToRetail)
+      if (!Number.isNaN(ptr) && ptr !== currentItem.priceToRetail)
         payload.priceToRetail = ptr;
       if (
         editForm.sgst !== undefined &&
-        String(editForm.sgst).trim() !== String(item.sgst ?? '').trim()
+        String(editForm.sgst).trim() !== String(currentItem.sgst ?? '').trim()
       )
         payload.sgst = String(editForm.sgst).trim() || undefined;
       if (
         editForm.cgst !== undefined &&
-        String(editForm.cgst).trim() !== String(item.cgst ?? '').trim()
+        String(editForm.cgst).trim() !== String(currentItem.cgst ?? '').trim()
       )
         payload.cgst = String(editForm.cgst).trim() || undefined;
       const addDiscStr = String(editForm.saleAdditionalDiscount ?? '').trim();
       const addDisc = addDiscStr !== '' ? parseFloat(addDiscStr) : null;
-      const currentAddDisc = item.saleAdditionalDiscount ?? null;
+      const currentAddDisc = currentItem.saleAdditionalDiscount ?? null;
       if (
         addDisc !== currentAddDisc &&
         (addDisc != null || currentAddDisc != null)
@@ -307,7 +309,7 @@ export function InventoryAlertDetails({
         payload.saleAdditionalDiscount = addDisc;
       if (
         editForm.thresholdCount !== undefined &&
-        editForm.thresholdCount !== item.thresholdCount
+        editForm.thresholdCount !== currentItem.thresholdCount
       )
         payload.thresholdCount =
           editForm.thresholdCount != null
@@ -315,8 +317,8 @@ export function InventoryAlertDetails({
             : null;
       if (editForm.purchaseDate) {
         const d = String(editForm.purchaseDate).trim();
-        const currentPd = item.purchaseDate
-          ? item.purchaseDate.slice(0, 10)
+        const currentPd = currentItem.purchaseDate
+          ? currentItem.purchaseDate.slice(0, 10)
           : '';
         if (d !== currentPd) {
           payload.purchaseDate = d ? `${d}T00:00:00Z` : undefined;
@@ -325,27 +327,27 @@ export function InventoryAlertDetails({
 
       const packStr = String(editForm.conversionFactor ?? '').trim();
       const curPackFactor =
-        item.unitConversions?.factor ?? item.unitsPerPack ?? null;
+        currentItem.unitConversions?.factor ?? currentItem.unitsPerPack ?? null;
       if (packStr !== '') {
         const f = parseFloat(packStr);
         if (!isNaN(f) && f > 0 && f !== curPackFactor) {
           payload.unitConversions = {
-            unit: item.unitConversions?.unit?.trim() || 'SALE UNIT',
+            unit: currentItem.unitConversions?.unit?.trim() || 'SALE UNIT',
             factor: f,
           };
-          payload.baseUnit = item.baseUnit?.trim() || 'BASE UNIT';
+          payload.baseUnit = currentItem.baseUnit?.trim() || 'BASE UNIT';
         }
       }
 
       const editSchemeType = String(
-        editForm.schemeType ?? item.schemeType ?? 'FIXED_UNITS'
+        editForm.schemeType ?? currentItem.schemeType ?? 'FIXED_UNITS'
       ) as SchemeType;
-      if (editSchemeType !== (item.schemeType ?? 'FIXED_UNITS')) {
+      if (editSchemeType !== (currentItem.schemeType ?? 'FIXED_UNITS')) {
         payload.schemeType = editSchemeType;
       }
 
       const saleSchemeRaw = String(editForm.saleScheme ?? '').trim();
-      const currentSaleScheme = formatSaleSchemeDisplay(item);
+      const currentSaleScheme = formatSaleSchemeDisplay(currentItem);
       if (saleSchemeRaw !== currentSaleScheme) {
         if (saleSchemeRaw === '') {
           payload.schemeType = 'FIXED_UNITS';
@@ -370,7 +372,7 @@ export function InventoryAlertDetails({
       ).trim();
       const purchaseDisc =
         purchaseDiscStr !== '' ? parseFloat(purchaseDiscStr) : null;
-      const curPurchaseDisc = item.purchaseAdditionalDiscount ?? null;
+      const curPurchaseDisc = currentItem.purchaseAdditionalDiscount ?? null;
       if (
         purchaseDisc !== curPurchaseDisc &&
         (purchaseDisc != null || curPurchaseDisc != null)
@@ -379,16 +381,16 @@ export function InventoryAlertDetails({
       }
 
       const editPurchaseSchemeType = String(
-        editForm.purchaseSchemeType ?? item.purchaseSchemeType ?? 'FIXED_UNITS'
+        editForm.purchaseSchemeType ?? currentItem.purchaseSchemeType ?? 'FIXED_UNITS'
       ) as SchemeType;
       if (
-        editPurchaseSchemeType !== (item.purchaseSchemeType ?? 'FIXED_UNITS')
+        editPurchaseSchemeType !== (currentItem.purchaseSchemeType ?? 'FIXED_UNITS')
       ) {
         payload.purchaseSchemeType = editPurchaseSchemeType;
       }
 
       const purchaseSchemeRaw = String(editForm.purchaseScheme ?? '').trim();
-      const currentPurchaseScheme = formatPurchaseSchemeDisplay(item);
+      const currentPurchaseScheme = formatPurchaseSchemeDisplay(currentItem);
       if (purchaseSchemeRaw !== currentPurchaseScheme) {
         if (purchaseSchemeRaw === '') {
           payload.purchaseSchemePayFor = null;
@@ -407,23 +409,23 @@ export function InventoryAlertDetails({
       }
 
       const editItemType = String(editForm.itemType ?? 'NORMAL') as ItemType;
-      if (editItemType !== (item.itemType ?? 'NORMAL')) {
+      if (editItemType !== (currentItem.itemType ?? 'NORMAL')) {
         payload.itemType = editItemType;
         if (editItemType !== 'DEGREE') {
           payload.itemTypeDegree = null;
         }
       }
       const degreeStr = String(editForm.itemTypeDegree ?? '').trim();
-      if (editItemType === 'DEGREE' || item.itemType === 'DEGREE') {
+      if (editItemType === 'DEGREE' || currentItem.itemType === 'DEGREE') {
         const deg = degreeStr !== '' ? parseInt(degreeStr, 10) : NaN;
-        if (!isNaN(deg) && deg > 0 && deg !== item.itemTypeDegree) {
+        if (!isNaN(deg) && deg > 0 && deg !== currentItem.itemTypeDegree) {
           payload.itemType = 'DEGREE';
           payload.itemTypeDegree = deg;
         }
       }
 
       const editDisc = String(editForm.discountApplicable ?? '').trim();
-      const curDisc = item.discountApplicable ?? '';
+      const curDisc = currentItem.discountApplicable ?? '';
       if (editDisc !== curDisc) {
         payload.discountApplicable =
           editDisc === '' ? null : (editDisc as DiscountApplicable);
@@ -431,8 +433,8 @@ export function InventoryAlertDetails({
 
       if (editForm.expiryDate) {
         const d = String(editForm.expiryDate).trim();
-        const currentExp = item.expiryDate
-          ? item.expiryDate.slice(0, 10)
+        const currentExp = currentItem.expiryDate
+          ? currentItem.expiryDate.slice(0, 10)
           : '';
         if (d !== currentExp) {
           payload.expiryDate = d ? `${d}T00:00:00Z` : undefined;
