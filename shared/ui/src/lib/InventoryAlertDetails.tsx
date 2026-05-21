@@ -1,13 +1,126 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router';
-import { vendorsApi, inventoryApi } from '@inventory-platform/api';
+import {
+  vendorsApi,
+  inventoryApi,
+  resolveInventoryDocumentId,
+} from '@inventory-platform/api';
 import type {
   VendorResponse,
   InventoryItem,
   UpdateInventoryRequest,
+  SchemeType,
+  ItemType,
+  DiscountApplicable,
 } from '@inventory-platform/types';
 import { useNotify } from '@inventory-platform/store';
 import styles from './InventoryAlertDetails.module.css';
+
+function formatSaleSchemeDisplay(item: InventoryItem): string {
+  const st = item.schemeType ?? 'FIXED_UNITS';
+  if (st === 'PERCENTAGE' && item.schemePercentage != null) {
+    return `${item.schemePercentage}%`;
+  }
+  if (item.schemePayFor != null || item.schemeFree != null) {
+    return `${item.schemePayFor ?? 0}+${item.schemeFree ?? 0}`;
+  }
+  if (item.scheme != null && item.scheme > 0) {
+    return `1+${item.scheme}`;
+  }
+  return '';
+}
+
+function formatPurchaseSchemeDisplay(item: InventoryItem): string {
+  const st = item.purchaseSchemeType ?? 'FIXED_UNITS';
+  if (st === 'PERCENTAGE' && item.purchaseSchemePercentage != null) {
+    return `${item.purchaseSchemePercentage}%`;
+  }
+  if (item.purchaseSchemePayFor != null || item.purchaseSchemeFree != null) {
+    return `${item.purchaseSchemePayFor ?? 0}+${item.purchaseSchemeFree ?? 0}`;
+  }
+  return '';
+}
+
+function parseSaleSchemeDraft(raw: string): {
+  schemeType: SchemeType;
+  schemePayFor: number | null;
+  schemeFree: number | null;
+  schemePercentage: number | null;
+} | null {
+  const t = raw.trim();
+  if (!t) return null;
+  if (t.endsWith('%')) {
+    const num = parseFloat(t.slice(0, -1));
+    if (!isNaN(num) && num >= 0 && num <= 100) {
+      return {
+        schemeType: 'PERCENTAGE',
+        schemePercentage: num,
+        schemePayFor: null,
+        schemeFree: null,
+      };
+    }
+    return null;
+  }
+  const plusIdx = t.indexOf('+');
+  if (plusIdx >= 0) {
+    const left = parseInt(t.slice(0, plusIdx).trim(), 10);
+    const right = parseInt(t.slice(plusIdx + 1).trim(), 10);
+    if (!isNaN(left) && !isNaN(right) && left >= 0 && right >= 0) {
+      return {
+        schemeType: 'FIXED_UNITS',
+        schemePayFor: left,
+        schemeFree: right,
+        schemePercentage: null,
+      };
+    }
+  }
+  return null;
+}
+
+function parsePurchaseSchemeDraft(raw: string): {
+  purchaseSchemeType: SchemeType;
+  purchaseSchemePayFor: number | null;
+  purchaseSchemeFree: number | null;
+  purchaseSchemePercentage: number | null;
+} | null {
+  const t = raw.trim();
+  if (!t) return null;
+  if (t.endsWith('%')) {
+    const num = parseFloat(t.slice(0, -1));
+    if (!isNaN(num) && num >= 0 && num <= 100) {
+      return {
+        purchaseSchemeType: 'PERCENTAGE',
+        purchaseSchemePercentage: num,
+        purchaseSchemePayFor: null,
+        purchaseSchemeFree: null,
+      };
+    }
+    return null;
+  }
+  const plusIdx = t.indexOf('+');
+  if (plusIdx >= 0) {
+    const left = parseInt(t.slice(0, plusIdx).trim(), 10);
+    const right = parseInt(t.slice(plusIdx + 1).trim(), 10);
+    if (!isNaN(left) && !isNaN(right) && left >= 0 && right >= 0) {
+      return {
+        purchaseSchemeType: 'FIXED_UNITS',
+        purchaseSchemePayFor: left,
+        purchaseSchemeFree: right,
+        purchaseSchemePercentage: null,
+      };
+    }
+  }
+  return null;
+}
+
+function packagingFactorDisplay(item: InventoryItem): string {
+  const factor = item.unitConversions?.factor ?? item.unitsPerPack ?? null;
+  if (factor != null && factor > 0) {
+    const unit = item.unitConversions?.unit?.trim() || 'sale unit';
+    return `1 × ${factor} (${unit})`;
+  }
+  return '—';
+}
 
 export interface InventoryAlertDetailsProps {
   open: boolean;
@@ -48,6 +161,7 @@ export function InventoryAlertDetails({
     const d = item;
     const fmtNum = (n: number | null | undefined) =>
       n != null && !Number.isNaN(n) ? String(n) : '';
+    const packFactor = d.unitConversions?.factor ?? d.unitsPerPack ?? null;
     setEditForm({
       name: d.name ?? '',
       barcode: d.barcode ?? '',
@@ -61,10 +175,24 @@ export function InventoryAlertDetails({
       priceToRetail: fmtNum(d.priceToRetail),
       sgst: d.sgst ?? '',
       cgst: d.cgst ?? '',
+      conversionFactor:
+        packFactor != null && packFactor > 0 ? String(packFactor) : '',
+      schemeType: d.schemeType ?? 'FIXED_UNITS',
+      saleScheme: formatSaleSchemeDisplay(d),
       saleAdditionalDiscount:
         d.saleAdditionalDiscount != null
           ? String(d.saleAdditionalDiscount)
           : '',
+      purchaseSchemeType: d.purchaseSchemeType ?? 'FIXED_UNITS',
+      purchaseScheme: formatPurchaseSchemeDisplay(d),
+      purchaseAdditionalDiscount:
+        d.purchaseAdditionalDiscount != null
+          ? String(d.purchaseAdditionalDiscount)
+          : '',
+      itemType: d.itemType ?? 'NORMAL',
+      itemTypeDegree:
+        d.itemTypeDegree != null ? String(d.itemTypeDegree) : '',
+      discountApplicable: d.discountApplicable ?? '',
       thresholdCount: d.thresholdCount ?? null,
       expiryDate: d.expiryDate ? d.expiryDate.slice(0, 10) : '',
       purchaseDate: d.purchaseDate ? d.purchaseDate.slice(0, 10) : '',
@@ -108,32 +236,38 @@ export function InventoryAlertDetails({
   };
 
   const handleSave = async () => {
-    if (!item?.id) return;
+    if (!item) return;
+    const currentItem = item;
+    const inventoryDocumentId = resolveInventoryDocumentId(currentItem);
+    if (!inventoryDocumentId) {
+      notifyError('Cannot save: missing inventory id');
+      return;
+    }
     setIsSaving(true);
     try {
       const payload: UpdateInventoryRequest = {};
-      if (editForm.name !== undefined && editForm.name !== item.name)
+      if (editForm.name !== undefined && editForm.name !== currentItem.name)
         payload.name = String(editForm.name) || undefined;
-      if (editForm.barcode !== undefined && editForm.barcode !== item.barcode)
+      if (editForm.barcode !== undefined && editForm.barcode !== currentItem.barcode)
         payload.barcode = String(editForm.barcode) || undefined;
       if (
         editForm.description !== undefined &&
-        editForm.description !== item.description
+        editForm.description !== currentItem.description
       )
         payload.description = String(editForm.description) || undefined;
       if (
         editForm.companyName !== undefined &&
-        editForm.companyName !== item.companyName
+        editForm.companyName !== currentItem.companyName
       )
         payload.companyName = String(editForm.companyName) || undefined;
       if (
         editForm.location !== undefined &&
-        editForm.location !== item.location
+        editForm.location !== currentItem.location
       )
         payload.location = String(editForm.location) || undefined;
-      if (editForm.hsn !== undefined && editForm.hsn !== item.hsn)
+      if (editForm.hsn !== undefined && editForm.hsn !== currentItem.hsn)
         payload.hsn = String(editForm.hsn) || undefined;
-      if (editForm.batchNo !== undefined && editForm.batchNo !== item.batchNo)
+      if (editForm.batchNo !== undefined && editForm.batchNo !== currentItem.batchNo)
         payload.batchNo = String(editForm.batchNo) || undefined;
       const mrp =
         editForm.maximumRetailPrice != null &&
@@ -149,25 +283,25 @@ export function InventoryAlertDetails({
         String(editForm.priceToRetail).trim() !== ''
           ? parseFloat(String(editForm.priceToRetail))
           : NaN;
-      if (!Number.isNaN(mrp) && mrp !== item.maximumRetailPrice)
+      if (!Number.isNaN(mrp) && mrp !== currentItem.maximumRetailPrice)
         payload.maximumRetailPrice = mrp;
-      if (!Number.isNaN(cost) && cost !== item.costPrice)
+      if (!Number.isNaN(cost) && cost !== currentItem.costPrice)
         payload.costPrice = cost;
-      if (!Number.isNaN(ptr) && ptr !== item.priceToRetail)
+      if (!Number.isNaN(ptr) && ptr !== currentItem.priceToRetail)
         payload.priceToRetail = ptr;
       if (
         editForm.sgst !== undefined &&
-        String(editForm.sgst).trim() !== String(item.sgst ?? '').trim()
+        String(editForm.sgst).trim() !== String(currentItem.sgst ?? '').trim()
       )
         payload.sgst = String(editForm.sgst).trim() || undefined;
       if (
         editForm.cgst !== undefined &&
-        String(editForm.cgst).trim() !== String(item.cgst ?? '').trim()
+        String(editForm.cgst).trim() !== String(currentItem.cgst ?? '').trim()
       )
         payload.cgst = String(editForm.cgst).trim() || undefined;
       const addDiscStr = String(editForm.saleAdditionalDiscount ?? '').trim();
       const addDisc = addDiscStr !== '' ? parseFloat(addDiscStr) : null;
-      const currentAddDisc = item.saleAdditionalDiscount ?? null;
+      const currentAddDisc = currentItem.saleAdditionalDiscount ?? null;
       if (
         addDisc !== currentAddDisc &&
         (addDisc != null || currentAddDisc != null)
@@ -175,26 +309,143 @@ export function InventoryAlertDetails({
         payload.saleAdditionalDiscount = addDisc;
       if (
         editForm.thresholdCount !== undefined &&
-        editForm.thresholdCount !== item.thresholdCount
+        editForm.thresholdCount !== currentItem.thresholdCount
       )
         payload.thresholdCount =
           editForm.thresholdCount != null
             ? Number(editForm.thresholdCount)
             : null;
-      if (editForm.expiryDate) {
-        const d = String(editForm.expiryDate).trim();
-        payload.expiryDate = d ? `${d}T00:00:00Z` : undefined;
-      }
       if (editForm.purchaseDate) {
         const d = String(editForm.purchaseDate).trim();
-        payload.purchaseDate = d ? `${d}T00:00:00Z` : undefined;
+        const currentPd = currentItem.purchaseDate
+          ? currentItem.purchaseDate.slice(0, 10)
+          : '';
+        if (d !== currentPd) {
+          payload.purchaseDate = d ? `${d}T00:00:00Z` : undefined;
+        }
+      }
+
+      const packStr = String(editForm.conversionFactor ?? '').trim();
+      const curPackFactor =
+        currentItem.unitConversions?.factor ?? currentItem.unitsPerPack ?? null;
+      if (packStr !== '') {
+        const f = parseFloat(packStr);
+        if (!isNaN(f) && f > 0 && f !== curPackFactor) {
+          payload.unitConversions = {
+            unit: currentItem.unitConversions?.unit?.trim() || 'SALE UNIT',
+            factor: f,
+          };
+          payload.baseUnit = currentItem.baseUnit?.trim() || 'BASE UNIT';
+        }
+      }
+
+      const editSchemeType = String(
+        editForm.schemeType ?? currentItem.schemeType ?? 'FIXED_UNITS'
+      ) as SchemeType;
+      if (editSchemeType !== (currentItem.schemeType ?? 'FIXED_UNITS')) {
+        payload.schemeType = editSchemeType;
+      }
+
+      const saleSchemeRaw = String(editForm.saleScheme ?? '').trim();
+      const currentSaleScheme = formatSaleSchemeDisplay(currentItem);
+      if (saleSchemeRaw !== currentSaleScheme) {
+        if (saleSchemeRaw === '') {
+          payload.schemeType = 'FIXED_UNITS';
+          payload.schemePayFor = null;
+          payload.schemeFree = null;
+          payload.schemePercentage = null;
+          payload.scheme = null;
+        } else {
+          const parsed = parseSaleSchemeDraft(saleSchemeRaw);
+          if (parsed) {
+            payload.schemeType = parsed.schemeType;
+            payload.schemePayFor = parsed.schemePayFor;
+            payload.schemeFree = parsed.schemeFree;
+            payload.schemePercentage = parsed.schemePercentage;
+            payload.scheme = null;
+          }
+        }
+      }
+
+      const purchaseDiscStr = String(
+        editForm.purchaseAdditionalDiscount ?? ''
+      ).trim();
+      const purchaseDisc =
+        purchaseDiscStr !== '' ? parseFloat(purchaseDiscStr) : null;
+      const curPurchaseDisc = currentItem.purchaseAdditionalDiscount ?? null;
+      if (
+        purchaseDisc !== curPurchaseDisc &&
+        (purchaseDisc != null || curPurchaseDisc != null)
+      ) {
+        payload.purchaseAdditionalDiscount = purchaseDisc;
+      }
+
+      const editPurchaseSchemeType = String(
+        editForm.purchaseSchemeType ?? currentItem.purchaseSchemeType ?? 'FIXED_UNITS'
+      ) as SchemeType;
+      if (
+        editPurchaseSchemeType !== (currentItem.purchaseSchemeType ?? 'FIXED_UNITS')
+      ) {
+        payload.purchaseSchemeType = editPurchaseSchemeType;
+      }
+
+      const purchaseSchemeRaw = String(editForm.purchaseScheme ?? '').trim();
+      const currentPurchaseScheme = formatPurchaseSchemeDisplay(currentItem);
+      if (purchaseSchemeRaw !== currentPurchaseScheme) {
+        if (purchaseSchemeRaw === '') {
+          payload.purchaseSchemePayFor = null;
+          payload.purchaseSchemeFree = null;
+          payload.purchaseSchemePercentage = null;
+        } else {
+          const parsed = parsePurchaseSchemeDraft(purchaseSchemeRaw);
+          if (parsed) {
+            payload.purchaseSchemeType = parsed.purchaseSchemeType;
+            payload.purchaseSchemePayFor = parsed.purchaseSchemePayFor;
+            payload.purchaseSchemeFree = parsed.purchaseSchemeFree;
+            payload.purchaseSchemePercentage =
+              parsed.purchaseSchemePercentage;
+          }
+        }
+      }
+
+      const editItemType = String(editForm.itemType ?? 'NORMAL') as ItemType;
+      if (editItemType !== (currentItem.itemType ?? 'NORMAL')) {
+        payload.itemType = editItemType;
+        if (editItemType !== 'DEGREE') {
+          payload.itemTypeDegree = null;
+        }
+      }
+      const degreeStr = String(editForm.itemTypeDegree ?? '').trim();
+      if (editItemType === 'DEGREE' || currentItem.itemType === 'DEGREE') {
+        const deg = degreeStr !== '' ? parseInt(degreeStr, 10) : NaN;
+        if (!isNaN(deg) && deg > 0 && deg !== currentItem.itemTypeDegree) {
+          payload.itemType = 'DEGREE';
+          payload.itemTypeDegree = deg;
+        }
+      }
+
+      const editDisc = String(editForm.discountApplicable ?? '').trim();
+      const curDisc = currentItem.discountApplicable ?? '';
+      if (editDisc !== curDisc) {
+        payload.discountApplicable =
+          editDisc === '' ? null : (editDisc as DiscountApplicable);
+      }
+
+      if (editForm.expiryDate) {
+        const d = String(editForm.expiryDate).trim();
+        const currentExp = currentItem.expiryDate
+          ? currentItem.expiryDate.slice(0, 10)
+          : '';
+        if (d !== currentExp) {
+          payload.expiryDate = d ? `${d}T00:00:00Z` : undefined;
+        }
       }
 
       if (Object.keys(payload).length === 0) {
         setIsEditing(false);
         return;
       }
-      const updated = await inventoryApi.update(item.id, payload);
+      const updated = await inventoryApi.update(inventoryDocumentId, payload);
       notifySuccess('Product updated successfully');
       onUpdated?.(updated);
       setIsEditing(false);
@@ -421,92 +672,6 @@ export function InventoryAlertDetails({
                   </div>
                 </div>
               )}
-              {(item?.itemType || item?.itemTypeDegree != null) && (
-                <div className={styles.detailCard}>
-                  <div className={styles.detailIcon}>📐</div>
-                  <div className={styles.detailContent}>
-                    <span className={styles.detailLabel}>Item Type</span>
-                    <span className={styles.detailValue}>
-                      {item.itemType === 'DEGREE' && item.itemTypeDegree != null
-                        ? `Temperature for the item (${item.itemTypeDegree}°)`
-                        : item.itemType === 'COSTLY'
-                        ? 'Costly'
-                        : item.itemType === 'NORMAL'
-                        ? 'Normal'
-                        : item.itemType ?? '—'}
-                    </span>
-                  </div>
-                </div>
-              )}
-              {item?.discountApplicable && (
-                <div className={styles.detailCard}>
-                  <div className={styles.detailIcon}>🏷️</div>
-                  <div className={styles.detailContent}>
-                    <span className={styles.detailLabel}>
-                      Discount applicable
-                    </span>
-                    <span className={styles.detailValue}>
-                      {item.discountApplicable === 'DISCOUNT'
-                        ? 'Discount applicable'
-                        : item.discountApplicable === 'SCHEME'
-                        ? 'Scheme applicable'
-                        : 'Both discount and scheme applicable'}
-                    </span>
-                  </div>
-                </div>
-              )}
-              {item?.purchaseDate && (
-                <div className={styles.detailCard}>
-                  <div className={styles.detailIcon}>🛒</div>
-                  <div className={styles.detailContent}>
-                    <span className={styles.detailLabel}>Purchase date</span>
-                    <span className={styles.detailValue}>
-                      {new Date(item.purchaseDate).toLocaleDateString('en-IN', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                      })}
-                    </span>
-                  </div>
-                </div>
-              )}
-              {(() => {
-                const schemeType = item?.schemeType ?? 'FIXED_UNITS';
-                if (
-                  schemeType === 'PERCENTAGE' &&
-                  item?.schemePercentage != null
-                ) {
-                  return (
-                    <div className={styles.detailCard}>
-                      <div className={styles.detailIcon}>🎁</div>
-                      <div className={styles.detailContent}>
-                        <span className={styles.detailLabel}>Scheme/Deal</span>
-                        <span className={styles.detailValue}>
-                          {item.schemePercentage}% extra free
-                        </span>
-                      </div>
-                    </div>
-                  );
-                }
-                if (
-                  (schemeType === 'FIXED_UNITS' || !item?.schemeType) &&
-                  item?.scheme != null &&
-                  item.scheme > 0
-                ) {
-                  return (
-                    <div className={styles.detailCard}>
-                      <div className={styles.detailIcon}>🎁</div>
-                      <div className={styles.detailContent}>
-                        <span className={styles.detailLabel}>Scheme/Deal</span>
-                        <span className={styles.detailValue}>
-                          {item.scheme} free
-                        </span>
-                      </div>
-                    </div>
-                  );
-                }
-                return null;
-              })()}
               <div className={styles.detailCardFull}>
                 <div className={styles.detailIcon}>📝</div>
                 <div className={styles.detailContent}>
@@ -528,61 +693,345 @@ export function InventoryAlertDetails({
                   )}
                 </div>
               </div>
-              {isEditing && (
-                <>
-                  <div className={styles.detailCard}>
-                    <div className={styles.detailIcon}>📅</div>
-                    <div className={styles.detailContent}>
-                      <span className={styles.detailLabel}>Expiry Date</span>
-                      <input
-                        type="date"
-                        className={styles.editInput}
-                        value={String(editForm.expiryDate ?? '')}
-                        onChange={(e) =>
-                          updateEditField('expiryDate', e.target.value)
-                        }
-                      />
-                    </div>
-                  </div>
-                  <div className={styles.detailCard}>
-                    <div className={styles.detailIcon}>🛒</div>
-                    <div className={styles.detailContent}>
-                      <span className={styles.detailLabel}>Purchase Date</span>
-                      <input
-                        type="date"
-                        className={styles.editInput}
-                        value={String(editForm.purchaseDate ?? '')}
-                        onChange={(e) =>
-                          updateEditField('purchaseDate', e.target.value)
-                        }
-                      />
-                    </div>
-                  </div>
-                  <div className={styles.detailCard}>
-                    <div className={styles.detailIcon}>⚠️</div>
-                    <div className={styles.detailContent}>
-                      <span className={styles.detailLabel}>
-                        Threshold Count
+            </div>
+          </div>
+
+          <div className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <span className={styles.sectionIcon}>📦</span>
+              <h4 className={styles.sectionTitle}>Stock & packaging</h4>
+            </div>
+            <div className={styles.detailsGrid}>
+              <div className={styles.detailCard}>
+                <div className={styles.detailIcon}>🔢</div>
+                <div className={styles.detailContent}>
+                  <span className={styles.detailLabel}>Current stock</span>
+                  <span className={styles.detailValue}>
+                    {item.currentCount}
+                    {isEditing && (
+                      <span className={styles.fieldHint}>
+                        Quantity changes via sales and purchases only
                       </span>
+                    )}
+                  </span>
+                </div>
+              </div>
+              <div className={styles.detailCard}>
+                <div className={styles.detailIcon}>📥</div>
+                <div className={styles.detailContent}>
+                  <span className={styles.detailLabel}>Received</span>
+                  <span className={styles.detailValue}>{item.receivedCount}</span>
+                </div>
+              </div>
+              <div className={styles.detailCard}>
+                <div className={styles.detailIcon}>📤</div>
+                <div className={styles.detailContent}>
+                  <span className={styles.detailLabel}>Sold</span>
+                  <span className={styles.detailValue}>{item.soldCount}</span>
+                </div>
+              </div>
+              <div className={styles.detailCard}>
+                <div className={styles.detailIcon}>📐</div>
+                <div className={styles.detailContent}>
+                  <span className={styles.detailLabel}>Packaging</span>
+                  {isEditing ? (
+                    <div className={styles.packagingEditWrap}>
+                      <span className={styles.packagingPrefix} aria-hidden>
+                        1 ×
+                      </span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        className={styles.editInput}
+                        value={String(editForm.conversionFactor ?? '')}
+                        onChange={(e) =>
+                          updateEditField(
+                            'conversionFactor',
+                            stripLeadingZeros(e.target.value)
+                          )
+                        }
+                        placeholder="e.g. 10"
+                      />
+                    </div>
+                  ) : (
+                    <span className={styles.detailValue}>
+                      {packagingFactorDisplay(item)}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className={styles.detailCard}>
+                <div className={styles.detailIcon}>📅</div>
+                <div className={styles.detailContent}>
+                  <span className={styles.detailLabel}>Expiry date</span>
+                  {isEditing ? (
+                    <input
+                      type="date"
+                      className={styles.editInput}
+                      value={String(editForm.expiryDate ?? '')}
+                      onChange={(e) =>
+                        updateEditField('expiryDate', e.target.value)
+                      }
+                    />
+                  ) : (
+                    <span className={styles.detailValue}>
+                      {item.expiryDate
+                        ? new Date(item.expiryDate).toLocaleDateString('en-IN')
+                        : '—'}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className={styles.detailCard}>
+                <div className={styles.detailIcon}>🛒</div>
+                <div className={styles.detailContent}>
+                  <span className={styles.detailLabel}>Purchase date</span>
+                  {isEditing ? (
+                    <input
+                      type="date"
+                      className={styles.editInput}
+                      value={String(editForm.purchaseDate ?? '')}
+                      onChange={(e) =>
+                        updateEditField('purchaseDate', e.target.value)
+                      }
+                    />
+                  ) : (
+                    <span className={styles.detailValue}>
+                      {item.purchaseDate
+                        ? new Date(item.purchaseDate).toLocaleDateString('en-IN')
+                        : '—'}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className={styles.detailCard}>
+                <div className={styles.detailIcon}>⚠️</div>
+                <div className={styles.detailContent}>
+                  <span className={styles.detailLabel}>Low-stock threshold</span>
+                  {isEditing ? (
+                    <input
+                      type="number"
+                      className={styles.editInput}
+                      min={0}
+                      value={editForm.thresholdCount ?? ''}
+                      onChange={(e) =>
+                        updateEditField(
+                          'thresholdCount',
+                          e.target.value === '' ? null : Number(e.target.value)
+                        )
+                      }
+                      placeholder="Threshold"
+                    />
+                  ) : (
+                    <span className={styles.detailValue}>
+                      {item.thresholdCount ?? '—'}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <span className={styles.sectionIcon}>🎁</span>
+              <h4 className={styles.sectionTitle}>Schemes & attributes</h4>
+            </div>
+            <div className={styles.detailsGrid}>
+              <div className={styles.detailCard}>
+                <div className={styles.detailContent}>
+                  <span className={styles.detailLabel}>Sale deal type</span>
+                  {isEditing ? (
+                    <select
+                      className={styles.editSelect}
+                      value={String(editForm.schemeType ?? 'FIXED_UNITS')}
+                      onChange={(e) =>
+                        updateEditField('schemeType', e.target.value)
+                      }
+                    >
+                      <option value="FIXED_UNITS">Free units</option>
+                      <option value="PERCENTAGE">Percentage</option>
+                    </select>
+                  ) : (
+                    <span className={styles.detailValue}>
+                      {(item.schemeType ?? 'FIXED_UNITS') === 'PERCENTAGE'
+                        ? 'Percentage'
+                        : 'Free units'}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className={styles.detailCard}>
+                <div className={styles.detailContent}>
+                  <span className={styles.detailLabel}>Sale scheme</span>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      className={styles.editInput}
+                      value={String(editForm.saleScheme ?? '')}
+                      onChange={(e) =>
+                        updateEditField('saleScheme', e.target.value)
+                      }
+                      placeholder="e.g. 10+2 or 15%"
+                    />
+                  ) : (
+                    <span className={styles.detailValue}>
+                      {formatSaleSchemeDisplay(item) || '—'}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className={styles.detailCard}>
+                <div className={styles.detailContent}>
+                  <span className={styles.detailLabel}>Purchase deal type</span>
+                  {isEditing ? (
+                    <select
+                      className={styles.editSelect}
+                      value={String(
+                        editForm.purchaseSchemeType ?? 'FIXED_UNITS'
+                      )}
+                      onChange={(e) =>
+                        updateEditField('purchaseSchemeType', e.target.value)
+                      }
+                    >
+                      <option value="FIXED_UNITS">Free units</option>
+                      <option value="PERCENTAGE">Percentage</option>
+                    </select>
+                  ) : (
+                    <span className={styles.detailValue}>
+                      {(item.purchaseSchemeType ?? 'FIXED_UNITS') ===
+                      'PERCENTAGE'
+                        ? 'Percentage'
+                        : 'Free units'}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className={styles.detailCard}>
+                <div className={styles.detailContent}>
+                  <span className={styles.detailLabel}>Purchase scheme</span>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      className={styles.editInput}
+                      value={String(editForm.purchaseScheme ?? '')}
+                      onChange={(e) =>
+                        updateEditField('purchaseScheme', e.target.value)
+                      }
+                      placeholder="e.g. 10+2 or 15%"
+                    />
+                  ) : (
+                    <span className={styles.detailValue}>
+                      {formatPurchaseSchemeDisplay(item) || '—'}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className={styles.detailCard}>
+                <div className={styles.detailContent}>
+                  <span className={styles.detailLabel}>
+                    Purchase add. discount (%)
+                  </span>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      className={styles.editInput}
+                      value={editForm.purchaseAdditionalDiscount ?? ''}
+                      onChange={(e) => {
+                        const v = stripLeadingZeros(e.target.value);
+                        updateEditField(
+                          'purchaseAdditionalDiscount',
+                          v === '' ? '' : v
+                        );
+                      }}
+                      placeholder="0"
+                    />
+                  ) : (
+                    <span className={styles.detailValue}>
+                      {item.purchaseAdditionalDiscount != null
+                        ? `${item.purchaseAdditionalDiscount}%`
+                        : '—'}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className={styles.detailCard}>
+                <div className={styles.detailContent}>
+                  <span className={styles.detailLabel}>Item type</span>
+                  {isEditing ? (
+                    <select
+                      className={styles.editSelect}
+                      value={String(editForm.itemType ?? 'NORMAL')}
+                      onChange={(e) =>
+                        updateEditField('itemType', e.target.value)
+                      }
+                    >
+                      <option value="NORMAL">Normal</option>
+                      <option value="COSTLY">Costly</option>
+                      <option value="DEGREE">Temperature / °</option>
+                    </select>
+                  ) : (
+                    <span className={styles.detailValue}>
+                      {item.itemType === 'DEGREE' && item.itemTypeDegree != null
+                        ? `Temperature (${item.itemTypeDegree}°)`
+                        : item.itemType ?? 'Normal'}
+                    </span>
+                  )}
+                </div>
+              </div>
+              {(isEditing ||
+                item.itemType === 'DEGREE' ||
+                editForm.itemType === 'DEGREE') && (
+                <div className={styles.detailCard}>
+                  <div className={styles.detailContent}>
+                    <span className={styles.detailLabel}>Temperature (°)</span>
+                    {isEditing ? (
                       <input
                         type="number"
                         className={styles.editInput}
-                        min={0}
-                        value={editForm.thresholdCount ?? ''}
+                        min={1}
+                        step={1}
+                        value={String(editForm.itemTypeDegree ?? '')}
                         onChange={(e) =>
-                          updateEditField(
-                            'thresholdCount',
-                            e.target.value === ''
-                              ? null
-                              : Number(e.target.value)
-                          )
+                          updateEditField('itemTypeDegree', e.target.value)
                         }
-                        placeholder="Threshold"
+                        disabled={
+                          String(editForm.itemType ?? item.itemType) !==
+                          'DEGREE'
+                        }
                       />
-                    </div>
+                    ) : (
+                      <span className={styles.detailValue}>
+                        {item.itemTypeDegree ?? '—'}
+                      </span>
+                    )}
                   </div>
-                </>
+                </div>
               )}
+              <div className={styles.detailCard}>
+                <div className={styles.detailContent}>
+                  <span className={styles.detailLabel}>Discount applicable</span>
+                  {isEditing ? (
+                    <select
+                      className={styles.editSelect}
+                      value={String(editForm.discountApplicable ?? '')}
+                      onChange={(e) =>
+                        updateEditField('discountApplicable', e.target.value)
+                      }
+                    >
+                      <option value="">—</option>
+                      <option value="DISCOUNT">Discount</option>
+                      <option value="SCHEME">Scheme</option>
+                      <option value="DISCOUNT_AND_SCHEME">Both</option>
+                    </select>
+                  ) : (
+                    <span className={styles.detailValue}>
+                      {item.discountApplicable ?? '—'}
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -683,61 +1132,65 @@ export function InventoryAlertDetails({
                   )}
                 </div>
               </div>
-              <div className={`${styles.detailCard} ${styles.pricingCard}`}>
-                <div className={styles.detailIcon}>📊</div>
-                <div className={styles.detailContent}>
-                  <span className={styles.detailLabel}>SGST (%)</span>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      className={styles.editInput}
-                      value={String(editForm.sgst ?? '')}
-                      onChange={(e) =>
-                        updateEditField(
-                          'sgst',
-                          stripLeadingZeros(e.target.value)
-                        )
-                      }
-                      placeholder="e.g. 2.5"
-                    />
-                  ) : (
-                    <span className={styles.detailValue}>
-                      {item?.sgst ? `${item.sgst}%` : '—'}
-                    </span>
-                  )}
+              {item?.billingMode !== 'BASIC' && (
+                <div className={`${styles.detailCard} ${styles.pricingCard}`}>
+                  <div className={styles.detailIcon}>📊</div>
+                  <div className={styles.detailContent}>
+                    <span className={styles.detailLabel}>SGST (%)</span>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        className={styles.editInput}
+                        value={String(editForm.sgst ?? '')}
+                        onChange={(e) =>
+                          updateEditField(
+                            'sgst',
+                            stripLeadingZeros(e.target.value)
+                          )
+                        }
+                        placeholder="e.g. 2.5"
+                      />
+                    ) : (
+                      <span className={styles.detailValue}>
+                        {item?.sgst ? `${item.sgst}%` : '—'}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-              <div className={`${styles.detailCard} ${styles.pricingCard}`}>
-                <div className={styles.detailIcon}>📊</div>
-                <div className={styles.detailContent}>
-                  <span className={styles.detailLabel}>CGST (%)</span>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      className={styles.editInput}
-                      value={String(editForm.cgst ?? '')}
-                      onChange={(e) =>
-                        updateEditField(
-                          'cgst',
-                          stripLeadingZeros(e.target.value)
-                        )
-                      }
-                      placeholder="e.g. 2.5"
-                    />
-                  ) : (
-                    <span className={styles.detailValue}>
-                      {item?.cgst ? `${item.cgst}%` : '—'}
-                    </span>
-                  )}
+              )}
+              {item?.billingMode !== 'BASIC' && (
+                <div className={`${styles.detailCard} ${styles.pricingCard}`}>
+                  <div className={styles.detailIcon}>📊</div>
+                  <div className={styles.detailContent}>
+                    <span className={styles.detailLabel}>CGST (%)</span>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        className={styles.editInput}
+                        value={String(editForm.cgst ?? '')}
+                        onChange={(e) =>
+                          updateEditField(
+                            'cgst',
+                            stripLeadingZeros(e.target.value)
+                          )
+                        }
+                        placeholder="e.g. 2.5"
+                      />
+                    ) : (
+                      <span className={styles.detailValue}>
+                        {item?.cgst ? `${item.cgst}%` : '—'}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
               <div className={`${styles.detailCard} ${styles.pricingCard}`}>
                 <div className={styles.detailIcon}>🎯</div>
                 <div className={styles.detailContent}>
                   <span className={styles.detailLabel}>
-                    Additional Discount (%)
+                    Sale add. discount (%)
                   </span>
                   {isEditing ? (
                     <input

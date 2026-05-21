@@ -25,6 +25,28 @@ import type {
 } from '@inventory-platform/types';
 import axios from 'axios';
 
+/** Resolve inventory document id for GET/PUT `/inventory/{id}`. */
+export function resolveInventoryDocumentId(
+  item: Pick<InventoryItem, 'id' | 'lotId'> | null | undefined
+): string | null {
+  if (!item) return null;
+  const id = item.id?.trim();
+  if (id) return id;
+  const lotId = item.lotId?.trim();
+  return lotId || null;
+}
+
+function normalizeInventoryItem(
+  row: InventoryItem,
+  inventoryDocumentId: string
+): InventoryItem {
+  return {
+    ...row,
+    id: row.id?.trim() || inventoryDocumentId,
+    lotId: row.lotId?.trim() || inventoryDocumentId,
+  };
+}
+
 export const inventoryApi = {
   listPackagingUnits: async (): Promise<PackagingUnit[]> => {
     const response = await apiClient.get<ApiResponse<PackagingUnit[]>>(
@@ -111,19 +133,33 @@ export const inventoryApi = {
     return response.data;
   },
 
-  getById: async (inventoryId: string): Promise<InventoryItem> => {
+  /** GET /inventory/{inventoryDocumentId} — full detail for edit modals. */
+  getById: async (inventoryDocumentId: string): Promise<InventoryItem> => {
+    const id = inventoryDocumentId.trim();
     const response = await apiClient.get<ApiResponse<InventoryItem>>(
-      API_ENDPOINTS.INVENTORY.BY_ID(inventoryId)
+      API_ENDPOINTS.INVENTORY.BY_ID(id)
     );
-    return response.data;
+    return normalizeInventoryItem(response.data, id);
   },
 
   getByIds: async (inventoryIds: string[]): Promise<InventoryItem[]> => {
+    const normalizedIds = inventoryIds
+      .map((x) => x?.trim())
+      .filter((x): x is string => !!x);
+    if (normalizedIds.length === 0) return [];
+
     const response = await apiClient.post<ApiResponse<InventoryItem[]>>(
       API_ENDPOINTS.INVENTORY.BY_IDS,
-      { inventoryIds }
+      { inventoryIds: normalizedIds }
     );
-    return response.data ?? [];
+    const rows = response.data ?? [];
+    return normalizedIds
+      .map((id, index) => {
+        const row = rows[index];
+        if (!row) return null;
+        return normalizeInventoryItem(row, id);
+      })
+      .filter((row): row is InventoryItem => row != null);
   },
 
   updateThreshold: async (
@@ -136,15 +172,17 @@ export const inventoryApi = {
     );
   },
 
+  /** PUT /inventory/{inventoryDocumentId} */
   update: async (
-    inventoryId: string,
+    inventoryDocumentId: string,
     data: UpdateInventoryRequest
   ): Promise<InventoryItem> => {
+    const id = inventoryDocumentId.trim();
     const response = await apiClient.put<ApiResponse<InventoryItem>>(
-      API_ENDPOINTS.INVENTORY.BY_ID(inventoryId),
+      API_ENDPOINTS.INVENTORY.BY_ID(id),
       data
     );
-    return response.data;
+    return normalizeInventoryItem(response.data, id);
   },
 
   parseInvoice: async (imageFile: File): Promise<ParseInvoiceResponse> => {

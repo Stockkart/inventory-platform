@@ -1,5 +1,9 @@
 import { useState, useEffect, FormEvent } from 'react';
-import { inventoryApi, cartApi } from '@inventory-platform/api';
+import {
+  inventoryApi,
+  cartApi,
+  resolveInventoryDocumentId,
+} from '@inventory-platform/api';
 import type { BillingMode, InventoryItem } from '@inventory-platform/types';
 import { InventoryAlertDetails, PaginationBar } from '@inventory-platform/ui';
 import styles from './dashboard.product-search.module.css';
@@ -27,6 +31,7 @@ export default function ProductSearchPage() {
   const [searchTotalPages, setSearchTotalPages] = useState(0);
   const [searchTotalItems, setSearchTotalItems] = useState(0);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
   const [billingModeFilter, setBillingModeFilter] = useState<
     'ALL' | BillingMode
   >('ALL');
@@ -133,7 +138,33 @@ export default function ProductSearchPage() {
     }
   };
 
+  const openProductDetails = async (item: InventoryItem) => {
+    const inventoryId = resolveInventoryDocumentId(item);
+    if (!inventoryId) {
+      notifyError('Cannot open product: missing inventory id');
+      return;
+    }
+    setDetailLoadingId(inventoryId);
+    setSelectedItem(item);
+    try {
+      const full = await inventoryApi.getById(inventoryId);
+      setSelectedItem(full);
+    } catch (err) {
+      notifyError(
+        err instanceof Error ? err.message : 'Failed to load product details'
+      );
+      setSelectedItem(null);
+    } finally {
+      setDetailLoadingId(null);
+    }
+  };
+
   const handleAddToSell = async (item: InventoryItem) => {
+    const inventoryId = resolveInventoryDocumentId(item);
+    if (!inventoryId) {
+      notifyError('Cannot add: missing inventory id');
+      return;
+    }
     if (item.currentCount <= 0) {
       notifyError('Product is out of stock');
       return;
@@ -145,7 +176,7 @@ export default function ProductSearchPage() {
       return;
     }
 
-    setAddingToCart(item.id);
+    setAddingToCart(inventoryId);
     setError(null);
     setSuccessMessage(null);
 
@@ -154,7 +185,7 @@ export default function ProductSearchPage() {
         businessType: 'pharmacy',
         items: [
           {
-            id: item.id,
+            id: inventoryId,
             quantity: 1,
             priceToRetail: effectivePrice,
           },
@@ -421,22 +452,27 @@ export default function ProductSearchPage() {
                     <div className={styles.actionButtons}>
                       <button
                         className={styles.viewDetailsBtn}
-                        onClick={() => setSelectedItem(item)}
-                        disabled={isLoading}
+                        onClick={() => openProductDetails(item)}
+                        disabled={
+                          isLoading ||
+                          detailLoadingId === resolveInventoryDocumentId(item)
+                        }
                       >
-                        View Details
+                        {detailLoadingId === resolveInventoryDocumentId(item)
+                          ? 'Loading…'
+                          : 'View Details'}
                       </button>
                       <button
                         className={styles.addToSellBtn}
                         onClick={() => handleAddToSell(item)}
                         disabled={
                           isLoading ||
-                          addingToCart === item.id ||
+                          addingToCart === resolveInventoryDocumentId(item) ||
                           item.currentCount <= 0 ||
                           (item.sellingPrice ?? item.priceToRetail) == null
                         }
                       >
-                        {addingToCart === item.id
+                        {addingToCart === resolveInventoryDocumentId(item)
                           ? 'Adding...'
                           : item.currentCount <= 0
                           ? 'Out of Stock'

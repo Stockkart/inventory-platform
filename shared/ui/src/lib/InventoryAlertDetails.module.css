@@ -15,7 +15,7 @@
   border-radius: 20px;
   border: 1px solid var(--border-color);
   width: 95%;
-  max-width: 600px;
+  max-width: 720px;
   box-shadow: 0 24px 48px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
@@ -94,6 +94,43 @@
 .editInput:focus {
   outline: none;
   border-color: #3b82f6;
+}
+
+.editSelect {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  width: 100%;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.editSelect:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.packagingEditWrap {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.packagingPrefix {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.fieldHint {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  font-weight: 400;
 }
 
 .closeBtn {

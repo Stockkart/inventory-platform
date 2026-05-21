@@ -9,6 +9,7 @@ import {
 import { useNavigate, useLocation, Link } from 'react-router';
 import {
   inventoryApi,
+  resolveInventoryDocumentId,
   cartApi,
   customersApi,
   usersApi,
@@ -538,7 +539,10 @@ export default function ScanSellPage() {
     setDetailModalFullItemLoading(true);
     setDetailModalFullItemError(null);
     inventoryApi
-      .getById(detailModalItem.inventoryItem.id)
+      .getById(
+        resolveInventoryDocumentId(detailModalItem.inventoryItem) ??
+          detailModalItem.inventoryItem.id
+      )
       .then((inv) => {
         if (cancelled) return;
         setDetailModalFullItem(inv);
