@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import styles from './dashboard.inventory-alert.module.css';
-import { inventoryApi } from '@inventory-platform/api';
+import { inventoryApi, resolveInventoryDocumentId } from '@inventory-platform/api';
+import type { InventoryItem } from '@inventory-platform/types';
 import { InventoryAlertDetails, PaginationBar } from '@inventory-platform/ui';
 import { useLocation } from 'react-router';
 
@@ -34,6 +35,22 @@ export default function InventoryAlertPage() {
     threshold: 10,
   });
   const [updating, setUpdating] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  const openInventoryDetails = async (raw: InventoryItem) => {
+    const inventoryId = resolveInventoryDocumentId(raw);
+    if (!inventoryId) return;
+    setDetailLoading(true);
+    setSelected(raw);
+    try {
+      const full = await inventoryApi.getById(inventoryId);
+      setSelected(full);
+    } catch {
+      setSelected(raw);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
 
   useEffect(() => {
     InventoryAlertLoad();
@@ -43,7 +60,7 @@ export default function InventoryAlertPage() {
     if (!inventoryId) return;
 
     const found = alerts.find((a) => a.id === inventoryId);
-    if (found) setSelected(found.raw);
+    if (found) void openInventoryDetails(found.raw);
   }, [inventoryId, alerts]);
 
   async function InventoryAlertLoad() {
@@ -135,7 +152,8 @@ export default function InventoryAlertPage() {
               <div className={styles.alertActions}>
                 <button
                   className={styles.actionBtnSecondary}
-                  onClick={() => setSelected(alert.raw)}
+                  onClick={() => openInventoryDetails(alert.raw)}
+                  disabled={detailLoading}
                 >
                   View Details
                 </button>
@@ -258,12 +276,15 @@ export default function InventoryAlertPage() {
                 <button
                   className={styles.primaryBtn}
                   onClick={async () => {
-                    if (!thresholdModal.item?.id) return;
+                    const inventoryId = resolveInventoryDocumentId(
+                      thresholdModal.item
+                    );
+                    if (!inventoryId) return;
 
                     setUpdating(true);
                     try {
                       await inventoryApi.updateThreshold(
-                        thresholdModal.item.id,
+                        inventoryId,
                         thresholdModal.threshold
                       );
                       // Reload the alerts to reflect the updated threshold
