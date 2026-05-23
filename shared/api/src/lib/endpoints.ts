@@ -65,6 +65,7 @@ export const API_ENDPOINTS = {
   SHOPS: {
     REGISTER: '/shops/register',
     ACTIVE_SHOP: '/shops/active-shop',
+    BY_ID: (shopId: string) => `/shops/${shopId}`,
     BY_OWNER_EMAIL: '/shops/by-owner-email',
     JOIN_REQUEST: '/shops/join-request',
     JOIN_REQUESTS: '/shops/join-requests',
@@ -227,6 +228,13 @@ export const API_ENDPOINTS = {
     GSTR2_DOWNLOAD: '/taxation/gstr2/download',
     GSTR3B: '/taxation/gstr3b',
     GSTR3B_DOWNLOAD: '/taxation/gstr3b/download',
+  },
+
+  // Contextual help / YouTube tutorials
+  HELP: {
+    VIDEOS: '/help/videos',
+    VIDEO_BY_KEY: (videoKey: string) => `/help/videos/key/${videoKey}`,
+    VIDEOS_FOR_ROUTE: '/help/videos/for-route',
   },
 
   // Upload endpoints (QR Code Upload Flow)
