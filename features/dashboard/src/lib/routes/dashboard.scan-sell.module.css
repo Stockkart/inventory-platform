@@ -1020,6 +1020,30 @@
   vertical-align: middle;
 }
 
+.excelHistoryTr {
+  background: transparent;
+}
+
+.excelHistoryTr:hover {
+  background: transparent;
+}
+
+.excelHistoryTd {
+  padding: 0.25rem 0.6rem 0.6rem;
+  border-top: none;
+  border-left: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-primary);
+}
+
+.excelHistoryTd .previousBuyStrip {
+  margin-top: 0.1rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--bg-card) 92%, var(--accent-color, #4f46e5) 8%);
+}
+
 .excelProductBtn {
   background: none;
   border: none;
@@ -1526,6 +1550,78 @@
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
+}
+
+/* Previous purchase history strip beneath a cart row */
+.previousBuyStrip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  background: var(--bg-secondary, #f8fafc);
+  border: 1px dashed var(--border-color, #e2e8f0);
+  border-radius: 8px;
+}
+
+.previousBuyLabel {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-tertiary, #64748b);
+}
+
+.previousBuyList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.previousBuyItem {
+  margin: 0;
+  padding: 0;
+}
+
+.previousBuyChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 999px;
+  background: var(--bg-primary, #ffffff);
+  color: var(--text-primary, #0f172a);
+  font-size: 0.78rem;
+  line-height: 1.1;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.previousBuyChip:hover,
+.previousBuyChip:focus-visible {
+  border-color: var(--accent-color, #2563eb);
+  color: var(--accent-color, #2563eb);
+  background: var(--hover-bg, #f1f5f9);
+  outline: none;
+}
+
+.previousBuyPrice {
+  font-weight: 600;
+}
+
+.previousBuyMeta {
+  color: var(--text-secondary, #475569);
+  font-size: 0.72rem;
+}
+
+.previousBuyDate {
+  color: var(--text-tertiary, #64748b);
+  font-size: 0.7rem;
 }
 
 /* Quantity stepper - unified control */

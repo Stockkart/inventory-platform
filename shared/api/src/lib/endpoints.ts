@@ -138,6 +138,7 @@ export const API_ENDPOINTS = {
   PURCHASES: {
     BASE: '/purchases',
     SEARCH: '/purchases/search',
+    CUSTOMER_PRODUCT_HISTORY: '/purchases/customer-product-history',
   },
 
   // Refund endpoints

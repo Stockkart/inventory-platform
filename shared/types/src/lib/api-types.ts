@@ -1448,6 +1448,40 @@ export interface SearchPurchasesParams {
   limit?: number;
 }
 
+/** One past sale of a single inventory line to the same customer. */
+export interface CustomerProductHistoryEntry {
+  purchaseId: string;
+  invoiceNo: string | null;
+  soldAt: string;
+  inventoryId: string;
+  name: string | null;
+  quantity: number | null;
+  saleUnit: string | null;
+  priceToRetail: number | null;
+  saleAdditionalDiscount: number | null;
+  totalAmount: number | null;
+  cgst: string | null;
+  sgst: string | null;
+  schemeType?: 'FIXED_UNITS' | 'PERCENTAGE' | null;
+  schemePayFor?: number | null;
+  schemeFree?: number | null;
+  schemePercentage?: number | null;
+}
+
+export interface CustomerProductHistoryResponse {
+  customerId: string | null;
+  perItemLimit: number;
+  /** Map of inventoryId → recent purchases (newest first). Missing key = no prior buy. */
+  history: Record<string, CustomerProductHistoryEntry[]>;
+}
+
+export interface GetCustomerProductHistoryParams {
+  customerId?: string;
+  customerPhone?: string;
+  inventoryIds: string[];
+  perItemLimit?: number;
+}
+
 export interface SearchPurchasesResponse {
   purchases: Purchase[];
   page: number;

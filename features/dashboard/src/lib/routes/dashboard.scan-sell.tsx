@@ -1,4 +1,5 @@
 import {
+  Fragment,
   useState,
   useEffect,
   useLayoutEffect,
@@ -14,6 +15,7 @@ import {
   customersApi,
   usersApi,
   pricingApi,
+  purchasesApi,
 } from '@inventory-platform/api';
 import type {
   AvailableUnit,
@@ -21,6 +23,7 @@ import type {
   InventoryItem,
   CartResponse,
   CheckoutItemResponse,
+  CustomerProductHistoryEntry,
   PricingResponse,
   CustomerResponse,
 } from '@inventory-platform/types';
@@ -453,6 +456,129 @@ function CartSchemeInput({
   );
 }
 
+const inrFormatter = new Intl.NumberFormat('en-IN', {
+  style: 'currency',
+  currency: 'INR',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+function formatHistoryDate(iso: string): string {
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  } catch {
+    return iso;
+  }
+}
+
+function describeScheme(entry: CustomerProductHistoryEntry): string | null {
+  if (entry.schemeType === 'PERCENTAGE' && entry.schemePercentage != null) {
+    return `+${entry.schemePercentage}%`;
+  }
+  if (
+    entry.schemeType === 'FIXED_UNITS' &&
+    entry.schemePayFor != null &&
+    entry.schemeFree != null &&
+    entry.schemePayFor > 0
+  ) {
+    return `${entry.schemePayFor}+${entry.schemeFree}`;
+  }
+  return null;
+}
+
+/**
+ * Inline strip beneath a cart row that surfaces the same customer's recent purchases of this
+ * exact inventory line. Empty when there is no customer selected or no prior buys.
+ */
+function CustomerProductHistoryStrip({
+  entries,
+  loading,
+  hasCustomer,
+  onApplyPrice,
+}: {
+  entries: CustomerProductHistoryEntry[] | undefined;
+  loading: boolean;
+  hasCustomer: boolean;
+  onApplyPrice: (price: number) => void;
+}) {
+  if (!hasCustomer) return null;
+  if (loading && (!entries || entries.length === 0)) {
+    return (
+      <div className={styles.previousBuyStrip}>
+        <span className={styles.previousBuyLabel}>Looking up customer history…</span>
+      </div>
+    );
+  }
+  if (!entries || entries.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className={styles.previousBuyStrip}>
+      <span className={styles.previousBuyLabel}>
+        Bought by this customer before:
+      </span>
+      <ul className={styles.previousBuyList}>
+        {entries.map((entry) => {
+          const price = entry.priceToRetail ?? 0;
+          const scheme = describeScheme(entry);
+          const qtyLabel =
+            entry.quantity != null
+              ? `${entry.quantity}${entry.saleUnit ? ` ${entry.saleUnit}` : ''}`
+              : null;
+          const discount =
+            entry.saleAdditionalDiscount != null &&
+            entry.saleAdditionalDiscount !== 0
+              ? `${entry.saleAdditionalDiscount}% off`
+              : null;
+          const title = [
+            `Invoice ${entry.invoiceNo ?? entry.purchaseId}`,
+            qtyLabel ? `Qty ${qtyLabel}` : null,
+            discount,
+            scheme ? `Scheme ${scheme}` : null,
+          ]
+            .filter(Boolean)
+            .join(' • ');
+          return (
+            <li key={entry.purchaseId} className={styles.previousBuyItem}>
+              <button
+                type="button"
+                className={styles.previousBuyChip}
+                title={`${title} • Click to apply price`}
+                onClick={() => {
+                  if (price > 0) onApplyPrice(price);
+                }}
+              >
+                <span className={styles.previousBuyPrice}>
+                  {inrFormatter.format(price)}
+                </span>
+                {qtyLabel ? (
+                  <span className={styles.previousBuyMeta}>× {qtyLabel}</span>
+                ) : null}
+                {scheme ? (
+                  <span className={styles.previousBuyMeta}>{scheme}</span>
+                ) : null}
+                {discount ? (
+                  <span className={styles.previousBuyMeta}>{discount}</span>
+                ) : null}
+                <span className={styles.previousBuyDate}>
+                  {formatHistoryDate(entry.soldAt)}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 export default function ScanSellPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -568,6 +694,11 @@ export default function ScanSellPage() {
     Record<string, string>
   >({});
 
+  const [customerProductHistory, setCustomerProductHistory] = useState<
+    Record<string, CustomerProductHistoryEntry[]>
+  >({});
+  const [customerHistoryLoading, setCustomerHistoryLoading] = useState(false);
+
   const loadPricingOnDropdownClick = useCallback(
     async (pricingId: string | undefined, inventoryId: string) => {
       let idToFetch = pricingId ?? inventoryToPricingId[inventoryId];
@@ -661,6 +792,55 @@ export default function ScanSellPage() {
     scanSellCustomerPrefillRef.current = raw;
     navigate(location.pathname, { replace: true, state: {} });
   }, [location.state, location.pathname, navigate]);
+
+  // Resolve the most reliable customer key for history lookups: prefer id from cart, then
+  // searched phone. We re-fetch whenever the key or the set of inventory ids in the cart changes.
+  const customerHistoryKey = (() => {
+    const id = cartData?.customerId?.trim();
+    if (id) return `id:${id}`;
+    const phone = customerPhone.trim();
+    if (phone) return `phone:${phone}`;
+    return '';
+  })();
+  useEffect(() => {
+    if (!customerHistoryKey || !cartItemIds) {
+      setCustomerProductHistory({});
+      setCustomerHistoryLoading(false);
+      return;
+    }
+    const inventoryIds = cartItemIds.split(',').filter(Boolean);
+    if (inventoryIds.length === 0) {
+      setCustomerProductHistory({});
+      return;
+    }
+    let cancelled = false;
+    setCustomerHistoryLoading(true);
+    const [kind, value] = customerHistoryKey.split(':');
+    purchasesApi
+      .getCustomerProductHistory({
+        ...(kind === 'id' ? { customerId: value } : { customerPhone: value }),
+        inventoryIds,
+        perItemLimit: 3,
+      })
+      .then((res) => {
+        if (!cancelled) {
+          setCustomerProductHistory(res.history ?? {});
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCustomerProductHistory({});
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setCustomerHistoryLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [customerHistoryKey, cartItemIds]);
 
   const normalizeBillingMode = useCallback(
     (mode?: BillingMode | null): BillingMode =>
@@ -1910,6 +2090,56 @@ export default function ScanSellPage() {
     }
   };
 
+  const handleCustomerSearchByName = async () => {
+    if (!customerName.trim()) {
+      notifyError('Please enter a customer name');
+      return;
+    }
+
+    setIsSearchingCustomer(true);
+    setError(null);
+    try {
+      const customer = await customersApi.searchByName(customerName.trim());
+      if (customer) {
+        setCustomerName(customer.name || '');
+        setCustomerPhone(customer.phone || '');
+        setCustomerEmail(customer.email || '');
+        setCustomerAddress(customer.address || '');
+        const hasRetailerFields = !!(
+          customer.gstin ||
+          customer.dlNo ||
+          customer.pan
+        );
+        if (hasRetailerFields) {
+          setIsRetailer(true);
+          setCustomerGstin(customer.gstin || '');
+          setCustomerDlNo(customer.dlNo || '');
+          setCustomerPan(customer.pan || '');
+        } else {
+          setIsRetailer(false);
+          setCustomerGstin('');
+          setCustomerDlNo('');
+          setCustomerPan('');
+        }
+        if (customer.userId) {
+          setLinkedUser({
+            userId: customer.userId,
+            email: customer.email || '',
+            name: customer.name || '',
+          });
+        }
+      } else {
+        notifyError('No customer found with that name');
+      }
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to search customer';
+      notifyError(errorMessage);
+    } finally {
+      setIsSearchingCustomer(false);
+    }
+  };
+
   const handleCustomerSearchByEmail = async () => {
     if (!customerEmail.trim()) {
       notifyError('Please enter a customer email');
@@ -2251,10 +2481,8 @@ export default function ScanSellPage() {
                           pricingLoading[pricingId ?? ''] ||
                           pricingLoading[`inv:${cartItem.inventoryItem.id}`];
                         return (
-                          <tr
-                            key={cartItem.inventoryItem.id}
-                            className={styles.excelTr}
-                          >
+                          <Fragment key={cartItem.inventoryItem.id}>
+                          <tr className={styles.excelTr}>
                             <td className={styles.excelTd}>{idx + 1}</td>
                             <td className={styles.excelTd}>
                               <button
@@ -2450,6 +2678,34 @@ export default function ScanSellPage() {
                               </button>
                             </td>
                           </tr>
+                          {customerHistoryKey &&
+                            (customerProductHistory[cartItem.inventoryItem.id]
+                              ?.length ||
+                              customerHistoryLoading) && (
+                              <tr className={styles.excelHistoryTr}>
+                                <td
+                                  className={styles.excelHistoryTd}
+                                  colSpan={10}
+                                >
+                                  <CustomerProductHistoryStrip
+                                    entries={
+                                      customerProductHistory[
+                                        cartItem.inventoryItem.id
+                                      ]
+                                    }
+                                    loading={customerHistoryLoading}
+                                    hasCustomer={Boolean(customerHistoryKey)}
+                                    onApplyPrice={(price) =>
+                                      handleSellingPriceChange(
+                                        cartItem.inventoryItem.id,
+                                        price
+                                      )
+                                    }
+                                  />
+                                </td>
+                              </tr>
+                            )}
+                          </Fragment>
                         );
                       })}
                     </tbody>
@@ -2813,6 +3069,19 @@ export default function ScanSellPage() {
                               </div>
                             </div>
                           </div>
+                          <CustomerProductHistoryStrip
+                            entries={
+                              customerProductHistory[cartItem.inventoryItem.id]
+                            }
+                            loading={customerHistoryLoading}
+                            hasCustomer={Boolean(customerHistoryKey)}
+                            onApplyPrice={(price) =>
+                              handleSellingPriceChange(
+                                cartItem.inventoryItem.id,
+                                price
+                              )
+                            }
+                          />
                         </div>
                       </div>
                     );
@@ -2884,16 +3153,34 @@ export default function ScanSellPage() {
                     >
                       Name
                     </label>
-                    <input
-                      id="sidebar-customerName"
-                      type="text"
-                      className={styles.customerInput}
-                      placeholder="Name"
-                      value={customerName}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                        setCustomerName(e.currentTarget.value)
-                      }
-                    />
+                    <div className={styles.customerInputRow}>
+                      <input
+                        id="sidebar-customerName"
+                        type="text"
+                        className={styles.customerInput}
+                        placeholder="Name"
+                        value={customerName}
+                        onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                          setCustomerName(e.currentTarget.value)
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && customerName.trim()) {
+                            e.preventDefault();
+                            handleCustomerSearchByName();
+                          }
+                        }}
+                        disabled={isSearchingCustomer}
+                      />
+                      <button
+                        type="button"
+                        className={styles.sidebarSearchBtn}
+                        onClick={handleCustomerSearchByName}
+                        disabled={isSearchingCustomer || !customerName.trim()}
+                        title="Search customer by name"
+                      >
+                        {isSearchingCustomer ? '…' : '⌕'}
+                      </button>
+                    </div>
                   </div>
                   <div className={styles.customerField}>
                     <label

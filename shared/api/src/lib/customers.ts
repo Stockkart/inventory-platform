@@ -73,5 +73,19 @@ export const customersApi = {
       throw error;
     }
   },
+  searchByName: async (name: string): Promise<CustomerResponse | null> => {
+    try {
+      const response = await apiClient.get<ApiResponse<CustomerResponse>>(
+        API_ENDPOINTS.CUSTOMERS.SEARCH,
+        { name }
+      );
+      return response.data;
+    } catch (error: any) {
+      if (error?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  },
 };
 
