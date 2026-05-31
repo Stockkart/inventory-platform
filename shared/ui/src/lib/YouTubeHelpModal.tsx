@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 import { X } from 'lucide-react';
-import type { TutorialVideoResponse } from '@inventory-platform/types';
+import type { TutorialResourceResponse } from '@inventory-platform/types';
 import styles from './YouTubeHelpModal.module.css';
 
 type YouTubeHelpModalProps = {
-  video: TutorialVideoResponse | null;
+  video: TutorialResourceResponse | null;
   open: boolean;
   onClose: () => void;
   title?: string;
