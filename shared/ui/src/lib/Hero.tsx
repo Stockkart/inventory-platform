@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Play } from 'lucide-react';
-import { helpVideosApi } from '@inventory-platform/api';
-import type { HelpVideoResponse } from '@inventory-platform/types';
+import { resourcesApi } from '@inventory-platform/api';
+import type { TutorialResourceResponse } from '@inventory-platform/types';
 import { YouTubeHelpModal } from './YouTubeHelpModal';
 import styles from './Hero.module.css';
 
@@ -17,7 +17,7 @@ const DEMO_VIDEO_KEY = 'stockkart-overview';
 
 export function Hero() {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [demoVideo, setDemoVideo] = useState<HelpVideoResponse | null>(null);
+  const [demoVideo, setDemoVideo] = useState<TutorialResourceResponse | null>(null);
   const [demoOpen, setDemoOpen] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
   const navigate = useNavigate();
@@ -36,12 +36,12 @@ export function Hero() {
     }
     setDemoLoading(true);
     try {
-      const video = await helpVideosApi.getByKey(DEMO_VIDEO_KEY);
+      const video = await resourcesApi.getByKey(DEMO_VIDEO_KEY);
       setDemoVideo(video);
       setDemoOpen(true);
     } catch {
       try {
-        const fallback = await helpVideosApi.getByKey('demo');
+        const fallback = await resourcesApi.getByKey('demo');
         setDemoVideo(fallback);
         setDemoOpen(true);
       } catch {

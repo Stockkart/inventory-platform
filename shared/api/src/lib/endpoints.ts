@@ -230,11 +230,11 @@ export const API_ENDPOINTS = {
     GSTR3B_DOWNLOAD: '/taxation/gstr3b/download',
   },
 
-  // Contextual help / YouTube tutorials
-  HELP: {
-    VIDEOS: '/help/videos',
-    VIDEO_BY_KEY: (videoKey: string) => `/help/videos/key/${videoKey}`,
-    VIDEOS_FOR_ROUTE: '/help/videos/for-route',
+  // YouTube tutorial resources
+  RESOURCES: {
+    BASE: '/resources',
+    BY_KEY: (videoKey: string) => `/resources/key/${videoKey}`,
+    FOR_ROUTE: '/resources/for-route',
   },
 
   // Upload endpoints (QR Code Upload Flow)

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ExternalLink, Loader2, Play, X } from 'lucide-react';
-import { helpVideosApi } from '@inventory-platform/api';
-import type { HelpVideoResponse } from '@inventory-platform/types';
+import { resourcesApi } from '@inventory-platform/api';
+import type { TutorialResourceResponse } from '@inventory-platform/types';
 import { YouTubeHelpModal } from './YouTubeHelpModal';
 import styles from './ContextualHelpPanel.module.css';
 
@@ -18,10 +18,10 @@ export function ContextualHelpPanel({
   currentPath,
   pageLabel,
 }: ContextualHelpPanelProps) {
-  const [videos, setVideos] = useState<HelpVideoResponse[]>([]);
+  const [videos, setVideos] = useState<TutorialResourceResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedVideo, setSelectedVideo] = useState<HelpVideoResponse | null>(
+  const [selectedVideo, setSelectedVideo] = useState<TutorialResourceResponse | null>(
     null
   );
 
@@ -30,7 +30,7 @@ export function ContextualHelpPanel({
     let cancelled = false;
     setLoading(true);
     setError(null);
-    helpVideosApi
+    resourcesApi
       .listForRoute(currentPath)
       .then((list) => {
         if (!cancelled) setVideos(list);

@@ -2878,8 +2878,8 @@ export interface PartyStatementResponse {
   totalPages: number;
 }
 
-/** YouTube tutorial returned by {@code GET /api/v1/help/videos}. */
-export interface HelpVideoResponse {
+/** YouTube tutorial resource returned by {@code GET /api/v1/resources}. */
+export interface TutorialResourceResponse {
   id: string;
   videoKey: string;
   title: string;
