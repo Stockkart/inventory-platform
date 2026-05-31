@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Play } from 'lucide-react';
+import { helpVideosApi } from '@inventory-platform/api';
+import type { HelpVideoResponse } from '@inventory-platform/types';
+import { YouTubeHelpModal } from './YouTubeHelpModal';
 import styles from './Hero.module.css';
 
 // Use public assets - these will be served from /assets/logo/ in the public folder
@@ -10,8 +13,13 @@ const backgrounds = [
   '/assets/logo/inventory-pic3.png',
 ];
 
+const DEMO_VIDEO_KEY = 'stockkart-overview';
+
 export function Hero() {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [demoVideo, setDemoVideo] = useState<HelpVideoResponse | null>(null);
+  const [demoOpen, setDemoOpen] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,6 +28,29 @@ export function Hero() {
     }, 5000);
     return () => clearInterval(id);
   }, []);
+
+  const handleWatchDemo = async () => {
+    if (demoVideo) {
+      setDemoOpen(true);
+      return;
+    }
+    setDemoLoading(true);
+    try {
+      const video = await helpVideosApi.getByKey(DEMO_VIDEO_KEY);
+      setDemoVideo(video);
+      setDemoOpen(true);
+    } catch {
+      try {
+        const fallback = await helpVideosApi.getByKey('demo');
+        setDemoVideo(fallback);
+        setDemoOpen(true);
+      } catch {
+        window.open('https://www.youtube.com', '_blank', 'noopener,noreferrer');
+      }
+    } finally {
+      setDemoLoading(false);
+    }
+  };
 
   return (
     <section className={styles.hero}>
@@ -70,12 +101,24 @@ export function Hero() {
               />
             </svg>
           </button>
-          <button className={styles.secondaryBtn}>
-            <Play size={18} style={{ marginRight: '8px', paddingTop: '3px' }} />{' '}
-            Watch Demo
+          <button
+            type="button"
+            className={styles.secondaryBtn}
+            onClick={() => void handleWatchDemo()}
+            disabled={demoLoading}
+          >
+            <Play size={18} style={{ marginRight: '8px', paddingTop: '3px' }} />
+            {demoLoading ? 'Loading…' : 'Watch Demo'}
           </button>
         </div>
       </div>
+
+      <YouTubeHelpModal
+        video={demoVideo}
+        open={demoOpen}
+        onClose={() => setDemoOpen(false)}
+        title={demoVideo?.title ?? 'StockKart demo'}
+      />
     </section>
   );
 }

@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { useAuthStore } from '@inventory-platform/store';
+import { shopsApi } from '@inventory-platform/api';
 import type { DashboardLayoutProps } from '@inventory-platform/types';
+import type { Location as LocationType } from '@inventory-platform/types';
 import styles from './DashboardLayout.module.css';
 import { ThemeToggle } from './ThemeToggle';
 import { useNotifications } from '@inventory-platform/store';
@@ -41,7 +43,9 @@ import {
   ChevronDown,
   ChevronUp,
   Keyboard,
+  Info,
 } from 'lucide-react';
+import { ContextualHelpPanel } from './ContextualHelpPanel';
 
 function isTypingInField(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -62,6 +66,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   );
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [showNotificationMenu, setShowNotificationMenu] = useState(false);
+  const [contextualHelpOpen, setContextualHelpOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
     () => new Set(['overview', 'products'])
   );
@@ -70,6 +75,19 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [chatMessages, setChatMessages] = useState<
     { text: string; from: 'user' | 'support' }[]
   >([]);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editTagline, setEditTagline] = useState('');
+  const [editLocation, setEditLocation] = useState<LocationType>({
+    primaryAddress: '',
+    secondaryAddress: '',
+    state: '',
+    city: '',
+    pin: '',
+    country: 'IND',
+  });
 
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
@@ -223,8 +241,18 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     [filteredMenuGroups]
   );
 
-  const currentPageLabel =
-    allMenuItems.find((i) => i.path === currentPath)?.label ?? 'Dashboard';
+  const currentPageLabel = useMemo(() => {
+    const exact = allMenuItems.find((i) => i.path === currentPath);
+    if (exact) return exact.label;
+    const prefixMatch = allMenuItems
+      .filter(
+        (i) =>
+          currentPath === i.path ||
+          (i.path !== '/dashboard' && currentPath.startsWith(`${i.path}/`))
+      )
+      .sort((a, b) => b.path.length - a.path.length)[0];
+    return prefixMatch?.label ?? 'Dashboard';
+  }, [allMenuItems, currentPath]);
 
   const isPathInGroup = useCallback(
     (groupId: string, path: string) => {
@@ -259,6 +287,69 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       navigate('/login');
     }
   };
+
+  const closeEditModal = useCallback(() => {
+    setEditModalOpen(false);
+    setEditError(null);
+  }, []);
+
+  useEffect(() => {
+    if (!editModalOpen || !user?.shopId) return;
+    setEditLoading(true);
+    setEditError(null);
+    shopsApi
+      .getShop(user.shopId)
+      .then((shop) => {
+        setEditTagline(shop.tagline ?? '');
+        setEditLocation(
+          shop.location
+            ? {
+                primaryAddress: shop.location.primaryAddress ?? '',
+                secondaryAddress: shop.location.secondaryAddress ?? '',
+                state: shop.location.state ?? '',
+                city: shop.location.city ?? '',
+                pin: shop.location.pin ?? '',
+                country: shop.location.country ?? 'IND',
+              }
+            : {
+                primaryAddress: '',
+                secondaryAddress: '',
+                state: '',
+                city: '',
+                pin: '',
+                country: 'IND',
+              }
+        );
+      })
+      .catch((err) => {
+        setEditError(err instanceof Error ? err.message : 'Failed to load shop');
+      })
+      .finally(() => setEditLoading(false));
+  }, [editModalOpen, user?.shopId]);
+
+  const handleSaveEdit = useCallback(async () => {
+    if (!user?.shopId) return;
+    setEditSaving(true);
+    setEditError(null);
+    try {
+      await shopsApi.updateShop(user.shopId, {
+        tagline: editTagline.trim() || undefined,
+        location: {
+          primaryAddress: editLocation.primaryAddress.trim(),
+          secondaryAddress: editLocation.secondaryAddress?.trim() || undefined,
+          state: editLocation.state.trim(),
+          city: editLocation.city.trim(),
+          pin: editLocation.pin.trim(),
+          country: editLocation.country.trim() || 'IND',
+        },
+      });
+      closeEditModal();
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : 'Failed to update shop');
+    } finally {
+      setEditSaving(false);
+    }
+  }, [user?.shopId, editTagline, editLocation, closeEditModal]);
 
   const handleChatSend = () => {
     if (!chatMessage.trim()) return;
@@ -298,6 +389,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             refreshFavoriteLabels(next, navRowsForPalette)
           )
         }
+      />
+      <ContextualHelpPanel
+        open={contextualHelpOpen}
+        onClose={() => setContextualHelpOpen(false)}
+        currentPath={currentPath}
+        pageLabel={currentPageLabel}
       />
       <ToastProvider />
       {!sidebarOpen && window.innerWidth <= 768 && (
@@ -524,6 +621,19 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <h1 className={styles.pageTitle}>{currentPageLabel}</h1>
 
             <div className={styles.headerActions}>
+              <button
+                type="button"
+                className={styles.helpBtn}
+                onClick={() => {
+                  setShowNotificationMenu(false);
+                  setContextualHelpOpen(true);
+                }}
+                title="Help for this page"
+                aria-label="Help for this page"
+              >
+                <Info size={18} aria-hidden />
+              </button>
+
               {/* Notifications */}
               <div className={styles.notificationWrapper}>
                 <button
@@ -606,7 +716,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                       </div>
 
                       <div className={styles.userMenuInfo}>
-                        <span className={styles.roleBadge}>{shopName}</span>
+                        <span className={styles.roleBadge}>
+                          {shopName ?? shop?.name}
+                        </span>
                         <button
                           type="button"
                           className={styles.editMetaBtn}
@@ -651,6 +763,138 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           {children}
         </main>
       </div>
+
+      {editModalOpen && (
+        <div className={styles.modalBackdrop} onClick={closeEditModal}>
+          <div
+            className={styles.modal}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-shop-title"
+          >
+            <h2 id="edit-shop-title" className={styles.modalTitle}>
+              Edit tagline &amp; location
+            </h2>
+            {editLoading ? (
+              <div className={styles.modalLoading}>Loading…</div>
+            ) : (
+              <>
+                {editError && (
+                  <div className={styles.editError}>{editError}</div>
+                )}
+                <div className={styles.modalForm}>
+                  <label className={styles.modalLabel} htmlFor="edit-tagline">
+                    Tagline (optional)
+                  </label>
+                  <input
+                    id="edit-tagline"
+                    type="text"
+                    className={styles.modalInput}
+                    value={editTagline}
+                    onChange={(e) => setEditTagline(e.target.value)}
+                    placeholder="e.g. Your Trusted Pharmacy"
+                  />
+                  <label className={styles.modalLabel}>Location</label>
+                  <input
+                    type="text"
+                    className={styles.modalInput}
+                    placeholder="Primary address *"
+                    value={editLocation.primaryAddress}
+                    onChange={(e) =>
+                      setEditLocation((prev) => ({
+                        ...prev,
+                        primaryAddress: e.target.value,
+                      }))
+                    }
+                  />
+                  <input
+                    type="text"
+                    className={styles.modalInput}
+                    placeholder="Secondary address"
+                    value={editLocation.secondaryAddress ?? ''}
+                    onChange={(e) =>
+                      setEditLocation((prev) => ({
+                        ...prev,
+                        secondaryAddress: e.target.value,
+                      }))
+                    }
+                  />
+                  <div className={styles.modalRow}>
+                    <input
+                      type="text"
+                      className={styles.modalInput}
+                      placeholder="City *"
+                      value={editLocation.city}
+                      onChange={(e) =>
+                        setEditLocation((prev) => ({
+                          ...prev,
+                          city: e.target.value,
+                        }))
+                      }
+                    />
+                    <input
+                      type="text"
+                      className={styles.modalInput}
+                      placeholder="State *"
+                      value={editLocation.state}
+                      onChange={(e) =>
+                        setEditLocation((prev) => ({
+                          ...prev,
+                          state: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className={styles.modalRow}>
+                    <input
+                      type="text"
+                      className={styles.modalInput}
+                      placeholder="PIN *"
+                      value={editLocation.pin}
+                      onChange={(e) =>
+                        setEditLocation((prev) => ({
+                          ...prev,
+                          pin: e.target.value,
+                        }))
+                      }
+                    />
+                    <input
+                      type="text"
+                      className={styles.modalInput}
+                      placeholder="Country *"
+                      value={editLocation.country}
+                      onChange={(e) =>
+                        setEditLocation((prev) => ({
+                          ...prev,
+                          country: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                </div>
+                <div className={styles.modalActions}>
+                  <button
+                    type="button"
+                    className={styles.modalCancelBtn}
+                    onClick={closeEditModal}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.modalSaveBtn}
+                    onClick={handleSaveEdit}
+                    disabled={editSaving}
+                  >
+                    {editSaving ? 'Saving…' : 'Save'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

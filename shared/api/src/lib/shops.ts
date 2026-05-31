@@ -79,10 +79,28 @@ export const shopsApi = {
     return response.data;
   },
 
+  getShop: async (shopId: string): Promise<ShopDetailResponse> => {
+    const response = await apiClient.get<ApiResponse<ShopDetailResponse>>(
+      API_ENDPOINTS.SHOPS.BY_ID(shopId)
+    );
+    return response.data;
+  },
+
   /** Update the current user's active shop tagline/location. */
   updateActiveShop: async (data: UpdateShopDto): Promise<ShopDetailResponse> => {
     const response = await apiClient.patch<ApiResponse<ShopDetailResponse>>(
       API_ENDPOINTS.SHOPS.ACTIVE_SHOP,
+      data
+    );
+    return response.data;
+  },
+
+  updateShop: async (
+    shopId: string,
+    data: UpdateShopDto
+  ): Promise<ShopDetailResponse> => {
+    const response = await apiClient.patch<ApiResponse<ShopDetailResponse>>(
+      API_ENDPOINTS.SHOPS.BY_ID(shopId),
       data
     );
     return response.data;

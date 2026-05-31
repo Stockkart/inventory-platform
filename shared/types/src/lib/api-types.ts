@@ -2877,3 +2877,15 @@ export interface PartyStatementResponse {
   totalItems: number;
   totalPages: number;
 }
+
+/** YouTube tutorial returned by {@code GET /api/v1/help/videos}. */
+export interface HelpVideoResponse {
+  id: string;
+  videoKey: string;
+  title: string;
+  description: string;
+  youtubeUrl: string;
+  youtubeVideoId: string | null;
+  routePaths: string[];
+  sortOrder: number;
+}

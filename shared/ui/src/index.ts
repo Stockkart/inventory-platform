@@ -45,3 +45,5 @@ export * from './lib/FormRow';
 export * from './lib/CustomerEditForm';
 export * from './lib/VendorEditForm';
 export * from './lib/ShopProfileForm';
+export * from './lib/YouTubeHelpModal';
+export * from './lib/ContextualHelpPanel';
