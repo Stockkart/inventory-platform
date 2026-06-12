@@ -6,6 +6,24 @@
 
 [Learn more about this workspace setup and its capabilities](https://nx.dev/getting-started/tutorials/react-monorepo-tutorial?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `pnpm nx graph` to visually explore what was created. Now, let's get you up to speed!
 
+## Vertical schema (Phase 2)
+
+The platform renders **vertical-specific fields** from the inventory API schema — no hardcoded pharmacy forms.
+
+| Surface | Schema source | Notes |
+|---------|---------------|--------|
+| Onboarding | `GET /verticals`, `GET /verticals/{id}/schema` | Vertical picker; shop fields (`dlNo`, `fssai`) only when in schema |
+| Product registration | `GET /shops/me/schema?mode=regular\|basic` | Grid + list; Company after Barcode; `verticalFields` on create |
+| Scan-sell | Shop `verticalId` | `businessType` from shop, not `pharmacy` |
+
+**Shared libraries:** `@inventory-platform/types` (`vertical-schema.ts`), `@inventory-platform/api` (`verticals.ts`), `@inventory-platform/store` (`useVerticalSchemaStore`), `@inventory-platform/ui` (`verticalSchemaUtils`, `VerticalSchemaFieldInput`).
+
+**Backend architecture:** see [inventory-api `docs/VERTICAL_PLUGIN_ARCHITECTURE.md`](../inventory-api/docs/VERTICAL_PLUGIN_ARCHITECTURE.md) (v4.8).
+
+**After API seed changes:** restart API or reseed `vertical_schemas` so the UI picks up new field labels.
+
+---
+
 ## Quick Start
 
 **Option 1: Run with Docker (Recommended for first-time setup)**

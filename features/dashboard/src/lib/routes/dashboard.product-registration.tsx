@@ -1,4 +1,12 @@
-import { useState, FormEvent, useRef, useEffect, useLayoutEffect } from 'react';
+import {
+  useState,
+  FormEvent,
+  useRef,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useCallback,
+} from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { QRCodeSVG } from 'qrcode.react';
 import {
@@ -39,8 +47,28 @@ import {
   runFormKeyboardNavigation,
   shouldSkipNestedFormKeyboardNav,
   validatePaymentSplit,
+  VerticalInventoryFields,
+  VerticalSchemaFieldInput,
+  buildVerticalFieldsPayload,
+  getVerticalFieldValue,
+  partitionRegistrationFields,
+  pickRegistrationField,
+  registrationFieldsForBilling,
+  schemaModeForBilling,
+  setVerticalFieldPatch,
+  validateProductVerticalFields,
 } from '@inventory-platform/ui';
-import { useNotify } from '@inventory-platform/store';
+import {
+  useNotify,
+  useVerticalSchemaStore,
+} from '@inventory-platform/store';
+import type { ShopSchemaResponse, VerticalSchemaFieldDef } from '@inventory-platform/types';
+import {
+  VerticalRegistrationGridCells,
+  VerticalRegistrationGridCompanyCell,
+  VerticalRegistrationGridCompanyHeader,
+  VerticalRegistrationGridHeaders,
+} from '../vertical/VerticalRegistrationGridCells';
 import {
   PackagingUnitInput,
   packagingFactorForDisplay,
@@ -198,6 +226,7 @@ interface ProductFormData
   conversionFactor?: number;
   rates?: PricingRate[];
   defaultRate?: string;
+  verticalFields?: Record<string, unknown>;
 }
 
 /** Parse numeric-ish form fields used for GST valuation (same precedence as OCR lines). */
@@ -450,6 +479,7 @@ interface GridBulkFillDraft {
   purchaseDate?: string;
   cgst?: string;
   sgst?: string;
+  verticalBulk?: Record<string, string>;
 }
 
 /**
@@ -618,6 +648,8 @@ function getPurchaseDateFieldMax(): string {
 }
 
 export default function ProductRegistrationPage() {
+  const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
+  const [shopSchema, setShopSchema] = useState<ShopSchemaResponse | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const vendorPrefillConsumedRef = useRef(false);
@@ -816,7 +848,7 @@ export default function ProductRegistrationPage() {
     maximumRetailPrice: 0,
     costPrice: 0,
     priceToRetail: 0,
-    businessType: 'pharmacy',
+    businessType: shopSchema?.verticalId ?? 'medical',
     location: '',
     count: 0,
     expiryDate: '',
@@ -848,7 +880,90 @@ export default function ProductRegistrationPage() {
     conversionFactor: 0,
     rates: [],
     defaultRate: '',
+    verticalFields: {},
   });
+
+  const registrationFields = useMemo(
+    () => registrationFieldsForBilling(shopSchema, billingMode),
+    [shopSchema, billingMode]
+  );
+
+  const { companyField, otherFields: otherRegistrationFields } = useMemo(
+    () => partitionRegistrationFields(registrationFields),
+    [registrationFields]
+  );
+
+  const expiryField = useMemo(
+    () => pickRegistrationField(otherRegistrationFields, 'expiryDate'),
+    [otherRegistrationFields]
+  );
+
+  const batchField = useMemo(
+    () => pickRegistrationField(otherRegistrationFields, 'batchNo'),
+    [otherRegistrationFields]
+  );
+
+  const extraRegistrationFields = useMemo(
+    () =>
+      otherRegistrationFields.filter(
+        (field) => field.key !== 'expiryDate' && field.key !== 'batchNo'
+      ),
+    [otherRegistrationFields]
+  );
+
+  const gridSchemaFields = useMemo(() => {
+    const fields: VerticalSchemaFieldDef[] = [];
+    if (expiryField) {
+      fields.push(expiryField);
+    }
+    if (batchField && billingMode !== 'BASIC') {
+      fields.push(batchField);
+    }
+    fields.push(...extraRegistrationFields);
+    return fields;
+  }, [expiryField, batchField, extraRegistrationFields, billingMode]);
+
+  useEffect(() => {
+    const mode = schemaModeForBilling(billingMode);
+    const cached =
+      useVerticalSchemaStore.getState().shopSchemaByKey[`shop:${mode}`];
+    if (cached) {
+      setShopSchema(cached);
+    }
+    void fetchShopSchema(mode).then((schema) => {
+      if (schema) {
+        setShopSchema(schema);
+      }
+    });
+  }, [billingMode, fetchShopSchema]);
+
+  const applyVerticalFieldChange = useCallback(
+    (productId: string, field: VerticalSchemaFieldDef, value: string) => {
+      setProducts((prev) =>
+        prev.map((p) => {
+          if (p.id !== productId) {
+            return p;
+          }
+          const patch = setVerticalFieldPatch(field, value);
+          const nextVerticalFields = {
+            ...(p.verticalFields ?? {}),
+            ...((patch.verticalFields as Record<string, unknown> | undefined) ??
+              {}),
+          };
+          const { verticalFields: _vf, ...restPatch } = patch;
+          return {
+            ...p,
+            ...restPatch,
+            verticalFields:
+              Object.keys(nextVerticalFields).length > 0
+                ? nextVerticalFields
+                : p.verticalFields,
+          };
+        })
+      );
+    },
+    []
+  );
 
   const handleAddProduct = () => {
     setProducts([...products, createEmptyProduct()]);
@@ -891,7 +1006,10 @@ export default function ProductRegistrationPage() {
       maximumRetailPrice: item.maximumRetailPrice || 0,
       costPrice: item.costPrice || 0,
       priceToRetail: item.priceToRetail || 0,
-      businessType: item.businessType?.toLowerCase() || 'pharmacy',
+      businessType:
+        item.businessType?.toLowerCase() ||
+        shopSchema?.verticalId ||
+        'medical',
       location: item.location || '',
       count: item.count || 0,
       expiryDate: item.expiryDate || '',
@@ -1374,6 +1492,13 @@ export default function ProductRegistrationPage() {
     setGridBulkFill((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleVerticalBulkChange = (key: string, value: string) => {
+    setGridBulkFill((prev) => ({
+      ...prev,
+      verticalBulk: { ...(prev.verticalBulk ?? {}), [key]: value },
+    }));
+  };
+
   const handleApplyGridBulkFill = () => {
     const b = gridBulkFill;
     const trim = (s?: string) => (s ?? '').trim();
@@ -1482,6 +1607,32 @@ export default function ProductRegistrationPage() {
 
         if (hasText(b.cgst)) next = { ...next, cgst: trim(b.cgst) };
         if (hasText(b.sgst)) next = { ...next, sgst: trim(b.sgst) };
+
+        for (const field of registrationFields) {
+          const raw =
+            b.verticalBulk?.[field.key] ??
+            (field.key in b
+              ? String(b[field.key as keyof GridBulkFillDraft] ?? '')
+              : '');
+          if (!hasText(raw)) {
+            continue;
+          }
+          const patch = setVerticalFieldPatch(field, trim(raw));
+          const nextVerticalFields = {
+            ...(next.verticalFields ?? {}),
+            ...((patch.verticalFields as Record<string, unknown> | undefined) ??
+              {}),
+          };
+          const { verticalFields: _vf, ...restPatch } = patch;
+          next = {
+            ...next,
+            ...restPatch,
+            verticalFields:
+              Object.keys(nextVerticalFields).length > 0
+                ? nextVerticalFields
+                : next.verticalFields,
+          };
+        }
 
         return next;
       })
@@ -1596,15 +1747,19 @@ export default function ProductRegistrationPage() {
 
       // Validate all products
       for (const product of products) {
-        if (
-          !product.name ||
-          !product.companyName ||
-          !product.location ||
-          !product.expiryDate
-        ) {
-          notifyError(
-            `Product "${product.name || 'Unnamed'}" is missing required fields`
-          );
+        const label = product.name || 'Unnamed';
+        if (!product.name?.trim() || !product.location?.trim()) {
+          notifyError(`Product "${label}" is missing required fields`);
+          setIsLoading(false);
+          return;
+        }
+        const verticalError = validateProductVerticalFields(
+          product,
+          registrationFields,
+          label
+        );
+        if (verticalError) {
+          notifyError(verticalError);
           setIsLoading(false);
           return;
         }
@@ -1839,7 +1994,7 @@ export default function ProductRegistrationPage() {
           maximumRetailPrice: Number(product.maximumRetailPrice) || 0,
           costPrice: Number(product.costPrice) || 0,
           priceToRetail: Number(product.priceToRetail) || 0,
-          businessType: product.businessType.toUpperCase(),
+          businessType: (shopSchema?.verticalId ?? product.businessType).toUpperCase(),
           location: product.location,
           count: product.count,
           baseUnit: resolvePackagingUqc(product.baseUnit ?? '', packagingUnits),
@@ -1856,6 +2011,14 @@ export default function ProductRegistrationPage() {
           customReminders: customReminders,
           hsn: product.hsn || null,
           batchNo: product.batchNo || null,
+          ...(buildVerticalFieldsPayload(product, registrationFields)
+            ? {
+                verticalFields: buildVerticalFieldsPayload(
+                  product,
+                  registrationFields
+                ),
+              }
+            : {}),
           ...((product.schemeType ?? 'FIXED_UNITS') === 'PERCENTAGE'
             ? {
                 schemeType: 'PERCENTAGE' as const,
@@ -2960,22 +3123,22 @@ export default function ProductRegistrationPage() {
                   runFormKeyboardNavigation(e, e.currentTarget, 'grid');
                 }}
               >
-                <table className={styles.excelTable}>
+                <table
+                  key={schemaModeForBilling(billingMode)}
+                  className={styles.excelTable}
+                >
                   <thead>
                     <tr>
                       <th className={styles.excelTh}>#</th>
                       <th className={styles.excelTh}>Barcode</th>
+                      <VerticalRegistrationGridCompanyHeader field={companyField} />
                       <th className={styles.excelTh}>Product *</th>
-                      <th className={styles.excelTh}>Company *</th>
+                      <VerticalRegistrationGridHeaders fields={gridSchemaFields} />
                       <th className={styles.excelTh}>Count *</th>
                       <th className={styles.excelTh}>Packaging</th>
-                      <th className={styles.excelTh}>Expiry *</th>
                       <th className={styles.excelTh}>Location *</th>
                       {billingMode !== 'BASIC' && (
-                        <>
-                          <th className={styles.excelTh}>HSN</th>
-                          <th className={styles.excelTh}>Batch</th>
-                        </>
+                        <th className={styles.excelTh}>HSN</th>
                       )}
                       <th className={styles.excelTh}>PTS *</th>
                       <th className={styles.excelTh}>PTR *</th>
@@ -3011,8 +3174,11 @@ export default function ProductRegistrationPage() {
                     <GridBulkFillRow
                       bulk={gridBulkFill}
                       billingMode={billingMode}
+                      companyField={companyField}
+                      schemaFields={gridSchemaFields}
                       isLoading={isLoading}
                       onBulkChange={handleGridBulkFillChange}
+                      onVerticalBulkChange={handleVerticalBulkChange}
                       onApply={handleApplyGridBulkFill}
                     />
                   </thead>
@@ -3036,6 +3202,15 @@ export default function ProductRegistrationPage() {
                             disabled={isLoading}
                           />
                         </td>
+                        <VerticalRegistrationGridCompanyCell
+                          field={companyField}
+                          product={product}
+                          productId={product.id}
+                          disabled={isLoading}
+                          onFieldChange={(field, value) =>
+                            applyVerticalFieldChange(product.id, field, value)
+                          }
+                        />
                         <td className={styles.excelTd}>
                           <input
                             type="text"
@@ -3053,23 +3228,15 @@ export default function ProductRegistrationPage() {
                             required
                           />
                         </td>
-                        <td className={styles.excelTd}>
-                          <input
-                            type="text"
-                            className={styles.excelInput}
-                            placeholder="Company"
-                            value={product.companyName}
-                            onChange={(e) =>
-                              handleProductChange(
-                                product.id,
-                                'companyName',
-                                e.target.value
-                              )
-                            }
-                            disabled={isLoading}
-                            required
-                          />
-                        </td>
+                        <VerticalRegistrationGridCells
+                          fields={gridSchemaFields}
+                          product={product}
+                          productId={product.id}
+                          disabled={isLoading}
+                          onFieldChange={(field, value) =>
+                            applyVerticalFieldChange(product.id, field, value)
+                          }
+                        />
                         <td className={styles.excelTd}>
                           <input
                             type="text"
@@ -3128,30 +3295,6 @@ export default function ProductRegistrationPage() {
                         </td>
                         <td className={styles.excelTd}>
                           <input
-                            type="date"
-                            className={styles.excelInputDate}
-                            value={
-                              product.expiryDate &&
-                              !isNaN(new Date(product.expiryDate).getTime())
-                                ? new Date(product.expiryDate)
-                                    .toISOString()
-                                    .split('T')[0]
-                                : ''
-                            }
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              handleProductChange(
-                                product.id,
-                                'expiryDate',
-                                v ? `${v}T00:00:00Z` : ''
-                              );
-                            }}
-                            disabled={isLoading}
-                            required
-                          />
-                        </td>
-                        <td className={styles.excelTd}>
-                          <input
                             type="text"
                             className={styles.excelInput}
                             placeholder="Location"
@@ -3179,22 +3322,6 @@ export default function ProductRegistrationPage() {
                                   handleProductChange(
                                     product.id,
                                     'hsn',
-                                    e.target.value
-                                  )
-                                }
-                                disabled={isLoading}
-                              />
-                            </td>
-                            <td className={styles.excelTd}>
-                              <input
-                                type="text"
-                                className={styles.excelInput}
-                                placeholder="Batch"
-                                value={product.batchNo || ''}
-                                onChange={(e) =>
-                                  handleProductChange(
-                                    product.id,
-                                    'batchNo',
                                     e.target.value
                                   )
                                 }
@@ -3853,12 +3980,17 @@ export default function ProductRegistrationPage() {
                   <ProductAccordion
                     key={product.id}
                     product={product}
+                    companyField={companyField}
+                    expiryField={expiryField}
+                    batchField={batchField}
+                    extraSchemaFields={extraRegistrationFields}
                     packagingUnits={packagingUnits}
                     billingMode={billingMode}
                     index={index}
                     onToggle={() => handleToggleProduct(product.id)}
                     onRemove={() => handleRemoveProduct(product.id)}
                     onChange={handleProductChange}
+                    onVerticalFieldChange={applyVerticalFieldChange}
                     onApplyPurchasePatch={handleApplyPurchasePatch}
                     onIntegerChange={handleIntegerChange}
                     onDecimalChange={handleDecimalChange}
@@ -4294,19 +4426,25 @@ export default function ProductRegistrationPage() {
 interface GridBulkFillRowProps {
   bulk: GridBulkFillDraft;
   billingMode: BillingMode;
+  companyField: VerticalSchemaFieldDef | null;
+  schemaFields: VerticalSchemaFieldDef[];
   isLoading: boolean;
   onBulkChange: (
     field: keyof GridBulkFillDraft,
     value: GridBulkFillDraft[keyof GridBulkFillDraft]
   ) => void;
+  onVerticalBulkChange: (key: string, value: string) => void;
   onApply: () => void;
 }
 
 function GridBulkFillRow({
   bulk,
   billingMode,
+  companyField,
+  schemaFields,
   isLoading,
   onBulkChange,
+  onVerticalBulkChange,
   onApply,
 }: GridBulkFillRowProps) {
   return (
@@ -4331,6 +4469,20 @@ function GridBulkFillRow({
           —
         </span>
       </th>
+      {companyField && (
+        <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+          <input
+            type="text"
+            className={styles.excelInput}
+            placeholder="Company"
+            value={bulk.verticalBulk?.[companyField.key] ?? bulk.companyName ?? ''}
+            onChange={(e) =>
+              onVerticalBulkChange(companyField.key, e.target.value)
+            }
+            disabled={isLoading}
+          />
+        </th>
+      )}
       <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
         <input
           type="text"
@@ -4341,16 +4493,20 @@ function GridBulkFillRow({
           disabled={isLoading}
         />
       </th>
-      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <input
-          type="text"
-          className={styles.excelInput}
-          placeholder="Company"
-          value={bulk.companyName ?? ''}
-          onChange={(e) => onBulkChange('companyName', e.target.value)}
-          disabled={isLoading}
-        />
-      </th>
+      {schemaFields.map((field) => (
+        <th key={field.key} className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+          <input
+            type={field.type === 'date' ? 'date' : 'text'}
+            className={
+              field.type === 'date' ? styles.excelInputDate : styles.excelInput
+            }
+            placeholder={field.label ?? field.key}
+            value={bulk.verticalBulk?.[field.key] ?? ''}
+            onChange={(e) => onVerticalBulkChange(field.key, e.target.value)}
+            disabled={isLoading}
+          />
+        </th>
+      ))}
       <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
         <input
           type="text"
@@ -4375,15 +4531,6 @@ function GridBulkFillRow({
       </th>
       <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
         <input
-          type="date"
-          className={styles.excelInputDate}
-          value={bulk.expiryDate ?? ''}
-          onChange={(e) => onBulkChange('expiryDate', e.target.value)}
-          disabled={isLoading}
-        />
-      </th>
-      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <input
           type="text"
           className={styles.excelInput}
           placeholder="Location"
@@ -4393,24 +4540,14 @@ function GridBulkFillRow({
         />
       </th>
       {billingMode !== 'BASIC' && (
-        <>
-          <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-            <span
-              className={styles.excelBulkDisabled}
-              title="HSN must be set per row"
-            >
-              —
-            </span>
-          </th>
-          <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-            <span
-              className={styles.excelBulkDisabled}
-              title="Batch must be set per row"
-            >
-              —
-            </span>
-          </th>
-        </>
+        <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+          <span
+            className={styles.excelBulkDisabled}
+            title="HSN must be set per row"
+          >
+            —
+          </span>
+        </th>
       )}
       <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
         <span
@@ -4607,6 +4744,10 @@ function GridBulkFillRow({
 // Product Accordion Component
 interface ProductAccordionProps {
   product: ProductFormData;
+  companyField: VerticalSchemaFieldDef | null;
+  expiryField: VerticalSchemaFieldDef | null;
+  batchField: VerticalSchemaFieldDef | null;
+  extraSchemaFields: VerticalSchemaFieldDef[];
   packagingUnits: PackagingUnit[];
   billingMode: BillingMode;
   index: number;
@@ -4616,6 +4757,11 @@ interface ProductAccordionProps {
     productId: string,
     field: keyof ProductFormData,
     value: ProductFormData[keyof ProductFormData]
+  ) => void;
+  onVerticalFieldChange: (
+    productId: string,
+    field: VerticalSchemaFieldDef,
+    value: string
   ) => void;
   onApplyPurchasePatch: (
     productId: string,
@@ -4631,12 +4777,17 @@ interface ProductAccordionProps {
 
 function ProductAccordion({
   product,
+  companyField,
+  expiryField,
+  batchField,
+  extraSchemaFields,
   packagingUnits,
   billingMode,
   index,
   onToggle,
   onRemove,
   onChange,
+  onVerticalFieldChange,
   onApplyPurchasePatch,
   onIntegerChange,
   onDecimalChange,
@@ -4821,26 +4972,19 @@ function ProductAccordion({
                 disabled={isLoading}
               />
             </div>
-            <div className={styles.formGroup}>
-              <label
-                htmlFor={`companyName-${product.id}`}
-                className={styles.label}
-              >
-                Company *
-              </label>
-              <input
-                type="text"
-                id={`companyName-${product.id}`}
-                className={styles.input}
-                placeholder="Enter company name"
-                value={product.companyName}
-                onChange={(e) =>
-                  onChange(product.id, 'companyName', e.target.value)
+            {companyField && (
+              <VerticalSchemaFieldInput
+                field={companyField}
+                value={getVerticalFieldValue(product, companyField)}
+                onChange={(value) =>
+                  onVerticalFieldChange(product.id, companyField, value)
                 }
-                required
                 disabled={isLoading}
+                idPrefix={`acc-${product.id}`}
+                inputClassName={styles.input}
+                labelClassName={styles.label}
               />
-            </div>
+            )}
           </div>
 
           <div className={styles.formRow}>
@@ -4920,36 +5064,49 @@ function ProductAccordion({
           })()}
 
           <div className={styles.formRow}>
-            <div className={styles.formGroup}>
-              <label
-                htmlFor={`expiryDate-${product.id}`}
-                className={styles.label}
-              >
-                Expiry Date *
-              </label>
-              <input
-                type="date"
-                id={`expiryDate-${product.id}`}
-                className={styles.input}
-                value={
-                  product.expiryDate &&
-                  !isNaN(new Date(product.expiryDate).getTime())
-                    ? new Date(product.expiryDate).toISOString().split('T')[0]
-                    : ''
+            {expiryField ? (
+              <VerticalSchemaFieldInput
+                field={expiryField}
+                value={getVerticalFieldValue(product, expiryField)}
+                onChange={(value) =>
+                  onVerticalFieldChange(product.id, expiryField, value)
                 }
-                onChange={(e) => {
-                  const dateValue = e.target.value;
-                  if (dateValue) {
-                    const isoDate = `${dateValue}T00:00:00Z`;
-                    onChange(product.id, 'expiryDate', isoDate);
-                  } else {
-                    onChange(product.id, 'expiryDate', '');
-                  }
-                }}
-                required
                 disabled={isLoading}
+                idPrefix={`acc-${product.id}`}
+                inputClassName={styles.input}
+                labelClassName={styles.label}
               />
-            </div>
+            ) : (
+              <div className={styles.formGroup}>
+                <label
+                  htmlFor={`expiryDate-${product.id}`}
+                  className={styles.label}
+                >
+                  Expiry Date *
+                </label>
+                <input
+                  type="date"
+                  id={`expiryDate-${product.id}`}
+                  className={styles.input}
+                  value={
+                    product.expiryDate &&
+                    !isNaN(new Date(product.expiryDate).getTime())
+                      ? new Date(product.expiryDate).toISOString().split('T')[0]
+                      : ''
+                  }
+                  onChange={(e) => {
+                    const dateValue = e.target.value;
+                    if (dateValue) {
+                      onChange(product.id, 'expiryDate', `${dateValue}T00:00:00Z`);
+                    } else {
+                      onChange(product.id, 'expiryDate', '');
+                    }
+                  }}
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+            )}
             <div className={styles.formGroup}>
               <label
                 htmlFor={`location-${product.id}`}
@@ -4972,7 +5129,6 @@ function ProductAccordion({
             </div>
           </div>
 
-          {/* Additional Product Information */}
           {billingMode !== 'BASIC' && (
             <div className={styles.formRow}>
               <div className={styles.formGroup}>
@@ -4989,26 +5145,54 @@ function ProductAccordion({
                   disabled={isLoading}
                 />
               </div>
-              <div className={styles.formGroup}>
-                <label
-                  htmlFor={`batchNo-${product.id}`}
-                  className={styles.label}
-                >
-                  Batch Number
-                </label>
-                <input
-                  type="text"
-                  id={`batchNo-${product.id}`}
-                  className={styles.input}
-                  placeholder="Enter the batch number"
-                  value={product.batchNo || ''}
-                  onChange={(e) =>
-                    onChange(product.id, 'batchNo', e.target.value)
+              {batchField ? (
+                <VerticalSchemaFieldInput
+                  field={batchField}
+                  value={getVerticalFieldValue(product, batchField)}
+                  onChange={(value) =>
+                    onVerticalFieldChange(product.id, batchField, value)
                   }
                   disabled={isLoading}
+                  idPrefix={`acc-${product.id}`}
+                  inputClassName={styles.input}
+                  labelClassName={styles.label}
                 />
-              </div>
+              ) : (
+                <div className={styles.formGroup}>
+                  <label
+                    htmlFor={`batchNo-${product.id}`}
+                    className={styles.label}
+                  >
+                    Batch Number
+                  </label>
+                  <input
+                    type="text"
+                    id={`batchNo-${product.id}`}
+                    className={styles.input}
+                    placeholder="Enter the batch number"
+                    value={product.batchNo || ''}
+                    onChange={(e) =>
+                      onChange(product.id, 'batchNo', e.target.value)
+                    }
+                    disabled={isLoading}
+                  />
+                </div>
+              )}
             </div>
+          )}
+
+          {extraSchemaFields.length > 0 && (
+            <VerticalInventoryFields
+              fields={extraSchemaFields}
+              product={product}
+              onFieldChange={(field, value) =>
+                onVerticalFieldChange(product.id, field, value)
+              }
+              disabled={isLoading}
+              idPrefix={`acc-${product.id}`}
+              inputClassName={styles.input}
+              labelClassName={styles.label}
+            />
           )}
 
           <div className={styles.formRow}>

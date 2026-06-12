@@ -125,6 +125,7 @@ export type Plan = {
 // Feature-specific Types
 export type OnboardingStep =
   | 'name'
+  | 'vertical'
   | 'shopType'
   // | 'businessId'
   | 'contactPhone'

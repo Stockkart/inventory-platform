@@ -1,13 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
-import { useAuthStore } from '@inventory-platform/store';
-import { shopsApi } from '@inventory-platform/api';
-import type { OnboardingStep, ShopType } from '@inventory-platform/types';
+import { useAuthStore, useVerticalSchemaStore, useNotify } from '@inventory-platform/store';
+import { shopsApi, verticalsApi } from '@inventory-platform/api';
+import type {
+  OnboardingStep,
+  ShopType,
+  VerticalSchemaFieldDef,
+  VerticalSummary,
+} from '@inventory-platform/types';
+import {
+  VerticalSchemaFieldInput,
+  fieldLabel,
+  getShopOnboardingFields,
+} from '@inventory-platform/ui';
 import styles from './onboarding.module.css';
-import { useNotify } from '@inventory-platform/store';
 
 const STEPS: OnboardingStep[] = [
   'name',
+  'vertical',
   'shopType',
   'tagline',
   // 'businessId',
@@ -19,6 +29,7 @@ const STEPS: OnboardingStep[] = [
 
 const STEP_LABELS: Record<OnboardingStep, string> = {
   name: 'Shop Name',
+  vertical: 'Business vertical',
   shopType: 'Shop Type',
   // businessId: 'Business ID',
   contactPhone: 'Mobile number',
@@ -50,8 +61,14 @@ export default function OnboardingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { error: notifyError } = useNotify;
+  const fetchVerticalSchema = useVerticalSchemaStore((s) => s.fetchVerticalSchema);
+  const [verticals, setVerticals] = useState<VerticalSummary[]>([]);
+  const [verticalSchemaFields, setVerticalSchemaFields] = useState<
+    VerticalSchemaFieldDef[]
+  >([]);
   const [formData, setFormData] = useState({
     name: '',
+    verticalId: 'medical',
     shopType: '' as ShopType | '',
     // businessId: 'Pharmacy',
     location: {
@@ -74,22 +91,31 @@ export default function OnboardingPage() {
   });
 
   useEffect(() => {
-    // Check if user is authenticated
     if (!isAuthenticated) {
       navigate('/login');
       return;
     }
-
-    // If user already has a shopId and is not adding another shop, redirect to dashboard
     if (user?.shopId && !addShop) {
       navigate('/dashboard');
     }
-
-    // Update email if user email is available
     if (user?.email && !formData.contactEmail) {
       setFormData((prev) => ({ ...prev, contactEmail: user.email || '' }));
     }
-  }, [isAuthenticated, user, navigate, formData.contactEmail]);
+  }, [isAuthenticated, user, navigate, formData.contactEmail, addShop]);
+
+  useEffect(() => {
+    void verticalsApi.listActive().then(setVerticals).catch(() => setVerticals([]));
+  }, []);
+
+  useEffect(() => {
+    if (!formData.verticalId) {
+      setVerticalSchemaFields([]);
+      return;
+    }
+    void fetchVerticalSchema(formData.verticalId, 'regular').then((schema) => {
+      setVerticalSchemaFields(getShopOnboardingFields(schema?.entities));
+    });
+  }, [formData.verticalId, fetchVerticalSchema]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -97,6 +123,8 @@ export default function OnboardingPage() {
 
     if (step === 'name') {
       setFormData({ ...formData, name: value });
+    } else if (step === 'vertical' || name === 'verticalId') {
+      setFormData({ ...formData, verticalId: value });
       // } else if (step === 'businessId') {
       //   // Business ID is fixed, don't allow changes
       //   return;
@@ -126,6 +154,7 @@ export default function OnboardingPage() {
   const getCurrentValue = (fieldName?: string): string => {
     const step = STEPS[currentStep];
     if (step === 'name') return formData.name;
+    if (step === 'vertical') return formData.verticalId;
     if (step === 'shopType') return formData.shopType;
     // if (step === 'businessId') return formData.businessId;
     if (step === 'contactPhone') return formData.contactPhone;
@@ -145,8 +174,12 @@ export default function OnboardingPage() {
   const handleContinue = () => {
     const step = STEPS[currentStep];
 
-    // Validate shopType step
-    if (step === 'shopType') {
+    if (step === 'vertical') {
+      if (!formData.verticalId?.trim()) {
+        notifyError('Please select a business vertical');
+        return;
+      }
+    } else if (step === 'shopType') {
       if (!formData.shopType || !['RETAILER', 'DISTRIBUTOR', 'WHOLESALER'].includes(formData.shopType)) {
         notifyError('Please select a shop type');
         return;
@@ -227,9 +260,24 @@ export default function OnboardingPage() {
     setIsLoading(true);
 
     try {
+      for (const field of verticalSchemaFields) {
+        if (!field.required) {
+          continue;
+        }
+        const value = String(
+          (formData as Record<string, unknown>)[field.key] ?? ''
+        ).trim();
+        if (!value) {
+          notifyError(`${fieldLabel(field)} is required`);
+          setIsLoading(false);
+          return;
+        }
+      }
+
       const response = await shopsApi.register({
         name: formData.name,
-        businessId: 'pharmacy',
+        businessId: formData.verticalId,
+        verticalId: formData.verticalId,
         location: {
           primaryAddress: formData.location.primaryAddress,
           secondaryAddress: formData.location.secondaryAddress || undefined,
@@ -456,15 +504,60 @@ export default function OnboardingPage() {
                   </div>
                 </div>
               </>
+            ) : STEPS[currentStep] === 'vertical' ? (
+              <div className={styles.formGroup}>
+                <label htmlFor="verticalId" className={styles.label}>
+                  Business vertical *
+                </label>
+                <select
+                  id="verticalId"
+                  name="verticalId"
+                  className={styles.input}
+                  value={formData.verticalId}
+                  onChange={(e) =>
+                    setFormData({ ...formData, verticalId: e.target.value })
+                  }
+                  disabled={isLoading}
+                  required
+                >
+                  {(verticals.length > 0
+                    ? verticals
+                    : [{ verticalId: 'medical', version: '1.0.0', status: 'ACTIVE' }]
+                  ).map((v) => (
+                    <option key={v.verticalId} value={v.verticalId}>
+                      {v.verticalId}
+                    </option>
+                  ))}
+                </select>
+              </div>
             ) : STEPS[currentStep] === 'businessDetails' ? (
               <>
                 <p
                   className={styles.subtitle}
                   style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}
                 >
-                  These fields are optional. You can skip this step or fill them
-                  later.
+                  {verticalSchemaFields.some((f) => f.required)
+                    ? 'Fill required vertical fields below. Tax details are optional.'
+                    : 'Tax and compliance details are optional. You can skip or fill them later.'}
                 </p>
+                {verticalSchemaFields.length > 0 && (
+                  <div className={styles.formRow}>
+                    {verticalSchemaFields.map((field) => (
+                      <VerticalSchemaFieldInput
+                        key={field.key}
+                        field={field}
+                        value={getCurrentValue(field.key)}
+                        onChange={(value: string) =>
+                          setFormData({ ...formData, [field.key]: value })
+                        }
+                        disabled={isLoading}
+                        idPrefix="onboard-shop"
+                        inputClassName={styles.input}
+                        labelClassName={styles.label}
+                      />
+                    ))}
+                  </div>
+                )}
                 <div className={styles.formRow}>
                   <div className={styles.formGroup}>
                     <label htmlFor="gstinNo" className={styles.label}>
@@ -477,38 +570,6 @@ export default function OnboardingPage() {
                       className={styles.input}
                       placeholder="Enter the GSTIN No"
                       value={getCurrentValue('gstinNo')}
-                      onChange={handleChange}
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="fssai" className={styles.label}>
-                      FSSAI
-                    </label>
-                    <input
-                      type="text"
-                      id="fssai"
-                      name="fssai"
-                      className={styles.input}
-                      placeholder="Enter the FSSAI"
-                      value={getCurrentValue('fssai')}
-                      onChange={handleChange}
-                      disabled={isLoading}
-                    />
-                  </div>
-                </div>
-                <div className={styles.formRow}>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="dlNo" className={styles.label}>
-                      Drug License No (DL No)
-                    </label>
-                    <input
-                      type="text"
-                      id="dlNo"
-                      name="dlNo"
-                      className={styles.input}
-                      placeholder="Enter the DL No"
-                      value={getCurrentValue('dlNo')}
                       onChange={handleChange}
                       disabled={isLoading}
                     />
