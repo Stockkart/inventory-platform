@@ -10,6 +10,7 @@ export * from './lib/alerts';
 export * from './lib/reminders';
 export * from './lib/events';
 export * from './lib/shops';
+export * from './lib/verticals';
 export * from './lib/invitations';
 export * from './lib/users';
 export * from './lib/inventory';

@@ -1,6 +1,15 @@
-# store
+# @inventory-platform/store
 
-This library was generated with [Nx](https://nx.dev).
+Zustand stores for app state.
+
+## Vertical schema cache
+
+`useVerticalSchemaStore` (`src/lib/useVerticalSchemaStore.ts`) caches shop and vertical schemas by `mode` (`regular` | `basic` | `invoice`). Use in registration, onboarding, and any surface that needs `GET /shops/me/schema` or public vertical preview.
+
+```ts
+const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
+const schema = await fetchShopSchema('regular');
+```
 
 ## Building
 

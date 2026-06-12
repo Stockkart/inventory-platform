@@ -497,6 +497,8 @@ export interface RegisterShopDto {
   contactEmail: string;
   contactPhone: string;
   shopType?: ShopType;
+  /** Required — must match an ACTIVE row in vertical_schemas (e.g. medical, sports). */
+  verticalId: string;
   gstinNo?: string;
   fssai?: string;
   dlNo?: string;
@@ -518,6 +520,9 @@ export interface ShopDetailResponse {
   location?: Location | null;
   /** PAN derived from GSTIN: 10 chars from 3rd character (1-based). */
   panNo?: string | null;
+  verticalId?: string | null;
+  pluginVersion?: string | null;
+  dlNo?: string | null;
 }
 
 export interface UpdateShopDto {
@@ -715,6 +720,8 @@ export interface BulkCreateInventoryItem {
   rates?: Array<{ name: string; price: number }> | null;
   /** Optional. Must be empty/null or one of: rates[].name, "priceToRetail", "maximumRetailPrice", "costPrice". */
   defaultRate?: string | null;
+  /** Extension vertical fields (sport, brand, model, storageTemp, …). */
+  verticalFields?: Record<string, unknown> | null;
 }
 
 /** Optional vendor invoice header on bulk stock-in. Omit for legacy behavior. */

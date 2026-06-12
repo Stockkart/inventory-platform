@@ -8,3 +8,4 @@ export { useAnalyticsStore } from './lib/useAnalyticsStore';
 export { useToastStore } from './lib/useToastStore';
 export type { ToastItem, ToastType } from './lib/useToastStore';
 export { useNotify } from './lib/useNotify';
+export { useVerticalSchemaStore } from './lib/useVerticalSchemaStore';

@@ -61,10 +61,17 @@ export const API_ENDPOINTS = {
     STREAM: '/events/stream',
   },
 
+  // Vertical plugin schema endpoints
+  VERTICALS: {
+    BASE: '/verticals',
+    SCHEMA: (verticalId: string) => `/verticals/${verticalId}/schema`,
+  },
+
   // Shop endpoints
   SHOPS: {
     REGISTER: '/shops/register',
     ACTIVE_SHOP: '/shops/active-shop',
+    ME_SCHEMA: '/shops/me/schema',
     BY_ID: (shopId: string) => `/shops/${shopId}`,
     BY_OWNER_EMAIL: '/shops/by-owner-email',
     JOIN_REQUEST: '/shops/join-request',

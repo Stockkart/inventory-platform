@@ -25,7 +25,7 @@ import type {
   CustomerResponse,
 } from '@inventory-platform/types';
 import styles from './dashboard.scan-sell.module.css';
-import { useNotify } from '@inventory-platform/store';
+import { useNotify, useVerticalSchemaStore } from '@inventory-platform/store';
 import {
   isScanSellHidePurchaseKey,
   shouldSkipScanSellHidePurchaseKey,
@@ -454,6 +454,8 @@ function CartSchemeInput({
 }
 
 export default function ScanSellPage() {
+  const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
+  const [cartBusinessType, setCartBusinessType] = useState('medical');
   const navigate = useNavigate();
   const location = useLocation();
   const scanSellCustomerPrefillRef = useRef<CustomerResponse | null>(null);
@@ -526,6 +528,14 @@ export default function ScanSellPage() {
   );
   const searchWrapperRef = useRef<HTMLDivElement>(null);
   const { error: notifyError } = useNotify;
+
+  useEffect(() => {
+    void fetchShopSchema('regular').then((schema) => {
+      if (schema?.verticalId) {
+        setCartBusinessType(schema.verticalId);
+      }
+    });
+  }, [fetchShopSchema]);
 
   useEffect(() => {
     if (!detailModalItem) {
@@ -1371,7 +1381,7 @@ export default function ScanSellPage() {
       }
 
       const cartPayload = {
-        businessType: 'pharmacy',
+        businessType: cartBusinessType,
         items: itemsToSend,
         ...(customerName && { customerName }),
         ...(customerAddress && { customerAddress }),
@@ -1745,7 +1755,7 @@ export default function ScanSellPage() {
         }));
 
         const cartPayload = {
-          businessType: 'pharmacy',
+          businessType: cartBusinessType,
           items: itemsToSend,
           ...(customerName && { customerName }),
           ...(customerAddress && { customerAddress }),
@@ -2018,7 +2028,7 @@ export default function ScanSellPage() {
     try {
       // Step 1: Call upsert API with only customer info (no items)
       const upsertPayload = {
-        businessType: 'pharmacy',
+        businessType: cartBusinessType,
         items: [], // Empty items array - only updating customer info
         ...(customerName && { customerName }),
         ...(customerAddress && { customerAddress }),
