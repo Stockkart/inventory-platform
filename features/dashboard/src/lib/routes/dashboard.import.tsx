@@ -99,6 +99,10 @@ export default function ImportPage() {
       : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
           .toISOString()
           .slice(0, 10) + 'T00:00:00Z';
+    const verticalFields: Record<string, unknown> = { expiryDate: expiry };
+    if (row.batchNo?.trim()) {
+      verticalFields.batchNo = row.batchNo.trim();
+    }
     return {
       ...(row.barcode?.trim() ? { barcode: row.barcode.trim() } : {}),
       name: row.name?.trim() || 'Unnamed',
@@ -112,9 +116,8 @@ export default function ImportPage() {
       count: Number(row.count) || 1,
       baseUnit: 'BASE UNIT',
       unitConversions: { unit: 'SALE UNIT', factor: 1 },
-      expiryDate: expiry,
+      verticalFields,
       hsn: row.hsn || null,
-      batchNo: row.batchNo || null,
       scheme: row.scheme ?? null,
       schemePayFor: row.schemePayFor ?? null,
       schemeFree: row.schemeFree ?? null,

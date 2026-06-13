@@ -50,8 +50,10 @@ import {
   validatePaymentSplit,
   VerticalInventoryFields,
   VerticalSchemaFieldInput,
-  buildVerticalFieldsPayload,
+  attachVerticalFieldsToBulkItem,
+  formatCoreExpiryDateForApi,
   getVerticalFieldValue,
+  hydrateExtensionFieldsOnProduct,
   partitionRegistrationFields,
   registrationFieldsForBilling,
   isRegistrationSchemaReady,
@@ -986,7 +988,8 @@ export default function ProductRegistrationPage() {
             }))
         : [];
 
-    return {
+    return hydrateExtensionFieldsOnProduct(
+      {
       id: `product-${Date.now()}-${Math.random()}`,
       isExpanded: true,
       barcode: item.barcode || '',
@@ -1087,7 +1090,10 @@ export default function ProductRegistrationPage() {
         0,
       rates: item.rates ?? [],
       defaultRate: item.defaultRate ?? '',
-    };
+      verticalFields: {},
+    },
+    registrationFields
+    );
   };
 
   /**
@@ -1514,7 +1520,21 @@ export default function ProductRegistrationPage() {
           if (!isNaN(f) && f > 0) next = { ...next, conversionFactor: f };
         }
         if (hasText(b.expiryDate)) {
-          next = { ...next, expiryDate: `${trim(b.expiryDate)}T00:00:00Z` };
+          const expiryField = registrationFields.find((f) => f.key === 'expiryDate');
+          const expiryIso = `${trim(b.expiryDate)}T00:00:00Z`;
+          if (expiryField) {
+            const patch = setVerticalFieldPatch(expiryField, expiryIso);
+            next = {
+              ...next,
+              ...patch,
+              verticalFields: {
+                ...(next.verticalFields ?? {}),
+                ...(patch.verticalFields ?? {}),
+              },
+            };
+          } else {
+            next = { ...next, expiryDate: expiryIso };
+          }
         }
         if (hasText(b.location)) next = { ...next, location: trim(b.location) };
 
@@ -1950,22 +1970,27 @@ export default function ProductRegistrationPage() {
           }
         }
 
+        const expiryField = registrationFields.find((f) => f.key === 'expiryDate');
+        const productExpiryRaw = expiryField
+          ? getVerticalFieldValue(product, expiryField)
+          : product.expiryDate?.trim() || '';
+
         // Transform customReminders to the format expected by bulk API
         const customReminders =
           product.customReminders && product.customReminders.length > 0
             ? product.customReminders.map((reminder) => {
                 // Calculate daysBefore from reminderAt and expiryDate
                 let daysBefore = 30; // default
-                if (reminder.reminderAt && product.expiryDate) {
+                if (reminder.reminderAt && productExpiryRaw) {
                   const reminderDate = new Date(reminder.reminderAt);
-                  const expiryDate = new Date(product.expiryDate);
+                  const expiryDate = new Date(productExpiryRaw);
                   const diffTime =
                     expiryDate.getTime() - reminderDate.getTime();
                   daysBefore = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                } else if (reminder.endDate && product.expiryDate) {
+                } else if (reminder.endDate && productExpiryRaw) {
                   // Fallback: calculate from endDate if reminderAt is not available
                   const endDate = new Date(reminder.endDate);
-                  const expiryDate = new Date(product.expiryDate);
+                  const expiryDate = new Date(productExpiryRaw);
                   const diffTime = expiryDate.getTime() - endDate.getTime();
                   daysBefore = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                 }
@@ -1980,7 +2005,15 @@ export default function ProductRegistrationPage() {
         const unitsPerPackForApi =
           Number(product.unitsPerPack ?? product.conversionFactor) || 0;
 
-        return {
+        const batchField = registrationFields.find((f) => f.key === 'batchNo');
+        const resolvedExpiryRaw = expiryField
+          ? getVerticalFieldValue(product, expiryField)
+          : product.expiryDate?.trim() || '';
+        const resolvedBatchNo = batchField
+          ? getVerticalFieldValue(product, batchField)
+          : product.batchNo?.trim() || '';
+
+        const coreItem = {
           ...(product.barcode?.trim()
             ? { barcode: product.barcode.trim() }
             : {}),
@@ -1997,24 +2030,13 @@ export default function ProductRegistrationPage() {
           ...(unitsPerPackForApi > 0
             ? { unitsPerPack: unitsPerPackForApi }
             : {}),
-          expiryDate: product.expiryDate
-            ? product.expiryDate.includes('T') &&
-              product.expiryDate.includes('Z')
-              ? product.expiryDate
-              : `${String(product.expiryDate).trim().slice(0, 10)}T00:00:00Z`
-            : '',
+          ...(resolvedExpiryRaw
+            ? { expiryDate: formatCoreExpiryDateForApi(resolvedExpiryRaw) }
+            : {}),
           reminderAt: reminderAtISO,
           customReminders: customReminders,
           hsn: product.hsn || null,
-          batchNo: product.batchNo || null,
-          ...(buildVerticalFieldsPayload(product, registrationFields)
-            ? {
-                verticalFields: buildVerticalFieldsPayload(
-                  product,
-                  registrationFields
-                ),
-              }
-            : {}),
+          ...(resolvedBatchNo ? { batchNo: resolvedBatchNo } : {}),
           ...((product.schemeType ?? 'FIXED_UNITS') === 'PERCENTAGE'
             ? {
                 schemeType: 'PERCENTAGE' as const,
@@ -2093,6 +2115,12 @@ export default function ProductRegistrationPage() {
             ? { defaultRate: product.defaultRate.trim() }
             : {}),
         };
+
+        return attachVerticalFieldsToBulkItem(
+          coreItem,
+          product,
+          registrationFields
+        );
       });
 
       if (!vendorPaymentMethod) {
@@ -2154,6 +2182,8 @@ export default function ProductRegistrationPage() {
           response?.totalCreated ??
           response?.items?.length ??
           0;
+        const failedCount = response?.totalFailed ?? 0;
+        const itemErrors = response?.itemErrors ?? [];
         const items = response?.items ?? [];
         const savedVendorInvoiceId =
           response?.vendorPurchaseInvoiceId ?? response?.lotId;
@@ -2198,9 +2228,17 @@ export default function ProductRegistrationPage() {
             setVendorPaymentSplit(emptyPaymentSplit());
             setSuccess(null);
           }, 5000);
+        } else if (failedCount > 0) {
+          const detail =
+            itemErrors.length > 0
+              ? itemErrors.slice(0, 3).join('; ')
+              : `${failedCount} product(s) failed validation or save.`;
+          notifyError(
+            `No products were saved. ${detail}${
+              itemErrors.length > 3 ? ' …' : ''
+            }`
+          );
         } else if (response) {
-          // If response exists but no createdCount/items, still consider it success
-          // (API might return success without detailed counts)
           notifySuccess(
             `Successfully registered ${products.length} product(s)! ${
               (response?.vendorPurchaseInvoiceId ?? response?.lotId)

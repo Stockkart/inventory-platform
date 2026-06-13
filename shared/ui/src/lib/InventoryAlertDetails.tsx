@@ -14,6 +14,7 @@ import type {
   DiscountApplicable,
 } from '@inventory-platform/types';
 import { useNotify } from '@inventory-platform/store';
+import { itemUsesExtensionBag } from './verticalSchemaUtils';
 import styles from './InventoryAlertDetails.module.css';
 
 function formatSaleSchemeDisplay(item: InventoryItem): string {
@@ -162,6 +163,8 @@ export function InventoryAlertDetails({
     const fmtNum = (n: number | null | undefined) =>
       n != null && !Number.isNaN(n) ? String(n) : '';
     const packFactor = d.unitConversions?.factor ?? d.unitsPerPack ?? null;
+    const batchFromBag = d.verticalFields?.batchNo;
+    const expiryFromBag = d.verticalFields?.expiryDate;
     setEditForm({
       name: d.name ?? '',
       barcode: d.barcode ?? '',
@@ -169,7 +172,10 @@ export function InventoryAlertDetails({
       companyName: d.companyName ?? '',
       location: d.location ?? '',
       hsn: d.hsn ?? '',
-      batchNo: d.batchNo ?? '',
+      batchNo:
+        batchFromBag != null && batchFromBag !== ''
+          ? String(batchFromBag)
+          : d.batchNo ?? '',
       maximumRetailPrice: fmtNum(d.maximumRetailPrice),
       costPrice: fmtNum(d.costPrice),
       priceToRetail: fmtNum(d.priceToRetail),
@@ -194,7 +200,12 @@ export function InventoryAlertDetails({
         d.itemTypeDegree != null ? String(d.itemTypeDegree) : '',
       discountApplicable: d.discountApplicable ?? '',
       thresholdCount: d.thresholdCount ?? null,
-      expiryDate: d.expiryDate ? d.expiryDate.slice(0, 10) : '',
+      expiryDate:
+        expiryFromBag != null && expiryFromBag !== ''
+          ? String(expiryFromBag).slice(0, 10)
+          : d.expiryDate
+          ? d.expiryDate.slice(0, 10)
+          : '',
       purchaseDate: d.purchaseDate ? d.purchaseDate.slice(0, 10) : '',
     });
   }, [item]);
@@ -267,8 +278,27 @@ export function InventoryAlertDetails({
         payload.location = String(editForm.location) || undefined;
       if (editForm.hsn !== undefined && editForm.hsn !== currentItem.hsn)
         payload.hsn = String(editForm.hsn) || undefined;
-      if (editForm.batchNo !== undefined && editForm.batchNo !== currentItem.batchNo)
-        payload.batchNo = String(editForm.batchNo) || undefined;
+
+      const usesExtension = itemUsesExtensionBag(currentItem);
+      const verticalPatch: Record<string, unknown> = usesExtension
+        ? { ...(currentItem.verticalFields ?? {}) }
+        : {};
+      let verticalChanged = false;
+
+      if (
+        editForm.batchNo !== undefined &&
+        editForm.batchNo !==
+          (usesExtension
+            ? String(currentItem.verticalFields?.batchNo ?? '')
+            : currentItem.batchNo)
+      ) {
+        if (usesExtension) {
+          verticalPatch.batchNo = String(editForm.batchNo) || null;
+          verticalChanged = true;
+        } else {
+          payload.batchNo = String(editForm.batchNo) || undefined;
+        }
+      }
       const mrp =
         editForm.maximumRetailPrice != null &&
         String(editForm.maximumRetailPrice).trim() !== ''
@@ -433,12 +463,26 @@ export function InventoryAlertDetails({
 
       if (editForm.expiryDate) {
         const d = String(editForm.expiryDate).trim();
-        const currentExp = currentItem.expiryDate
+        const currentExp = usesExtension
+          ? currentItem.verticalFields?.expiryDate
+            ? String(currentItem.verticalFields.expiryDate).slice(0, 10)
+            : ''
+          : currentItem.expiryDate
           ? currentItem.expiryDate.slice(0, 10)
           : '';
         if (d !== currentExp) {
-          payload.expiryDate = d ? `${d}T00:00:00Z` : undefined;
+          const iso = d ? `${d}T00:00:00Z` : undefined;
+          if (usesExtension) {
+            verticalPatch.expiryDate = iso ?? null;
+            verticalChanged = true;
+          } else {
+            payload.expiryDate = iso;
+          }
         }
+      }
+
+      if (verticalChanged) {
+        payload.verticalFields = verticalPatch;
       }
 
       if (Object.keys(payload).length === 0) {

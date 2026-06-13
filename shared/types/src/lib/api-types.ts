@@ -770,6 +770,8 @@ export interface BulkCreateInventoryResponse {
   createdCount?: number;
   totalCreated?: number;
   totalFailed?: number;
+  /** Per-item errors when totalFailed &gt; 0 (product name + server message). */
+  itemErrors?: string[] | null;
   vendorPurchaseInvoiceId?: string | null;
   /** Set when stock-in leaves payable due in credit ledger. */
   creditEntryId?: string | null;
@@ -1082,6 +1084,8 @@ export interface InventoryItem {
   purchaseSchemePayFor?: number | null;
   purchaseSchemeFree?: number | null;
   purchaseSchemePercentage?: number | null;
+  /** Extension vertical fields merged from inventory_ext_* (batchNo, expiryDate, sport, …). */
+  verticalFields?: Record<string, unknown> | null;
 }
 
 /** Partial update - only non-null fields are updated. Omitted fields keep current values. */
@@ -1124,6 +1128,8 @@ export interface UpdateInventoryRequest {
   schemePercentage?: number | null;
   baseUnit?: string | null;
   unitConversions?: UnitConversion | null;
+  /** Extension vertical fields (batchNo, expiryDate, sport, …). */
+  verticalFields?: Record<string, unknown> | null;
 }
 
 export interface InventoryListResponse {
