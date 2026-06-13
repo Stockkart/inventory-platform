@@ -72,10 +72,10 @@ export function registrationFieldsForBilling(
   billingMode: 'REGULAR' | 'BASIC',
   shopId?: string | null
 ): VerticalSchemaFieldDef[] {
-  if (!isRegistrationSchemaReady(shopSchema, billingMode, { shopId })) {
+  if (!shopSchema || !isRegistrationSchemaReady(shopSchema, billingMode, { shopId })) {
     return [];
   }
-  return getDynamicInventoryFields(shopSchema!.entities, 'registration');
+  return getDynamicInventoryFields(shopSchema.entities, 'registration');
 }
 
 /** True when shop schema is loaded and matches the active billing mode. */
@@ -150,16 +150,42 @@ export function getVerticalFieldValue(
 ): string {
   const record = product as Record<string, unknown>;
   const prop = apiPropertyName(field);
+  const bag = product.verticalFields as Record<string, unknown> | undefined;
+
+  if (field.storage === 'extension') {
+    const fromBag = bag?.[field.key];
+    if (fromBag != null && fromBag !== '') {
+      return formatFieldValueForInput(field, fromBag);
+    }
+    const direct = record[prop];
+    if (direct != null && direct !== '') {
+      return formatFieldValueForInput(field, direct);
+    }
+    return '';
+  }
+
   const direct = record[prop];
   if (direct != null && direct !== '') {
     return String(direct);
   }
-  const bag = product.verticalFields as Record<string, unknown> | undefined;
   const fromBag = bag?.[field.key];
   if (fromBag != null && fromBag !== '') {
     return String(fromBag);
   }
   return '';
+}
+
+function formatFieldValueForInput(
+  field: VerticalSchemaFieldDef,
+  value: unknown
+): string {
+  if (field.type === 'date' && value != null) {
+    const text = String(value);
+    if (/^\d{4}-\d{2}-\d{2}/.test(text)) {
+      return text.includes('T') ? text : `${text.slice(0, 10)}T00:00:00Z`;
+    }
+  }
+  return String(value);
 }
 
 export function setVerticalFieldPatch(
@@ -172,6 +198,7 @@ export function setVerticalFieldPatch(
       verticalFields: {
         [field.key]: value === '' ? null : coerceFieldValue(field, value),
       },
+      [prop]: '',
     };
   }
   return { [prop]: value };
@@ -229,4 +256,83 @@ export function buildVerticalFieldsPayload(
     }
   }
   return Object.keys(bag).length > 0 ? bag : undefined;
+}
+
+/** Move legacy top-level extension values into {@code verticalFields} for form state. */
+export function hydrateExtensionFieldsOnProduct<
+  T extends VerticalFieldProduct & Record<string, unknown>,
+>(product: T, fields: VerticalSchemaFieldDef[]): T {
+  const extensionFields = fields.filter((f) => f.storage === 'extension');
+  if (extensionFields.length === 0) {
+    return product;
+  }
+  const bag: Record<string, unknown> = {
+    ...((product.verticalFields as Record<string, unknown> | undefined) ?? {}),
+  };
+  const record = product as Record<string, unknown>;
+  let changed = false;
+  for (const field of extensionFields) {
+    const prop = apiPropertyName(field);
+    const direct = record[prop];
+    if (direct != null && direct !== '') {
+      if (bag[field.key] == null || bag[field.key] === '') {
+        bag[field.key] = coerceFieldValue(field, String(direct));
+        changed = true;
+      }
+      record[prop] = '';
+      changed = true;
+    }
+  }
+  if (changed) {
+    product.verticalFields = bag;
+  }
+  return product;
+}
+
+/** True when API responses include an extension field bag (writes should use verticalFields only). */
+export function itemUsesExtensionBag(item: {
+  verticalFields?: Record<string, unknown> | null;
+}): boolean {
+  return (
+    item.verticalFields != null && Object.keys(item.verticalFields).length > 0
+  );
+}
+
+export function isExtensionSchemaField(
+  fields: VerticalSchemaFieldDef[],
+  key: string
+): boolean {
+  return fields.some((f) => f.key === key && f.storage === 'extension');
+}
+
+/**
+ * Removes top-level keys that belong in {@code verticalFields} and attaches the extension bag.
+ * Extension-schema fields must never be duplicated on the core bulk item DTO.
+ */
+export function attachVerticalFieldsToBulkItem<T extends Record<string, unknown>>(
+  item: T,
+  product: VerticalFieldProduct,
+  registrationFields: VerticalSchemaFieldDef[]
+): T & { verticalFields?: Record<string, unknown> } {
+  const out: Record<string, unknown> = { ...item };
+  for (const field of registrationFields) {
+    if (field.storage === 'extension') {
+      delete out[apiPropertyName(field)];
+    }
+  }
+  const verticalPayload = buildVerticalFieldsPayload(product, registrationFields);
+  if (verticalPayload) {
+    out.verticalFields = verticalPayload;
+  }
+  return out as T & { verticalFields?: Record<string, unknown> };
+}
+
+/** Core-only expiry for bulk when schema stores expiry on core (non-extension verticals). */
+export function formatCoreExpiryDateForApi(raw: string): string {
+  if (!raw.trim()) {
+    return '';
+  }
+  return raw.includes('T') && raw.includes('Z')
+    ? raw
+    : `${raw.trim().slice(0, 10)}T00:00:00Z`;
 }
