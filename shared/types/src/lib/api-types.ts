@@ -685,7 +685,8 @@ export interface BulkCreateInventoryItem {
   location: string;
   count: number;
   thresholdCount?: number;
-  expiryDate: string;
+  /** Core expiry (omit when schema stores expiry in verticalFields). */
+  expiryDate?: string;
   reminderAt?: string;
   customReminders?: Array<{
     daysBefore: number;

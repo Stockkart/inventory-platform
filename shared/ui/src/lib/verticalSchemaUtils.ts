@@ -72,10 +72,10 @@ export function registrationFieldsForBilling(
   billingMode: 'REGULAR' | 'BASIC',
   shopId?: string | null
 ): VerticalSchemaFieldDef[] {
-  if (!isRegistrationSchemaReady(shopSchema, billingMode, { shopId })) {
+  if (!shopSchema || !isRegistrationSchemaReady(shopSchema, billingMode, { shopId })) {
     return [];
   }
-  return getDynamicInventoryFields(shopSchema!.entities, 'registration');
+  return getDynamicInventoryFields(shopSchema.entities, 'registration');
 }
 
 /** True when shop schema is loaded and matches the active billing mode. */
@@ -269,16 +269,17 @@ export function hydrateExtensionFieldsOnProduct<
   const bag: Record<string, unknown> = {
     ...((product.verticalFields as Record<string, unknown> | undefined) ?? {}),
   };
+  const record = product as Record<string, unknown>;
   let changed = false;
   for (const field of extensionFields) {
     const prop = apiPropertyName(field);
-    const direct = product[prop];
+    const direct = record[prop];
     if (direct != null && direct !== '') {
       if (bag[field.key] == null || bag[field.key] === '') {
         bag[field.key] = coerceFieldValue(field, String(direct));
         changed = true;
       }
-      product[prop] = '';
+      record[prop] = '';
       changed = true;
     }
   }
