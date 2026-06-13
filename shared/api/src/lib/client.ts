@@ -138,6 +138,16 @@ class ApiClient {
     }
   }
 
+  getShopId(): string | null {
+    if (this.shopId) {
+      return this.shopId;
+    }
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(X_SHOP_ID_KEY);
+    }
+    return null;
+  }
+
   /* REST METHODS */
   async get<T>(endpoint: string, params?: Record<string, string>): Promise<T> {
     const r = await this.axiosInstance.get<T>(endpoint, { params });

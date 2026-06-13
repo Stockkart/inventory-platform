@@ -2,11 +2,11 @@
 
 Shared React components and form utilities.
 
-## Vertical schema UI (Phase 2)
+## Vertical schema UI (Phase 2–3)
 
 | Module | Purpose |
 |--------|---------|
-| `verticalSchemaUtils.ts` | Field labels, `getDynamicInventoryFields`, `registrationFieldsForBilling`, `buildVerticalFieldsPayload`, validation helpers |
+| `verticalSchemaUtils.ts` | `getDynamicInventoryFields` (extension + companyName), `registrationFieldsForBilling`, `isRegistrationSchemaReady`, validation helpers |
 | `VerticalSchemaFieldInput.tsx` | Renders string / date / enum inputs from `VerticalSchemaFieldDef` |
 | `VerticalInventoryFields.tsx` | Row/stack layout for multiple schema fields |
 

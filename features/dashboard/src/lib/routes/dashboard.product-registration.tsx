@@ -14,6 +14,7 @@ import {
   vendorsApi,
   uploadApi,
   usersApi,
+  apiClient,
 } from '@inventory-platform/api';
 import type {
   CreateInventoryDto,
@@ -52,17 +53,19 @@ import {
   buildVerticalFieldsPayload,
   getVerticalFieldValue,
   partitionRegistrationFields,
-  pickRegistrationField,
   registrationFieldsForBilling,
+  isRegistrationSchemaReady,
   schemaModeForBilling,
   setVerticalFieldPatch,
   validateProductVerticalFields,
 } from '@inventory-platform/ui';
 import {
   useNotify,
+  useAuthStore,
   useVerticalSchemaStore,
+  shopSchemaCacheKey,
 } from '@inventory-platform/store';
-import type { ShopSchemaResponse, VerticalSchemaFieldDef } from '@inventory-platform/types';
+import type { VerticalSchemaFieldDef } from '@inventory-platform/types';
 import {
   VerticalRegistrationGridCells,
   VerticalRegistrationGridCompanyCell,
@@ -649,7 +652,8 @@ function getPurchaseDateFieldMax(): string {
 
 export default function ProductRegistrationPage() {
   const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
-  const [shopSchema, setShopSchema] = useState<ShopSchemaResponse | null>(null);
+  const activeShopId =
+    useAuthStore((s) => s.user?.shopId ?? null) ?? apiClient.getShopId();
   const navigate = useNavigate();
   const location = useLocation();
   const vendorPrefillConsumedRef = useRef(false);
@@ -679,6 +683,18 @@ export default function ProductRegistrationPage() {
   const [showVendorModal, setShowVendorModal] = useState(false);
   const [isCreatingVendor, setIsCreatingVendor] = useState(false);
   const [billingMode, setBillingMode] = useState<BillingMode>('REGULAR');
+  const billingSchemaMode = schemaModeForBilling(billingMode);
+  const shopSchema = useVerticalSchemaStore((s) =>
+    activeShopId
+      ? s.shopSchemaByKey[shopSchemaCacheKey(activeShopId, billingSchemaMode)] ??
+        null
+      : null
+  );
+  const schemaLoadError = useVerticalSchemaStore((s) =>
+    activeShopId
+      ? s.errors[shopSchemaCacheKey(activeShopId, billingSchemaMode)] ?? ''
+      : ''
+  );
   const [vendorFormData, setVendorFormData] = useState<CreateVendorDto>({
     name: '',
     contactEmail: '',
@@ -884,58 +900,29 @@ export default function ProductRegistrationPage() {
   });
 
   const registrationFields = useMemo(
-    () => registrationFieldsForBilling(shopSchema, billingMode),
-    [shopSchema, billingMode]
+    () => registrationFieldsForBilling(shopSchema, billingMode, activeShopId),
+    [shopSchema, billingMode, activeShopId]
   );
 
-  const { companyField, otherFields: otherRegistrationFields } = useMemo(
+  const { companyField, otherFields: verticalRegistrationFields } = useMemo(
     () => partitionRegistrationFields(registrationFields),
     [registrationFields]
   );
 
-  const expiryField = useMemo(
-    () => pickRegistrationField(otherRegistrationFields, 'expiryDate'),
-    [otherRegistrationFields]
-  );
-
-  const batchField = useMemo(
-    () => pickRegistrationField(otherRegistrationFields, 'batchNo'),
-    [otherRegistrationFields]
-  );
-
-  const extraRegistrationFields = useMemo(
+  const registrationSchemaReady = useMemo(
     () =>
-      otherRegistrationFields.filter(
-        (field) => field.key !== 'expiryDate' && field.key !== 'batchNo'
-      ),
-    [otherRegistrationFields]
+      isRegistrationSchemaReady(shopSchema, billingMode, {
+        shopId: activeShopId,
+      }),
+    [shopSchema, billingMode, activeShopId]
   );
-
-  const gridSchemaFields = useMemo(() => {
-    const fields: VerticalSchemaFieldDef[] = [];
-    if (expiryField) {
-      fields.push(expiryField);
-    }
-    if (batchField && billingMode !== 'BASIC') {
-      fields.push(batchField);
-    }
-    fields.push(...extraRegistrationFields);
-    return fields;
-  }, [expiryField, batchField, extraRegistrationFields, billingMode]);
 
   useEffect(() => {
-    const mode = schemaModeForBilling(billingMode);
-    const cached =
-      useVerticalSchemaStore.getState().shopSchemaByKey[`shop:${mode}`];
-    if (cached) {
-      setShopSchema(cached);
+    if (!activeShopId) {
+      return;
     }
-    void fetchShopSchema(mode).then((schema) => {
-      if (schema) {
-        setShopSchema(schema);
-      }
-    });
-  }, [billingMode, fetchShopSchema]);
+    void fetchShopSchema(billingSchemaMode);
+  }, [activeShopId, billingSchemaMode, fetchShopSchema]);
 
   const applyVerticalFieldChange = useCallback(
     (productId: string, field: VerticalSchemaFieldDef, value: string) => {
@@ -966,6 +953,9 @@ export default function ProductRegistrationPage() {
   );
 
   const handleAddProduct = () => {
+    if (!registrationSchemaReady) {
+      return;
+    }
     setProducts([...products, createEmptyProduct()]);
     setError(null);
   };
@@ -1661,6 +1651,12 @@ export default function ProductRegistrationPage() {
     e.preventDefault();
     setError(null);
     setSuccess(null);
+
+    if (!registrationSchemaReady) {
+      notifyError('Product fields are still loading. Please wait and try again.');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -3084,35 +3080,69 @@ export default function ProductRegistrationPage() {
                   type="button"
                   className={styles.addProductBtn}
                   onClick={handleAddProduct}
-                  disabled={isLoading}
+                  disabled={isLoading || !registrationSchemaReady}
+                  title={
+                    registrationSchemaReady
+                      ? undefined
+                      : 'Waiting for shop product schema to load'
+                  }
                 >
                   + Add Product
                 </button>
               </div>
             </div>
 
-            {products.length > 0 && (
-              <p className={styles.keyboardNavHint}>
-                <span className={styles.keyboardNavHintLabel}>Keyboard:</span>{' '}
-                <kbd className={styles.kbdInline}>Enter</kbd> next field ·{' '}
-                <kbd className={styles.kbdInline}>↑</kbd>
-                <kbd className={styles.kbdInline}>↓</kbd>{' '}
-                {productViewMode === 'grid'
-                  ? 'same column'
-                  : 'previous / next'}
-                {' · '}
-                <kbd className={styles.kbdInline}>Shift</kbd>+
-                <kbd className={styles.kbdInline}>Enter</kbd> back
-              </p>
-            )}
-
-            {products.length === 0 ? (
-              <div className={styles.emptyState}>
-                <p>
-                  No products added yet. Click "Add Product" to get started.
-                </p>
+            {!registrationSchemaReady ? (
+              <div
+                className={styles.schemaLoadingState}
+                role="status"
+                aria-live="polite"
+              >
+                {schemaLoadError ? (
+                  <>
+                    <p className={styles.schemaLoadingTitle}>
+                      Could not load product fields
+                    </p>
+                    <p className={styles.schemaLoadingHint}>{schemaLoadError}</p>
+                  </>
+                ) : (
+                  <>
+                    <div className={styles.spinner} aria-hidden />
+                    <p className={styles.schemaLoadingTitle}>
+                      Loading product fields…
+                    </p>
+                    <p className={styles.schemaLoadingHint}>
+                      Vertical columns come from your shop schema only — no
+                      fields are shown until loading finishes.
+                    </p>
+                  </>
+                )}
               </div>
-            ) : productViewMode === 'grid' ? (
+            ) : (
+              <>
+                {products.length > 0 && (
+                  <p className={styles.keyboardNavHint}>
+                    <span className={styles.keyboardNavHintLabel}>Keyboard:</span>{' '}
+                    <kbd className={styles.kbdInline}>Enter</kbd> next field ·{' '}
+                    <kbd className={styles.kbdInline}>↑</kbd>
+                    <kbd className={styles.kbdInline}>↓</kbd>{' '}
+                    {productViewMode === 'grid'
+                      ? 'same column'
+                      : 'previous / next'}
+                    {' · '}
+                    <kbd className={styles.kbdInline}>Shift</kbd>+
+                    <kbd className={styles.kbdInline}>Enter</kbd> back
+                  </p>
+                )}
+
+                {products.length === 0 ? (
+                  <div className={styles.emptyState}>
+                    <p>
+                      No products added yet. Click &quot;Add Product&quot; to get
+                      started.
+                    </p>
+                  </div>
+                ) : productViewMode === 'grid' ? (
               <div
                 className={styles.excelTableWrap}
                 {...{ 'data-keyboard-nav': KEYBOARD_NAV_GRID }}
@@ -3133,7 +3163,7 @@ export default function ProductRegistrationPage() {
                       <th className={styles.excelTh}>Barcode</th>
                       <VerticalRegistrationGridCompanyHeader field={companyField} />
                       <th className={styles.excelTh}>Product *</th>
-                      <VerticalRegistrationGridHeaders fields={gridSchemaFields} />
+                      <VerticalRegistrationGridHeaders fields={verticalRegistrationFields} />
                       <th className={styles.excelTh}>Count *</th>
                       <th className={styles.excelTh}>Packaging</th>
                       <th className={styles.excelTh}>Location *</th>
@@ -3175,7 +3205,7 @@ export default function ProductRegistrationPage() {
                       bulk={gridBulkFill}
                       billingMode={billingMode}
                       companyField={companyField}
-                      schemaFields={gridSchemaFields}
+                      schemaFields={verticalRegistrationFields}
                       isLoading={isLoading}
                       onBulkChange={handleGridBulkFillChange}
                       onVerticalBulkChange={handleVerticalBulkChange}
@@ -3229,7 +3259,7 @@ export default function ProductRegistrationPage() {
                           />
                         </td>
                         <VerticalRegistrationGridCells
-                          fields={gridSchemaFields}
+                          fields={verticalRegistrationFields}
                           product={product}
                           productId={product.id}
                           disabled={isLoading}
@@ -3981,9 +4011,7 @@ export default function ProductRegistrationPage() {
                     key={product.id}
                     product={product}
                     companyField={companyField}
-                    expiryField={expiryField}
-                    batchField={batchField}
-                    extraSchemaFields={extraRegistrationFields}
+                    schemaFields={verticalRegistrationFields}
                     packagingUnits={packagingUnits}
                     billingMode={billingMode}
                     index={index}
@@ -4007,6 +4035,8 @@ export default function ProductRegistrationPage() {
                   />
                 ))}
               </div>
+            )}
+              </>
             )}
           </div>
 
@@ -4745,9 +4775,7 @@ function GridBulkFillRow({
 interface ProductAccordionProps {
   product: ProductFormData;
   companyField: VerticalSchemaFieldDef | null;
-  expiryField: VerticalSchemaFieldDef | null;
-  batchField: VerticalSchemaFieldDef | null;
-  extraSchemaFields: VerticalSchemaFieldDef[];
+  schemaFields: VerticalSchemaFieldDef[];
   packagingUnits: PackagingUnit[];
   billingMode: BillingMode;
   index: number;
@@ -4778,9 +4806,7 @@ interface ProductAccordionProps {
 function ProductAccordion({
   product,
   companyField,
-  expiryField,
-  batchField,
-  extraSchemaFields,
+  schemaFields,
   packagingUnits,
   billingMode,
   index,
@@ -4797,6 +4823,9 @@ function ProductAccordion({
   localDateTimeToIso,
 }: ProductAccordionProps) {
   const productTitle = product.name || `Product ${index + 1}`;
+  const showExpiryReminders = schemaFields.some(
+    (field) => field.key === 'expiryDate'
+  );
 
   const formatSchemeFixed = (p: ProductFormData): string => {
     if (p.schemePayFor != null || p.schemeFree != null) {
@@ -5063,50 +5092,21 @@ function ProductAccordion({
             );
           })()}
 
+          {schemaFields.length > 0 && (
+            <VerticalInventoryFields
+              fields={schemaFields}
+              product={product}
+              onFieldChange={(field, value) =>
+                onVerticalFieldChange(product.id, field, value)
+              }
+              disabled={isLoading}
+              idPrefix={`acc-${product.id}`}
+              inputClassName={styles.input}
+              labelClassName={styles.label}
+            />
+          )}
+
           <div className={styles.formRow}>
-            {expiryField ? (
-              <VerticalSchemaFieldInput
-                field={expiryField}
-                value={getVerticalFieldValue(product, expiryField)}
-                onChange={(value) =>
-                  onVerticalFieldChange(product.id, expiryField, value)
-                }
-                disabled={isLoading}
-                idPrefix={`acc-${product.id}`}
-                inputClassName={styles.input}
-                labelClassName={styles.label}
-              />
-            ) : (
-              <div className={styles.formGroup}>
-                <label
-                  htmlFor={`expiryDate-${product.id}`}
-                  className={styles.label}
-                >
-                  Expiry Date *
-                </label>
-                <input
-                  type="date"
-                  id={`expiryDate-${product.id}`}
-                  className={styles.input}
-                  value={
-                    product.expiryDate &&
-                    !isNaN(new Date(product.expiryDate).getTime())
-                      ? new Date(product.expiryDate).toISOString().split('T')[0]
-                      : ''
-                  }
-                  onChange={(e) => {
-                    const dateValue = e.target.value;
-                    if (dateValue) {
-                      onChange(product.id, 'expiryDate', `${dateValue}T00:00:00Z`);
-                    } else {
-                      onChange(product.id, 'expiryDate', '');
-                    }
-                  }}
-                  required
-                  disabled={isLoading}
-                />
-              </div>
-            )}
             <div className={styles.formGroup}>
               <label
                 htmlFor={`location-${product.id}`}
@@ -5145,54 +5145,7 @@ function ProductAccordion({
                   disabled={isLoading}
                 />
               </div>
-              {batchField ? (
-                <VerticalSchemaFieldInput
-                  field={batchField}
-                  value={getVerticalFieldValue(product, batchField)}
-                  onChange={(value) =>
-                    onVerticalFieldChange(product.id, batchField, value)
-                  }
-                  disabled={isLoading}
-                  idPrefix={`acc-${product.id}`}
-                  inputClassName={styles.input}
-                  labelClassName={styles.label}
-                />
-              ) : (
-                <div className={styles.formGroup}>
-                  <label
-                    htmlFor={`batchNo-${product.id}`}
-                    className={styles.label}
-                  >
-                    Batch Number
-                  </label>
-                  <input
-                    type="text"
-                    id={`batchNo-${product.id}`}
-                    className={styles.input}
-                    placeholder="Enter the batch number"
-                    value={product.batchNo || ''}
-                    onChange={(e) =>
-                      onChange(product.id, 'batchNo', e.target.value)
-                    }
-                    disabled={isLoading}
-                  />
-                </div>
-              )}
             </div>
-          )}
-
-          {extraSchemaFields.length > 0 && (
-            <VerticalInventoryFields
-              fields={extraSchemaFields}
-              product={product}
-              onFieldChange={(field, value) =>
-                onVerticalFieldChange(product.id, field, value)
-              }
-              disabled={isLoading}
-              idPrefix={`acc-${product.id}`}
-              inputClassName={styles.input}
-              labelClassName={styles.label}
-            />
           )}
 
           <div className={styles.formRow}>
@@ -5874,7 +5827,8 @@ function ProductAccordion({
             />
           </div>
 
-          {/* Reminder Section */}
+          {/* Reminder Section — medical / verticals with expiry only */}
+          {showExpiryReminders && (
           <div className={styles.reminderSection}>
             <h4 className={styles.subsectionTitle}>Expiry Reminder Settings</h4>
             <div className={styles.formRow}>
@@ -5918,6 +5872,7 @@ function ProductAccordion({
               disabled={isLoading}
             />
           </div>
+          )}
         </div>
       )}
     </div>
