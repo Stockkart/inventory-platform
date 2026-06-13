@@ -10,69 +10,11 @@ export type VerticalFieldProduct = {
   verticalFields?: Record<string, unknown> | null;
 };
 
-/** Inventory fields always rendered by platform UI (pricing, packaging, schemes, …). */
-export const PLATFORM_INVENTORY_FIELD_KEYS = new Set([
-  'name',
-  'barcode',
-  'count',
-  'location',
-  'description',
-  'maximumRetailPrice',
-  'costPrice',
-  'priceToRetail',
-  'businessType',
-  'scheme',
-  'schemePayFor',
-  'schemeFree',
-  'schemeType',
-  'schemePercentage',
-  'purchaseSchemeType',
-  'purchaseSchemePayFor',
-  'purchaseSchemeFree',
-  'purchaseSchemePercentage',
-  'saleAdditionalDiscount',
-  'purchaseAdditionalDiscount',
-  'itemType',
-  'itemTypeDegree',
-  'discountApplicable',
-  'purchaseDate',
-  'sgst',
-  'cgst',
-  'hsn',
-  'sac',
-  'baseUnit',
-  'unitsPerPack',
-  'unitConversions',
-  'thresholdCount',
-  'reminderAt',
-  'customReminders',
-  'vendorId',
-  'lotId',
-  'billingMode',
-  'rates',
-  'defaultRate',
-]);
-
-const DEFAULT_LABELS: Record<string, string> = {
-  companyName: 'Company',
-  batchNo: 'Batch Number',
-  expiryDate: 'Expiry Date',
-  storageTemp: 'Storage temp',
-  sport: 'Sport',
-  brand: 'Brand',
-  model: 'Model',
-  warrantyMonths: 'Warranty (months)',
-  dlNo: 'Drug license no.',
-  fssai: 'FSSAI',
-  hsn: 'HSN/SAC',
-  baseUnit: 'Unit',
-};
-
 export function fieldLabel(field: VerticalSchemaFieldDef): string {
   if (field.label?.trim()) {
     return field.label.trim();
   }
-  return DEFAULT_LABELS[field.key] ?? humanizeKey(field.key);
+  return humanizeKey(field.key);
 }
 
 function humanizeKey(key: string): string {
@@ -106,58 +48,66 @@ export function getEntityFields(
   return entities?.[entityName]?.fields ?? [];
 }
 
-/** Vertical-specific inventory fields for a UI surface (excludes platform-managed keys). */
+/** Vertical-owned inventory fields for dynamic UI (extension storage + companyName layout). */
+function isDynamicInventoryField(field: VerticalSchemaFieldDef): boolean {
+  if (field.key === 'companyName') {
+    return true;
+  }
+  return field.storage === 'extension';
+}
+
+/** Schema-driven columns for a UI surface (excludes universal core fields rendered by platform layout). */
 export function getDynamicInventoryFields(
   entities: Record<string, { fields?: VerticalSchemaFieldDef[] }> | undefined,
   surface: VerticalSchemaSurface
 ): VerticalSchemaFieldDef[] {
   return getEntityFields(entities, 'inventory').filter(
     (field) =>
-      isVisibleOnSurface(field, surface) &&
-      !PLATFORM_INVENTORY_FIELD_KEYS.has(field.key)
+      isVisibleOnSurface(field, surface) && isDynamicInventoryField(field)
   );
 }
 
-/** Medical registration fields used until shop schema finishes loading. */
-export const MEDICAL_FALLBACK_REGISTRATION_FIELDS: VerticalSchemaFieldDef[] = [
-  {
-    key: 'companyName',
-    label: 'Company Name',
-    type: 'string',
-    required: true,
-    storage: 'core',
-  },
-  {
-    key: 'batchNo',
-    label: 'Batch Number',
-    type: 'string',
-    required: true,
-    storage: 'extension',
-  },
-  {
-    key: 'expiryDate',
-    label: 'Expiry Date',
-    type: 'date',
-    required: true,
-    storage: 'extension',
-  },
-];
-
 export function registrationFieldsForBilling(
   shopSchema: { verticalId: string; mode: string; entities: Record<string, { fields?: VerticalSchemaFieldDef[] }> } | null,
-  billingMode: 'REGULAR' | 'BASIC'
+  billingMode: 'REGULAR' | 'BASIC',
+  shopId?: string | null
 ): VerticalSchemaFieldDef[] {
-  const expectedMode = billingMode === 'BASIC' ? 'basic' : 'regular';
-  if (shopSchema?.mode === expectedMode) {
-    return getDynamicInventoryFields(shopSchema.entities, 'registration');
+  if (!isRegistrationSchemaReady(shopSchema, billingMode, { shopId })) {
+    return [];
   }
-  const verticalId = shopSchema?.verticalId ?? 'medical';
-  if (verticalId === 'medical') {
-    return billingMode === 'BASIC'
-      ? MEDICAL_FALLBACK_REGISTRATION_FIELDS.filter((f) => f.key !== 'batchNo')
-      : MEDICAL_FALLBACK_REGISTRATION_FIELDS;
+  return getDynamicInventoryFields(shopSchema!.entities, 'registration');
+}
+
+/** True when shop schema is loaded and matches the active billing mode. */
+export function isRegistrationSchemaReady(
+  shopSchema: { shopId?: string; verticalId?: string; mode?: string; entities?: Record<string, unknown> } | null,
+  billingMode: 'REGULAR' | 'BASIC',
+  options?: { shopId?: string | null }
+): boolean {
+  if (!shopSchema?.verticalId || !shopSchema.entities) {
+    return false;
   }
-  return [];
+  if (
+    options &&
+    (options.shopId === null || options.shopId === undefined)
+  ) {
+    return false;
+  }
+  if (
+    shopSchema.shopId &&
+    options?.shopId &&
+    shopSchema.shopId !== options.shopId
+  ) {
+    return false;
+  }
+  const expectedMode = schemaModeForBilling(billingMode);
+  if (shopSchema.mode !== expectedMode) {
+    return false;
+  }
+  return getDynamicInventoryFields(
+    shopSchema.entities as Record<string, { fields?: VerticalSchemaFieldDef[] }>,
+    'registration'
+  ).length > 0;
 }
 
 /** Split company name (after barcode) from other vertical registration columns. */

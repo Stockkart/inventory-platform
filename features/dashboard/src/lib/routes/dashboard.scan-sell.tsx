@@ -25,7 +25,7 @@ import type {
   CustomerResponse,
 } from '@inventory-platform/types';
 import styles from './dashboard.scan-sell.module.css';
-import { useNotify, useVerticalSchemaStore } from '@inventory-platform/store';
+import { useNotify, useAuthStore, useVerticalSchemaStore } from '@inventory-platform/store';
 import {
   isScanSellHidePurchaseKey,
   shouldSkipScanSellHidePurchaseKey,
@@ -455,6 +455,7 @@ function CartSchemeInput({
 
 export default function ScanSellPage() {
   const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
+  const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
   const [cartBusinessType, setCartBusinessType] = useState('medical');
   const navigate = useNavigate();
   const location = useLocation();
@@ -530,12 +531,15 @@ export default function ScanSellPage() {
   const { error: notifyError } = useNotify;
 
   useEffect(() => {
+    if (!activeShopId) {
+      return;
+    }
     void fetchShopSchema('regular').then((schema) => {
-      if (schema?.verticalId) {
+      if (schema?.verticalId && schema.shopId === activeShopId) {
         setCartBusinessType(schema.verticalId);
       }
     });
-  }, [fetchShopSchema]);
+  }, [activeShopId, fetchShopSchema]);
 
   useEffect(() => {
     if (!detailModalItem) {
