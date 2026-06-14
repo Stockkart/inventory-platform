@@ -298,6 +298,49 @@ export function itemUsesExtensionBag(item: {
   );
 }
 
+/** Read an extension field for display (verticalFields bag, then legacy top-level). */
+export function getExtensionFieldString(
+  item: VerticalFieldProduct,
+  key: string
+): string {
+  const bag = item.verticalFields as Record<string, unknown> | undefined;
+  const fromBag = bag?.[key];
+  if (fromBag != null && fromBag !== '') {
+    return String(fromBag);
+  }
+  const legacy = (item as Record<string, unknown>)[key];
+  if (legacy != null && legacy !== '') {
+    return String(legacy);
+  }
+  return '';
+}
+
+export function getInventoryBatchNo(item: VerticalFieldProduct): string {
+  const value = getExtensionFieldString(item, 'batchNo');
+  return value || '—';
+}
+
+export function formatInventoryExpiryDate(
+  item: VerticalFieldProduct,
+  locale = 'en-IN'
+): string {
+  const raw =
+    getExtensionFieldString(item, 'expiryDate') ||
+    String((item as { expiryDate?: string }).expiryDate ?? '');
+  if (!raw.trim()) {
+    return '—';
+  }
+  try {
+    return new Date(raw).toLocaleDateString(locale);
+  } catch {
+    return raw.slice(0, 10);
+  }
+}
+
+export function hasInventoryExpiryDate(item: VerticalFieldProduct): boolean {
+  return getExtensionFieldString(item, 'expiryDate').trim().length > 0;
+}
+
 export function isExtensionSchemaField(
   fields: VerticalSchemaFieldDef[],
   key: string

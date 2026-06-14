@@ -2,9 +2,11 @@
 
 Zustand stores for app state.
 
-## Vertical schema cache
+## Vertical schema cache (Phase 2+)
 
-`useVerticalSchemaStore` (`src/lib/useVerticalSchemaStore.ts`) caches shop schemas by **shop id + mode** (`shop:<shopId>:regular`, etc.). The cache is cleared on logout and active-shop switch. Use in registration, onboarding, and any surface that needs `GET /shops/me/schema` or public vertical preview.
+`useVerticalSchemaStore` (`src/lib/useVerticalSchemaStore.ts`) caches shop schemas by **shop id + mode** (`shop:<shopId>:regular`, etc.). The cache is cleared on logout and active-shop switch.
+
+Used by: product registration, product search (searchable field detection), onboarding, scan-sell.
 
 ```ts
 const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);

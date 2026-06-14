@@ -8,6 +8,7 @@ import type {
   UpdateReminderDto,
   ReminderDetail,
   ReminderInventorySummary,
+  InventoryExpiryBuckets,
 } from '@inventory-platform/types';
 import {
   ReminderForm,
@@ -51,6 +52,8 @@ export default function RemindersPage() {
   const [customSnoozeDays, setCustomSnoozeDays] = useState<number | ''>(''); // 👈 for manual days
   const [selectedInventory, setSelectedInventory] =
     useState<ReminderInventorySummary | null>(null);
+  const [expiryBuckets, setExpiryBuckets] =
+    useState<InventoryExpiryBuckets | null>(null);
   const { error: notifyError } = useNotify;
 
   const handleSnooze = async (reminderId: string, snoozeDays: number) => {
@@ -103,6 +106,22 @@ export default function RemindersPage() {
     fetchReminders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, size]);
+
+  useEffect(() => {
+    if (fromNotification) return;
+    let cancelled = false;
+    remindersApi
+      .getExpiryBuckets(30)
+      .then((buckets) => {
+        if (!cancelled) setExpiryBuckets(buckets);
+      })
+      .catch(() => {
+        if (!cancelled) setExpiryBuckets(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [fromNotification]);
 
   useEffect(() => {
     if (focusReminderId) {
@@ -238,6 +257,35 @@ export default function RemindersPage() {
           </button>
         )}
       </div>
+
+      {!fromNotification && expiryBuckets && (
+        <div className={styles.expiryBuckets}>
+          <div className={styles.bucketCard}>
+            <span className={styles.bucketLabel}>Expired</span>
+            <span className={styles.bucketValue}>{expiryBuckets.expired}</span>
+          </div>
+          <div className={styles.bucketCard}>
+            <span className={styles.bucketLabel}>Within 7 days</span>
+            <span className={styles.bucketValue}>
+              {expiryBuckets.expiringWithin7Days}
+            </span>
+          </div>
+          <div className={styles.bucketCard}>
+            <span className={styles.bucketLabel}>
+              Within {expiryBuckets.expiringSoonDays} days
+            </span>
+            <span className={styles.bucketValue}>
+              {expiryBuckets.expiringSoonTotal}
+            </span>
+          </div>
+          <div className={styles.bucketCard}>
+            <span className={styles.bucketLabel}>Tracked expiry</span>
+            <span className={styles.bucketValue}>
+              {expiryBuckets.totalWithExpiry}
+            </span>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className={styles.errorMessage}>

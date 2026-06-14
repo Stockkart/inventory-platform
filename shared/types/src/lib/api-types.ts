@@ -1144,6 +1144,22 @@ export interface InventoryListResponse {
   } | null;
 }
 
+export interface InventoryExpiryBuckets {
+  expired: number;
+  expiringWithin7Days: number;
+  expiringWithinSoonDays: number;
+  expiringSoonTotal: number;
+  totalWithExpiry: number;
+  expiringSoonDays: number;
+}
+
+export interface InventorySearchParams {
+  /** Single search box: name, barcode, batch 123, expiring 30, fefo, dates, etc. */
+  q?: string;
+  sort?: string;
+  limit?: number;
+}
+
 export interface PaginationInventoryResponse {
   data: InventoryItem[];
   meta: unknown | null;

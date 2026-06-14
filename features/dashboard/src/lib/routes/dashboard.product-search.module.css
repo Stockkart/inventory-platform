@@ -84,6 +84,34 @@
   background: var(--bg-primary);
 }
 
+.expiryBuckets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.bucketCard {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.bucketLabel {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.bucketValue {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
 .clearBtn {
   padding: 0.75rem 1.5rem;
   border: 1px solid var(--border-color);

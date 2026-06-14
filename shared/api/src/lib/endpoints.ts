@@ -53,6 +53,7 @@ export const API_ENDPOINTS = {
     BY_TYPE: (type: string) => `/reminders/type/${type}`,
     SNOOZE: (id: string) => `/reminders/${id}/snooze`,
     DETAILS: '/reminders/details',
+    EXPIRY_BUCKETS: '/reminders/expiry-buckets',
     DETAIL_BY_ID: (id: string) => `/reminders/${id}/details`,
   },
 
@@ -123,6 +124,9 @@ export const API_ENDPOINTS = {
     PARSE_INVOICE: '/inventory/parse-invoice',
     PARSE_STOCK_SHEET: '/inventory/parse-stock-sheet',
     SEARCH: '/inventory/search',
+    EXPIRY_BUCKETS: '/inventory/expiry-buckets',
+    NEAR_EXPIRY: '/inventory/near-expiry',
+    FEFO: '/inventory/fefo',
     BY_IDS: '/inventory/by-ids',
     LOTS: '/inventory/lots',
     LOW_STOCK: '/inventory/low-stock',

@@ -29,6 +29,9 @@ import { useNotify, useAuthStore, useVerticalSchemaStore } from '@inventory-plat
 import {
   isScanSellHidePurchaseKey,
   shouldSkipScanSellHidePurchaseKey,
+  formatInventoryExpiryDate,
+  hasInventoryExpiryDate,
+  getExtensionFieldString,
 } from '@inventory-platform/ui';
 
 export function meta() {
@@ -3357,14 +3360,14 @@ export default function ScanSellPage() {
                               HSN / Batch
                             </span>
                             <span className={styles.detailModalDetailValue}>
-                              {[inv.hsn, inv.batchNo]
+                              {[inv.hsn, getExtensionFieldString(inv, 'batchNo')]
                                 .filter(Boolean)
                                 .join(' / ')}
                             </span>
                           </div>
                         </div>
                       )}
-                      {inv.expiryDate && (
+                      {hasInventoryExpiryDate(inv) && (
                         <div className={styles.detailModalDetailCard}>
                           <div className={styles.detailModalDetailIcon}>📅</div>
                           <div className={styles.detailModalDetailContent}>
@@ -3372,11 +3375,7 @@ export default function ScanSellPage() {
                               Expiry
                             </span>
                             <span className={styles.detailModalDetailValue}>
-                              {
-                                new Date(inv.expiryDate)
-                                  .toISOString()
-                                  .split('T')[0]
-                              }
+                              {formatInventoryExpiryDate(inv)}
                             </span>
                           </div>
                         </div>
@@ -3657,19 +3656,6 @@ function SearchDropdownItem({
   onAddToCart: (item: InventoryItem, price?: number) => void;
   disabled: boolean;
 }) {
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
-    } catch {
-      return dateString;
-    }
-  };
-
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     onAddToCart(item);
@@ -3713,11 +3699,11 @@ function SearchDropdownItem({
             ? (item.sellingPrice ?? item.priceToRetail)!.toFixed(2)
             : '—'}
         </span>
-        {item.expiryDate && (
+        {hasInventoryExpiryDate(item) && (
           <span
             className={`${styles.dropdownItemMeta} ${styles.dropdownItemMetaBold}`}
           >
-            Expires: {formatDate(item.expiryDate)}
+            Expires: {formatInventoryExpiryDate(item)}
           </span>
         )}
       </div>
