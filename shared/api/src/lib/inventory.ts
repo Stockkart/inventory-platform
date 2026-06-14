@@ -110,6 +110,7 @@ export const inventoryApi = {
         ? {
             q: queryOrParams,
             limit: size !== undefined ? size : 50,
+            sort: 'expiryDate:asc',
           }
         : queryOrParams;
 
@@ -143,42 +144,6 @@ export const inventoryApi = {
     }
     const response = await apiClient.get<ApiResponse<InventoryExpiryBuckets>>(
       API_ENDPOINTS.INVENTORY.EXPIRY_BUCKETS,
-      params
-    );
-    return response.data;
-  },
-
-  getNearExpiry: async (
-    days?: number,
-    limit?: number
-  ): Promise<InventoryListResponse> => {
-    const params: Record<string, string> = {};
-    if (days !== undefined && days > 0) {
-      params.days = String(days);
-    }
-    if (limit !== undefined && limit > 0) {
-      params.limit = String(limit);
-    }
-    const response = await apiClient.get<ApiResponse<InventoryListResponse>>(
-      API_ENDPOINTS.INVENTORY.NEAR_EXPIRY,
-      params
-    );
-    return response.data;
-  },
-
-  getFefo: async (
-    batchNo?: string,
-    limit?: number
-  ): Promise<InventoryListResponse> => {
-    const params: Record<string, string> = {};
-    if (batchNo?.trim()) {
-      params.batchNo = batchNo.trim();
-    }
-    if (limit !== undefined && limit > 0) {
-      params.limit = String(limit);
-    }
-    const response = await apiClient.get<ApiResponse<InventoryListResponse>>(
-      API_ENDPOINTS.INVENTORY.FEFO,
       params
     );
     return response.data;

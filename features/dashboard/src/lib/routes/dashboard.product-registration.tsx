@@ -2012,6 +2012,8 @@ export default function ProductRegistrationPage() {
         const resolvedBatchNo = batchField
           ? getVerticalFieldValue(product, batchField)
           : product.batchNo?.trim() || '';
+        const expiryOnExtension = expiryField?.storage === 'extension';
+        const batchOnExtension = batchField?.storage === 'extension';
 
         const coreItem = {
           ...(product.barcode?.trim()
@@ -2030,13 +2032,13 @@ export default function ProductRegistrationPage() {
           ...(unitsPerPackForApi > 0
             ? { unitsPerPack: unitsPerPackForApi }
             : {}),
-          ...(resolvedExpiryRaw
+          ...(resolvedExpiryRaw && !expiryOnExtension
             ? { expiryDate: formatCoreExpiryDateForApi(resolvedExpiryRaw) }
             : {}),
           reminderAt: reminderAtISO,
           customReminders: customReminders,
           hsn: product.hsn || null,
-          ...(resolvedBatchNo ? { batchNo: resolvedBatchNo } : {}),
+          ...(resolvedBatchNo && !batchOnExtension ? { batchNo: resolvedBatchNo } : {}),
           ...((product.schemeType ?? 'FIXED_UNITS') === 'PERCENTAGE'
             ? {
                 schemeType: 'PERCENTAGE' as const,

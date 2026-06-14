@@ -1154,7 +1154,7 @@ export interface InventoryExpiryBuckets {
 }
 
 export interface InventorySearchParams {
-  /** Single search box: name, barcode, batch 123, expiring 30, fefo, dates, etc. */
+  /** Single search box: name, barcode, batch 123, etc. */
   q?: string;
   sort?: string;
   limit?: number;

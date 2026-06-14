@@ -1,23 +1,18 @@
-import { useState, useEffect, FormEvent, useMemo } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import {
   inventoryApi,
   cartApi,
   resolveInventoryDocumentId,
-  apiClient,
 } from '@inventory-platform/api';
-import type { BillingMode, InventoryItem, InventoryExpiryBuckets } from '@inventory-platform/types';
+import type { BillingMode, InventoryItem } from '@inventory-platform/types';
 import {
   InventoryAlertDetails,
   PaginationBar,
   formatInventoryExpiryDate,
+  sortInventoryByExpirySoonest,
 } from '@inventory-platform/ui';
 import styles from './dashboard.product-search.module.css';
-import {
-  useNotify,
-  useVerticalSchemaStore,
-  shopSchemaCacheKey,
-  useAuthStore,
-} from '@inventory-platform/store';
+import { useNotify } from '@inventory-platform/store';
 
 export function meta() {
   return [
@@ -45,55 +40,20 @@ export default function ProductSearchPage() {
   const [billingModeFilter, setBillingModeFilter] = useState<
     'ALL' | BillingMode
   >('ALL');
-  const [expiryBuckets, setExpiryBuckets] =
-    useState<InventoryExpiryBuckets | null>(null);
-  const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
-  const activeShopId =
-    useAuthStore((s) => s.user?.shopId ?? null) ?? apiClient.getShopId();
-  const shopSchema = useVerticalSchemaStore((s) =>
-    activeShopId
-      ? s.shopSchemaByKey[shopSchemaCacheKey(activeShopId, 'regular')] ?? null
-      : null
-  );
   const { success: notifySuccess, error: notifyError } = useNotify;
 
-  const hasExpiryFilter = useMemo(() => {
-    const fields = shopSchema?.entities?.inventory?.fields ?? [];
-    return fields.some((f) => f.key === 'expiryDate' && f.searchable);
-  }, [shopSchema]);
-
-  useEffect(() => {
-    void fetchShopSchema();
-    fetchAllInventory();
-  }, [fetchShopSchema]);
-
-  useEffect(() => {
-    if (!hasExpiryFilter) {
-      setExpiryBuckets(null);
-      return;
-    }
-    let cancelled = false;
-    inventoryApi
-      .getExpiryBuckets(30)
-      .then((buckets) => {
-        if (!cancelled) setExpiryBuckets(buckets);
-      })
-      .catch(() => {
-        if (!cancelled) setExpiryBuckets(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [hasExpiryFilter]);
-
   const hasActiveSearch = searchQuery.trim().length > 0;
+
+  useEffect(() => {
+    fetchAllInventory();
+  }, []);
 
   const fetchAllInventory = async (page = 0, size = 10) => {
     setIsLoading(true);
     setError(null);
     try {
       const response = await inventoryApi.getAll(page, size);
-      setInventory(response.data || []);
+      setInventory(sortInventoryByExpirySoonest(response.data || []));
       // Update pagination info if available
       if (response.page) {
         setSearchTotalPages(response.page.totalPages || 0);
@@ -144,8 +104,9 @@ export default function ProductSearchPage() {
       const response = await inventoryApi.search({
         q: searchQuery.trim(),
         limit: currentPageSize,
+        sort: 'expiryDate:asc',
       });
-      setInventory(response.data || []);
+      setInventory(sortInventoryByExpirySoonest(response.data || []));
       const total = response.data?.length ?? 0;
       setSearchTotalPages(total > 0 ? 1 : 0);
       setSearchTotalItems(total);
@@ -264,10 +225,12 @@ export default function ProductSearchPage() {
   const normalizedMode = (item: InventoryItem): BillingMode =>
     item.billingMode === 'BASIC' ? 'BASIC' : 'REGULAR';
 
-  const filteredInventory = inventory.filter((item) =>
-    billingModeFilter === 'ALL'
-      ? true
-      : normalizedMode(item) === billingModeFilter
+  const filteredInventory = sortInventoryByExpirySoonest(
+    inventory.filter((item) =>
+      billingModeFilter === 'ALL'
+        ? true
+        : normalizedMode(item) === billingModeFilter
+    )
   );
 
   return (
@@ -275,31 +238,9 @@ export default function ProductSearchPage() {
       <div className={styles.header}>
         <h2 className={styles.title}>Product Search</h2>
         <p className={styles.subtitle}>
-          One search box: product name, barcode, batch 123, expiring 30, fefo
+          Search by product name, barcode, or batch number
         </p>
       </div>
-      {hasExpiryFilter && expiryBuckets && (
-        <div className={styles.expiryBuckets}>
-          <div className={styles.bucketCard}>
-            <span className={styles.bucketLabel}>Expired</span>
-            <span className={styles.bucketValue}>{expiryBuckets.expired}</span>
-          </div>
-          <div className={styles.bucketCard}>
-            <span className={styles.bucketLabel}>Within 7 days</span>
-            <span className={styles.bucketValue}>
-              {expiryBuckets.expiringWithin7Days}
-            </span>
-          </div>
-          <div className={styles.bucketCard}>
-            <span className={styles.bucketLabel}>
-              Within {expiryBuckets.expiringSoonDays} days
-            </span>
-            <span className={styles.bucketValue}>
-              {expiryBuckets.expiringSoonTotal}
-            </span>
-          </div>
-        </div>
-      )}
       <div className={styles.searchContainer}>
         <form className={styles.searchBar} onSubmit={handleSearch}>
           <span className={styles.searchIcon} role="img" aria-label="Search">
@@ -308,7 +249,7 @@ export default function ProductSearchPage() {
           <input
             type="text"
             className={styles.searchInput}
-            placeholder="Name, barcode, batch 1947304, expiring 30, fefo…"
+            placeholder="Name, barcode, or batch 1947304"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             disabled={isLoading}

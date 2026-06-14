@@ -32,6 +32,7 @@ import {
   formatInventoryExpiryDate,
   hasInventoryExpiryDate,
   getExtensionFieldString,
+  sortInventoryByExpirySoonest,
 } from '@inventory-platform/ui';
 
 export function meta() {
@@ -794,7 +795,7 @@ export default function ScanSellPage() {
           setSearchTotalItems(response.page.totalItems);
           setSearchPage(response.page.page);
         }
-        setSearchResults(items);
+        setSearchResults(sortInventoryByExpirySoonest(items));
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Search failed';
         notifyError(msg);

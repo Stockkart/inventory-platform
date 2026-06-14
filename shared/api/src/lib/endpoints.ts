@@ -125,8 +125,6 @@ export const API_ENDPOINTS = {
     PARSE_STOCK_SHEET: '/inventory/parse-stock-sheet',
     SEARCH: '/inventory/search',
     EXPIRY_BUCKETS: '/inventory/expiry-buckets',
-    NEAR_EXPIRY: '/inventory/near-expiry',
-    FEFO: '/inventory/fefo',
     BY_IDS: '/inventory/by-ids',
     LOTS: '/inventory/lots',
     LOW_STOCK: '/inventory/low-stock',
