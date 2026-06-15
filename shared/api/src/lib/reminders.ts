@@ -7,6 +7,7 @@ import type {
   UpdateReminderDto,
   ReminderDetail,
   ReminderDetailListResponse,
+  InventoryExpiryBuckets,
 } from '@inventory-platform/types';
 
 export interface RemindersListResponse {
@@ -80,6 +81,20 @@ export const remindersApi = {
   getDetailById: async (id: string): Promise<ReminderDetail> => {
     const response = await apiClient.get<ApiResponse<ReminderDetail>>(
       API_ENDPOINTS.REMINDERS.DETAIL_BY_ID(id)
+    );
+    return response.data;
+  },
+
+  getExpiryBuckets: async (
+    expiringSoonDays?: number
+  ): Promise<InventoryExpiryBuckets> => {
+    const params: Record<string, string> = {};
+    if (expiringSoonDays !== undefined && expiringSoonDays > 0) {
+      params.expiringSoonDays = String(expiringSoonDays);
+    }
+    const response = await apiClient.get<ApiResponse<InventoryExpiryBuckets>>(
+      API_ENDPOINTS.REMINDERS.EXPIRY_BUCKETS,
+      params
     );
     return response.data;
   },

@@ -5,6 +5,8 @@ import type {
   CreateInventoryDto,
   InventoryResponse,
   InventoryListResponse,
+  InventoryExpiryBuckets,
+  InventorySearchParams,
   LotsListResponse,
   PaginationInventoryResponse,
   BulkCreateInventoryDto,
@@ -99,25 +101,51 @@ export const inventoryApi = {
   },
 
   search: async (
-    query: string,
+    queryOrParams: string | InventorySearchParams,
     page?: number,
     size?: number
   ): Promise<InventoryListResponse> => {
-    const params: Record<string, string> = { q: query };
-    if (page !== undefined) {
-      params.page = String(page);
+    const params: InventorySearchParams =
+      typeof queryOrParams === 'string'
+        ? {
+            q: queryOrParams,
+            limit: size !== undefined ? size : 50,
+            sort: 'expiryDate:asc',
+          }
+        : queryOrParams;
+
+    const queryParams: Record<string, string> = {};
+    if (params.q?.trim()) queryParams.q = params.q.trim();
+    if (params.sort?.trim()) queryParams.sort = params.sort.trim();
+    if (params.limit !== undefined && params.limit > 0) {
+      queryParams.limit = String(params.limit);
     }
-    if (size !== undefined) {
-      params.size = String(size);
-    }
+
     const response = await apiClient.get<ApiResponse<InventoryListResponse>>(
       API_ENDPOINTS.INVENTORY.SEARCH,
+      queryParams
+    );
+    return response.data;
+  },
+
+  /** @deprecated Use inventoryApi.search with flat params */
+  searchWithFilters: async (
+    params: InventorySearchParams
+  ): Promise<InventoryListResponse> => {
+    return inventoryApi.search(params);
+  },
+
+  getExpiryBuckets: async (
+    expiringSoonDays?: number
+  ): Promise<InventoryExpiryBuckets> => {
+    const params: Record<string, string> = {};
+    if (expiringSoonDays !== undefined && expiringSoonDays > 0) {
+      params.expiringSoonDays = String(expiringSoonDays);
+    }
+    const response = await apiClient.get<ApiResponse<InventoryExpiryBuckets>>(
+      API_ENDPOINTS.INVENTORY.EXPIRY_BUCKETS,
       params
     );
-    // The API returns { success: true, data: { data: [...], meta: null, page: {...} } }
-    // apiClient.get returns r.data which is the full response body: { success: true, data: {...} }
-    // So response is ApiResponse<InventoryListResponse> = { success: true, data: InventoryListResponse }
-    // response.data is InventoryListResponse = { data: InventoryItem[], meta: unknown | null, page: {...} }
     return response.data;
   },
 

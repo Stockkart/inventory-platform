@@ -6,19 +6,29 @@
 
 [Learn more about this workspace setup and its capabilities](https://nx.dev/getting-started/tutorials/react-monorepo-tutorial?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `pnpm nx graph` to visually explore what was created. Now, let's get you up to speed!
 
-## Vertical schema (Phase 2–3)
+## Vertical schema (Phases 2–4)
 
 The platform renders **vertical-specific fields** from the inventory API schema — no hardcoded pharmacy forms or medical loading fallbacks.
+
+| Phase | Status | Highlights |
+|-------|--------|------------|
+| **2 — Dynamic UI** | Mostly shipped | Onboarding, registration, scan-sell `businessType` |
+| **3 — Extension storage** | Shipped | `verticalFields` on create/read; no top-level `batchNo`/`expiryDate` |
+| **4 — Search** | Shipped | `searchWithFilters`, expiry buckets, near-expiry filters |
 
 | Surface | Schema source | Notes |
 |---------|---------------|--------|
 | Onboarding | `GET /verticals`, `GET /verticals/{id}/schema` | Vertical picker; shop fields (`dlNo`, `fssai`) only when in schema |
-| Product registration | `GET /shops/me/schema?mode=regular\|basic` | Grid + list columns from API schema (`storage: extension` + `companyName`); `verticalFields` on create |
+| Product registration | `GET /shops/me/schema?mode=regular\|basic` | Grid + list columns from API schema; `verticalFields` on create |
+| Product search | `GET /inventory/search` + schema `searchable` fields | Batch no. + near-expiry days filters when in schema |
 | Scan-sell | Shop `verticalId` | `businessType` from shop, not `pharmacy` |
+| Reminders | `GET /reminders/expiry-buckets` | Expiry bucket summary cards |
 
-**Shared libraries:** `@inventory-platform/types` (`vertical-schema.ts`), `@inventory-platform/api` (`verticals.ts`), `@inventory-platform/store` (`useVerticalSchemaStore`), `@inventory-platform/ui` (`verticalSchemaUtils`, `VerticalSchemaFieldInput`).
+**Shared libraries:** `@inventory-platform/types` (`vertical-schema.ts`), `@inventory-platform/api` (`verticals.ts`, `inventory.ts`), `@inventory-platform/store` (`useVerticalSchemaStore`), `@inventory-platform/ui` (`verticalSchemaUtils`, `VerticalSchemaFieldInput`).
 
-**Backend architecture:** see [inventory-api `docs/VERTICAL_PLUGIN_ARCHITECTURE.md`](../inventory-api/docs/VERTICAL_PLUGIN_ARCHITECTURE.md) (v4.8).
+**Backend architecture:** see [inventory-api `docs/VERTICAL_PLUGIN_ARCHITECTURE.md`](../inventory-api/docs/VERTICAL_PLUGIN_ARCHITECTURE.md) (v4.9).
+
+**Remaining (roadmap):** scan-sell detail modal schema columns; import fully schema-driven; FEFO in checkout UI; widget registry (Phase 6).
 
 **After API seed changes:** restart API or reseed `vertical_schemas` so the UI picks up new field labels.
 

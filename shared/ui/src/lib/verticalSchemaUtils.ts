@@ -298,6 +298,83 @@ export function itemUsesExtensionBag(item: {
   );
 }
 
+/** Read an extension field for display (verticalFields bag, then legacy top-level). */
+export function getExtensionFieldString(
+  item: VerticalFieldProduct,
+  key: string
+): string {
+  const bag = item.verticalFields as Record<string, unknown> | undefined;
+  const fromBag = bag?.[key];
+  if (fromBag != null && fromBag !== '') {
+    return String(fromBag);
+  }
+  const legacy = (item as Record<string, unknown>)[key];
+  if (legacy != null && legacy !== '') {
+    return String(legacy);
+  }
+  return '';
+}
+
+export function getInventoryBatchNo(item: VerticalFieldProduct): string {
+  const value = getExtensionFieldString(item, 'batchNo');
+  return value || '—';
+}
+
+export function formatInventoryExpiryDate(
+  item: VerticalFieldProduct,
+  locale = 'en-IN'
+): string {
+  const raw =
+    getExtensionFieldString(item, 'expiryDate') ||
+    String((item as { expiryDate?: string }).expiryDate ?? '');
+  if (!raw.trim()) {
+    return '—';
+  }
+  try {
+    return new Date(raw).toLocaleDateString(locale);
+  } catch {
+    return raw.slice(0, 10);
+  }
+}
+
+export function hasInventoryExpiryDate(item: VerticalFieldProduct): boolean {
+  return getExtensionFieldString(item, 'expiryDate').trim().length > 0;
+}
+
+/** Epoch ms for sorting; null when no expiry on the item. */
+export function getInventoryExpiryTimestamp(
+  item: VerticalFieldProduct
+): number | null {
+  const raw =
+    getExtensionFieldString(item, 'expiryDate') ||
+    String((item as { expiryDate?: string }).expiryDate ?? '');
+  if (!raw.trim()) {
+    return null;
+  }
+  const ts = Date.parse(raw);
+  return Number.isNaN(ts) ? null : ts;
+}
+
+/** Soonest expiry first; items without expiry sort last. */
+export function sortInventoryByExpirySoonest<T extends VerticalFieldProduct>(
+  items: T[]
+): T[] {
+  return [...items].sort((a, b) => {
+    const ta = getInventoryExpiryTimestamp(a);
+    const tb = getInventoryExpiryTimestamp(b);
+    if (ta == null && tb == null) {
+      return 0;
+    }
+    if (ta == null) {
+      return 1;
+    }
+    if (tb == null) {
+      return -1;
+    }
+    return ta - tb;
+  });
+}
+
 export function isExtensionSchemaField(
   fields: VerticalSchemaFieldDef[],
   key: string

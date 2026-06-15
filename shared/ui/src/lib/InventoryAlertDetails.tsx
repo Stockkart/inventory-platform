@@ -14,7 +14,11 @@ import type {
   DiscountApplicable,
 } from '@inventory-platform/types';
 import { useNotify } from '@inventory-platform/store';
-import { itemUsesExtensionBag } from './verticalSchemaUtils';
+import {
+  itemUsesExtensionBag,
+  getInventoryBatchNo,
+  formatInventoryExpiryDate,
+} from './verticalSchemaUtils';
 import styles from './InventoryAlertDetails.module.css';
 
 function formatSaleSchemeDisplay(item: InventoryItem): string {
@@ -694,7 +698,7 @@ export function InventoryAlertDetails({
                     />
                   ) : (
                     <span className={styles.detailValue}>
-                      {item?.batchNo ?? '—'}
+                      {getInventoryBatchNo(item)}
                     </span>
                   )}
                 </div>
@@ -819,9 +823,7 @@ export function InventoryAlertDetails({
                     />
                   ) : (
                     <span className={styles.detailValue}>
-                      {item.expiryDate
-                        ? new Date(item.expiryDate).toLocaleDateString('en-IN')
-                        : '—'}
+                      {formatInventoryExpiryDate(item)}
                     </span>
                   )}
                 </div>

@@ -5,7 +5,12 @@ import {
   resolveInventoryDocumentId,
 } from '@inventory-platform/api';
 import type { BillingMode, InventoryItem } from '@inventory-platform/types';
-import { InventoryAlertDetails, PaginationBar } from '@inventory-platform/ui';
+import {
+  InventoryAlertDetails,
+  PaginationBar,
+  formatInventoryExpiryDate,
+  sortInventoryByExpirySoonest,
+} from '@inventory-platform/ui';
 import styles from './dashboard.product-search.module.css';
 import { useNotify } from '@inventory-platform/store';
 
@@ -37,7 +42,8 @@ export default function ProductSearchPage() {
   >('ALL');
   const { success: notifySuccess, error: notifyError } = useNotify;
 
-  // Fetch all inventory on mount
+  const hasActiveSearch = searchQuery.trim().length > 0;
+
   useEffect(() => {
     fetchAllInventory();
   }, []);
@@ -47,7 +53,7 @@ export default function ProductSearchPage() {
     setError(null);
     try {
       const response = await inventoryApi.getAll(page, size);
-      setInventory(response.data || []);
+      setInventory(sortInventoryByExpirySoonest(response.data || []));
       // Update pagination info if available
       if (response.page) {
         setSearchTotalPages(response.page.totalPages || 0);
@@ -87,7 +93,7 @@ export default function ProductSearchPage() {
       setSearchPageSize(pageSize);
     }
 
-    if (!searchQuery.trim()) {
+    if (!hasActiveSearch) {
       fetchAllInventory(currentPage, currentPageSize);
       return;
     }
@@ -95,18 +101,16 @@ export default function ProductSearchPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await inventoryApi.search(
-        searchQuery.trim(),
-        currentPage,
-        currentPageSize
-      );
-      setInventory(response.data || []);
-      // Update pagination info
-      if (response.page) {
-        setSearchTotalPages(response.page.totalPages);
-        setSearchTotalItems(response.page.totalItems);
-        setSearchPage(response.page.page);
-      }
+      const response = await inventoryApi.search({
+        q: searchQuery.trim(),
+        limit: currentPageSize,
+        sort: 'expiryDate:asc',
+      });
+      setInventory(sortInventoryByExpirySoonest(response.data || []));
+      const total = response.data?.length ?? 0;
+      setSearchTotalPages(total > 0 ? 1 : 0);
+      setSearchTotalItems(total);
+      setSearchPage(0);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to search inventory';
@@ -221,10 +225,12 @@ export default function ProductSearchPage() {
   const normalizedMode = (item: InventoryItem): BillingMode =>
     item.billingMode === 'BASIC' ? 'BASIC' : 'REGULAR';
 
-  const filteredInventory = inventory.filter((item) =>
-    billingModeFilter === 'ALL'
-      ? true
-      : normalizedMode(item) === billingModeFilter
+  const filteredInventory = sortInventoryByExpirySoonest(
+    inventory.filter((item) =>
+      billingModeFilter === 'ALL'
+        ? true
+        : normalizedMode(item) === billingModeFilter
+    )
   );
 
   return (
@@ -232,7 +238,7 @@ export default function ProductSearchPage() {
       <div className={styles.header}>
         <h2 className={styles.title}>Product Search</h2>
         <p className={styles.subtitle}>
-          Search products by name, company, or barcode
+          Search by product name, barcode, or batch number
         </p>
       </div>
       <div className={styles.searchContainer}>
@@ -243,7 +249,7 @@ export default function ProductSearchPage() {
           <input
             type="text"
             className={styles.searchInput}
-            placeholder="Search by product name, company, or barcode..."
+            placeholder="Name, barcode, or batch 1947304"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             disabled={isLoading}
@@ -255,7 +261,7 @@ export default function ProductSearchPage() {
           >
             {isLoading ? 'Searching...' : 'Search'}
           </button>
-          {searchQuery && (
+          {hasActiveSearch && (
             <button
               type="button"
               className={styles.clearBtn}
@@ -372,7 +378,7 @@ export default function ProductSearchPage() {
                       </div>
                       <div className={styles.expiryInfo}>
                         <span className={styles.expiryDate}>
-                          Expires: {formatDate(item.expiryDate)}
+                          Expires: {formatInventoryExpiryDate(item)}
                         </span>
                       </div>
                       {(item.itemType ||

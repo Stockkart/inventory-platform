@@ -1,10 +1,16 @@
 import { useEffect, useState } from 'react';
+import { inventoryApi } from '@inventory-platform/api';
 import { useAnalyticsStore } from '@inventory-platform/store';
-import type { InventoryItemAnalytics } from '@inventory-platform/types';
+import type {
+  InventoryItemAnalytics,
+  InventoryExpiryBuckets,
+} from '@inventory-platform/types';
 import styles from './analytics.module.css';
 
 export function InventoryAnalytics() {
   const { inventoryData, isLoading, error, fetchInventory } = useAnalyticsStore();
+  const [expiryBuckets, setExpiryBuckets] =
+    useState<InventoryExpiryBuckets | null>(null);
   const [localFilters, setLocalFilters] = useState<{
     includeAll: boolean;
     lowStockThreshold: number;
@@ -60,6 +66,13 @@ export function InventoryAnalytics() {
       expiringSoonDays: localFilters.expiringSoonDays,
     });
   }, [localFilters, fetchInventory]);
+
+  useEffect(() => {
+    inventoryApi
+      .getExpiryBuckets(localFilters.expiringSoonDays)
+      .then(setExpiryBuckets)
+      .catch(() => setExpiryBuckets(null));
+  }, [localFilters.expiringSoonDays]);
 
   const handleFilterChange = (key: string, value: string | number | boolean) => {
     setLocalFilters((prev) => ({ ...prev, [key]: value }));
@@ -295,6 +308,37 @@ export function InventoryAnalytics() {
       {/* Inventory Analytics Content */}
       {inventoryData && !isLoading && (
         <>
+          {expiryBuckets && (
+            <div className={styles.summaryGrid}>
+              <div className={styles.summaryCard}>
+                <div className={styles.summaryHeader}>
+                  <span className={styles.summaryLabel}>
+                    Expired (extension index)
+                  </span>
+                </div>
+                <div className={styles.summaryValue}>{expiryBuckets.expired}</div>
+              </div>
+              <div className={styles.summaryCard}>
+                <div className={styles.summaryHeader}>
+                  <span className={styles.summaryLabel}>Within 7 days</span>
+                </div>
+                <div className={styles.summaryValue}>
+                  {expiryBuckets.expiringWithin7Days}
+                </div>
+              </div>
+              <div className={styles.summaryCard}>
+                <div className={styles.summaryHeader}>
+                  <span className={styles.summaryLabel}>
+                    Within {expiryBuckets.expiringSoonDays} days
+                  </span>
+                </div>
+                <div className={styles.summaryValue}>
+                  {expiryBuckets.expiringSoonTotal}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Summary Cards */}
           <div className={styles.summaryGrid}>
             <div className={styles.summaryCard}>
