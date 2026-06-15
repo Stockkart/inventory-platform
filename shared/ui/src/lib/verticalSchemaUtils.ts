@@ -270,9 +270,10 @@ export function extensionFieldKeys(
  * Drops vertical/extension values that do not belong to the active schema
  * (e.g. medical batch/expiry on a sports shop).
  */
-export function sanitizeProductForVerticalSchema<
-  T extends VerticalFieldProduct & Record<string, unknown>,
->(product: T, fields: VerticalSchemaFieldDef[]): T {
+export function sanitizeProductForVerticalSchema<T extends VerticalFieldProduct>(
+  product: T,
+  fields: VerticalSchemaFieldDef[]
+): T {
   const allowedExtension = extensionFieldKeys(fields);
   const record = product as Record<string, unknown>;
   const rawBag =
@@ -343,9 +344,10 @@ export function sanitizeProductForVerticalSchema<
 }
 
 /** Move legacy top-level extension values into {@code verticalFields} for form state. */
-export function hydrateExtensionFieldsOnProduct<
-  T extends VerticalFieldProduct & Record<string, unknown>,
->(product: T, fields: VerticalSchemaFieldDef[]): T {
+export function hydrateExtensionFieldsOnProduct<T extends VerticalFieldProduct>(
+  product: T,
+  fields: VerticalSchemaFieldDef[]
+): T {
   const extensionFields = fields.filter((f) => f.storage === 'extension');
   if (extensionFields.length === 0) {
     return product;

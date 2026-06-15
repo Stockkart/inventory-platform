@@ -1015,6 +1015,7 @@ export interface ParseInvoiceItem {
   unitConversions?: UnitConversion | null;
   rates?: Array<{ name: string; price: number }> | null;
   defaultRate?: string | null;
+  verticalFields?: Record<string, unknown> | null;
 }
 
 export interface ParseInvoiceResponse {
