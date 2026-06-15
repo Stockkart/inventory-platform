@@ -4,15 +4,21 @@ import {
   cartApi,
   resolveInventoryDocumentId,
 } from '@inventory-platform/api';
-import type { BillingMode, InventoryItem } from '@inventory-platform/types';
+import type { BillingMode, InventoryItem, InventorySearchMeta } from '@inventory-platform/types';
 import {
   InventoryAlertDetails,
   PaginationBar,
   formatInventoryExpiryDate,
-  sortInventoryByExpirySoonest,
+  hasInventoryExpiryDate,
+  shopSchemaHasInventoryField,
 } from '@inventory-platform/ui';
 import styles from './dashboard.product-search.module.css';
-import { useNotify } from '@inventory-platform/store';
+import {
+  useNotify,
+  useVerticalSchemaStore,
+  shopSchemaCacheKey,
+  useAuthStore,
+} from '@inventory-platform/store';
 
 export function meta() {
   return [
@@ -35,14 +41,39 @@ export default function ProductSearchPage() {
   const [searchPageSize, setSearchPageSize] = useState(10);
   const [searchTotalPages, setSearchTotalPages] = useState(0);
   const [searchTotalItems, setSearchTotalItems] = useState(0);
+  const [searchCursors, setSearchCursors] = useState<(string | undefined)[]>([
+    undefined,
+  ]);
+  const [searchHasNext, setSearchHasNext] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
   const [billingModeFilter, setBillingModeFilter] = useState<
     'ALL' | BillingMode
   >('ALL');
   const { success: notifySuccess, error: notifyError } = useNotify;
+  const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
+  const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
+  const shopSchema = useVerticalSchemaStore((s) => {
+    if (!activeShopId) {
+      return null;
+    }
+    return s.shopSchemaByKey[shopSchemaCacheKey(activeShopId, 'regular')] ?? null;
+  });
+  const showExpiryField = shopSchemaHasInventoryField(shopSchema, 'expiryDate');
+
+  useEffect(() => {
+    if (!activeShopId) {
+      return;
+    }
+    void fetchShopSchema('regular');
+  }, [activeShopId, fetchShopSchema]);
 
   const hasActiveSearch = searchQuery.trim().length > 0;
+
+  const readNextCursor = (meta: InventorySearchMeta | null | undefined) => {
+    const cursor = meta?.nextCursor?.trim();
+    return cursor || undefined;
+  };
 
   useEffect(() => {
     fetchAllInventory();
@@ -53,7 +84,7 @@ export default function ProductSearchPage() {
     setError(null);
     try {
       const response = await inventoryApi.getAll(page, size);
-      setInventory(sortInventoryByExpirySoonest(response.data || []));
+      setInventory(response.data || []);
       // Update pagination info if available
       if (response.page) {
         setSearchTotalPages(response.page.totalPages || 0);
@@ -82,21 +113,36 @@ export default function ProductSearchPage() {
   ) => {
     e?.preventDefault();
 
-    const currentPage = pageNum !== undefined ? pageNum : 0;
+    const currentPage = pageNum !== undefined ? pageNum : searchPage;
     const currentPageSize = pageSize !== undefined ? pageSize : searchPageSize;
+    const isNewSearch = pageNum === undefined && pageSize === undefined;
 
-    if (pageNum === undefined && pageSize === undefined) {
-      setSearchPage(0); // Reset to first page on new search
+    if (isNewSearch) {
+      setSearchPage(0);
+      setSearchCursors([undefined]);
+    } else if (pageNum !== undefined) {
+      setSearchPage(currentPage);
     }
 
     if (pageSize !== undefined) {
-      setSearchPageSize(pageSize);
+      setSearchPageSize(currentPageSize);
+      if (hasActiveSearch) {
+        setSearchPage(0);
+        setSearchCursors([undefined]);
+      }
     }
 
     if (!hasActiveSearch) {
-      fetchAllInventory(currentPage, currentPageSize);
+      fetchAllInventory(
+        pageSize !== undefined ? 0 : currentPage,
+        currentPageSize
+      );
       return;
     }
+
+    const cursor = isNewSearch || pageSize !== undefined
+      ? undefined
+      : searchCursors[currentPage];
 
     setIsLoading(true);
     setError(null);
@@ -105,12 +151,24 @@ export default function ProductSearchPage() {
         q: searchQuery.trim(),
         limit: currentPageSize,
         sort: 'expiryDate:asc',
+        ...(cursor ? { cursor } : {}),
       });
-      setInventory(sortInventoryByExpirySoonest(response.data || []));
-      const total = response.data?.length ?? 0;
-      setSearchTotalPages(total > 0 ? 1 : 0);
-      setSearchTotalItems(total);
-      setSearchPage(0);
+      const items = response.data || [];
+      setInventory(items);
+      const nextCursor = readNextCursor(response.meta);
+      setSearchHasNext(Boolean(nextCursor));
+      if (nextCursor) {
+        setSearchCursors((prev) => {
+          const next = [...prev];
+          next[currentPage + 1] = nextCursor;
+          return next;
+        });
+      }
+      setSearchTotalPages(0);
+      setSearchTotalItems(0);
+      if (!isNewSearch && pageNum !== undefined) {
+        setSearchPage(currentPage);
+      }
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to search inventory';
@@ -126,6 +184,8 @@ export default function ProductSearchPage() {
     setSearchPage(0);
     setSearchTotalPages(0);
     setSearchTotalItems(0);
+    setSearchCursors([undefined]);
+    setSearchHasNext(false);
     fetchAllInventory(0, searchPageSize);
   };
 
@@ -225,12 +285,10 @@ export default function ProductSearchPage() {
   const normalizedMode = (item: InventoryItem): BillingMode =>
     item.billingMode === 'BASIC' ? 'BASIC' : 'REGULAR';
 
-  const filteredInventory = sortInventoryByExpirySoonest(
-    inventory.filter((item) =>
-      billingModeFilter === 'ALL'
-        ? true
-        : normalizedMode(item) === billingModeFilter
-    )
+  const filteredInventory = inventory.filter((item) =>
+    billingModeFilter === 'ALL'
+      ? true
+      : normalizedMode(item) === billingModeFilter
   );
 
   return (
@@ -376,11 +434,13 @@ export default function ProductSearchPage() {
                             </span>
                           )}
                       </div>
+                      {showExpiryField && hasInventoryExpiryDate(item) && (
                       <div className={styles.expiryInfo}>
                         <span className={styles.expiryDate}>
                           Expires: {formatInventoryExpiryDate(item)}
                         </span>
                       </div>
+                      )}
                       {(item.itemType ||
                         item.discountApplicable ||
                         item.purchaseDate ||
@@ -493,10 +553,13 @@ export default function ProductSearchPage() {
             </div>
             <PaginationBar
               page={searchPage}
-              totalPages={Math.max(searchTotalPages, 1)}
-              totalItems={searchTotalItems}
+              totalPages={
+                hasActiveSearch ? undefined : Math.max(searchTotalPages, 1)
+              }
+              totalItems={hasActiveSearch ? undefined : searchTotalItems}
               disabled={isLoading}
               onPageChange={(p) => handleSearch(undefined, p)}
+              nextDisabled={hasActiveSearch ? isLoading || !searchHasNext : undefined}
               pageSize={searchPageSize}
               pageSizeOptions={[10, 20, 50]}
               onPageSizeChange={(n) => handleSearch(undefined, 0, n)}

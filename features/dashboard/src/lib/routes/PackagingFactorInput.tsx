@@ -1,8 +1,10 @@
 import {
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type KeyboardEvent,
 } from 'react';
 import type { PackagingUnit } from '@inventory-platform/types';
@@ -115,6 +117,7 @@ export function PackagingUnitInput({
   const unitFocusedRef = useRef(false);
   const qtyFocusedRef = useRef(false);
   const lastSyncedBaseUnitRef = useRef(baseUnit);
+  const [dropdownStyle, setDropdownStyle] = useState<CSSProperties>({});
   const [qtyDraft, setQtyDraft] = useState(() =>
     factor > 1 ? String(factor) : ''
   );
@@ -164,15 +167,56 @@ export function PackagingUnitInput({
     setHighlightIdx(0);
   }, [unitDraft, listOpen]);
 
+  useLayoutEffect(() => {
+    if (!listOpen || !unitWrapRef.current) {
+      return;
+    }
+    const updatePosition = () => {
+      const el = unitWrapRef.current;
+      if (!el) {
+        return;
+      }
+      const rect = el.getBoundingClientRect();
+      const width = Math.max(rect.width, compact ? 180 : 220);
+      const maxHeight = 240;
+      const spaceBelow = window.innerHeight - rect.bottom - 8;
+      const spaceAbove = rect.top - 8;
+      const openUp = spaceBelow < 120 && spaceAbove > spaceBelow;
+      const height = Math.min(maxHeight, openUp ? spaceAbove : spaceBelow);
+      setDropdownStyle({
+        position: 'fixed',
+        left: Math.min(rect.left, window.innerWidth - width - 8),
+        width,
+        maxHeight: Math.max(height, 96),
+        zIndex: 3000,
+        ...(openUp
+          ? { bottom: window.innerHeight - rect.top + 4 }
+          : { top: rect.bottom + 4 }),
+      });
+    };
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [listOpen, compact, unitDraft, filteredUnits.length]);
+
   useEffect(() => {
     if (!listOpen) return;
     const onDocMouseDown = (e: MouseEvent) => {
-      if (
-        unitWrapRef.current &&
-        !unitWrapRef.current.contains(e.target as Node)
-      ) {
-        setListOpen(false);
+      const target = e.target as Node;
+      if (unitWrapRef.current?.contains(target)) {
+        return;
       }
+      if (
+        target instanceof Element &&
+        target.closest('[data-packaging-unit-dropdown]')
+      ) {
+        return;
+      }
+      setListOpen(false);
     };
     document.addEventListener('mousedown', onDocMouseDown);
     return () => document.removeEventListener('mousedown', onDocMouseDown);
@@ -185,6 +229,25 @@ export function PackagingUnitInput({
     const def = packagingUnits.find((u) => u.uqc === uqc);
     if (def && !def.allowsUnitsPerPack) return 1;
     return currentFactor;
+  };
+
+  const emitPackagingChange = (rawUnit: string, nextFactor: number) => {
+    const text = rawUnit.trim();
+    if (!text) {
+      lastSyncedBaseUnitRef.current = '';
+      onChange('', nextFactor);
+      return;
+    }
+    const resolved = resolvePackagingUqc(text, packagingUnits);
+    const factorForUnit = effectiveFactorForUnit(resolved, nextFactor);
+    lastSyncedBaseUnitRef.current = resolved;
+    onChange(resolved, factorForUnit);
+    if (!unitFocusedRef.current) {
+      setUnitDraft(displayUnitValue(resolved, packagingUnits));
+    }
+    if (!packagingUnits.find((u) => u.uqc === resolved)?.allowsUnitsPerPack) {
+      setQtyDraft('');
+    }
   };
 
   const commitUnit = (raw?: string) => {
@@ -294,7 +357,8 @@ export function PackagingUnitInput({
               if (v === '' || /^\d+$/.test(v)) {
                 setQtyDraft(v);
                 const n = v === '' ? 1 : parseInt(v, 10);
-                onChange(baseUnit, n);
+                const unitText = baseUnit.trim() || unitDraft.trim();
+                emitPackagingChange(unitText, n);
               }
             }}
             onFocus={() => {
@@ -302,6 +366,9 @@ export function PackagingUnitInput({
             }}
             onBlur={() => {
               qtyFocusedRef.current = false;
+              if (unitDraft.trim() && !baseUnit.trim()) {
+                commitUnit();
+              }
             }}
             onKeyDown={(e) => e.stopPropagation()}
             disabled={disabled}
@@ -369,7 +436,9 @@ export function PackagingUnitInput({
           {listOpen && filteredUnits.length > 0 ? (
             <ul
               id={listboxId}
-              className={styles.unitDropdown}
+              className={`${styles.unitDropdown} ${styles.unitDropdownFloating}`}
+              style={dropdownStyle}
+              data-packaging-unit-dropdown
               role="listbox"
             >
               {filteredUnits.map((u, i) => (
@@ -394,7 +463,13 @@ export function PackagingUnitInput({
           {listOpen &&
           filteredUnits.length === 0 &&
           packagingUnits.length > 0 ? (
-            <div className={styles.unitDropdownEmpty}>No matching units</div>
+            <div
+              className={`${styles.unitDropdownEmpty} ${styles.unitDropdownFloating}`}
+              style={dropdownStyle}
+              data-packaging-unit-dropdown
+            >
+              No matching units
+            </div>
           ) : null}
         </div>
       </div>

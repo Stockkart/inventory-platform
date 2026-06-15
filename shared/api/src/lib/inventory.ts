@@ -120,6 +120,9 @@ export const inventoryApi = {
     if (params.limit !== undefined && params.limit > 0) {
       queryParams.limit = String(params.limit);
     }
+    if (params.cursor?.trim()) {
+      queryParams.cursor = params.cursor.trim();
+    }
 
     const response = await apiClient.get<ApiResponse<InventoryListResponse>>(
       API_ENDPOINTS.INVENTORY.SEARCH,

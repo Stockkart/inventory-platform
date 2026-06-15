@@ -14,6 +14,21 @@ export interface RemindersListResponse {
   data: Reminder[];
 }
 
+/** Collapse concurrent identical GETs (e.g. React Strict Mode double-mount). */
+const inflightGet = new Map<string, Promise<unknown>>();
+
+function dedupeGet<T>(key: string, request: () => Promise<T>): Promise<T> {
+  const existing = inflightGet.get(key);
+  if (existing) {
+    return existing as Promise<T>;
+  }
+  const promise = request().finally(() => {
+    inflightGet.delete(key);
+  });
+  inflightGet.set(key, promise);
+  return promise;
+}
+
 export const remindersApi = {
   getAll: async (page = 0, size = 10): Promise<Reminder[]> => {
     const response = await apiClient.get<ApiResponse<RemindersListResponse>>(
@@ -68,14 +83,15 @@ export const remindersApi = {
     page = 0,
     size = 10
   ): Promise<ReminderDetailListResponse> => {
-    const response = await apiClient.get<
-      ApiResponse<ReminderDetailListResponse>
-    >(API_ENDPOINTS.REMINDERS.DETAILS, {
-      page: String(page),
-      size: String(size),
+    return dedupeGet(`details:${page}:${size}`, async () => {
+      const response = await apiClient.get<
+        ApiResponse<ReminderDetailListResponse>
+      >(API_ENDPOINTS.REMINDERS.DETAILS, {
+        page: String(page),
+        size: String(size),
+      });
+      return response.data;
     });
-
-    return response.data;
   },
 
   getDetailById: async (id: string): Promise<ReminderDetail> => {
@@ -88,14 +104,17 @@ export const remindersApi = {
   getExpiryBuckets: async (
     expiringSoonDays?: number
   ): Promise<InventoryExpiryBuckets> => {
-    const params: Record<string, string> = {};
-    if (expiringSoonDays !== undefined && expiringSoonDays > 0) {
-      params.expiringSoonDays = String(expiringSoonDays);
-    }
-    const response = await apiClient.get<ApiResponse<InventoryExpiryBuckets>>(
-      API_ENDPOINTS.REMINDERS.EXPIRY_BUCKETS,
-      params
-    );
-    return response.data;
+    const days = expiringSoonDays ?? 30;
+    return dedupeGet(`expiry-buckets:${days}`, async () => {
+      const params: Record<string, string> = {};
+      if (days > 0) {
+        params.expiringSoonDays = String(days);
+      }
+      const response = await apiClient.get<ApiResponse<InventoryExpiryBuckets>>(
+        API_ENDPOINTS.REMINDERS.EXPIRY_BUCKETS,
+        params
+      );
+      return response.data;
+    });
   },
 };

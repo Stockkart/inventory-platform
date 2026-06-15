@@ -374,6 +374,16 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
+.unitDropdownFloating {
+  position: fixed;
+  top: auto;
+  left: auto;
+  right: auto;
+  margin: 0;
+  overflow-y: auto;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
 .unitDropdownItem {
   padding: 0.6rem 0.85rem;
   cursor: pointer;
@@ -1275,6 +1285,12 @@
   padding: 0.4rem 0.6rem;
   border: 1px solid var(--border-color);
   vertical-align: middle;
+}
+
+.excelTdPackaging {
+  overflow: visible;
+  position: relative;
+  min-width: 11rem;
 }
 
 .excelInput {

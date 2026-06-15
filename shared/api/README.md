@@ -20,12 +20,10 @@ Defined in `src/lib/inventory.ts`:
 
 | Function | API |
 |----------|-----|
-| `inventoryApi.searchWithFilters({ q, filters, sort, limit })` | `GET /api/v1/inventory/search` |
-| `inventoryApi.getExpiryBuckets(expiringSoonDays?)` | `GET /api/v1/inventory/expiry-buckets` |
-| `inventoryApi.getNearExpiry(days?, limit?)` | `GET /api/v1/inventory/near-expiry` |
-| `inventoryApi.getFefo(batchNo?, limit?)` | `GET /api/v1/inventory/fefo` |
+| `inventoryApi.search({ q, sort, limit, cursor? })` | `GET /api/v1/inventory/search` — `meta.nextCursor` for next page |
+| `inventoryApi.getExpiryBuckets(expiringSoonDays?)` | `GET /api/v1/inventory/expiry-buckets` (Analytics surface) |
 
-Filter keys use `filters[key]=value` query params (e.g. `filters[batchNo]`, `filters[nearExpiryDays]`).
+Unified `q` examples: `paracetamol`, `batch 1947304`, `dolo batch ABC12`.
 
 ## Reminders expiry buckets
 
@@ -34,6 +32,8 @@ Defined in `src/lib/reminders.ts`:
 | Function | API |
 |----------|-----|
 | `remindersApi.getExpiryBuckets(expiringSoonDays?)` | `GET /api/v1/reminders/expiry-buckets` |
+
+Concurrent identical GETs are deduped in-flight (e.g. React Strict Mode).
 
 ## Building
 

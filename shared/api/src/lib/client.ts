@@ -1,6 +1,7 @@
 // API Client configuration
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import { EventSourcePolyfill } from 'event-source-polyfill';
+import { parseApiErrorPayload } from './errors';
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
@@ -63,20 +64,8 @@ class ApiClient {
       (response) => response,
       (error: AxiosError) => {
         if (error.response) {
-          const errorData = error.response.data as {
-            message?: string;
-            error?: string;
-            data?: { message?: string };
-            errors?: Record<string, string[]>;
-            code?: string;
-            details?: unknown;
-          };
-
-          const message =
-            errorData?.data?.message ||
-            errorData?.error ||
-            errorData?.message ||
-            error.response.statusText;
+          const errorData = error.response.data;
+          const { message, errors } = parseApiErrorPayload(errorData);
 
           const apiError = new Error(message) as Error & {
             status?: number;
@@ -86,9 +75,10 @@ class ApiClient {
           };
 
           apiError.status = error.response.status;
-          apiError.errors = errorData?.errors;
-          apiError.code = errorData?.code;
-          apiError.details = errorData?.details;
+          apiError.errors = errors;
+          const legacy = errorData as { code?: string; details?: unknown };
+          apiError.code = legacy?.code;
+          apiError.details = legacy?.details;
 
           throw apiError;
         }

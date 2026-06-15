@@ -13,22 +13,31 @@ The platform renders **vertical-specific fields** from the inventory API schema 
 | Phase | Status | Highlights |
 |-------|--------|------------|
 | **2 — Dynamic UI** | Mostly shipped | Onboarding, registration, scan-sell `businessType` |
-| **3 — Extension storage** | Shipped | `verticalFields` on create/read; no top-level `batchNo`/`expiryDate` |
-| **4 — Search** | Shipped | `searchWithFilters`, expiry buckets, near-expiry filters |
+| **3 — Extension storage** | Shipped | `verticalFields` on create/read; no top-level `batchNo`/`expiryDate` on core |
+| **4 — Search** | Shipped | Single `q` search; cursor pagination; expiry sorted in DB; expiry buckets (no `totalWithExpiry`) on Reminders + Analytics |
 
 | Surface | Schema source | Notes |
 |---------|---------------|--------|
 | Onboarding | `GET /verticals`, `GET /verticals/{id}/schema` | Vertical picker; shop fields (`dlNo`, `fssai`) only when in schema |
-| Product registration | `GET /shops/me/schema?mode=regular\|basic` | Grid + list columns from API schema; `verticalFields` on create |
-| Product search | `GET /inventory/search` + schema `searchable` fields | Batch no. + near-expiry days filters when in schema |
-| Scan-sell | Shop `verticalId` | `businessType` from shop, not `pharmacy` |
-| Reminders | `GET /reminders/expiry-buckets` | Expiry bucket summary cards |
+| Product registration | `GET /shops/me/schema?mode=regular\|basic` | Grid + list columns from API schema; `verticalFields` on create; expiry reminders from `verticalFields` |
+| Product search | `GET /inventory/search?q=…` | Name, barcode, or `batch …`; sorted by expiry soonest-first; **no** expiry bucket cards |
+| Scan-sell | Shop `verticalId` | Search sorted by expiry; `businessType` from shop |
+| Reminders | `GET /reminders/expiry-buckets` | Expiry bucket cards (expired / 7d / 30d) |
 
 **Shared libraries:** `@inventory-platform/types` (`vertical-schema.ts`), `@inventory-platform/api` (`verticals.ts`, `inventory.ts`), `@inventory-platform/store` (`useVerticalSchemaStore`), `@inventory-platform/ui` (`verticalSchemaUtils`, `VerticalSchemaFieldInput`).
 
-**Backend architecture:** see [inventory-api `docs/VERTICAL_PLUGIN_ARCHITECTURE.md`](../inventory-api/docs/VERTICAL_PLUGIN_ARCHITECTURE.md) (v4.9).
+**Backend architecture:** see [inventory-api `docs/VERTICAL_PLUGIN_ARCHITECTURE.md`](../inventory-api/docs/VERTICAL_PLUGIN_ARCHITECTURE.md) (v4.10).
 
-**Remaining (roadmap):** scan-sell detail modal schema columns; import fully schema-driven; FEFO in checkout UI; widget registry (Phase 6).
+### Remaining roadmap
+
+| Phase | Items |
+|-------|--------|
+| **2** | Scan-sell detail modal columns from schema; import fully schema-driven |
+| **3** | Strip legacy `batchNo`/`expiryDate` from core BSON (M8 migration) |
+| **4** | _(done)_ | Cursor pagination shipped on `/inventory/search` |
+| **5** | Apparel or cafe vertical end-to-end; sports onboarding polish |
+| **6** | Import row mapper, widget registry, `CheckoutGuard` (block expired sell) |
+| **7** | Async export, read projections, schema admin |
 
 **After API seed changes:** restart API or reseed `vertical_schemas` so the UI picks up new field labels.
 

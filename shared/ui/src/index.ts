@@ -45,6 +45,7 @@ export * from './lib/FormRow';
 export * from './lib/verticalSchemaUtils';
 export * from './lib/VerticalSchemaFieldInput';
 export * from './lib/VerticalInventoryFields';
+export * from './lib/VerticalInventoryDetailFields';
 export * from './lib/CustomerEditForm';
 export * from './lib/VendorEditForm';
 export * from './lib/ShopProfileForm';

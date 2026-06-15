@@ -688,10 +688,7 @@ export interface BulkCreateInventoryItem {
   /** Core expiry (omit when schema stores expiry in verticalFields). */
   expiryDate?: string;
   reminderAt?: string;
-  customReminders?: Array<{
-    daysBefore: number;
-    message: string;
-  }> | null;
+  customReminders?: CustomReminderInput[] | null;
   hsn?: string | null;
   sac?: string | null;
   batchNo?: string | null;
@@ -1135,7 +1132,7 @@ export interface UpdateInventoryRequest {
 
 export interface InventoryListResponse {
   data: InventoryItem[];
-  meta: unknown | null;
+  meta: InventorySearchMeta | null;
   page?: {
     page: number;
     size: number;
@@ -1144,12 +1141,15 @@ export interface InventoryListResponse {
   } | null;
 }
 
+export interface InventorySearchMeta {
+  nextCursor?: string;
+}
+
 export interface InventoryExpiryBuckets {
   expired: number;
   expiringWithin7Days: number;
   expiringWithinSoonDays: number;
   expiringSoonTotal: number;
-  totalWithExpiry: number;
   expiringSoonDays: number;
 }
 
@@ -1158,6 +1158,8 @@ export interface InventorySearchParams {
   q?: string;
   sort?: string;
   limit?: number;
+  /** Opaque cursor from prior search response `meta.nextCursor`. */
+  cursor?: string;
 }
 
 export interface PaginationInventoryResponse {

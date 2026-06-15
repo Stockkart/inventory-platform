@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link } from 'react-router';
 import {
   vendorsApi,
@@ -13,12 +13,15 @@ import type {
   ItemType,
   DiscountApplicable,
 } from '@inventory-platform/types';
-import { useNotify } from '@inventory-platform/store';
+import { useNotify, useVerticalSchemaStore, shopSchemaCacheKey } from '@inventory-platform/store';
+import { apiClient } from '@inventory-platform/api';
 import {
   itemUsesExtensionBag,
-  getInventoryBatchNo,
-  formatInventoryExpiryDate,
+  detailExtensionFieldsForItem,
+  getVerticalFieldValue,
+  setVerticalFieldPatch,
 } from './verticalSchemaUtils';
+import { VerticalInventoryDetailFields } from './VerticalInventoryDetailFields';
 import styles from './InventoryAlertDetails.module.css';
 
 function formatSaleSchemeDisplay(item: InventoryItem): string {
@@ -152,7 +155,27 @@ export function InventoryAlertDetails({
   const [editForm, setEditForm] = useState<
     Record<string, string | number | null>
   >({});
+  const [editVerticalFields, setEditVerticalFields] = useState<
+    Record<string, string>
+  >({});
   const { success: notifySuccess, error: notifyError } = useNotify;
+  const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
+  const shopSchema = useVerticalSchemaStore((s) => {
+    const shopId = apiClient.getShopId();
+    if (!shopId) {
+      return null;
+    }
+    return s.shopSchemaByKey[shopSchemaCacheKey(shopId, 'regular')] ?? null;
+  });
+
+  useEffect(() => {
+    void fetchShopSchema('regular');
+  }, [fetchShopSchema]);
+
+  const detailExtensionFields = useMemo(
+    () => detailExtensionFieldsForItem(shopSchema, item, 'scan-sell'),
+    [shopSchema, item]
+  );
 
   const stripLeadingZeros = (val: string): string => {
     if (val === '' || val === '.') return val;
@@ -167,8 +190,11 @@ export function InventoryAlertDetails({
     const fmtNum = (n: number | null | undefined) =>
       n != null && !Number.isNaN(n) ? String(n) : '';
     const packFactor = d.unitConversions?.factor ?? d.unitsPerPack ?? null;
-    const batchFromBag = d.verticalFields?.batchNo;
-    const expiryFromBag = d.verticalFields?.expiryDate;
+    const verticalValues: Record<string, string> = {};
+    for (const field of detailExtensionFieldsForItem(shopSchema, d, 'scan-sell')) {
+      verticalValues[field.key] = getVerticalFieldValue(d, field);
+    }
+    setEditVerticalFields(verticalValues);
     setEditForm({
       name: d.name ?? '',
       barcode: d.barcode ?? '',
@@ -176,10 +202,6 @@ export function InventoryAlertDetails({
       companyName: d.companyName ?? '',
       location: d.location ?? '',
       hsn: d.hsn ?? '',
-      batchNo:
-        batchFromBag != null && batchFromBag !== ''
-          ? String(batchFromBag)
-          : d.batchNo ?? '',
       maximumRetailPrice: fmtNum(d.maximumRetailPrice),
       costPrice: fmtNum(d.costPrice),
       priceToRetail: fmtNum(d.priceToRetail),
@@ -204,15 +226,9 @@ export function InventoryAlertDetails({
         d.itemTypeDegree != null ? String(d.itemTypeDegree) : '',
       discountApplicable: d.discountApplicable ?? '',
       thresholdCount: d.thresholdCount ?? null,
-      expiryDate:
-        expiryFromBag != null && expiryFromBag !== ''
-          ? String(expiryFromBag).slice(0, 10)
-          : d.expiryDate
-          ? d.expiryDate.slice(0, 10)
-          : '',
       purchaseDate: d.purchaseDate ? d.purchaseDate.slice(0, 10) : '',
     });
-  }, [item]);
+  }, [item, shopSchema]);
 
   useEffect(() => {
     if (open && item) {
@@ -248,6 +264,7 @@ export function InventoryAlertDetails({
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditForm({});
+    setEditVerticalFields({});
   };
 
   const handleSave = async () => {
@@ -283,24 +300,31 @@ export function InventoryAlertDetails({
       if (editForm.hsn !== undefined && editForm.hsn !== currentItem.hsn)
         payload.hsn = String(editForm.hsn) || undefined;
 
-      const usesExtension = itemUsesExtensionBag(currentItem);
-      const verticalPatch: Record<string, unknown> = usesExtension
-        ? { ...(currentItem.verticalFields ?? {}) }
-        : {};
+  const hasExtensionFields = detailExtensionFields.some(
+        (field) => field.storage === 'extension'
+      );
+      const verticalPatch: Record<string, unknown> =
+        itemUsesExtensionBag(currentItem) || hasExtensionFields
+          ? { ...(currentItem.verticalFields ?? {}) }
+          : {};
       let verticalChanged = false;
 
-      if (
-        editForm.batchNo !== undefined &&
-        editForm.batchNo !==
-          (usesExtension
-            ? String(currentItem.verticalFields?.batchNo ?? '')
-            : currentItem.batchNo)
-      ) {
-        if (usesExtension) {
-          verticalPatch.batchNo = String(editForm.batchNo) || null;
+      for (const field of detailExtensionFields) {
+        if (field.storage !== 'extension') {
+          continue;
+        }
+        const edited = editVerticalFields[field.key];
+        if (edited === undefined) {
+          continue;
+        }
+        const current = getVerticalFieldValue(currentItem, field);
+        if (edited !== current) {
+          const patch = setVerticalFieldPatch(field, edited);
+          const bagValue = (
+            patch.verticalFields as Record<string, unknown> | undefined
+          )?.[field.key];
+          verticalPatch[field.key] = bagValue ?? null;
           verticalChanged = true;
-        } else {
-          payload.batchNo = String(editForm.batchNo) || undefined;
         }
       }
       const mrp =
@@ -463,26 +487,6 @@ export function InventoryAlertDetails({
       if (editDisc !== curDisc) {
         payload.discountApplicable =
           editDisc === '' ? null : (editDisc as DiscountApplicable);
-      }
-
-      if (editForm.expiryDate) {
-        const d = String(editForm.expiryDate).trim();
-        const currentExp = usesExtension
-          ? currentItem.verticalFields?.expiryDate
-            ? String(currentItem.verticalFields.expiryDate).slice(0, 10)
-            : ''
-          : currentItem.expiryDate
-          ? currentItem.expiryDate.slice(0, 10)
-          : '';
-        if (d !== currentExp) {
-          const iso = d ? `${d}T00:00:00Z` : undefined;
-          if (usesExtension) {
-            verticalPatch.expiryDate = iso ?? null;
-            verticalChanged = true;
-          } else {
-            payload.expiryDate = iso;
-          }
-        }
       }
 
       if (verticalChanged) {
@@ -682,27 +686,19 @@ export function InventoryAlertDetails({
                   </div>
                 </div>
               )}
-              <div className={styles.detailCard}>
-                <div className={styles.detailIcon}>🏭</div>
-                <div className={styles.detailContent}>
-                  <span className={styles.detailLabel}>Batch No</span>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      className={styles.editInput}
-                      value={String(editForm.batchNo ?? '')}
-                      onChange={(e) =>
-                        updateEditField('batchNo', e.target.value)
-                      }
-                      placeholder="Batch No"
-                    />
-                  ) : (
-                    <span className={styles.detailValue}>
-                      {getInventoryBatchNo(item)}
-                    </span>
-                  )}
-                </div>
-              </div>
+              <VerticalInventoryDetailFields
+                fields={detailExtensionFields}
+                item={item}
+                isEditing={isEditing}
+                editValues={editVerticalFields}
+                onFieldChange={(field, value) =>
+                  setEditVerticalFields((prev) => ({
+                    ...prev,
+                    [field.key]: value,
+                  }))
+                }
+                idPrefix={`detail-${item?.id ?? 'item'}`}
+              />
               {item?.createdAt && (
                 <div className={styles.detailCard}>
                   <div className={styles.detailIcon}>📅</div>
@@ -804,26 +800,6 @@ export function InventoryAlertDetails({
                   ) : (
                     <span className={styles.detailValue}>
                       {packagingFactorDisplay(item)}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className={styles.detailCard}>
-                <div className={styles.detailIcon}>📅</div>
-                <div className={styles.detailContent}>
-                  <span className={styles.detailLabel}>Expiry date</span>
-                  {isEditing ? (
-                    <input
-                      type="date"
-                      className={styles.editInput}
-                      value={String(editForm.expiryDate ?? '')}
-                      onChange={(e) =>
-                        updateEditField('expiryDate', e.target.value)
-                      }
-                    />
-                  ) : (
-                    <span className={styles.detailValue}>
-                      {formatInventoryExpiryDate(item)}
                     </span>
                   )}
                 </div>

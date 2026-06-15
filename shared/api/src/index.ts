@@ -30,3 +30,4 @@ export * from './lib/plans';
 export * from './lib/credit';
 export * from './lib/accounting';
 export * from './lib/resources';
+export * from './lib/errors';

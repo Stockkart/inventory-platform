@@ -1,4 +1,5 @@
 import type {
+  CustomReminderInput,
   SchemaDisplayMode,
   VerticalSchemaFieldDef,
   VerticalSchemaSurface,
@@ -246,9 +247,7 @@ export function buildVerticalFieldsPayload(
   if (extensionFields.length === 0) {
     return undefined;
   }
-  const bag: Record<string, unknown> = {
-    ...((product.verticalFields as Record<string, unknown> | undefined) ?? {}),
-  };
+  const bag: Record<string, unknown> = {};
   for (const field of extensionFields) {
     const value = getVerticalFieldValue(product, field);
     if (value !== '') {
@@ -256,6 +255,91 @@ export function buildVerticalFieldsPayload(
     }
   }
   return Object.keys(bag).length > 0 ? bag : undefined;
+}
+
+/** Extension field keys allowed for the active vertical schema. */
+export function extensionFieldKeys(
+  fields: VerticalSchemaFieldDef[]
+): Set<string> {
+  return new Set(
+    fields.filter((f) => f.storage === 'extension').map((f) => f.key)
+  );
+}
+
+/**
+ * Drops vertical/extension values that do not belong to the active schema
+ * (e.g. medical batch/expiry on a sports shop).
+ */
+export function sanitizeProductForVerticalSchema<
+  T extends VerticalFieldProduct & Record<string, unknown>,
+>(product: T, fields: VerticalSchemaFieldDef[]): T {
+  const allowedExtension = extensionFieldKeys(fields);
+  const record = product as Record<string, unknown>;
+  const rawBag =
+    (product.verticalFields as Record<string, unknown> | undefined) ?? {};
+  const bag: Record<string, unknown> = {};
+  let bagChanged = false;
+
+  for (const [key, value] of Object.entries(rawBag)) {
+    if (allowedExtension.has(key)) {
+      bag[key] = value;
+    } else {
+      bagChanged = true;
+    }
+  }
+
+  let topLevelChanged = false;
+  for (const field of fields) {
+    if (field.storage !== 'extension') {
+      continue;
+    }
+    const prop = apiPropertyName(field);
+    if (prop !== field.key && record[prop]) {
+      topLevelChanged = true;
+    }
+  }
+
+  const legacyExtensionKeys = [
+    'batchNo',
+    'expiryDate',
+    'sport',
+    'brand',
+    'model',
+    'warrantyMonths',
+    'companyName',
+  ];
+  for (const key of legacyExtensionKeys) {
+    if (!allowedExtension.has(key) && record[key]) {
+      topLevelChanged = true;
+    }
+  }
+
+  if (!bagChanged && !topLevelChanged) {
+    return product;
+  }
+
+  const nextRecord = topLevelChanged ? { ...record } : record;
+  if (topLevelChanged) {
+    for (const field of fields) {
+      if (field.storage !== 'extension') {
+        continue;
+      }
+      const prop = apiPropertyName(field);
+      if (prop !== field.key && prop in nextRecord) {
+        nextRecord[prop] = '';
+      }
+    }
+    for (const key of legacyExtensionKeys) {
+      if (!allowedExtension.has(key) && key in nextRecord) {
+        nextRecord[key] = '';
+      }
+    }
+  }
+
+  return {
+    ...(nextRecord as T),
+    verticalFields: Object.keys(bag).length > 0 ? bag : {},
+  };
 }
 
 /** Move legacy top-level extension values into {@code verticalFields} for form state. */
@@ -380,6 +464,132 @@ export function isExtensionSchemaField(
   key: string
 ): boolean {
   return fields.some((f) => f.key === key && f.storage === 'extension');
+}
+
+/** True when the active shop schema defines an inventory field (any vertical). */
+export function shopSchemaHasInventoryField(
+  schema:
+    | { entities?: Record<string, { fields?: VerticalSchemaFieldDef[] }> }
+    | null
+    | undefined,
+  fieldKey: string
+): boolean {
+  return getEntityFields(schema?.entities, 'inventory').some(
+    (field) => field.key === fieldKey
+  );
+}
+
+/**
+ * Extension fields for product detail / scan-sell surfaces.
+ * Uses shop schema when available; otherwise infers keys from {@code verticalFields} on the item.
+ */
+export function detailExtensionFieldsForItem(
+  schema:
+    | { entities?: Record<string, { fields?: VerticalSchemaFieldDef[] }> }
+    | null
+    | undefined,
+  item: VerticalFieldProduct | null | undefined,
+  surface: VerticalSchemaSurface = 'scan-sell'
+): VerticalSchemaFieldDef[] {
+  const fromSchema = getDynamicInventoryFields(schema?.entities, surface).filter(
+    (field) => field.key !== 'companyName'
+  );
+  if (fromSchema.length > 0) {
+    return fromSchema;
+  }
+  const bag = item?.verticalFields as Record<string, unknown> | undefined;
+  if (!bag) {
+    return [];
+  }
+  return Object.keys(bag)
+    .filter((key) => bag[key] != null && bag[key] !== '')
+    .map((key) => inferVerticalFieldDefFromBag(key, bag[key]));
+}
+
+function inferVerticalFieldDefFromBag(
+  key: string,
+  value: unknown
+): VerticalSchemaFieldDef {
+  let type: VerticalSchemaFieldDef['type'] = 'string';
+  const lower = key.toLowerCase();
+  if (lower.includes('date') || key === 'expiryDate') {
+    type = 'date';
+  } else if (typeof value === 'number') {
+    type = 'number';
+  }
+  return {
+    key,
+    type,
+    storage: 'extension',
+  };
+}
+
+export function formatVerticalFieldDisplay(
+  field: VerticalSchemaFieldDef,
+  value: string
+): string {
+  if (!value.trim()) {
+    return '—';
+  }
+  if (field.type === 'date') {
+    try {
+      return new Date(value).toLocaleDateString('en-IN');
+    } catch {
+      return value.slice(0, 10);
+    }
+  }
+  return value;
+}
+
+/** Keeps end date on or after the reminder date. */
+export function normalizeCustomReminderRow(
+  reminder: CustomReminderInput
+): CustomReminderInput {
+  const reminderAt = reminder.reminderAt?.trim() ?? '';
+  let endDate = reminder.endDate?.trim() ?? '';
+  if (!reminderAt || !endDate) {
+    return reminder;
+  }
+  const atMs = Date.parse(reminderAt);
+  const endMs = Date.parse(endDate);
+  if (!Number.isNaN(atMs) && !Number.isNaN(endMs) && endMs < atMs) {
+    endDate = reminderAt;
+  }
+  return { ...reminder, reminderAt, endDate };
+}
+
+export function validateCustomReminders(
+  reminders: CustomReminderInput[] | undefined | null,
+  productLabel: string
+): string | null {
+  if (!reminders?.length) {
+    return null;
+  }
+  for (let i = 0; i < reminders.length; i++) {
+    const reminder = reminders[i];
+    const hasContent =
+      reminder.reminderAt?.trim() ||
+      reminder.endDate?.trim() ||
+      reminder.notes?.trim();
+    if (!hasContent) {
+      continue;
+    }
+    if (!reminder.reminderAt?.trim()) {
+      return `${productLabel}: custom reminder ${i + 1} — reminder date is required`;
+    }
+    if (!reminder.endDate?.trim()) {
+      return `${productLabel}: custom reminder ${i + 1} — end date is required`;
+    }
+    const atMs = Date.parse(reminder.reminderAt);
+    const endMs = Date.parse(reminder.endDate);
+    if (Number.isNaN(atMs) || Number.isNaN(endMs)) {
+      return `${productLabel}: custom reminder ${i + 1} — invalid date`;
+    }
+    if (endMs < atMs) {
+      return `${productLabel}: custom reminder ${i + 1} — end date cannot be before reminder date`;
+    }
+  }
+  return null;
 }
 
 /**

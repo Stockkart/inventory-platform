@@ -4,6 +4,7 @@ import {
   useLayoutEffect,
   useRef,
   useCallback,
+  useMemo,
   ChangeEvent,
 } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router';
@@ -25,14 +26,16 @@ import type {
   CustomerResponse,
 } from '@inventory-platform/types';
 import styles from './dashboard.scan-sell.module.css';
-import { useNotify, useAuthStore, useVerticalSchemaStore } from '@inventory-platform/store';
+import { useNotify, useAuthStore, useVerticalSchemaStore, shopSchemaCacheKey } from '@inventory-platform/store';
 import {
   isScanSellHidePurchaseKey,
   shouldSkipScanSellHidePurchaseKey,
   formatInventoryExpiryDate,
   hasInventoryExpiryDate,
-  getExtensionFieldString,
-  sortInventoryByExpirySoonest,
+  detailExtensionFieldsForItem,
+  fieldLabel,
+  formatVerticalFieldDisplay,
+  getVerticalFieldValue,
 } from '@inventory-platform/ui';
 
 export function meta() {
@@ -460,6 +463,19 @@ function CartSchemeInput({
 export default function ScanSellPage() {
   const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
   const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
+  const shopSchema = useVerticalSchemaStore((s) => {
+    if (!activeShopId) {
+      return null;
+    }
+    return s.shopSchemaByKey[shopSchemaCacheKey(activeShopId, 'regular')] ?? null;
+  });
+  const showExpiryField = useMemo(
+    () =>
+      detailExtensionFieldsForItem(shopSchema, null, 'scan-sell').some(
+        (field) => field.key === 'expiryDate'
+      ),
+    [shopSchema]
+  );
   const [cartBusinessType, setCartBusinessType] = useState('medical');
   const navigate = useNavigate();
   const location = useLocation();
@@ -795,7 +811,7 @@ export default function ScanSellPage() {
           setSearchTotalItems(response.page.totalItems);
           setSearchPage(response.page.page);
         }
-        setSearchResults(sortInventoryByExpirySoonest(items));
+        setSearchResults(items);
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Search failed';
         notifyError(msg);
@@ -2144,6 +2160,7 @@ export default function ScanSellPage() {
                         <SearchDropdownItem
                           key={item.id}
                           item={item}
+                          showExpiryField={showExpiryField}
                           onAddToCart={handleAddToCart}
                           disabled={
                             item.currentCount <= 0 ||
@@ -3206,6 +3223,11 @@ export default function ScanSellPage() {
               i.inventoryId === detailModalItem.inventoryItem.id
           );
           const inv = detailModalFullItem ?? detailModalItem.inventoryItem;
+          const detailVerticalFields = detailExtensionFieldsForItem(
+            shopSchema,
+            inv,
+            'scan-sell'
+          );
           const mrp = inv.maximumRetailPrice;
           const price = detailModalItem.price;
           const qty = detailModalItem.quantity;
@@ -3353,30 +3375,34 @@ export default function ScanSellPage() {
                           </div>
                         </div>
                       )}
-                      {(inv.hsn || inv.batchNo) && (
+                      {detailVerticalFields.map((field) => (
+                        <div
+                          key={field.key}
+                          className={styles.detailModalDetailCard}
+                        >
+                          <div className={styles.detailModalDetailIcon}>🏷️</div>
+                          <div className={styles.detailModalDetailContent}>
+                            <span className={styles.detailModalDetailLabel}>
+                              {fieldLabel(field)}
+                            </span>
+                            <span className={styles.detailModalDetailValue}>
+                              {formatVerticalFieldDisplay(
+                                field,
+                                getVerticalFieldValue(inv, field)
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                      {inv.hsn && (
                         <div className={styles.detailModalDetailCard}>
                           <div className={styles.detailModalDetailIcon}>🧾</div>
                           <div className={styles.detailModalDetailContent}>
                             <span className={styles.detailModalDetailLabel}>
-                              HSN / Batch
+                              HSN
                             </span>
                             <span className={styles.detailModalDetailValue}>
-                              {[inv.hsn, getExtensionFieldString(inv, 'batchNo')]
-                                .filter(Boolean)
-                                .join(' / ')}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                      {hasInventoryExpiryDate(inv) && (
-                        <div className={styles.detailModalDetailCard}>
-                          <div className={styles.detailModalDetailIcon}>📅</div>
-                          <div className={styles.detailModalDetailContent}>
-                            <span className={styles.detailModalDetailLabel}>
-                              Expiry
-                            </span>
-                            <span className={styles.detailModalDetailValue}>
-                              {formatInventoryExpiryDate(inv)}
+                              {inv.hsn}
                             </span>
                           </div>
                         </div>
@@ -3650,10 +3676,12 @@ export default function ScanSellPage() {
 // Search dropdown item with full details (like original product result)
 function SearchDropdownItem({
   item,
+  showExpiryField,
   onAddToCart,
   disabled,
 }: {
   item: InventoryItem;
+  showExpiryField: boolean;
   onAddToCart: (item: InventoryItem, price?: number) => void;
   disabled: boolean;
 }) {
@@ -3700,7 +3728,7 @@ function SearchDropdownItem({
             ? (item.sellingPrice ?? item.priceToRetail)!.toFixed(2)
             : '—'}
         </span>
-        {hasInventoryExpiryDate(item) && (
+        {showExpiryField && hasInventoryExpiryDate(item) && (
           <span
             className={`${styles.dropdownItemMeta} ${styles.dropdownItemMetaBold}`}
           >

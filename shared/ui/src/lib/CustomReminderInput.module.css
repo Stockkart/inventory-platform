@@ -49,6 +49,12 @@
   padding: 1rem;
 }
 
+.fieldError {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  color: #dc2626;
+}
+
 .remindersList {
   display: flex;
   flex-direction: column;

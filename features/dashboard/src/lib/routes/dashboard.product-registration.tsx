@@ -15,6 +15,7 @@ import {
   uploadApi,
   usersApi,
   apiClient,
+  formatApiErrorMessage,
 } from '@inventory-platform/api';
 import type {
   CreateInventoryDto,
@@ -57,9 +58,12 @@ import {
   partitionRegistrationFields,
   registrationFieldsForBilling,
   isRegistrationSchemaReady,
+  sanitizeProductForVerticalSchema,
   schemaModeForBilling,
   setVerticalFieldPatch,
   validateProductVerticalFields,
+  validateCustomReminders,
+  normalizeCustomReminderRow,
 } from '@inventory-platform/ui';
 import {
   useNotify,
@@ -926,6 +930,29 @@ export default function ProductRegistrationPage() {
     void fetchShopSchema(billingSchemaMode);
   }, [activeShopId, billingSchemaMode, fetchShopSchema]);
 
+  useEffect(() => {
+    if (!registrationSchemaReady || registrationFields.length === 0) {
+      return;
+    }
+    setProducts((prev) => {
+      if (prev.length === 0) {
+        return prev;
+      }
+      let changed = false;
+      const next = prev.map((product) => {
+        const sanitized = sanitizeProductForVerticalSchema(
+          product,
+          registrationFields
+        );
+        if (sanitized !== product) {
+          changed = true;
+        }
+        return sanitized;
+      });
+      return changed ? next : prev;
+    });
+  }, [registrationSchemaReady, registrationFields, activeShopId, billingMode]);
+
   const applyVerticalFieldChange = useCallback(
     (productId: string, field: VerticalSchemaFieldDef, value: string) => {
       setProducts((prev) =>
@@ -958,7 +985,7 @@ export default function ProductRegistrationPage() {
     if (!registrationSchemaReady) {
       return;
     }
-    setProducts([...products, createEmptyProduct()]);
+    setProducts([...products, sanitizeProductForVerticalSchema(createEmptyProduct(), registrationFields)]);
     setError(null);
   };
 
@@ -988,7 +1015,8 @@ export default function ProductRegistrationPage() {
             }))
         : [];
 
-    return hydrateExtensionFieldsOnProduct(
+    return sanitizeProductForVerticalSchema(
+      hydrateExtensionFieldsOnProduct(
       {
       id: `product-${Date.now()}-${Math.random()}`,
       isExpanded: true,
@@ -1005,12 +1033,16 @@ export default function ProductRegistrationPage() {
         'medical',
       location: item.location || '',
       count: item.count || 0,
-      expiryDate: item.expiryDate || '',
+      expiryDate: registrationFields.some((f) => f.key === 'expiryDate')
+        ? item.expiryDate || ''
+        : '',
       description: item.description || '',
       reminderAt: item.reminderAt || undefined,
       customReminders,
       hsn: item.hsn || '',
-      batchNo: item.batchNo || '',
+      batchNo: registrationFields.some((f) => f.key === 'batchNo')
+        ? item.batchNo || ''
+        : '',
       ...(() => {
         const fromApi =
           item.schemePayFor != null ||
@@ -1090,8 +1122,10 @@ export default function ProductRegistrationPage() {
         0,
       rates: item.rates ?? [],
       defaultRate: item.defaultRate ?? '',
-      verticalFields: {},
+      verticalFields: item.verticalFields ?? {},
     },
+    registrationFields
+    ),
     registrationFields
     );
   };
@@ -1521,8 +1555,8 @@ export default function ProductRegistrationPage() {
         }
         if (hasText(b.expiryDate)) {
           const expiryField = registrationFields.find((f) => f.key === 'expiryDate');
-          const expiryIso = `${trim(b.expiryDate)}T00:00:00Z`;
           if (expiryField) {
+            const expiryIso = `${trim(b.expiryDate)}T00:00:00Z`;
             const patch = setVerticalFieldPatch(expiryField, expiryIso);
             next = {
               ...next,
@@ -1532,8 +1566,6 @@ export default function ProductRegistrationPage() {
                 ...(patch.verticalFields ?? {}),
               },
             };
-          } else {
-            next = { ...next, expiryDate: expiryIso };
           }
         }
         if (hasText(b.location)) next = { ...next, location: trim(b.location) };
@@ -1779,6 +1811,15 @@ export default function ProductRegistrationPage() {
           setIsLoading(false);
           return;
         }
+        const reminderError = validateCustomReminders(
+          product.customReminders,
+          label
+        );
+        if (reminderError) {
+          notifyError(reminderError);
+          setIsLoading(false);
+          return;
+        }
 
         if (product.count <= 0) {
           notifyError(
@@ -1790,52 +1831,50 @@ export default function ProductRegistrationPage() {
           return;
         }
 
-        if (productViewMode !== 'grid') {
-          if (!product.baseUnit?.trim()) {
-            notifyError(
-              `Product "${
-                product.name || 'Unnamed'
-              }": packaging unit is required (e.g. 1 × 50 TBS)`
-            );
-            setIsLoading(false);
-            return;
-          }
-          const baseUqcForValidation = resolvePackagingUqc(
-            product.baseUnit,
-            packagingUnits
+        if (!product.baseUnit?.trim()) {
+          notifyError(
+            `Product "${
+              product.name || 'Unnamed'
+            }": packaging unit is required (e.g. 1 × PCS or 1 × 50 TBS)`
           );
-          if (!baseUqcForValidation) {
-            notifyError(
-              `Product "${
-                product.name || 'Unnamed'
-              }": select a valid packaging unit from the list`
-            );
-            setIsLoading(false);
-            return;
-          }
-          const unitDef = packagingUnits.find(
-            (u) => u.uqc === baseUqcForValidation
+          setIsLoading(false);
+          return;
+        }
+        const baseUqcForValidation = resolvePackagingUqc(
+          product.baseUnit,
+          packagingUnits
+        );
+        if (!baseUqcForValidation) {
+          notifyError(
+            `Product "${
+              product.name || 'Unnamed'
+            }": select a valid packaging unit from the list`
           );
-          const displayFactor = packagingFactorForDisplay(
-            product.unitsPerPack ?? product.conversionFactor
+          setIsLoading(false);
+          return;
+        }
+        const unitDef = packagingUnits.find(
+          (u) => u.uqc === baseUqcForValidation
+        );
+        const displayFactor = packagingFactorForDisplay(
+          product.unitsPerPack ?? product.conversionFactor
+        );
+        const normalizedUnitsPerPack = packagingFactorToUnitsPerPack(
+          displayFactor,
+          unitDef
+        );
+        if (
+          unitDef?.allowsUnitsPerPack &&
+          unitDef.sellUnitRule === 'PACK_ONLY' &&
+          normalizedUnitsPerPack <= 0
+        ) {
+          notifyError(
+            `Product "${
+              product.name || 'Unnamed'
+            }": enter pack size after 1 × (e.g. 1 × 100 ${unitDef.uqc})`
           );
-          const normalizedUnitsPerPack = packagingFactorToUnitsPerPack(
-            displayFactor,
-            unitDef
-          );
-          if (
-            unitDef?.allowsUnitsPerPack &&
-            unitDef.sellUnitRule === 'PACK_ONLY' &&
-            normalizedUnitsPerPack <= 0
-          ) {
-            notifyError(
-              `Product "${
-                product.name || 'Unnamed'
-              }": enter pack size after 1 × (e.g. 1 × 100 ${unitDef.uqc})`
-            );
-            setIsLoading(false);
-            return;
-          }
+          setIsLoading(false);
+          return;
         }
 
         const ptr = Number(product.priceToRetail);
@@ -1971,35 +2010,17 @@ export default function ProductRegistrationPage() {
         }
 
         const expiryField = registrationFields.find((f) => f.key === 'expiryDate');
-        const productExpiryRaw = expiryField
-          ? getVerticalFieldValue(product, expiryField)
-          : product.expiryDate?.trim() || '';
 
-        // Transform customReminders to the format expected by bulk API
         const customReminders =
           product.customReminders && product.customReminders.length > 0
-            ? product.customReminders.map((reminder) => {
-                // Calculate daysBefore from reminderAt and expiryDate
-                let daysBefore = 30; // default
-                if (reminder.reminderAt && productExpiryRaw) {
-                  const reminderDate = new Date(reminder.reminderAt);
-                  const expiryDate = new Date(productExpiryRaw);
-                  const diffTime =
-                    expiryDate.getTime() - reminderDate.getTime();
-                  daysBefore = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                } else if (reminder.endDate && productExpiryRaw) {
-                  // Fallback: calculate from endDate if reminderAt is not available
-                  const endDate = new Date(reminder.endDate);
-                  const expiryDate = new Date(productExpiryRaw);
-                  const diffTime = expiryDate.getTime() - endDate.getTime();
-                  daysBefore = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                }
-
-                return {
-                  daysBefore: daysBefore > 0 ? daysBefore : 30,
-                  message: reminder.notes || 'Expiry reminder',
-                };
-              })
+            ? product.customReminders
+                .map((reminder) => normalizeCustomReminderRow(reminder))
+                .filter((reminder) => reminder.reminderAt?.trim())
+                .map((reminder) => ({
+                  reminderAt: reminder.reminderAt,
+                  endDate: reminder.endDate?.trim() || reminder.reminderAt,
+                  ...(reminder.notes?.trim() ? { notes: reminder.notes } : {}),
+                }))
             : null;
 
         const unitsPerPackForApi =
@@ -2008,10 +2029,10 @@ export default function ProductRegistrationPage() {
         const batchField = registrationFields.find((f) => f.key === 'batchNo');
         const resolvedExpiryRaw = expiryField
           ? getVerticalFieldValue(product, expiryField)
-          : product.expiryDate?.trim() || '';
+          : '';
         const resolvedBatchNo = batchField
           ? getVerticalFieldValue(product, batchField)
-          : product.batchNo?.trim() || '';
+          : '';
         const expiryOnExtension = expiryField?.storage === 'extension';
         const batchOnExtension = batchField?.storage === 'extension';
 
@@ -2190,8 +2211,17 @@ export default function ProductRegistrationPage() {
         const savedVendorInvoiceId =
           response?.vendorPurchaseInvoiceId ?? response?.lotId;
 
-        // If we have items or a positive createdCount, consider it successful
-        if (createdCount > 0 || items.length > 0) {
+        if (failedCount > 0) {
+          const detail =
+            itemErrors.length > 0
+              ? itemErrors.slice(0, 3).join('; ')
+              : `${failedCount} product(s) failed validation or save.`;
+          notifyError(
+            `Registration was not saved. ${detail}${
+              itemErrors.length > 3 ? ' …' : ''
+            }`
+          );
+        } else if (createdCount > 0 || items.length > 0) {
           const itemDetails =
             items.length > 0
               ? items
@@ -2230,16 +2260,6 @@ export default function ProductRegistrationPage() {
             setVendorPaymentSplit(emptyPaymentSplit());
             setSuccess(null);
           }, 5000);
-        } else if (failedCount > 0) {
-          const detail =
-            itemErrors.length > 0
-              ? itemErrors.slice(0, 3).join('; ')
-              : `${failedCount} product(s) failed validation or save.`;
-          notifyError(
-            `No products were saved. ${detail}${
-              itemErrors.length > 3 ? ' …' : ''
-            }`
-          );
         } else if (response) {
           notifySuccess(
             `Successfully registered ${products.length} product(s)! ${
@@ -2270,18 +2290,20 @@ export default function ProductRegistrationPage() {
           notifyError('Failed to register products. No items were created.');
         }
       } catch (bulkError) {
-        const errorMessage =
-          bulkError instanceof Error
-            ? bulkError.message
-            : 'Failed to register products. Please try again.';
-        notifyError(errorMessage);
+        notifyError(
+          formatApiErrorMessage(
+            bulkError,
+            'Failed to register products. Please try again.'
+          )
+        );
       }
     } catch (err) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'Failed to register products. Please try again.';
-      notifyError(errorMessage);
+      notifyError(
+        formatApiErrorMessage(
+          err,
+          'Failed to register products. Please try again.'
+        )
+      );
     } finally {
       setIsLoading(false);
     }
@@ -3326,7 +3348,7 @@ export default function ProductRegistrationPage() {
                             required
                           />
                         </td>
-                        <td className={styles.excelTd}>
+                        <td className={`${styles.excelTd} ${styles.excelTdPackaging}`}>
                           <PackagingUnitInput
                             label=""
                             compact
@@ -5867,7 +5889,7 @@ function ProductAccordion({
             />
           </div>
 
-          {/* Reminder Section — medical / verticals with expiry only */}
+          {/* Expiry reminder — verticals with expiryDate only */}
           {showExpiryReminders && (
           <div className={styles.reminderSection}>
             <h4 className={styles.subsectionTitle}>Expiry Reminder Settings</h4>
@@ -5905,14 +5927,16 @@ function ProductAccordion({
                 </p>
               </div>
             </div>
+          </div>
+          )}
 
+          <div className={styles.reminderSection}>
             <CustomRemindersSection
               reminders={product.customReminders || []}
               onChange={onCustomRemindersChange}
               disabled={isLoading}
             />
           </div>
-          )}
         </div>
       )}
     </div>

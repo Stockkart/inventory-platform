@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router';
 import { remindersApi } from '@inventory-platform/api';
 import type {
@@ -77,19 +77,17 @@ export default function RemindersPage() {
     }
   };
 
-  const fetchReminders = async () => {
+  const fetchReminders = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
       if (focusReminderId) {
         const reminder = await remindersApi.getDetailById(focusReminderId);
-
         setReminders([reminder]);
         setTotalPages(1);
       } else {
         const res = await remindersApi.getDetails(page, size);
-
         setReminders(res.data);
         setTotalPages(res.meta.totalPages);
       }
@@ -100,28 +98,57 @@ export default function RemindersPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [focusReminderId, page, size, notifyError]);
 
   useEffect(() => {
-    fetchReminders();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, size]);
-
-  useEffect(() => {
-    if (fromNotification) return;
     let cancelled = false;
-    remindersApi
-      .getExpiryBuckets(30)
-      .then((buckets) => {
-        if (!cancelled) setExpiryBuckets(buckets);
-      })
-      .catch(() => {
-        if (!cancelled) setExpiryBuckets(null);
-      });
+
+    const load = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        if (focusReminderId) {
+          const reminder = await remindersApi.getDetailById(focusReminderId);
+          if (cancelled) return;
+          setReminders([reminder]);
+          setTotalPages(1);
+          return;
+        }
+
+        const detailsPromise = remindersApi.getDetails(page, size);
+        const bucketsPromise = fromNotification
+          ? null
+          : remindersApi.getExpiryBuckets(30);
+
+        const [detailsRes, bucketsRes] = await Promise.all([
+          detailsPromise,
+          bucketsPromise ?? Promise.resolve(null),
+        ]);
+
+        if (cancelled) return;
+        setReminders(detailsRes.data);
+        setTotalPages(detailsRes.meta.totalPages);
+        if (bucketsRes) {
+          setExpiryBuckets(bucketsRes);
+        }
+      } catch (err) {
+        if (cancelled) return;
+        notifyError(
+          err instanceof Error ? err.message : 'Failed to load reminders'
+        );
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void load();
     return () => {
       cancelled = true;
     };
-  }, [fromNotification]);
+  }, [page, size, fromNotification, focusReminderId, notifyError]);
 
   useEffect(() => {
     if (focusReminderId) {
@@ -276,12 +303,6 @@ export default function RemindersPage() {
             </span>
             <span className={styles.bucketValue}>
               {expiryBuckets.expiringSoonTotal}
-            </span>
-          </div>
-          <div className={styles.bucketCard}>
-            <span className={styles.bucketLabel}>Tracked expiry</span>
-            <span className={styles.bucketValue}>
-              {expiryBuckets.totalWithExpiry}
             </span>
           </div>
         </div>

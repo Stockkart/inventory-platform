@@ -1,4 +1,5 @@
 import type { CustomReminderInput } from '@inventory-platform/types';
+import { normalizeCustomReminderRow } from './verticalSchemaUtils';
 import styles from './CustomReminderInput.module.css';
 
 interface CustomReminderInputProps {
@@ -17,10 +18,13 @@ export function CustomReminderInputItem({
   disabled = false,
 }: CustomReminderInputProps) {
   const handleChange = (field: keyof CustomReminderInput, value: string) => {
-    onChange(index, {
-      ...reminder,
-      [field]: value,
-    });
+    onChange(
+      index,
+      normalizeCustomReminderRow({
+        ...reminder,
+        [field]: value,
+      })
+    );
   };
 
   // Convert ISO (UTC) → datetime-local (local time)
@@ -53,6 +57,8 @@ export function CustomReminderInputItem({
     }
   };
 
+  const reminderAtMin = formatDateForInput(reminder.reminderAt);
+
   return (
     <div className={styles.reminderItem}>
       <div className={styles.reminderHeader}>
@@ -84,10 +90,29 @@ export function CustomReminderInputItem({
             type="datetime-local"
             className={styles.input}
             value={formatDateForInput(reminder.endDate)}
+            min={reminderAtMin || undefined}
             onChange={(e) => handleDateChange('endDate', e.target.value)}
             disabled={disabled}
             required
           />
+          {reminder.reminderAt && reminder.endDate && (
+            (() => {
+              const atMs = Date.parse(reminder.reminderAt);
+              const endMs = Date.parse(reminder.endDate);
+              if (
+                !Number.isNaN(atMs) &&
+                !Number.isNaN(endMs) &&
+                endMs < atMs
+              ) {
+                return (
+                  <p className={styles.fieldError}>
+                    End date cannot be before reminder date
+                  </p>
+                );
+              }
+              return null;
+            })()
+          )}
         </div>
         <div className={styles.formGroup}>
           <label className={styles.label}>Notes (Optional)</label>
@@ -127,7 +152,7 @@ export function CustomRemindersSection({
 
   const updateReminder = (index: number, reminder: CustomReminderInput) => {
     const updated = [...reminders];
-    updated[index] = reminder;
+    updated[index] = normalizeCustomReminderRow(reminder);
     onChange(updated);
   };
 
