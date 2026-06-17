@@ -1,4 +1,4 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, FormEvent, useMemo, useCallback } from 'react';
 import {
   inventoryApi,
   cartApi,
@@ -11,7 +11,12 @@ import {
   formatInventoryExpiryDate,
   hasInventoryExpiryDate,
   shopSchemaHasInventoryField,
+  resolveDefaultInventorySearchSort,
+  buildInventorySearchSortParam,
+  inventorySearchSortLabel,
+  getSortableInventoryFields,
 } from '@inventory-platform/ui';
+import type { InventorySearchSortState } from '@inventory-platform/types';
 import styles from './dashboard.product-search.module.css';
 import {
   useNotify,
@@ -45,6 +50,9 @@ export default function ProductSearchPage() {
     undefined,
   ]);
   const [searchHasNext, setSearchHasNext] = useState(false);
+  const [searchSort, setSearchSort] = useState<InventorySearchSortState>(() =>
+    resolveDefaultInventorySearchSort(null)
+  );
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
   const [billingModeFilter, setBillingModeFilter] = useState<
@@ -60,6 +68,24 @@ export default function ProductSearchPage() {
     return s.shopSchemaByKey[shopSchemaCacheKey(activeShopId, 'regular')] ?? null;
   });
   const showExpiryField = shopSchemaHasInventoryField(shopSchema, 'expiryDate');
+  const sortableFields = useMemo(
+    () => getSortableInventoryFields(shopSchema),
+    [shopSchema]
+  );
+  const canToggleSort = sortableFields.length > 0;
+
+  useEffect(() => {
+    if (!shopSchema) {
+      return;
+    }
+    setSearchSort(resolveDefaultInventorySearchSort(shopSchema));
+  }, [shopSchema?.verticalId, shopSchema?.pluginVersion]);
+
+  const resetSearchPagination = useCallback(() => {
+    setSearchPage(0);
+    setSearchCursors([undefined]);
+    setSearchHasNext(false);
+  }, []);
 
   useEffect(() => {
     if (!activeShopId) {
@@ -109,15 +135,17 @@ export default function ProductSearchPage() {
   const handleSearch = async (
     e?: FormEvent<HTMLFormElement>,
     pageNum?: number,
-    pageSize?: number
+    pageSize?: number,
+    sortOverride?: InventorySearchSortState
   ) => {
     e?.preventDefault();
 
     const currentPage = pageNum !== undefined ? pageNum : searchPage;
     const currentPageSize = pageSize !== undefined ? pageSize : searchPageSize;
     const isNewSearch = pageNum === undefined && pageSize === undefined;
+    const effectiveSort = sortOverride ?? searchSort;
 
-    if (isNewSearch) {
+    if (isNewSearch || sortOverride) {
       setSearchPage(0);
       setSearchCursors([undefined]);
     } else if (pageNum !== undefined) {
@@ -140,9 +168,10 @@ export default function ProductSearchPage() {
       return;
     }
 
-    const cursor = isNewSearch || pageSize !== undefined
-      ? undefined
-      : searchCursors[currentPage];
+    const cursor =
+      isNewSearch || pageSize !== undefined || sortOverride
+        ? undefined
+        : searchCursors[currentPage];
 
     setIsLoading(true);
     setError(null);
@@ -150,7 +179,7 @@ export default function ProductSearchPage() {
       const response = await inventoryApi.search({
         q: searchQuery.trim(),
         limit: currentPageSize,
-        sort: 'expiryDate:asc',
+        sort: buildInventorySearchSortParam(effectiveSort),
         ...(cursor ? { cursor } : {}),
       });
       const items = response.data || [];
@@ -186,7 +215,24 @@ export default function ProductSearchPage() {
     setSearchTotalItems(0);
     setSearchCursors([undefined]);
     setSearchHasNext(false);
+    setSearchSort(resolveDefaultInventorySearchSort(shopSchema));
     fetchAllInventory(0, searchPageSize);
+  };
+
+  const handleToggleSortDirection = () => {
+    if (!canToggleSort) {
+      return;
+    }
+    const nextSort: InventorySearchSortState = {
+      ...searchSort,
+      direction: searchSort.direction === 'asc' ? 'desc' : 'asc',
+    };
+    setSearchSort(nextSort);
+    if (hasActiveSearch) {
+      void handleSearch(undefined, 0, undefined, nextSort);
+    } else {
+      resetSearchPagination();
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -356,6 +402,17 @@ export default function ProductSearchPage() {
                   filteredInventory.length === 1 ? 'result' : 'results'
                 }`}
           </span>
+          {canToggleSort && hasActiveSearch && (
+            <button
+              type="button"
+              className={styles.sortToggleBtn}
+              onClick={handleToggleSortDirection}
+              disabled={isLoading}
+              title="Toggle sort direction"
+            >
+              Sort: {inventorySearchSortLabel(shopSchema, searchSort)}
+            </button>
+          )}
         </div>
         {isLoading && filteredInventory.length === 0 ? (
           <div className={styles.loading}>Loading inventory...</div>

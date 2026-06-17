@@ -6,6 +6,24 @@ export type SchemaDisplayMode = 'regular' | 'basic' | 'invoice';
 
 export type VerticalSchemaSurface = 'registration' | 'scan-sell' | 'onboarding' | 'invoice';
 
+export type InventorySearchSortDirection = 'asc' | 'desc';
+
+export interface VerticalSearchSortFieldDef {
+  field: string;
+  direction?: InventorySearchSortDirection;
+  nulls?: 'last' | 'first';
+}
+
+export interface VerticalEntitySearchConfig {
+  defaultSort?: VerticalSearchSortFieldDef[];
+  cursor?: 'compound-key' | 'skip';
+}
+
+export interface InventorySearchSortState {
+  field: string;
+  direction: InventorySearchSortDirection;
+}
+
 export interface VerticalSchemaFieldDef {
   key: string;
   apiKey?: string;
@@ -25,6 +43,7 @@ export interface VerticalSchemaFieldDef {
 
 export interface VerticalEntitySchema {
   fields?: VerticalSchemaFieldDef[];
+  search?: VerticalEntitySearchConfig;
 }
 
 export interface ShopSchemaResponse {

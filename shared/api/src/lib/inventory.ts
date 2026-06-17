@@ -110,7 +110,6 @@ export const inventoryApi = {
         ? {
             q: queryOrParams,
             limit: size !== undefined ? size : 50,
-            sort: 'expiryDate:asc',
           }
         : queryOrParams;
 

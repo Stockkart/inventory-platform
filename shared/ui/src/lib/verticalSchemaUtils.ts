@@ -1,8 +1,12 @@
 import type {
   CustomReminderInput,
+  InventorySearchSortDirection,
+  InventorySearchSortState,
   SchemaDisplayMode,
+  ShopSchemaResponse,
   VerticalSchemaFieldDef,
   VerticalSchemaSurface,
+  VerticalSearchSortFieldDef,
 } from '@inventory-platform/types';
 
 /** Product or form row that may carry core props and/or a verticalFields bag. */
@@ -624,4 +628,61 @@ export function formatCoreExpiryDateForApi(raw: string): string {
   return raw.includes('T') && raw.includes('Z')
     ? raw
     : `${raw.trim().slice(0, 10)}T00:00:00Z`;
+}
+
+const FALLBACK_SEARCH_SORT: InventorySearchSortState = {
+  field: 'expiryDate',
+  direction: 'asc',
+};
+
+/** Primary sort from `entities.inventory.search.defaultSort` or first sortable field. */
+export function resolveDefaultInventorySearchSort(
+  schema: Pick<ShopSchemaResponse, 'entities'> | null | undefined
+): InventorySearchSortState {
+  const search = schema?.entities?.inventory?.search;
+  const primary = search?.defaultSort?.[0];
+  if (primary?.field?.trim()) {
+    return {
+      field: primary.field.trim(),
+      direction: normalizeSearchDirection(primary.direction),
+    };
+  }
+  const sortable = getSortableInventoryFields(schema);
+  if (sortable.length > 0) {
+    return { field: sortable[0].key, direction: 'asc' };
+  }
+  return { ...FALLBACK_SEARCH_SORT };
+}
+
+export function getSortableInventoryFields(
+  schema: Pick<ShopSchemaResponse, 'entities'> | null | undefined
+): VerticalSchemaFieldDef[] {
+  return getEntityFields(schema?.entities, 'inventory').filter(
+    (field) => field.sortable === true
+  );
+}
+
+export function buildInventorySearchSortParam(
+  sort: InventorySearchSortState
+): string {
+  const field = sort.field?.trim() || FALLBACK_SEARCH_SORT.field;
+  const direction = normalizeSearchDirection(sort.direction);
+  return `${field}:${direction}`;
+}
+
+export function inventorySearchSortLabel(
+  schema: Pick<ShopSchemaResponse, 'entities'> | null | undefined,
+  sort: InventorySearchSortState
+): string {
+  const fields = getEntityFields(schema?.entities, 'inventory');
+  const match = fields.find((f) => f.key === sort.field);
+  const label = match ? fieldLabel(match) : humanizeKey(sort.field);
+  const arrow = sort.direction === 'desc' ? '↓' : '↑';
+  return `${label} ${arrow}`;
+}
+
+function normalizeSearchDirection(
+  direction: VerticalSearchSortFieldDef['direction'] | undefined
+): InventorySearchSortDirection {
+  return direction === 'desc' ? 'desc' : 'asc';
 }
