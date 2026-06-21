@@ -15,6 +15,15 @@ export { default as PricingPage } from './lib/routes/dashboard.pricing';
 export { default as RemindersPage } from './lib/routes/dashboard.reminders';
 export { default as ScanSellPage } from './lib/routes/dashboard.scan-sell';
 export {
+  default as MenuSellPage,
+} from './lib/routes/dashboard.menu-sell';
+export {
+  default as MenuAdminPage,
+} from './lib/routes/dashboard.menu';
+export {
+  default as ManualStockPage,
+} from './lib/routes/dashboard.manual-stock';
+export {
   default as CheckoutPage,
   meta as checkoutMeta,
 } from './lib/routes/dashboard.checkout';
@@ -105,6 +114,9 @@ export { meta as productSearchMeta } from './lib/routes/dashboard.product-search
 export { meta as pricingMeta } from './lib/routes/dashboard.pricing';
 export { meta as remindersMeta } from './lib/routes/dashboard.reminders';
 export { meta as scanSellMeta } from './lib/routes/dashboard.scan-sell';
+export { meta as menuSellMeta } from './lib/routes/dashboard.menu-sell';
+export { meta as menuAdminMeta } from './lib/routes/dashboard.menu';
+export { meta as manualStockMeta } from './lib/routes/dashboard.manual-stock';
 export { meta as invitationsMeta } from './lib/routes/dashboard.invitations';
 export { meta as myInvitationsMeta } from './lib/routes/dashboard.my-invitations';
 export { meta as shopUsersMeta } from './lib/routes/dashboard.shop-users';

@@ -15,6 +15,7 @@ import {
   emptyPaymentSplit,
   isCreditMethod,
   roundMoney,
+  useCapabilityFeatureGuard,
   validatePaymentSplit,
 } from '@inventory-platform/ui';
 import { useNotify } from '@inventory-platform/store';
@@ -265,6 +266,8 @@ function buildInvoiceSearchPattern(
 }
 
 export default function VendorReturnPage() {
+  const { enabled, loading: guardLoading } =
+    useCapabilityFeatureGuard('vendorReturn');
   const location = useLocation();
   const state = location.state as { prefillVendor?: VendorResponse } | null;
 
@@ -591,6 +594,10 @@ export default function VendorReturnPage() {
 
   const vendorHint =
     hydrateBusy || detailBusy ? 'Loading invoice…' : null;
+
+  if (guardLoading || !enabled) {
+    return null;
+  }
 
   return (
     <div className={refundStyles.page}>

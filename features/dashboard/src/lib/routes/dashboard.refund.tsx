@@ -17,6 +17,7 @@ import {
   emptyPaymentSplit,
   isCreditMethod,
   roundMoney,
+  useCapabilityFeatureGuard,
   validatePaymentSplit,
 } from '@inventory-platform/ui';
 import styles from './dashboard.refund.module.css';
@@ -113,6 +114,8 @@ function formatDate(dateString: string): string {
 }
 
 export default function RefundPage() {
+  const { enabled, loading: guardLoading } =
+    useCapabilityFeatureGuard('customerReturn');
   const location = useLocation();
   const state = location.state as
     | { prefillCustomer?: CustomerResponse; prefillTab?: 'process' | 'history' }
@@ -411,6 +414,10 @@ export default function RefundPage() {
   );
   const canProcessReturn =
     returnTotalNum > 0 && refundPaymentValidation.ok && !isLoading;
+
+  if (guardLoading || !enabled) {
+    return null;
+  }
 
   return (
     <div className={styles.page}>

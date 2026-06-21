@@ -1,10 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router';
 import {
   PurchaseList,
   RefundHistoryList,
   VendorReturnHistoryList,
+  isCustomerReturnEnabled,
+  isVendorReturnEnabled,
 } from '@inventory-platform/ui';
+import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/store';
 import VendorInvoicesPage from './dashboard.vendor-invoices';
 import styles from './dashboard.history.module.css';
 
@@ -39,6 +42,16 @@ function parseHistoryTab(state: unknown): HistoryTab {
   return 'saleHistory';
 }
 
+function isTabEnabled(
+  tab: HistoryTab,
+  customerReturn: boolean,
+  vendorReturn: boolean
+): boolean {
+  if (tab === 'customerReturnHistory') return customerReturn;
+  if (tab === 'vendorReturnHistory') return vendorReturn;
+  return true;
+}
+
 export function meta() {
   return [
     { title: 'History - StockKart' },
@@ -52,25 +65,53 @@ export function meta() {
 
 export default function HistoryPage() {
   const location = useLocation();
+  const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
+  const fetchCapabilities = useShopCapabilitiesStore((s) => s.fetchCapabilities);
+  const shopCapabilities = useShopCapabilitiesStore((s) =>
+    activeShopId ? s.byShopId[activeShopId] : undefined
+  );
+
+  const customerReturnEnabled = isCustomerReturnEnabled(shopCapabilities);
+  const vendorReturnEnabled = isVendorReturnEnabled(shopCapabilities);
+  const showReturnHints = customerReturnEnabled || vendorReturnEnabled;
 
   const [activeTab, setActiveTab] = useState<HistoryTab>(() =>
     parseHistoryTab(location.state)
   );
 
   useEffect(() => {
+    void fetchCapabilities();
+  }, [fetchCapabilities]);
+
+  useEffect(() => {
     setActiveTab(parseHistoryTab(location.state));
   }, [location.state, location.key]);
+
+  useEffect(() => {
+    if (
+      !isTabEnabled(activeTab, customerReturnEnabled, vendorReturnEnabled)
+    ) {
+      setActiveTab('saleHistory');
+    }
+  }, [activeTab, customerReturnEnabled, vendorReturnEnabled]);
+
+  const subtitle = useMemo(() => {
+    if (!showReturnHints) {
+      return 'Read-only timelines: sale invoices and supplier purchase bills.';
+    }
+    const labels: string[] = [];
+    if (customerReturnEnabled) labels.push('Return to customer');
+    if (vendorReturnEnabled) labels.push('Return to vendor');
+    const joined =
+      labels.length === 2 ? `${labels[0]} or ${labels[1]}` : labels[0] ?? '';
+    return `Read-only timelines: invoices and past returns — use ${joined} under Products & Sales to record new returns`;
+  }, [customerReturnEnabled, showReturnHints, vendorReturnEnabled]);
 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <h1 className={styles.title}>History</h1>
-        <p className={styles.subtitle}>
-          Read-only timelines: invoices and past returns — use{' '}
-          <strong>Return to customer</strong> or{' '}
-          <strong>Return to vendor</strong> under Products &amp; Sales to record new
-          returns
-        </p>
+        <p className={styles.subtitle}>{subtitle}</p>
       </div>
 
       <div className={styles.tabs} role="tablist" aria-label="History sections">
@@ -96,28 +137,32 @@ export default function HistoryPage() {
         >
           Purchase history
         </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'customerReturnHistory'}
-          className={`${styles.tab} ${
-            activeTab === 'customerReturnHistory' ? styles.activeTab : ''
-          }`}
-          onClick={() => setActiveTab('customerReturnHistory')}
-        >
-          Customer return history
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'vendorReturnHistory'}
-          className={`${styles.tab} ${
-            activeTab === 'vendorReturnHistory' ? styles.activeTab : ''
-          }`}
-          onClick={() => setActiveTab('vendorReturnHistory')}
-        >
-          Supplier return history
-        </button>
+        {customerReturnEnabled && (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'customerReturnHistory'}
+            className={`${styles.tab} ${
+              activeTab === 'customerReturnHistory' ? styles.activeTab : ''
+            }`}
+            onClick={() => setActiveTab('customerReturnHistory')}
+          >
+            Customer return history
+          </button>
+        )}
+        {vendorReturnEnabled && (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'vendorReturnHistory'}
+            className={`${styles.tab} ${
+              activeTab === 'vendorReturnHistory' ? styles.activeTab : ''
+            }`}
+            onClick={() => setActiveTab('vendorReturnHistory')}
+          >
+            Supplier return history
+          </button>
+        )}
       </div>
 
       <div className={styles.content}>
@@ -125,8 +170,12 @@ export default function HistoryPage() {
         {activeTab === 'purchaseHistory' && (
           <VendorInvoicesPage embedded />
         )}
-        {activeTab === 'customerReturnHistory' && <RefundHistoryList />}
-        {activeTab === 'vendorReturnHistory' && <VendorReturnHistoryList />}
+        {customerReturnEnabled && activeTab === 'customerReturnHistory' && (
+          <RefundHistoryList />
+        )}
+        {vendorReturnEnabled && activeTab === 'vendorReturnHistory' && (
+          <VendorReturnHistoryList />
+        )}
       </div>
     </div>
   );

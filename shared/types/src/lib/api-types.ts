@@ -1185,7 +1185,12 @@ export interface LotsListResponse {
 
 // Checkout types
 export interface CheckoutItem {
-  id: string;
+  /** Canonical line ref, e.g. {@code inventory:lotId} or {@code menu:itemId}. */
+  sellableRef?: string;
+  /** @deprecated use {@code sellableRef} with {@code inventory:…} prefix */
+  id?: string;
+  /** @deprecated use {@code sellableRef} with {@code menu:…} prefix */
+  menuItemId?: string;
   unit?: string;
   quantity?: number;
   baseQuantity?: number;
@@ -1211,7 +1216,13 @@ export interface CreateCheckoutDto {
 }
 
 export interface CheckoutItemResponse {
-  inventoryId: string;
+  sellableRef?: string | null;
+  stockRef?: string | null;
+  /** Derived from {@link sellableRef} / {@link stockRef} for legacy clients. */
+  inventoryId?: string | null;
+  /** Derived from {@link sellableRef} for legacy clients. */
+  menuItemId?: string | null;
+  sellMode?: 'menu' | 'direct' | 'sku' | null;
   /** Present when cart/checkout returns it; used to fetch full pricing/rates. */
   pricingId?: string | null;
   name: string;
@@ -1315,6 +1326,8 @@ export interface CartResponse {
   billingMode?: BillingMode;
   /** Present when checkout completion left a customer due in credit ledger. */
   creditEntryId?: string | null;
+  /** Daily order token (cafe / menu-billing verticals). */
+  tokenNo?: string | null;
 }
 
 export type CreditPartyType = 'VENDOR' | 'CUSTOMER';

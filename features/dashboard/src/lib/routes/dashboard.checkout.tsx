@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { cartApi } from '@inventory-platform/api';
 import type {
@@ -14,11 +14,12 @@ import {
   formatPaymentSplit,
   isCreditMethod,
   PrintInvoiceModal,
+  resolveSellPath,
   roundMoney,
   validatePaymentSplit,
 } from '@inventory-platform/ui';
 import styles from './dashboard.checkout.module.css';
-import { useNotify } from '@inventory-platform/store';
+import { useAuthStore, useNotify, useShopCapabilitiesStore } from '@inventory-platform/store';
 
 export function meta() {
   return [
@@ -30,6 +31,21 @@ export function meta() {
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const { error: notifyError } = useNotify;
+  const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
+  const fetchCapabilities = useShopCapabilitiesStore((s) => s.fetchCapabilities);
+  const shopCapabilities = useShopCapabilitiesStore((s) =>
+    activeShopId ? s.byShopId[activeShopId] : undefined
+  );
+  const sellPath = useMemo(
+    () => resolveSellPath(shopCapabilities ?? null),
+    [shopCapabilities]
+  );
+  const showTokenOnReceipt =
+    shopCapabilities?.features?.tokenOnReceipt === true;
+
+  useEffect(() => {
+    void fetchCapabilities();
+  }, [fetchCapabilities]);
   const [checkoutData, setCheckoutData] = useState<CartResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -58,9 +74,9 @@ export default function CheckoutPage() {
         });
       }
 
-      // If status is CREATED, redirect to scan-sell page
+      // If status is CREATED, redirect to sell page
       if (cart.status === 'CREATED') {
-        navigate('/dashboard/scan-sell');
+        navigate(sellPath);
         return;
       }
 
@@ -70,8 +86,8 @@ export default function CheckoutPage() {
         return;
       }
 
-      // For any other status, redirect to scan-sell
-      navigate('/dashboard/scan-sell');
+      // For any other status, redirect to sell page
+      navigate(sellPath);
     } catch (err) {
       // 404 or other error - cart API doesn't return COMPLETED carts
       // If we already have checkout data (likely COMPLETED), stay on checkout page
@@ -84,11 +100,11 @@ export default function CheckoutPage() {
       }
       // No checkout data, redirect to scan-sell
       console.error('Error loading cart:', err);
-      navigate('/dashboard/scan-sell');
+      navigate(sellPath);
     } finally {
       setIsLoading(false);
     }
-  }, [navigate, checkoutData]);
+  }, [navigate, checkoutData, sellPath]);
 
   // Load cart data on mount
   useEffect(() => {
@@ -122,12 +138,12 @@ export default function CheckoutPage() {
       <div className={styles.page}>
         <div className={styles.errorContainer}>
           <h2>No checkout data found</h2>
-          <p>Please start a new transaction from the Scan and Sell page.</p>
+          <p>Please start a new transaction from the sell page.</p>
           <button
             className={styles.backBtn}
-            onClick={() => navigate('/dashboard/scan-sell')}
+            onClick={() => navigate(sellPath)}
           >
-            Go to Scan and Sell
+            Go to Sell
           </button>
         </div>
       </div>
@@ -181,6 +197,7 @@ export default function CheckoutPage() {
       setCheckoutData({
         ...checkoutData,
         ...completed,
+        purchaseId: completed.purchaseId ?? checkoutData.purchaseId,
         status: 'COMPLETED',
         paymentMethod: paymentMethod ?? checkoutData.paymentMethod,
         cashAmount: paymentSplit.cashAmount,
@@ -204,7 +221,7 @@ export default function CheckoutPage() {
 
   const handleGoBack = async () => {
     if (!checkoutData) {
-      navigate('/dashboard/scan-sell');
+      navigate(sellPath);
       return;
     }
 
@@ -226,8 +243,7 @@ export default function CheckoutPage() {
 
       await cartApi.updateStatus(statusPayload);
 
-      // Navigate back to scan-sell page
-      navigate('/dashboard/scan-sell');
+      navigate(sellPath);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to update cart status';
@@ -289,6 +305,11 @@ export default function CheckoutPage() {
             </div>
           </div>
           <h2 className={styles.successTitle}>Order Successful!</h2>
+          {showTokenOnReceipt && checkoutData?.tokenNo != null && (
+            <p className={styles.tokenNo}>
+              Token #{checkoutData.tokenNo}
+            </p>
+          )}
           <p className={styles.successMessage}>
             Your payment has been processed successfully.
           </p>
@@ -301,7 +322,12 @@ export default function CheckoutPage() {
     <div className={styles.page}>
       <div className={styles.header}>
         <h2 className={styles.title}>Checkout</h2>
-        <p className={styles.subtitle}>Invoice #{checkoutData.invoiceNo}</p>
+        <p className={styles.subtitle}>
+          Invoice #{checkoutData.invoiceNo}
+          {showTokenOnReceipt && checkoutData.tokenNo != null && (
+            <> · Token #{checkoutData.tokenNo}</>
+          )}
+        </p>
       </div>
 
       {error && <div className={styles.errorMessage}>{error}</div>}
@@ -325,8 +351,15 @@ export default function CheckoutPage() {
               </div>
               {checkoutData.status === 'COMPLETED' && (
                 <button
+                  type="button"
                   className={styles.printBtn}
-                  onClick={() => setShowPrintModal(true)}
+                  onClick={() => {
+                    if (!checkoutData.purchaseId) {
+                      notifyError('Invoice is not ready to print yet.');
+                      return;
+                    }
+                    setShowPrintModal(true);
+                  }}
                   aria-label="Print Invoice"
                   title="Print Invoice"
                 >

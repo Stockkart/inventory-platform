@@ -12,7 +12,8 @@ import type {
   VendorPurchaseInvoiceSummary,
 } from '@inventory-platform/types';
 import styles from './dashboard.vendor-invoices.module.css';
-import { PaginationBar } from '@inventory-platform/ui';
+import { PaginationBar, isVendorReturnEnabled } from '@inventory-platform/ui';
+import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/store';
 
 export function meta() {
   return [
@@ -245,6 +246,13 @@ export type VendorInvoicesPageProps = {
 export default function VendorInvoicesPage({
   embedded = false,
 }: VendorInvoicesPageProps) {
+  const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
+  const fetchCapabilities = useShopCapabilitiesStore((s) => s.fetchCapabilities);
+  const shopCapabilities = useShopCapabilitiesStore((s) =>
+    activeShopId ? s.byShopId[activeShopId] : undefined
+  );
+  const vendorReturnEnabled = isVendorReturnEnabled(shopCapabilities);
+
   const [page, setPage] = useState(0);
   const [size] = useState(20);
   const [searchInput, setSearchInput] = useState('');
@@ -290,6 +298,10 @@ export default function VendorInvoicesPage({
       setLoading(false);
     }
   }, [page, size, listQuery]);
+
+  useEffect(() => {
+    void fetchCapabilities();
+  }, [fetchCapabilities]);
 
   useEffect(() => {
     loadList();
@@ -425,14 +437,26 @@ export default function VendorInvoicesPage({
           <p className={styles.heroSubtitle}>
             Supplier bills linked to stock-in registrations. Search by product, barcode,
             invoice number, or vendor name. Expand a row to see line items and
-            totals. To return stock to a supplier, use <strong>Return to vendor</strong> under Products
-            &amp; Sales.
+            totals.
+            {vendorReturnEnabled ? (
+              <>
+                {' '}
+                To return stock to a supplier, use{' '}
+                <strong>Return to vendor</strong> under Products &amp; Sales.
+              </>
+            ) : null}
           </p>
         </header>
       ) : (
         <p className={styles.heroSubtitle} style={{ marginBottom: '1rem' }}>
-          Supplier bills (stock‑in). To return stock, use the <strong>Return to vendor</strong>{' '}
-          tab here in History.
+          Supplier bills (stock‑in).
+          {vendorReturnEnabled ? (
+            <>
+              {' '}
+              To return stock, use the <strong>Return to vendor</strong> tab here in
+              History.
+            </>
+          ) : null}
         </p>
       )}
 
