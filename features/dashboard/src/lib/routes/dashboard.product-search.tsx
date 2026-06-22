@@ -315,13 +315,6 @@ export default function ProductSearchPage() {
             <div className={styles.productsGrid}>
               {filteredInventory.map((item) => (
                 <div key={item.id || item.lotId} className={styles.productCard}>
-                  <div
-                    className={styles.productImage}
-                    role="img"
-                    aria-label="Product"
-                  >
-                    📦
-                  </div>
                   <div className={styles.productInfo}>
                     <h3 className={styles.productName}>
                       {item.name || 'Unnamed Product'}

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
-import { useAuthStore } from '@inventory-platform/store';
+import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/store';
 import { shopsApi } from '@inventory-platform/api';
 import type { DashboardLayoutProps } from '@inventory-platform/types';
 import type { Location as LocationType } from '@inventory-platform/types';
@@ -9,9 +9,8 @@ import { ThemeToggle } from './ThemeToggle';
 import { useNotifications } from '@inventory-platform/store';
 import { ToastProvider } from './ToastProvider';
 import {
-  getDashboardMenuGroupsForRole,
-  getDashboardNavRowsForRole,
-} from './dashboardNavConfig';
+  getDashboardMenuGroupsWithCapabilities,
+} from './capabilityNav';
 import { CommandPalette } from './CommandPalette';
 import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 import {
@@ -59,6 +58,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, shop, logout, isLoading } = useAuthStore();
+  const fetchCapabilities = useShopCapabilitiesStore((s) => s.fetchCapabilities);
+  const shopCapabilities = useShopCapabilitiesStore((s) =>
+    user?.shopId ? s.byShopId[user.shopId] : undefined
+  );
+
+  useEffect(() => {
+    if (user?.shopId) {
+      void fetchCapabilities();
+    }
+  }, [user?.shopId, fetchCapabilities]);
 
   //const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(() =>
@@ -100,9 +109,18 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const modLabel = useMemo(() => getDashboardModLabel(), []);
 
+  const filteredMenuGroups = useMemo(
+    () =>
+      getDashboardMenuGroupsWithCapabilities(user?.role, shopCapabilities ?? null),
+    [user?.role, shopCapabilities]
+  );
+
   const navRowsForPalette = useMemo(
-    () => getDashboardNavRowsForRole(user?.role),
-    [user?.role]
+    () =>
+      filteredMenuGroups.flatMap((group) =>
+        group.items.map((item) => ({ ...item, groupLabel: group.label }))
+      ),
+    [filteredMenuGroups]
   );
 
   const favoritesNav = useMemo(
@@ -182,11 +200,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   );
 
   const currentPath = location.pathname;
-
-  const filteredMenuGroups = useMemo(
-    () => getDashboardMenuGroupsForRole(user?.role),
-    [user?.role]
-  );
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {

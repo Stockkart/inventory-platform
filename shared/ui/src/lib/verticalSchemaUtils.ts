@@ -67,6 +67,12 @@ export function getDynamicInventoryFields(
   );
 }
 
+/** Extension fields dropped from cafe ingredient registration (cost lives on pricing). */
+const SIMPLE_PRICING_REGISTRATION_EXCLUDED_KEYS = new Set([
+  'lastPurchaseRate',
+  'reorderLevel',
+]);
+
 export function registrationFieldsForBilling(
   shopSchema: { verticalId: string; mode: string; entities: Record<string, { fields?: VerticalSchemaFieldDef[] }> } | null,
   billingMode: 'REGULAR' | 'BASIC',
@@ -76,6 +82,19 @@ export function registrationFieldsForBilling(
     return [];
   }
   return getDynamicInventoryFields(shopSchema.entities, 'registration');
+}
+
+/** Hide legacy / medical-only schema columns when {@code simplePricing} is enabled (cafe). */
+export function filterRegistrationFieldsForSimplePricing(
+  fields: VerticalSchemaFieldDef[],
+  simplePricing: boolean
+): VerticalSchemaFieldDef[] {
+  if (!simplePricing) {
+    return fields;
+  }
+  return fields.filter(
+    (field) => !SIMPLE_PRICING_REGISTRATION_EXCLUDED_KEYS.has(field.key)
+  );
 }
 
 /** True when shop schema is loaded and matches the active billing mode. */
@@ -110,17 +129,22 @@ export function isRegistrationSchemaReady(
   ).length > 0;
 }
 
-/** Split company name (after barcode) from other vertical registration columns. */
+/** Split company name (after barcode) and sell-direct from other vertical registration columns. */
 export function partitionRegistrationFields(
   fields: VerticalSchemaFieldDef[]
 ): {
   companyField: VerticalSchemaFieldDef | null;
+  sellDirectField: VerticalSchemaFieldDef | null;
   otherFields: VerticalSchemaFieldDef[];
 } {
   const companyField =
     fields.find((field) => field.key === 'companyName') ?? null;
-  const otherFields = fields.filter((field) => field.key !== 'companyName');
-  return { companyField, otherFields };
+  const sellDirectField =
+    fields.find((field) => field.key === 'sellDirect') ?? null;
+  const otherFields = fields.filter(
+    (field) => field.key !== 'companyName' && field.key !== 'sellDirect'
+  );
+  return { companyField, sellDirectField, otherFields };
 }
 
 export function pickRegistrationField(
@@ -179,6 +203,10 @@ function formatFieldValueForInput(
   field: VerticalSchemaFieldDef,
   value: unknown
 ): string {
+  if (field.key === 'sellDirect') {
+    if (value === true || value === 'true' || value === 'yes') return 'yes';
+    if (value === false || value === 'false' || value === 'no') return 'no';
+  }
   if (field.type === 'date' && value != null) {
     const text = String(value);
     if (/^\d{4}-\d{2}-\d{2}/.test(text)) {
@@ -207,9 +235,13 @@ export function setVerticalFieldPatch(
 function coerceFieldValue(
   field: VerticalSchemaFieldDef,
   value: string
-): string | number | null {
+): string | number | boolean | null {
   if (value === '') {
     return null;
+  }
+  if (field.key === 'sellDirect') {
+    if (value === 'yes' || value === 'true') return true;
+    if (value === 'no' || value === 'false') return false;
   }
   if (field.type === 'number') {
     const n = Number(value);
@@ -313,6 +345,12 @@ export function getExtensionFieldString(
     return String(legacy);
   }
   return '';
+}
+
+/** Cafe inventory flagged for direct sell on the cashier screen. */
+export function isSellDirectInventory(item: VerticalFieldProduct): boolean {
+  const raw = getExtensionFieldString(item, 'sellDirect').trim().toLowerCase();
+  return raw === 'yes' || raw === 'true';
 }
 
 export function getInventoryBatchNo(item: VerticalFieldProduct): string {

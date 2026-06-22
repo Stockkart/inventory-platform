@@ -1,6 +1,9 @@
 // Export API types directly
 export * from './lib/api-types.js';
 export * from './lib/vertical-schema.js';
+export * from './lib/shop-capabilities.js';
+export * from './lib/menu.js';
+export * from './lib/sellable-ref.js';
 // Export store and UI types
 export type {
   AuthState,

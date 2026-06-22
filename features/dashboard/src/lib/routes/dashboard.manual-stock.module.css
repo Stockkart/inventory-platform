@@ -1,0 +1,238 @@
+.correctStockBtn {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  background: #fffbeb;
+  color: #b45309;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.correctStockBtn:hover:not(:disabled) {
+  background: #fef3c7;
+  border-color: #f59e0b;
+}
+
+.correctStockBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sellDirectBadge {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.addToCartBtn {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 1px solid #34d399;
+  border-radius: 8px;
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.addToCartBtn:hover:not(:disabled) {
+  background: #d1fae5;
+  border-color: #10b981;
+}
+
+.addToCartBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modal {
+  width: 100%;
+  max-width: 440px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modalTitle {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.modalSubtitle {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.modalClose {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.15rem 0.35rem;
+  border-radius: 6px;
+}
+
+.modalClose:hover {
+  background: var(--hover-bg);
+}
+
+.modalBody {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.fieldLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.currentStock {
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.qtyInput {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 1rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.qtyInput:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.noteInput {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  resize: vertical;
+  min-height: 72px;
+}
+
+.deltaHint {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.deltaPositive {
+  color: #047857;
+  font-weight: 600;
+}
+
+.deltaNegative {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.modalError {
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 0.85rem;
+}
+
+.modalFooter {
+  display: flex;
+  gap: 0.65rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-primary);
+}
+
+.modalCancelBtn {
+  flex: 1;
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.modalCancelBtn:hover:not(:disabled) {
+  background: var(--hover-bg);
+}
+
+.modalSubmitBtn {
+  flex: 1;
+  padding: 0.65rem 1rem;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.modalSubmitBtn:hover:not(:disabled) {
+  opacity: 0.92;
+}
+
+.modalSubmitBtn:disabled,
+.modalCancelBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

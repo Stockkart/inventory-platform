@@ -110,7 +110,6 @@ export const inventoryApi = {
         ? {
             q: queryOrParams,
             limit: size !== undefined ? size : 50,
-            sort: 'expiryDate:asc',
           }
         : queryOrParams;
 
@@ -119,6 +118,13 @@ export const inventoryApi = {
     if (params.sort?.trim()) queryParams.sort = params.sort.trim();
     if (params.limit !== undefined && params.limit > 0) {
       queryParams.limit = String(params.limit);
+    }
+    if (params.filters) {
+      for (const [key, val] of Object.entries(params.filters)) {
+        if (val?.trim()) {
+          queryParams[key] = val.trim();
+        }
+      }
     }
 
     const response = await apiClient.get<ApiResponse<InventoryListResponse>>(

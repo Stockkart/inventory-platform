@@ -33,6 +33,12 @@ function dateInputValue(value: string): string {
   return '';
 }
 
+function enumOptionLabel(value: string): string {
+  if (value === 'yes') return 'Yes';
+  if (value === 'no') return 'No';
+  return value;
+}
+
 export function VerticalSchemaFieldInput({
   field,
   value,
@@ -52,6 +58,51 @@ export function VerticalSchemaFieldInput({
   const inputCls = inputClassName ?? formStyles.input;
   const labelCls = labelClassName ?? formStyles.label;
 
+  if (field.key === 'sellDirect') {
+    const selected =
+      value === 'yes' || value === 'true' ? 'yes' : 'no';
+    return (
+      <div className={compact ? undefined : formStyles.formGroup}>
+        <span className={labelCls} id={`${id}-label`}>
+          {label}
+          {required ? ' *' : ''}
+        </span>
+        <div
+          className={formStyles.radioGroup}
+          role="radiogroup"
+          aria-labelledby={`${id}-label`}
+        >
+          <label className={formStyles.radioOption}>
+            <input
+              type="radio"
+              name={id}
+              value="no"
+              checked={selected === 'no'}
+              onChange={() => onChange('no')}
+              disabled={disabled}
+              required={required}
+            />
+            No
+          </label>
+          <label className={formStyles.radioOption}>
+            <input
+              type="radio"
+              name={id}
+              value="yes"
+              checked={selected === 'yes'}
+              onChange={() => onChange('yes')}
+              disabled={disabled}
+            />
+            Yes
+          </label>
+        </div>
+        <span className={formStyles.fieldHint}>
+          Yes = show on sell screen and reduce stock when sold
+        </span>
+      </div>
+    );
+  }
+
   if (field.type === 'enum' && field.values?.length) {
     return (
       <div className={compact ? undefined : formStyles.formGroup}>
@@ -67,10 +118,12 @@ export function VerticalSchemaFieldInput({
           disabled={disabled}
           required={required}
         >
-          <option value="">Select…</option>
+          {field.key !== 'sellDirect' ? (
+            <option value="">Select…</option>
+          ) : null}
           {field.values.map((v) => (
             <option key={v} value={v}>
-              {v}
+              {enumOptionLabel(v)}
             </option>
           ))}
         </select>

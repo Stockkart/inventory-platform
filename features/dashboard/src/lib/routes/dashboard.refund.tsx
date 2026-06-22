@@ -11,12 +11,17 @@ import type {
   SearchPurchasesParams,
 } from '@inventory-platform/types';
 import {
+  inventoryLotIdFromSellableRef,
+  lineSellableRef,
+} from '@inventory-platform/types';
+import {
   PaginationBar,
   PaymentMethodSplit,
   RefundHistoryList,
   emptyPaymentSplit,
   isCreditMethod,
   roundMoney,
+  useCapabilityFeatureGuard,
   validatePaymentSplit,
 } from '@inventory-platform/ui';
 import styles from './dashboard.refund.module.css';
@@ -64,6 +69,10 @@ function formatGstRatesLabelForSaleLine(line: CheckoutItemResponse): string {
 }
 
 const roundMoney2 = (n: number) => Math.round(n * 100) / 100;
+
+function refundLineKey(line: CheckoutItemResponse, index: number): string {
+  return lineSellableRef(line) ?? `line-${index}`;
+}
 
 /**
  * Mirrors RefundService: credit = priceToRetail × return qty (per selling unit on the bill).
@@ -113,6 +122,8 @@ function formatDate(dateString: string): string {
 }
 
 export default function RefundPage() {
+  const { enabled, loading: guardLoading } =
+    useCapabilityFeatureGuard('customerReturn');
   const location = useLocation();
   const state = location.state as
     | { prefillCustomer?: CustomerResponse; prefillTab?: 'process' | 'history' }
@@ -260,8 +271,8 @@ export default function RefundPage() {
     setPaymentSplit(emptyPaymentSplit());
     // Initialize refund items with max quantities
     const items: Record<string, { quantity: number; maxQuantity: number }> = {};
-    purchase.items.forEach((item) => {
-      items[item.inventoryId] = {
+    purchase.items.forEach((item, index) => {
+      items[refundLineKey(item, index)] = {
         quantity: 0,
         maxQuantity: item.quantity,
       };
@@ -307,8 +318,10 @@ export default function RefundPage() {
     const itemsToRefund: RefundItem[] = [];
     let hasItems = false;
 
-    Object.entries(refundItems).forEach(([inventoryId, item]) => {
+    Object.entries(refundItems).forEach(([lineKey, item]) => {
       if (item.quantity > 0) {
+        const inventoryId =
+          inventoryLotIdFromSellableRef(lineKey) ?? lineKey;
         itemsToRefund.push({
           inventoryId,
           quantity: item.quantity,
@@ -387,8 +400,9 @@ export default function RefundPage() {
     }
     let grand = 0;
     let linesWithQty = 0;
-    for (const it of selectedPurchase.items) {
-      const ri = refundItems[it.inventoryId];
+    for (let i = 0; i < selectedPurchase.items.length; i++) {
+      const it = selectedPurchase.items[i];
+      const ri = refundItems[refundLineKey(it, i)];
       const q = ri?.quantity ?? 0;
       if (q <= 0) continue;
       const est = estimateCustomerRefundLine(q, it);
@@ -411,6 +425,10 @@ export default function RefundPage() {
   );
   const canProcessReturn =
     returnTotalNum > 0 && refundPaymentValidation.ok && !isLoading;
+
+  if (guardLoading || !enabled) {
+    return null;
+  }
 
   return (
     <div className={styles.page}>
@@ -631,16 +649,16 @@ export default function RefundPage() {
                               </tr>
                             </thead>
                             <tbody>
-                              {selectedPurchase.items.map((item) => {
-                                const refundItem =
-                                  refundItems[item.inventoryId];
+                              {selectedPurchase.items.map((item, index) => {
+                                const lineKey = refundLineKey(item, index);
+                                const refundItem = refundItems[lineKey];
                                 const rq = refundItem?.quantity ?? 0;
                                 const lineEst =
                                   rq > 0
                                     ? estimateCustomerRefundLine(rq, item)
                                     : null;
                                 return (
-                                  <tr key={item.inventoryId}>
+                                  <tr key={lineKey}>
                                     <td>{item.name}</td>
                                     <td>
                                       {formatCurrency(item.maximumRetailPrice)}
@@ -664,7 +682,7 @@ export default function RefundPage() {
                                         value={refundItem?.quantity || 0}
                                         onChange={(e) =>
                                           handleRefundQuantityChange(
-                                            item.inventoryId,
+                                            lineKey,
                                             e.target.value
                                           )
                                         }
