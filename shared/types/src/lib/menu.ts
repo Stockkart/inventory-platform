@@ -1,3 +1,5 @@
+import type { InventoryItem } from './api-types.js';
+
 export type MenuSellMode = 'menu' | 'direct';
 
 export interface MenuItem {
@@ -17,8 +19,6 @@ export interface MenuSection {
   sortOrder?: number;
   items: MenuItem[];
 }
-
-import type { InventoryItem } from './api-types';
 
 export interface ShopMenu {
   id?: string;
