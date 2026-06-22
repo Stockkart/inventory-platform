@@ -13,6 +13,7 @@ export * from './lib/shops';
 export * from './lib/verticals';
 export * from './lib/capabilities';
 export * from './lib/menu';
+export * from './lib/sell-catalog';
 export * from './lib/invitations';
 export * from './lib/users';
 export * from './lib/inventory';

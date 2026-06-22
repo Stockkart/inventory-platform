@@ -18,6 +18,8 @@ export interface MenuSection {
   items: MenuItem[];
 }
 
+import type { InventoryItem } from './api-types';
+
 export interface ShopMenu {
   id?: string;
   shopId?: string;
@@ -27,4 +29,10 @@ export interface ShopMenu {
   sections: MenuSection[];
   updatedAt?: string;
   updatedBy?: string;
+}
+
+/** Backend-assembled sell surface: menu sections + cafe direct stock. */
+export interface SellCatalog {
+  menu: ShopMenu;
+  directStock: InventoryItem[];
 }

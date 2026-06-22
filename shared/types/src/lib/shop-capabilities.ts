@@ -12,6 +12,8 @@ export interface FeatureFlags {
   manualStock?: boolean;
   customerReturn?: boolean;
   vendorReturn?: boolean;
+  /** Ingredient registration: cost + optional sell price only (no PTR/MRP/rates). */
+  simplePricing?: boolean;
 }
 
 export interface PurchaseSearchConfig {

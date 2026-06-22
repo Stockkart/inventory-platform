@@ -633,6 +633,8 @@ export interface CreateInventoryDto {
   maximumRetailPrice: number;
   costPrice: number;
   priceToRetail: number;
+  /** Reference sell price for resale ingredients (cafe simple pricing). */
+  sellingPrice?: number;
   businessType: string;
   location: string;
   count: number;
@@ -681,6 +683,7 @@ export interface BulkCreateInventoryItem {
   maximumRetailPrice: number;
   costPrice: number;
   priceToRetail: number;
+  sellingPrice?: number;
   businessType: string;
   location: string;
   count: number;
@@ -1158,6 +1161,8 @@ export interface InventorySearchParams {
   q?: string;
   sort?: string;
   limit?: number;
+  /** Extension field filters, e.g. sellDirect=true */
+  filters?: Record<string, string>;
 }
 
 export interface PaginationInventoryResponse {

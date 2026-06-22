@@ -119,6 +119,13 @@ export const inventoryApi = {
     if (params.limit !== undefined && params.limit > 0) {
       queryParams.limit = String(params.limit);
     }
+    if (params.filters) {
+      for (const [key, val] of Object.entries(params.filters)) {
+        if (val?.trim()) {
+          queryParams[key] = val.trim();
+        }
+      }
+    }
 
     const response = await apiClient.get<ApiResponse<InventoryListResponse>>(
       API_ENDPOINTS.INVENTORY.SEARCH,

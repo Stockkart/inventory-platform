@@ -1,16 +1,19 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import {
+  cartApi,
   inventoryApi,
   resolveInventoryDocumentId,
 } from '@inventory-platform/api';
 import type { InventoryItem } from '@inventory-platform/types';
+import { inventorySellableRef } from '@inventory-platform/types';
 import {
   InventoryAlertDetails,
   PaginationBar,
   getExtensionFieldString,
+  isSellDirectInventory,
 } from '@inventory-platform/ui';
-import { useNotify } from '@inventory-platform/store';
+import { useNotify, useVerticalSchemaStore } from '@inventory-platform/store';
 import searchStyles from './dashboard.product-search.module.css';
 import styles from './dashboard.manual-stock.module.css';
 
@@ -38,6 +41,12 @@ function displayQty(item: InventoryItem): number {
 
 function stockUnit(item: InventoryItem): string {
   return item.baseUnit?.trim() || item.uqc?.trim() || 'units';
+}
+
+function sellPrice(item: InventoryItem): number {
+  const selling = item.sellingPrice;
+  if (selling != null && selling > 0) return selling;
+  return item.priceToRetail ?? 0;
 }
 
 function isLowStock(item: InventoryItem): boolean {
@@ -239,9 +248,20 @@ export default function ManualStockPage() {
     null
   );
   const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
-  const { error: notifyError } = useNotify;
+  const [addingToCartId, setAddingToCartId] = useState<string | null>(null);
+  const [businessType, setBusinessType] = useState('cafe');
+  const { error: notifyError, success: notifySuccess } = useNotify;
+  const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
 
   const hasActiveSearch = searchQuery.trim().length > 0;
+
+  useEffect(() => {
+    void fetchShopSchema('regular').then((schema) => {
+      if (schema?.verticalId) {
+        setBusinessType(schema.verticalId);
+      }
+    });
+  }, [fetchShopSchema]);
 
   useEffect(() => {
     void fetchAllInventory();
@@ -361,6 +381,39 @@ export default function ManualStockPage() {
     );
   };
 
+  const handleAddToCart = async (item: InventoryItem) => {
+    const lotId = resolveInventoryDocumentId(item);
+    if (!lotId) {
+      notifyError('Cannot add to cart: missing inventory id');
+      return;
+    }
+    const price = sellPrice(item);
+    const stock = stockQty(item);
+    if (price <= 0) {
+      notifyError('Set a sell price before adding this item to the cart');
+      return;
+    }
+    if (stock <= 0) {
+      notifyError('Out of stock');
+      return;
+    }
+
+    setAddingToCartId(lotId);
+    try {
+      await cartApi.add({
+        businessType,
+        items: [{ sellableRef: inventorySellableRef(lotId), quantity: 1 }],
+      });
+      notifySuccess(`Added "${item.name || 'item'}" to cart`);
+    } catch (err) {
+      notifyError(
+        err instanceof Error ? err.message : 'Failed to add item to cart'
+      );
+    } finally {
+      setAddingToCartId(null);
+    }
+  };
+
   return (
     <div className={searchStyles.page}>
       <div className={searchStyles.header}>
@@ -439,6 +492,8 @@ export default function ManualStockPage() {
                 const unit = stockUnit(item);
                 const low = isLowStock(item);
                 const itemId = resolveInventoryDocumentId(item);
+                const sellDirect = isSellDirectInventory(item);
+                const price = sellPrice(item);
                 return (
                   <div
                     key={item.id || item.lotId}
@@ -451,6 +506,11 @@ export default function ManualStockPage() {
                       {ingredientType && (
                         <span className={searchStyles.modeBadge}>
                           {ingredientType}
+                        </span>
+                      )}
+                      {sellDirect && (
+                        <span className={styles.sellDirectBadge}>
+                          Sell direct
                         </span>
                       )}
                       {item.barcode && (
@@ -493,6 +553,13 @@ export default function ManualStockPage() {
                             </span>
                           </div>
                         )}
+                        {sellDirect && price > 0 && (
+                          <div className={searchStyles.priceInfo}>
+                            <span className={searchStyles.productPrice}>
+                              Sell: ₹{price.toFixed(2)}
+                            </span>
+                          </div>
+                        )}
                       </div>
                       {item.description && (
                         <p className={searchStyles.productDescription}>
@@ -520,6 +587,23 @@ export default function ManualStockPage() {
                         >
                           Correct stock
                         </button>
+                        {sellDirect && (
+                          <button
+                            type="button"
+                            className={styles.addToCartBtn}
+                            onClick={() => void handleAddToCart(item)}
+                            disabled={
+                              !itemId ||
+                              addingToCartId === itemId ||
+                              stock <= 0 ||
+                              price <= 0
+                            }
+                          >
+                            {addingToCartId === itemId
+                              ? 'Adding…'
+                              : 'Add to cart'}
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

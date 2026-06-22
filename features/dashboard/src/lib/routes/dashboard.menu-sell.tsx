@@ -8,11 +8,11 @@ import {
   useState,
 } from 'react';
 import { useNavigate } from 'react-router';
-import { cartApi, customersApi, shopMenuApi, usersApi } from '@inventory-platform/api';
+import { cartApi, customersApi, sellCatalogApi, usersApi } from '@inventory-platform/api';
 import type {
   CartResponse,
-  CheckoutItemResponse,
   MenuItem,
+  SellCatalog,
   ShopMenu,
 } from '@inventory-platform/types';
 import {
@@ -31,6 +31,8 @@ export function meta() {
 
 type FlatMenuItem = MenuItem & { sectionTitle: string };
 
+type SellSearchHit = { kind: 'menu'; item: FlatMenuItem };
+
 function money(n: number): string {
   return `₹${n.toFixed(2)}`;
 }
@@ -43,6 +45,13 @@ function flattenMenu(menu: ShopMenu | null): FlatMenuItem[] {
       sectionTitle: section.title,
     }))
   );
+}
+
+function catalogToSearchHits(catalog: SellCatalog | null): SellSearchHit[] {
+  if (!catalog) return [];
+  return flattenMenu(catalog.menu)
+    .filter((item) => item.available !== false)
+    .map((item) => ({ kind: 'menu' as const, item }));
 }
 
 function CartQuantityInput({
@@ -114,9 +123,6 @@ function MenuSearchDropdownItem({
         >
           Price: {money(item.sellingPrice)}
         </span>
-        {item.sellMode === 'direct' && (
-          <span className={styles.dropdownItemMeta}>Stock linked</span>
-        )}
       </div>
       <div className={styles.dropdownItemActions}>
         <button
@@ -143,9 +149,10 @@ export default function MenuSellPage() {
   const isSyncingRef = useRef(false);
 
   const [businessType, setBusinessType] = useState('cafe');
-  const [menu, setMenu] = useState<ShopMenu | null>(null);
+  const [searchCatalog, setSearchCatalog] = useState<SellCatalog | null>(null);
   const [cartData, setCartData] = useState<CartResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -181,11 +188,8 @@ export default function MenuSellPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const [menuData, cart] = await Promise.all([
-        shopMenuApi.get(),
-        cartApi.get().catch(() => null),
-      ]);
-      setMenu(menuData);
+      const cart = await cartApi.get().catch(() => null);
+      setSearchCatalog(null);
       if (cart && cart.status === 'PENDING') {
         navigate('/dashboard/checkout');
         return;
@@ -223,6 +227,7 @@ export default function MenuSellPage() {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
+        showSearchDropdown &&
         searchWrapperRef.current &&
         !searchWrapperRef.current.contains(event.target as Node)
       ) {
@@ -231,22 +236,32 @@ export default function MenuSellPage() {
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [showSearchDropdown]);
 
-  const allMenuItems = useMemo(() => flattenMenu(menu), [menu]);
+  const searchResults = useMemo(
+    () => catalogToSearchHits(searchCatalog),
+    [searchCatalog]
+  );
 
-  const searchResults = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return [];
-    const available = allMenuItems.filter((item) => item.available !== false);
-    return available.filter(
-      (item) =>
-        item.name?.toLowerCase().includes(q) ||
-        item.sectionTitle.toLowerCase().includes(q)
-    );
-  }, [allMenuItems, searchQuery]);
-
-  const hasActiveSearch = searchQuery.trim().length > 0;
+  const runSearch = useCallback(
+    async (q: string) => {
+      setIsSearching(true);
+      setError(null);
+      try {
+        const result = await sellCatalogApi.get(q);
+        setSearchCatalog(result);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : 'Search failed';
+        setError(message);
+        notifyError(message);
+        setSearchCatalog(null);
+      } finally {
+        setIsSearching(false);
+      }
+    },
+    [notifyError]
+  );
 
   const customerPayload = useCallback(
     () => ({
@@ -355,11 +370,14 @@ export default function MenuSellPage() {
 
   const handleSearchSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!hasActiveSearch) {
+    const q = searchQuery.trim();
+    if (!q) {
+      setSearchCatalog(null);
       setShowSearchDropdown(false);
       return;
     }
     setShowSearchDropdown(true);
+    void runSearch(q);
   };
 
   const handleCustomerSearch = async () => {
@@ -554,7 +572,7 @@ export default function MenuSellPage() {
   if (isLoading) {
     return (
       <div className={styles.page}>
-        <div className={styles.loading}>Loading menu…</div>
+        <div className={styles.loading}>Loading cart…</div>
       </div>
     );
   }
@@ -574,7 +592,7 @@ export default function MenuSellPage() {
       <div className={styles.header}>
         <h2 className={styles.title}>Sell</h2>
         <p className={styles.subtitle}>
-          Search menu items and build the order
+          Search and add menu items to the cart
         </p>
       </div>
 
@@ -596,42 +614,42 @@ export default function MenuSellPage() {
                     className={styles.searchInput}
                     placeholder="Search menu items..."
                     value={searchQuery}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                      const next = e.currentTarget.value;
-                      setSearchQuery(next);
-                      setShowSearchDropdown(next.trim().length > 0);
-                    }}
-                    disabled={isSyncing}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                      setSearchQuery(e.currentTarget.value)
+                    }
+                    disabled={isSyncing || isSearching}
                     autoFocus
-                    aria-expanded={showSearchDropdown && hasActiveSearch}
+                    aria-expanded={showSearchDropdown}
                     aria-haspopup="listbox"
                     aria-controls="menu-search-results-list"
                   />
                   <button
                     type="submit"
                     className={styles.searchSubmitBtn}
-                    disabled={isSyncing}
+                    disabled={isSyncing || isSearching}
                   >
-                    Search
+                    {isSearching ? 'Searching…' : 'Search'}
                   </button>
                 </div>
               </form>
-              {showSearchDropdown && hasActiveSearch && (
+              {showSearchDropdown && (
                 <div
                   id="menu-search-results-list"
                   className={styles.searchDropdown}
                   role="listbox"
                 >
-                  {searchResults.length === 0 ? (
+                  {isSearching ? (
+                    <div className={styles.dropdownLoading}>Searching…</div>
+                  ) : searchResults.length === 0 ? (
                     <div className={styles.dropdownEmpty}>
                       No menu items found
                     </div>
                   ) : (
                     <ul className={styles.dropdownList}>
-                      {searchResults.map((item) => (
+                      {searchResults.map((hit) => (
                         <MenuSearchDropdownItem
-                          key={item.id}
-                          item={item}
+                          key={`menu-${hit.item.id}`}
+                          item={hit.item}
                           onAdd={(menuItem) => void addMenuItem(menuItem)}
                           disabled={isSyncing}
                         />

@@ -51,11 +51,13 @@ import {
   VerticalInventoryFields,
   VerticalSchemaFieldInput,
   attachVerticalFieldsToBulkItem,
+  fieldLabel,
   formatCoreExpiryDateForApi,
   getVerticalFieldValue,
   hydrateExtensionFieldsOnProduct,
   partitionRegistrationFields,
   registrationFieldsForBilling,
+  filterRegistrationFieldsForSimplePricing,
   isRegistrationSchemaReady,
   schemaModeForBilling,
   setVerticalFieldPatch,
@@ -65,6 +67,7 @@ import {
   useNotify,
   useAuthStore,
   useVerticalSchemaStore,
+  useShopCapabilitiesStore,
   shopSchemaCacheKey,
 } from '@inventory-platform/store';
 import type { VerticalSchemaFieldDef } from '@inventory-platform/types';
@@ -215,6 +218,7 @@ interface ProductFormData
   priceToRetail: number | string;
   costPrice: number | string;
   maximumRetailPrice: number | string;
+  sellingPrice?: number | string;
   sgst?: string;
   cgst?: string;
   saleAdditionalDiscount?: number | null;
@@ -472,6 +476,7 @@ interface GridBulkFillDraft {
   costPrice?: string;
   priceToRetail?: string;
   maximumRetailPrice?: string;
+  sellingPrice?: string;
   schemeType?: SchemeType | '';
   saleScheme?: string;
   saleAdditionalDiscount?: string;
@@ -656,6 +661,11 @@ export default function ProductRegistrationPage() {
   const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
   const activeShopId =
     useAuthStore((s) => s.user?.shopId ?? null) ?? apiClient.getShopId();
+  const fetchCapabilities = useShopCapabilitiesStore((s) => s.fetchCapabilities);
+  const shopCapabilities = useShopCapabilitiesStore((s) =>
+    activeShopId ? s.byShopId[activeShopId] ?? null : null
+  );
+  const isSimplePricing = shopCapabilities?.features?.simplePricing === true;
   const navigate = useNavigate();
   const location = useLocation();
   const vendorPrefillConsumedRef = useRef(false);
@@ -806,6 +816,12 @@ export default function ProductRegistrationPage() {
       .catch(() => setPackagingUnits([]));
   }, []);
 
+  useEffect(() => {
+    if (activeShopId) {
+      void fetchCapabilities();
+    }
+  }, [activeShopId, fetchCapabilities]);
+
   // Grid view: column values to apply to every product row
   const [gridBulkFill, setGridBulkFill] = useState<GridBulkFillDraft>({});
 
@@ -866,6 +882,7 @@ export default function ProductRegistrationPage() {
     maximumRetailPrice: 0,
     costPrice: 0,
     priceToRetail: 0,
+    sellingPrice: 0,
     businessType: shopSchema?.verticalId ?? 'medical',
     location: '',
     count: 0,
@@ -898,15 +915,20 @@ export default function ProductRegistrationPage() {
     conversionFactor: 0,
     rates: [],
     defaultRate: '',
-    verticalFields: {},
+    verticalFields:
+      shopSchema?.verticalId === 'cafe' ? { sellDirect: 'no' } : {},
   });
 
   const registrationFields = useMemo(
-    () => registrationFieldsForBilling(shopSchema, billingMode, activeShopId),
-    [shopSchema, billingMode, activeShopId]
+    () =>
+      filterRegistrationFieldsForSimplePricing(
+        registrationFieldsForBilling(shopSchema, billingMode, activeShopId),
+        isSimplePricing
+      ),
+    [shopSchema, billingMode, activeShopId, isSimplePricing]
   );
 
-  const { companyField, otherFields: verticalRegistrationFields } = useMemo(
+  const { companyField, sellDirectField, otherFields: verticalRegistrationFields } = useMemo(
     () => partitionRegistrationFields(registrationFields),
     [registrationFields]
   );
@@ -1090,7 +1112,8 @@ export default function ProductRegistrationPage() {
         0,
       rates: item.rates ?? [],
       defaultRate: item.defaultRate ?? '',
-      verticalFields: {},
+      verticalFields:
+      shopSchema?.verticalId === 'cafe' ? { sellDirect: 'no' } : {},
     },
     registrationFields
     );
@@ -1538,7 +1561,26 @@ export default function ProductRegistrationPage() {
         }
         if (hasText(b.location)) next = { ...next, location: trim(b.location) };
 
-        if (b.schemeType) {
+        if (hasText(b.costPrice)) {
+          const n = parseFloat(trim(b.costPrice));
+          if (!isNaN(n) && n > 0) next = { ...next, costPrice: n };
+        }
+        if (hasText(b.sellingPrice)) {
+          const n = parseFloat(trim(b.sellingPrice));
+          if (!isNaN(n) && n >= 0) next = { ...next, sellingPrice: n };
+        }
+        if (!isSimplePricing && hasText(b.priceToRetail)) {
+          const n = parseFloat(trim(b.priceToRetail));
+          if (!isNaN(n) && n > 0) next = { ...next, priceToRetail: n };
+        }
+        if (!isSimplePricing && hasText(b.maximumRetailPrice)) {
+          const n = parseFloat(trim(b.maximumRetailPrice));
+          if (!isNaN(n) && n > 0) {
+            next = { ...next, maximumRetailPrice: n };
+          }
+        }
+
+        if (!isSimplePricing && b.schemeType) {
           next = {
             ...next,
             schemeType: b.schemeType,
@@ -1547,19 +1589,23 @@ export default function ProductRegistrationPage() {
               : { schemePercentage: null }),
           };
         }
-        if (appliedSaleScheme) {
+        if (!isSimplePricing && appliedSaleScheme) {
           const parsed = parseSaleSchemeDraft(trim(b.saleScheme));
           if (parsed) next = { ...next, ...parsed };
         }
 
-        if (b.saleAdditionalDiscount !== undefined && b.saleAdditionalDiscount !== '') {
+        if (
+          !isSimplePricing &&
+          b.saleAdditionalDiscount !== undefined &&
+          b.saleAdditionalDiscount !== ''
+        ) {
           const n = parseFloat(trim(b.saleAdditionalDiscount));
           if (!isNaN(n) && n >= 0 && n <= 100) {
             next = { ...next, saleAdditionalDiscount: n };
           }
         }
 
-        if (b.purchaseSchemeType) {
+        if (!isSimplePricing && b.purchaseSchemeType) {
           next = {
             ...next,
             purchaseSchemeType: b.purchaseSchemeType,
@@ -1568,7 +1614,7 @@ export default function ProductRegistrationPage() {
               : { purchaseSchemePercentage: null }),
           };
         }
-        if (appliedPurchaseScheme) {
+        if (!isSimplePricing && appliedPurchaseScheme) {
           const parsed = parsePurchaseSchemeDraft(trim(b.purchaseScheme));
           if (parsed) {
             next = {
@@ -1582,6 +1628,7 @@ export default function ProductRegistrationPage() {
         }
 
         if (
+          !isSimplePricing &&
           b.purchaseAdditionalDiscount !== undefined &&
           b.purchaseAdditionalDiscount !== ''
         ) {
@@ -1591,20 +1638,20 @@ export default function ProductRegistrationPage() {
           }
         }
 
-        if (b.itemType) {
+        if (!isSimplePricing && b.itemType) {
           next = { ...next, itemType: b.itemType };
           if (b.itemType !== 'DEGREE') {
             next = { ...next, itemTypeDegree: undefined };
           }
         }
-        if (hasText(b.itemTypeDegree)) {
+        if (!isSimplePricing && hasText(b.itemTypeDegree)) {
           const deg = parseInt(trim(b.itemTypeDegree), 10);
           if (!isNaN(deg) && deg > 0 && Number.isInteger(deg)) {
             next = { ...next, itemType: 'DEGREE', itemTypeDegree: deg };
           }
         }
 
-        if (b.discountApplicable) {
+        if (!isSimplePricing && b.discountApplicable) {
           next = { ...next, discountApplicable: b.discountApplicable };
         }
 
@@ -1841,7 +1888,32 @@ export default function ProductRegistrationPage() {
         const ptr = Number(product.priceToRetail);
         const cost = Number(product.costPrice);
         const mrp = Number(product.maximumRetailPrice);
-        if (!Number.isFinite(ptr) || ptr <= 0) {
+        if (isSimplePricing) {
+          if (!Number.isFinite(cost) || cost <= 0) {
+            notifyError(
+              `Product "${
+                product.name || 'Unnamed'
+              }": cost (rate) is required and must be greater than 0`
+            );
+            setIsLoading(false);
+            return;
+          }
+          const sellRaw = product.sellingPrice;
+          const sell =
+            sellRaw === '' || sellRaw == null ? null : Number(sellRaw);
+          if (
+            sell != null &&
+            (!Number.isFinite(sell) || sell < 0)
+          ) {
+            notifyError(
+              `Product "${
+                product.name || 'Unnamed'
+              }": selling price must be zero or greater when provided`
+            );
+            setIsLoading(false);
+            return;
+          }
+        } else if (!Number.isFinite(ptr) || ptr <= 0) {
           notifyError(
             `Product "${
               product.name || 'Unnamed'
@@ -1849,8 +1921,7 @@ export default function ProductRegistrationPage() {
           );
           setIsLoading(false);
           return;
-        }
-        if (!Number.isFinite(cost) || cost <= 0) {
+        } else if (!Number.isFinite(cost) || cost <= 0) {
           notifyError(
             `Product "${
               product.name || 'Unnamed'
@@ -1858,8 +1929,7 @@ export default function ProductRegistrationPage() {
           );
           setIsLoading(false);
           return;
-        }
-        if (!Number.isFinite(mrp) || mrp <= 0) {
+        } else if (!Number.isFinite(mrp) || mrp <= 0) {
           notifyError(
             `Product "${
               product.name || 'Unnamed'
@@ -1870,6 +1940,7 @@ export default function ProductRegistrationPage() {
         }
 
         if (
+          !isSimplePricing &&
           product.itemType === 'DEGREE' &&
           (product.itemTypeDegree == null ||
             product.itemTypeDegree <= 0 ||
@@ -1899,7 +1970,7 @@ export default function ProductRegistrationPage() {
         }
 
         const schemeType = product.schemeType ?? 'FIXED_UNITS';
-        if (schemeType === 'PERCENTAGE') {
+        if (!isSimplePricing && schemeType === 'PERCENTAGE') {
           if (
             product.schemePercentage == null ||
             product.schemePercentage === undefined ||
@@ -2022,9 +2093,22 @@ export default function ProductRegistrationPage() {
           name: product.name,
           description: product.description || undefined,
           companyName: product.companyName,
-          maximumRetailPrice: Number(product.maximumRetailPrice) || 0,
-          costPrice: Number(product.costPrice) || 0,
-          priceToRetail: Number(product.priceToRetail) || 0,
+          ...(isSimplePricing
+            ? {
+                maximumRetailPrice: 0,
+                costPrice: Number(product.costPrice) || 0,
+                priceToRetail: 0,
+                ...(product.sellingPrice != null &&
+                product.sellingPrice !== '' &&
+                Number(product.sellingPrice) > 0
+                  ? { sellingPrice: Number(product.sellingPrice) }
+                  : {}),
+              }
+            : {
+                maximumRetailPrice: Number(product.maximumRetailPrice) || 0,
+                costPrice: Number(product.costPrice) || 0,
+                priceToRetail: Number(product.priceToRetail) || 0,
+              }),
           businessType: (shopSchema?.verticalId ?? product.businessType).toUpperCase(),
           location: product.location,
           count: product.count,
@@ -2039,23 +2123,25 @@ export default function ProductRegistrationPage() {
           customReminders: customReminders,
           hsn: product.hsn || null,
           ...(resolvedBatchNo && !batchOnExtension ? { batchNo: resolvedBatchNo } : {}),
-          ...((product.schemeType ?? 'FIXED_UNITS') === 'PERCENTAGE'
-            ? {
-                schemeType: 'PERCENTAGE' as const,
-                schemePercentage: product.schemePercentage ?? null,
-              }
-            : product.schemePayFor != null || product.schemeFree != null
-            ? {
-                schemeType: 'FIXED_UNITS' as const,
-                schemePayFor: product.schemePayFor ?? null,
-                schemeFree: product.schemeFree ?? null,
-                scheme: null,
-              }
-            : {
-                schemeType: (product.schemeType ??
-                  'FIXED_UNITS') as 'FIXED_UNITS',
-                scheme: product.scheme ?? null,
-              }),
+          ...(!isSimplePricing
+            ? (product.schemeType ?? 'FIXED_UNITS') === 'PERCENTAGE'
+              ? {
+                  schemeType: 'PERCENTAGE' as const,
+                  schemePercentage: product.schemePercentage ?? null,
+                }
+              : product.schemePayFor != null || product.schemeFree != null
+              ? {
+                  schemeType: 'FIXED_UNITS' as const,
+                  schemePayFor: product.schemePayFor ?? null,
+                  schemeFree: product.schemeFree ?? null,
+                  scheme: null,
+                }
+              : {
+                  schemeType: (product.schemeType ??
+                    'FIXED_UNITS') as 'FIXED_UNITS',
+                  scheme: product.scheme ?? null,
+                }
+            : {}),
           billingMode: billingMode as BillingMode,
           ...(billingMode !== 'BASIC' && product.sgst && product.sgst.trim()
             ? { sgst: product.sgst.trim() }
@@ -2063,15 +2149,17 @@ export default function ProductRegistrationPage() {
           ...(billingMode !== 'BASIC' && product.cgst && product.cgst.trim()
             ? { cgst: product.cgst.trim() }
             : {}),
-          ...(product.saleAdditionalDiscount !== null &&
+          ...(!isSimplePricing &&
+          product.saleAdditionalDiscount !== null &&
           product.saleAdditionalDiscount !== undefined
             ? { saleAdditionalDiscount: product.saleAdditionalDiscount }
             : {}),
-          ...(product.purchaseSchemeType != null ||
-          product.purchaseSchemePayFor != null ||
-          product.purchaseSchemeFree != null ||
-          product.purchaseSchemePercentage != null ||
-          product.purchaseSchemeFreeQty != null
+          ...(!isSimplePricing &&
+          (product.purchaseSchemeType != null ||
+            product.purchaseSchemePayFor != null ||
+            product.purchaseSchemeFree != null ||
+            product.purchaseSchemePercentage != null ||
+            product.purchaseSchemeFreeQty != null)
             ? (product.purchaseSchemeType ?? 'FIXED_UNITS') === 'PERCENTAGE'
               ? {
                   purchaseSchemeType: 'PERCENTAGE' as const,
@@ -2087,25 +2175,29 @@ export default function ProductRegistrationPage() {
                   purchaseSchemePercentage: null,
                 }
             : {}),
-          ...(product.purchaseAdditionalDiscount !== null &&
+          ...(!isSimplePricing &&
+          product.purchaseAdditionalDiscount !== null &&
           product.purchaseAdditionalDiscount !== undefined
             ? {
                 purchaseAdditionalDiscount: product.purchaseAdditionalDiscount,
               }
             : {}),
-          ...(product.itemType != null ? { itemType: product.itemType } : {}),
-          ...(product.itemType === 'DEGREE' &&
+          ...(!isSimplePricing && product.itemType != null
+            ? { itemType: product.itemType }
+            : {}),
+          ...(!isSimplePricing &&
+          product.itemType === 'DEGREE' &&
           product.itemTypeDegree != null &&
           product.itemTypeDegree > 0
             ? { itemTypeDegree: product.itemTypeDegree }
             : {}),
-          ...(product.discountApplicable != null
+          ...(product.discountApplicable != null && !isSimplePricing
             ? { discountApplicable: product.discountApplicable }
             : {}),
           ...(purchaseDateFromInvoice
             ? { purchaseDate: purchaseDateFromInvoice }
             : {}),
-          ...(validRates.length > 0
+          ...(!isSimplePricing && validRates.length > 0
             ? {
                 rates: validRates.map((r) => ({
                   name: r.name.trim(),
@@ -2113,7 +2205,7 @@ export default function ProductRegistrationPage() {
                 })),
               }
             : {}),
-          ...(hasValidDefaultRate && product.defaultRate
+          ...(!isSimplePricing && hasValidDefaultRate && product.defaultRate
             ? { defaultRate: product.defaultRate.trim() }
             : {}),
         };
@@ -3207,31 +3299,45 @@ export default function ProductRegistrationPage() {
                       <th className={styles.excelTh}>Count *</th>
                       <th className={styles.excelTh}>Packaging</th>
                       <th className={styles.excelTh}>Location *</th>
+                      {sellDirectField && (
+                        <th className={styles.excelTh}>
+                          {fieldLabel(sellDirectField)} *
+                        </th>
+                      )}
                       {billingMode !== 'BASIC' && (
                         <th className={styles.excelTh}>HSN</th>
                       )}
-                      <th className={styles.excelTh}>PTS *</th>
-                      <th className={styles.excelTh}>PTR *</th>
-                      <th className={styles.excelTh}>MRP *</th>
-                      <th className={styles.excelTh}>Sale deal type</th>
-                      <th
-                        className={styles.excelTh}
-                        title='When deal type is Percentage, scheme % is required.'
-                      >
-                        Sale scheme
-                      </th>
-                      <th className={styles.excelTh}>Sale disc %</th>
-                      <th className={styles.excelTh}>Purchase deal type</th>
-                      <th className={styles.excelTh}>Purchase scheme</th>
-                      <th className={styles.excelTh}>Purchase disc %</th>
-                      <th className={styles.excelTh}>Item type</th>
-                      <th
-                        className={styles.excelTh}
-                        title="Required when item type is Temperature for the item"
-                      >
-                        ° *
-                      </th>
-                      <th className={styles.excelTh}>Disc appl.</th>
+                      {isSimplePricing ? (
+                        <>
+                          <th className={styles.excelTh}>Rate *</th>
+                          <th className={styles.excelTh}>Sell price</th>
+                        </>
+                      ) : (
+                        <>
+                          <th className={styles.excelTh}>PTS *</th>
+                          <th className={styles.excelTh}>PTR *</th>
+                          <th className={styles.excelTh}>MRP *</th>
+                          <th className={styles.excelTh}>Sale deal type</th>
+                          <th
+                            className={styles.excelTh}
+                            title='When deal type is Percentage, scheme % is required.'
+                          >
+                            Sale scheme
+                          </th>
+                          <th className={styles.excelTh}>Sale disc %</th>
+                          <th className={styles.excelTh}>Purchase deal type</th>
+                          <th className={styles.excelTh}>Purchase scheme</th>
+                          <th className={styles.excelTh}>Purchase disc %</th>
+                          <th className={styles.excelTh}>Item type</th>
+                          <th
+                            className={styles.excelTh}
+                            title="Required when item type is Temperature for the item"
+                          >
+                            ° *
+                          </th>
+                          <th className={styles.excelTh}>Disc appl.</th>
+                        </>
+                      )}
                       <th className={styles.excelTh}>Purch. date</th>
                       {billingMode === 'REGULAR' && (
                         <>
@@ -3244,7 +3350,9 @@ export default function ProductRegistrationPage() {
                     <GridBulkFillRow
                       bulk={gridBulkFill}
                       billingMode={billingMode}
+                      simplePricing={isSimplePricing}
                       companyField={companyField}
+                      sellDirectField={sellDirectField}
                       schemaFields={verticalRegistrationFields}
                       isLoading={isLoading}
                       onBulkChange={handleGridBulkFillChange}
@@ -3380,6 +3488,29 @@ export default function ProductRegistrationPage() {
                             required
                           />
                         </td>
+                        {sellDirectField && (
+                          <td className={styles.excelTd}>
+                            <select
+                              className={styles.excelInput}
+                              value={
+                                getVerticalFieldValue(product, sellDirectField) ||
+                                'no'
+                              }
+                              onChange={(e) =>
+                                applyVerticalFieldChange(
+                                  product.id,
+                                  sellDirectField,
+                                  e.target.value
+                                )
+                              }
+                              disabled={isLoading}
+                              required
+                            >
+                              <option value="no">No</option>
+                              <option value="yes">Yes</option>
+                            </select>
+                          </td>
+                        )}
                         {billingMode !== 'BASIC' && (
                           <>
                             <td className={styles.excelTd}>
@@ -3400,6 +3531,55 @@ export default function ProductRegistrationPage() {
                             </td>
                           </>
                         )}
+                        {isSimplePricing ? (
+                          <>
+                            <td className={styles.excelTd}>
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                pattern="[0-9]*\.?[0-9]*"
+                                className={styles.excelInputNarrow}
+                                placeholder="Rate"
+                                value={
+                                  product.costPrice === 0 ? '' : product.costPrice
+                                }
+                                onChange={(e) =>
+                                  handleDecimalChange(
+                                    product.id,
+                                    'costPrice',
+                                    e.target.value
+                                  )
+                                }
+                                disabled={isLoading}
+                                required
+                              />
+                            </td>
+                            <td className={styles.excelTd}>
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                pattern="[0-9]*\.?[0-9]*"
+                                className={styles.excelInputNarrow}
+                                placeholder="Optional"
+                                value={
+                                  product.sellingPrice === 0 ||
+                                  product.sellingPrice == null
+                                    ? ''
+                                    : product.sellingPrice
+                                }
+                                onChange={(e) =>
+                                  handleDecimalChange(
+                                    product.id,
+                                    'sellingPrice',
+                                    e.target.value
+                                  )
+                                }
+                                disabled={isLoading}
+                              />
+                            </td>
+                          </>
+                        ) : (
+                          <>
                         <td className={styles.excelTd}>
                           <input
                             type="text"
@@ -3951,6 +4131,8 @@ export default function ProductRegistrationPage() {
                             <option value="DISCOUNT_AND_SCHEME">Both</option>
                           </select>
                         </td>
+                          </>
+                        )}
                         <td className={styles.excelTd}>
                           <input
                             type="date"
@@ -4040,8 +4222,10 @@ export default function ProductRegistrationPage() {
                   Use the fill row above to copy the same value into every row
                   (only columns you type in are updated). Packaging is optional
                   in grid view (defaults to 1× on save). Columns marked * match
-                  required fields. Use list view for rate tiers, description,
-                  and reminders.
+                  required fields.
+                  {isSimplePricing
+                    ? ' Customer price is set on the Menu; sell price here is optional reference only.'
+                    : ' Use list view for rate tiers, description, and reminders.'}
                 </p>
               </div>
             ) : (
@@ -4051,9 +4235,11 @@ export default function ProductRegistrationPage() {
                     key={product.id}
                     product={product}
                     companyField={companyField}
+                    sellDirectField={sellDirectField}
                     schemaFields={verticalRegistrationFields}
                     packagingUnits={packagingUnits}
                     billingMode={billingMode}
+                    simplePricing={isSimplePricing}
                     index={index}
                     onToggle={() => handleToggleProduct(product.id)}
                     onRemove={() => handleRemoveProduct(product.id)}
@@ -4496,7 +4682,9 @@ export default function ProductRegistrationPage() {
 interface GridBulkFillRowProps {
   bulk: GridBulkFillDraft;
   billingMode: BillingMode;
+  simplePricing: boolean;
   companyField: VerticalSchemaFieldDef | null;
+  sellDirectField: VerticalSchemaFieldDef | null;
   schemaFields: VerticalSchemaFieldDef[];
   isLoading: boolean;
   onBulkChange: (
@@ -4510,7 +4698,9 @@ interface GridBulkFillRowProps {
 function GridBulkFillRow({
   bulk,
   billingMode,
+  simplePricing,
   companyField,
+  sellDirectField,
   schemaFields,
   isLoading,
   onBulkChange,
@@ -4609,6 +4799,22 @@ function GridBulkFillRow({
           disabled={isLoading}
         />
       </th>
+      {sellDirectField && (
+        <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+          <select
+            className={styles.excelInput}
+            value={bulk.verticalBulk?.[sellDirectField.key] ?? ''}
+            onChange={(e) =>
+              onVerticalBulkChange(sellDirectField.key, e.target.value)
+            }
+            disabled={isLoading}
+          >
+            <option value="">—</option>
+            <option value="no">No</option>
+            <option value="yes">Yes</option>
+          </select>
+        </th>
+      )}
       {billingMode !== 'BASIC' && (
         <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
           <span
@@ -4619,6 +4825,33 @@ function GridBulkFillRow({
           </span>
         </th>
       )}
+      {simplePricing ? (
+        <>
+          <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+            <input
+              type="text"
+              inputMode="decimal"
+              className={styles.excelInputNarrow}
+              placeholder="Rate"
+              value={bulk.costPrice ?? ''}
+              onChange={(e) => onBulkChange('costPrice', e.target.value)}
+              disabled={isLoading}
+            />
+          </th>
+          <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+            <input
+              type="text"
+              inputMode="decimal"
+              className={styles.excelInputNarrow}
+              placeholder="Sell"
+              value={bulk.sellingPrice ?? ''}
+              onChange={(e) => onBulkChange('sellingPrice', e.target.value)}
+              disabled={isLoading}
+            />
+          </th>
+        </>
+      ) : (
+        <>
       <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
         <span
           className={styles.excelBulkDisabled}
@@ -4769,6 +5002,8 @@ function GridBulkFillRow({
           <option value="DISCOUNT_AND_SCHEME">Both</option>
         </select>
       </th>
+        </>
+      )}
       <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
         <input
           type="date"
@@ -4811,13 +5046,31 @@ function GridBulkFillRow({
   );
 }
 
+function FormRowSpacer() {
+  return (
+    <div className={styles.formGroup} aria-hidden="true">
+      <span className={styles.label} style={{ visibility: 'hidden' }}>
+        .
+      </span>
+      <span
+        className={styles.input}
+        style={{ visibility: 'hidden', display: 'block' }}
+      >
+        .
+      </span>
+    </div>
+  );
+}
+
 // Product Accordion Component
 interface ProductAccordionProps {
   product: ProductFormData;
   companyField: VerticalSchemaFieldDef | null;
+  sellDirectField: VerticalSchemaFieldDef | null;
   schemaFields: VerticalSchemaFieldDef[];
   packagingUnits: PackagingUnit[];
   billingMode: BillingMode;
+  simplePricing: boolean;
   index: number;
   onToggle: () => void;
   onRemove: () => void;
@@ -4846,9 +5099,11 @@ interface ProductAccordionProps {
 function ProductAccordion({
   product,
   companyField,
+  sellDirectField,
   schemaFields,
   packagingUnits,
   billingMode,
+  simplePricing,
   index,
   onToggle,
   onRemove,
@@ -4975,6 +5230,42 @@ function ProductAccordion({
 
   const purchaseSchemeType =
     product.purchaseSchemeType ?? 'FIXED_UNITS';
+
+  const baseUqc = product.baseUnit?.trim()
+    ? resolvePackagingUqc(product.baseUnit, packagingUnits)
+    : '';
+  const packagingUnitDef = packagingUnits.find((u) => u.uqc === baseUqc);
+  const packagingFactor = packagingFactorForDisplay(
+    product.unitsPerPack ?? product.conversionFactor
+  );
+  const packagingHint = packagingUnitDef
+    ? `${packagingUnitDef.registrationHint}${
+        packagingUnitDef.sellUnitRule === 'PACK_ONLY'
+          ? ` · Sold in full ${packagingUnitDef.defaultPackUqc ?? 'pack'} only.`
+          : ''
+      } · e.g. 1 × 50 tablets, 1 × 100 ml`
+    : 'e.g. 1 × 50 tablets — GST UQC unit after the number';
+  const applyPackaging = (uqc: string, f: number) => {
+    const nextDef = packagingUnits.find((u) => u.uqc === uqc);
+    const upp = packagingFactorToUnitsPerPack(f, nextDef);
+    onChange(product.id, 'baseUnit', uqc);
+    onChange(product.id, 'unitsPerPack', upp);
+    onChange(product.id, 'conversionFactor', upp);
+  };
+  const packagingInput = (
+    <PackagingUnitInput
+      id={`packaging-${product.id}`}
+      label="Packaging"
+      baseUnit={baseUqc}
+      factor={packagingFactor}
+      packagingUnits={packagingUnits}
+      onChange={applyPackaging}
+      disabled={isLoading}
+      required
+      hint={packagingHint}
+    />
+  );
+
   const purchaseSchemePaidFreeHint = (() => {
     const billable = billableCountForPurchaseFreeQty(product);
     if (product.purchaseSchemeFreeQty != null) {
@@ -5026,38 +5317,6 @@ function ProductAccordion({
         <div className={styles.accordionContent}>
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
-              <label htmlFor={`barcode-${product.id}`} className={styles.label}>
-                Barcode
-              </label>
-              <input
-                type="text"
-                id={`barcode-${product.id}`}
-                className={styles.input}
-                placeholder="Enter barcode (optional)"
-                value={product.barcode}
-                onChange={(e) =>
-                  onChange(product.id, 'barcode', e.target.value)
-                }
-                disabled={isLoading}
-              />
-            </div>
-            {companyField && (
-              <VerticalSchemaFieldInput
-                field={companyField}
-                value={getVerticalFieldValue(product, companyField)}
-                onChange={(value) =>
-                  onVerticalFieldChange(product.id, companyField, value)
-                }
-                disabled={isLoading}
-                idPrefix={`acc-${product.id}`}
-                inputClassName={styles.input}
-                labelClassName={styles.label}
-              />
-            )}
-          </div>
-
-          <div className={styles.formRow}>
-            <div className={styles.formGroup}>
               <label htmlFor={`name-${product.id}`} className={styles.label}>
                 Product Name *
               </label>
@@ -5093,44 +5352,65 @@ function ProductAccordion({
             </div>
           </div>
 
-          {(() => {
-            const baseUqc = product.baseUnit?.trim()
-              ? resolvePackagingUqc(product.baseUnit, packagingUnits)
-              : '';
-            const def = packagingUnits.find((u) => u.uqc === baseUqc);
-            const factor = packagingFactorForDisplay(
-              product.unitsPerPack ?? product.conversionFactor
-            );
-            const packHint = def
-              ? `${def.registrationHint}${
-                  def.sellUnitRule === 'PACK_ONLY'
-                    ? ` · Sold in full ${def.defaultPackUqc ?? 'pack'} only.`
-                    : ''
-                } · e.g. 1 × 50 tablets, 1 × 100 ml`
-              : 'e.g. 1 × 50 tablets — GST UQC unit after the number';
-            const applyPackaging = (uqc: string, f: number) => {
-              const nextDef = packagingUnits.find((u) => u.uqc === uqc);
-              const upp = packagingFactorToUnitsPerPack(f, nextDef);
-              onChange(product.id, 'baseUnit', uqc);
-              onChange(product.id, 'unitsPerPack', upp);
-              onChange(product.id, 'conversionFactor', upp);
-            };
-            return (
-              <div className={styles.formRow}>
-                <PackagingUnitInput
-                  id={`packaging-${product.id}`}
-                  label="Packaging"
-                  baseUnit={baseUqc}
-                  factor={factor}
-                  packagingUnits={packagingUnits}
-                  onChange={applyPackaging}
-                  disabled={isLoading}
+          <div className={styles.formRow}>
+            <div className={styles.formGroup}>
+              <label htmlFor={`barcode-${product.id}`} className={styles.label}>
+                Barcode
+              </label>
+              <input
+                type="text"
+                id={`barcode-${product.id}`}
+                className={styles.input}
+                placeholder="Enter barcode (optional)"
+                value={product.barcode}
+                onChange={(e) =>
+                  onChange(product.id, 'barcode', e.target.value)
+                }
+                disabled={isLoading}
+              />
+            </div>
+            {companyField ? (
+              <VerticalSchemaFieldInput
+                field={companyField}
+                value={getVerticalFieldValue(product, companyField)}
+                onChange={(value) =>
+                  onVerticalFieldChange(product.id, companyField, value)
+                }
+                disabled={isLoading}
+                idPrefix={`acc-${product.id}`}
+                inputClassName={styles.input}
+                labelClassName={styles.label}
+              />
+            ) : (
+              packagingInput
+            )}
+          </div>
+
+          {companyField ? (
+            <div className={styles.formRow}>
+              {packagingInput}
+              <div className={styles.formGroup}>
+                <label
+                  htmlFor={`location-${product.id}`}
+                  className={styles.label}
+                >
+                  Inventory Location *
+                </label>
+                <input
+                  type="text"
+                  id={`location-${product.id}`}
+                  className={styles.input}
+                  placeholder="Enter inventory location"
+                  value={product.location}
+                  onChange={(e) =>
+                    onChange(product.id, 'location', e.target.value)
+                  }
                   required
-                  hint={packHint}
+                  disabled={isLoading}
                 />
               </div>
-            );
-          })()}
+            </div>
+          ) : null}
 
           {schemaFields.length > 0 && (
             <VerticalInventoryFields
@@ -5146,48 +5426,55 @@ function ProductAccordion({
             />
           )}
 
-          <div className={styles.formRow}>
-            <div className={styles.formGroup}>
-              <label
-                htmlFor={`location-${product.id}`}
-                className={styles.label}
-              >
-                Inventory Location *
-              </label>
-              <input
-                type="text"
-                id={`location-${product.id}`}
-                className={styles.input}
-                placeholder="Enter inventory location"
-                value={product.location}
-                onChange={(e) =>
-                  onChange(product.id, 'location', e.target.value)
-                }
-                required
-                disabled={isLoading}
-              />
-            </div>
-          </div>
-
-          {billingMode !== 'BASIC' && (
+          {(companyField ? billingMode !== 'BASIC' : true) && (
             <div className={styles.formRow}>
-              <div className={styles.formGroup}>
-                <label htmlFor={`hsn-${product.id}`} className={styles.label}>
-                  HSN Code
-                </label>
-                <input
-                  type="text"
-                  id={`hsn-${product.id}`}
-                  className={styles.input}
-                  placeholder="Enter the HSN code"
-                  value={product.hsn || ''}
-                  onChange={(e) => onChange(product.id, 'hsn', e.target.value)}
-                  disabled={isLoading}
-                />
-              </div>
+              {!companyField ? (
+                <div className={styles.formGroup}>
+                  <label
+                    htmlFor={`location-${product.id}`}
+                    className={styles.label}
+                  >
+                    Inventory Location *
+                  </label>
+                  <input
+                    type="text"
+                    id={`location-${product.id}`}
+                    className={styles.input}
+                    placeholder="Enter inventory location"
+                    value={product.location}
+                    onChange={(e) =>
+                      onChange(product.id, 'location', e.target.value)
+                    }
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+              ) : (
+                <FormRowSpacer />
+              )}
+              {billingMode !== 'BASIC' ? (
+                <div className={styles.formGroup}>
+                  <label htmlFor={`hsn-${product.id}`} className={styles.label}>
+                    HSN Code
+                  </label>
+                  <input
+                    type="text"
+                    id={`hsn-${product.id}`}
+                    className={styles.input}
+                    placeholder="Enter the HSN code"
+                    value={product.hsn || ''}
+                    onChange={(e) => onChange(product.id, 'hsn', e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
+              ) : (
+                <FormRowSpacer />
+              )}
             </div>
           )}
 
+          {!simplePricing && (
+          <>
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label
@@ -5626,8 +5913,58 @@ function ProductAccordion({
               </select>
             </div>
           </div>
+          </>
+          )}
 
-
+          {simplePricing ? (
+            <div className={styles.formRow}>
+              <div className={styles.formGroup}>
+                <label htmlFor={`costPrice-${product.id}`} className={styles.label}>
+                  Rate (cost) *
+                </label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*\.?[0-9]*"
+                  id={`costPrice-${product.id}`}
+                  className={styles.input}
+                  placeholder="0.00"
+                  value={product.costPrice === 0 ? '' : product.costPrice}
+                  onChange={(e) =>
+                    onDecimalChange(product.id, 'costPrice', e.target.value)
+                  }
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label
+                  htmlFor={`sellingPrice-${product.id}`}
+                  className={styles.label}
+                >
+                  Sell price (optional)
+                </label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*\.?[0-9]*"
+                  id={`sellingPrice-${product.id}`}
+                  className={styles.input}
+                  placeholder="Menu sets customer price"
+                  value={
+                    product.sellingPrice === 0 || product.sellingPrice == null
+                      ? ''
+                      : product.sellingPrice
+                  }
+                  onChange={(e) =>
+                    onDecimalChange(product.id, 'sellingPrice', e.target.value)
+                  }
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+          ) : (
+          <>
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label
@@ -5706,7 +6043,10 @@ function ProductAccordion({
                 disabled={isLoading}
               />
             </div>
+            <FormRowSpacer />
           </div>
+          </>
+          )}
 
           {billingMode === 'REGULAR' && (
             <div className={styles.formRow}>
@@ -5746,6 +6086,8 @@ function ProductAccordion({
           )}
 
           {/* Rates (optional) - custom pricing tiers */}
+          {!simplePricing && (
+          <>
           <div className={styles.ratesSection}>
             <div className={styles.ratesHeader}>
               <label className={styles.label}>Rates (optional)</label>
@@ -5846,6 +6188,8 @@ function ProductAccordion({
                 ))}
             </select>
           </div>
+          </>
+          )}
 
           <div className={styles.formGroup}>
             <label
@@ -5912,6 +6256,20 @@ function ProductAccordion({
               disabled={isLoading}
             />
           </div>
+          )}
+
+          {sellDirectField && (
+            <VerticalSchemaFieldInput
+              field={sellDirectField}
+              value={getVerticalFieldValue(product, sellDirectField) || 'no'}
+              onChange={(value) =>
+                onVerticalFieldChange(product.id, sellDirectField, value)
+              }
+              disabled={isLoading}
+              idPrefix={`acc-${product.id}`}
+              inputClassName={styles.input}
+              labelClassName={styles.label}
+            />
           )}
         </div>
       )}

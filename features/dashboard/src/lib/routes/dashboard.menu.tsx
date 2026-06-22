@@ -8,11 +8,9 @@ import {
 } from 'react';
 import {
   cartApi,
-  inventoryApi,
-  resolveInventoryDocumentId,
   shopMenuApi,
 } from '@inventory-platform/api';
-import type { InventoryItem, MenuItem, MenuSection, ShopMenu } from '@inventory-platform/types';
+import type { MenuItem, MenuSection, ShopMenu } from '@inventory-platform/types';
 import { menuSellableRef } from '@inventory-platform/types';
 import { useNotify, useVerticalSchemaStore } from '@inventory-platform/store';
 import styles from './dashboard.menu.module.css';
@@ -58,9 +56,7 @@ function normalizeSectionsForCompare(sections: MenuSection[]): string {
           id: i.id,
           name: i.name.trim(),
           sellingPrice: Number(i.sellingPrice) || 0,
-          sellMode: i.sellMode,
-          inventoryId:
-            i.sellMode === 'direct' ? i.inventoryId?.trim() || null : null,
+          sellMode: 'menu' as const,
           available: i.available !== false,
         })),
     }))
@@ -78,147 +74,6 @@ function menuItemMatchesSearch(
   return (
     item.name.toLowerCase().includes(normalized) ||
     sectionTitle.toLowerCase().includes(normalized)
-  );
-}
-
-function IngredientPicker({
-  inventoryId,
-  onSelect,
-  onClear,
-  disabled,
-}: {
-  inventoryId?: string | null;
-  onSelect: (id: string, name: string) => void;
-  onClear: () => void;
-  disabled?: boolean;
-}) {
-  const [query, setQuery] = useState('');
-  const [linkedName, setLinkedName] = useState<string | null>(null);
-  const [results, setResults] = useState<InventoryItem[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [open, setOpen] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!inventoryId?.trim()) {
-      setLinkedName(null);
-      return;
-    }
-    let cancelled = false;
-    void inventoryApi
-      .getById(inventoryId.trim())
-      .then((item) => {
-        if (!cancelled) setLinkedName(item.name ?? inventoryId);
-      })
-      .catch(() => {
-        if (!cancelled) setLinkedName(inventoryId);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [inventoryId]);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        wrapperRef.current &&
-        !wrapperRef.current.contains(event.target as Node)
-      ) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const runSearch = async (q: string) => {
-    const trimmed = q.trim();
-    if (!trimmed) {
-      setResults([]);
-      return;
-    }
-    setIsSearching(true);
-    try {
-      const response = await inventoryApi.search(trimmed, 0, 8);
-      setResults(response.data ?? []);
-    } catch {
-      setResults([]);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  if (inventoryId?.trim() && linkedName) {
-    return (
-      <div className={styles.ingredientLinked}>
-        <span title={inventoryId}>🥕 {linkedName}</span>
-        <button
-          type="button"
-          className={styles.ingredientClearBtn}
-          onClick={onClear}
-          disabled={disabled}
-        >
-          Change
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className={styles.ingredientPicker} ref={wrapperRef}>
-      <input
-        type="text"
-        className={styles.ingredientInput}
-        value={query}
-        disabled={disabled}
-        placeholder="Search ingredient…"
-        onChange={(e) => {
-          setQuery(e.target.value);
-          setOpen(true);
-          void runSearch(e.target.value);
-        }}
-        onFocus={() => setOpen(true)}
-      />
-      {open && (query.trim() || isSearching) && (
-        <div className={styles.ingredientDropdown}>
-          {isSearching ? (
-            <button type="button" className={styles.ingredientOption} disabled>
-              Searching…
-            </button>
-          ) : results.length === 0 ? (
-            <button type="button" className={styles.ingredientOption} disabled>
-              No ingredients found
-            </button>
-          ) : (
-            results.map((item) => {
-              const id = resolveInventoryDocumentId(item);
-              if (!id) return null;
-              const stock =
-                item.currentBaseCount ?? item.currentCount ?? 0;
-              const unit = item.baseUnit?.trim() || item.uqc?.trim() || 'units';
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  className={styles.ingredientOption}
-                  onClick={() => {
-                    onSelect(id, item.name ?? 'Ingredient');
-                    setQuery('');
-                    setResults([]);
-                    setOpen(false);
-                  }}
-                >
-                  {item.name || 'Unnamed'}
-                  <span className={styles.ingredientOptionMeta}>
-                    Stock: {stock} {unit}
-                  </span>
-                </button>
-              );
-            })
-          )}
-        </div>
-      )}
-    </div>
   );
 }
 
@@ -452,8 +307,8 @@ export default function MenuAdminPage() {
               ...i,
               name: i.name.trim(),
               sellingPrice: Number(i.sellingPrice) || 0,
-              inventoryId:
-                i.sellMode === 'direct' ? i.inventoryId?.trim() || null : null,
+              sellMode: 'menu' as const,
+              inventoryId: null,
             })),
         }))
         .filter((s) => s.items.length > 0);
@@ -697,66 +552,6 @@ export default function MenuAdminPage() {
                                 />
                               </div>
                             </div>
-
-                            <div className={styles.fieldGroup}>
-                              <span className={styles.fieldLabel}>
-                                Stock handling
-                              </span>
-                              <div className={styles.modeToggle}>
-                                <button
-                                  type="button"
-                                  className={`${styles.modeBtn} ${
-                                    item.sellMode === 'menu'
-                                      ? styles.modeBtnActive
-                                      : ''
-                                  }`}
-                                  onClick={() =>
-                                    updateItem(section.id, item.id, {
-                                      sellMode: 'menu',
-                                      inventoryId: null,
-                                    })
-                                  }
-                                >
-                                  Menu only
-                                </button>
-                                <button
-                                  type="button"
-                                  className={`${styles.modeBtn} ${
-                                    item.sellMode === 'direct'
-                                      ? styles.modeBtnActive
-                                      : ''
-                                  }`}
-                                  onClick={() =>
-                                    updateItem(section.id, item.id, {
-                                      sellMode: 'direct',
-                                    })
-                                  }
-                                >
-                                  Deduct stock
-                                </button>
-                              </div>
-                            </div>
-
-                            {item.sellMode === 'direct' && (
-                              <div className={styles.fieldGroup}>
-                                <span className={styles.fieldLabel}>
-                                  Ingredient
-                                </span>
-                                <IngredientPicker
-                                  inventoryId={item.inventoryId}
-                                  onSelect={(id) =>
-                                    updateItem(section.id, item.id, {
-                                      inventoryId: id,
-                                    })
-                                  }
-                                  onClear={() =>
-                                    updateItem(section.id, item.id, {
-                                      inventoryId: null,
-                                    })
-                                  }
-                                />
-                              </div>
-                            )}
 
                             <div className={styles.availabilityRow}>
                               <span className={styles.availabilityLabel}>
