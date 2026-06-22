@@ -211,7 +211,12 @@ export function meta() {
 interface ProductFormData
   extends Omit<
     CreateInventoryDto,
-    'vendorId' | 'lotId' | 'priceToRetail' | 'costPrice' | 'maximumRetailPrice'
+    | 'vendorId'
+    | 'lotId'
+    | 'priceToRetail'
+    | 'costPrice'
+    | 'maximumRetailPrice'
+    | 'sellingPrice'
   > {
   id: string; // Unique ID for each product form
   isExpanded: boolean;

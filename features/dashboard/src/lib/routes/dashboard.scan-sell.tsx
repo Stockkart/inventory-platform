@@ -24,6 +24,7 @@ import type {
   PricingResponse,
   CustomerResponse,
 } from '@inventory-platform/types';
+import { inventoryLotIdFromSellableRef } from '@inventory-platform/types';
 import styles from './dashboard.scan-sell.module.css';
 import { useNotify, useAuthStore, useVerticalSchemaStore } from '@inventory-platform/store';
 import {
@@ -1002,6 +1003,10 @@ export default function ScanSellPage() {
           resItem.quantity,
           unitFactor > 0 ? apiBaseQuantity / unitFactor : apiBaseQuantity
         );
+        const resolvedLotId =
+          resItem.inventoryId ??
+          inventoryLotIdFromSellableRef(resItem.stockRef ?? resItem.sellableRef) ??
+          '';
         const inventoryItem: InventoryItem = existing
           ? {
               ...existing.inventoryItem,
@@ -1041,8 +1046,8 @@ export default function ScanSellPage() {
                 null,
             }
           : {
-              id: resItem.inventoryId,
-              lotId: '',
+              id: resolvedLotId,
+              lotId: resolvedLotId,
               barcode: null,
               name: resItem.name,
               description: null,

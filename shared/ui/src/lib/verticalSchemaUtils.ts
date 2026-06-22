@@ -203,12 +203,9 @@ function formatFieldValueForInput(
   field: VerticalSchemaFieldDef,
   value: unknown
 ): string {
-  if (field.key === 'sellDirect' || field.type === 'boolean') {
+  if (field.key === 'sellDirect') {
     if (value === true || value === 'true' || value === 'yes') return 'yes';
     if (value === false || value === 'false' || value === 'no') return 'no';
-  }
-  if (field.type === 'boolean') {
-    return value === true || value === 'true' ? 'true' : 'false';
   }
   if (field.type === 'date' && value != null) {
     const text = String(value);
@@ -242,7 +239,7 @@ function coerceFieldValue(
   if (value === '') {
     return null;
   }
-  if (field.key === 'sellDirect' || field.type === 'boolean') {
+  if (field.key === 'sellDirect') {
     if (value === 'yes' || value === 'true') return true;
     if (value === 'no' || value === 'false') return false;
   }
