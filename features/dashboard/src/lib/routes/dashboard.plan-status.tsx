@@ -114,8 +114,14 @@ export default function PlanStatusPage() {
               <>
                 <p className={styles.planName}>{s.plan?.planName ?? '—'}</p>
                 <p className={styles.planExpiry}>
-                  Renews: {formatDate(s.planExpiryDate)}
+                  {s.planExpired ? 'Expired' : 'Renews'}:{' '}
+                  {formatDate(s.planExpiryDate)}
                 </p>
+                {s.planExpired && (
+                  <div className={styles.trialExpired}>
+                    Your subscription has ended. Choose a plan below to continue.
+                  </div>
+                )}
                 <p className={styles.planPosition}>
                   Plan {currentPlanIndex + 1} of {plans.length}
                 </p>
@@ -176,7 +182,7 @@ export default function PlanStatusPage() {
         {/* All Plans Grid - same design as pre-login Pricing */}
         <section className={styles.section}>
           <h3 className={styles.sectionTitle}>
-            {s.trialExpired ? 'Choose a Plan' : 'Available Plans'}
+            {s.planExpired ? 'Choose a Plan' : 'Available Plans'}
           </h3>
           <p className={styles.sectionSubtitle}>
             Select a plan to proceed to payment
@@ -185,7 +191,7 @@ export default function PlanStatusPage() {
             plans={plans}
             currentPlanId={s.trial ? null : s.planId}
             onSelectPlan={handleSelectPlan}
-            ctaLabel={s.trialExpired ? 'Select Plan' : 'Upgrade'}
+            ctaLabel={s.planExpired ? 'Select Plan' : 'Upgrade'}
             showTrialBadge
           />
         </section>

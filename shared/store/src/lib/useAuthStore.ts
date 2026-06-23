@@ -4,6 +4,7 @@ import { authApi, apiClient, usersApi } from '@inventory-platform/api';
 import type { LoginDto, SignupDto } from '@inventory-platform/types';
 import type { AuthState } from '@inventory-platform/types';
 import { useVerticalSchemaStore } from './useVerticalSchemaStore';
+import { usePlanStatusStore } from './usePlanStatusStore';
 
 function deriveShopFromUser(user: { shopId: string | null; shops?: Array<{ shopId: string; shopName: string }> } | null): { name?: string } | null {
   if (!user?.shopId || !user.shops?.length) return null;
@@ -87,6 +88,7 @@ export const useAuthStore = create<AuthState>()(
           // Continue with logout even if API call fails
         } finally {
           useVerticalSchemaStore.getState().clear();
+          usePlanStatusStore.getState().clear();
           set({
             user: null,
             token: null,
@@ -135,6 +137,7 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         try {
           useVerticalSchemaStore.getState().clear();
+          usePlanStatusStore.getState().clear();
           await usersApi.setActiveShop(shopId);
           const user = await authApi.getCurrentUser();
           const shop = deriveShopFromUser(user) ?? null;

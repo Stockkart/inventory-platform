@@ -1,14 +1,37 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate, Outlet, useLocation } from 'react-router';
-import { useAuthStore } from '@inventory-platform/store';
+import { useAuthStore, usePlanStatusStore } from '@inventory-platform/store';
+import { apiClient } from '@inventory-platform/api';
+import { isPlanExpiryAllowedPath } from '@inventory-platform/types';
 import { DashboardLayout } from '@inventory-platform/ui';
 
 export default function DashboardLayoutRoute() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, isLoading, user, token, fetchCurrentUser } = useAuthStore();
+  const fetchPlanStatus = usePlanStatusStore((s) => s.fetchPlanStatus);
+  const planStatusLoading = usePlanStatusStore((s) => s.loading);
+  const planStatus = usePlanStatusStore((s) =>
+    user?.shopId ? s.byShopId[user.shopId] : undefined
+  );
   const hasCheckedAuth = useRef(false);
   const isCheckingRef = useRef(false);
+
+  useEffect(() => {
+    apiClient.setPlanExpiredHandler(() => {
+      if (!isPlanExpiryAllowedPath(window.location.pathname)) {
+        navigate('/dashboard/plan-status', { replace: true });
+      }
+    });
+    return () => apiClient.setPlanExpiredHandler(null);
+  }, [navigate]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !user?.shopId) {
+      return;
+    }
+    void fetchPlanStatus({ force: true });
+  }, [isAuthenticated, user?.shopId, fetchPlanStatus]);
 
   useEffect(() => {
     // Reset check flag when authentication state changes
@@ -58,8 +81,28 @@ export default function DashboardLayoutRoute() {
     checkAuth();
   }, [isAuthenticated, isLoading, user, token, navigate, fetchCurrentUser, location.pathname]);
 
+  useEffect(() => {
+    if (!isAuthenticated || !user?.shopId || planStatusLoading) {
+      return;
+    }
+    if (planStatus?.planExpired && !isPlanExpiryAllowedPath(location.pathname)) {
+      navigate('/dashboard/plan-status', { replace: true });
+    }
+  }, [
+    isAuthenticated,
+    user?.shopId,
+    planStatus?.planExpired,
+    planStatusLoading,
+    location.pathname,
+    navigate,
+  ]);
+
   // Show loading while checking auth or if we have a token and haven't checked yet
-  if (isLoading || (token && !hasCheckedAuth.current && !isAuthenticated)) {
+  if (
+    isLoading ||
+    (token && !hasCheckedAuth.current && !isAuthenticated) ||
+    (isAuthenticated && user?.shopId && planStatusLoading && !planStatus)
+  ) {
     return (
       <div style={{ 
         display: 'flex', 

@@ -16,6 +16,7 @@ class ApiClient {
   private token: string | null = null;
   private shopId: string | null = null;
   private baseURL: string;
+  private onPlanExpired: (() => void) | null = null;
 
   constructor(baseURL: string) {
     this.baseURL = baseURL.replace(/\/$/, '');
@@ -90,6 +91,10 @@ class ApiClient {
           apiError.code = errorData?.code;
           apiError.details = errorData?.details;
 
+          if (error.response.status === 402 && this.onPlanExpired) {
+            this.onPlanExpired();
+          }
+
           throw apiError;
         }
 
@@ -146,6 +151,10 @@ class ApiClient {
       return localStorage.getItem(X_SHOP_ID_KEY);
     }
     return null;
+  }
+
+  setPlanExpiredHandler(handler: (() => void) | null) {
+    this.onPlanExpired = handler;
   }
 
   /* REST METHODS */

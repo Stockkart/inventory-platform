@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router';
 import { plansApi } from '@inventory-platform/api';
-import { useAuthStore } from '@inventory-platform/store';
+import { useAuthStore, usePlanStatusStore } from '@inventory-platform/store';
 import type {
   PlanResponse,
   PlanTransactionResponse,
@@ -26,6 +26,7 @@ const PAYMENT_METHODS = [
 
 export default function PlanPaymentPage() {
   const { user } = useAuthStore();
+  const fetchPlanStatus = usePlanStatusStore((s) => s.fetchPlanStatus);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const planIdFromUrl = searchParams.get('planId');
@@ -96,8 +97,9 @@ export default function PlanPaymentPage() {
         durationMonths: 12,
         paymentMethod,
       });
+      await fetchPlanStatus({ force: true });
       await fetchTransactions();
-      navigate('/dashboard/plan-payment', { replace: true });
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Failed to process payment'
