@@ -1998,6 +1998,8 @@ export interface ShopPlanStatusResponse {
   planExpiryDate: string | null;
   trial: boolean;
   trialExpired: boolean;
+  /** True when planExpiryDate is in the past (trial or paid subscription). */
+  planExpired: boolean;
   currentUsage: UsageResponse;
   suggestedPlan: PlanResponse | null;
   billingLimitReached: boolean;
