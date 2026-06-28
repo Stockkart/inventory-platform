@@ -231,10 +231,17 @@
 }
 
 .factorPrefix {
-  padding: 0.75rem 0 0.75rem 1rem;
+  padding: 0.75rem 0.15rem 0.75rem 1rem;
   font-size: 1rem;
   color: var(--text-secondary);
   user-select: none;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.factorLeadGroup {
+  display: flex;
+  align-items: center;
   flex-shrink: 0;
 }
 
@@ -247,14 +254,14 @@
 }
 
 .factorQtyInput {
-  width: 4.5rem;
+  width: 2.75rem;
   flex-shrink: 0;
-  padding: 0.75rem 0.5rem 0.75rem 1rem;
+  padding: 0.75rem 0.35rem 0.75rem 0.15rem;
   border: none;
   font-size: 1rem;
   color: var(--text-primary);
   background: transparent;
-  text-align: right;
+  text-align: left;
 }
 
 .factorQtyInput:focus {
@@ -291,8 +298,15 @@
   font-size: 0.875rem;
 }
 
+.factorInputWrapCompact .factorPrefix {
+  padding-left: 0.65rem;
+  padding-right: 0.1rem;
+}
+
 .factorInputWrapCompact .factorQtyInput {
-  width: 3.25rem;
+  width: 2.25rem;
+  padding-left: 0.1rem;
+  padding-right: 0.25rem;
 }
 
 .packagingCellStack {

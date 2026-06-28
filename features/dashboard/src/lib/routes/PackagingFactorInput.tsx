@@ -68,13 +68,10 @@ export function packagingFactorForDisplay(
 
 export function packagingFactorToUnitsPerPack(
   factor: number,
-  unitDef: PackagingUnit | undefined
+  _unitDef: PackagingUnit | undefined
 ): number {
   const n = Math.floor(Number(factor)) || 0;
   if (n <= 1) return 0;
-  // Keep factor while user has not picked a unit yet.
-  if (!unitDef) return n;
-  if (!unitDef.allowsUnitsPerPack) return 0;
   return n;
 }
 
@@ -115,22 +112,17 @@ export function PackagingUnitInput({
   const unitFocusedRef = useRef(false);
   const qtyFocusedRef = useRef(false);
   const lastSyncedBaseUnitRef = useRef(baseUnit);
-  const [qtyDraft, setQtyDraft] = useState(() =>
-    factor > 1 ? String(factor) : ''
-  );
+  const [qtyDraft, setQtyDraft] = useState(() => String(Math.max(1, factor)));
 
-  const unitDef = useMemo(() => {
-    const code = baseUnit.trim().toUpperCase();
-    if (!code) return undefined;
-    return packagingUnits.find((u) => u.uqc === code);
-  }, [baseUnit, packagingUnits]);
-
-  /** Middle number only for units that support pack size (e.g. TBS, MLT). */
-  const showQtyInput = !unitDef || unitDef.allowsUnitsPerPack;
+  const resolvedFactorFromDraft = (): number => {
+    if (qtyDraft.trim() === '') return Math.max(1, factor);
+    const n = parseInt(qtyDraft, 10);
+    return !isNaN(n) && n > 0 ? n : Math.max(1, factor);
+  };
 
   useEffect(() => {
     if (qtyFocusedRef.current) return;
-    setQtyDraft(factor > 1 ? String(factor) : '');
+    setQtyDraft(String(Math.max(1, factor)));
   }, [factor]);
 
   // Sync from parent only when not editing (avoids wiping keystrokes).
@@ -178,32 +170,21 @@ export function PackagingUnitInput({
     return () => document.removeEventListener('mousedown', onDocMouseDown);
   }, [listOpen]);
 
-  const effectiveFactorForUnit = (
-    uqc: string,
-    currentFactor: number
-  ): number => {
-    const def = packagingUnits.find((u) => u.uqc === uqc);
-    if (def && !def.allowsUnitsPerPack) return 1;
-    return currentFactor;
-  };
-
   const commitUnit = (raw?: string) => {
     const text = (raw ?? unitDraft).trim();
     if (!text) {
       lastSyncedBaseUnitRef.current = '';
-      onChange('', factor);
+      onChange('', resolvedFactorFromDraft());
       setUnitDraft('');
       setListOpen(false);
       return;
     }
     const resolved = resolvePackagingUqc(text, packagingUnits);
-    const nextFactor = effectiveFactorForUnit(resolved, factor);
+    const nextFactor = resolvedFactorFromDraft();
     lastSyncedBaseUnitRef.current = resolved;
     onChange(resolved, nextFactor);
     setUnitDraft(displayUnitValue(resolved, packagingUnits));
-    if (!packagingUnits.find((u) => u.uqc === resolved)?.allowsUnitsPerPack) {
-      setQtyDraft('');
-    }
+    setQtyDraft(String(Math.max(1, nextFactor)));
     setListOpen(false);
   };
 
@@ -279,8 +260,8 @@ export function PackagingUnitInput({
         </label>
       ) : null}
       <div className={wrapClass}>
-        <span className={styles.factorPrefix}>1 ×</span>
-        {showQtyInput ? (
+        <div className={styles.factorLeadGroup}>
+          <span className={styles.factorPrefix}>1 ×</span>
           <input
             id={qtyInputId}
             type="text"
@@ -302,13 +283,17 @@ export function PackagingUnitInput({
             }}
             onBlur={() => {
               qtyFocusedRef.current = false;
+              if (qtyDraft.trim() === '') {
+                setQtyDraft('1');
+                onChange(baseUnit, 1);
+              }
             }}
             onKeyDown={(e) => e.stopPropagation()}
             disabled={disabled}
             data-keyboard-nav="skip"
             aria-label={`${label} quantity per pack`}
           />
-        ) : null}
+        </div>
         <div
           ref={unitWrapRef}
           className={styles.factorUnitWrap}
