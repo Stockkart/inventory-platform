@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router';
 import { plansApi } from '@inventory-platform/api';
+import { getPaymentCheckout } from '@inventory-platform/payment';
 import { useAuthStore, usePlanStatusStore } from '@inventory-platform/store';
 import type {
   PlanResponse,
@@ -18,12 +19,6 @@ export function meta() {
   ];
 }
 
-const PAYMENT_METHODS = [
-  { value: 'CARD', label: 'Credit/Debit Card', icon: '💳' },
-  { value: 'UPI', label: 'UPI', icon: '📱' },
-  { value: 'NET_BANKING', label: 'Net Banking', icon: '🏦' },
-];
-
 export default function PlanPaymentPage() {
   const { user } = useAuthStore();
   const fetchPlanStatus = usePlanStatusStore((s) => s.fetchPlanStatus);
@@ -37,8 +32,7 @@ export default function PlanPaymentPage() {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [assigning, setAssigning] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState('CARD');
+  const [paying, setPaying] = useState(false);
 
   const [planById, setPlanById] = useState<PlanResponse | null>(null);
   const selectedPlan = plans.find((p) => p.id === planIdFromUrl) ?? planById;
@@ -89,14 +83,36 @@ export default function PlanPaymentPage() {
 
   const handlePay = async () => {
     if (!user?.shopId || !selectedPlan) return;
-    setAssigning(true);
+    setPaying(true);
     setError(null);
     try {
-      await plansApi.assignPlan(user.shopId, {
+      const checkout = await plansApi.createCheckout({
         planId: selectedPlan.id,
         durationMonths: 12,
-        paymentMethod,
       });
+
+      const paymentCheckout = getPaymentCheckout(checkout.provider);
+      const result = await paymentCheckout.openCheckout(
+        {
+          orderId: checkout.orderId,
+          provider: checkout.provider,
+          amount: checkout.amount,
+          currency: checkout.currency,
+          planName: checkout.planName,
+          razorpay: checkout.razorpay,
+        },
+        {
+          customerEmail: user.email ?? undefined,
+        }
+      );
+
+      await plansApi.verifyPayment({
+        orderId: checkout.orderId,
+        razorpayPaymentId: result.razorpay_payment_id,
+        razorpayOrderId: result.razorpay_order_id,
+        razorpaySignature: result.razorpay_signature,
+      });
+
       await fetchPlanStatus({ force: true });
       await fetchTransactions();
       navigate('/dashboard', { replace: true });
@@ -105,7 +121,7 @@ export default function PlanPaymentPage() {
         err instanceof Error ? err.message : 'Failed to process payment'
       );
     } finally {
-      setAssigning(false);
+      setPaying(false);
     }
   };
 
@@ -117,9 +133,6 @@ export default function PlanPaymentPage() {
       hour: '2-digit',
       minute: '2-digit',
     });
-
-  const getPaymentMethodLabel = (method: string) =>
-    PAYMENT_METHODS.find((m) => m.value === method)?.label ?? method;
 
   if (loading && transactions.length === 0) {
     return (
@@ -134,12 +147,11 @@ export default function PlanPaymentPage() {
       <div className={styles.header}>
         <h2 className={styles.title}>Payment</h2>
         <p className={styles.subtitle}>
-          Manage plan payment and view transaction history
+          Review your plan and pay with Razorpay (UPI, card, net banking, and more)
         </p>
       </div>
 
       <div className={styles.container}>
-        {/* Plan to pay */}
         {selectedPlan && (
           <section className={styles.section}>
             <h3 className={styles.sectionTitle}>Selected Plan</h3>
@@ -166,44 +178,24 @@ export default function PlanPaymentPage() {
               </div>
 
               <div className={styles.paymentSection}>
-                <h4 className={styles.paymentSectionTitle}>Payment Method</h4>
-                <div className={styles.paymentMethods}>
-                  {PAYMENT_METHODS.map((m) => (
-                    <label key={m.value} className={styles.paymentOption}>
-                      <input
-                        type="radio"
-                        name="payment"
-                        value={m.value}
-                        checked={paymentMethod === m.value}
-                        onChange={() => setPaymentMethod(m.value)}
-                      />
-                      <div className={styles.paymentCard}>
-                        <span
-                          className={styles.cardIcon}
-                          role="img"
-                          aria-label={m.label}
-                        >
-                          {m.icon}
-                        </span>
-                        <span>{m.label}</span>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-
                 <button
+                  type="button"
                   className={styles.processBtn}
                   onClick={handlePay}
-                  disabled={assigning}
+                  disabled={paying}
                 >
-                  {assigning
-                    ? 'Processing...'
+                  {paying
+                    ? 'Opening Razorpay…'
                     : `Pay ₹${selectedPlan.arcPrice?.toLocaleString('en-IN')}${
                         selectedPlan.planName === 'Extra User Plan'
                           ? ' per user/year'
                           : '/year'
-                      } & Activate`}
+                      }`}
                 </button>
+                <p className={styles.razorpayNote}>
+                  Secured by Razorpay. Choose your payment method in the checkout
+                  window.
+                </p>
               </div>
             </div>
           </section>
@@ -220,7 +212,6 @@ export default function PlanPaymentPage() {
           </section>
         )}
 
-        {/* Transaction History */}
         <section className={styles.section}>
           <h3 className={styles.sectionTitle}>Transaction History</h3>
           {transactions.length === 0 ? (
@@ -240,7 +231,7 @@ export default function PlanPaymentPage() {
                     </span>
                   </div>
                   <div className={styles.transactionMeta}>
-                    <span>{getPaymentMethodLabel(tx.paymentMethod)}</span>
+                    <span>{tx.paymentMethod}</span>
                     <span>{formatDate(tx.createdAt)}</span>
                   </div>
                 </div>

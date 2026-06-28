@@ -189,6 +189,9 @@ export const API_ENDPOINTS = {
     SHOP_ASSIGN: (shopId: string) => `/plans/shop/${shopId}/assign`,
     SHOP_USAGE: '/plans/shop/usage',
     SHOP_TRANSACTIONS: '/plans/shop/transactions',
+    PAYMENT_CONFIG: '/plans/payment/config',
+    PAYMENT_CHECKOUT: '/plans/payment/checkout',
+    PAYMENT_VERIFY: '/plans/payment/verify',
   },
 
   // Dashboard endpoints
