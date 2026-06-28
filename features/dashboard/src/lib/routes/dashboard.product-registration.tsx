@@ -101,6 +101,41 @@ function formatComputedAmount(n: number): string {
   return String(roundMoney(n));
 }
 
+function toReminderIso(value: string): string {
+  if (!value.trim()) return '';
+  return value.includes('T')
+    ? new Date(value).toISOString()
+    : new Date(`${value}T00:00:00`).toISOString();
+}
+
+/** Maps registration form reminders to API shape (reminderAt + endDate required server-side). */
+function mapCustomRemindersForBulkApi(
+  reminders: CustomReminderInput[] | undefined,
+  productExpiryRaw: string
+): CustomReminderInput[] | null {
+  if (!reminders?.length) return null;
+  const mapped = reminders
+    .filter((r) => r.reminderAt?.trim())
+    .map((reminder) => {
+      const reminderAt = toReminderIso(reminder.reminderAt);
+      let endDate = reminder.endDate?.trim()
+        ? toReminderIso(reminder.endDate)
+        : '';
+      if (!endDate && productExpiryRaw.trim()) {
+        endDate = toReminderIso(productExpiryRaw);
+      }
+      if (!endDate) {
+        endDate = reminderAt;
+      }
+      return {
+        reminderAt,
+        endDate,
+        notes: reminder.notes?.trim() || undefined,
+      };
+    });
+  return mapped.length > 0 ? mapped : null;
+}
+
 /** Parse GST rate from OCR strings like "9", "9%", " 9 ". */
 function parseGstPercent(rate: string | null | undefined): number {
   if (rate == null) return 0;
@@ -2031,32 +2066,11 @@ export default function ProductRegistrationPage() {
           ? getVerticalFieldValue(product, expiryField)
           : product.expiryDate?.trim() || '';
 
-        // Transform customReminders to the format expected by bulk API
-        const customReminders =
-          product.customReminders && product.customReminders.length > 0
-            ? product.customReminders.map((reminder) => {
-                // Calculate daysBefore from reminderAt and expiryDate
-                let daysBefore = 30; // default
-                if (reminder.reminderAt && productExpiryRaw) {
-                  const reminderDate = new Date(reminder.reminderAt);
-                  const expiryDate = new Date(productExpiryRaw);
-                  const diffTime =
-                    expiryDate.getTime() - reminderDate.getTime();
-                  daysBefore = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                } else if (reminder.endDate && productExpiryRaw) {
-                  // Fallback: calculate from endDate if reminderAt is not available
-                  const endDate = new Date(reminder.endDate);
-                  const expiryDate = new Date(productExpiryRaw);
-                  const diffTime = expiryDate.getTime() - endDate.getTime();
-                  daysBefore = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                }
-
-                return {
-                  daysBefore: daysBefore > 0 ? daysBefore : 30,
-                  message: reminder.notes || 'Expiry reminder',
-                };
-              })
-            : null;
+        // Custom reminders: send reminderAt/endDate/notes (works for all verticals)
+        const customReminders = mapCustomRemindersForBulkApi(
+          product.customReminders,
+          productExpiryRaw
+        );
 
         const unitsPerPackForApi =
           Number(product.unitsPerPack ?? product.conversionFactor) || 0;
@@ -4176,7 +4190,7 @@ export default function ProductRegistrationPage() {
                   in grid view (defaults to 1× on save). Columns marked * match
                   required fields.
                   {isSimplePricing
-                    ? ' Customer price is set on the Menu; sell price here is optional reference only.'
+                    ? ' Customer price is set on the Menu; sell price here is optional reference only. Use list view for custom reminders.'
                     : ' Use list view for rate tiers, description, and reminders.'}
                 </p>
               </div>
@@ -5059,7 +5073,7 @@ function ProductAccordion({
   localDateTimeToIso,
 }: ProductAccordionProps) {
   const productTitle = product.name || `Product ${index + 1}`;
-  const showExpiryReminders = schemaFields.some(
+  const showExpiryReminder = schemaFields.some(
     (field) => field.key === 'expiryDate'
   );
 
@@ -6152,10 +6166,11 @@ function ProductAccordion({
             />
           </div>
 
-          {/* Reminder Section — medical / verticals with expiry only */}
-          {showExpiryReminders && (
+          {/* Reminders — custom for all verticals; expiry-linked when schema has expiryDate */}
           <div className={styles.reminderSection}>
-            <h4 className={styles.subsectionTitle}>Expiry Reminder Settings</h4>
+            <h4 className={styles.subsectionTitle}>Reminders</h4>
+            {showExpiryReminder && (
+            <>
             <div className={styles.formRow}>
               <div className={styles.formGroup}>
                 <label
@@ -6190,6 +6205,8 @@ function ProductAccordion({
                 </p>
               </div>
             </div>
+            </>
+            )}
 
             <CustomRemindersSection
               reminders={product.customReminders || []}
@@ -6197,7 +6214,6 @@ function ProductAccordion({
               disabled={isLoading}
             />
           </div>
-          )}
 
           {sellDirectField && (
             <VerticalSchemaFieldInput

@@ -691,10 +691,7 @@ export interface BulkCreateInventoryItem {
   /** Core expiry (omit when schema stores expiry in verticalFields). */
   expiryDate?: string;
   reminderAt?: string;
-  customReminders?: Array<{
-    daysBefore: number;
-    message: string;
-  }> | null;
+  customReminders?: CustomReminderInput[] | null;
   hsn?: string | null;
   sac?: string | null;
   batchNo?: string | null;

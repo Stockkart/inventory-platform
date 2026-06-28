@@ -109,7 +109,10 @@ export function getDashboardMenuGroupsWithCapabilities(
         (item) =>
           !SKU_ONLY_PRODUCT_PATHS.has(item.path) && !capPaths.has(item.path)
       );
-      return { ...group, items: [...capItems, ...kept] };
+      return {
+        ...group,
+        items: [...capItems, ...kept],
+      };
     });
   }
 
