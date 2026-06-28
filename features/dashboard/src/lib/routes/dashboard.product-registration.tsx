@@ -491,7 +491,6 @@ interface GridBulkFillDraft {
   itemType?: ItemType | '';
   itemTypeDegree?: string;
   discountApplicable?: DiscountApplicable | '';
-  purchaseDate?: string;
   cgst?: string;
   sgst?: string;
   verticalBulk?: Record<string, string>;
@@ -648,18 +647,6 @@ function computeVendorInvoiceTotalsFromProducts(
     lineSubTotal: roundMoney(lineSubTotal),
     taxTotal: roundMoney(taxTotal),
   };
-}
-
-function getPurchaseDateFieldMin(): string {
-  const d = new Date();
-  d.setDate(d.getDate() - 30);
-  return d.toISOString().split('T')[0];
-}
-
-function getPurchaseDateFieldMax(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 30);
-  return d.toISOString().split('T')[0];
 }
 
 export default function ProductRegistrationPage() {
@@ -1658,13 +1645,6 @@ export default function ProductRegistrationPage() {
 
         if (!isSimplePricing && b.discountApplicable) {
           next = { ...next, discountApplicable: b.discountApplicable };
-        }
-
-        if (hasText(b.purchaseDate)) {
-          next = {
-            ...next,
-            purchaseDate: `${trim(b.purchaseDate)}T00:00:00.000Z`,
-          };
         }
 
         if (hasText(b.cgst)) next = { ...next, cgst: trim(b.cgst) };
@@ -3343,7 +3323,6 @@ export default function ProductRegistrationPage() {
                           <th className={styles.excelTh}>Disc appl.</th>
                         </>
                       )}
-                      <th className={styles.excelTh}>Purch. date</th>
                       {billingMode === 'REGULAR' && (
                         <>
                           <th className={styles.excelTh}>CGST %</th>
@@ -4138,38 +4117,6 @@ export default function ProductRegistrationPage() {
                         </td>
                           </>
                         )}
-                        <td className={styles.excelTd}>
-                          <input
-                            type="date"
-                            className={styles.excelInputDate}
-                            min={getPurchaseDateFieldMin()}
-                            max={getPurchaseDateFieldMax()}
-                            value={
-                              product.purchaseDate
-                                ? new Date(product.purchaseDate)
-                                    .toISOString()
-                                    .split('T')[0]
-                                : ''
-                            }
-                            onChange={(e) => {
-                              const dateValue = e.target.value;
-                              if (dateValue) {
-                                handleProductChange(
-                                  product.id,
-                                  'purchaseDate',
-                                  `${dateValue}T00:00:00.000Z`
-                                );
-                              } else {
-                                handleProductChange(
-                                  product.id,
-                                  'purchaseDate',
-                                  undefined
-                                );
-                              }
-                            }}
-                            disabled={isLoading}
-                          />
-                        </td>
                         {billingMode === 'REGULAR' && (
                           <>
                             <td className={styles.excelTd}>
@@ -5009,17 +4956,6 @@ function GridBulkFillRow({
       </th>
         </>
       )}
-      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <input
-          type="date"
-          className={styles.excelInputDate}
-          min={getPurchaseDateFieldMin()}
-          max={getPurchaseDateFieldMax()}
-          value={bulk.purchaseDate ?? ''}
-          onChange={(e) => onBulkChange('purchaseDate', e.target.value)}
-          disabled={isLoading}
-        />
-      </th>
       {billingMode === 'REGULAR' && (
         <>
           <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
