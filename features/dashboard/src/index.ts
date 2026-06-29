@@ -30,6 +30,7 @@ export {
 export { default as InvitationsPage } from './lib/routes/dashboard.invitations';
 export { default as MyInvitationsPage } from './lib/routes/dashboard.my-invitations';
 export { default as ShopUsersPage } from './lib/routes/dashboard.shop-users';
+export { default as AccessControlPage } from './lib/routes/dashboard.access-control';
 export { default as JoinRequestsPage } from './lib/routes/dashboard.join-requests';
 export { default as HistoryPage } from './lib/routes/dashboard.history';
 export { default as VendorInvoicesPage } from './lib/routes/dashboard.vendor-invoices';
@@ -120,6 +121,7 @@ export { meta as manualStockMeta } from './lib/routes/dashboard.manual-stock';
 export { meta as invitationsMeta } from './lib/routes/dashboard.invitations';
 export { meta as myInvitationsMeta } from './lib/routes/dashboard.my-invitations';
 export { meta as shopUsersMeta } from './lib/routes/dashboard.shop-users';
+export { meta as accessControlMeta } from './lib/routes/dashboard.access-control';
 export { meta as joinRequestsMeta } from './lib/routes/dashboard.join-requests';
 export { meta as historyMeta } from './lib/routes/dashboard.history';
 export { meta as vendorInvoicesMeta } from './lib/routes/dashboard.vendor-invoices';

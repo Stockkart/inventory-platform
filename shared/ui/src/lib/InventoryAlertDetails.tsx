@@ -12,6 +12,11 @@ import type {
   SchemeType,
   ItemType,
   DiscountApplicable,
+  ShopProductSearchAccess,
+} from '@inventory-platform/types';
+import {
+  canEditProductSearchUiField,
+  hasProductSearchEditAccess,
 } from '@inventory-platform/types';
 import { useNotify } from '@inventory-platform/store';
 import {
@@ -131,8 +136,10 @@ export interface InventoryAlertDetailsProps {
   open: boolean;
   item: InventoryItem | null;
   onClose: () => void;
-  /** When true, shows Edit button and allows in-modal editing */
+  /** When true, shows Edit button when product-search access allows edits */
   editable?: boolean;
+  /** Effective product-search access from GET /shops/me/access */
+  productSearchAccess?: ShopProductSearchAccess | null;
   /** Called after successful update so parent can refresh the item */
   onUpdated?: (updated: InventoryItem) => void;
 }
@@ -142,6 +149,7 @@ export function InventoryAlertDetails({
   item,
   onClose,
   editable = false,
+  productSearchAccess = null,
   onUpdated,
 }: InventoryAlertDetailsProps) {
   const [vendor, setVendor] = useState<VendorResponse | null>(null);
@@ -153,6 +161,12 @@ export function InventoryAlertDetails({
     Record<string, string | number | null>
   >({});
   const { success: notifySuccess, error: notifyError } = useNotify;
+
+  const canEditField = (uiKey: string) =>
+    canEditProductSearchUiField(uiKey, productSearchAccess);
+  const allowEditMode =
+    editable && hasProductSearchEditAccess(productSearchAccess);
+  const showEditor = (uiKey: string) => isEditing && canEditField(uiKey);
 
   const stripLeadingZeros = (val: string): string => {
     if (val === '' || val === '.') return val;
@@ -493,7 +507,34 @@ export function InventoryAlertDetails({
         setIsEditing(false);
         return;
       }
-      const updated = await inventoryApi.update(inventoryDocumentId, payload);
+
+      const filtered: UpdateInventoryRequest = {};
+      const allowPayloadKey = (key: keyof UpdateInventoryRequest) => {
+        if (productSearchAccess?.editMode === 'FULL_EDIT' || !productSearchAccess) {
+          return true;
+        }
+        if (key === 'unitConversions' || key === 'baseUnit') {
+          return productSearchAccess.editableFields.includes('unitsPerPack')
+            || productSearchAccess.editableFields.includes('baseUnit');
+        }
+        if (key === 'verticalFields' && payload.verticalFields) {
+          return Object.keys(payload.verticalFields).every((k) =>
+            productSearchAccess.editableFields.includes(k)
+          );
+        }
+        return productSearchAccess.editableFields.includes(String(key));
+      };
+      for (const [key, value] of Object.entries(payload)) {
+        if (allowPayloadKey(key as keyof UpdateInventoryRequest)) {
+          (filtered as Record<string, unknown>)[key] = value;
+        }
+      }
+      if (Object.keys(filtered).length === 0) {
+        notifyError('No changes allowed with your current product edit permissions');
+        return;
+      }
+
+      const updated = await inventoryApi.update(inventoryDocumentId, filtered);
       notifySuccess('Product updated successfully');
       onUpdated?.(updated);
       setIsEditing(false);
@@ -526,7 +567,7 @@ export function InventoryAlertDetails({
             </div>
           </div>
           <div className={styles.headerActions}>
-            {editable && !isEditing && (
+            {allowEditMode && !isEditing && (
               <button
                 type="button"
                 className={styles.editBtn}
@@ -558,7 +599,7 @@ export function InventoryAlertDetails({
                 <div className={styles.detailIcon}>🏷️</div>
                 <div className={styles.detailContent}>
                   <span className={styles.detailLabel}>Product Name</span>
-                  {isEditing ? (
+                  {showEditor('name') ? (
                     <input
                       type="text"
                       className={styles.editInput}
@@ -586,7 +627,7 @@ export function InventoryAlertDetails({
                 <div className={styles.detailIcon}>🏢</div>
                 <div className={styles.detailContent}>
                   <span className={styles.detailLabel}>Company</span>
-                  {isEditing ? (
+                  {showEditor('companyName') ? (
                     <input
                       type="text"
                       className={styles.editInput}
@@ -607,7 +648,7 @@ export function InventoryAlertDetails({
                 <div className={styles.detailIcon}>🔖</div>
                 <div className={styles.detailContent}>
                   <span className={styles.detailLabel}>Barcode</span>
-                  {isEditing ? (
+                  {showEditor('barcode') ? (
                     <input
                       type="text"
                       className={styles.editInput}
@@ -1384,7 +1425,7 @@ export function InventoryAlertDetails({
               )}
             </div>
           )}
-          {editable && isEditing && (
+          {allowEditMode && isEditing && (
             <div className={styles.modalFooter}>
               <button
                 type="button"

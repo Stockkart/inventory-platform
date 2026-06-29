@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
-import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/store';
+import { useAuthStore, useShopCapabilitiesStore, useShopAccessStore } from '@inventory-platform/store';
 import { shopsApi } from '@inventory-platform/api';
 import type { DashboardLayoutProps } from '@inventory-platform/types';
 import type { Location as LocationType } from '@inventory-platform/types';
@@ -62,12 +62,27 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const shopCapabilities = useShopCapabilitiesStore((s) =>
     user?.shopId ? s.byShopId[user.shopId] : undefined
   );
+  const fetchAccess = useShopAccessStore((s) => s.fetchAccess);
+  const shopAccess = useShopAccessStore((s) =>
+    user?.shopId ? s.byShopId[user.shopId] : undefined
+  );
 
   useEffect(() => {
     if (user?.shopId) {
       void fetchCapabilities();
+      void fetchAccess();
     }
-  }, [user?.shopId, fetchCapabilities]);
+  }, [user?.shopId, fetchCapabilities, fetchAccess]);
+
+  useEffect(() => {
+    const onFocus = () => {
+      if (user?.shopId) {
+        void fetchAccess({ force: true });
+      }
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [user?.shopId, fetchAccess]);
 
   //const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(() =>
@@ -111,8 +126,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const filteredMenuGroups = useMemo(
     () =>
-      getDashboardMenuGroupsWithCapabilities(user?.role, shopCapabilities ?? null),
-    [user?.role, shopCapabilities]
+      getDashboardMenuGroupsWithCapabilities(
+        user?.role,
+        shopCapabilities ?? null,
+        shopAccess ?? null
+      ),
+    [user?.role, shopCapabilities, shopAccess]
   );
 
   const navRowsForPalette = useMemo(

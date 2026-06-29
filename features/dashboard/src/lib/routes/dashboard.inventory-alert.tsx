@@ -3,6 +3,7 @@ import styles from './dashboard.inventory-alert.module.css';
 import { inventoryApi, resolveInventoryDocumentId } from '@inventory-platform/api';
 import type { InventoryItem } from '@inventory-platform/types';
 import { InventoryAlertDetails, PaginationBar } from '@inventory-platform/ui';
+import { useAuthStore, useShopAccessStore } from '@inventory-platform/store';
 import { useLocation } from 'react-router';
 
 export function meta() {
@@ -14,6 +15,10 @@ export function meta() {
 
 export default function InventoryAlertPage() {
   const location = useLocation();
+  const { user } = useAuthStore();
+  const productSearchAccess = useShopAccessStore((s) =>
+    user?.shopId ? s.byShopId[user.shopId]?.productSearch : undefined
+  );
   const inventoryId =
     location.state?.fromNotification === true
       ? location.state?.inventoryId
@@ -194,6 +199,7 @@ export default function InventoryAlertPage() {
         item={selected}
         onClose={() => setSelected(null)}
         editable
+        productSearchAccess={productSearchAccess}
         onUpdated={(updated) => {
           setAlerts((prev) =>
             prev.map((a) => (a.id === updated.id ? { ...a, raw: updated } : a))

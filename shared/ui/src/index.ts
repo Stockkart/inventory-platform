@@ -18,6 +18,7 @@ export * from './lib/FormKeyboardNavScope';
 export * from './lib/dashboardHotkeys';
 export * from './lib/DashboardLayout';
 export * from './lib/capabilityNav';
+export * from './lib/accessNav';
 export * from './lib/useCapabilityFeatureGuard';
 export * from './lib/ShopSwitcher';
 export * from './lib/AuthInitializer';

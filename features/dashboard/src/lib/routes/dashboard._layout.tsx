@@ -4,6 +4,8 @@ import { useAuthStore, usePlanStatusStore } from '@inventory-platform/store';
 import { apiClient } from '@inventory-platform/api';
 import { isPlanExpiryAllowedPath } from '@inventory-platform/types';
 import { DashboardLayout } from '@inventory-platform/ui';
+import { canAccessDashboardPath } from '@inventory-platform/ui';
+import { useShopAccessStore } from '@inventory-platform/store';
 
 export default function DashboardLayoutRoute() {
   const navigate = useNavigate();
@@ -14,6 +16,11 @@ export default function DashboardLayoutRoute() {
   const planStatus = usePlanStatusStore((s) =>
     user?.shopId ? s.byShopId[user.shopId] : undefined
   );
+  const shopAccess = useShopAccessStore((s) =>
+    user?.shopId ? s.byShopId[user.shopId] : undefined
+  );
+  const accessLoading = useShopAccessStore((s) => s.loading);
+  const fetchAccess = useShopAccessStore((s) => s.fetchAccess);
   const hasCheckedAuth = useRef(false);
   const isCheckingRef = useRef(false);
 
@@ -31,7 +38,24 @@ export default function DashboardLayoutRoute() {
       return;
     }
     void fetchPlanStatus({ force: true });
-  }, [isAuthenticated, user?.shopId, fetchPlanStatus]);
+    void fetchAccess({ force: true });
+  }, [isAuthenticated, user?.shopId, fetchPlanStatus, fetchAccess]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !user?.shopId || accessLoading || !shopAccess) {
+      return;
+    }
+    if (!canAccessDashboardPath(location.pathname, shopAccess)) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [
+    isAuthenticated,
+    user?.shopId,
+    accessLoading,
+    shopAccess,
+    location.pathname,
+    navigate,
+  ]);
 
   useEffect(() => {
     // Reset check flag when authentication state changes

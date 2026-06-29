@@ -12,7 +12,7 @@ import {
   sortInventoryByExpirySoonest,
 } from '@inventory-platform/ui';
 import styles from './dashboard.product-search.module.css';
-import { useNotify } from '@inventory-platform/store';
+import { useAuthStore, useNotify, useShopAccessStore } from '@inventory-platform/store';
 
 export function meta() {
   return [
@@ -41,6 +41,10 @@ export default function ProductSearchPage() {
     'ALL' | BillingMode
   >('ALL');
   const { success: notifySuccess, error: notifyError } = useNotify;
+  const { user } = useAuthStore();
+  const productSearchAccess = useShopAccessStore((s) =>
+    user?.shopId ? s.byShopId[user.shopId]?.productSearch : undefined
+  );
 
   const hasActiveSearch = searchQuery.trim().length > 0;
 
@@ -503,6 +507,7 @@ export default function ProductSearchPage() {
         item={selectedItem}
         onClose={() => setSelectedItem(null)}
         editable
+        productSearchAccess={productSearchAccess}
         onUpdated={(updated) => {
           setInventory((prev) =>
             prev.map((i) => (i.id === updated.id ? updated : i))
