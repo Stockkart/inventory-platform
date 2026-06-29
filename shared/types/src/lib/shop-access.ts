@@ -7,17 +7,17 @@ export interface ShopAccessModules {
   stockCorrection: boolean;
   marketing: boolean;
   paymentPlan: boolean;
+  productSearchEdit: boolean;
 }
 
-export interface ShopAccessTeam {
-  manageInvitations: boolean;
-  manageJoinRequests: boolean;
-  manageShopUsers: boolean;
-  viewMyInvitations: boolean;
+export interface ShopStockCorrectionAccess {
+  canCreate: boolean;
+  canApprove: boolean;
 }
 
 export interface ShopProductSearchAccess {
   canView: boolean;
+  canEdit: boolean;
   editMode: ProductSearchEditMode;
   canEditAll: boolean;
   editableFields: string[];
@@ -29,8 +29,16 @@ export interface ShopAccess {
   owner: boolean;
   canManageAccess: boolean;
   productSearch: ShopProductSearchAccess;
+  stockCorrection: ShopStockCorrectionAccess;
   modules: ShopAccessModules;
   team: ShopAccessTeam;
+}
+
+export interface ShopAccessTeam {
+  manageInvitations: boolean;
+  manageJoinRequests: boolean;
+  manageShopUsers: boolean;
+  viewMyInvitations: boolean;
 }
 
 export interface MemberModulePermissions {
@@ -40,6 +48,7 @@ export interface MemberModulePermissions {
   stockCorrection?: boolean;
   marketing?: boolean;
   paymentPlan?: boolean;
+  productSearchEdit?: boolean;
 }
 
 export interface MemberPermissions {

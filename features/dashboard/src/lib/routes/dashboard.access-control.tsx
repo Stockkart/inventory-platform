@@ -15,10 +15,10 @@ const MODULE_COLUMNS: {
   label: string;
   short: string;
 }[] = [
+  { key: 'productSearchEdit', label: 'Product search edit', short: 'Edit' },
   { key: 'accounting', label: 'Accounting', short: 'Acct' },
   { key: 'analytics', label: 'Analytics', short: 'Anly' },
   { key: 'taxes', label: 'Taxes', short: 'Tax' },
-  { key: 'stockCorrection', label: 'Stock corrections', short: 'Stock' },
   { key: 'marketing', label: 'Marketing', short: 'Mkt' },
   { key: 'paymentPlan', label: 'Payment & plan', short: 'Plan' },
 ];
@@ -43,6 +43,8 @@ function modulesFromMember(member: ShopMemberAccess): MemberModulePermissions {
     stockCorrection: stored.stockCorrection ?? effective.stockCorrection,
     marketing: stored.marketing ?? effective.marketing,
     paymentPlan: stored.paymentPlan ?? effective.paymentPlan,
+    productSearchEdit:
+      stored.productSearchEdit ?? effective.productSearchEdit,
   };
 }
 
@@ -149,12 +151,17 @@ export default function AccessControlPage() {
   const saveMember = async (member: ShopMemberAccess) => {
     const modules = draftModules[member.userId];
     if (!modules) return;
+    const fields = draftFields[member.userId] ?? [];
+    const modulesToSave: MemberModulePermissions = { ...modules };
+    if (editMode === 'PERMISSION_BASED') {
+      modulesToSave.productSearchEdit = fields.length > 0;
+    }
     setSavingUserId(member.userId);
     try {
       await shopAccessApi.updateMember(shopId, member.userId, {
-        modules,
+        modules: modulesToSave,
         ...(editMode === 'PERMISSION_BASED'
-          ? { productSearchEditableFields: draftFields[member.userId] ?? [] }
+          ? { productSearchEditableFields: fields }
           : {}),
       });
       notifySuccess(`Access updated for ${member.name || member.email}.`);
@@ -174,7 +181,15 @@ export default function AccessControlPage() {
       const current = new Set(prev[userId] ?? []);
       if (checked) current.add(fieldKey);
       else current.delete(fieldKey);
-      return { ...prev, [userId]: Array.from(current) };
+      const nextFields = Array.from(current);
+      setDraftModules((mods) => ({
+        ...mods,
+        [userId]: {
+          ...mods[userId],
+          productSearchEdit: nextFields.length > 0,
+        },
+      }));
+      return { ...prev, [userId]: nextFields };
     });
   };
 
@@ -183,6 +198,10 @@ export default function AccessControlPage() {
   const selectedFieldMember = editableMembers.find(
     (m) => m.userId === fieldMemberId
   );
+  const moduleColumns =
+    editMode === 'PERMISSION_BASED'
+      ? MODULE_COLUMNS.filter((col) => col.key !== 'productSearchEdit')
+      : MODULE_COLUMNS;
 
   return (
     <div className={styles.container}>
@@ -198,9 +217,9 @@ export default function AccessControlPage() {
       <div className={styles.card}>
         <h2 className={styles.cardTitle}>Product search editing</h2>
         <p className={styles.cardHint}>
-          <strong>Full edit</strong> lets staff change any product field in
-          search/details. <strong>Permission-based</strong> limits each member to
-          the fields you assign below.
+          <strong>Full edit</strong> uses the <strong>Edit</strong> column in
+          the module table below. <strong>Permission-based</strong> uses the
+          field checkboxes above — no separate Edit toggle needed.
         </p>
         <div className={styles.policyRow}>
           <select
@@ -221,8 +240,9 @@ export default function AccessControlPage() {
         <div className={styles.card}>
           <h2 className={styles.cardTitle}>Product search field access</h2>
           <p className={styles.cardHint}>
-            Choose which fields each member can edit in product search. Members
-            with no fields selected can view products but not edit them.
+            Choose which fields each member can edit in product search. Checking
+            any field enables edit for that member (only those fields are
+            editable).
           </p>
           {loading ? (
             <p className={styles.loading}>Loading…</p>
@@ -290,7 +310,8 @@ export default function AccessControlPage() {
         <h2 className={styles.cardTitle}>Team module access</h2>
         <p className={styles.cardHint}>
           Toggle modules for each member, then click Save on their row. The shop
-          owner always has full access.
+          owner always has full access. Stock corrections: any member can create
+          pending corrections; only owner/manager can approve.
         </p>
 
         {loading ? (
@@ -303,7 +324,7 @@ export default function AccessControlPage() {
               <thead>
                 <tr>
                   <th>Member</th>
-                  {MODULE_COLUMNS.map((col) => (
+                  {moduleColumns.map((col) => (
                     <th key={col.key} className={styles.toggleCell}>
                       <span title={col.label}>{col.short}</span>
                     </th>
@@ -331,7 +352,7 @@ export default function AccessControlPage() {
                           ) : null}
                         </div>
                       </td>
-                      {MODULE_COLUMNS.map((col) => (
+                      {moduleColumns.map((col) => (
                         <td key={col.key} className={styles.toggleCell}>
                           <input
                             type="checkbox"

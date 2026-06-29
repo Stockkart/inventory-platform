@@ -6,6 +6,7 @@ import {
   useState,
 } from 'react';
 import { inventoryApi } from '@inventory-platform/api';
+import { useAuthStore, useShopAccessStore } from '@inventory-platform/store';
 import type {
   InventoryCorrection,
   InventoryCorrectionLine,
@@ -170,6 +171,12 @@ function summarizeApprovedNetImpact(
 }
 
 export default function StockCorrectionsPage() {
+  const { user } = useAuthStore();
+  const canApproveCorrections = useShopAccessStore((s) => {
+    const access = user?.shopId ? s.byShopId[user.shopId] : undefined;
+    return access?.stockCorrection?.canApprove ?? false;
+  });
+
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
   const [invoiceResults, setInvoiceResults] = useState<VendorPurchaseInvoiceSummary[]>(
@@ -639,6 +646,12 @@ export default function StockCorrectionsPage() {
 
       <section className={styles.card}>
         <div className={styles.sectionTitle}>Pending approvals</div>
+        {!canApproveCorrections ? (
+          <p className={styles.muted}>
+            Pending corrections are listed below. Only the shop owner or a manager
+            can approve or reject them.
+          </p>
+        ) : null}
         {pendingLoading ? (
           <div className={styles.muted}>Loading pending...</div>
         ) : pending.length === 0 ? (
@@ -669,7 +682,7 @@ export default function StockCorrectionsPage() {
                         <td>{line.requestedCurrentCount}</td>
                         <td>{line.status}</td>
                         <td>
-                          {line.status === 'PENDING' ? (
+                          {line.status === 'PENDING' && canApproveCorrections ? (
                             <div className={styles.rowActions}>
                               <button
                                 type="button"

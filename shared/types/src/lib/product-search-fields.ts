@@ -31,7 +31,10 @@ export function canEditProductSearchField(
   if (!access) {
     return true;
   }
-  if (access.editMode === 'FULL_EDIT') {
+  if (!access.canEdit) {
+    return false;
+  }
+  if (access.editMode === 'FULL_EDIT' || access.canEditAll) {
     return true;
   }
   return access.editableFields.includes(field);
@@ -44,10 +47,7 @@ export function hasProductSearchEditAccess(
   if (!access) {
     return true;
   }
-  if (access.editMode === 'FULL_EDIT') {
-    return true;
-  }
-  return access.editableFields.length > 0;
+  return access.canEdit;
 }
 
 /** Maps UI edit-form keys to RBAC field keys. */
@@ -65,7 +65,10 @@ export function canEditProductSearchUiField(
   if (!access) {
     return true;
   }
-  if (access.editMode === 'FULL_EDIT') {
+  if (!access.canEdit) {
+    return false;
+  }
+  if (access.editMode === 'FULL_EDIT' || access.canEditAll) {
     return true;
   }
   return access.editableFields.includes(uiFieldToRbacKey(uiKey));

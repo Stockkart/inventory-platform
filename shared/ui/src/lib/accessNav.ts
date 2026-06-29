@@ -11,7 +11,6 @@ function isRbacGatedPath(path: string): boolean {
   }
   if (path === '/dashboard/analytics') return true;
   if (path === '/dashboard/taxes') return true;
-  if (path === '/dashboard/stock-corrections') return true;
   if (path === '/dashboard/whatsapp-marketing') return true;
   if (path === '/dashboard/plan-payment' || path === '/dashboard/plan-status') {
     return true;
@@ -34,9 +33,6 @@ function isPathAllowed(path: string, access: ShopAccess): boolean {
   }
   if (path === '/dashboard/taxes') {
     return access.modules.taxes;
-  }
-  if (path === '/dashboard/stock-corrections') {
-    return access.modules.stockCorrection;
   }
   if (path === '/dashboard/whatsapp-marketing') {
     return access.modules.marketing;

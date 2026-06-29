@@ -510,6 +510,9 @@ export function InventoryAlertDetails({
 
       const filtered: UpdateInventoryRequest = {};
       const allowPayloadKey = (key: keyof UpdateInventoryRequest) => {
+        if (!productSearchAccess?.canEdit && productSearchAccess) {
+          return false;
+        }
         if (productSearchAccess?.editMode === 'FULL_EDIT' || !productSearchAccess) {
           return true;
         }
