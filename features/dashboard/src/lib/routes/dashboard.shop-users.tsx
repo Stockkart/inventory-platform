@@ -6,7 +6,10 @@ import styles from './dashboard.shop-users.module.css';
 export function meta() {
   return [
     { title: 'Shop Users - StockKart' },
-    { name: 'description', content: 'View and manage shop users' },
+    {
+      name: 'description',
+      content: 'View and manage team members working in your shop',
+    },
   ];
 }
 
@@ -46,7 +49,7 @@ export default function ShopUsersPage() {
       <div className={styles.header}>
         <h1 className={styles.title}>Shop Users</h1>
         <p className={styles.subtitle}>
-          View all users associated with your shop
+          View and manage team members working in your shop
         </p>
       </div>
 

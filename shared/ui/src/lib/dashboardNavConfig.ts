@@ -48,6 +48,11 @@ export const DASHBOARD_MENU_GROUPS: DashboardMenuGroup[] = [
     items: [
       { path: '/dashboard/customers', label: 'Customer', icon: '👥' },
       { path: '/dashboard/vendors', label: 'Vendor', icon: '🚚' },
+      {
+        path: '/dashboard/shop-users',
+        label: 'Shop Users',
+        icon: '🧑‍💼',
+      },
     ],
   },
   {
@@ -165,7 +170,6 @@ export const DASHBOARD_MENU_GROUPS: DashboardMenuGroup[] = [
         icon: '📬',
       },
       { path: '/dashboard/join-requests', label: 'Join Requests', icon: '🤝' },
-      { path: '/dashboard/shop-users', label: 'Shop Users', icon: '👥' },
     ],
   },
   {
