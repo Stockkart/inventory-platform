@@ -4,9 +4,29 @@ import type {
   ApiResponse,
   PurchaseHistoryResponse,
   GetPurchasesParams,
+  SearchPurchasesParams,
+  SearchPurchasesResponse,
 } from '@inventory-platform/types';
 
 export const purchasesApi = {
+  search: async (
+    params: SearchPurchasesParams
+  ): Promise<SearchPurchasesResponse> => {
+    const queryParams: Record<string, string> = {};
+    if (params.customerEmail) queryParams.customerEmail = params.customerEmail;
+    if (params.customerPhone) queryParams.customerPhone = params.customerPhone;
+    if (params.customerName) queryParams.customerName = params.customerName;
+    if (params.invoiceNo) queryParams.invoiceNo = params.invoiceNo;
+    if (params.page) queryParams.page = String(params.page);
+    if (params.limit) queryParams.limit = String(params.limit);
+
+    const response = await apiClient.get<ApiResponse<SearchPurchasesResponse>>(
+      API_ENDPOINTS.PURCHASES.SEARCH,
+      queryParams
+    );
+    return response.data;
+  },
+
   getAll: async (params?: GetPurchasesParams): Promise<PurchaseHistoryResponse> => {
     // Convert params to query string format
     const queryParams: Record<string, string> = {};

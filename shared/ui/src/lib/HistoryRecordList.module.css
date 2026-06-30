@@ -2,55 +2,8 @@
   width: 100%;
 }
 
-.filterBar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 0.75rem;
+.summary {
   margin-bottom: 1.25rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.filterLabel {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-}
-
-.filterInput {
-  flex: 1;
-  min-width: 160px;
-  padding: 0.45rem 0.65rem;
-  border-radius: 6px;
-  border: 1px solid var(--border-color);
-  font-size: 0.9rem;
-  background: var(--bg-primary);
-  color: var(--text-primary);
-}
-
-.filterBtn,
-.filterClear {
-  padding: 0.45rem 0.9rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  cursor: pointer;
-  border: 1px solid var(--border-color);
-  background: var(--bg-primary);
-  color: var(--text-primary);
-}
-
-.filterBtn {
-  font-weight: 600;
-  background: var(--hover-bg);
-}
-
-.filterClear {
-  color: var(--text-secondary);
-}
-
-.filterSummary {
-  margin: 0 0 1rem;
   font-size: 0.875rem;
   color: var(--text-secondary);
 }
@@ -61,16 +14,17 @@
   gap: 1rem;
 }
 
-.refundCard {
+.recordCard {
   padding: 1.5rem;
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: 8px;
 }
 
-.refundHeader {
+.recordHeader {
   display: flex;
   justify-content: space-between;
+  gap: 1rem;
   margin-bottom: 1rem;
   font-size: 0.95rem;
   color: var(--text-primary);
@@ -78,12 +32,34 @@
   border-bottom: 1px solid var(--border-color);
 }
 
-.refundDetails {
+.recordDetails {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 0.75rem;
   font-size: 0.9rem;
   color: var(--text-secondary);
+}
+
+.recordActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.expandBtn {
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--hover-bg);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.expandBtn:hover {
+  border-color: #3b82f6;
 }
 
 .breakdownWrap {
@@ -153,12 +129,22 @@
   font-size: 1rem;
 }
 
+.statusCompleted {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.statusCancelled {
+  color: #dc2626;
+  font-weight: 600;
+}
+
 @media (max-width: 768px) {
-  .refundDetails {
+  .recordDetails {
     grid-template-columns: 1fr;
   }
 
-  .refundHeader {
+  .recordHeader {
     flex-direction: column;
     gap: 0.5rem;
   }

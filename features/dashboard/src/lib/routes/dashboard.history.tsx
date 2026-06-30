@@ -4,18 +4,16 @@ import {
   PurchaseList,
   RefundHistoryList,
   VendorReturnHistoryList,
+  HistoryFiltersBar,
+  EMPTY_HISTORY_FILTERS,
+  hasActiveHistoryFilters,
   isCustomerReturnEnabled,
   isVendorReturnEnabled,
 } from '@inventory-platform/ui';
+import type { HistoryFilters, HistoryTab } from '@inventory-platform/ui';
 import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/store';
 import VendorInvoicesPage from './dashboard.vendor-invoices';
 import styles from './dashboard.history.module.css';
-
-export type HistoryTab =
-  | 'saleHistory'
-  | 'purchaseHistory'
-  | 'customerReturnHistory'
-  | 'vendorReturnHistory';
 
 /** Map legacy state from older redirects/bookmarks */
 function coerceHistoryTab(v: string | undefined): HistoryTab | undefined {
@@ -78,6 +76,12 @@ export default function HistoryPage() {
   const [activeTab, setActiveTab] = useState<HistoryTab>(() =>
     parseHistoryTab(location.state)
   );
+  const [draftFilters, setDraftFilters] = useState<HistoryFilters>(
+    EMPTY_HISTORY_FILTERS
+  );
+  const [appliedFilters, setAppliedFilters] = useState<HistoryFilters>(
+    EMPTY_HISTORY_FILTERS
+  );
 
   useEffect(() => {
     void fetchCapabilities();
@@ -106,6 +110,8 @@ export default function HistoryPage() {
       labels.length === 2 ? `${labels[0]} or ${labels[1]}` : labels[0] ?? '';
     return `Read-only timelines: invoices and past returns — use ${joined} under Products & Sales to record new returns`;
   }, [customerReturnEnabled, showReturnHints, vendorReturnEnabled]);
+
+  const filtersActive = hasActiveHistoryFilters(appliedFilters, activeTab);
 
   return (
     <div className={styles.container}>
@@ -166,15 +172,29 @@ export default function HistoryPage() {
       </div>
 
       <div className={styles.content}>
-        {activeTab === 'saleHistory' && <PurchaseList />}
+        <HistoryFiltersBar
+          filters={draftFilters}
+          onChange={setDraftFilters}
+          onApply={() => setAppliedFilters({ ...draftFilters })}
+          onClear={() => {
+            setDraftFilters(EMPTY_HISTORY_FILTERS);
+            setAppliedFilters(EMPTY_HISTORY_FILTERS);
+          }}
+          activeTab={activeTab}
+          hasAppliedFilters={filtersActive}
+        />
+
+        {activeTab === 'saleHistory' && (
+          <PurchaseList filters={appliedFilters} />
+        )}
         {activeTab === 'purchaseHistory' && (
-          <VendorInvoicesPage embedded />
+          <VendorInvoicesPage embedded filters={appliedFilters} />
         )}
         {customerReturnEnabled && activeTab === 'customerReturnHistory' && (
-          <RefundHistoryList />
+          <RefundHistoryList filters={appliedFilters} />
         )}
         {vendorReturnEnabled && activeTab === 'vendorReturnHistory' && (
-          <VendorReturnHistoryList />
+          <VendorReturnHistoryList filters={appliedFilters} />
         )}
       </div>
     </div>
