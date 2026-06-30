@@ -6,6 +6,8 @@ import type {
   GetPurchasesParams,
   SearchPurchasesParams,
   SearchPurchasesResponse,
+  GetCustomerProductHistoryParams,
+  CustomerProductHistoryResponse,
 } from '@inventory-platform/types';
 
 export const purchasesApi = {
@@ -51,6 +53,26 @@ export const purchasesApi = {
     // apiClient.get already unwraps axios response.data
     // So response is ApiResponse<PurchaseHistoryResponse> = { success: true, data: { ... } }
     // We need to return response.data
+    return response.data;
+  },
+
+  getCustomerProductHistory: async (
+    params: GetCustomerProductHistoryParams
+  ): Promise<CustomerProductHistoryResponse> => {
+    const queryParams: Record<string, string> = {
+      sellableRefs: params.sellableRefs.join(','),
+    };
+    if (params.customerId) queryParams.customerId = params.customerId;
+    if (params.customerPhone) queryParams.customerPhone = params.customerPhone;
+    if (params.limit != null) queryParams.limit = String(params.limit);
+    if (params.excludePurchaseId) {
+      queryParams.excludePurchaseId = params.excludePurchaseId;
+    }
+
+    const response = await apiClient.get<ApiResponse<CustomerProductHistoryResponse>>(
+      API_ENDPOINTS.PURCHASES.CUSTOMER_PRODUCT_HISTORY,
+      queryParams
+    );
     return response.data;
   },
 };

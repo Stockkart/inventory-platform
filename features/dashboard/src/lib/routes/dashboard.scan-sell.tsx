@@ -4,6 +4,7 @@ import {
   useLayoutEffect,
   useRef,
   useCallback,
+  useMemo,
   ChangeEvent,
 } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router';
@@ -24,7 +25,7 @@ import type {
   PricingResponse,
   CustomerResponse,
 } from '@inventory-platform/types';
-import { inventoryLotIdFromSellableRef } from '@inventory-platform/types';
+import { inventoryLotIdFromSellableRef, inventorySellableRef } from '@inventory-platform/types';
 import styles from './dashboard.scan-sell.module.css';
 import { useNotify, useAuthStore, useVerticalSchemaStore } from '@inventory-platform/store';
 import {
@@ -34,6 +35,8 @@ import {
   hasInventoryExpiryDate,
   getExtensionFieldString,
   sortInventoryByExpirySoonest,
+  useCustomerProductHistory,
+  CustomerProductHistoryHint,
 } from '@inventory-platform/ui';
 
 export function meta() {
@@ -485,6 +488,7 @@ export default function ScanSellPage() {
   const [customerName, setCustomerName] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [customerId, setCustomerId] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [isRetailer, setIsRetailer] = useState(false);
   const [customerGstin, setCustomerGstin] = useState('');
@@ -883,6 +887,7 @@ export default function ScanSellPage() {
         setCustomerName(cart.customerName || '');
         setCustomerAddress(cart.customerAddress || '');
         setCustomerPhone(cart.customerPhone || '');
+        setCustomerId(cart.customerId || '');
         setCustomerEmail(cart.customerEmail || '');
         // Build cart items from response only (no per-item inventory/search API calls)
         setCartItems(mergeCartResponseToItems(cart, []));
@@ -895,6 +900,7 @@ export default function ScanSellPage() {
       setCustomerName('');
       setCustomerAddress('');
       setCustomerPhone('');
+      setCustomerId('');
       setCustomerEmail('');
       setIsRetailer(false);
       setCustomerGstin('');
@@ -909,6 +915,7 @@ export default function ScanSellPage() {
       setCustomerName('');
       setCustomerAddress('');
       setCustomerPhone('');
+      setCustomerId('');
       setCustomerEmail('');
       setIsRetailer(false);
       setCustomerGstin('');
@@ -927,6 +934,7 @@ export default function ScanSellPage() {
     scanSellCustomerPrefillRef.current = null;
     setCustomerName(c.name ?? '');
     setCustomerPhone(c.phone ?? '');
+    setCustomerId(c.customerId ?? '');
     setCustomerEmail(c.email ?? '');
     setCustomerAddress(c.address ?? '');
     const gstin = c.gstin ?? '';
@@ -1878,6 +1886,7 @@ export default function ScanSellPage() {
       const customer = await customersApi.searchByPhone(customerPhone.trim());
       if (customer) {
         setCustomerName(customer.name || '');
+        setCustomerId(customer.customerId || '');
         setCustomerEmail(customer.email || '');
         setCustomerAddress(customer.address || '');
         // Phone is already set from the search input
@@ -1909,6 +1918,7 @@ export default function ScanSellPage() {
       } else {
         // Customer not found - clear all fields
         setCustomerName('');
+        setCustomerId('');
         setCustomerEmail('');
         setCustomerAddress('');
         setIsRetailer(false);
@@ -1922,6 +1932,7 @@ export default function ScanSellPage() {
         err instanceof Error ? err.message : 'Failed to search customer';
       notifyError(errorMessage);
       setCustomerName('');
+      setCustomerId('');
       setCustomerEmail('');
       setCustomerAddress('');
       setIsRetailer(false);
@@ -1946,6 +1957,7 @@ export default function ScanSellPage() {
       if (customer) {
         setCustomerName(customer.name || '');
         setCustomerPhone(customer.phone || '');
+        setCustomerId(customer.customerId || '');
         setCustomerAddress(customer.address || '');
         const hasRetailerFields = !!(
           customer.gstin ||
@@ -1973,6 +1985,7 @@ export default function ScanSellPage() {
       } else {
         setCustomerName('');
         setCustomerPhone('');
+        setCustomerId('');
         setCustomerAddress('');
         setIsRetailer(false);
         setCustomerGstin('');
@@ -1985,6 +1998,7 @@ export default function ScanSellPage() {
       notifyError(errorMessage);
       setCustomerName('');
       setCustomerPhone('');
+      setCustomerId('');
       setCustomerAddress('');
       setIsRetailer(false);
       setCustomerGstin('');
@@ -2083,6 +2097,21 @@ export default function ScanSellPage() {
       setIsProcessing(false);
     }
   };
+
+  const cartSellableRefs = useMemo(
+    () =>
+      cartItems.map((item) => inventorySellableRef(item.inventoryItem.id)),
+    [cartItems]
+  );
+
+  const { data: customerProductHistory, loading: customerProductHistoryLoading } =
+    useCustomerProductHistory({
+      customerId,
+      customerPhone,
+      sellableRefs: cartSellableRefs,
+      excludePurchaseId: cartData?.purchaseId,
+      enabled: cartItems.length > 0,
+    });
 
   return (
     <div className={styles.page}>
@@ -2287,6 +2316,13 @@ export default function ScanSellPage() {
                               >
                                 {cartItem.inventoryItem.name || '—'}
                               </button>
+                              <CustomerProductHistoryHint
+                                sellableRef={inventorySellableRef(
+                                  cartItem.inventoryItem.id
+                                )}
+                                history={customerProductHistory}
+                                loading={customerProductHistoryLoading}
+                              />
                             </td>
                             <td className={styles.excelTd}>
                               {cartItem.inventoryItem.companyName || '—'}
@@ -2519,6 +2555,13 @@ export default function ScanSellPage() {
                                 {cartItem.inventoryItem.companyName}
                               </span>
                             )}
+                            <CustomerProductHistoryHint
+                              sellableRef={inventorySellableRef(
+                                cartItem.inventoryItem.id
+                              )}
+                              history={customerProductHistory}
+                              loading={customerProductHistoryLoading}
+                            />
                             <div className={styles.itemMetaRow}>
                               <span className={styles.itemUnitMeta}>
                                 {formatCartPackagingMeta(cartItem)}

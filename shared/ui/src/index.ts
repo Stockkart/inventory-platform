@@ -57,3 +57,5 @@ export * from './lib/VendorEditForm';
 export * from './lib/ShopProfileForm';
 export * from './lib/YouTubeHelpModal';
 export * from './lib/ContextualHelpPanel';
+export * from './lib/useCustomerProductHistory';
+export * from './lib/CustomerProductHistoryHint';

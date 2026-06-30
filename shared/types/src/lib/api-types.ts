@@ -1501,6 +1501,32 @@ export interface SearchPurchasesResponse {
   totalPages: number;
 }
 
+export interface CustomerProductSaleEntry {
+  soldAt: string;
+  invoiceNo: string;
+  purchaseId: string;
+  quantity: number;
+  priceToRetail: number;
+  lineTotal: number;
+}
+
+export interface CustomerProductHistoryGroup {
+  lastSale: CustomerProductSaleEntry | null;
+  history: CustomerProductSaleEntry[];
+}
+
+export interface CustomerProductHistoryResponse {
+  bySellableRef: Record<string, CustomerProductHistoryGroup>;
+}
+
+export interface GetCustomerProductHistoryParams {
+  customerId?: string;
+  customerPhone?: string;
+  sellableRefs: string[];
+  limit?: number;
+  excludePurchaseId?: string;
+}
+
 // Refund types
 export interface RefundItem {
   inventoryId: string;
