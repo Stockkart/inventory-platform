@@ -20,6 +20,7 @@ import {
   isQuickNavSlash,
   isShortcutsHelp,
 } from './dashboardHotkeys';
+import { UserMenuShopSection } from './UserMenuShopSection';
 import {
   favoriteShortcutMatches,
   loadFavoritePageShortcuts,
@@ -165,17 +166,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     user?.shopId ?? undefined
   );
 
-  const [shopName, setShopName] = useState<string | null>(null);
-
   useEffect(() => {
     if (shop?.name) {
-      setShopName(shop.name);
       localStorage.setItem('shopName', shop.name);
-    } else {
-      const saved = localStorage.getItem('shopName');
-      if (saved) {
-        setShopName(saved);
-      }
     }
   }, [shop]);
 
@@ -747,22 +740,20 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                         </div>
                       </div>
 
-                      <div className={styles.userMenuInfo}>
-                        <span className={styles.roleBadge}>
-                          {shopName ?? shop?.name}
-                        </span>
-                        <button
-                          type="button"
-                          className={styles.editMetaBtn}
-                          onClick={() => {
-                            setUserMenuOpen(false);
-                            navigate('/dashboard/profile');
-                          }}
-                        >
-                          View profile
-                        </button>
-                      </div>
                     </div>
+
+                    <UserMenuShopSection onClose={() => setUserMenuOpen(false)} />
+
+                    <button
+                      type="button"
+                      className={styles.profileMenuBtn}
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        navigate('/dashboard/profile');
+                      }}
+                    >
+                      View profile
+                    </button>
 
                     <button onClick={handleLogout} className={styles.logoutBtn}>
                       🚪 Logout

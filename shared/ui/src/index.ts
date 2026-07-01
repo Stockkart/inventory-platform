@@ -21,6 +21,7 @@ export * from './lib/capabilityNav';
 export * from './lib/accessNav';
 export * from './lib/useCapabilityFeatureGuard';
 export * from './lib/ShopSwitcher';
+export * from './lib/UserMenuShopSection';
 export * from './lib/AuthInitializer';
 export * from './lib/InviteForm';
 export * from './lib/InvitationList';

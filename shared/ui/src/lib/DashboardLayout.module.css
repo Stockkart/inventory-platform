@@ -610,6 +610,23 @@
   white-space: nowrap;
 }
 
+.profileMenuBtn {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: none;
+  text-align: left;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  border-top: 1px solid var(--border-color);
+}
+
+.profileMenuBtn:hover {
+  background-color: var(--bg-card, rgba(0, 0, 0, 0.04));
+}
+
 /* Logout */
 .logoutBtn {
   width: 100%;
