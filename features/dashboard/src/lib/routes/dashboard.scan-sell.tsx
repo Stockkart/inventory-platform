@@ -13,7 +13,6 @@ import {
   resolveInventoryDocumentId,
   cartApi,
   customersApi,
-  usersApi,
   pricingApi,
 } from '@inventory-platform/api';
 import type {
@@ -24,6 +23,7 @@ import type {
   CheckoutItemResponse,
   PricingResponse,
   CustomerResponse,
+  QuotationSummary,
 } from '@inventory-platform/types';
 import { inventoryLotIdFromSellableRef, inventorySellableRef } from '@inventory-platform/types';
 import styles from './dashboard.scan-sell.module.css';
@@ -38,6 +38,7 @@ import {
   useCustomerProductHistory,
   CustomerProductHistoryHint,
 } from '@inventory-platform/ui';
+import { ScanSellQuotationStack } from '../ScanSellQuotationStack';
 
 export function meta() {
   return [
@@ -478,6 +479,8 @@ export default function ScanSellPage() {
   const [_searchTotalItems, setSearchTotalItems] = useState(0);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [cartData, setCartData] = useState<CartResponse | null>(null);
+  const [quotations, setQuotations] = useState<QuotationSummary[]>([]);
+  const [activePurchaseId, setActivePurchaseId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoadingCart, setIsLoadingCart] = useState(true);
@@ -485,6 +488,9 @@ export default function ScanSellPage() {
   const cartLoadedRef = useRef(false);
   const isUpdatingRef = useRef(false);
   const syncVersionRef = useRef(0);
+  const suppressCustomerSyncRef = useRef(false);
+  const customerSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isSavingCustomerRef = useRef(false);
   const [customerName, setCustomerName] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -495,15 +501,6 @@ export default function ScanSellPage() {
   const [customerDlNo, setCustomerDlNo] = useState('');
   const [customerPan, setCustomerPan] = useState('');
   const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
-  const [linkedUser, setLinkedUser] = useState<{
-    userId: string;
-    email: string;
-    name: string;
-  } | null>(null);
-  const [userSearchMessage, setUserSearchMessage] = useState<string | null>(
-    null
-  );
-  const [isSearchingUser, setIsSearchingUser] = useState(false);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [customerSectionOpen, setCustomerSectionOpen] = useState(false);
   const [additionalDiscountOverrides, setAdditionalDiscountOverrides] =
@@ -864,6 +861,206 @@ export default function ScanSellPage() {
   }, [error]);
 
   const loadCart = async (): Promise<void> => {
+    await initializeQuotations();
+  };
+
+  const ensureDefaultQuotation = async (): Promise<string> => {
+    const cart = await cartApi.createQuotation({
+      businessType: cartBusinessType,
+    });
+    await refreshQuotationList();
+    applyCartToState(cart, []);
+    return cart.purchaseId;
+  };
+
+  const looksLikePhone = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return false;
+    const digits = trimmed.replace(/\D/g, '');
+    return digits.length >= 7 && digits.length <= 15 && /^[+]?[\d\s-]+$/.test(trimmed);
+  };
+
+  const resolveCustomerFieldsFromCart = (cart: CartResponse) => {
+    let name = cart.customerName?.trim() ?? '';
+    let phone = cart.customerPhone?.trim() ?? '';
+    if (!phone && name && looksLikePhone(name) && !cart.customerId) {
+      phone = name;
+      name = '';
+    }
+    return {
+      name,
+      phone,
+      email: cart.customerEmail?.trim() ?? '',
+      address: cart.customerAddress?.trim() ?? '',
+      customerId: cart.customerId ?? '',
+      gstin: cart.customerGstin ?? '',
+      dlNo: cart.customerDlNo ?? '',
+      pan: cart.customerPan ?? '',
+    };
+  };
+
+  const applyCustomerFieldsFromCart = (
+    cart: CartResponse,
+    typed?: {
+      customerName?: string;
+      customerPhone?: string;
+      customerEmail?: string;
+      customerAddress?: string;
+    }
+  ) => {
+    const resolved = resolveCustomerFieldsFromCart(cart);
+    setCustomerName(resolved.name || typed?.customerName?.trim() || '');
+    setCustomerAddress(resolved.address || typed?.customerAddress?.trim() || '');
+    setCustomerPhone(resolved.phone || typed?.customerPhone?.trim() || '');
+    setCustomerId(resolved.customerId);
+    setCustomerEmail(resolved.email || typed?.customerEmail?.trim() || '');
+    const gstin = resolved.gstin;
+    const dl = resolved.dlNo;
+    const pan = resolved.pan;
+    if (gstin || dl || pan) {
+      setIsRetailer(true);
+      setCustomerGstin(gstin);
+      setCustomerDlNo(dl);
+      setCustomerPan(pan);
+    } else {
+      setIsRetailer(false);
+      setCustomerGstin('');
+      setCustomerDlNo('');
+      setCustomerPan('');
+    }
+  };
+
+  const normCustomerField = (value?: string | null) => (value ?? '').trim();
+
+  const applyCartToState = (cart: CartResponse, previousItems: CartItem[] = []) => {
+    setCartData(cart);
+    setActivePurchaseId(cart.purchaseId);
+    applyCustomerFieldsFromCart(cart);
+    setCartItems(mergeCartResponseToItems(cart, previousItems));
+  };
+
+  const refreshQuotationList = async (): Promise<QuotationSummary[]> => {
+    const list = await cartApi.listQuotations();
+    setQuotations(list.quotations);
+    return list.quotations;
+  };
+
+  const syncCustomerToQuotation = async (overrides?: {
+    customerName?: string;
+    customerPhone?: string;
+    customerEmail?: string;
+    customerAddress?: string;
+    customerGstin?: string;
+    customerDlNo?: string;
+    customerPan?: string;
+    isRetailer?: boolean;
+  }): Promise<void> => {
+    if (
+      suppressCustomerSyncRef.current ||
+      isLoadingCart ||
+      !activePurchaseId ||
+      isUpdatingRef.current ||
+      isSavingCustomerRef.current
+    ) {
+      return;
+    }
+
+    const name = overrides?.customerName ?? customerName;
+    const phone = overrides?.customerPhone ?? customerPhone;
+    const email = overrides?.customerEmail ?? customerEmail;
+    const address = overrides?.customerAddress ?? customerAddress;
+    const retailer = overrides?.isRetailer ?? isRetailer;
+    const gstin = overrides?.customerGstin ?? customerGstin;
+    const dlNo = overrides?.customerDlNo ?? customerDlNo;
+    const pan = overrides?.customerPan ?? customerPan;
+
+    const dirty =
+      normCustomerField(name) !== normCustomerField(cartData?.customerName) ||
+      normCustomerField(phone) !== normCustomerField(cartData?.customerPhone) ||
+      normCustomerField(email) !== normCustomerField(cartData?.customerEmail) ||
+      normCustomerField(address) !== normCustomerField(cartData?.customerAddress) ||
+      normCustomerField(gstin) !== normCustomerField(cartData?.customerGstin) ||
+      normCustomerField(dlNo) !== normCustomerField(cartData?.customerDlNo) ||
+      normCustomerField(pan) !== normCustomerField(cartData?.customerPan);
+    if (!dirty) {
+      return;
+    }
+
+    const hasCustomerInput =
+      normCustomerField(name).length > 0 ||
+      normCustomerField(phone).length > 0 ||
+      normCustomerField(email).length > 0 ||
+      normCustomerField(address).length > 0 ||
+      normCustomerField(gstin).length > 0 ||
+      normCustomerField(dlNo).length > 0 ||
+      normCustomerField(pan).length > 0;
+    if (
+      !hasCustomerInput &&
+      !cartData?.customerId &&
+      !normCustomerField(cartData?.customerName)
+    ) {
+      return;
+    }
+
+    isSavingCustomerRef.current = true;
+    try {
+      const updatedCart = await cartApi.add({
+        businessType: cartBusinessType,
+        purchaseId: activePurchaseId,
+        items: [],
+        ...(name.trim() && { customerName: name.trim() }),
+        ...(address.trim() && { customerAddress: address.trim() }),
+        ...(phone.trim() && { customerPhone: phone.trim() }),
+        ...(email.trim() && { customerEmail: email.trim() }),
+        ...(retailer && gstin && { customerGstin: gstin.trim() }),
+        ...(retailer && dlNo && { customerDlNo: dlNo.trim() }),
+        ...(retailer && pan && { customerPan: pan.trim() }),
+      });
+      suppressCustomerSyncRef.current = true;
+      setCartData(updatedCart);
+      applyCustomerFieldsFromCart(updatedCart, {
+        customerName: name,
+        customerPhone: phone,
+        customerEmail: email,
+        customerAddress: address,
+      });
+      await refreshQuotationList();
+    } catch (err) {
+      notifyError(
+        err instanceof Error ? err.message : 'Failed to save customer details'
+      );
+    } finally {
+      isSavingCustomerRef.current = false;
+      suppressCustomerSyncRef.current = false;
+    }
+  };
+
+  const handleCustomerFieldBlur = () => {
+    if (customerSyncTimerRef.current) {
+      clearTimeout(customerSyncTimerRef.current);
+    }
+    void syncCustomerToQuotation();
+  };
+
+  const loadQuotation = async (purchaseId: string): Promise<void> => {
+    suppressCustomerSyncRef.current = true;
+    try {
+      const cart = await cartApi.get(purchaseId);
+      if (cart.status === 'PENDING') {
+        scanSellCustomerPrefillRef.current = null;
+        navigate('/dashboard/checkout');
+        return;
+      }
+      if (cart.status !== 'CREATED') {
+        throw new Error('Quotation is no longer open');
+      }
+      applyCartToState(cart, []);
+    } finally {
+      suppressCustomerSyncRef.current = false;
+    }
+  };
+
+  const initializeQuotations = async (): Promise<void> => {
     if (isUpdatingRef.current) {
       return;
     }
@@ -871,58 +1068,104 @@ export default function ScanSellPage() {
     setIsLoadingCart(true);
     setError(null);
     try {
-      const cart = await cartApi.get();
-
-      // Only handle CREATED and PENDING statuses
-      // If status is PENDING, redirect to checkout page
-      if (cart.status === 'PENDING') {
-        scanSellCustomerPrefillRef.current = null;
-        navigate('/dashboard/checkout');
+      const list = await refreshQuotationList();
+      if (list.length > 0) {
+        const targetId = activePurchaseId && list.some((q) => q.purchaseId === activePurchaseId)
+          ? activePurchaseId
+          : list[0].purchaseId;
+        await loadQuotation(targetId);
         return;
       }
-
-      // If status is CREATED, stay on scan-sell page
-      if (cart.status === 'CREATED') {
-        setCartData(cart);
-        setCustomerName(cart.customerName || '');
-        setCustomerAddress(cart.customerAddress || '');
-        setCustomerPhone(cart.customerPhone || '');
-        setCustomerId(cart.customerId || '');
-        setCustomerEmail(cart.customerEmail || '');
-        // Build cart items from response only (no per-item inventory/search API calls)
-        setCartItems(mergeCartResponseToItems(cart, []));
-        return;
-      }
-
-      // For COMPLETED or other statuses, clear cart and stay on scan-sell
-      setCartData(null);
-      setCartItems([]);
-      setCustomerName('');
-      setCustomerAddress('');
-      setCustomerPhone('');
-      setCustomerId('');
-      setCustomerEmail('');
-      setIsRetailer(false);
-      setCustomerGstin('');
-      setCustomerDlNo('');
-      setCustomerPan('');
+      await ensureDefaultQuotation();
     } catch (err) {
-      // 404 or other error - no cart exists, stay on scan-sell page
-      console.log('No existing cart or error loading cart:', err);
-      setCartData(null);
-      setCartItems([]);
-      // Reset customer fields if cart is empty
-      setCustomerName('');
-      setCustomerAddress('');
-      setCustomerPhone('');
-      setCustomerId('');
-      setCustomerEmail('');
-      setIsRetailer(false);
-      setCustomerGstin('');
-      setCustomerDlNo('');
-      setCustomerPan('');
+      console.log('No quotations or error loading:', err);
+      try {
+        await ensureDefaultQuotation();
+      } catch (createErr) {
+        console.log('Failed to create default quotation:', createErr);
+        setActivePurchaseId(null);
+        setCartData(null);
+        setCartItems([]);
+      }
     } finally {
       setIsLoadingCart(false);
+    }
+  };
+
+  const handleNewQuotation = async () => {
+    if (isUpdatingRef.current || isLoadingCart) {
+      return;
+    }
+    setIsUpdatingCart(true);
+    try {
+      setSearchQuery('');
+      setShowSearchDropdown(false);
+      setError(null);
+      if (customerSyncTimerRef.current) {
+        clearTimeout(customerSyncTimerRef.current);
+      }
+      await syncCustomerToQuotation();
+      await ensureDefaultQuotation();
+    } catch (err) {
+      notifyError(
+        err instanceof Error ? err.message : 'Failed to create quotation'
+      );
+    } finally {
+      setIsUpdatingCart(false);
+    }
+  };
+
+  const handleSelectQuotation = async (purchaseId: string) => {
+    if (purchaseId === activePurchaseId || isUpdatingRef.current) {
+      return;
+    }
+    setIsLoadingCart(true);
+    try {
+      if (customerSyncTimerRef.current) {
+        clearTimeout(customerSyncTimerRef.current);
+      }
+      await syncCustomerToQuotation();
+      await loadQuotation(purchaseId);
+    } catch (err) {
+      notifyError(err instanceof Error ? err.message : 'Failed to load quotation');
+    } finally {
+      setIsLoadingCart(false);
+    }
+  };
+
+  const handleCancelQuotation = async (purchaseId: string) => {
+    if (!window.confirm('Cancel this quotation? Reserved stock will be released.')) {
+      return;
+    }
+    setIsUpdatingCart(true);
+    try {
+      await cartApi.cancelQuotation(purchaseId);
+      const list = await refreshQuotationList();
+      if (activePurchaseId === purchaseId) {
+        if (list.length > 0) {
+          await loadQuotation(list[0].purchaseId);
+        } else {
+          await ensureDefaultQuotation();
+        }
+      }
+    } catch (err) {
+      notifyError(err instanceof Error ? err.message : 'Failed to cancel quotation');
+    } finally {
+      setIsUpdatingCart(false);
+    }
+  };
+
+  const ensureActiveQuotationId = async (): Promise<string | null> => {
+    if (activePurchaseId) {
+      return activePurchaseId;
+    }
+    try {
+      return await ensureDefaultQuotation();
+    } catch (err) {
+      notifyError(
+        err instanceof Error ? err.message : 'Failed to create quotation'
+      );
+      return null;
     }
   };
 
@@ -951,16 +1194,6 @@ export default function ScanSellPage() {
       setCustomerDlNo('');
       setCustomerPan('');
     }
-    if (c.userId && c.email) {
-      setLinkedUser({
-        userId: c.userId,
-        email: c.email,
-        name: c.name ?? '',
-      });
-    } else {
-      setLinkedUser(null);
-    }
-    setUserSearchMessage(null);
     setCustomerSectionOpen(true);
   }, [isLoadingCart]);
 
@@ -1115,6 +1348,33 @@ export default function ScanSellPage() {
     [additionalDiscountOverrides]
   );
 
+  useEffect(() => {
+    if (isLoadingCart || !activePurchaseId || suppressCustomerSyncRef.current) {
+      return undefined;
+    }
+    if (customerSyncTimerRef.current) {
+      clearTimeout(customerSyncTimerRef.current);
+    }
+    customerSyncTimerRef.current = setTimeout(() => {
+      void syncCustomerToQuotation();
+    }, 800);
+    return () => {
+      if (customerSyncTimerRef.current) {
+        clearTimeout(customerSyncTimerRef.current);
+      }
+    };
+  }, [
+    customerName,
+    customerEmail,
+    customerAddress,
+    isRetailer,
+    customerGstin,
+    customerDlNo,
+    customerPan,
+    activePurchaseId,
+    isLoadingCart,
+  ]);
+
   const syncCartToAPI = async (
     items: CartItem[],
     changedItemId?: string,
@@ -1214,6 +1474,17 @@ export default function ScanSellPage() {
     isUpdatingRef.current = true;
     setIsUpdatingCart(true);
     try {
+      let targetPurchaseId = activePurchaseId;
+      const hasPositiveQty = items.some(
+        (item) => item.quantity > 0 || item.baseQuantity > 0
+      );
+      if (!targetPurchaseId && hasPositiveQty) {
+        targetPurchaseId = await ensureActiveQuotationId();
+        if (!targetPurchaseId) {
+          return;
+        }
+      }
+
       let itemsToSend: CartItemPayload[];
 
       if (priceToRetailUpdate) {
@@ -1403,6 +1674,7 @@ export default function ScanSellPage() {
 
       const cartPayload = {
         businessType: cartBusinessType,
+        ...(targetPurchaseId && { purchaseId: targetPurchaseId }),
         items: itemsToSend,
         ...(customerName && { customerName }),
         ...(customerAddress && { customerAddress }),
@@ -1411,15 +1683,16 @@ export default function ScanSellPage() {
         ...(isRetailer && customerGstin && { customerGstin }),
         ...(isRetailer && customerDlNo && { customerDlNo }),
         ...(isRetailer && customerPan && { customerPan }),
-        ...(linkedUser && { customerUserId: linkedUser.userId }),
       };
 
       const updatedCart = await cartApi.add(cartPayload);
       // Only apply if no newer sync started (prevents stale response overwriting e.g. 15 with 10)
       if (thisSyncVersion !== syncVersionRef.current) return;
       setCartData(updatedCart);
+      setActivePurchaseId(updatedCart.purchaseId);
       // Merge response into local state (no extra inventory/search API calls)
       setCartItems(mergeCartResponseToItems(updatedCart, items));
+      void refreshQuotationList();
       setError(null);
     } catch (err) {
       // Handle API errors - might include stock validation errors
@@ -1440,7 +1713,9 @@ export default function ScanSellPage() {
       // Revert to previous cart state on error by reloading cart (only if still latest sync)
       if (thisSyncVersion === syncVersionRef.current) {
         try {
-          const currentCart = await cartApi.get();
+          const reloadId = activePurchaseId ?? cartData?.purchaseId;
+          if (!reloadId) return;
+          const currentCart = await cartApi.get(reloadId);
           if (thisSyncVersion !== syncVersionRef.current) return;
           setCartData(currentCart);
           setCartItems(mergeCartResponseToItems(currentCart, items));
@@ -1777,6 +2052,7 @@ export default function ScanSellPage() {
 
         const cartPayload = {
           businessType: cartBusinessType,
+          ...(activePurchaseId && { purchaseId: activePurchaseId }),
           items: itemsToSend,
           ...(customerName && { customerName }),
           ...(customerAddress && { customerAddress }),
@@ -1785,18 +2061,22 @@ export default function ScanSellPage() {
           ...(isRetailer && customerGstin && { customerGstin }),
           ...(isRetailer && customerDlNo && { customerDlNo }),
           ...(isRetailer && customerPan && { customerPan }),
-          ...(linkedUser && { customerUserId: linkedUser.userId }),
         };
 
         const updatedCart = await cartApi.add(cartPayload);
         setCartData(updatedCart);
+        void refreshQuotationList();
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : 'Failed to clear cart';
         notifyError(errorMessage);
         // Reload cart on error to restore state
         try {
-          await loadCart();
+          if (activePurchaseId) {
+            await loadQuotation(activePurchaseId);
+          } else {
+            await initializeQuotations();
+          }
         } catch {
           // If reload fails, just show the error
         }
@@ -1908,37 +2188,23 @@ export default function ScanSellPage() {
           setCustomerDlNo('');
           setCustomerPan('');
         }
-        if (customer.userId) {
-          setLinkedUser({
-            userId: customer.userId,
-            email: customer.email || '',
-            name: customer.name || '',
-          });
-        }
+        await syncCustomerToQuotation({
+          customerName: customer.name || '',
+          customerPhone: customer.phone || customerPhone.trim(),
+          customerEmail: customer.email || '',
+          customerAddress: customer.address || '',
+          customerGstin: hasRetailerFields ? customer.gstin || '' : '',
+          customerDlNo: hasRetailerFields ? customer.dlNo || '' : '',
+          customerPan: hasRetailerFields ? customer.pan || '' : '',
+          isRetailer: hasRetailerFields,
+        });
       } else {
-        // Customer not found - clear all fields
-        setCustomerName('');
-        setCustomerId('');
-        setCustomerEmail('');
-        setCustomerAddress('');
-        setIsRetailer(false);
-        setCustomerGstin('');
-        setCustomerDlNo('');
-        setCustomerPan('');
+        notifyError('No customer found with this phone number');
       }
     } catch (err) {
-      // On error (404 or any other error), clear all fields
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to search customer';
       notifyError(errorMessage);
-      setCustomerName('');
-      setCustomerId('');
-      setCustomerEmail('');
-      setCustomerAddress('');
-      setIsRetailer(false);
-      setCustomerGstin('');
-      setCustomerDlNo('');
-      setCustomerPan('');
     } finally {
       setIsSearchingCustomer(false);
     }
@@ -1975,72 +2241,26 @@ export default function ScanSellPage() {
           setCustomerDlNo('');
           setCustomerPan('');
         }
-        if (customer.userId) {
-          setLinkedUser({
-            userId: customer.userId,
-            email: customer.email || '',
-            name: customer.name || '',
-          });
-        }
+        await syncCustomerToQuotation({
+          customerName: customer.name || '',
+          customerPhone: customer.phone || '',
+          customerEmail: customer.email || '',
+          customerAddress: customer.address || '',
+          customerGstin: hasRetailerFields ? customer.gstin || '' : '',
+          customerDlNo: hasRetailerFields ? customer.dlNo || '' : '',
+          customerPan: hasRetailerFields ? customer.pan || '' : '',
+          isRetailer: hasRetailerFields,
+        });
       } else {
-        setCustomerName('');
-        setCustomerPhone('');
-        setCustomerId('');
-        setCustomerAddress('');
-        setIsRetailer(false);
-        setCustomerGstin('');
-        setCustomerDlNo('');
-        setCustomerPan('');
+        notifyError('No customer found with this email');
       }
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to search customer';
       notifyError(errorMessage);
-      setCustomerName('');
-      setCustomerPhone('');
-      setCustomerId('');
-      setCustomerAddress('');
-      setIsRetailer(false);
-      setCustomerGstin('');
-      setCustomerDlNo('');
-      setCustomerPan('');
     } finally {
       setIsSearchingCustomer(false);
     }
-  };
-
-  const handleSearchUserForLink = async () => {
-    const email = customerEmail?.trim();
-    if (!email) {
-      notifyError('Enter customer email first to check for StockKart user');
-      return;
-    }
-    setIsSearchingUser(true);
-    setUserSearchMessage(null);
-    setLinkedUser(null);
-    try {
-      const user = await usersApi.searchByEmail(email);
-      if (user) {
-        setLinkedUser({
-          userId: user.userId,
-          email: user.email,
-          name: user.name,
-        });
-        setUserSearchMessage(`Found: ${user.name} (${user.email})`);
-        setCustomerName((prev) => prev || user.name);
-      } else {
-        setUserSearchMessage('No StockKart user found with this email');
-      }
-    } catch {
-      setUserSearchMessage('Failed to search. Please try again.');
-    } finally {
-      setIsSearchingUser(false);
-    }
-  };
-
-  const handleUnlinkUser = () => {
-    setLinkedUser(null);
-    setUserSearchMessage(null);
   };
 
   const handleProcessPayment = async () => {
@@ -2053,9 +2273,18 @@ export default function ScanSellPage() {
     setError(null);
 
     try {
+      let purchaseId = activePurchaseId ?? cartData?.purchaseId ?? null;
+      if (!purchaseId) {
+        purchaseId = await ensureActiveQuotationId();
+        if (!purchaseId) {
+          return;
+        }
+      }
+
       // Step 1: Call upsert API with only customer info (no items)
       const upsertPayload = {
         businessType: cartBusinessType,
+        purchaseId,
         items: [], // Empty items array - only updating customer info
         ...(customerName && { customerName }),
         ...(customerAddress && { customerAddress }),
@@ -2066,21 +2295,20 @@ export default function ScanSellPage() {
         ...(isRetailer &&
           customerDlNo && { customerDlNo: customerDlNo.trim() }),
         ...(isRetailer && customerPan && { customerPan: customerPan.trim() }),
-        ...(linkedUser && { customerUserId: linkedUser.userId }),
       };
 
       const upsertResponse = await cartApi.add(upsertPayload);
 
-      // Get purchaseId from upsert response or cartData
-      const purchaseId = upsertResponse.purchaseId || cartData?.purchaseId;
+      // Get purchaseId from upsert response or resolved id
+      const finalPurchaseId = upsertResponse.purchaseId || purchaseId;
 
-      if (!purchaseId) {
+      if (!finalPurchaseId) {
         throw new Error('Purchase ID not found');
       }
 
       // Step 2: Call update status API with PENDING status and CASH payment method
       const statusPayload = {
-        purchaseId,
+        purchaseId: finalPurchaseId,
         status: 'PENDING',
         paymentMethod: 'CASH',
       };
@@ -2121,6 +2349,19 @@ export default function ScanSellPage() {
         <h2 className={styles.title}>Scan and Sell</h2>
         <p className={styles.subtitle}>Speed up sales with barcode scanning</p>
       </div>
+
+      {isLoadingCart ? (
+        <div className={styles.loadingState}>Loading…</div>
+      ) : (
+        <>
+          <ScanSellQuotationStack
+            quotations={quotations}
+            activePurchaseId={activePurchaseId}
+            disabled={isUpdatingCart || isLoadingCart}
+            onSelect={handleSelectQuotation}
+            onNew={handleNewQuotation}
+            onCancel={handleCancelQuotation}
+          />
 
       {/* Main: cart (wider) + totals sidebar (narrow fixed) */}
       <div className={styles.mainRow}>
@@ -2930,6 +3171,7 @@ export default function ScanSellPage() {
                         onChange={(e: ChangeEvent<HTMLInputElement>) =>
                           setCustomerPhone(e.currentTarget.value)
                         }
+                        onBlur={handleCustomerFieldBlur}
                         disabled={isSearchingCustomer}
                       />
                       <button
@@ -2959,6 +3201,7 @@ export default function ScanSellPage() {
                       onChange={(e: ChangeEvent<HTMLInputElement>) =>
                         setCustomerName(e.currentTarget.value)
                       }
+                      onBlur={handleCustomerFieldBlur}
                     />
                   </div>
                   <div className={styles.customerField}>
@@ -2978,6 +3221,7 @@ export default function ScanSellPage() {
                         onChange={(e: ChangeEvent<HTMLInputElement>) =>
                           setCustomerEmail(e.currentTarget.value)
                         }
+                        onBlur={handleCustomerFieldBlur}
                         disabled={isSearchingCustomer}
                       />
                       <button
@@ -3007,6 +3251,7 @@ export default function ScanSellPage() {
                       onChange={(e: ChangeEvent<HTMLInputElement>) =>
                         setCustomerAddress(e.currentTarget.value)
                       }
+                      onBlur={handleCustomerFieldBlur}
                     />
                   </div>
                 </div>
@@ -3086,45 +3331,6 @@ export default function ScanSellPage() {
                     </div>
                   </div>
                 )}
-                <div className={styles.customerLinkSection}>
-                  <span className={styles.customerLinkLabel}>
-                    Link to StockKart user
-                  </span>
-                  {linkedUser ? (
-                    <div className={styles.customerLinkStatus}>
-                      <span>
-                        Linked: {linkedUser.name} ({linkedUser.email})
-                      </span>
-                      <button
-                        type="button"
-                        className={styles.customerUnlinkBtn}
-                        onClick={handleUnlinkUser}
-                      >
-                        Unlink
-                      </button>
-                    </div>
-                  ) : (
-                    <div className={styles.customerLinkSearch}>
-                      <p className={styles.customerLinkHint}>
-                        Enter email above and search to link a new customer to
-                        their StockKart account.
-                      </p>
-                      <button
-                        type="button"
-                        className={styles.customerLinkSearchBtn}
-                        onClick={handleSearchUserForLink}
-                        disabled={isSearchingUser || !customerEmail?.trim()}
-                      >
-                        {isSearchingUser ? '…' : 'Search by email'}
-                      </button>
-                      {userSearchMessage && (
-                        <span className={styles.customerLinkMessage}>
-                          {userSearchMessage}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
               </div>
             )}
           </div>
@@ -3246,6 +3452,8 @@ export default function ScanSellPage() {
           </div>
         </aside>
       </div>
+        </>
+      )}
 
       {detailModalItem &&
         (() => {

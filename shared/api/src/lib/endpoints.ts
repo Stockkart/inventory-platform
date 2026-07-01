@@ -150,6 +150,8 @@ export const API_ENDPOINTS = {
     BASE: '/cart',
     ADD: '/cart/upsert',
     STATUS: '/cart/status',
+    QUOTATIONS: '/cart/quotations',
+    QUOTATION_BY_ID: (purchaseId: string) => `/cart/quotations/${purchaseId}`,
   },
 
   // Purchase endpoints

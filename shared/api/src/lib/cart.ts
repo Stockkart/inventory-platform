@@ -5,6 +5,8 @@ import type {
   ApiResponse,
   CartResponse,
   AddToCartDto,
+  CreateQuotationDto,
+  QuotationListResponse,
   UpdateCartStatusDto,
 } from '@inventory-platform/types';
 
@@ -12,11 +14,37 @@ const API_BASE_URL =
   import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 export const cartApi = {
-  get: async (): Promise<CartResponse> => {
+  get: async (purchaseId?: string): Promise<CartResponse> => {
+    const queryParams: Record<string, string> = {};
+    if (purchaseId) {
+      queryParams.purchaseId = purchaseId;
+    }
     const response = await apiClient.get<ApiResponse<CartResponse>>(
-      API_ENDPOINTS.CART.BASE
+      API_ENDPOINTS.CART.BASE,
+      Object.keys(queryParams).length > 0 ? queryParams : undefined
     );
     return response.data;
+  },
+
+  listQuotations: async (): Promise<QuotationListResponse> => {
+    const response = await apiClient.get<ApiResponse<QuotationListResponse>>(
+      API_ENDPOINTS.CART.QUOTATIONS
+    );
+    return response.data;
+  },
+
+  createQuotation: async (data: CreateQuotationDto): Promise<CartResponse> => {
+    const response = await apiClient.post<ApiResponse<CartResponse>>(
+      API_ENDPOINTS.CART.QUOTATIONS,
+      data
+    );
+    return response.data;
+  },
+
+  cancelQuotation: async (purchaseId: string): Promise<void> => {
+    await apiClient.delete<ApiResponse<null>>(
+      API_ENDPOINTS.CART.QUOTATION_BY_ID(purchaseId)
+    );
   },
 
   add: async (data: AddToCartDto): Promise<CartResponse> => {
@@ -57,4 +85,3 @@ export const cartApi = {
     return response.data;
   },
 };
-

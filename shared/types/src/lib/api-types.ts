@@ -1403,6 +1403,8 @@ export interface CreateCreditEntryDto {
 export interface AddToCartDto {
   businessType: string;
   items: CheckoutItem[];
+  purchaseId?: string;
+  createNewQuotation?: boolean;
   customerName?: string;
   customerAddress?: string;
   customerPhone?: string;
@@ -1412,6 +1414,34 @@ export interface AddToCartDto {
   customerPan?: string;
   /** Optional link to a registered StockKart user for this party. */
   customerUserId?: string;
+}
+
+export interface CreateQuotationDto {
+  businessType: string;
+  customerName?: string;
+  customerAddress?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  customerGstin?: string;
+  customerDlNo?: string;
+  customerPan?: string;
+  customerUserId?: string;
+}
+
+export interface QuotationSummary {
+  purchaseId: string;
+  status: string;
+  customerId?: string | null;
+  customerName: string;
+  customerPhone?: string | null;
+  itemCount: number;
+  grandTotal: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface QuotationListResponse {
+  quotations: QuotationSummary[];
 }
 
 export interface UpdateCartStatusDto {

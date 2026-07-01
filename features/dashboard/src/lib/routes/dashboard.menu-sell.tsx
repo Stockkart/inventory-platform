@@ -581,14 +581,6 @@ export default function MenuSellPage() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className={styles.page}>
-        <div className={styles.loading}>Loading cart…</div>
-      </div>
-    );
-  }
-
   const cartItems = cartData?.items ?? [];
   const cartSellableRefs = useMemo(
     () =>
@@ -603,8 +595,17 @@ export default function MenuSellPage() {
       customerPhone,
       sellableRefs: cartSellableRefs,
       excludePurchaseId: cartData?.purchaseId,
-      enabled: cartItems.length > 0,
+      enabled: !isLoading && cartItems.length > 0,
     });
+
+  if (isLoading) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.loading}>Loading cart…</div>
+      </div>
+    );
+  }
+
   const grandTotal =
     cartData?.grandTotal ??
     cartItems.reduce(

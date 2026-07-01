@@ -4,7 +4,7 @@ import {
   cartApi,
   resolveInventoryDocumentId,
 } from '@inventory-platform/api';
-import type { BillingMode, InventoryItem } from '@inventory-platform/types';
+import type { BillingMode, InventoryItem, QuotationSummary } from '@inventory-platform/types';
 import {
   InventoryAlertDetails,
   PaginationBar,
@@ -12,7 +12,8 @@ import {
   sortInventoryByExpirySoonest,
 } from '@inventory-platform/ui';
 import styles from './dashboard.product-search.module.css';
-import { useAuthStore, useNotify, useShopAccessStore } from '@inventory-platform/store';
+import { useAuthStore, useNotify, useShopAccessStore, useVerticalSchemaStore } from '@inventory-platform/store';
+import { AddToSellQuotationPicker } from '../AddToSellQuotationPicker';
 
 export function meta() {
   return [
@@ -40,8 +41,16 @@ export default function ProductSearchPage() {
   const [billingModeFilter, setBillingModeFilter] = useState<
     'ALL' | BillingMode
   >('ALL');
+  const [quotationPickerItem, setQuotationPickerItem] =
+    useState<InventoryItem | null>(null);
+  const [quotationPickerList, setQuotationPickerList] = useState<
+    QuotationSummary[]
+  >([]);
+  const [cartBusinessType, setCartBusinessType] = useState('medical');
   const { success: notifySuccess, error: notifyError } = useNotify;
   const { user } = useAuthStore();
+  const activeShopId = user?.shopId;
+  const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
   const productSearchAccess = useShopAccessStore((s) =>
     user?.shopId ? s.byShopId[user.shopId]?.productSearch : undefined
   );
@@ -51,6 +60,17 @@ export default function ProductSearchPage() {
   useEffect(() => {
     fetchAllInventory();
   }, []);
+
+  useEffect(() => {
+    if (!activeShopId) {
+      return;
+    }
+    void fetchShopSchema('regular').then((schema) => {
+      if (schema?.verticalId && schema.shopId === activeShopId) {
+        setCartBusinessType(schema.verticalId);
+      }
+    });
+  }, [activeShopId, fetchShopSchema]);
 
   const fetchAllInventory = async (page = 0, size = 10) => {
     setIsLoading(true);
@@ -167,6 +187,107 @@ export default function ProductSearchPage() {
     }
   };
 
+  const addItemToQuotation = async (
+    item: InventoryItem,
+    purchaseId: string
+  ): Promise<void> => {
+    const inventoryId = resolveInventoryDocumentId(item);
+    if (!inventoryId) {
+      notifyError('Cannot add: missing inventory id');
+      return;
+    }
+
+    const effectivePrice = item.sellingPrice ?? item.priceToRetail;
+    if (effectivePrice == null) {
+      notifyError('Cannot add: product price is not set');
+      return;
+    }
+
+    await cartApi.add({
+      businessType: cartBusinessType,
+      purchaseId,
+      items: [
+        {
+          id: inventoryId,
+          quantity: 1,
+          priceToRetail: effectivePrice,
+        },
+      ],
+    });
+  };
+
+  const quotationLabel = (q: QuotationSummary) => q.customerName;
+
+  const notifyAddedToQuotation = (
+    item: InventoryItem,
+    quotation?: QuotationSummary
+  ) => {
+    const productName = item.name || 'Product';
+    if (quotation) {
+      notifySuccess(
+        `Added "${productName}" to quotation for ${quotationLabel(quotation)}`
+      );
+    } else {
+      notifySuccess(`Added "${productName}" to a new quotation`);
+    }
+  };
+
+  const handleAddToSellError = (err: unknown) => {
+    const errorMessage =
+      err instanceof Error ? err.message : 'Failed to add item to cart';
+    if (
+      errorMessage.includes(
+        'Cannot mix REGULAR and BASIC inventory items in a single cart'
+      )
+    ) {
+      notifyError(
+        'Cannot add this item because the quotation already contains a different billing mode (REGULAR/BASIC). Pick another quotation or clear that cart.'
+      );
+    } else {
+      notifyError(errorMessage);
+    }
+  };
+
+  const resolveTargetQuotation = async (): Promise<{
+    quotations: QuotationSummary[];
+    purchaseId: string;
+  }> => {
+    let list = (await cartApi.listQuotations()).quotations;
+    if (list.length === 0) {
+      const cart = await cartApi.createQuotation({
+        businessType: cartBusinessType,
+      });
+      list = (await cartApi.listQuotations()).quotations;
+      return { quotations: list, purchaseId: cart.purchaseId };
+    }
+    return { quotations: list, purchaseId: list[0].purchaseId };
+  };
+
+  const commitAddToSell = async (
+    item: InventoryItem,
+    purchaseId: string,
+    quotations: QuotationSummary[]
+  ) => {
+    const inventoryId = resolveInventoryDocumentId(item);
+    if (!inventoryId) {
+      return;
+    }
+    setAddingToCart(inventoryId);
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      await addItemToQuotation(item, purchaseId);
+      const quotation = quotations.find((q) => q.purchaseId === purchaseId);
+      notifyAddedToQuotation(item, quotation);
+      setQuotationPickerItem(null);
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err) {
+      handleAddToSellError(err);
+    } finally {
+      setAddingToCart(null);
+    }
+  };
+
   const handleAddToSell = async (item: InventoryItem) => {
     const inventoryId = resolveInventoryDocumentId(item);
     if (!inventoryId) {
@@ -186,42 +307,50 @@ export default function ProductSearchPage() {
 
     setAddingToCart(inventoryId);
     setError(null);
-    setSuccessMessage(null);
-
     try {
-      const cartPayload = {
-        businessType: 'pharmacy',
-        items: [
-          {
-            id: inventoryId,
-            quantity: 1,
-            priceToRetail: effectivePrice,
-          },
-        ],
-      };
-
-      await cartApi.add(cartPayload);
-      notifySuccess(`Added "${item.name || 'Product'}" to cart successfully!`);
-
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setSuccessMessage(null);
-      }, 3000);
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to add item to cart';
-      if (
-        errorMessage.includes(
-          'Cannot mix REGULAR and BASIC inventory items in a single cart'
-        )
-      ) {
-        notifyError(
-          'Cannot add this item because the cart already contains a different billing mode (REGULAR/BASIC). Clear cart or use matching mode items only.'
-        );
-      } else {
-        notifyError(errorMessage);
+      const { quotations, purchaseId } = await resolveTargetQuotation();
+      if (quotations.length > 1) {
+        setQuotationPickerList(quotations);
+        setQuotationPickerItem(item);
+        setAddingToCart(null);
+        return;
       }
-    } finally {
+      await commitAddToSell(item, purchaseId, quotations);
+    } catch (err) {
+      handleAddToSellError(err);
+      setAddingToCart(null);
+    }
+  };
+
+  const handlePickerSelect = async (purchaseId: string) => {
+    if (!quotationPickerItem) {
+      return;
+    }
+    await commitAddToSell(
+      quotationPickerItem,
+      purchaseId,
+      quotationPickerList
+    );
+  };
+
+  const handlePickerNewQuotation = async () => {
+    if (!quotationPickerItem) {
+      return;
+    }
+    const inventoryId = resolveInventoryDocumentId(quotationPickerItem);
+    if (!inventoryId) {
+      return;
+    }
+    setAddingToCart(inventoryId);
+    try {
+      const cart = await cartApi.createQuotation({
+        businessType: cartBusinessType,
+      });
+      const list = (await cartApi.listQuotations()).quotations;
+      setQuotationPickerList(list);
+      await commitAddToSell(quotationPickerItem, cart.purchaseId, list);
+    } catch (err) {
+      handleAddToSellError(err);
       setAddingToCart(null);
     }
   };
@@ -513,6 +642,21 @@ export default function ProductSearchPage() {
             prev.map((i) => (i.id === updated.id ? updated : i))
           );
           setSelectedItem(updated);
+        }}
+      />
+      <AddToSellQuotationPicker
+        open={quotationPickerItem !== null}
+        productLabel={quotationPickerItem?.name || 'this product'}
+        quotations={quotationPickerList}
+        isSubmitting={
+          quotationPickerItem !== null &&
+          addingToCart === resolveInventoryDocumentId(quotationPickerItem)
+        }
+        onSelect={(purchaseId) => void handlePickerSelect(purchaseId)}
+        onNewQuotation={() => void handlePickerNewQuotation()}
+        onCancel={() => {
+          if (addingToCart) return;
+          setQuotationPickerItem(null);
         }}
       />
     </div>

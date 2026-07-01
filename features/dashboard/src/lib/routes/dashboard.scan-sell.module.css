@@ -24,6 +24,15 @@
   color: var(--text-secondary);
 }
 
+.loadingState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+}
+
 /* Search bar: inside cart section, compact top bar */
 .searchRow {
   position: relative;
