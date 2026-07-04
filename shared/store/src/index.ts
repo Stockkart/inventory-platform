@@ -10,4 +10,5 @@ export type { ToastItem, ToastType } from './lib/useToastStore';
 export { useNotify } from './lib/useNotify';
 export { useVerticalSchemaStore, shopSchemaCacheKey } from './lib/useVerticalSchemaStore';
 export { useShopCapabilitiesStore } from './lib/useShopCapabilitiesStore';
+export { useShopAccessStore } from './lib/useShopAccessStore';
 export { usePlanStatusStore } from './lib/usePlanStatusStore';

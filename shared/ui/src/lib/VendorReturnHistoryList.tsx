@@ -1,9 +1,17 @@
-import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { inventoryApi } from '@inventory-platform/api';
 import type { VendorPurchaseReturnSummary } from '@inventory-platform/types';
 import { useNotify } from '@inventory-platform/store';
-import styles from './RefundHistoryList.module.css';
+import recordStyles from './HistoryRecordList.module.css';
 import { PaginationBar } from './PaginationBar';
+import { HistoryListSummary } from './HistoryListSummary';
+import type { HistoryFilters } from './historyFilters';
+import {
+  hasActiveHistoryFilters,
+  isDateInRange,
+  paginateLocal,
+  matchesRegexField,
+} from './historyFilters';
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('en-IN', {
@@ -21,7 +29,6 @@ function moneyOrDash(n: number | null | undefined): string {
   return formatCurrency(n);
 }
 
-/** Returned qty in invoice / shelf (sell) units only — never base units on this screen. */
 function formatReturnedDisplayQty(displayQuantityReturned: unknown): string {
   const d =
     typeof displayQuantityReturned === 'number' ? displayQuantityReturned : null;
@@ -52,32 +59,61 @@ function formatDate(dateString: string): string {
 
 export interface VendorReturnHistoryListProps {
   refreshTrigger?: number;
+  filters?: HistoryFilters;
+}
+
+const FILTER_FETCH_LIMIT = 100;
+const PAGE_SIZE = 20;
+
+function applyVendorReturnFilters(
+  rows: VendorPurchaseReturnSummary[],
+  applied: HistoryFilters
+): VendorPurchaseReturnSummary[] {
+  return rows
+    .filter((r) => isDateInRange(r.createdAt, applied.dateFrom, applied.dateTo))
+    .filter((r) => matchesRegexField(applied.invoiceNo, r.invoiceNo))
+    .filter((r) => matchesRegexField(applied.vendor, r.vendorName));
 }
 
 export function VendorReturnHistoryList({
   refreshTrigger,
+  filters,
 }: VendorReturnHistoryListProps) {
+  const applied = filters;
+  const filtering =
+    applied != null && hasActiveHistoryFilters(applied, 'vendorReturnHistory');
+
   const [returns, setReturns] = useState<VendorPurchaseReturnSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [limit] = useState(20);
+  const [limit] = useState(PAGE_SIZE);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
-  const [invoiceFilter, setInvoiceFilter] = useState('');
-  const [appliedInvoiceFilter, setAppliedInvoiceFilter] = useState('');
   const { error: notifyError } = useNotify;
+
+  useEffect(() => {
+    setPage(1);
+  }, [filters]);
 
   const fetchList = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await inventoryApi.listVendorPurchaseReturns({
-        page,
-        limit,
-        invoiceNo: appliedInvoiceFilter || undefined,
-      });
-      setReturns(res.returns ?? []);
-      setTotalPages(res.totalPages);
-      setTotal(res.total);
+      if (filtering && applied) {
+        const res = await inventoryApi.listVendorPurchaseReturns({
+          page: 1,
+          limit: FILTER_FETCH_LIMIT,
+        });
+        const rows = applyVendorReturnFilters(res.returns ?? [], applied);
+        const paged = paginateLocal(rows, page, limit);
+        setReturns(paged.slice);
+        setTotalPages(paged.totalPages);
+        setTotal(paged.total);
+      } else {
+        const res = await inventoryApi.listVendorPurchaseReturns({ page, limit });
+        setReturns(res.returns ?? []);
+        setTotalPages(res.totalPages);
+        setTotal(res.total);
+      }
     } catch (err) {
       notifyError(
         err instanceof Error ? err.message : 'Failed to load supplier return history.'
@@ -86,20 +122,11 @@ export function VendorReturnHistoryList({
     } finally {
       setIsLoading(false);
     }
-  }, [appliedInvoiceFilter, limit, notifyError, page]);
+  }, [applied, filtering, limit, notifyError, page]);
 
   useEffect(() => {
     fetchList();
   }, [fetchList, refreshTrigger]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [appliedInvoiceFilter]);
-
-  const handleFilterSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    setAppliedInvoiceFilter(invoiceFilter.trim());
-  };
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
@@ -110,56 +137,34 @@ export function VendorReturnHistoryList({
 
   if (isLoading && returns.length === 0) {
     return (
-      <div className={styles.container}>
-        <div className={styles.loading}>Loading supplier return history…</div>
+      <div className={recordStyles.container}>
+        <div className={recordStyles.loading}>Loading supplier return history…</div>
       </div>
     );
   }
 
   return (
-    <div className={styles.container}>
-      <form onSubmit={handleFilterSubmit} className={styles.filterBar}>
-        <label htmlFor="vendorReturnInvoiceFilter" className={styles.filterLabel}>
-          Filter by invoice no.
-        </label>
-        <input
-          id="vendorReturnInvoiceFilter"
-          type="text"
-          className={styles.filterInput}
-          value={invoiceFilter}
-          onChange={(e) => setInvoiceFilter(e.target.value)}
-          placeholder="Exact purchase invoice number"
-          aria-label="Filter by purchase invoice number"
-        />
-        <button type="submit" className={styles.filterBtn}>
-          Apply
-        </button>
-        {appliedInvoiceFilter ? (
-          <button
-            type="button"
-            className={styles.filterClear}
-            onClick={() => {
-              setInvoiceFilter('');
-              setAppliedInvoiceFilter('');
-            }}
-          >
-            Clear
-          </button>
-        ) : null}
-      </form>
+    <div className={recordStyles.container}>
+      <HistoryListSummary
+        page={page}
+        limit={limit}
+        total={total}
+        filtered={filtering}
+        label="returns"
+      />
 
       {returns.length === 0 ? (
-        <div className={styles.emptyState}>
-          {appliedInvoiceFilter
-            ? 'No supplier returns match this invoice number.'
+        <div className={recordStyles.emptyState}>
+          {filtering
+            ? 'No supplier returns match these filters.'
             : 'No supplier returns yet.'}
         </div>
       ) : (
         <>
-          <div className={styles.list}>
+          <div className={recordStyles.list}>
             {returns.map((r) => (
-              <div key={r.returnId} className={styles.refundCard}>
-                <div className={styles.refundHeader}>
+              <div key={r.returnId} className={recordStyles.recordCard}>
+                <div className={recordStyles.recordHeader}>
                   <div>
                     <strong>Credit note:</strong>{' '}
                     {r.supplierCreditNoteNo ?? r.returnId}
@@ -168,7 +173,7 @@ export function VendorReturnHistoryList({
                     <strong>Date:</strong> {formatDate(r.createdAt)}
                   </div>
                 </div>
-                <div className={styles.refundDetails}>
+                <div className={recordStyles.recordDetails}>
                   <div>
                     <strong>Purchase invoice:</strong>{' '}
                     {r.invoiceNo ?? '—'}
@@ -190,10 +195,10 @@ export function VendorReturnHistoryList({
                   ) : null}
                 </div>
                 {(r.lines?.length ?? 0) > 0 ? (
-                  <div className={styles.breakdownWrap}>
-                    <div className={styles.breakdownTitle}>Line breakdown</div>
-                    <div className={styles.breakdownScroll}>
-                      <table className={styles.breakdownTable}>
+                  <div className={recordStyles.breakdownWrap}>
+                    <div className={recordStyles.breakdownTitle}>Line breakdown</div>
+                    <div className={recordStyles.breakdownScroll}>
+                      <table className={recordStyles.breakdownTable}>
                         <thead>
                           <tr>
                             <th scope="col">Product</th>
@@ -216,7 +221,11 @@ export function VendorReturnHistoryList({
                                   : line.inventoryId ?? '—'}
                               </td>
                               <td>{line.barcode ?? '—'}</td>
-                              <td>{formatReturnedDisplayQty(line.displayQuantityReturned)}</td>
+                              <td>
+                                {formatReturnedDisplayQty(
+                                  line.displayQuantityReturned
+                                )}
+                              </td>
                               <td>{moneyOrDash(line.taxableValue)}</td>
                               <td>{moneyOrDash(line.centralGstAmount)}</td>
                               <td>{moneyOrDash(line.stateGstAmount)}</td>
@@ -228,7 +237,7 @@ export function VendorReturnHistoryList({
                     </div>
                   </div>
                 ) : (
-                  <p className={styles.breakdownLegacyNote}>
+                  <p className={recordStyles.breakdownLegacyNote}>
                     No saved line breakdown for this debit note (often older
                     returns).
                   </p>

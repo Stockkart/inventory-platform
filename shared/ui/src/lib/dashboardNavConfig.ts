@@ -37,6 +37,11 @@ export const DASHBOARD_MENU_GROUPS: DashboardMenuGroup[] = [
         label: 'Product Search',
         icon: '🔍',
       },
+      {
+        path: '/dashboard/stock-corrections',
+        label: 'Stock corrections',
+        icon: '🛠️',
+      },
       { path: '/dashboard/pricing', label: 'Pricing', icon: '💰' },
       { path: '/dashboard/scan-sell', label: 'Scan and Sell', icon: '📱' },
     ],
@@ -121,11 +126,6 @@ export const DASHBOARD_MENU_GROUPS: DashboardMenuGroup[] = [
       },
       { path: '/dashboard/taxes', label: 'Taxes', icon: '📋' },
       { path: '/dashboard/history', label: 'History', icon: '📜' },
-      {
-        path: '/dashboard/stock-corrections',
-        label: 'Stock corrections',
-        icon: '🛠️',
-      },
     ],
   },
   {
@@ -179,6 +179,7 @@ export const DASHBOARD_MENU_GROUPS: DashboardMenuGroup[] = [
   },
 ];
 
+/** @deprecated Use shop access from `/shops/me/access` instead. */
 export const CASHIER_HIDDEN_DASHBOARD_PATHS = [
   '/dashboard/shop-users',
   '/dashboard/invitations',
@@ -194,34 +195,20 @@ export const CASHIER_HIDDEN_DASHBOARD_PATHS = [
 
 export type DashboardNavRow = DashboardMenuItem & { groupLabel: string };
 
-/** Sidebar groups for the signed-in user's role (cashier sees a subset). */
+/** Sidebar groups — module visibility is enforced via {@link filterDashboardMenuGroupsByAccess}. */
 export function getDashboardMenuGroupsForRole(
-  role: string | undefined
+  _role: string | undefined
 ): DashboardMenuGroup[] {
-  const isCashier = role === 'CASHIER';
-  return DASHBOARD_MENU_GROUPS.map((group) => ({
-    ...group,
-    items: isCashier
-      ? group.items.filter(
-          (item) => !CASHIER_HIDDEN_DASHBOARD_PATHS.includes(item.path)
-        )
-      : group.items,
-  })).filter((group) => group.items.length > 0);
+  return DASHBOARD_MENU_GROUPS.filter((group) => group.items.length > 0);
 }
 
-/** Flattened nav for the signed-in user's role (cashier sees a subset). */
+/** Flattened nav rows (module visibility enforced via shop access API). */
 export function getDashboardNavRowsForRole(
-  role: string | undefined
+  _role: string | undefined
 ): DashboardNavRow[] {
-  const isCashier = role === 'CASHIER';
   const rows: DashboardNavRow[] = [];
   for (const group of DASHBOARD_MENU_GROUPS) {
-    const items = isCashier
-      ? group.items.filter(
-          (item) => !CASHIER_HIDDEN_DASHBOARD_PATHS.includes(item.path)
-        )
-      : group.items;
-    for (const item of items) {
+    for (const item of group.items) {
       rows.push({ ...item, groupLabel: group.label });
     }
   }

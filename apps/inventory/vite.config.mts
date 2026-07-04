@@ -21,6 +21,7 @@ export default defineConfig({
       '@inventory-platform/store': path.resolve(__dirname, '../../shared/store/src/index.ts'),
       '@inventory-platform/api': path.resolve(__dirname, '../../shared/api/src/index.ts'),
       '@inventory-platform/types': path.resolve(__dirname, '../../shared/types/src/index.ts'),
+      '@inventory-platform/payment': path.resolve(__dirname, '../../shared/payment/src/index.ts'),
       '@inventory-platform/dashboard': path.resolve(__dirname, '../../features/dashboard/src/index.ts'),
       '@inventory-platform/onboarding': path.resolve(__dirname, '../../features/onboarding/src/index.ts'),
       '@inventory-platform/auth': path.resolve(__dirname, '../../features/auth/src/index.ts'),

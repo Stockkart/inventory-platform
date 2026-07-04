@@ -74,6 +74,11 @@ export const API_ENDPOINTS = {
     ACTIVE_SHOP: '/shops/active-shop',
     ME_SCHEMA: '/shops/me/schema',
     ME_CAPABILITIES: '/shops/me/capabilities',
+    ME_ACCESS: '/shops/me/access',
+    RBAC: (shopId: string) => `/shops/${shopId}/rbac`,
+    RBAC_POLICY: (shopId: string) => `/shops/${shopId}/rbac/policy`,
+    RBAC_MEMBER: (shopId: string, userId: string) =>
+      `/shops/${shopId}/rbac/members/${userId}`,
     ME_MENU: '/shops/me/menu',
     ME_SELL_CATALOG: '/shops/me/sell-catalog',
     BY_ID: (shopId: string) => `/shops/${shopId}`,
@@ -145,12 +150,15 @@ export const API_ENDPOINTS = {
     BASE: '/cart',
     ADD: '/cart/upsert',
     STATUS: '/cart/status',
+    QUOTATIONS: '/cart/quotations',
+    QUOTATION_BY_ID: (purchaseId: string) => `/cart/quotations/${purchaseId}`,
   },
 
   // Purchase endpoints
   PURCHASES: {
     BASE: '/purchases',
     SEARCH: '/purchases/search',
+    CUSTOMER_PRODUCT_HISTORY: '/purchases/customer-product-history',
   },
 
   // Refund endpoints
@@ -189,6 +197,9 @@ export const API_ENDPOINTS = {
     SHOP_ASSIGN: (shopId: string) => `/plans/shop/${shopId}/assign`,
     SHOP_USAGE: '/plans/shop/usage',
     SHOP_TRANSACTIONS: '/plans/shop/transactions',
+    PAYMENT_CONFIG: '/plans/payment/config',
+    PAYMENT_CHECKOUT: '/plans/payment/checkout',
+    PAYMENT_VERIFY: '/plans/payment/verify',
   },
 
   // Dashboard endpoints

@@ -13,7 +13,7 @@ import {
   getExtensionFieldString,
   isSellDirectInventory,
 } from '@inventory-platform/ui';
-import { useNotify, useVerticalSchemaStore } from '@inventory-platform/store';
+import { useNotify, useVerticalSchemaStore, useAuthStore, useShopAccessStore } from '@inventory-platform/store';
 import searchStyles from './dashboard.product-search.module.css';
 import styles from './dashboard.manual-stock.module.css';
 
@@ -251,6 +251,10 @@ export default function ManualStockPage() {
   const [addingToCartId, setAddingToCartId] = useState<string | null>(null);
   const [businessType, setBusinessType] = useState('cafe');
   const { error: notifyError, success: notifySuccess } = useNotify;
+  const { user } = useAuthStore();
+  const productSearchAccess = useShopAccessStore((s) =>
+    user?.shopId ? s.byShopId[user.shopId]?.productSearch : undefined
+  );
   const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
 
   const hasActiveSearch = searchQuery.trim().length > 0;
@@ -630,6 +634,7 @@ export default function ManualStockPage() {
         item={selectedItem}
         onClose={() => setSelectedItem(null)}
         editable
+        productSearchAccess={productSearchAccess}
         onUpdated={(updated) => {
           refreshItemInList(updated);
           setSelectedItem(updated);

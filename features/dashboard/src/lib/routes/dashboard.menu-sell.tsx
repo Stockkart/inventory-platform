@@ -20,6 +20,10 @@ import {
   menuSellableRef,
 } from '@inventory-platform/types';
 import { useNotify, useVerticalSchemaStore } from '@inventory-platform/store';
+import {
+  CustomerProductHistoryHint,
+  useCustomerProductHistory,
+} from '@inventory-platform/ui';
 import styles from './dashboard.scan-sell.module.css';
 
 export function meta() {
@@ -162,6 +166,7 @@ export default function MenuSellPage() {
   const [customerName, setCustomerName] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [customerId, setCustomerId] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [isRetailer, setIsRetailer] = useState(false);
   const [customerGstin, setCustomerGstin] = useState('');
@@ -199,6 +204,7 @@ export default function MenuSellPage() {
         setCustomerName(cart.customerName || '');
         setCustomerAddress(cart.customerAddress || '');
         setCustomerPhone(cart.customerPhone || '');
+        setCustomerId(cart.customerId || '');
         setCustomerEmail(cart.customerEmail || '');
         const hasRetailerFields = !!(
           cart.customerGstin ||
@@ -391,6 +397,7 @@ export default function MenuSellPage() {
       const customer = await customersApi.searchByPhone(customerPhone.trim());
       if (customer) {
         setCustomerName(customer.name || '');
+        setCustomerId(customer.customerId || '');
         setCustomerEmail(customer.email || '');
         setCustomerAddress(customer.address || '');
         const hasRetailerFields = !!(
@@ -418,6 +425,7 @@ export default function MenuSellPage() {
         }
       } else {
         setCustomerName('');
+        setCustomerId('');
         setCustomerEmail('');
         setCustomerAddress('');
         setIsRetailer(false);
@@ -430,6 +438,7 @@ export default function MenuSellPage() {
         err instanceof Error ? err.message : 'Failed to search customer';
       notifyError(message);
       setCustomerName('');
+      setCustomerId('');
       setCustomerEmail('');
       setCustomerAddress('');
       setIsRetailer(false);
@@ -453,6 +462,7 @@ export default function MenuSellPage() {
       if (customer) {
         setCustomerName(customer.name || '');
         setCustomerPhone(customer.phone || '');
+        setCustomerId(customer.customerId || '');
         setCustomerAddress(customer.address || '');
         const hasRetailerFields = !!(
           customer.gstin ||
@@ -480,6 +490,7 @@ export default function MenuSellPage() {
       } else {
         setCustomerName('');
         setCustomerPhone('');
+        setCustomerId('');
         setCustomerAddress('');
         setIsRetailer(false);
         setCustomerGstin('');
@@ -492,6 +503,7 @@ export default function MenuSellPage() {
       notifyError(message);
       setCustomerName('');
       setCustomerPhone('');
+      setCustomerId('');
       setCustomerAddress('');
       setIsRetailer(false);
       setCustomerGstin('');
@@ -569,6 +581,23 @@ export default function MenuSellPage() {
     }
   };
 
+  const cartItems = cartData?.items ?? [];
+  const cartSellableRefs = useMemo(
+    () =>
+      cartItems
+        .map((line) => lineSellableRef(line))
+        .filter((ref): ref is string => Boolean(ref)),
+    [cartItems]
+  );
+  const { data: customerProductHistory, loading: customerProductHistoryLoading } =
+    useCustomerProductHistory({
+      customerId,
+      customerPhone,
+      sellableRefs: cartSellableRefs,
+      excludePurchaseId: cartData?.purchaseId,
+      enabled: !isLoading && cartItems.length > 0,
+    });
+
   if (isLoading) {
     return (
       <div className={styles.page}>
@@ -577,7 +606,6 @@ export default function MenuSellPage() {
     );
   }
 
-  const cartItems = cartData?.items ?? [];
   const grandTotal =
     cartData?.grandTotal ??
     cartItems.reduce(
@@ -679,6 +707,13 @@ export default function MenuSellPage() {
                               {line.name || 'Menu item'}
                             </span>
                           </div>
+                          {ref && (
+                            <CustomerProductHistoryHint
+                              sellableRef={ref}
+                              history={customerProductHistory}
+                              loading={customerProductHistoryLoading}
+                            />
+                          )}
                           <div className={styles.itemMetaRow}>
                             <span className={styles.itemUnitMeta}>
                               {money(line.priceToRetail)} each ·{' '}

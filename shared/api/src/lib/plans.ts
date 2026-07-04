@@ -7,6 +7,11 @@ import type {
   UsageResponse,
   AssignPlanRequest,
   PlanTransactionResponse,
+  PaymentConfigResponse,
+  PlanCheckoutResponse,
+  CreatePlanCheckoutRequest,
+  VerifyPlanPaymentRequest,
+  VerifyPlanPaymentResponse,
 } from '@inventory-platform/types';
 
 export const plansApi = {
@@ -42,7 +47,7 @@ export const plansApi = {
     return response.data;
   },
 
-  /** Assign plan to shop (after payment) */
+  /** Assign plan to shop (internal — requires verified payment metadata) */
   assignPlan: async (
     shopId: string,
     data: AssignPlanRequest
@@ -66,6 +71,33 @@ export const plansApi = {
   listTransactions: async (): Promise<PlanTransactionResponse[]> => {
     const response = await apiClient.get<ApiResponse<PlanTransactionResponse[]>>(
       API_ENDPOINTS.PLANS.SHOP_TRANSACTIONS
+    );
+    return response.data;
+  },
+
+  getPaymentConfig: async (): Promise<PaymentConfigResponse> => {
+    const response = await apiClient.get<ApiResponse<PaymentConfigResponse>>(
+      API_ENDPOINTS.PLANS.PAYMENT_CONFIG
+    );
+    return response.data;
+  },
+
+  createCheckout: async (
+    data: CreatePlanCheckoutRequest
+  ): Promise<PlanCheckoutResponse> => {
+    const response = await apiClient.post<ApiResponse<PlanCheckoutResponse>>(
+      API_ENDPOINTS.PLANS.PAYMENT_CHECKOUT,
+      data
+    );
+    return response.data;
+  },
+
+  verifyPayment: async (
+    data: VerifyPlanPaymentRequest
+  ): Promise<VerifyPlanPaymentResponse> => {
+    const response = await apiClient.post<ApiResponse<VerifyPlanPaymentResponse>>(
+      API_ENDPOINTS.PLANS.PAYMENT_VERIFY,
+      data
     );
     return response.data;
   },

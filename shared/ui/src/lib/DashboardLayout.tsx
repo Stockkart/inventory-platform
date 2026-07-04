@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
-import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/store';
+import { useAuthStore, useShopCapabilitiesStore, useShopAccessStore } from '@inventory-platform/store';
 import { shopsApi } from '@inventory-platform/api';
 import type { DashboardLayoutProps } from '@inventory-platform/types';
 import type { Location as LocationType } from '@inventory-platform/types';
@@ -20,6 +20,7 @@ import {
   isQuickNavSlash,
   isShortcutsHelp,
 } from './dashboardHotkeys';
+import { UserMenuShopSection } from './UserMenuShopSection';
 import {
   favoriteShortcutMatches,
   loadFavoritePageShortcuts,
@@ -62,12 +63,27 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const shopCapabilities = useShopCapabilitiesStore((s) =>
     user?.shopId ? s.byShopId[user.shopId] : undefined
   );
+  const fetchAccess = useShopAccessStore((s) => s.fetchAccess);
+  const shopAccess = useShopAccessStore((s) =>
+    user?.shopId ? s.byShopId[user.shopId] : undefined
+  );
 
   useEffect(() => {
     if (user?.shopId) {
       void fetchCapabilities();
+      void fetchAccess();
     }
-  }, [user?.shopId, fetchCapabilities]);
+  }, [user?.shopId, fetchCapabilities, fetchAccess]);
+
+  useEffect(() => {
+    const onFocus = () => {
+      if (user?.shopId) {
+        void fetchAccess({ force: true });
+      }
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [user?.shopId, fetchAccess]);
 
   //const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(() =>
@@ -111,8 +127,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const filteredMenuGroups = useMemo(
     () =>
-      getDashboardMenuGroupsWithCapabilities(user?.role, shopCapabilities ?? null),
-    [user?.role, shopCapabilities]
+      getDashboardMenuGroupsWithCapabilities(
+        user?.role,
+        shopCapabilities ?? null,
+        shopAccess ?? null
+      ),
+    [user?.role, shopCapabilities, shopAccess]
   );
 
   const navRowsForPalette = useMemo(
@@ -146,17 +166,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     user?.shopId ?? undefined
   );
 
-  const [shopName, setShopName] = useState<string | null>(null);
-
   useEffect(() => {
     if (shop?.name) {
-      setShopName(shop.name);
       localStorage.setItem('shopName', shop.name);
-    } else {
-      const saved = localStorage.getItem('shopName');
-      if (saved) {
-        setShopName(saved);
-      }
     }
   }, [shop]);
 
@@ -728,22 +740,20 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                         </div>
                       </div>
 
-                      <div className={styles.userMenuInfo}>
-                        <span className={styles.roleBadge}>
-                          {shopName ?? shop?.name}
-                        </span>
-                        <button
-                          type="button"
-                          className={styles.editMetaBtn}
-                          onClick={() => {
-                            setUserMenuOpen(false);
-                            navigate('/dashboard/profile');
-                          }}
-                        >
-                          View profile
-                        </button>
-                      </div>
                     </div>
+
+                    <UserMenuShopSection onClose={() => setUserMenuOpen(false)} />
+
+                    <button
+                      type="button"
+                      className={styles.profileMenuBtn}
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        navigate('/dashboard/profile');
+                      }}
+                    >
+                      View profile
+                    </button>
 
                     <button onClick={handleLogout} className={styles.logoutBtn}>
                       🚪 Logout

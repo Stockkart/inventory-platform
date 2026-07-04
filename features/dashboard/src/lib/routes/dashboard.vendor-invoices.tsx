@@ -12,8 +12,23 @@ import type {
   VendorPurchaseInvoiceSummary,
 } from '@inventory-platform/types';
 import styles from './dashboard.vendor-invoices.module.css';
-import { PaginationBar, isVendorReturnEnabled } from '@inventory-platform/ui';
+import {
+  PaginationBar,
+  isVendorReturnEnabled,
+  HistoryListSummary,
+  historyRecordListStyles,
+} from '@inventory-platform/ui';
+import type { HistoryFilters } from '@inventory-platform/ui';
+import {
+  hasActiveHistoryFilters,
+  isDateInRange,
+  buildVendorInvoiceSearchQuery,
+  paginateLocal,
+  matchesRegexField,
+} from '@inventory-platform/ui';
 import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/store';
+
+const recordStyles = historyRecordListStyles;
 
 export function meta() {
   return [
@@ -241,10 +256,14 @@ function InvoiceExpandedBody({
 
 export type VendorInvoicesPageProps = {
   embedded?: boolean;
+  filters?: HistoryFilters;
 };
+
+const FILTER_FETCH_SIZE = 100;
 
 export default function VendorInvoicesPage({
   embedded = false,
+  filters,
 }: VendorInvoicesPageProps) {
   const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
   const fetchCapabilities = useShopCapabilitiesStore((s) => s.fetchCapabilities);
@@ -257,6 +276,10 @@ export default function VendorInvoicesPage({
   const [size] = useState(20);
   const [searchInput, setSearchInput] = useState('');
   const [listQuery, setListQuery] = useState('');
+  const filtering =
+    filters != null && hasActiveHistoryFilters(filters, 'purchaseHistory');
+  const [filterPage, setFilterPage] = useState(1);
+  const embeddedPageSize = 20;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalPages, setTotalPages] = useState(0);
@@ -276,28 +299,72 @@ export default function VendorInvoicesPage({
   const [inventoryWarningByInvoice, setInventoryWarningByInvoice] = useState<
     Record<string, string>
   >({});
+  const [filteredTotal, setFilteredTotal] = useState(0);
+  const [totalItems, setTotalItems] = useState(0);
+
+  useEffect(() => {
+    setFilterPage(1);
+    setPage(0);
+  }, [filters]);
 
   const loadList = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await inventoryApi.listVendorPurchaseInvoices(
-        page,
-        size,
-        listQuery || undefined
-      );
-      setInvoices(res.invoices ?? []);
-      setTotalPages(res.page?.totalPages ?? 0);
+      if (filtering && filters) {
+        const q = buildVendorInvoiceSearchQuery(filters);
+        const res = await inventoryApi.listVendorPurchaseInvoices(
+          0,
+          FILTER_FETCH_SIZE,
+          q
+        );
+        let rows = res.invoices ?? [];
+        rows = rows.filter((inv) =>
+          isDateInRange(inv.invoiceDate, filters.dateFrom, filters.dateTo)
+        );
+        rows = rows.filter((inv) =>
+          matchesRegexField(filters.invoiceNo, inv.invoiceNo)
+        );
+        rows = rows.filter((inv) =>
+          matchesRegexField(filters.vendor, vendorDisplay(inv))
+        );
+        const paged = paginateLocal(rows, filterPage, embeddedPageSize);
+        setFilteredTotal(paged.total);
+        setInvoices(paged.slice);
+        setTotalPages(paged.totalPages);
+        setTotalItems(paged.total);
+      } else if (embedded) {
+        const res = await inventoryApi.listVendorPurchaseInvoices(
+          page,
+          embeddedPageSize,
+          listQuery || undefined
+        );
+        setInvoices(res.invoices ?? []);
+        setTotalPages(res.page?.totalPages ?? 0);
+        setTotalItems(res.page?.totalItems ?? 0);
+        setFilteredTotal(0);
+      } else {
+        const res = await inventoryApi.listVendorPurchaseInvoices(
+          page,
+          size,
+          listQuery || undefined
+        );
+        setInvoices(res.invoices ?? []);
+        setTotalPages(res.page?.totalPages ?? 0);
+        setTotalItems(res.page?.totalItems ?? 0);
+        setFilteredTotal(0);
+      }
     } catch (e) {
       setError(
         e instanceof Error ? e.message : 'Failed to load vendor invoices'
       );
       setInvoices([]);
       setTotalPages(0);
+      setTotalItems(0);
     } finally {
       setLoading(false);
     }
-  }, [page, size, listQuery]);
+  }, [embedded, filterPage, filtering, filters, listQuery, page, size]);
 
   useEffect(() => {
     void fetchCapabilities();
@@ -309,7 +376,7 @@ export default function VendorInvoicesPage({
 
   useEffect(() => {
     setExpandedId(null);
-  }, [page]);
+  }, [page, filterPage]);
 
   const runSearch = useCallback(() => {
     const q = searchInput.trim();
@@ -430,7 +497,7 @@ export default function VendorInvoicesPage({
   };
 
   return (
-    <div className={styles.page}>
+    <div className={embedded ? recordStyles.container : styles.page}>
       {!embedded ? (
         <header className={styles.hero}>
           <h1 className={styles.heroTitle}>Vendor purchase invoices</h1>
@@ -447,18 +514,7 @@ export default function VendorInvoicesPage({
             ) : null}
           </p>
         </header>
-      ) : (
-        <p className={styles.heroSubtitle} style={{ marginBottom: '1rem' }}>
-          Supplier bills (stock‑in).
-          {vendorReturnEnabled ? (
-            <>
-              {' '}
-              To return stock, use the <strong>Return to vendor</strong> tab here in
-              History.
-            </>
-          ) : null}
-        </p>
-      )}
+      ) : null}
 
       {error && (
         <div className={styles.alertError} role="alert">
@@ -466,46 +522,136 @@ export default function VendorInvoicesPage({
         </div>
       )}
 
-      <div className={styles.surface}>
-        <div className={styles.searchBar}>
-          <input
-            type="search"
-            className={styles.searchInput}
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') runSearch();
-            }}
-            placeholder="Product, barcode, invoice no, or vendor"
-            aria-label="Search invoices by product, barcode, invoice number, or vendor name"
-          />
-          <button type="button" className={styles.searchBtn} onClick={runSearch}>
-            Search
-          </button>
-          {listQuery ? (
-            <button
-              type="button"
-              className={styles.searchBtnSecondary}
-              onClick={clearSearch}
-            >
-              Clear
+      <div className={embedded ? undefined : styles.surface}>
+        {!embedded && (
+          <div className={styles.searchBar}>
+            <input
+              type="search"
+              className={styles.searchInput}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') runSearch();
+              }}
+              placeholder="Product, barcode, invoice no, or vendor"
+              aria-label="Search invoices by product, barcode, invoice number, or vendor name"
+            />
+            <button type="button" className={styles.searchBtn} onClick={runSearch}>
+              Search
             </button>
-          ) : null}
-          <p className={styles.searchHint}>
-            Same pattern is tried against invoice number, vendor name, and each line’s
-            product name and barcode (case-insensitive). Examples:{' '}
-            <code>paracetamol|dolo</code>, <code>INV-712</code>, <code>^HIMP</code>.
-            Invalid patterns return an error from the server.
-          </p>
-        </div>
+            {listQuery ? (
+              <button
+                type="button"
+                className={styles.searchBtnSecondary}
+                onClick={clearSearch}
+              >
+                Clear
+              </button>
+            ) : null}
+            <p className={styles.searchHint}>
+              Same pattern is tried against invoice number, vendor name, and each line’s
+              product name and barcode (case-insensitive). Examples:{' '}
+              <code>paracetamol|dolo</code>, <code>INV-712</code>, <code>^HIMP</code>.
+              Invalid patterns return an error from the server.
+            </p>
+          </div>
+        )}
         {loading ? (
-          <div className={styles.stateMuted}>Loading…</div>
+          <div className={embedded ? recordStyles.loading : styles.stateMuted}>
+            Loading…
+          </div>
         ) : invoices.length === 0 ? (
-          <div className={styles.stateMuted}>
-            {listQuery
+          <div className={embedded ? recordStyles.emptyState : styles.stateMuted}>
+            {filtering || listQuery
               ? 'No invoices match this search. Try a different pattern or clear the filter.'
               : 'No vendor invoices yet. When you register stock with invoice details, they appear here.'}
           </div>
+        ) : embedded ? (
+          <>
+            <HistoryListSummary
+              page={filtering ? filterPage : page + 1}
+              limit={embeddedPageSize}
+              total={filtering ? filteredTotal : totalItems}
+              filtered={filtering}
+              label="purchases"
+            />
+            <div className={recordStyles.list}>
+              {invoices.map((inv) => {
+                const isOpen = expandedId === inv.id;
+                const detail = detailsById[inv.id];
+                const rowBusy = fetchingId === inv.id;
+                const err = rowError[inv.id];
+
+                return (
+                  <div key={inv.id} className={recordStyles.recordCard}>
+                    <div className={recordStyles.recordHeader}>
+                      <div>
+                        <strong>Invoice:</strong> {inv.invoiceNo}
+                        {inv.synthetic ? (
+                          <span className={styles.badge}> Auto</span>
+                        ) : null}
+                      </div>
+                      <div className={recordStyles.recordActions}>
+                        <div>
+                          <strong>Date:</strong> {formatDateShort(inv.invoiceDate)}
+                        </div>
+                        <button
+                          type="button"
+                          className={recordStyles.expandBtn}
+                          onClick={() => toggleExpanded(inv)}
+                          aria-expanded={isOpen}
+                        >
+                          {isOpen ? 'Hide details' : 'View details'}
+                        </button>
+                      </div>
+                    </div>
+                    <div className={recordStyles.recordDetails}>
+                      <div>
+                        <strong>Vendor:</strong> {vendorDisplay(inv)}
+                      </div>
+                      <div>
+                        <strong>Lines:</strong> {inv.lineCount}
+                      </div>
+                      <div>
+                        <strong>Total:</strong> {formatMoney(inv.invoiceTotal)}
+                      </div>
+                    </div>
+                    {isOpen ? (
+                      <div className={recordStyles.breakdownWrap}>
+                        {rowBusy && !detail ? (
+                          <div className={styles.panelLoading}>Loading details…</div>
+                        ) : null}
+                        {err ? (
+                          <div className={styles.panelError} role="alert">
+                            {err}
+                          </div>
+                        ) : null}
+                        {detail ? (
+                          <InvoiceExpandedBody
+                            detail={detail}
+                            inventoryById={inventoryById}
+                            inventoryLoading={
+                              inventoryLoadingByInvoice[inv.id] === true
+                            }
+                            inventoryWarning={inventoryWarningByInvoice[inv.id]}
+                          />
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+            <PaginationBar
+              page={filtering ? filterPage - 1 : page}
+              totalPages={totalPages}
+              onPageChange={(p) => {
+                if (filtering) setFilterPage(p + 1);
+                else setPage(p);
+              }}
+              aria-label="Invoice pages"
+            />
+          </>
         ) : (
           <>
             <div className={styles.tableScroll}>
@@ -634,9 +780,12 @@ export default function VendorInvoicesPage({
             </div>
 
             <PaginationBar
-              page={page}
+              page={filtering ? filterPage - 1 : page}
               totalPages={totalPages}
-              onPageChange={setPage}
+              onPageChange={(p) => {
+                if (filtering) setFilterPage(p + 1);
+                else setPage(p);
+              }}
               aria-label="Invoice pages"
             />
           </>

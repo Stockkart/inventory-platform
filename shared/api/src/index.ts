@@ -12,6 +12,7 @@ export * from './lib/events';
 export * from './lib/shops';
 export * from './lib/verticals';
 export * from './lib/capabilities';
+export * from './lib/shopAccess';
 export * from './lib/menu';
 export * from './lib/sell-catalog';
 export * from './lib/invitations';

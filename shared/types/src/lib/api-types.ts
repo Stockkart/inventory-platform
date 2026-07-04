@@ -691,10 +691,7 @@ export interface BulkCreateInventoryItem {
   /** Core expiry (omit when schema stores expiry in verticalFields). */
   expiryDate?: string;
   reminderAt?: string;
-  customReminders?: Array<{
-    daysBefore: number;
-    message: string;
-  }> | null;
+  customReminders?: CustomReminderInput[] | null;
   hsn?: string | null;
   sac?: string | null;
   batchNo?: string | null;
@@ -1406,6 +1403,8 @@ export interface CreateCreditEntryDto {
 export interface AddToCartDto {
   businessType: string;
   items: CheckoutItem[];
+  purchaseId?: string;
+  createNewQuotation?: boolean;
   customerName?: string;
   customerAddress?: string;
   customerPhone?: string;
@@ -1415,6 +1414,36 @@ export interface AddToCartDto {
   customerPan?: string;
   /** Optional link to a registered StockKart user for this party. */
   customerUserId?: string;
+}
+
+export interface CreateQuotationDto {
+  businessType: string;
+  customerName?: string;
+  customerAddress?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  customerGstin?: string;
+  customerDlNo?: string;
+  customerPan?: string;
+  customerUserId?: string;
+}
+
+export interface QuotationSummary {
+  purchaseId: string;
+  status: string;
+  customerId?: string | null;
+  customerName: string;
+  customerPhone?: string | null;
+  /** Daily order token (cafe). */
+  tokenNo?: string | null;
+  itemCount: number;
+  grandTotal: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface QuotationListResponse {
+  quotations: QuotationSummary[];
 }
 
 export interface UpdateCartStatusDto {
@@ -1502,6 +1531,32 @@ export interface SearchPurchasesResponse {
   limit: number;
   total: number;
   totalPages: number;
+}
+
+export interface CustomerProductSaleEntry {
+  soldAt: string;
+  invoiceNo: string;
+  purchaseId: string;
+  quantity: number;
+  priceToRetail: number;
+  lineTotal: number;
+}
+
+export interface CustomerProductHistoryGroup {
+  lastSale: CustomerProductSaleEntry | null;
+  history: CustomerProductSaleEntry[];
+}
+
+export interface CustomerProductHistoryResponse {
+  bySellableRef: Record<string, CustomerProductHistoryGroup>;
+}
+
+export interface GetCustomerProductHistoryParams {
+  customerId?: string;
+  customerPhone?: string;
+  sellableRefs: string[];
+  limit?: number;
+  excludePurchaseId?: string;
 }
 
 // Refund types
@@ -2015,6 +2070,41 @@ export interface AssignPlanRequest {
   paymentMethod?: string;
 }
 
+export interface PaymentConfigResponse {
+  provider: string;
+  publicKey: string | null;
+}
+
+export interface PlanCheckoutResponse {
+  orderId: string;
+  provider: string;
+  amount: number;
+  currency: string;
+  planName: string;
+  razorpay?: {
+    keyId: string;
+    orderId: string;
+  };
+}
+
+export interface CreatePlanCheckoutRequest {
+  planId: string;
+  durationMonths?: number;
+}
+
+export interface VerifyPlanPaymentRequest {
+  orderId: string;
+  razorpayPaymentId: string;
+  razorpayOrderId: string;
+  razorpaySignature: string;
+}
+
+export interface VerifyPlanPaymentResponse {
+  success: boolean;
+  orderId: string;
+  plan: PlanResponse | null;
+}
+
 export interface PlanTransactionResponse {
   id: string;
   shopId: string;
@@ -2023,6 +2113,8 @@ export interface PlanTransactionResponse {
   amount: number;
   durationMonths: number;
   paymentMethod: string;
+  provider?: string | null;
+  providerPaymentId?: string | null;
   createdAt: string;
 }
 

@@ -42,6 +42,7 @@ export default [
     route('invitations', './routes/dashboard.invitations.tsx'),
     route('my-invitations', './routes/dashboard.my-invitations.tsx'),
     route('shop-users', './routes/dashboard.shop-users.tsx'),
+    route('access-control', './routes/dashboard.access-control.tsx'),
     route('join-requests', './routes/dashboard.join-requests.tsx'),
     route('history', './routes/dashboard.history.tsx'),
     route(

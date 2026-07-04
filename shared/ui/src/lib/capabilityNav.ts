@@ -1,6 +1,7 @@
-import type { ShopUiCapabilities } from '@inventory-platform/types';
+import type { ShopUiCapabilities, ShopAccess } from '@inventory-platform/types';
 import type { DashboardMenuGroup, DashboardMenuItem } from './dashboardNavConfig';
 import { getDashboardMenuGroupsForRole } from './dashboardNavConfig';
+import { filterDashboardMenuGroupsByAccess } from './accessNav';
 
 const NAV_ICONS: Record<string, string> = {
   'product-registration': '📦',
@@ -83,7 +84,8 @@ export function resolveSellPath(
 
 export function getDashboardMenuGroupsWithCapabilities(
   role: string | undefined,
-  capabilities: ShopUiCapabilities | null | undefined
+  capabilities: ShopUiCapabilities | null | undefined,
+  access?: ShopAccess | null
 ): DashboardMenuGroup[] {
   const base = getDashboardMenuGroupsForRole(role);
 
@@ -109,9 +111,15 @@ export function getDashboardMenuGroupsWithCapabilities(
         (item) =>
           !SKU_ONLY_PRODUCT_PATHS.has(item.path) && !capPaths.has(item.path)
       );
-      return { ...group, items: [...capItems, ...kept] };
+      return {
+        ...group,
+        items: [...capItems, ...kept],
+      };
     });
   }
 
-  return filterReturnsGroup(groups, capabilities);
+  return filterDashboardMenuGroupsByAccess(
+    filterReturnsGroup(groups, capabilities),
+    access
+  );
 }
