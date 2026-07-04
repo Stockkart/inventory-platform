@@ -9,7 +9,7 @@ Phase 0 scaffolds live here. **`product` is not scaffolded yet** — it conflict
 | `credit` | Scaffold ready |
 | `plan` | Scaffold ready |
 | `pricing` | Scaffold ready |
-| `reminders` | Scaffold ready |
+| `reminders` | Phase 2e — migrated (reminders + inventory-alert) |
 | `taxation` | Scaffold ready |
 | `user` | Scaffold ready |
 | `notifications` | Scaffold ready |

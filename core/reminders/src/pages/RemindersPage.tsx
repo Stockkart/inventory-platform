@@ -1,60 +1,97 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router';
-import { remindersApi } from '@inventory-platform/api';
 import type {
-  Reminder,
-  ReminderType,
   CreateReminderDto,
-  UpdateReminderDto,
-  ReminderDetail,
+  Reminder,
   ReminderInventorySummary,
-  InventoryExpiryBuckets,
+  ReminderType,
+  UpdateReminderDto,
 } from '@inventory-platform/types';
 import {
-  ReminderForm,
   InventoryAlertDetails,
   PaginationBar,
+  ReminderForm,
 } from '@inventory-platform/ui';
-import styles from './dashboard.reminders.module.css';
-import { useNotify } from '@inventory-platform/store';
-
-export function meta() {
-  return [
-    { title: 'Reminders - StockKart' },
-    { name: 'description', content: 'Manage your inventory reminders' },
-  ];
-}
+import { useNotify } from '@inventory-platform/session';
+import {
+  useCreateReminderMutation,
+  useDeleteReminderMutation,
+  useExpiryBucketsQuery,
+  useReminderDetailQuery,
+  useReminderDetailsQuery,
+  useSnoozeReminderMutation,
+  useUpdateReminderMutation,
+} from '../queries/hooks';
+import styles from './reminders.module.css';
 
 const SNOOZE_OPTIONS = [1, 2, 3, 5, 7, 14, 30];
 
-export default function RemindersPage() {
+export function RemindersPage() {
   const location = useLocation();
   const fromNotification = location.state?.fromNotification === true;
   const focusReminderId = location.state?.reminderId as string | undefined;
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
-  const [totalPages, setTotalPages] = useState(1);
-
-  const [reminders, setReminders] = useState<ReminderDetail[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'PENDING' | 'COMPLETED'>('all');
   const [typeFilter, setTypeFilter] = useState<'all' | ReminderType>('all');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingReminderId, setDeletingReminderId] = useState<string | null>(
     null
   );
   const [snoozingReminderId, setSnoozingReminderId] = useState<string | null>(
     null
   );
-  const [customSnoozeDays, setCustomSnoozeDays] = useState<number | ''>(''); // 👈 for manual days
+  const [customSnoozeDays, setCustomSnoozeDays] = useState<number | ''>('');
   const [selectedInventory, setSelectedInventory] =
     useState<ReminderInventorySummary | null>(null);
-  const [expiryBuckets, setExpiryBuckets] =
-    useState<InventoryExpiryBuckets | null>(null);
   const { error: notifyError } = useNotify;
+
+  const listQuery = useReminderDetailsQuery(page, size, {
+    enabled: !focusReminderId,
+  });
+  const focusQuery = useReminderDetailQuery(focusReminderId, {
+    enabled: Boolean(focusReminderId),
+  });
+  const { data: expiryBuckets } = useExpiryBucketsQuery(
+    { expiringSoonDays: 30 },
+    { enabled: !fromNotification }
+  );
+
+  const reminders = focusReminderId
+    ? focusQuery.data
+      ? [focusQuery.data]
+      : []
+    : (listQuery.data?.data ?? []);
+  const totalPages = focusReminderId
+    ? 1
+    : (listQuery.data?.meta.totalPages ?? 1);
+  const isLoading = focusReminderId ? focusQuery.isLoading : listQuery.isLoading;
+
+  const createMutation = useCreateReminderMutation({
+    onError: (err) =>
+      notifyError(err instanceof Error ? err.message : 'Failed to create reminder'),
+  });
+  const updateMutation = useUpdateReminderMutation({
+    onError: (err) =>
+      notifyError(err instanceof Error ? err.message : 'Failed to update reminder'),
+  });
+  const deleteMutation = useDeleteReminderMutation({
+    onError: (err) =>
+      notifyError(err instanceof Error ? err.message : 'Failed to delete reminder'),
+  });
+  const snoozeMutation = useSnoozeReminderMutation({
+    onError: (err) =>
+      notifyError(err instanceof Error ? err.message : 'Failed to snooze reminder'),
+  });
+
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+
+  useEffect(() => {
+    if (focusReminderId) {
+      window.history.replaceState({}, '', '/dashboard/reminders');
+    }
+  }, [focusReminderId]);
 
   const handleSnooze = async (reminderId: string, snoozeDays: number) => {
     if (!snoozeDays || snoozeDays <= 0) {
@@ -63,147 +100,53 @@ export default function RemindersPage() {
     }
 
     setSnoozingReminderId(reminderId);
-    setError(null);
     try {
-      await remindersApi.snooze(reminderId, snoozeDays);
-      await fetchReminders();
+      await snoozeMutation.mutateAsync({ id: reminderId, snoozeDays });
       setCustomSnoozeDays('');
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to snooze reminder';
-      notifyError(errorMessage);
     } finally {
       setSnoozingReminderId(null);
     }
   };
 
-  const fetchReminders = async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      if (focusReminderId) {
-        const reminder = await remindersApi.getDetailById(focusReminderId);
-
-        setReminders([reminder]);
-        setTotalPages(1);
-      } else {
-        const res = await remindersApi.getDetails(page, size);
-
-        setReminders(res.data);
-        setTotalPages(res.meta.totalPages);
-      }
-    } catch (err) {
-      notifyError(
-        err instanceof Error ? err.message : 'Failed to load reminders'
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchReminders();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, size]);
-
-  useEffect(() => {
-    if (fromNotification) return;
-    let cancelled = false;
-    remindersApi
-      .getExpiryBuckets(30)
-      .then((buckets) => {
-        if (!cancelled) setExpiryBuckets(buckets);
-      })
-      .catch(() => {
-        if (!cancelled) setExpiryBuckets(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [fromNotification]);
-
-  useEffect(() => {
-    if (focusReminderId) {
-      window.history.replaceState({}, '', '/dashboard/reminders');
-    }
-  }, [focusReminderId]);
-
-  const handleCreate = async (
-    data: Parameters<typeof remindersApi.create>[0]
-  ) => {
-    setIsSubmitting(true);
-    try {
-      await remindersApi.create(data);
-      await fetchReminders();
-      setShowCreateForm(false);
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to create reminder';
-      notifyError(errorMessage);
-      throw err;
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleUpdate = async (
-    data: Parameters<typeof remindersApi.update>[1]
-  ) => {
-    if (!editingReminder) return;
-
-    setIsSubmitting(true);
-    try {
-      await remindersApi.update(editingReminder.id, data);
-      await fetchReminders();
-      setEditingReminder(null);
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to update reminder';
-      notifyError(errorMessage);
-      throw err;
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const handleSubmit = async (data: CreateReminderDto | UpdateReminderDto) => {
     if (editingReminder) {
-      await handleUpdate(data as UpdateReminderDto);
+      await updateMutation.mutateAsync({
+        id: editingReminder.id,
+        data: data as UpdateReminderDto,
+      });
+      setEditingReminder(null);
     } else {
-      await handleCreate(data as CreateReminderDto);
+      await createMutation.mutateAsync(data as CreateReminderDto);
+      setShowCreateForm(false);
     }
-  };
-
-  const handleDeleteClick = (reminderId: string) => {
-    setDeletingReminderId(reminderId);
   };
 
   const handleDeleteConfirm = async () => {
     if (!deletingReminderId) return;
 
     try {
-      await remindersApi.delete(deletingReminderId);
-      await fetchReminders();
+      await deleteMutation.mutateAsync(deletingReminderId);
       setDeletingReminderId(null);
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to delete reminder';
-      notifyError(errorMessage);
+    } catch {
       setDeletingReminderId(null);
     }
   };
 
-  const handleDeleteCancel = () => {
-    setDeletingReminderId(null);
-  };
+  const filteredReminders = useMemo(
+    () =>
+      reminders.filter((reminder) => {
+        const statusMatch = filter === 'all' || reminder.status === filter;
+        const typeMatch = typeFilter === 'all' || reminder.type === typeFilter;
+        return statusMatch && typeMatch;
+      }),
+    [reminders, filter, typeFilter]
+  );
 
   const getDaysUntilReminder = (reminderAt: string): number => {
     const now = new Date();
     const reminderDate = new Date(reminderAt);
     const diffTime = reminderDate.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
   const getPriority = (daysLeft: number): 'high' | 'medium' | 'low' => {
@@ -212,12 +155,6 @@ export default function RemindersPage() {
     if (daysLeft <= 7) return 'medium';
     return 'low';
   };
-
-  const filteredReminders = reminders.filter((reminder) => {
-    const statusMatch = filter === 'all' || reminder.status === filter;
-    const typeMatch = typeFilter === 'all' || reminder.type === typeFilter;
-    return statusMatch && typeMatch;
-  });
 
   const formatDate = (dateString: string): string => {
     try {
@@ -287,18 +224,6 @@ export default function RemindersPage() {
         </div>
       )}
 
-      {error && (
-        <div className={styles.errorMessage}>
-          {error}
-          <button
-            className={styles.dismissButton}
-            onClick={() => setError(null)}
-          >
-            ×
-          </button>
-        </div>
-      )}
-
       {!fromNotification && (showCreateForm || editingReminder) && (
         <div className={styles.modal}>
           <div className={styles.modalContent}>
@@ -334,7 +259,7 @@ export default function RemindersPage() {
               <h3>Delete Reminder</h3>
               <button
                 className={styles.closeButton}
-                onClick={handleDeleteCancel}
+                onClick={() => setDeletingReminderId(null)}
               >
                 ×
               </button>
@@ -347,13 +272,13 @@ export default function RemindersPage() {
               <div className={styles.confirmActions}>
                 <button
                   className={styles.cancelButton}
-                  onClick={handleDeleteCancel}
+                  onClick={() => setDeletingReminderId(null)}
                 >
                   Cancel
                 </button>
                 <button
                   className={styles.confirmButton}
-                  onClick={handleDeleteConfirm}
+                  onClick={() => void handleDeleteConfirm()}
                 >
                   Delete
                 </button>
@@ -515,10 +440,10 @@ export default function RemindersPage() {
                           {daysLeft < 0
                             ? `${Math.abs(daysLeft)} days overdue`
                             : daysLeft === 0
-                            ? 'Due today'
-                            : `${daysLeft} ${
-                                daysLeft === 1 ? 'day' : 'days'
-                              } left`}
+                              ? 'Due today'
+                              : `${daysLeft} ${
+                                  daysLeft === 1 ? 'day' : 'days'
+                                } left`}
                         </div>
                       </div>
                     </div>
@@ -533,7 +458,9 @@ export default function RemindersPage() {
                                 type="button"
                                 className={styles.snoozeChip}
                                 disabled={snoozingReminderId === reminder.id}
-                                onClick={() => handleSnooze(reminder.id, days)}
+                                onClick={() =>
+                                  void handleSnooze(reminder.id, days)
+                                }
                               >
                                 {days}d
                               </button>
@@ -565,7 +492,7 @@ export default function RemindersPage() {
                               }
                               onClick={() =>
                                 customSnoozeDays !== '' &&
-                                handleSnooze(
+                                void handleSnooze(
                                   reminder.id,
                                   Number(customSnoozeDays)
                                 )
@@ -578,7 +505,7 @@ export default function RemindersPage() {
                             <button
                               type="button"
                               className={styles.actionBtnDanger}
-                              onClick={() => handleDeleteClick(reminder.id)}
+                              onClick={() => setDeletingReminderId(reminder.id)}
                             >
                               Delete
                             </button>
@@ -606,7 +533,7 @@ export default function RemindersPage() {
                             </button>
                             <button
                               className={styles.actionBtnDanger}
-                              onClick={() => handleDeleteClick(reminder.id)}
+                              onClick={() => setDeletingReminderId(reminder.id)}
                             >
                               Delete
                             </button>
@@ -649,7 +576,7 @@ export default function RemindersPage() {
       {selectedInventory && (
         <InventoryAlertDetails
           open={selectedInventory !== null}
-          item={selectedInventory as any}
+          item={selectedInventory as never}
           onClose={() => setSelectedInventory(null)}
         />
       )}

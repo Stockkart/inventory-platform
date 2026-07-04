@@ -6,7 +6,6 @@ export * from './lib/auth';
 export * from './lib/products';
 export * from './lib/orders';
 export * from './lib/alerts';
-export * from './lib/reminders';
 export * from './lib/events';
 export * from './lib/shops';
 export * from './lib/verticals';

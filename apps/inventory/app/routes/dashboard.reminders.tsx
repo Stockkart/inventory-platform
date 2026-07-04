@@ -1,1 +1,1 @@
-export { RemindersPage as default, remindersMeta as meta } from '@inventory-platform/dashboard';
+export { default, meta } from '@inventory-platform/reminders/routes/index';

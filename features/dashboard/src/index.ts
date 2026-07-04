@@ -5,13 +5,11 @@ export { default as ShopsPage } from './lib/routes/dashboard.shops';
 export { default as ProfilePage } from './lib/routes/dashboard.profile';
 export { default as CustomersPage } from './lib/routes/dashboard.customers';
 export { default as VendorsPage } from './lib/routes/dashboard.vendors';
-export { default as InventoryAlertPage } from './lib/routes/dashboard.inventory-alert';
 export { default as PaymentBillingPage } from './lib/routes/dashboard.payment-billing';
 export { default as ProductRegistrationPage } from './lib/routes/dashboard.product-registration';
 export { default as ImportPage } from './lib/routes/dashboard.import';
 export { default as ProductSearchPage } from './lib/routes/dashboard.product-search';
 export { default as PricingPage } from './lib/routes/dashboard.pricing';
-export { default as RemindersPage } from './lib/routes/dashboard.reminders';
 export { default as ScanSellPage } from './lib/routes/dashboard.scan-sell';
 export {
   default as MenuSellPage,
@@ -43,13 +41,11 @@ export { default as WhatsAppMarketingPage } from './lib/routes/dashboard.whatsap
 
 // Re-export meta functions
 export { meta as dashboardMeta } from './lib/routes/dashboard';
-export { meta as inventoryAlertMeta } from './lib/routes/dashboard.inventory-alert';
 export { meta as paymentBillingMeta } from './lib/routes/dashboard.payment-billing';
 export { meta as productRegistrationMeta } from './lib/routes/dashboard.product-registration';
 export { meta as importMeta } from './lib/routes/dashboard.import';
 export { meta as productSearchMeta } from './lib/routes/dashboard.product-search';
 export { meta as pricingMeta } from './lib/routes/dashboard.pricing';
-export { meta as remindersMeta } from './lib/routes/dashboard.reminders';
 export { meta as scanSellMeta } from './lib/routes/dashboard.scan-sell';
 export { meta as menuSellMeta } from './lib/routes/dashboard.menu-sell';
 export { meta as menuAdminMeta } from './lib/routes/dashboard.menu';

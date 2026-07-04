@@ -1,105 +1,79 @@
-import { useEffect, useState } from 'react';
-import styles from './dashboard.inventory-alert.module.css';
-import { inventoryApi, resolveInventoryDocumentId } from '@inventory-platform/api';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation } from 'react-router';
 import type { InventoryItem } from '@inventory-platform/types';
 import { InventoryAlertDetails, PaginationBar } from '@inventory-platform/ui';
 import { useAuthStore, useShopAccessStore } from '@inventory-platform/store';
-import { useLocation } from 'react-router';
+import { useNotify } from '@inventory-platform/session';
+import { resolveInventoryDocumentId } from '../api/inventory-alert.api';
+import { mapLowStockItems, type LowStockAlertRow } from '../model/inventory-alert-utils';
+import {
+  useInventoryItemQuery,
+  useLowStockAlertsQuery,
+  useUpdateThresholdMutation,
+} from '../queries/hooks';
+import styles from './inventory-alert.module.css';
 
-export function meta() {
-  return [
-    { title: 'Inventory Low Alert - StockKart' },
-    { name: 'description', content: 'Monitor products with low stock levels' },
-  ];
-}
-
-export default function InventoryAlertPage() {
+export function InventoryAlertPage() {
   const location = useLocation();
   const { user } = useAuthStore();
   const productSearchAccess = useShopAccessStore((s) =>
     user?.shopId ? s.byShopId[user.shopId]?.productSearch : undefined
   );
-  const inventoryId =
+  const inventoryIdFromNotification =
     location.state?.fromNotification === true
-      ? location.state?.inventoryId
+      ? (location.state?.inventoryId as string | undefined)
       : undefined;
-  const [alerts, setAlerts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
-  const [totalPages, setTotalPages] = useState(0);
-  const [totalItems, setTotalItems] = useState(0);
-  const [selected, setSelected] = useState<any | null>(null);
+  const [detailItemId, setDetailItemId] = useState<string | null>(null);
+  const [detailFallback, setDetailFallback] = useState<InventoryItem | null>(
+    null
+  );
   const [thresholdModal, setThresholdModal] = useState<{
     open: boolean;
-    item: any | null;
+    item: InventoryItem | null;
     threshold: number;
   }>({
     open: false,
     item: null,
     threshold: 10,
   });
-  const [updating, setUpdating] = useState(false);
-  const [detailLoading, setDetailLoading] = useState(false);
+  const { error: notifyError } = useNotify;
 
-  const openInventoryDetails = async (raw: InventoryItem) => {
-    const inventoryId = resolveInventoryDocumentId(raw);
-    if (!inventoryId) return;
-    setDetailLoading(true);
-    setSelected(raw);
-    try {
-      const full = await inventoryApi.getById(inventoryId);
-      setSelected(full);
-    } catch {
-      setSelected(raw);
-    } finally {
-      setDetailLoading(false);
-    }
+  const { data: lowStockData, isLoading } = useLowStockAlertsQuery(page, size);
+  const { data: detailItem, isLoading: detailLoading } = useInventoryItemQuery(
+    detailItemId,
+    { retry: false }
+  );
+  const updateThresholdMutation = useUpdateThresholdMutation({
+    onError: (err) =>
+      notifyError(
+        err instanceof Error ? err.message : 'Failed to update threshold'
+      ),
+  });
+
+  const alerts = useMemo(
+    () => mapLowStockItems(lowStockData?.data ?? []),
+    [lowStockData?.data]
+  );
+  const totalPages = lowStockData?.page?.totalPages ?? 0;
+  const totalItems = lowStockData?.page?.totalItems ?? alerts.length;
+  const selected = detailItem ?? detailFallback;
+
+  const openInventoryDetails = (raw: InventoryItem) => {
+    const id = resolveInventoryDocumentId(raw);
+    if (!id) return;
+    setDetailFallback(raw);
+    setDetailItemId(id);
   };
 
   useEffect(() => {
-    InventoryAlertLoad();
-  }, [page, size]);
+    if (!inventoryIdFromNotification || alerts.length === 0) return;
+    const found = alerts.find((a) => a.id === inventoryIdFromNotification);
+    if (found) openInventoryDetails(found.raw);
+  }, [inventoryIdFromNotification, alerts]);
 
-  useEffect(() => {
-    if (!inventoryId) return;
-
-    const found = alerts.find((a) => a.id === inventoryId);
-    if (found) void openInventoryDetails(found.raw);
-  }, [inventoryId, alerts]);
-
-  async function InventoryAlertLoad() {
-    setLoading(true);
-
-    try {
-      const res = await inventoryApi.getLowStock(page, size);
-
-      const items = res.data ?? [];
-
-      const mapped = items.map((item) => {
-        const current = item.currentCount ?? 0;
-        const threshold = item.thresholdCount ?? 10;
-
-        return {
-          id: item.id,
-          product: item.name ?? item.barcode ?? 'Unknown',
-          current,
-          threshold,
-          status: current <= threshold / 2 ? 'critical' : 'warning',
-
-          raw: item,
-        };
-      });
-
-      setAlerts(mapped);
-      setTotalPages(res.page?.totalPages ?? 0);
-      setTotalItems(res.page?.totalItems ?? items.length);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  if (loading) return <p>Loading…</p>;
+  if (isLoading) return <p>Loading…</p>;
 
   return (
     <div className={styles.page}>
@@ -120,9 +94,9 @@ export default function InventoryAlertPage() {
         </div>
 
         <div className={styles.alertsList}>
-          {alerts.map((alert, index) => (
+          {alerts.map((alert: LowStockAlertRow) => (
             <div
-              key={index}
+              key={alert.id}
               className={`${styles.alertCard} ${styles[alert.status]}`}
             >
               <div className={styles.alertIcon}>
@@ -183,7 +157,7 @@ export default function InventoryAlertPage() {
           page={page}
           totalPages={Math.max(totalPages, 1)}
           totalItems={totalItems}
-          disabled={loading}
+          disabled={isLoading}
           onPageChange={setPage}
           pageSize={size}
           pageSizeOptions={[10, 20, 50]}
@@ -197,18 +171,18 @@ export default function InventoryAlertPage() {
       <InventoryAlertDetails
         open={!!selected}
         item={selected}
-        onClose={() => setSelected(null)}
+        onClose={() => {
+          setDetailItemId(null);
+          setDetailFallback(null);
+        }}
         editable
         productSearchAccess={productSearchAccess}
         onUpdated={(updated) => {
-          setAlerts((prev) =>
-            prev.map((a) => (a.id === updated.id ? { ...a, raw: updated } : a))
-          );
-          setSelected(updated);
+          setDetailFallback(updated);
+          setDetailItemId(resolveInventoryDocumentId(updated));
         }}
       />
 
-      {/* Threshold Configuration Modal */}
       {thresholdModal.open && (
         <div
           className={styles.modalBackdrop}
@@ -258,10 +232,10 @@ export default function InventoryAlertPage() {
                   onChange={(e) =>
                     setThresholdModal({
                       ...thresholdModal,
-                      threshold: parseInt(e.target.value) || 1,
+                      threshold: parseInt(e.target.value, 10) || 1,
                     })
                   }
-                  disabled={updating}
+                  disabled={updateThresholdMutation.isPending}
                 />
               </div>
 
@@ -275,44 +249,34 @@ export default function InventoryAlertPage() {
                       threshold: 10,
                     })
                   }
-                  disabled={updating}
+                  disabled={updateThresholdMutation.isPending}
                 >
                   Cancel
                 </button>
                 <button
                   className={styles.primaryBtn}
-                  onClick={async () => {
-                    const inventoryId = resolveInventoryDocumentId(
-                      thresholdModal.item
-                    );
-                    if (!inventoryId) return;
+                  onClick={() => {
+                    const id = resolveInventoryDocumentId(thresholdModal.item);
+                    if (!id) return;
 
-                    setUpdating(true);
-                    try {
-                      await inventoryApi.updateThreshold(
-                        inventoryId,
-                        thresholdModal.threshold
-                      );
-                      // Reload the alerts to reflect the updated threshold
-                      await InventoryAlertLoad();
-                      setThresholdModal({
-                        open: false,
-                        item: null,
-                        threshold: 10,
+                    void updateThresholdMutation
+                      .mutateAsync({
+                        inventoryId: id,
+                        thresholdCount: thresholdModal.threshold,
+                      })
+                      .then(() => {
+                        setThresholdModal({
+                          open: false,
+                          item: null,
+                          threshold: 10,
+                        });
                       });
-                    } catch (error: any) {
-                      console.error('Failed to update threshold:', error);
-                      alert(
-                        error?.message ||
-                          'Failed to update threshold. Please try again.'
-                      );
-                    } finally {
-                      setUpdating(false);
-                    }
                   }}
-                  disabled={updating}
+                  disabled={updateThresholdMutation.isPending}
                 >
-                  {updating ? 'Updating...' : 'Update Threshold'}
+                  {updateThresholdMutation.isPending
+                    ? 'Updating...'
+                    : 'Update Threshold'}
                 </button>
               </div>
             </div>

@@ -11,9 +11,15 @@
     "forceConsistentCasingInFileNames": true,
     "lib": ["es2022", "dom"],
     "jsx": "react-jsx",
-    "types": ["node"],
+    "types": ["node", "vite/client"],
     "paths": {
-      "@inventory-platform/query": ["../../platform/query/src/index.ts"]
+      "@inventory-platform/api-client": ["../../platform/api-client/src/index.ts"],
+      "@inventory-platform/query": ["../../platform/query/src/index.ts"],
+      "@inventory-platform/routing": ["../../platform/routing/src/index.ts"],
+      "@inventory-platform/session": ["../../platform/session/src/index.ts"],
+      "@inventory-platform/store": ["../../shared/store/src/index.ts"],
+      "@inventory-platform/types": ["../../shared/types/src/index.ts"],
+      "@inventory-platform/ui": ["../../shared/ui/src/index.ts"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
@@ -25,7 +31,25 @@
   ],
   "references": [
     {
+      "path": "../../shared/types/tsconfig.lib.json"
+    },
+    {
       "path": "../../platform/query/tsconfig.lib.json"
+    },
+    {
+      "path": "../../platform/api-client/tsconfig.lib.json"
+    },
+    {
+      "path": "../../platform/routing/tsconfig.lib.json"
+    },
+    {
+      "path": "../../platform/session/tsconfig.lib.json"
+    },
+    {
+      "path": "../../shared/store/tsconfig.lib.json"
+    },
+    {
+      "path": "../../shared/ui/tsconfig.lib.json"
     }
   ]
 }

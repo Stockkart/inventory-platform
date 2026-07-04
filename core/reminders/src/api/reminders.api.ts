@@ -1,41 +1,51 @@
-import { apiClient } from './client';
-import { API_ENDPOINTS } from './endpoints';
+import { apiClient } from '@inventory-platform/api-client';
 import type {
   ApiResponse,
-  Reminder,
   CreateReminderDto,
-  UpdateReminderDto,
+  InventoryExpiryBuckets,
+  Reminder,
   ReminderDetail,
   ReminderDetailListResponse,
-  InventoryExpiryBuckets,
+  UpdateReminderDto,
 } from '@inventory-platform/types';
+import { REMINDERS_ENDPOINTS } from './endpoints';
 
 export interface RemindersListResponse {
   data: Reminder[];
 }
 
+export type ExpiryBucketsParams = {
+  expiringSoonDays?: number;
+};
+
+function toQuery(params: Record<string, unknown>): Record<string, string> {
+  const queryParams: Record<string, string> = {};
+  Object.entries(params).forEach(([key, value]) => {
+    if (value == null) return;
+    queryParams[key] = String(value);
+  });
+  return queryParams;
+}
+
 export const remindersApi = {
   getAll: async (page = 0, size = 10): Promise<Reminder[]> => {
     const response = await apiClient.get<ApiResponse<RemindersListResponse>>(
-      API_ENDPOINTS.REMINDERS.BASE,
-      {
-        page: String(page),
-        size: String(size),
-      }
+      REMINDERS_ENDPOINTS.BASE,
+      { page: String(page), size: String(size) }
     );
     return response.data.data;
   },
 
   getById: async (id: string): Promise<Reminder> => {
     const response = await apiClient.get<ApiResponse<Reminder>>(
-      API_ENDPOINTS.REMINDERS.BY_ID(id)
+      REMINDERS_ENDPOINTS.BY_ID(id)
     );
     return response.data;
   },
 
   create: async (data: CreateReminderDto): Promise<Reminder> => {
     const response = await apiClient.post<ApiResponse<Reminder>>(
-      API_ENDPOINTS.REMINDERS.BASE,
+      REMINDERS_ENDPOINTS.BASE,
       data
     );
     return response.data;
@@ -43,7 +53,7 @@ export const remindersApi = {
 
   update: async (id: string, data: UpdateReminderDto): Promise<Reminder> => {
     const response = await apiClient.put<ApiResponse<Reminder>>(
-      API_ENDPOINTS.REMINDERS.BY_ID(id),
+      REMINDERS_ENDPOINTS.BY_ID(id),
       data
     );
     return response.data;
@@ -51,14 +61,14 @@ export const remindersApi = {
 
   delete: async (id: string): Promise<number> => {
     const response = await apiClient.delete<ApiResponse<number>>(
-      API_ENDPOINTS.REMINDERS.BY_ID(id)
+      REMINDERS_ENDPOINTS.BY_ID(id)
     );
     return response.data;
   },
 
   snooze: async (id: string, snoozeDays: number): Promise<Reminder> => {
     const response = await apiClient.post<ApiResponse<Reminder>>(
-      API_ENDPOINTS.REMINDERS.SNOOZE(id),
+      REMINDERS_ENDPOINTS.SNOOZE(id),
       { snoozeDays }
     );
     return response.data;
@@ -68,33 +78,31 @@ export const remindersApi = {
     page = 0,
     size = 10
   ): Promise<ReminderDetailListResponse> => {
-    const response = await apiClient.get<
-      ApiResponse<ReminderDetailListResponse>
-    >(API_ENDPOINTS.REMINDERS.DETAILS, {
-      page: String(page),
-      size: String(size),
-    });
-
+    const response = await apiClient.get<ApiResponse<ReminderDetailListResponse>>(
+      REMINDERS_ENDPOINTS.DETAILS,
+      { page: String(page), size: String(size) }
+    );
     return response.data;
   },
 
   getDetailById: async (id: string): Promise<ReminderDetail> => {
     const response = await apiClient.get<ApiResponse<ReminderDetail>>(
-      API_ENDPOINTS.REMINDERS.DETAIL_BY_ID(id)
+      REMINDERS_ENDPOINTS.DETAIL_BY_ID(id)
     );
     return response.data;
   },
 
   getExpiryBuckets: async (
-    expiringSoonDays?: number
+    params: ExpiryBucketsParams = {}
   ): Promise<InventoryExpiryBuckets> => {
-    const params: Record<string, string> = {};
-    if (expiringSoonDays !== undefined && expiringSoonDays > 0) {
-      params.expiringSoonDays = String(expiringSoonDays);
-    }
     const response = await apiClient.get<ApiResponse<InventoryExpiryBuckets>>(
-      API_ENDPOINTS.REMINDERS.EXPIRY_BUCKETS,
-      params
+      REMINDERS_ENDPOINTS.EXPIRY_BUCKETS,
+      toQuery({
+        expiringSoonDays:
+          params.expiringSoonDays !== undefined && params.expiringSoonDays > 0
+            ? params.expiringSoonDays
+            : undefined,
+      })
     );
     return response.data;
   },
