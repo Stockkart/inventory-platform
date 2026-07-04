@@ -9,6 +9,11 @@ export {
   isCustomerReturnEnabled,
   isVendorReturnEnabled,
 } from './lib/capabilityNav';
+export {
+  useResolvedSellPath,
+  useDashboardVerticalPlugin,
+  VerticalPluginProvider,
+} from '@inventory-platform/routing';
 export { filterDashboardMenuGroupsByAccess, canAccessDashboardPath } from './lib/accessNav';
 export {
   DASHBOARD_MENU_GROUPS,

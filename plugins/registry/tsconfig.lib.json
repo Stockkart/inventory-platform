@@ -16,11 +16,11 @@
     }
   },
   "include": ["src/**/*.ts"],
-  "exclude": [
-    "src/**/*.spec.ts",
-    "src/**/*.test.ts"
-  ],
+  "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts"],
   "references": [
+    {
+      "path": "../cafe/tsconfig.lib.json"
+    },
     {
       "path": "../../platform/routing/tsconfig.lib.json"
     }

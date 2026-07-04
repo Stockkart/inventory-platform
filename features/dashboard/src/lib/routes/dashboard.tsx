@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { dashboardApi } from '@inventory-platform/api';
 import type { DashboardData } from '@inventory-platform/types';
+import { useResolvedSellPath } from '@inventory-platform/routing';
 import styles from './dashboard.module.css';
-import { useNotify } from '@inventory-platform/store';
+import { useAuthStore, useNotify, useShopCapabilitiesStore } from '@inventory-platform/store';
 
 export function meta() {
   return [
@@ -27,6 +28,11 @@ function formatNumber(value: number): string {
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
+  const shopCapabilities = useShopCapabilitiesStore((s) =>
+    activeShopId ? s.byShopId[activeShopId] : undefined
+  );
+  const sellPath = useResolvedSellPath(shopCapabilities ?? null);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(
     null
   );
@@ -147,7 +153,7 @@ export default function DashboardPage() {
             </button>
             <button
               className={styles.actionBtn}
-              onClick={() => navigate('/dashboard/scan-sell')}
+              onClick={() => navigate(sellPath)}
             >
               <span className={styles.actionIcon}>📱</span>
               <span>Scan & Sell</span>

@@ -136,6 +136,9 @@
       "path": "../../core/plan/tsconfig.lib.json"
     },
     {
+      "path": "../../plugins/cafe/tsconfig.lib.json"
+    },
+    {
       "path": "../../core/reminders/tsconfig.lib.json"
     },
     {

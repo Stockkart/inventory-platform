@@ -1,31 +1,29 @@
-import type { VerticalPlugin, VerticalPluginLoader } from '@inventory-platform/routing';
+import type { RouteModule } from '@inventory-platform/routing';
 
-/**
- * Register vertical plugins here. Each loader is dynamically imported so
- * unused vertical UI stays out of the main bundle.
- */
-const PLUGIN_LOADERS: Record<string, VerticalPluginLoader> = {
-  // cafe: () => import('@inventory-platform/plugin-cafe').then((m) => m.default),
-  // medical: () => import('@inventory-platform/plugin-medical').then((m) => m.default),
-};
+export type {
+  NavContribution,
+  NavContributionItem,
+  RouteModule,
+  VerticalPlugin,
+  VerticalPluginLoader,
+  VerticalPluginSellSurface,
+} from '@inventory-platform/routing';
 
-export function registerVerticalPluginLoader(
-  verticalId: string,
-  loader: VerticalPluginLoader
-): void {
-  PLUGIN_LOADERS[verticalId] = loader;
-}
+export {
+  registerVerticalPluginLoader,
+  loadVerticalPlugin,
+  getRegisteredVerticalIds,
+} from './plugin-loaders';
 
-export async function loadVerticalPlugin(
-  verticalId: string
-): Promise<VerticalPlugin | null> {
-  const loader = PLUGIN_LOADERS[verticalId];
-  if (!loader) {
-    return null;
+export async function loadVerticalPluginRoutes(
+  plugin: import('@inventory-platform/routing').VerticalPlugin
+): Promise<RouteModule[]> {
+  if (!plugin.loadRoutes) {
+    return [];
   }
-  return loader();
+  const result = await plugin.loadRoutes();
+  return Array.isArray(result.default) ? result.default : [result.default];
 }
 
-export function getRegisteredVerticalIds(): string[] {
-  return Object.keys(PLUGIN_LOADERS);
-}
+export { useVerticalPluginStore } from './useVerticalPluginStore';
+export { loadSellSurfaceComponent, resolveSellPath } from './sell-surface';

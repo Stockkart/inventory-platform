@@ -11,14 +11,15 @@
     ".": {
       "@inventory-platform/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
     }
   },
   "nx": {
     "tags": ["type:plugin", "scope:registry"]
   },
   "dependencies": {
-    "@inventory-platform/routing": "workspace:*"
+    "@inventory-platform/routing": "workspace:*",
+    "zustand": "^5.0.8"
   }
 }

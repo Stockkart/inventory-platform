@@ -11,16 +11,25 @@
     "forceConsistentCasingInFileNames": true,
     "lib": ["es2022", "dom"],
     "jsx": "react-jsx",
-    "types": ["node", "@nx/react/typings/cssmodule.d.ts", "vite/client"],
+    "types": ["node", "vite/client"],
     "paths": {
       "@inventory-platform/api": ["../../shared/api/src/index.ts"],
-      "@inventory-platform/api-client": [
-        "../../platform/api-client/src/index.ts"
+      "@inventory-platform/product/api": [
+        "../../core/product/src/api/index.ts"
       ],
-      "@inventory-platform/session": ["../../platform/session/src/index.ts"],
+      "@inventory-platform/product/pages/product-search.module.css": [
+        "../../core/product/src/pages/product-search.module.css"
+      ],
+      "@inventory-platform/product/pages/scan-sell.module.css": [
+        "../../core/product/src/pages/scan-sell.module.css"
+      ],
+      "@inventory-platform/routing": ["../../platform/routing/src/index.ts"],
       "@inventory-platform/store": ["../../shared/store/src/index.ts"],
       "@inventory-platform/types": ["../../shared/types/src/index.ts"],
-      "@inventory-platform/routing": ["../../platform/routing/src/index.ts"]
+      "@inventory-platform/ui": ["../../shared/ui/src/index.ts"],
+      "@inventory-platform/user/customers": [
+        "../../core/user/src/api/customers.api.ts"
+      ]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
@@ -32,19 +41,22 @@
   ],
   "references": [
     {
-      "path": "../routing/tsconfig.lib.json"
+      "path": "../../core/product/tsconfig.lib.json"
     },
     {
-      "path": "../../shared/types/tsconfig.lib.json"
+      "path": "../../platform/routing/tsconfig.lib.json"
     },
     {
       "path": "../../shared/store/tsconfig.lib.json"
     },
     {
-      "path": "../session/tsconfig.lib.json"
+      "path": "../../shared/ui/tsconfig.lib.json"
     },
     {
-      "path": "../api-client/tsconfig.lib.json"
+      "path": "../../shared/types/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/user/tsconfig.lib.json"
     },
     {
       "path": "../../shared/api/tsconfig.lib.json"

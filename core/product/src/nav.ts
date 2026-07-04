@@ -23,14 +23,3 @@ export const productNav: NavContribution = {
     { path: '/dashboard/scan-sell', label: 'Scan and Sell', icon: '📱' },
   ],
 };
-
-export const cafeNav: NavContribution = {
-  groupId: 'cafe',
-  label: 'Cafe',
-  icon: '☕',
-  items: [
-    { path: '/dashboard/menu-sell', label: 'Sell', icon: '🛒' },
-    { path: '/dashboard/menu', label: 'Menu Admin', icon: '📋' },
-    { path: '/dashboard/manual-stock', label: 'Ingredient Search', icon: '🔍' },
-  ],
-};

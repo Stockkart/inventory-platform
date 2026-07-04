@@ -2,11 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { customersApi } from '../api/customers.api';
 import { EditModal, CustomerEditForm, PaginationBar } from '@inventory-platform/ui';
+import { useResolvedSellPath } from '@inventory-platform/routing';
 import type {
   CustomerResponse,
   CreateCustomerDto,
   UpdateCustomerDto,
 } from '@inventory-platform/types';
+import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/store';
 import styles from '././customers.module.css';
 
 export function meta() {
@@ -18,6 +20,11 @@ export function meta() {
 
 export function CustomersPage() {
   const navigate = useNavigate();
+  const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
+  const shopCapabilities = useShopCapabilitiesStore((s) =>
+    activeShopId ? s.byShopId[activeShopId] : undefined
+  );
+  const sellPath = useResolvedSellPath(shopCapabilities ?? null);
   const [data, setData] = useState<CustomerResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -143,7 +150,7 @@ export function CustomersPage() {
   };
 
   const goScanSellWithCustomer = (customer: CustomerResponse) => {
-    navigate('/dashboard/scan-sell', {
+    navigate(sellPath, {
       state: { prefillCustomer: customer },
     });
   };

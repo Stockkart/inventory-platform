@@ -360,7 +360,7 @@ importers:
         version: link:../../platform/api-client
       '@inventory-platform/product':
         specifier: workspace:*
-        version: link:../../features/product
+        version: link:../product
       '@inventory-platform/query':
         specifier: workspace:*
         version: link:../../platform/query
@@ -539,7 +539,7 @@ importers:
         version: link:../../core/pricing
       '@inventory-platform/product':
         specifier: workspace:*
-        version: link:../product
+        version: link:../../core/product
       '@inventory-platform/user':
         specifier: workspace:*
         version: link:../../core/user
@@ -598,6 +598,12 @@ importers:
       '@inventory-platform/api-client':
         specifier: workspace:*
         version: link:../api-client
+      '@inventory-platform/plugin-registry':
+        specifier: workspace:*
+        version: link:../../plugins/registry
+      '@inventory-platform/routing':
+        specifier: workspace:*
+        version: link:../routing
       '@inventory-platform/types':
         specifier: workspace:*
         version: link:../../shared/types
@@ -638,8 +644,47 @@ importers:
         specifier: ^7.2.0
         version: 7.9.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
 
+  plugins/cafe:
+    dependencies:
+      '@inventory-platform/api':
+        specifier: workspace:*
+        version: link:../../shared/api
+      '@inventory-platform/product':
+        specifier: workspace:*
+        version: link:../../core/product
+      '@inventory-platform/routing':
+        specifier: workspace:*
+        version: link:../../platform/routing
+      '@inventory-platform/store':
+        specifier: workspace:*
+        version: link:../../shared/store
+      '@inventory-platform/types':
+        specifier: workspace:*
+        version: link:../../shared/types
+      '@inventory-platform/ui':
+        specifier: workspace:*
+        version: link:../../shared/ui
+      '@inventory-platform/user':
+        specifier: workspace:*
+        version: link:../../core/user
+      '@tanstack/react-query':
+        specifier: ^5.90.0
+        version: 5.101.2(react@19.2.0)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.0
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.0(react@19.2.0)
+      react-router:
+        specifier: ^7.2.0
+        version: 7.9.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+
   plugins/registry:
     dependencies:
+      '@inventory-platform/plugin-cafe':
+        specifier: workspace:*
+        version: link:../cafe
       '@inventory-platform/routing':
         specifier: workspace:*
         version: link:../../platform/routing

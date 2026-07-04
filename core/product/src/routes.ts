@@ -30,21 +30,6 @@ export const scanSellRoutes: RouteModule = {
   children: [{ path: '', lazy: () => import('./routes/scan-sell') }],
 };
 
-export const menuSellRoutes: RouteModule = {
-  path: 'menu-sell',
-  children: [{ path: '', lazy: () => import('./routes/menu-sell') }],
-};
-
-export const menuAdminRoutes: RouteModule = {
-  path: 'menu',
-  children: [{ path: '', lazy: () => import('./routes/menu') }],
-};
-
-export const manualStockRoutes: RouteModule = {
-  path: 'manual-stock',
-  children: [{ path: '', lazy: () => import('./routes/manual-stock') }],
-};
-
 export const checkoutRoutes: RouteModule = {
   path: 'checkout',
   children: [{ path: '', lazy: () => import('./routes/checkout') }],

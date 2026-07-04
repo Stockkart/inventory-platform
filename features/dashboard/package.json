@@ -6,6 +6,8 @@
     "qrcode.react": "^3.1.0",
     "@inventory-platform/pricing": "workspace:*",
     "@inventory-platform/product": "workspace:*",
+    "@inventory-platform/plugin-registry": "workspace:*",
+    "@inventory-platform/routing": "workspace:*",
     "@inventory-platform/user": "workspace:*"
   },
   "types": "./src/index.ts",

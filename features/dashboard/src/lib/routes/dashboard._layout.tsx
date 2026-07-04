@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate, Outlet, useLocation } from 'react-router';
-import { useAuthStore, usePlanStatusStore } from '@inventory-platform/store';
+import { useAuthStore, usePlanStatusStore, useVerticalSchemaStore, useShopCapabilitiesStore } from '@inventory-platform/store';
 import { apiClient } from '@inventory-platform/api';
 import { isPlanExpiryAllowedPath } from '@inventory-platform/types';
+import { VerticalPluginProvider } from '@inventory-platform/routing';
 import { DashboardLayout } from '@inventory-platform/ui';
 import { canAccessDashboardPath } from '@inventory-platform/ui';
 import { useShopAccessStore } from '@inventory-platform/store';
+import { useVerticalPluginStore } from '@inventory-platform/plugin-registry';
 
 export default function DashboardLayoutRoute() {
   const navigate = useNavigate();
@@ -21,6 +23,15 @@ export default function DashboardLayoutRoute() {
   );
   const accessLoading = useShopAccessStore((s) => s.loading);
   const fetchAccess = useShopAccessStore((s) => s.fetchAccess);
+  const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
+  const shopSchema = useVerticalSchemaStore((s) => {
+    if (!user?.shopId) return undefined;
+    return s.shopSchemaByKey[`shop:${user.shopId}:regular`];
+  });
+  const fetchVerticalPlugin = useVerticalPluginStore((s) => s.fetchPlugin);
+  const verticalPlugin = useVerticalPluginStore((s) =>
+    shopSchema?.verticalId ? s.pluginByVerticalId[shopSchema.verticalId] : undefined
+  );
   const hasCheckedAuth = useRef(false);
   const isCheckingRef = useRef(false);
 
@@ -39,7 +50,16 @@ export default function DashboardLayoutRoute() {
     }
     void fetchPlanStatus({ force: true });
     void fetchAccess({ force: true });
-  }, [isAuthenticated, user?.shopId, fetchPlanStatus, fetchAccess]);
+    void fetchShopSchema();
+  }, [isAuthenticated, user?.shopId, fetchPlanStatus, fetchAccess, fetchShopSchema]);
+
+  useEffect(() => {
+    const verticalId = shopSchema?.verticalId;
+    if (!verticalId) {
+      return;
+    }
+    void fetchVerticalPlugin(verticalId);
+  }, [shopSchema?.verticalId, fetchVerticalPlugin]);
 
   useEffect(() => {
     if (!isAuthenticated || !user?.shopId || accessLoading || !shopAccess) {
@@ -150,9 +170,11 @@ export default function DashboardLayoutRoute() {
   }
 
   return (
-    <DashboardLayout>
-      <Outlet />
-    </DashboardLayout>
+    <VerticalPluginProvider plugin={verticalPlugin}>
+      <DashboardLayout verticalPlugin={verticalPlugin ?? null}>
+        <Outlet />
+      </DashboardLayout>
+    </VerticalPluginProvider>
   );
 }
 

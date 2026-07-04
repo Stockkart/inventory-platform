@@ -9,8 +9,7 @@ import {
 } from 'react';
 import { useNavigate } from 'react-router';
 import { usersApi } from '@inventory-platform/api';
-import { cartApi } from '../api/cart.api';
-import { sellCatalogApi } from '../api/sell-catalog.api';
+import { cartApi, sellCatalogApi } from '@inventory-platform/product/api';
 import { customersApi } from '@inventory-platform/user/customers';
 import type {
   CartResponse,
@@ -27,7 +26,7 @@ import {
   CustomerProductHistoryHint,
   useCustomerProductHistory,
 } from '@inventory-platform/ui';
-import styles from './scan-sell.module.css';
+import styles from '@inventory-platform/product/pages/scan-sell.module.css';
 
 export function meta() {
   return [

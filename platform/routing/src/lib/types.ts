@@ -28,12 +28,14 @@ export interface NavContribution {
 
 export interface VerticalPluginSellSurface {
   sellSurface: SellSurface;
+  /** Dashboard route for this sell mode (e.g. `/dashboard/menu-sell`). */
+  path: string;
   load: () => Promise<{ default: unknown }>;
 }
 
 export interface VerticalPlugin {
   id: string;
-  loadRoutes?: () => Promise<{ default: RouteModule }>;
+  loadRoutes?: () => Promise<{ default: RouteModule | RouteModule[] }>;
   navContributions?: NavContribution[];
   sellSurfaces?: VerticalPluginSellSurface[];
 }

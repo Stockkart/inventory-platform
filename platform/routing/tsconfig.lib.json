@@ -9,13 +9,14 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "forceConsistentCasingInFileNames": true,
-    "lib": ["es2022"],
+    "lib": ["es2022", "dom"],
+    "jsx": "react-jsx",
     "types": ["node"],
     "paths": {
       "@inventory-platform/types": ["../../shared/types/src/index.ts"]
     }
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": [
     "src/**/*.spec.ts",
     "src/**/*.test.ts"

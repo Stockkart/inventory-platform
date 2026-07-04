@@ -1,1 +1,1 @@
-export { default, meta } from '@inventory-platform/product/routes/manual-stock';
+export { default, meta } from '@inventory-platform/plugin-cafe/routes/manual-stock';

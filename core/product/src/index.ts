@@ -25,12 +25,9 @@ export {
   stockCorrectionsRoutes,
   vendorInvoicesRoutes,
   scanSellRoutes,
-  menuSellRoutes,
-  menuAdminRoutes,
-  manualStockRoutes,
   checkoutRoutes,
 } from './routes';
-export { productNav, cafeNav } from './nav';
+export { productNav } from './nav';
 
 export { ProductRegistrationPage } from './pages/ProductRegistrationPage';
 export { ImportPage } from './pages/ImportPage';
@@ -38,7 +35,4 @@ export { ProductSearchPage } from './pages/ProductSearchPage';
 export { StockCorrectionsPage } from './pages/StockCorrectionsPage';
 export { VendorInvoicesPage } from './pages/VendorInvoicesPage';
 export { ScanSellPage } from './pages/ScanSellPage';
-export { MenuSellPage } from './pages/MenuSellPage';
-export { MenuAdminPage } from './pages/MenuAdminPage';
-export { ManualStockPage } from './pages/ManualStockPage';
 export { CheckoutPage } from './pages/CheckoutPage';

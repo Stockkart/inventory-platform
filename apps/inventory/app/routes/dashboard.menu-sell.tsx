@@ -1,1 +1,1 @@
-export { default, meta } from '@inventory-platform/product/routes/menu-sell';
+export { default, meta } from '@inventory-platform/plugin-cafe/routes/menu-sell';

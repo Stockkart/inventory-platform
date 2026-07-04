@@ -106,6 +106,17 @@ const productRouteAliases = Object.fromEntries(
     ])
 );
 
+const cafeRoutesDir = path.resolve(__dirname, '../../plugins/cafe/src/routes');
+const cafeRouteAliases = Object.fromEntries(
+  fs
+    .readdirSync(cafeRoutesDir)
+    .filter((file) => file.endsWith('.tsx'))
+    .map((file) => [
+      `@inventory-platform/plugin-cafe/routes/${file.replace(/\.tsx$/, '')}`,
+      path.join(cafeRoutesDir, file),
+    ])
+);
+
 export default defineConfig({
   root: __dirname,
   cacheDir: '../../node_modules/.vite/apps/inventory',
@@ -129,6 +140,7 @@ export default defineConfig({
       ...userRouteAliases,
       ...pricingRouteAliases,
       ...productRouteAliases,
+      ...cafeRouteAliases,
       '@inventory-platform/ui': path.resolve(__dirname, '../../shared/ui/src/index.ts'),
       '@inventory-platform/store': path.resolve(__dirname, '../../shared/store/src/index.ts'),
       '@inventory-platform/user/customers': path.resolve(
@@ -168,7 +180,19 @@ export default defineConfig({
         __dirname,
         '../../core/product/src/pages/product-search.module.css'
       ),
+      '@inventory-platform/product/pages/scan-sell.module.css': path.resolve(
+        __dirname,
+        '../../core/product/src/pages/scan-sell.module.css'
+      ),
       '@inventory-platform/product': path.resolve(__dirname, '../../core/product/src/index.ts'),
+      '@inventory-platform/plugin-registry': path.resolve(
+        __dirname,
+        '../../plugins/registry/src/index.ts'
+      ),
+      '@inventory-platform/plugin-cafe': path.resolve(
+        __dirname,
+        '../../plugins/cafe/src/index.ts'
+      ),
       '@inventory-platform/query': path.resolve(__dirname, '../../platform/query/src/index.ts'),
       '@inventory-platform/session': path.resolve(__dirname, '../../platform/session/src/index.ts'),
       '@inventory-platform/api-client': path.resolve(__dirname, '../../platform/api-client/src/index.ts'),

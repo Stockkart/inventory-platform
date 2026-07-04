@@ -15,13 +15,21 @@
       "@inventory-platform/ui": ["../../shared/ui/src/index.ts"],
       "@inventory-platform/store": ["../../shared/store/src/index.ts"],
       "@inventory-platform/api": ["../../shared/api/src/index.ts"],
-      "@inventory-platform/product/api": ["../../core/product/src/api/index.ts"],
+      "@inventory-platform/product/api": [
+        "../../core/product/src/api/index.ts"
+      ],
       "@inventory-platform/product/pages/product-search.module.css": [
         "../../core/product/src/pages/product-search.module.css"
       ],
-      "@inventory-platform/pricing/api": ["../../core/pricing/src/api/index.ts"],
-      "@inventory-platform/user/customers": ["../../core/user/src/api/customers.api.ts"],
-      "@inventory-platform/user/vendors": ["../../core/user/src/api/vendors.api.ts"],
+      "@inventory-platform/pricing/api": [
+        "../../core/pricing/src/api/index.ts"
+      ],
+      "@inventory-platform/user/customers": [
+        "../../core/user/src/api/customers.api.ts"
+      ],
+      "@inventory-platform/user/vendors": [
+        "../../core/user/src/api/vendors.api.ts"
+      ],
       "@inventory-platform/product/pages/product-search.module.css": [
         "../../core/product/src/pages/product-search.module.css"
       ],
@@ -49,25 +57,31 @@
   "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
   "references": [
     {
-      "path": "../../shared/api/tsconfig.lib.json"
-    },
-    {
-      "path": "../../shared/store/tsconfig.lib.json"
-    },
-    {
       "path": "../../shared/ui/tsconfig.lib.json"
     },
     {
       "path": "../../shared/types/tsconfig.lib.json"
     },
     {
+      "path": "../../shared/api/tsconfig.lib.json"
+    },
+    {
+      "path": "../../shared/store/tsconfig.lib.json"
+    },
+    {
       "path": "../../core/user/tsconfig.lib.json"
     },
     {
-      "path": "../../core/pricing/tsconfig.lib.json"
+      "path": "../../platform/routing/tsconfig.lib.json"
+    },
+    {
+      "path": "../../plugins/registry/tsconfig.lib.json"
     },
     {
       "path": "../../core/product/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/pricing/tsconfig.lib.json"
     }
   ]
 }

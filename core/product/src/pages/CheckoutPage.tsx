@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { cartApi } from '../api/cart.api';
 import type {
@@ -14,10 +14,10 @@ import {
   formatPaymentSplit,
   isCreditMethod,
   PrintInvoiceModal,
-  resolveSellPath,
   roundMoney,
   validatePaymentSplit,
 } from '@inventory-platform/ui';
+import { useResolvedSellPath } from '@inventory-platform/routing';
 import styles from './checkout.module.css';
 import { useAuthStore, useNotify, useShopCapabilitiesStore } from '@inventory-platform/store';
 
@@ -36,10 +36,7 @@ export function CheckoutPage() {
   const shopCapabilities = useShopCapabilitiesStore((s) =>
     activeShopId ? s.byShopId[activeShopId] : undefined
   );
-  const sellPath = useMemo(
-    () => resolveSellPath(shopCapabilities ?? null),
-    [shopCapabilities]
-  );
+  const sellPath = useResolvedSellPath(shopCapabilities ?? null);
   const showTokenOnReceipt =
     shopCapabilities?.features?.tokenOnReceipt === true;
 

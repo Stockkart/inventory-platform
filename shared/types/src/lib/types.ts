@@ -95,8 +95,24 @@ export interface ProductState {
 }
 
 // UI Component Interfaces
+export interface DashboardVerticalPlugin {
+  id: string;
+  navContributions?: Array<{
+    groupId: string;
+    label: string;
+    icon: string;
+    requiredCapability?: string;
+    items: Array<{ path: string; label: string; icon: string }>;
+  }>;
+  sellSurfaces?: Array<{
+    sellSurface: 'SKU_SCAN' | 'MENU_LIST';
+    path: string;
+  }>;
+}
+
 export interface DashboardLayoutProps {
   children: React.ReactNode;
+  verticalPlugin?: DashboardVerticalPlugin | null;
 }
 
 export type Theme = 'light' | 'dark';

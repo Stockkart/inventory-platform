@@ -15,6 +15,7 @@ export type {
   CartState,
   ProductState,
   DashboardLayoutProps,
+  DashboardVerticalPlugin,
   Theme,
   ThemeContextType,
   Feature,

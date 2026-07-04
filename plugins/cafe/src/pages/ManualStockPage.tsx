@@ -1,10 +1,10 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
-import { cartApi } from '../api/cart.api';
 import {
+  cartApi,
   inventoryApi,
   resolveInventoryDocumentId,
-} from '../api/inventory.api';
+} from '@inventory-platform/product/api';
 import type { InventoryItem } from '@inventory-platform/types';
 import { inventorySellableRef } from '@inventory-platform/types';
 import {
@@ -14,7 +14,7 @@ import {
   isSellDirectInventory,
 } from '@inventory-platform/ui';
 import { useNotify, useVerticalSchemaStore, useAuthStore, useShopAccessStore } from '@inventory-platform/store';
-import searchStyles from './product-search.module.css';
+import searchStyles from '@inventory-platform/product/pages/product-search.module.css';
 import styles from './manual-stock.module.css';
 
 export function meta() {

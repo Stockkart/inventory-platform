@@ -1,26 +1,9 @@
-import type { ShopUiCapabilities, ShopAccess } from '@inventory-platform/types';
+import type { ShopUiCapabilities, ShopAccess, DashboardVerticalPlugin } from '@inventory-platform/types';
+import type { VerticalPlugin } from '@inventory-platform/routing';
+import { resolveSellPath } from '@inventory-platform/routing';
 import type { DashboardMenuGroup, DashboardMenuItem } from './dashboardNavConfig';
 import { getDashboardMenuGroupsForRole } from './dashboardNavConfig';
 import { filterDashboardMenuGroupsByAccess } from './accessNav';
-
-const NAV_ICONS: Record<string, string> = {
-  'product-registration': '📦',
-  'manual-stock': '🔍',
-  'menu-admin': '💰',
-  'menu-sell': '📱',
-  'scan-sell': '📱',
-};
-
-const CAFE_NAV_ORDER = [
-  'product-registration',
-  'manual-stock',
-  'menu-admin',
-  'menu-sell',
-];
-
-function iconForNavId(id: string): string {
-  return NAV_ICONS[id] ?? '•';
-}
 
 const SKU_ONLY_PRODUCT_PATHS = new Set([
   '/dashboard/scan-sell',
@@ -70,52 +53,78 @@ function filterReturnsGroup(
     .filter((group) => group.id !== 'returns' || group.items.length > 0);
 }
 
-export function resolveSellPath(
-  capabilities: ShopUiCapabilities | null | undefined
-): string {
-  if (capabilities?.sellSurface === 'MENU_LIST') {
-    const sell =
-      capabilities.navigation.find((n) => n.id === 'menu-sell') ??
-      capabilities.navigation[0];
-    return sell?.path ?? '/dashboard/menu-sell';
+function pluginNavItemsForCapabilities(
+  plugin: VerticalPlugin | DashboardVerticalPlugin,
+  capabilities: ShopUiCapabilities
+): DashboardMenuItem[] {
+  const enabledPaths = new Set(capabilities.navigation.map((n) => n.path));
+  const apiLabels = new Map(
+    capabilities.navigation.map((n) => [n.path, n.label] as const)
+  );
+
+  const items: DashboardMenuItem[] = [];
+  for (const contribution of plugin.navContributions ?? []) {
+    for (const item of contribution.items) {
+      if (enabledPaths.has(item.path)) {
+        items.push({
+          path: item.path,
+          label: apiLabels.get(item.path) ?? item.label,
+          icon: item.icon,
+        });
+      }
+    }
   }
-  return '/dashboard/scan-sell';
+  return items;
 }
+
+function capabilityNavItems(
+  capabilities: ShopUiCapabilities
+): DashboardMenuItem[] {
+  return capabilities.navigation.map((n) => ({
+    path: n.path,
+    label: n.label,
+    icon: '•',
+  }));
+}
+
+function mergeMenuListProductNav(
+  base: DashboardMenuGroup[],
+  capItems: DashboardMenuItem[]
+): DashboardMenuGroup[] {
+  const capPaths = new Set(capItems.map((i) => i.path));
+
+  return base.map((group) => {
+    if (group.id !== 'products') {
+      return group;
+    }
+    const kept = group.items.filter(
+      (item) =>
+        !SKU_ONLY_PRODUCT_PATHS.has(item.path) && !capPaths.has(item.path)
+    );
+    return {
+      ...group,
+      items: [...capItems, ...kept],
+    };
+  });
+}
+
+export { resolveSellPath };
 
 export function getDashboardMenuGroupsWithCapabilities(
   role: string | undefined,
   capabilities: ShopUiCapabilities | null | undefined,
-  access?: ShopAccess | null
+  access?: ShopAccess | null,
+  plugin?: VerticalPlugin | DashboardVerticalPlugin | null
 ): DashboardMenuGroup[] {
   const base = getDashboardMenuGroupsForRole(role);
 
   let groups = base;
   if (capabilities?.sellSurface === 'MENU_LIST') {
-    const capItems: DashboardMenuItem[] = [...capabilities.navigation]
-      .sort(
-        (a, b) =>
-          CAFE_NAV_ORDER.indexOf(a.id) - CAFE_NAV_ORDER.indexOf(b.id)
-      )
-      .map((n) => ({
-        path: n.path,
-        label: n.label,
-        icon: iconForNavId(n.id),
-      }));
-    const capPaths = new Set(capItems.map((i) => i.path));
-
-    groups = base.map((group) => {
-      if (group.id !== 'products') {
-        return group;
-      }
-      const kept = group.items.filter(
-        (item) =>
-          !SKU_ONLY_PRODUCT_PATHS.has(item.path) && !capPaths.has(item.path)
-      );
-      return {
-        ...group,
-        items: [...capItems, ...kept],
-      };
-    });
+    const capItems =
+      plugin?.navContributions?.length
+        ? pluginNavItemsForCapabilities(plugin, capabilities)
+        : capabilityNavItems(capabilities);
+    groups = mergeMenuListProductNav(base, capItems);
   }
 
   return filterDashboardMenuGroupsByAccess(

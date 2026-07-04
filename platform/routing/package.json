@@ -20,5 +20,8 @@
   },
   "dependencies": {
     "@inventory-platform/types": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
   }
 }

@@ -6,8 +6,7 @@ import {
   useState,
   type FormEvent,
 } from 'react';
-import { cartApi } from '../api/cart.api';
-import { shopMenuApi } from '../api/menu.api';
+import { cartApi, shopMenuApi } from '@inventory-platform/product/api';
 import type { MenuItem, MenuSection, ShopMenu } from '@inventory-platform/types';
 import { menuSellableRef } from '@inventory-platform/types';
 import { useNotify, useVerticalSchemaStore } from '@inventory-platform/store';

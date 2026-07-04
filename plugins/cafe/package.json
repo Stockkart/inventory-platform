@@ -1,5 +1,5 @@
 {
-  "name": "@inventory-platform/shell",
+  "name": "@inventory-platform/plugin-cafe",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -13,21 +13,27 @@
       "types": "./dist/index.d.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./routes/*": {
+      "@inventory-platform/source": "./src/routes/*.tsx",
+      "import": "./src/routes/*.tsx",
+      "default": "./src/routes/*.tsx"
     }
   },
   "nx": {
-    "tags": ["type:platform", "scope:shell"]
+    "tags": ["type:plugin", "scope:cafe"]
   },
   "dependencies": {
     "@inventory-platform/api": "workspace:*",
-    "@inventory-platform/api-client": "workspace:*",
+    "@inventory-platform/product": "workspace:*",
     "@inventory-platform/routing": "workspace:*",
-    "@inventory-platform/session": "workspace:*",
     "@inventory-platform/store": "workspace:*",
     "@inventory-platform/types": "workspace:*",
-    "lucide-react": "^0.554.0"
+    "@inventory-platform/ui": "workspace:*",
+    "@inventory-platform/user": "workspace:*"
   },
   "peerDependencies": {
+    "@tanstack/react-query": "^5.90.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router": "^7.2.0"
