@@ -1,2 +1,1 @@
-export { CheckoutPage as default, checkoutMeta as meta } from '@inventory-platform/dashboard';
-
+export { default, meta } from '@inventory-platform/product/routes/checkout';

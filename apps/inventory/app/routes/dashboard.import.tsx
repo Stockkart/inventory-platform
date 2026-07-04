@@ -1,1 +1,1 @@
-export { ImportPage as default, importMeta as meta } from '@inventory-platform/dashboard';
+export { default, meta } from '@inventory-platform/product/routes/import';

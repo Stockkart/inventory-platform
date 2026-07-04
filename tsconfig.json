@@ -7,7 +7,7 @@
       "path": "./apps/inventory"
     },
     {
-      "path": "./features/product"
+      "path": "./core/product"
     },
     {
       "path": "./core/analytics"
@@ -83,6 +83,9 @@
     },
     {
       "path": "./ui-kit"
+    },
+    {
+      "path": "./features/product"
     }
   ]
 }

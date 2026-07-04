@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router';
 import {
-  inventoryApi,
+  inventoryClient,
   resolveInventoryDocumentId,
-} from '@inventory-platform/api';
+} from './inventoryClient';
 import { vendorsClient } from './vendorsClient';
 import type {
   VendorResponse,
@@ -537,7 +537,7 @@ export function InventoryAlertDetails({
         return;
       }
 
-      const updated = await inventoryApi.update(inventoryDocumentId, filtered);
+      const updated = await inventoryClient.update(inventoryDocumentId, filtered);
       notifySuccess('Product updated successfully');
       onUpdated?.(updated);
       setIsEditing(false);

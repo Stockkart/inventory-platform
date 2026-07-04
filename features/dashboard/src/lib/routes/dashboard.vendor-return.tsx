@@ -1,6 +1,6 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router';
-import { inventoryApi } from '@inventory-platform/api';
+import { inventoryApi } from '@inventory-platform/product/api';
 import type {
   InventoryItem,
   VendorPurchaseInvoiceDetail,

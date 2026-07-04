@@ -12,7 +12,7 @@ import {
 } from '@inventory-platform/ui';
 import type { HistoryFilters, HistoryTab } from '@inventory-platform/ui';
 import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/store';
-import VendorInvoicesPage from './dashboard.vendor-invoices';
+import { VendorInvoicesPage } from '@inventory-platform/product';
 import styles from './dashboard.history.module.css';
 
 /** Map legacy state from older redirects/bookmarks */

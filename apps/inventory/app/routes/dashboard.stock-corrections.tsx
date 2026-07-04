@@ -1,5 +1,1 @@
-export {
-  StockCorrectionsPage as default,
-  stockCorrectionsMeta as meta,
-} from '@inventory-platform/dashboard';
-
+export { default, meta } from '@inventory-platform/product/routes/stock-corrections';

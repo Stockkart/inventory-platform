@@ -95,6 +95,17 @@ const pricingRouteAliases = Object.fromEntries(
     ])
 );
 
+const productRoutesDir = path.resolve(__dirname, '../../core/product/src/routes');
+const productRouteAliases = Object.fromEntries(
+  fs
+    .readdirSync(productRoutesDir)
+    .filter((file) => file.endsWith('.tsx'))
+    .map((file) => [
+      `@inventory-platform/product/routes/${file.replace(/\.tsx$/, '')}`,
+      path.join(productRoutesDir, file),
+    ])
+);
+
 export default defineConfig({
   root: __dirname,
   cacheDir: '../../node_modules/.vite/apps/inventory',
@@ -117,6 +128,7 @@ export default defineConfig({
       ...planRouteAliases,
       ...userRouteAliases,
       ...pricingRouteAliases,
+      ...productRouteAliases,
       '@inventory-platform/ui': path.resolve(__dirname, '../../shared/ui/src/index.ts'),
       '@inventory-platform/store': path.resolve(__dirname, '../../shared/store/src/index.ts'),
       '@inventory-platform/user/customers': path.resolve(
@@ -151,6 +163,12 @@ export default defineConfig({
       '@inventory-platform/user': path.resolve(__dirname, '../../core/user/src/index.ts'),
       '@inventory-platform/pricing/api': path.resolve(__dirname, '../../core/pricing/src/api/index.ts'),
       '@inventory-platform/pricing': path.resolve(__dirname, '../../core/pricing/src/index.ts'),
+      '@inventory-platform/product/api': path.resolve(__dirname, '../../core/product/src/api/index.ts'),
+      '@inventory-platform/product/pages/product-search.module.css': path.resolve(
+        __dirname,
+        '../../core/product/src/pages/product-search.module.css'
+      ),
+      '@inventory-platform/product': path.resolve(__dirname, '../../core/product/src/index.ts'),
       '@inventory-platform/query': path.resolve(__dirname, '../../platform/query/src/index.ts'),
       '@inventory-platform/session': path.resolve(__dirname, '../../platform/session/src/index.ts'),
       '@inventory-platform/api-client': path.resolve(__dirname, '../../platform/api-client/src/index.ts'),

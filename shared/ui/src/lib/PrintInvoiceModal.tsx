@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { cartApi } from '@inventory-platform/api';
+import { cartClient } from './cartClient';
 import styles from './PrintInvoiceModal.module.css';
 
 export type PrinterType = 'NORMAL' | 'DOT_MATRIX';
@@ -27,7 +27,7 @@ export function PrintInvoiceModal({
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
-      const pdfBlob = await cartApi.getInvoicePdf(purchaseId, printerType);
+      const pdfBlob = await cartClient.getInvoicePdf(purchaseId, printerType);
       const url = window.URL.createObjectURL(pdfBlob);
       const newWindow = window.open(url, '_blank');
 

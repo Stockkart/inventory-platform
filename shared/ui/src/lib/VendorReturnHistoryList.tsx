@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { inventoryApi } from '@inventory-platform/api';
+import { inventoryClient } from './inventoryClient';
 import type { VendorPurchaseReturnSummary } from '@inventory-platform/types';
 import { useNotify } from '@inventory-platform/store';
 import recordStyles from './HistoryRecordList.module.css';
@@ -99,7 +99,7 @@ export function VendorReturnHistoryList({
     setIsLoading(true);
     try {
       if (filtering && applied) {
-        const res = await inventoryApi.listVendorPurchaseReturns({
+        const res = await inventoryClient.listVendorPurchaseReturns({
           page: 1,
           limit: FILTER_FETCH_LIMIT,
         });
@@ -109,7 +109,7 @@ export function VendorReturnHistoryList({
         setTotalPages(paged.totalPages);
         setTotal(paged.total);
       } else {
-        const res = await inventoryApi.listVendorPurchaseReturns({ page, limit });
+        const res = await inventoryClient.listVendorPurchaseReturns({ page, limit });
         setReturns(res.returns ?? []);
         setTotalPages(res.totalPages);
         setTotal(res.total);

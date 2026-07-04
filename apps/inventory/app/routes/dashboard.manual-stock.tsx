@@ -1,1 +1,1 @@
-export { ManualStockPage as default, manualStockMeta as meta } from '@inventory-platform/dashboard';
+export { default, meta } from '@inventory-platform/product/routes/manual-stock';

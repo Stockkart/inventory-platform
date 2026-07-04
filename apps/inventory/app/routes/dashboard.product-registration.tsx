@@ -1,1 +1,1 @@
-export { ProductRegistrationPage as default, productRegistrationMeta as meta } from '@inventory-platform/dashboard';
+export { default, meta } from '@inventory-platform/product/routes/product-registration';

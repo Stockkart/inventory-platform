@@ -32,6 +32,7 @@
   "dependencies": {
     "@inventory-platform/api": "workspace:*",
     "@inventory-platform/api-client": "workspace:*",
+    "@inventory-platform/product": "workspace:*",
     "@inventory-platform/query": "workspace:*",
     "@inventory-platform/routing": "workspace:*",
     "@inventory-platform/store": "workspace:*",

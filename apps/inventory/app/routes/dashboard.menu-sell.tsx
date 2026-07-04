@@ -1,1 +1,1 @@
-export { MenuSellPage as default, menuSellMeta as meta } from '@inventory-platform/dashboard';
+export { default, meta } from '@inventory-platform/product/routes/menu-sell';

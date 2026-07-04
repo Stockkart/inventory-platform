@@ -22,6 +22,7 @@ COPY core/reminders/package.json ./core/reminders/
 COPY core/plan/package.json ./core/plan/
 COPY core/user/package.json ./core/user/
 COPY core/pricing/package.json ./core/pricing/
+COPY core/product/package.json ./core/product/
 COPY features/auth/package.json ./features/auth/
 COPY features/dashboard/package.json ./features/dashboard/
 COPY features/onboarding/package.json ./features/onboarding/
@@ -60,6 +61,7 @@ COPY core/reminders/package.json ./core/reminders/
 COPY core/plan/package.json ./core/plan/
 COPY core/user/package.json ./core/user/
 COPY core/pricing/package.json ./core/pricing/
+COPY core/product/package.json ./core/product/
 COPY features/auth/package.json ./features/auth/
 COPY features/dashboard/package.json ./features/dashboard/
 COPY features/onboarding/package.json ./features/onboarding/

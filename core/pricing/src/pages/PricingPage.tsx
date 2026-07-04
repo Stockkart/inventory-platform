@@ -1,6 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { Link } from 'react-router';
-import { inventoryApi } from '@inventory-platform/api';
+import { inventoryApi } from '@inventory-platform/product/api';
 import type { InventoryItem } from '@inventory-platform/types';
 import { PaginationBar } from '@inventory-platform/ui';
 import styles from '././pricing.module.css';

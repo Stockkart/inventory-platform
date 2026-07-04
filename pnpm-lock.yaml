@@ -358,6 +358,9 @@ importers:
       '@inventory-platform/api-client':
         specifier: workspace:*
         version: link:../../platform/api-client
+      '@inventory-platform/product':
+        specifier: workspace:*
+        version: link:../../features/product
       '@inventory-platform/query':
         specifier: workspace:*
         version: link:../../platform/query
@@ -376,6 +379,51 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.90.0
         version: 5.101.2(react@19.2.0)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.0
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.0(react@19.2.0)
+      react-router:
+        specifier: ^7.2.0
+        version: 7.9.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+
+  core/product:
+    dependencies:
+      '@inventory-platform/api':
+        specifier: workspace:*
+        version: link:../../shared/api
+      '@inventory-platform/api-client':
+        specifier: workspace:*
+        version: link:../../platform/api-client
+      '@inventory-platform/query':
+        specifier: workspace:*
+        version: link:../../platform/query
+      '@inventory-platform/routing':
+        specifier: workspace:*
+        version: link:../../platform/routing
+      '@inventory-platform/store':
+        specifier: workspace:*
+        version: link:../../shared/store
+      '@inventory-platform/types':
+        specifier: workspace:*
+        version: link:../../shared/types
+      '@inventory-platform/ui':
+        specifier: workspace:*
+        version: link:../../shared/ui
+      '@inventory-platform/user':
+        specifier: workspace:*
+        version: link:../user
+      '@tanstack/react-query':
+        specifier: ^5.90.0
+        version: 5.101.2(react@19.2.0)
+      axios:
+        specifier: ^1.7.9
+        version: 1.13.2
+      qrcode.react:
+        specifier: ^3.1.0
+        version: 3.2.0(react@19.2.0)
       react:
         specifier: ^19.0.0
         version: 19.2.0
@@ -489,6 +537,9 @@ importers:
       '@inventory-platform/pricing':
         specifier: workspace:*
         version: link:../../core/pricing
+      '@inventory-platform/product':
+        specifier: workspace:*
+        version: link:../product
       '@inventory-platform/user':
         specifier: workspace:*
         version: link:../../core/user

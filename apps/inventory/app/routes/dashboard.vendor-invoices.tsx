@@ -1,4 +1,1 @@
-export {
-  VendorInvoicesPage as default,
-  vendorInvoicesMeta as meta,
-} from '@inventory-platform/dashboard';
+export { default, meta } from '@inventory-platform/product/routes/vendor-invoices';

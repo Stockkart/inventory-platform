@@ -26,30 +26,62 @@
       ],
       "@inventory-platform/auth": ["../../features/auth/src/index.ts"],
       "@inventory-platform/analytics": ["../../core/analytics/src/index.ts"],
-      "@inventory-platform/analytics/routes/*": ["../../core/analytics/src/routes/*"],
+      "@inventory-platform/analytics/routes/*": [
+        "../../core/analytics/src/routes/*"
+      ],
       "@inventory-platform/accounting": ["../../core/accounting/src/index.ts"],
-      "@inventory-platform/accounting/routes/*": ["../../core/accounting/src/routes/*"],
+      "@inventory-platform/accounting/routes/*": [
+        "../../core/accounting/src/routes/*"
+      ],
       "@inventory-platform/credit": ["../../core/credit/src/index.ts"],
       "@inventory-platform/credit/routes/*": ["../../core/credit/src/routes/*"],
       "@inventory-platform/taxation": ["../../core/taxation/src/index.ts"],
-      "@inventory-platform/taxation/routes/*": ["../../core/taxation/src/routes/*"],
+      "@inventory-platform/taxation/routes/*": [
+        "../../core/taxation/src/routes/*"
+      ],
       "@inventory-platform/reminders": ["../../core/reminders/src/index.ts"],
-      "@inventory-platform/reminders/routes/*": ["../../core/reminders/src/routes/*"],
+      "@inventory-platform/reminders/routes/*": [
+        "../../core/reminders/src/routes/*"
+      ],
       "@inventory-platform/plan/api": ["../../core/plan/src/api/index.ts"],
       "@inventory-platform/plan": ["../../core/plan/src/index.ts"],
       "@inventory-platform/plan/routes/*": ["../../core/plan/src/routes/*"],
-      "@inventory-platform/user/customers": ["../../core/user/src/api/customers.api.ts"],
-      "@inventory-platform/user/vendors": ["../../core/user/src/api/vendors.api.ts"],
-      "@inventory-platform/user/shop-access": ["../../core/user/src/api/shop-access.api.ts"],
-      "@inventory-platform/user/invitations": ["../../core/user/src/api/invitations.api.ts"],
+      "@inventory-platform/user/customers": [
+        "../../core/user/src/api/customers.api.ts"
+      ],
+      "@inventory-platform/user/vendors": [
+        "../../core/user/src/api/vendors.api.ts"
+      ],
+      "@inventory-platform/user/shop-access": [
+        "../../core/user/src/api/shop-access.api.ts"
+      ],
+      "@inventory-platform/user/invitations": [
+        "../../core/user/src/api/invitations.api.ts"
+      ],
       "@inventory-platform/user": ["../../core/user/src/index.ts"],
       "@inventory-platform/user/routes/*": ["../../core/user/src/routes/*"],
-      "@inventory-platform/pricing/api": ["../../core/pricing/src/api/index.ts"],
+      "@inventory-platform/pricing/api": [
+        "../../core/pricing/src/api/index.ts"
+      ],
       "@inventory-platform/pricing": ["../../core/pricing/src/index.ts"],
-      "@inventory-platform/pricing/routes/*": ["../../core/pricing/src/routes/*"],
+      "@inventory-platform/pricing/routes/*": [
+        "../../core/pricing/src/routes/*"
+      ],
+      "@inventory-platform/product/api": [
+        "../../core/product/src/api/index.ts"
+      ],
+      "@inventory-platform/product/pages/product-search.module.css": [
+        "../../core/product/src/pages/product-search.module.css"
+      ],
+      "@inventory-platform/product": ["../../core/product/src/index.ts"],
+      "@inventory-platform/product/routes/*": [
+        "../../core/product/src/routes/*"
+      ],
       "@inventory-platform/query": ["../../platform/query/src/index.ts"],
       "@inventory-platform/session": ["../../platform/session/src/index.ts"],
-      "@inventory-platform/api-client": ["../../platform/api-client/src/index.ts"],
+      "@inventory-platform/api-client": [
+        "../../platform/api-client/src/index.ts"
+      ],
       "@inventory-platform/routing": ["../../platform/routing/src/index.ts"]
     }
   },
@@ -95,37 +127,40 @@
       "path": "../../features/auth/tsconfig.lib.json"
     },
     {
-      "path": "../../features/dashboard/tsconfig.lib.json"
-    },
-    {
-      "path": "../../shared/ui/tsconfig.lib.json"
-    },
-    {
-      "path": "../../platform/query/tsconfig.lib.json"
-    },
-    {
-      "path": "../../core/accounting/tsconfig.lib.json"
-    },
-    {
-      "path": "../../core/credit/tsconfig.lib.json"
-    },
-    {
       "path": "../../core/taxation/tsconfig.lib.json"
     },
     {
-      "path": "../../core/analytics/tsconfig.lib.json"
-    },
-    {
-      "path": "../../core/reminders/tsconfig.lib.json"
+      "path": "../../core/pricing/tsconfig.lib.json"
     },
     {
       "path": "../../core/plan/tsconfig.lib.json"
     },
     {
+      "path": "../../core/reminders/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/credit/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/product/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/analytics/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/accounting/tsconfig.lib.json"
+    },
+    {
       "path": "../../core/user/tsconfig.lib.json"
     },
     {
-      "path": "../../core/pricing/tsconfig.lib.json"
+      "path": "../../features/dashboard/tsconfig.lib.json"
+    },
+    {
+      "path": "../../platform/query/tsconfig.lib.json"
+    },
+    {
+      "path": "../../shared/ui/tsconfig.lib.json"
     }
   ]
 }
