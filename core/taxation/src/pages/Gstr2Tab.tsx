@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
-import { gstr2Api } from '@inventory-platform/api';
-import type { Gstr2ReportResponse } from '@inventory-platform/types';
-import styles from './dashboard.gstr1.module.css';
+import { useEffect, useState } from 'react';
+import { triggerBlobDownload } from '../api/download';
+import { gstr2Api } from '../api/gstr2.api';
+import { useGstr2ReportQuery } from '../queries/hooks';
+import styles from '../ui/gstr.module.css';
 
 const TABS = [
   { id: 'b2b', label: 'B2B (Registered)' },
@@ -40,49 +41,33 @@ function getDefaultPeriod(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
-export function meta() {
-  return [
-    { title: 'GSTR-2 Report - StockKart' },
-    { name: 'description', content: 'View and download GSTR-2 tax return (inward supplies)' },
-  ];
-}
-
 export function Gstr2Tab() {
   const [period, setPeriod] = useState(getDefaultPeriod);
-  const [data, setData] = useState<Gstr2ReportResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const {
+    data = null,
+    isLoading,
+    isError,
+    error: queryError,
+  } = useGstr2ReportQuery(period);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<(typeof TABS)[number]['id']>('b2b');
   const [isDownloading, setIsDownloading] = useState(false);
 
-  const fetchReport = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const report = await gstr2Api.getReport(period);
-      setData(report);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load GSTR-2 report');
-      setData(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [period]);
-
   useEffect(() => {
-    fetchReport();
-  }, [fetchReport]);
+    if (isError) {
+      setError(
+        queryError instanceof Error ? queryError.message : 'Failed to load GSTR-2 report'
+      );
+    } else {
+      setError(null);
+    }
+  }, [isError, queryError]);
 
   const handleDownload = async () => {
     setIsDownloading(true);
     try {
       const { blob, filename } = await gstr2Api.downloadExcel(period);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
+      triggerBlobDownload(blob, filename);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to download Excel');
     } finally {

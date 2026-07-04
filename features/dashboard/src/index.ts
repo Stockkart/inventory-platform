@@ -38,7 +38,6 @@ export { default as StockCorrectionsPage } from './lib/routes/dashboard.stock-co
 export { default as RefundPage } from './lib/routes/dashboard.refund';
 export { default as VendorReturnPage } from './lib/routes/dashboard.vendor-return';
 export { default as PriceEditPage } from './lib/routes/dashboard.price-edit';
-export { default as TaxesPage } from './lib/routes/dashboard.taxes';
 export { default as PlanStatusPage } from './lib/routes/dashboard.plan-status';
 export { default as PlanPaymentPage } from './lib/routes/dashboard.plan-payment';
 export { default as WhatsAppMarketingPage } from './lib/routes/dashboard.whatsapp-marketing';
@@ -68,6 +67,5 @@ export { meta as stockCorrectionsMeta } from './lib/routes/dashboard.stock-corre
 export { meta as refundMeta } from './lib/routes/dashboard.refund';
 export { meta as vendorReturnMeta } from './lib/routes/dashboard.vendor-return';
 export { meta as priceEditMeta } from './lib/routes/dashboard.price-edit';
-export { meta as taxesMeta } from './lib/routes/dashboard.taxes';
 export { meta as planStatusMeta } from './lib/routes/dashboard.plan-status';
 export { meta as planPaymentMeta } from './lib/routes/dashboard.plan-payment';

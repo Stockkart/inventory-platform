@@ -1,1 +1,1 @@
-export { TaxesPage as default, taxesMeta as meta } from '@inventory-platform/dashboard';
+export { default, meta } from '@inventory-platform/taxation/routes/index';

@@ -247,15 +247,30 @@ importers:
 
   core/credit:
     dependencies:
+      '@inventory-platform/api-client':
+        specifier: workspace:*
+        version: link:../../platform/api-client
       '@inventory-platform/query':
         specifier: workspace:*
         version: link:../../platform/query
+      '@inventory-platform/routing':
+        specifier: workspace:*
+        version: link:../../platform/routing
+      '@inventory-platform/session':
+        specifier: workspace:*
+        version: link:../../platform/session
+      '@inventory-platform/types':
+        specifier: workspace:*
+        version: link:../../shared/types
       '@tanstack/react-query':
         specifier: ^5.90.0
         version: 5.101.2(react@19.2.0)
       react:
         specifier: ^19.0.0
         version: 19.2.0
+      react-router:
+        specifier: ^7.2.0
+        version: 7.9.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
 
   core/notifications:
     dependencies:
@@ -307,15 +322,30 @@ importers:
 
   core/taxation:
     dependencies:
+      '@inventory-platform/api-client':
+        specifier: workspace:*
+        version: link:../../platform/api-client
       '@inventory-platform/query':
         specifier: workspace:*
         version: link:../../platform/query
+      '@inventory-platform/routing':
+        specifier: workspace:*
+        version: link:../../platform/routing
+      '@inventory-platform/types':
+        specifier: workspace:*
+        version: link:../../shared/types
       '@tanstack/react-query':
         specifier: ^5.90.0
         version: 5.101.2(react@19.2.0)
+      axios:
+        specifier: ^1.13.2
+        version: 1.13.2
       react:
         specifier: ^19.0.0
         version: 19.2.0
+      react-router:
+        specifier: ^7.2.0
+        version: 7.9.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
 
   core/user:
     dependencies:
