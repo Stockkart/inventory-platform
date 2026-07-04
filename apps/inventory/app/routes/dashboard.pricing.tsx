@@ -1,1 +1,1 @@
-export { PricingPage as default, pricingMeta as meta } from '@inventory-platform/dashboard';
+export { default, meta } from '@inventory-platform/pricing/routes/pricing';

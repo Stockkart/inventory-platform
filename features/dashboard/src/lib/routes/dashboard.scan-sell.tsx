@@ -12,9 +12,9 @@ import {
   inventoryApi,
   resolveInventoryDocumentId,
   cartApi,
-  pricingApi,
   sellCatalogApi,
 } from '@inventory-platform/api';
+import { pricingApi } from '@inventory-platform/pricing/api';
 import { customersApi } from '@inventory-platform/user/customers';
 import type {
   AvailableUnit,

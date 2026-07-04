@@ -1,4 +1,1 @@
-export {
-  PriceEditPage as default,
-  priceEditMeta as meta,
-} from '@inventory-platform/dashboard';
+export { default, meta } from '@inventory-platform/pricing/routes/price-edit';

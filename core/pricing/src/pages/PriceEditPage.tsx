@@ -1,9 +1,9 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { useParams, useLocation, Link } from 'react-router';
-import { pricingApi } from '@inventory-platform/api';
+import { pricingApi } from '../api/pricing.api';
 import { useNotify } from '@inventory-platform/store';
 import type { PricingRate } from '@inventory-platform/types';
-import styles from './dashboard.price-edit.module.css';
+import styles from '././price-edit.module.css';
 
 export function meta() {
   return [
@@ -30,7 +30,7 @@ interface LocationState {
   defaultRate?: string | null;
 }
 
-export default function PriceEditPage() {
+export function PriceEditPage() {
   const { pricingId } = useParams<{ pricingId: string }>();
   const location = useLocation();
   const state = location.state as LocationState | null;

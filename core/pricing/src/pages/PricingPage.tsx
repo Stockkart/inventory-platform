@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import { inventoryApi } from '@inventory-platform/api';
 import type { InventoryItem } from '@inventory-platform/types';
 import { PaginationBar } from '@inventory-platform/ui';
-import styles from './dashboard.pricing.module.css';
+import styles from '././pricing.module.css';
 
 export function meta() {
   return [
@@ -12,7 +12,7 @@ export function meta() {
   ];
 }
 
-export default function PricingPage() {
+export function PricingPage() {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

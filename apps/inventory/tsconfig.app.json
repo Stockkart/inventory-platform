@@ -44,6 +44,9 @@
       "@inventory-platform/user/invitations": ["../../core/user/src/api/invitations.api.ts"],
       "@inventory-platform/user": ["../../core/user/src/index.ts"],
       "@inventory-platform/user/routes/*": ["../../core/user/src/routes/*"],
+      "@inventory-platform/pricing/api": ["../../core/pricing/src/api/index.ts"],
+      "@inventory-platform/pricing": ["../../core/pricing/src/index.ts"],
+      "@inventory-platform/pricing/routes/*": ["../../core/pricing/src/routes/*"],
       "@inventory-platform/query": ["../../platform/query/src/index.ts"],
       "@inventory-platform/session": ["../../platform/session/src/index.ts"],
       "@inventory-platform/api-client": ["../../platform/api-client/src/index.ts"],
@@ -120,6 +123,9 @@
     },
     {
       "path": "../../core/user/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/pricing/tsconfig.lib.json"
     }
   ]
 }
