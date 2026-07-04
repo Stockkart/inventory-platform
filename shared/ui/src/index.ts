@@ -39,6 +39,7 @@ export * from './lib/VendorReturnHistoryList';
 export * from './lib/HistoryFiltersBar';
 export * from './lib/historyFilters';
 export * from './lib/HistoryListSummary';
+export { historyRecordListStyles } from './lib/historyRecordListStyles';
 export * from './lib/SaleHistoryCard';
 export * from './lib/PaginationBar';
 export * from './lib/ReminderForm';

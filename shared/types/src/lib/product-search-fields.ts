@@ -1,4 +1,4 @@
-import type { ShopProductSearchAccess } from './shop-access';
+import type { ShopProductSearchAccess } from './shop-access.js';
 
 /** Core product fields the owner can grant per member (matches backend CORE_PRODUCT_SEARCH_FIELDS). */
 export const CORE_PRODUCT_SEARCH_FIELDS = [

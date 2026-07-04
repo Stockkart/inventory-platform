@@ -12,7 +12,12 @@ import type {
   VendorPurchaseInvoiceSummary,
 } from '@inventory-platform/types';
 import styles from './dashboard.vendor-invoices.module.css';
-import { PaginationBar, isVendorReturnEnabled, HistoryListSummary } from '@inventory-platform/ui';
+import {
+  PaginationBar,
+  isVendorReturnEnabled,
+  HistoryListSummary,
+  historyRecordListStyles,
+} from '@inventory-platform/ui';
 import type { HistoryFilters } from '@inventory-platform/ui';
 import {
   hasActiveHistoryFilters,
@@ -21,8 +26,9 @@ import {
   paginateLocal,
   matchesRegexField,
 } from '@inventory-platform/ui';
-import recordStyles from '../../../../../shared/ui/src/lib/HistoryRecordList.module.css';
 import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/store';
+
+const recordStyles = historyRecordListStyles;
 
 export function meta() {
   return [
