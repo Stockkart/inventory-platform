@@ -23,3 +23,28 @@ export const productNav: NavContribution = {
     { path: '/dashboard/scan-sell', label: 'Scan and Sell', icon: '📱' },
   ],
 };
+
+export const productReturnsNav: NavContribution = {
+  groupId: 'returns',
+  label: 'Returns',
+  icon: '↩️',
+  items: [
+    {
+      path: '/dashboard/refund',
+      label: 'Return to customer',
+      icon: '↩️',
+    },
+    {
+      path: '/dashboard/vendor-return',
+      label: 'Return to vendor',
+      icon: '📤',
+    },
+  ],
+};
+
+export const productHistoryNav: NavContribution = {
+  groupId: 'analytics-history',
+  label: 'Reports & Analytics',
+  icon: '📈',
+  items: [{ path: '/dashboard/history', label: 'History', icon: '📜' }],
+};

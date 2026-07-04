@@ -26,8 +26,11 @@ export {
   vendorInvoicesRoutes,
   scanSellRoutes,
   checkoutRoutes,
+  historyRoutes,
+  refundRoutes,
+  vendorReturnRoutes,
 } from './routes';
-export { productNav } from './nav';
+export { productNav, productReturnsNav, productHistoryNav } from './nav';
 
 export { ProductRegistrationPage } from './pages/ProductRegistrationPage';
 export { ImportPage } from './pages/ImportPage';
@@ -36,3 +39,6 @@ export { StockCorrectionsPage } from './pages/StockCorrectionsPage';
 export { VendorInvoicesPage } from './pages/VendorInvoicesPage';
 export { ScanSellPage } from './pages/ScanSellPage';
 export { CheckoutPage } from './pages/CheckoutPage';
+export { HistoryPage } from './pages/HistoryPage';
+export { RefundPage } from './pages/RefundPage';
+export { VendorReturnPage } from './pages/VendorReturnPage';

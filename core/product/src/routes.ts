@@ -34,3 +34,18 @@ export const checkoutRoutes: RouteModule = {
   path: 'checkout',
   children: [{ path: '', lazy: () => import('./routes/checkout') }],
 };
+
+export const historyRoutes: RouteModule = {
+  path: 'history',
+  children: [{ path: '', lazy: () => import('./routes/history') }],
+};
+
+export const refundRoutes: RouteModule = {
+  path: 'refund',
+  children: [{ path: '', lazy: () => import('./routes/refund') }],
+};
+
+export const vendorReturnRoutes: RouteModule = {
+  path: 'vendor-return',
+  children: [{ path: '', lazy: () => import('./routes/vendor-return') }],
+};

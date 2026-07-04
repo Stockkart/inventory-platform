@@ -24,7 +24,6 @@ COPY core/user/package.json ./core/user/
 COPY core/pricing/package.json ./core/pricing/
 COPY core/product/package.json ./core/product/
 COPY features/auth/package.json ./features/auth/
-COPY features/dashboard/package.json ./features/dashboard/
 COPY features/onboarding/package.json ./features/onboarding/
 COPY features/product/package.json ./features/product/
 
@@ -63,7 +62,6 @@ COPY core/user/package.json ./core/user/
 COPY core/pricing/package.json ./core/pricing/
 COPY core/product/package.json ./core/product/
 COPY features/auth/package.json ./features/auth/
-COPY features/dashboard/package.json ./features/dashboard/
 COPY features/onboarding/package.json ./features/onboarding/
 COPY features/product/package.json ./features/product/
 

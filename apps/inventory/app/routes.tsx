@@ -18,93 +18,93 @@ export default [
   route('onboarding', './routes/onboarding.tsx'),
   route('m/upload', './routes/m.upload.tsx'),
   route('dashboard', './routes/dashboard._layout.tsx', [
-    route('', './routes/dashboard.tsx'),
-    route('shops', './routes/dashboard.shops.tsx'),
-    route('profile', './routes/dashboard.profile.tsx'),
-    route('customers', './routes/dashboard.customers.tsx'),
-    route('vendors', './routes/dashboard.vendors.tsx'),
+    route('', '../../../platform/shell/src/routes/overview.tsx'),
+    route('shops', '../../../core/user/src/routes/shops.tsx'),
+    route('profile', '../../../core/user/src/routes/profile.tsx'),
+    route('customers', '../../../core/user/src/routes/customers.tsx'),
+    route('vendors', '../../../core/user/src/routes/vendors.tsx'),
     route(
       'product-registration',
-      './routes/dashboard.product-registration.tsx'
+      '../../../core/product/src/routes/product-registration.tsx'
     ),
-    route('import', './routes/dashboard.import.tsx'),
-    route('product-search', './routes/dashboard.product-search.tsx'),
-    route('pricing', './routes/dashboard.pricing.tsx'),
-    route('scan-sell', './routes/dashboard.scan-sell.tsx'),
-    route('menu-sell', './routes/dashboard.menu-sell.tsx'),
-    route('menu', './routes/dashboard.menu.tsx'),
-    route('manual-stock', './routes/dashboard.manual-stock.tsx'),
-    route('checkout', './routes/dashboard.checkout.tsx'),
-    route('payment-billing', './routes/dashboard.payment-billing.tsx'),
-    route('analytics', './routes/dashboard.analytics.tsx'),
-    route('inventory-alert', './routes/dashboard.inventory-alert.tsx'),
-    route('reminders', './routes/dashboard.reminders.tsx'),
-    route('invitations', './routes/dashboard.invitations.tsx'),
-    route('my-invitations', './routes/dashboard.my-invitations.tsx'),
-    route('shop-users', './routes/dashboard.shop-users.tsx'),
-    route('access-control', './routes/dashboard.access-control.tsx'),
-    route('join-requests', './routes/dashboard.join-requests.tsx'),
-    route('history', './routes/dashboard.history.tsx'),
-    route(
-      'vendor-invoices',
-      './routes/dashboard.vendor-invoices.tsx'
-    ),
-    route('stock-corrections', './routes/dashboard.stock-corrections.tsx'),
-    route('vendor-return', './routes/dashboard.vendor-return.tsx'),
-    route('refund', './routes/dashboard.refund.tsx'),
-    route('price-edit/:pricingId', './routes/dashboard.price-edit.tsx'),
-    route('taxes', './routes/dashboard.taxes.tsx'),
-    route('credit', './routes/dashboard.credit.tsx'),
-    route('accounting', './routes/dashboard.accounting.tsx'),
-    route('accounting/journal', './routes/dashboard.accounting.journal.tsx'),
+    route('import', '../../../core/product/src/routes/import.tsx'),
+    route('product-search', '../../../core/product/src/routes/product-search.tsx'),
+    route('pricing', '../../../core/pricing/src/routes/pricing.tsx'),
+    route('scan-sell', '../../../core/product/src/routes/scan-sell.tsx'),
+    route('menu-sell', '../../../plugins/cafe/src/routes/menu-sell.tsx'),
+    route('menu', '../../../plugins/cafe/src/routes/menu.tsx'),
+    route('manual-stock', '../../../plugins/cafe/src/routes/manual-stock.tsx'),
+    route('checkout', '../../../core/product/src/routes/checkout.tsx'),
+    route('payment-billing', '../../../core/plan/src/routes/payment-billing.tsx'),
+    route('analytics', '../../../core/analytics/src/routes/index.tsx'),
+    route('inventory-alert', '../../../core/reminders/src/routes/inventory-alert.tsx'),
+    route('reminders', '../../../core/reminders/src/routes/index.tsx'),
+    route('invitations', '../../../core/user/src/routes/invitations.tsx'),
+    route('my-invitations', '../../../core/user/src/routes/my-invitations.tsx'),
+    route('shop-users', '../../../core/user/src/routes/shop-users.tsx'),
+    route('access-control', '../../../core/user/src/routes/access-control.tsx'),
+    route('join-requests', '../../../core/user/src/routes/join-requests.tsx'),
+    route('history', '../../../core/product/src/routes/history.tsx'),
+    route('vendor-invoices', '../../../core/product/src/routes/vendor-invoices.tsx'),
+    route('stock-corrections', '../../../core/product/src/routes/stock-corrections.tsx'),
+    route('vendor-return', '../../../core/product/src/routes/vendor-return.tsx'),
+    route('refund', '../../../core/product/src/routes/refund.tsx'),
+    route('price-edit/:pricingId', '../../../core/pricing/src/routes/price-edit.tsx'),
+    route('taxes', '../../../core/taxation/src/routes/index.tsx'),
+    route('credit', '../../../core/credit/src/routes/index.tsx'),
+    route('accounting', '../../../core/accounting/src/routes/overview.tsx'),
+    route('accounting/journal', '../../../core/accounting/src/routes/journal.tsx'),
     route(
       'accounting/journal/new',
-      './routes/dashboard.accounting.journal.new.tsx'
+      '../../../core/accounting/src/routes/journal-new.tsx'
     ),
     route(
       'accounting/journal/:entryId',
-      './routes/dashboard.accounting.journal.$entryId.tsx'
+      '../../../core/accounting/src/routes/journal-detail.tsx'
     ),
-    route('accounting/ledger', './routes/dashboard.accounting.ledger.tsx'),
+    route('accounting/ledger', '../../../core/accounting/src/routes/ledger.tsx'),
     route(
       'accounting/ledger/:accountId',
-      './routes/dashboard.accounting.ledger.$accountId.tsx'
+      '../../../core/accounting/src/routes/ledger-account.tsx'
     ),
-    route('accounting/vendors', './routes/dashboard.accounting.vendors.tsx'),
+    route('accounting/vendors', '../../../core/accounting/src/routes/vendors.tsx'),
     route(
       'accounting/vendors/:partyRefId',
-      './routes/dashboard.accounting.vendors.$partyRefId.tsx'
+      '../../../core/accounting/src/routes/vendor-statement.tsx'
     ),
     route(
       'accounting/customers',
-      './routes/dashboard.accounting.customers.tsx'
+      '../../../core/accounting/src/routes/customers.tsx'
     ),
     route(
       'accounting/customers/:partyRefId',
-      './routes/dashboard.accounting.customers.$partyRefId.tsx'
+      '../../../core/accounting/src/routes/customer-statement.tsx'
     ),
     route(
       'accounting/trial-balance',
-      './routes/dashboard.accounting.trial-balance.tsx'
+      '../../../core/accounting/src/routes/trial-balance.tsx'
     ),
     route(
       'accounting/chart-of-accounts',
-      './routes/dashboard.accounting.chart-of-accounts.tsx'
+      '../../../core/accounting/src/routes/chart-of-accounts.tsx'
     ),
     route(
       'accounting/opening-balances',
-      './routes/dashboard.accounting.opening-balances.tsx'
+      '../../../core/accounting/src/routes/opening-balances.tsx'
     ),
     route(
       'accounting/reports/profit-and-loss',
-      './routes/dashboard.accounting.reports.profit-and-loss.tsx'
+      '../../../core/accounting/src/routes/profit-and-loss.tsx'
     ),
     route(
       'accounting/reports/balance-sheet',
-      './routes/dashboard.accounting.reports.balance-sheet.tsx'
+      '../../../core/accounting/src/routes/balance-sheet.tsx'
     ),
-    route('plan-payment', './routes/dashboard.plan-payment.tsx'),
-    route('plan-status', './routes/dashboard.plan-status.tsx'),
-    route('whatsapp-marketing', './routes/dashboard.whatsapp-marketing.tsx'),
+    route('plan-payment', '../../../core/plan/src/routes/plan-payment.tsx'),
+    route('plan-status', '../../../core/plan/src/routes/plan-status.tsx'),
+    route(
+      'whatsapp-marketing',
+      '../../../core/user/src/routes/whatsapp-marketing.tsx'
+    ),
   ]),
 ] satisfies RouteConfig;

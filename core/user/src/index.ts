@@ -17,8 +17,17 @@ export {
   myInvitationsRoutes,
   shopUsersRoutes,
   accessControlRoutes,
+  shopsRoutes,
+  profileRoutes,
+  joinRequestsRoutes,
+  whatsAppMarketingRoutes,
 } from './routes';
-export { userContactNav, userTeamNav } from './nav';
+export {
+  userContactNav,
+  userOverviewNav,
+  userTeamNav,
+  userMarketingNav,
+} from './nav';
 
 export { CustomersPage } from './pages/CustomersPage';
 export { VendorsPage } from './pages/VendorsPage';
@@ -26,3 +35,7 @@ export { AccessControlPage } from './pages/AccessControlPage';
 export { ShopUsersPage } from './pages/ShopUsersPage';
 export { InvitationsPage } from './pages/InvitationsPage';
 export { MyInvitationsPage } from './pages/MyInvitationsPage';
+export { ShopsPage } from './pages/ShopsPage';
+export { ProfilePage } from './pages/ProfilePage';
+export { JoinRequestsPage } from './pages/JoinRequestsPage';
+export { WhatsAppMarketingPage } from './pages/WhatsAppMarketingPage';

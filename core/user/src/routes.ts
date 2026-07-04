@@ -29,3 +29,23 @@ export const accessControlRoutes: RouteModule = {
   path: 'access-control',
   children: [{ path: '', lazy: () => import('./routes/access-control') }],
 };
+
+export const shopsRoutes: RouteModule = {
+  path: 'shops',
+  children: [{ path: '', lazy: () => import('./routes/shops') }],
+};
+
+export const profileRoutes: RouteModule = {
+  path: 'profile',
+  children: [{ path: '', lazy: () => import('./routes/profile') }],
+};
+
+export const joinRequestsRoutes: RouteModule = {
+  path: 'join-requests',
+  children: [{ path: '', lazy: () => import('./routes/join-requests') }],
+};
+
+export const whatsAppMarketingRoutes: RouteModule = {
+  path: 'whatsapp-marketing',
+  children: [{ path: '', lazy: () => import('./routes/whatsapp-marketing') }],
+};

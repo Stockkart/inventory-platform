@@ -117,6 +117,17 @@ const cafeRouteAliases = Object.fromEntries(
     ])
 );
 
+const shellRoutesDir = path.resolve(__dirname, '../../platform/shell/src/routes');
+const shellRouteAliases = Object.fromEntries(
+  fs
+    .readdirSync(shellRoutesDir)
+    .filter((file) => file.endsWith('.tsx'))
+    .map((file) => [
+      `@inventory-platform/shell/routes/${file.replace(/\.tsx$/, '')}`,
+      path.join(shellRoutesDir, file),
+    ])
+);
+
 export default defineConfig({
   root: __dirname,
   cacheDir: '../../node_modules/.vite/apps/inventory',
@@ -141,6 +152,7 @@ export default defineConfig({
       ...pricingRouteAliases,
       ...productRouteAliases,
       ...cafeRouteAliases,
+      ...shellRouteAliases,
       '@inventory-platform/ui': path.resolve(__dirname, '../../shared/ui/src/index.ts'),
       '@inventory-platform/store': path.resolve(__dirname, '../../shared/store/src/index.ts'),
       '@inventory-platform/user/customers': path.resolve(
@@ -162,7 +174,6 @@ export default defineConfig({
       '@inventory-platform/api': path.resolve(__dirname, '../../shared/api/src/index.ts'),
       '@inventory-platform/types': path.resolve(__dirname, '../../shared/types/src/index.ts'),
       '@inventory-platform/payment': path.resolve(__dirname, '../../shared/payment/src/index.ts'),
-      '@inventory-platform/dashboard': path.resolve(__dirname, '../../features/dashboard/src/index.ts'),
       '@inventory-platform/onboarding': path.resolve(__dirname, '../../features/onboarding/src/index.ts'),
       '@inventory-platform/auth': path.resolve(__dirname, '../../features/auth/src/index.ts'),
       '@inventory-platform/analytics': path.resolve(__dirname, '../../core/analytics/src/index.ts'),
@@ -197,6 +208,7 @@ export default defineConfig({
       '@inventory-platform/session': path.resolve(__dirname, '../../platform/session/src/index.ts'),
       '@inventory-platform/api-client': path.resolve(__dirname, '../../platform/api-client/src/index.ts'),
       '@inventory-platform/routing': path.resolve(__dirname, '../../platform/routing/src/index.ts'),
+      '@inventory-platform/shell': path.resolve(__dirname, '../../platform/shell/src/index.ts'),
     },
   },
   // Uncomment this if you are using workers.

@@ -10,6 +10,16 @@ export const userContactNav: NavContribution = {
   ],
 };
 
+export const userOverviewNav: NavContribution = {
+  groupId: 'overview',
+  label: 'Overview',
+  icon: '📊',
+  items: [
+    { path: '/dashboard/shops', label: 'Shops', icon: '🏪' },
+    { path: '/dashboard/profile', label: 'Profile', icon: '👤' },
+  ],
+};
+
 export const userTeamNav: NavContribution = {
   groupId: 'team',
   label: 'Team & Collaboration',
@@ -21,6 +31,20 @@ export const userTeamNav: NavContribution = {
       label: 'My Invitations',
       icon: '📬',
     },
+    { path: '/dashboard/join-requests', label: 'Join Requests', icon: '🤝' },
     { path: '/dashboard/shop-users', label: 'Shop Users', icon: '👥' },
+  ],
+};
+
+export const userMarketingNav: NavContribution = {
+  groupId: 'marketing',
+  label: 'Marketing',
+  icon: '📣',
+  items: [
+    {
+      path: '/dashboard/whatsapp-marketing',
+      label: 'WhatsApp Marketing',
+      icon: '💬',
+    },
   ],
 };

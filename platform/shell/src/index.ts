@@ -1,3 +1,4 @@
+export { OverviewPage } from './lib/OverviewPage';
 export { ThemeProvider } from './lib/ThemeProvider';
 export { ThemeToggle } from './lib/ThemeToggle';
 export { DashboardLayout } from './lib/DashboardLayout';
