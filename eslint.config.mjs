@@ -34,11 +34,20 @@ export default [
                 'type:plugin',
                 'type:journey',
                 'type:legacy',
+                'type:ui-kit',
               ],
             },
             {
               sourceTag: 'type:platform',
-              onlyDependOnLibsWithTags: ['type:platform', 'type:legacy'],
+              onlyDependOnLibsWithTags: [
+                'type:platform',
+                'type:legacy',
+                'type:ui-kit',
+              ],
+            },
+            {
+              sourceTag: 'type:ui-kit',
+              onlyDependOnLibsWithTags: ['type:ui-kit'],
             },
             {
               sourceTag: 'type:core',
@@ -46,6 +55,7 @@ export default [
                 'type:platform',
                 'type:core',
                 'type:legacy',
+                'type:ui-kit',
               ],
             },
             {
@@ -59,7 +69,11 @@ export default [
             },
             {
               sourceTag: 'type:legacy',
-              onlyDependOnLibsWithTags: ['type:legacy', 'type:platform'],
+              onlyDependOnLibsWithTags: [
+                'type:legacy',
+                'type:platform',
+                'type:ui-kit',
+              ],
             },
           ],
         },

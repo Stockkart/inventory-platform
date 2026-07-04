@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { UpdateVendorDto } from '@inventory-platform/types';
-import { FormField } from './FormField';
-import formStyles from './forms.module.css';
+import { FormField } from '@inventory-platform/ui-kit';
+import { formStyles } from '@inventory-platform/ui-kit/form-styles';
 import styles from './VendorEditForm.module.css';
 
 interface VendorEditFormProps {

@@ -1,0 +1,49 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "rootDir": "src",
+    "outDir": "dist",
+    "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
+    "emitDeclarationOnly": false,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "forceConsistentCasingInFileNames": true,
+    "lib": ["es2022", "dom"],
+    "jsx": "react-jsx",
+    "types": ["node", "@nx/react/typings/cssmodule.d.ts", "vite/client"],
+    "paths": {
+      "@inventory-platform/api": ["../../shared/api/src/index.ts"],
+      "@inventory-platform/api-client": [
+        "../../platform/api-client/src/index.ts"
+      ],
+      "@inventory-platform/session": ["../../platform/session/src/index.ts"],
+      "@inventory-platform/store": ["../../shared/store/src/index.ts"],
+      "@inventory-platform/types": ["../../shared/types/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": [
+    "src/**/*.spec.ts",
+    "src/**/*.test.ts",
+    "src/**/*.spec.tsx",
+    "src/**/*.test.tsx"
+  ],
+  "references": [
+    {
+      "path": "../../shared/types/tsconfig.lib.json"
+    },
+    {
+      "path": "../../shared/store/tsconfig.lib.json"
+    },
+    {
+      "path": "../session/tsconfig.lib.json"
+    },
+    {
+      "path": "../api-client/tsconfig.lib.json"
+    },
+    {
+      "path": "../../shared/api/tsconfig.lib.json"
+    }
+  ]
+}

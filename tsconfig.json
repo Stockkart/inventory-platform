@@ -74,6 +74,15 @@
     },
     {
       "path": "./core/user"
+    },
+    {
+      "path": "./platform/schema"
+    },
+    {
+      "path": "./platform/shell"
+    },
+    {
+      "path": "./ui-kit"
     }
   ]
 }

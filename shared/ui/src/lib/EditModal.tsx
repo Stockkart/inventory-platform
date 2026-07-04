@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { FormKeyboardNavScope } from './FormKeyboardNavScope';
-import styles from './forms.module.css';
+import { formStyles as styles } from '@inventory-platform/ui-kit/form-styles';
 
 interface EditModalProps {
   title: string;
