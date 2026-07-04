@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { apiClient, shopAccessApi } from '@inventory-platform/api';
+import { shopAccessApi } from '@inventory-platform/api';
+import { apiClient } from '@inventory-platform/api-client';
 import type { ShopAccess } from '@inventory-platform/types';
 
 interface ShopAccessState {

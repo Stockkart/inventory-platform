@@ -1,5 +1,12 @@
 // Central export for all Zustand stores
-export { useAuthStore } from './lib/useAuthStore';
+export {
+  useAuthStore,
+  useShopCapabilitiesStore,
+  useVerticalSchemaStore,
+  shopSchemaCacheKey,
+  useShopAccessStore,
+  usePlanStatusStore,
+} from '@inventory-platform/session';
 export { useProductStore } from './lib/useProductStore';
 export { useCartStore } from './lib/useCartStore';
 export { useOrderStore } from './lib/useOrderStore';
@@ -8,7 +15,3 @@ export { useAnalyticsStore } from './lib/useAnalyticsStore';
 export { useToastStore } from './lib/useToastStore';
 export type { ToastItem, ToastType } from './lib/useToastStore';
 export { useNotify } from './lib/useNotify';
-export { useVerticalSchemaStore, shopSchemaCacheKey } from './lib/useVerticalSchemaStore';
-export { useShopCapabilitiesStore } from './lib/useShopCapabilitiesStore';
-export { useShopAccessStore } from './lib/useShopAccessStore';
-export { usePlanStatusStore } from './lib/usePlanStatusStore';

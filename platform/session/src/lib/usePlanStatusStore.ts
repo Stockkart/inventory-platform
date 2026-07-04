@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { apiClient, plansApi } from '@inventory-platform/api';
+import { plansApi } from '@inventory-platform/api';
+import { apiClient } from '@inventory-platform/api-client';
 import type { ShopPlanStatusResponse } from '@inventory-platform/types';
 
 interface PlanStatusState {

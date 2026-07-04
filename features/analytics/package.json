@@ -13,5 +13,10 @@
   },
   "dependencies": {
     "recharts": "^3.6.0"
+  },
+  "nx": {
+    "tags": [
+      "type:legacy"
+    ]
   }
 }

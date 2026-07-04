@@ -32,6 +32,48 @@
     },
     {
       "path": "./features/auth"
+    },
+    {
+      "path": "./platform/query"
+    },
+    {
+      "path": "./platform/routing"
+    },
+    {
+      "path": "./core/accounting"
+    },
+    {
+      "path": "./platform/api-client"
+    },
+    {
+      "path": "./core/notifications"
+    },
+    {
+      "path": "./plugins/registry"
+    },
+    {
+      "path": "./platform/session"
+    },
+    {
+      "path": "./core/reminders"
+    },
+    {
+      "path": "./core/checkout"
+    },
+    {
+      "path": "./core/taxation"
+    },
+    {
+      "path": "./core/pricing"
+    },
+    {
+      "path": "./core/credit"
+    },
+    {
+      "path": "./core/plan"
+    },
+    {
+      "path": "./core/user"
     }
   ]
 }

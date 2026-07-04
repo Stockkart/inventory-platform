@@ -13,5 +13,10 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     }
+  },
+  "nx": {
+    "tags": [
+      "type:legacy"
+    ]
   }
 }

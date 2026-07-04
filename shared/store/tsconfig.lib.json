@@ -12,11 +12,15 @@
     "types": ["node"],
     "paths": {
       "@inventory-platform/api": ["../../shared/api/src/index.ts"],
+      "@inventory-platform/session": ["../../platform/session/src/index.ts"],
       "@inventory-platform/types": ["../../shared/types/src/index.ts"]
     }
   },
   "include": ["src/**/*.ts"],
   "references": [
+    {
+      "path": "../../platform/session/tsconfig.lib.json"
+    },
     {
       "path": "../api/tsconfig.lib.json"
     },

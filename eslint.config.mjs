@@ -26,8 +26,40 @@ export default [
           ],
           depConstraints: [
             {
-              sourceTag: '*',
-              onlyDependOnLibsWithTags: ['*'],
+              sourceTag: 'type:app',
+              onlyDependOnLibsWithTags: [
+                'type:app',
+                'type:platform',
+                'type:core',
+                'type:plugin',
+                'type:journey',
+                'type:legacy',
+              ],
+            },
+            {
+              sourceTag: 'type:platform',
+              onlyDependOnLibsWithTags: ['type:platform', 'type:legacy'],
+            },
+            {
+              sourceTag: 'type:core',
+              onlyDependOnLibsWithTags: [
+                'type:platform',
+                'type:core',
+                'type:legacy',
+              ],
+            },
+            {
+              sourceTag: 'type:plugin',
+              onlyDependOnLibsWithTags: [
+                'type:platform',
+                'type:core',
+                'type:plugin',
+                'type:legacy',
+              ],
+            },
+            {
+              sourceTag: 'type:legacy',
+              onlyDependOnLibsWithTags: ['type:legacy', 'type:platform'],
             },
           ],
         },
@@ -45,7 +77,6 @@ export default [
       '**/*.cjs',
       '**/*.mjs',
     ],
-    // Override or add rules here
     rules: {},
   },
 ];

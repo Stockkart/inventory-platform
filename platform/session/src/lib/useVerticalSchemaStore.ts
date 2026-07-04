@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { apiClient, verticalsApi } from '@inventory-platform/api';
+import { verticalsApi } from '@inventory-platform/api';
+import { apiClient } from '@inventory-platform/api-client';
 import type {
   SchemaDisplayMode,
   ShopSchemaResponse,
@@ -80,7 +81,7 @@ export const useVerticalSchemaStore = create<VerticalSchemaState>((set, get) => 
       return inFlight;
     }
 
-    const request = (async (): Promise<ShopSchemaResponse | null> => {
+    const schemaRequest = (async (): Promise<ShopSchemaResponse | null> => {
       set((state) => ({
         loadingKeys: new Set(state.loadingKeys).add(key),
         errors: { ...state.errors, [key]: '' },
@@ -118,8 +119,8 @@ export const useVerticalSchemaStore = create<VerticalSchemaState>((set, get) => 
       }
     })();
 
-    shopSchemaInFlight.set(key, request);
-    return request;
+    shopSchemaInFlight.set(key, schemaRequest);
+    return schemaRequest;
   },
 
   fetchVerticalSchema: async (verticalId, mode = 'regular', version) => {

@@ -1,5 +1,8 @@
 packages:
   - 'apps/*'
+  - 'core/*'
   - 'features/*'
+  - 'platform/*'
+  - 'plugins/*'
   - 'shared/*'
 autoInstallPeers: true

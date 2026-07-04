@@ -9,6 +9,7 @@ import {
 } from 'react-router';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { ThemeProvider, AuthInitializer } from '@inventory-platform/ui';
+import { QueryProvider } from '@inventory-platform/query';
 import '../styles.css';
 
 export const meta: MetaFunction = () => [
@@ -70,9 +71,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <GoogleOAuthProvider
           clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || ''}
         >
-          <ThemeProvider>
-            <AuthInitializer>{children}</AuthInitializer>
-          </ThemeProvider>
+          <QueryProvider>
+            <ThemeProvider>
+              <AuthInitializer>{children}</AuthInitializer>
+            </ThemeProvider>
+          </QueryProvider>
         </GoogleOAuthProvider>
         <ScrollRestoration />
         <Scripts />

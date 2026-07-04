@@ -25,7 +25,8 @@
         "../../features/onboarding/src/index.ts"
       ],
       "@inventory-platform/auth": ["../../features/auth/src/index.ts"],
-      "@inventory-platform/analytics": ["../../features/analytics/src/index.ts"]
+      "@inventory-platform/analytics": ["../../features/analytics/src/index.ts"],
+      "@inventory-platform/query": ["../../platform/query/src/index.ts"]
     }
   },
   "include": [
@@ -74,6 +75,9 @@
     },
     {
       "path": "../../shared/ui/tsconfig.lib.json"
+    },
+    {
+      "path": "../../platform/query/tsconfig.lib.json"
     }
   ]
 }

@@ -16,7 +16,11 @@
     }
   },
   "dependencies": {
+    "@inventory-platform/api-client": "workspace:*",
     "axios": "^1.13.2",
     "tslib": "^2.3.0"
+  },
+  "nx": {
+    "tags": ["type:legacy"]
   }
 }

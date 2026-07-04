@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { authApi, apiClient, usersApi } from '@inventory-platform/api';
+import { authApi, usersApi } from '@inventory-platform/api';
+import { apiClient } from '@inventory-platform/api-client';
 import type { LoginDto, SignupDto } from '@inventory-platform/types';
 import type { AuthState } from '@inventory-platform/types';
 import { useVerticalSchemaStore } from './useVerticalSchemaStore';
@@ -42,8 +43,9 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             error: null,
           });
-        } catch (error: any) {
-          const errorMessage = error?.message || 'Login failed';
+        } catch (error: unknown) {
+          const errorMessage =
+            error instanceof Error ? error.message : 'Login failed';
           set({
             isLoading: false,
             error: errorMessage,
@@ -57,7 +59,6 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
         try {
           const response = await authApi.signup(data);
-          // Token is already set by authApi.signup via apiClient.setToken
           set({
             user: response.user,
             token: response.accessToken,
@@ -65,8 +66,9 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             error: null,
           });
-        } catch (error: any) {
-          const errorMessage = error?.message || 'Signup failed';
+        } catch (error: unknown) {
+          const errorMessage =
+            error instanceof Error ? error.message : 'Signup failed';
           set({
             isLoading: false,
             error: errorMessage,
@@ -107,7 +109,6 @@ export const useAuthStore = create<AuthState>()(
         try {
           const user = await authApi.getCurrentUser();
           const state = get();
-          // Ensure API client has the token from store
           if (state.token) {
             apiClient.setToken(state.token);
           }
@@ -122,8 +123,9 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             error: null,
           });
-        } catch (error: any) {
-          const errorMessage = error?.message || 'Failed to fetch user';
+        } catch (error: unknown) {
+          const errorMessage =
+            error instanceof Error ? error.message : 'Failed to fetch user';
           set({
             isLoading: false,
             error: errorMessage,
@@ -152,8 +154,9 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             error: null,
           });
-        } catch (error: any) {
-          const errorMessage = error?.message || 'Failed to switch shop';
+        } catch (error: unknown) {
+          const errorMessage =
+            error instanceof Error ? error.message : 'Failed to switch shop';
           set({ isLoading: false, error: errorMessage });
           throw error;
         }
@@ -169,7 +172,6 @@ export const useAuthStore = create<AuthState>()(
         isAuthenticated: state.isAuthenticated,
       }),
       onRehydrateStorage: () => (state) => {
-        // Sync API client token and shop ID when store is rehydrated from localStorage
         if (state?.token) {
           apiClient.setToken(state.token);
         }
