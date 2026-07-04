@@ -1,7 +1,6 @@
 import { create } from 'zustand';
-import { shopAccessApi } from '@inventory-platform/api';
 import { apiClient } from '@inventory-platform/api-client';
-import type { ShopAccess } from '@inventory-platform/types';
+import type { ApiResponse, ShopAccess } from '@inventory-platform/types';
 
 interface ShopAccessState {
   byShopId: Record<string, ShopAccess>;
@@ -30,7 +29,10 @@ export const useShopAccessStore = create<ShopAccessState>((set, get) => ({
     }
     set({ loading: true, error: null });
     try {
-      const access = await shopAccessApi.getMyAccess();
+      const response = await apiClient.get<ApiResponse<ShopAccess>>(
+        '/shops/me/access'
+      );
+      const access = response.data;
       set((state) => ({
         byShopId: { ...state.byShopId, [shopId]: access },
         loading: false,

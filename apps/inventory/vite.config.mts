@@ -73,6 +73,17 @@ const planRouteAliases = Object.fromEntries(
     ])
 );
 
+const userRoutesDir = path.resolve(__dirname, '../../core/user/src/routes');
+const userRouteAliases = Object.fromEntries(
+  fs
+    .readdirSync(userRoutesDir)
+    .filter((file) => file.endsWith('.tsx'))
+    .map((file) => [
+      `@inventory-platform/user/routes/${file.replace(/\.tsx$/, '')}`,
+      path.join(userRoutesDir, file),
+    ])
+);
+
 export default defineConfig({
   root: __dirname,
   cacheDir: '../../node_modules/.vite/apps/inventory',
@@ -93,15 +104,24 @@ export default defineConfig({
       ...analyticsRouteAliases,
       ...remindersRouteAliases,
       ...planRouteAliases,
+      ...userRouteAliases,
       '@inventory-platform/ui': path.resolve(__dirname, '../../shared/ui/src/index.ts'),
       '@inventory-platform/store': path.resolve(__dirname, '../../shared/store/src/index.ts'),
-      '@inventory-platform/api/customers': path.resolve(
+      '@inventory-platform/user/customers': path.resolve(
         __dirname,
-        '../../shared/api/src/lib/customers.ts'
+        '../../core/user/src/api/customers.api.ts'
       ),
-      '@inventory-platform/api/vendors': path.resolve(
+      '@inventory-platform/user/vendors': path.resolve(
         __dirname,
-        '../../shared/api/src/lib/vendors.ts'
+        '../../core/user/src/api/vendors.api.ts'
+      ),
+      '@inventory-platform/user/shop-access': path.resolve(
+        __dirname,
+        '../../core/user/src/api/shop-access.api.ts'
+      ),
+      '@inventory-platform/user/invitations': path.resolve(
+        __dirname,
+        '../../core/user/src/api/invitations.api.ts'
       ),
       '@inventory-platform/api': path.resolve(__dirname, '../../shared/api/src/index.ts'),
       '@inventory-platform/types': path.resolve(__dirname, '../../shared/types/src/index.ts'),
@@ -116,6 +136,7 @@ export default defineConfig({
       '@inventory-platform/reminders': path.resolve(__dirname, '../../core/reminders/src/index.ts'),
       '@inventory-platform/plan/api': path.resolve(__dirname, '../../core/plan/src/api/index.ts'),
       '@inventory-platform/plan': path.resolve(__dirname, '../../core/plan/src/index.ts'),
+      '@inventory-platform/user': path.resolve(__dirname, '../../core/user/src/index.ts'),
       '@inventory-platform/query': path.resolve(__dirname, '../../platform/query/src/index.ts'),
       '@inventory-platform/session': path.resolve(__dirname, '../../platform/session/src/index.ts'),
       '@inventory-platform/api-client': path.resolve(__dirname, '../../platform/api-client/src/index.ts'),

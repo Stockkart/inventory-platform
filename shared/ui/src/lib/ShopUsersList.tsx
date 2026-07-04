@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { invitationsApi } from '@inventory-platform/api';
+import { invitationsClient } from './invitationsClient';
 import type { ShopUser, UserRole } from '@inventory-platform/types';
 import { RoleBadge } from './RoleBadge';
 import styles from './ShopUsersList.module.css';
@@ -21,7 +21,7 @@ export function ShopUsersList({ shopId, onUserChange }: ShopUsersListProps) {
     setError(null);
 
     try {
-      const data = await invitationsApi.getShopUsers(shopId);
+      const data = await invitationsClient.getShopUsers(shopId);
       setUsers(data);
     } catch (err: any) {
       notifyError(err?.message || 'Failed to load shop users');

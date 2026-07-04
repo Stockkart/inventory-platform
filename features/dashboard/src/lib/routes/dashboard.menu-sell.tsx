@@ -8,7 +8,8 @@ import {
   useState,
 } from 'react';
 import { useNavigate } from 'react-router';
-import { cartApi, customersApi, sellCatalogApi, usersApi } from '@inventory-platform/api';
+import { cartApi, sellCatalogApi, usersApi } from '@inventory-platform/api';
+import { customersApi } from '@inventory-platform/user/customers';
 import type {
   CartResponse,
   MenuItem,

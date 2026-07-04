@@ -1,29 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { InvitationList } from '@inventory-platform/ui';
-import styles from './dashboard.my-invitations.module.css';
+import styles from './my-invitations.module.css';
 
-export function meta() {
-  return [
-    { title: 'My Invitations - StockKart' },
-    {
-      name: 'description',
-      content: 'View and accept your pending invitations',
-    },
-  ];
-}
-
-export default function MyInvitationsPage() {
+export function MyInvitationsPage() {
   const navigate = useNavigate();
   const [refreshKey, setRefreshKey] = useState(0);
-
-  const handleInvitationAccept = () => {
-    setRefreshKey((prev) => prev + 1);
-    // Optionally refresh user data or redirect
-    setTimeout(() => {
-      navigate('/dashboard');
-    }, 1500);
-  };
 
   return (
     <div className={styles.container}>
@@ -39,7 +21,12 @@ export default function MyInvitationsPage() {
           key={refreshKey}
           showMyInvitations={true}
           showAcceptButton={true}
-          onInvitationChange={handleInvitationAccept}
+          onInvitationChange={() => {
+            setRefreshKey((prev) => prev + 1);
+            setTimeout(() => {
+              navigate('/dashboard');
+            }, 1500);
+          }}
         />
       </div>
     </div>

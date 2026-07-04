@@ -1,1 +1,1 @@
-export { VendorsPage as default } from '@inventory-platform/dashboard';
+export { default, meta } from '@inventory-platform/user/routes/vendors';

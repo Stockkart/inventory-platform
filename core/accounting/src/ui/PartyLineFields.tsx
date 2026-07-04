@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { customersApi } from '@inventory-platform/api/customers';
-import { vendorsApi } from '@inventory-platform/api/vendors';
+import { customersApi } from '@inventory-platform/user/customers';
+import { vendorsApi } from '@inventory-platform/user/vendors';
 import type { AccountingPartyType } from '@inventory-platform/types';
 import { isCreditorsAccount, isDebtorsAccount } from '../model/accountingConstants';
 import styles from './accounting.module.css';

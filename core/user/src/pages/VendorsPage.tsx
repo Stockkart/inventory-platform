@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { vendorsApi } from '@inventory-platform/api';
+import { vendorsApi } from '../api/vendors.api';
 import { EditModal, VendorEditForm, PaginationBar } from '@inventory-platform/ui';
 import type {
   VendorResponse,
   CreateVendorDto,
   UpdateVendorDto,
 } from '@inventory-platform/types';
-import styles from './dashboard.vendors.module.css';
+import styles from '././vendors.module.css';
 
 export function meta() {
   return [
@@ -16,7 +16,7 @@ export function meta() {
   ];
 }
 
-export default function VendorsPage() {
+export function VendorsPage() {
   const navigate = useNavigate();
   const [data, setData] = useState<VendorResponse[]>([]);
   const [loading, setLoading] = useState(true);

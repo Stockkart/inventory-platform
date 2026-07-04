@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { customersApi } from '@inventory-platform/api';
+import { customersApi } from '../api/customers.api';
 import { EditModal, CustomerEditForm, PaginationBar } from '@inventory-platform/ui';
 import type {
   CustomerResponse,
   CreateCustomerDto,
   UpdateCustomerDto,
 } from '@inventory-platform/types';
-import styles from './dashboard.customers.module.css';
+import styles from '././customers.module.css';
 
 export function meta() {
   return [
@@ -16,7 +16,7 @@ export function meta() {
   ];
 }
 
-export default function CustomersPage() {
+export function CustomersPage() {
   const navigate = useNavigate();
   const [data, setData] = useState<CustomerResponse[]>([]);
   const [loading, setLoading] = useState(true);

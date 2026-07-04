@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { invitationsApi } from '@inventory-platform/api';
+import { invitationsClient } from './invitationsClient';
 import type { Invitation } from '@inventory-platform/types';
 import { InvitationCard } from './InvitationCard';
 import styles from './InvitationList.module.css';
@@ -31,9 +31,9 @@ export function InvitationList({
       let data: Invitation[];
 
       if (showMyInvitations) {
-        data = await invitationsApi.getMyInvitations();
+        data = await invitationsClient.getMyInvitations();
       } else if (shopId) {
-        data = await invitationsApi.getShopInvitations(shopId);
+        data = await invitationsClient.getShopInvitations(shopId);
       } else {
         throw new Error('shopId or showMyInvitations must be provided');
       }

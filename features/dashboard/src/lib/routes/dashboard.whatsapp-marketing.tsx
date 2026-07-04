@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { customersApi } from '@inventory-platform/api';
+import { customersApi } from '@inventory-platform/user/customers';
 import { EditModal, PaginationBar } from '@inventory-platform/ui';
 import type { CustomerResponse } from '@inventory-platform/types';
 import styles from './dashboard.whatsapp-marketing.module.css';

@@ -38,12 +38,16 @@
       "@inventory-platform/plan/api": ["../../core/plan/src/api/index.ts"],
       "@inventory-platform/plan": ["../../core/plan/src/index.ts"],
       "@inventory-platform/plan/routes/*": ["../../core/plan/src/routes/*"],
+      "@inventory-platform/user/customers": ["../../core/user/src/api/customers.api.ts"],
+      "@inventory-platform/user/vendors": ["../../core/user/src/api/vendors.api.ts"],
+      "@inventory-platform/user/shop-access": ["../../core/user/src/api/shop-access.api.ts"],
+      "@inventory-platform/user/invitations": ["../../core/user/src/api/invitations.api.ts"],
+      "@inventory-platform/user": ["../../core/user/src/index.ts"],
+      "@inventory-platform/user/routes/*": ["../../core/user/src/routes/*"],
       "@inventory-platform/query": ["../../platform/query/src/index.ts"],
       "@inventory-platform/session": ["../../platform/session/src/index.ts"],
       "@inventory-platform/api-client": ["../../platform/api-client/src/index.ts"],
-      "@inventory-platform/routing": ["../../platform/routing/src/index.ts"],
-      "@inventory-platform/api/customers": ["../../shared/api/src/lib/customers.ts"],
-      "@inventory-platform/api/vendors": ["../../shared/api/src/lib/vendors.ts"]
+      "@inventory-platform/routing": ["../../platform/routing/src/index.ts"]
     }
   },
   "include": [
@@ -113,6 +117,9 @@
     },
     {
       "path": "../../core/plan/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/user/tsconfig.lib.json"
     }
   ]
 }

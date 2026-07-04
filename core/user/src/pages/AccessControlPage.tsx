@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { shopAccessApi } from '@inventory-platform/api';
+import { shopAccessApi } from '../api/shop-access.api';
 import type {
   MemberModulePermissions,
   ProductSearchEditMode,
@@ -8,7 +8,7 @@ import type {
 } from '@inventory-platform/types';
 import { CORE_PRODUCT_SEARCH_FIELDS } from '@inventory-platform/types';
 import { useAuthStore, useNotify, useShopAccessStore } from '@inventory-platform/store';
-import styles from './dashboard.access-control.module.css';
+import styles from './access-control.module.css';
 
 const MODULE_COLUMNS: {
   key: keyof MemberModulePermissions;
@@ -48,7 +48,7 @@ function modulesFromMember(member: ShopMemberAccess): MemberModulePermissions {
   };
 }
 
-export default function AccessControlPage() {
+export function AccessControlPage() {
   const { user } = useAuthStore();
   const { success: notifySuccess, error: notifyError } = useNotify;
   const fetchAccess = useShopAccessStore((s) => s.fetchAccess);

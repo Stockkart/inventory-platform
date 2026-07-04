@@ -3,8 +3,6 @@ export { default as DashboardLayoutRoute } from './lib/routes/dashboard._layout'
 export { default as DashboardPage } from './lib/routes/dashboard';
 export { default as ShopsPage } from './lib/routes/dashboard.shops';
 export { default as ProfilePage } from './lib/routes/dashboard.profile';
-export { default as CustomersPage } from './lib/routes/dashboard.customers';
-export { default as VendorsPage } from './lib/routes/dashboard.vendors';
 export { default as ProductRegistrationPage } from './lib/routes/dashboard.product-registration';
 export { default as ImportPage } from './lib/routes/dashboard.import';
 export { default as ProductSearchPage } from './lib/routes/dashboard.product-search';
@@ -23,10 +21,6 @@ export {
   default as CheckoutPage,
   meta as checkoutMeta,
 } from './lib/routes/dashboard.checkout';
-export { default as InvitationsPage } from './lib/routes/dashboard.invitations';
-export { default as MyInvitationsPage } from './lib/routes/dashboard.my-invitations';
-export { default as ShopUsersPage } from './lib/routes/dashboard.shop-users';
-export { default as AccessControlPage } from './lib/routes/dashboard.access-control';
 export { default as JoinRequestsPage } from './lib/routes/dashboard.join-requests';
 export { default as HistoryPage } from './lib/routes/dashboard.history';
 export { default as VendorInvoicesPage } from './lib/routes/dashboard.vendor-invoices';
@@ -46,10 +40,6 @@ export { meta as scanSellMeta } from './lib/routes/dashboard.scan-sell';
 export { meta as menuSellMeta } from './lib/routes/dashboard.menu-sell';
 export { meta as menuAdminMeta } from './lib/routes/dashboard.menu';
 export { meta as manualStockMeta } from './lib/routes/dashboard.manual-stock';
-export { meta as invitationsMeta } from './lib/routes/dashboard.invitations';
-export { meta as myInvitationsMeta } from './lib/routes/dashboard.my-invitations';
-export { meta as shopUsersMeta } from './lib/routes/dashboard.shop-users';
-export { meta as accessControlMeta } from './lib/routes/dashboard.access-control';
 export { meta as joinRequestsMeta } from './lib/routes/dashboard.join-requests';
 export { meta as historyMeta } from './lib/routes/dashboard.history';
 export { meta as vendorInvoicesMeta } from './lib/routes/dashboard.vendor-invoices';

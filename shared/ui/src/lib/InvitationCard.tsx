@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { invitationsApi } from '@inventory-platform/api';
+import { invitationsClient } from './invitationsClient';
 import type { Invitation, UserRole } from '@inventory-platform/types';
 import { RoleBadge } from './RoleBadge';
 import styles from './InvitationCard.module.css';
@@ -29,7 +29,7 @@ export function InvitationCard({
     setError(null);
 
     try {
-      await invitationsApi.acceptInvitation(invitation.invitationId);
+      await invitationsClient.acceptInvitation(invitation.invitationId);
       if (onAccept) {
         onAccept();
       }

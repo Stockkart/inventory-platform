@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { invitationsApi } from '@inventory-platform/api';
+import { invitationsClient } from './invitationsClient';
 import { useNotify } from '@inventory-platform/store';
 import type { UserRole } from '@inventory-platform/types';
 import styles from './InviteForm.module.css';
@@ -43,7 +43,7 @@ export function InviteForm({ shopId, onInviteSent, onError }: InviteFormProps) {
     setIsLoading(true);
 
     try {
-      const response = await invitationsApi.sendInvitation(shopId, {
+      const response = await invitationsClient.sendInvitation(shopId, {
         inviteeEmail: inviteeEmail.trim(),
         role,
       });

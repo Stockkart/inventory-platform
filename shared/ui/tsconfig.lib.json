@@ -15,6 +15,7 @@
     "baseUrl": ".",
     "paths": {
       "@inventory-platform/api": ["../../shared/api/src/index.ts"],
+      "@inventory-platform/api-client": ["../../platform/api-client/src/index.ts"],
       "@inventory-platform/schema": ["../../platform/schema/src/index.ts"],
       "@inventory-platform/shell": ["../../platform/shell/src/index.ts"],
       "@inventory-platform/store": ["../../shared/store/src/index.ts"],
@@ -44,6 +45,9 @@
     },
     {
       "path": "../../core/plan/tsconfig.lib.json"
+    },
+    {
+      "path": "../../platform/api-client/tsconfig.lib.json"
     },
     {
       "path": "../../platform/schema/tsconfig.lib.json"

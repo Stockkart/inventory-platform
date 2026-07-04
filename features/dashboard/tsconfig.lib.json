@@ -15,6 +15,8 @@
       "@inventory-platform/ui": ["../../shared/ui/src/index.ts"],
       "@inventory-platform/store": ["../../shared/store/src/index.ts"],
       "@inventory-platform/api": ["../../shared/api/src/index.ts"],
+      "@inventory-platform/user/customers": ["../../core/user/src/api/customers.api.ts"],
+      "@inventory-platform/user/vendors": ["../../core/user/src/api/vendors.api.ts"],
       "@inventory-platform/types": ["../../shared/types/src/index.ts"],
       "@inventory-platform/payment": ["../../shared/payment/src/index.ts"]
     }
@@ -49,6 +51,9 @@
     },
     {
       "path": "../../shared/types/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/user/tsconfig.lib.json"
     }
   ]
 }

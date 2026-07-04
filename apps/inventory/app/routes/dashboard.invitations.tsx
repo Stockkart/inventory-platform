@@ -1,1 +1,1 @@
-export { InvitationsPage as default, invitationsMeta as meta } from '@inventory-platform/dashboard';
+export { default, meta } from '@inventory-platform/user/routes/invitations';

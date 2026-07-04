@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router';
 import {
-  vendorsApi,
   inventoryApi,
   resolveInventoryDocumentId,
 } from '@inventory-platform/api';
+import { vendorsClient } from './vendorsClient';
 import type {
   VendorResponse,
   InventoryItem,
@@ -236,7 +236,7 @@ export function InventoryAlertDetails({
       if (vendorId) {
         setLoadingVendor(true);
         setVendorError(null);
-        vendorsApi
+        vendorsClient
           .getById(vendorId)
           .then((vendorData) => setVendor(vendorData))
           .catch((err) => {

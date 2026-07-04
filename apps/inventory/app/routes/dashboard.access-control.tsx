@@ -1,4 +1,1 @@
-export {
-  AccessControlPage as default,
-  accessControlMeta as meta,
-} from '@inventory-platform/dashboard';
+export { default, meta } from '@inventory-platform/user/routes/access-control';

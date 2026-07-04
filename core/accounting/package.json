@@ -29,6 +29,7 @@
     "@inventory-platform/routing": "workspace:*",
     "@inventory-platform/session": "workspace:*",
     "@inventory-platform/types": "workspace:*",
+    "@inventory-platform/user": "workspace:*",
     "@inventory-platform/api": "workspace:*"
   },
   "peerDependencies": {

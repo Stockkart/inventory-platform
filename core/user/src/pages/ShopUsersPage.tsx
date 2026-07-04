@@ -1,16 +1,9 @@
 import { useState } from 'react';
 import { useAuthStore } from '@inventory-platform/store';
 import { ShopUsersList } from '@inventory-platform/ui';
-import styles from './dashboard.shop-users.module.css';
+import styles from './shop-users.module.css';
 
-export function meta() {
-  return [
-    { title: 'Shop Users - StockKart' },
-    { name: 'description', content: 'View and manage shop users' },
-  ];
-}
-
-export default function ShopUsersPage() {
+export function ShopUsersPage() {
   const { user } = useAuthStore();
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -26,20 +19,15 @@ export default function ShopUsersPage() {
     );
   }
 
-  // Restrict access for CASHIER role
   if (user?.role === 'CASHIER') {
     return (
       <div className={styles.container}>
         <div className={styles.error}>
-          You don't have permission to view shop users.
+          You don&apos;t have permission to view shop users.
         </div>
       </div>
     );
   }
-
-  const handleUserChange = () => {
-    setRefreshKey((prev) => prev + 1);
-  };
 
   return (
     <div className={styles.container}>
@@ -54,7 +42,7 @@ export default function ShopUsersPage() {
         <ShopUsersList
           key={refreshKey}
           shopId={shopId}
-          onUserChange={handleUserChange}
+          onUserChange={() => setRefreshKey((prev) => prev + 1)}
         />
       </div>
     </div>

@@ -11,18 +11,54 @@
     ".": {
       "@inventory-platform/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./routes/*": {
+      "@inventory-platform/source": "./src/routes/*.tsx",
+      "import": "./src/routes/*.tsx",
+      "default": "./src/routes/*.tsx"
+    },
+    "./customers": {
+      "@inventory-platform/source": "./src/api/customers.api.ts",
+      "types": "./dist/api/customers.api.d.ts",
+      "import": "./src/api/customers.api.ts",
+      "default": "./src/api/customers.api.ts"
+    },
+    "./vendors": {
+      "@inventory-platform/source": "./src/api/vendors.api.ts",
+      "types": "./dist/api/vendors.api.d.ts",
+      "import": "./src/api/vendors.api.ts",
+      "default": "./src/api/vendors.api.ts"
+    },
+    "./shop-access": {
+      "@inventory-platform/source": "./src/api/shop-access.api.ts",
+      "types": "./dist/api/shop-access.api.d.ts",
+      "import": "./src/api/shop-access.api.ts",
+      "default": "./src/api/shop-access.api.ts"
+    },
+    "./invitations": {
+      "@inventory-platform/source": "./src/api/invitations.api.ts",
+      "types": "./dist/api/invitations.api.d.ts",
+      "import": "./src/api/invitations.api.ts",
+      "default": "./src/api/invitations.api.ts"
     }
   },
   "nx": {
     "tags": ["type:core", "scope:user"]
   },
   "dependencies": {
-    "@inventory-platform/query": "workspace:*"
+    "@inventory-platform/api-client": "workspace:*",
+    "@inventory-platform/query": "workspace:*",
+    "@inventory-platform/routing": "workspace:*",
+    "@inventory-platform/store": "workspace:*",
+    "@inventory-platform/types": "workspace:*",
+    "@inventory-platform/ui": "workspace:*"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.90.0",
-    "react": "^19.0.0"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router": "^7.2.0"
   }
 }

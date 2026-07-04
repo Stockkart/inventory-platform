@@ -11,11 +11,11 @@ import { useNavigate, useLocation } from 'react-router';
 import { QRCodeSVG } from 'qrcode.react';
 import {
   inventoryApi,
-  vendorsApi,
   uploadApi,
   usersApi,
   apiClient,
 } from '@inventory-platform/api';
+import { vendorsApi } from '@inventory-platform/user/vendors';
 import type {
   CreateInventoryDto,
   CustomReminderInput,

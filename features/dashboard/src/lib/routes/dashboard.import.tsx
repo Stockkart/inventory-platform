@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router';
-import { inventoryApi, vendorsApi } from '@inventory-platform/api';
+import { inventoryApi } from '@inventory-platform/api';
+import { vendorsApi } from '@inventory-platform/user/vendors';
 import type {
   BulkCreateInventoryDto,
   ParseInvoiceItem,

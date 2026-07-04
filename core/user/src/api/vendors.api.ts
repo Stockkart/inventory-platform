@@ -1,25 +1,27 @@
-import { apiClient } from './client';
-import { API_ENDPOINTS } from './endpoints';
+import { apiClient } from '@inventory-platform/api-client';
 import type {
   ApiResponse,
-  VendorResponse,
-  VendorListResponse,
   CreateVendorDto,
   UpdateVendorDto,
+  VendorListResponse,
+  VendorResponse,
 } from '@inventory-platform/types';
+import { VENDOR_ENDPOINTS } from './endpoints';
+
+export type VendorsListParams = {
+  page?: number;
+  limit?: number;
+  q?: string;
+};
 
 export const vendorsApi = {
-  list: async (params?: {
-    page?: number;
-    limit?: number;
-    q?: string;
-  }): Promise<VendorListResponse> => {
+  list: async (params: VendorsListParams = {}): Promise<VendorListResponse> => {
     const queryParams: Record<string, string> = {};
-    if (params?.page !== undefined) queryParams.page = String(params.page);
-    if (params?.limit !== undefined) queryParams.limit = String(params.limit);
-    if (params?.q) queryParams.q = params.q;
+    if (params.page !== undefined) queryParams.page = String(params.page);
+    if (params.limit !== undefined) queryParams.limit = String(params.limit);
+    if (params.q) queryParams.q = params.q;
     const response = await apiClient.get<ApiResponse<VendorListResponse>>(
-      API_ENDPOINTS.VENDORS.BASE,
+      VENDOR_ENDPOINTS.BASE,
       Object.keys(queryParams).length > 0 ? queryParams : undefined
     );
     return response.data;
@@ -30,7 +32,7 @@ export const vendorsApi = {
     data: UpdateVendorDto
   ): Promise<VendorResponse> => {
     const response = await apiClient.patch<ApiResponse<VendorResponse>>(
-      API_ENDPOINTS.VENDORS.BY_ID(vendorId),
+      VENDOR_ENDPOINTS.BY_ID(vendorId),
       data
     );
     return response.data;
@@ -38,7 +40,7 @@ export const vendorsApi = {
 
   create: async (data: CreateVendorDto): Promise<VendorResponse> => {
     const response = await apiClient.post<ApiResponse<VendorResponse>>(
-      API_ENDPOINTS.VENDORS.BASE,
+      VENDOR_ENDPOINTS.BASE,
       data
     );
     return response.data;
@@ -47,13 +49,17 @@ export const vendorsApi = {
   search: async (query: string): Promise<VendorResponse[]> => {
     try {
       const response = await apiClient.get<ApiResponse<VendorResponse[]>>(
-        API_ENDPOINTS.VENDORS.SEARCH,
+        VENDOR_ENDPOINTS.SEARCH,
         { q: query }
       );
       return response.data || [];
-    } catch (error: any) {
-      // If vendor not found, return empty array instead of throwing
-      if (error?.status === 404) {
+    } catch (error: unknown) {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'status' in error &&
+        (error as { status?: number }).status === 404
+      ) {
         return [];
       }
       throw error;
@@ -62,9 +68,8 @@ export const vendorsApi = {
 
   getById: async (vendorId: string): Promise<VendorResponse> => {
     const response = await apiClient.get<ApiResponse<VendorResponse>>(
-      API_ENDPOINTS.VENDORS.BY_ID(vendorId)
+      VENDOR_ENDPOINTS.BY_ID(vendorId)
     );
     return response.data;
   },
 };
-

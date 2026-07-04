@@ -12,10 +12,10 @@ import {
   inventoryApi,
   resolveInventoryDocumentId,
   cartApi,
-  customersApi,
   pricingApi,
   sellCatalogApi,
 } from '@inventory-platform/api';
+import { customersApi } from '@inventory-platform/user/customers';
 import type {
   AvailableUnit,
   BillingMode,

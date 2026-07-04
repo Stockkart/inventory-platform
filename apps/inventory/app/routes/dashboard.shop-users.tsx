@@ -1,1 +1,1 @@
-export { ShopUsersPage as default, shopUsersMeta as meta } from '@inventory-platform/dashboard';
+export { default, meta } from '@inventory-platform/user/routes/shop-users';
