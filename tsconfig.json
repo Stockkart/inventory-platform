@@ -10,7 +10,7 @@
       "path": "./features/product"
     },
     {
-      "path": "./features/analytics"
+      "path": "./core/analytics"
     },
     {
       "path": "./shared/ui"

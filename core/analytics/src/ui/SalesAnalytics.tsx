@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useAnalyticsStore } from '@inventory-platform/store';
+import { useEffect, useMemo, useState } from 'react';
+import { useSalesAnalyticsQuery } from '../queries/hooks';
 import styles from './analytics.module.css';
 import { SummaryCards } from './SummaryCards';
 import { RevenueChart } from './RevenueChart';
@@ -9,7 +9,6 @@ import { SalesByGroupPieChart } from './SalesByGroupPieChart';
 import { ComparisonMetrics } from './ComparisonMetrics';
 
 export function SalesAnalytics() {
-  const { data, isLoading, error, fetchSales } = useAnalyticsStore();
   const [localFilters, setLocalFilters] = useState<{
     startDate: string;
     endDate: string;
@@ -25,6 +24,32 @@ export function SalesAnalytics() {
     topN: 10,
     compare: true,
   });
+
+  const salesParams = useMemo(
+    () => ({
+      startDate: localFilters.startDate,
+      endDate: localFilters.endDate,
+      groupBy: localFilters.groupBy,
+      timeSeries: localFilters.timeSeries,
+      topN: localFilters.topN,
+      compare: localFilters.compare,
+    }),
+    [localFilters]
+  );
+
+  const {
+    data,
+    isLoading,
+    isError,
+    error: queryError,
+    refetch,
+  } = useSalesAnalyticsQuery(salesParams);
+
+  const error = isError
+    ? queryError instanceof Error
+      ? queryError.message
+      : 'Failed to fetch analytics'
+    : null;
 
   // Set default dates (30 days ago to now)
   useEffect(() => {
@@ -46,33 +71,12 @@ export function SalesAnalytics() {
      
   }, []);
 
-  // Fetch data when filters change
-  useEffect(() => {
-    if (localFilters.startDate && localFilters.endDate) {
-      fetchSales({
-        startDate: localFilters.startDate,
-        endDate: localFilters.endDate,
-        groupBy: localFilters.groupBy,
-        timeSeries: localFilters.timeSeries,
-        topN: localFilters.topN,
-        compare: localFilters.compare,
-      });
-    }
-  }, [localFilters, fetchSales]);
-
   const handleFilterChange = (key: string, value: string | number | boolean | null) => {
     setLocalFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleApplyFilters = () => {
-    fetchSales({
-      startDate: localFilters.startDate,
-      endDate: localFilters.endDate,
-      groupBy: localFilters.groupBy,
-      timeSeries: localFilters.timeSeries,
-      topN: localFilters.topN,
-      compare: localFilters.compare,
-    });
+    void refetch();
   };
 
   return (

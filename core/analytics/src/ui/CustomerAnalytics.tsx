@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react';
-import { useAnalyticsStore } from '@inventory-platform/store';
+import { useEffect, useMemo, useState } from 'react';
+import { useCustomerAnalyticsQuery } from '../queries/hooks';
 import styles from './analytics.module.css';
 
 export function CustomerAnalytics() {
-  const { customerData, isLoading, error, fetchCustomers } = useAnalyticsStore();
   const [localFilters, setLocalFilters] = useState<{
     startDate: string;
     endDate: string;
@@ -15,6 +14,30 @@ export function CustomerAnalytics() {
     topN: 10,
     includeAll: false,
   });
+
+  const customerParams = useMemo(
+    () => ({
+      startDate: localFilters.startDate,
+      endDate: localFilters.endDate,
+      topN: localFilters.topN,
+      includeAll: localFilters.includeAll,
+    }),
+    [localFilters]
+  );
+
+  const {
+    data: customerData,
+    isLoading,
+    isError,
+    error: queryError,
+    refetch,
+  } = useCustomerAnalyticsQuery(customerParams);
+
+  const error = isError
+    ? queryError instanceof Error
+      ? queryError.message
+      : 'Failed to fetch customer analytics'
+    : null;
 
   const [expandedSections, setExpandedSections] = useState<{
     topCustomers: boolean;
@@ -51,29 +74,12 @@ export function CustomerAnalytics() {
      
   }, []);
 
-  // Fetch data when filters change
-  useEffect(() => {
-    if (localFilters.startDate && localFilters.endDate) {
-      fetchCustomers({
-        startDate: localFilters.startDate,
-        endDate: localFilters.endDate,
-        topN: localFilters.topN,
-        includeAll: localFilters.includeAll,
-      });
-    }
-  }, [localFilters, fetchCustomers]);
-
   const handleFilterChange = (key: string, value: string | number | boolean) => {
     setLocalFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleApplyFilters = () => {
-    fetchCustomers({
-      startDate: localFilters.startDate,
-      endDate: localFilters.endDate,
-      topN: localFilters.topN,
-      includeAll: localFilters.includeAll,
-    });
+    void refetch();
   };
 
   const formatCurrency = (value: number) => {

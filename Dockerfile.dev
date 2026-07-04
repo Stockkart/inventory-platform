@@ -17,7 +17,7 @@ COPY shared/api/package.json ./shared/api/
 COPY shared/store/package.json ./shared/store/
 COPY shared/types/package.json ./shared/types/
 COPY shared/ui/package.json ./shared/ui/
-COPY features/analytics/package.json ./features/analytics/
+COPY core/analytics/package.json ./core/analytics/
 COPY features/auth/package.json ./features/auth/
 COPY features/dashboard/package.json ./features/dashboard/
 COPY features/onboarding/package.json ./features/onboarding/

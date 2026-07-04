@@ -1,16 +1,9 @@
-import { useEffect, useState } from 'react';
-import { inventoryApi } from '@inventory-platform/api';
-import { useAnalyticsStore } from '@inventory-platform/store';
-import type {
-  InventoryItemAnalytics,
-  InventoryExpiryBuckets,
-} from '@inventory-platform/types';
+import { useMemo, useState } from 'react';
+import type { InventoryItemAnalytics } from '@inventory-platform/types';
+import { useExpiryBucketsQuery, useInventoryAnalyticsQuery } from '../queries/hooks';
 import styles from './analytics.module.css';
 
 export function InventoryAnalytics() {
-  const { inventoryData, isLoading, error, fetchInventory } = useAnalyticsStore();
-  const [expiryBuckets, setExpiryBuckets] =
-    useState<InventoryExpiryBuckets | null>(null);
   const [localFilters, setLocalFilters] = useState<{
     includeAll: boolean;
     lowStockThreshold: number;
@@ -22,6 +15,34 @@ export function InventoryAnalytics() {
     deadStockDays: 60,
     expiringSoonDays: 15,
   });
+
+  const inventoryParams = useMemo(
+    () => ({
+      includeAll: localFilters.includeAll,
+      lowStockThreshold: localFilters.lowStockThreshold,
+      deadStockDays: localFilters.deadStockDays,
+      expiringSoonDays: localFilters.expiringSoonDays,
+    }),
+    [localFilters]
+  );
+
+  const {
+    data: inventoryData,
+    isLoading,
+    isError,
+    error: queryError,
+    refetch,
+  } = useInventoryAnalyticsQuery(inventoryParams);
+
+  const { data: expiryBuckets } = useExpiryBucketsQuery({
+    expiringSoonDays: localFilters.expiringSoonDays,
+  });
+
+  const error = isError
+    ? queryError instanceof Error
+      ? queryError.message
+      : 'Failed to fetch inventory analytics'
+    : null;
 
   const [expandedSections, setExpandedSections] = useState<{
     lowStock: boolean;
@@ -46,45 +67,12 @@ export function InventoryAnalytics() {
     }));
   };
 
-  // Fetch data on mount
-  useEffect(() => {
-    fetchInventory({
-      includeAll: localFilters.includeAll,
-      lowStockThreshold: localFilters.lowStockThreshold,
-      deadStockDays: localFilters.deadStockDays,
-      expiringSoonDays: localFilters.expiringSoonDays,
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Fetch data when filters change
-  useEffect(() => {
-    fetchInventory({
-      includeAll: localFilters.includeAll,
-      lowStockThreshold: localFilters.lowStockThreshold,
-      deadStockDays: localFilters.deadStockDays,
-      expiringSoonDays: localFilters.expiringSoonDays,
-    });
-  }, [localFilters, fetchInventory]);
-
-  useEffect(() => {
-    inventoryApi
-      .getExpiryBuckets(localFilters.expiringSoonDays)
-      .then(setExpiryBuckets)
-      .catch(() => setExpiryBuckets(null));
-  }, [localFilters.expiringSoonDays]);
-
   const handleFilterChange = (key: string, value: string | number | boolean) => {
     setLocalFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleApplyFilters = () => {
-    fetchInventory({
-      includeAll: localFilters.includeAll,
-      lowStockThreshold: localFilters.lowStockThreshold,
-      deadStockDays: localFilters.deadStockDays,
-      expiringSoonDays: localFilters.expiringSoonDays,
-    });
+    void refetch();
   };
 
   const formatCurrency = (value: number) => {

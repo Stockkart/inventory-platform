@@ -16,10 +16,7 @@
       "@inventory-platform/store": ["../../shared/store/src/index.ts"],
       "@inventory-platform/api": ["../../shared/api/src/index.ts"],
       "@inventory-platform/types": ["../../shared/types/src/index.ts"],
-      "@inventory-platform/payment": ["../../shared/payment/src/index.ts"],
-      "@inventory-platform/analytics": [
-        "../../features/analytics/src/index.ts"
-      ]
+      "@inventory-platform/payment": ["../../shared/payment/src/index.ts"]
     }
   },
   "exclude": [
@@ -46,9 +43,6 @@
     },
     {
       "path": "../../shared/api/tsconfig.lib.json"
-    },
-    {
-      "path": "../analytics/tsconfig.lib.json"
     },
     {
       "path": "../../shared/ui/tsconfig.lib.json"

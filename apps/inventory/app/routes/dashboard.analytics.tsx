@@ -1,1 +1,1 @@
-export { AnalyticsPage as default, analyticsMeta as meta } from '@inventory-platform/dashboard';
+export { default, meta } from '@inventory-platform/analytics/routes/index';

@@ -233,6 +233,36 @@ importers:
         specifier: ^7.2.0
         version: 7.9.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
 
+  core/analytics:
+    dependencies:
+      '@inventory-platform/api-client':
+        specifier: workspace:*
+        version: link:../../platform/api-client
+      '@inventory-platform/query':
+        specifier: workspace:*
+        version: link:../../platform/query
+      '@inventory-platform/routing':
+        specifier: workspace:*
+        version: link:../../platform/routing
+      '@inventory-platform/types':
+        specifier: workspace:*
+        version: link:../../shared/types
+      '@tanstack/react-query':
+        specifier: ^5.90.0
+        version: 5.101.2(react@19.2.0)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.0
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.0(react@19.2.0)
+      react-router:
+        specifier: ^7.2.0
+        version: 7.9.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      recharts:
+        specifier: ^3.6.0
+        version: 3.6.0(@types/react@19.2.7)(react-dom@19.2.0(react@19.2.0))(react-is@18.3.1)(react@19.2.0)(redux@5.0.1)
+
   core/checkout:
     dependencies:
       '@inventory-platform/query':
@@ -358,12 +388,6 @@ importers:
       react:
         specifier: ^19.0.0
         version: 19.2.0
-
-  features/analytics:
-    dependencies:
-      recharts:
-        specifier: ^3.6.0
-        version: 3.6.0(@types/react@19.2.7)(react-dom@19.2.0(react@19.2.0))(react-is@18.3.1)(react@19.2.0)(redux@5.0.1)
 
   features/auth: {}
 

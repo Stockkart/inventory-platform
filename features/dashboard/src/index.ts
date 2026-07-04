@@ -5,7 +5,6 @@ export { default as ShopsPage } from './lib/routes/dashboard.shops';
 export { default as ProfilePage } from './lib/routes/dashboard.profile';
 export { default as CustomersPage } from './lib/routes/dashboard.customers';
 export { default as VendorsPage } from './lib/routes/dashboard.vendors';
-export { default as AnalyticsPage } from './lib/routes/dashboard.analytics';
 export { default as InventoryAlertPage } from './lib/routes/dashboard.inventory-alert';
 export { default as PaymentBillingPage } from './lib/routes/dashboard.payment-billing';
 export { default as ProductRegistrationPage } from './lib/routes/dashboard.product-registration';
@@ -44,7 +43,6 @@ export { default as WhatsAppMarketingPage } from './lib/routes/dashboard.whatsap
 
 // Re-export meta functions
 export { meta as dashboardMeta } from './lib/routes/dashboard';
-export { meta as analyticsMeta } from './lib/routes/dashboard.analytics';
 export { meta as inventoryAlertMeta } from './lib/routes/dashboard.inventory-alert';
 export { meta as paymentBillingMeta } from './lib/routes/dashboard.payment-billing';
 export { meta as productRegistrationMeta } from './lib/routes/dashboard.product-registration';

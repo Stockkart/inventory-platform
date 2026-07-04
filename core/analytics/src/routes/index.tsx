@@ -1,4 +1,4 @@
-import { InventoryPlatformAnalytics } from '@inventory-platform/analytics';
+export { AnalyticsPage as default } from '../pages/AnalyticsPage';
 
 export function meta() {
   return [
@@ -8,10 +8,4 @@ export function meta() {
       content: 'Comprehensive insights on sales and inventory performance',
     },
   ];
-}
-
-export const analyticsMeta = meta;
-
-export default function AnalyticsPage() {
-  return <InventoryPlatformAnalytics />;
 }

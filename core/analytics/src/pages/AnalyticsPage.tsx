@@ -1,22 +1,25 @@
 import { useState } from 'react';
-import styles from './analytics.module.css';
-import { SalesAnalytics } from './SalesAnalytics';
-import { ProfitAnalytics } from './ProfitAnalytics';
-import { VendorAnalytics } from './VendorAnalytics';
-import { CustomerAnalytics } from './CustomerAnalytics';
-import { InventoryAnalytics } from './InventoryAnalytics';
+import { SalesAnalytics } from '../ui/SalesAnalytics';
+import { ProfitAnalytics } from '../ui/ProfitAnalytics';
+import { VendorAnalytics } from '../ui/VendorAnalytics';
+import { CustomerAnalytics } from '../ui/CustomerAnalytics';
+import { InventoryAnalytics } from '../ui/InventoryAnalytics';
+import styles from '../ui/analytics.module.css';
 
-export function InventoryPlatformAnalytics() {
-  const [activeTab, setActiveTab] = useState<'sales' | 'profit' | 'inventory' | 'vendors' | 'customers'>('sales');
+export function AnalyticsPage() {
+  const [activeTab, setActiveTab] = useState<
+    'sales' | 'profit' | 'inventory' | 'vendors' | 'customers'
+  >('sales');
 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <h1 className={styles.title}>Analytics Dashboard</h1>
-        <p className={styles.subtitle}>Comprehensive insights on sales and profit performance</p>
+        <p className={styles.subtitle}>
+          Comprehensive insights on sales and profit performance
+        </p>
       </div>
 
-      {/* Tabs */}
       <div className={styles.tabs}>
         <button
           className={`${styles.tab} ${activeTab === 'sales' ? styles.tabActive : ''}`}
@@ -50,7 +53,6 @@ export function InventoryPlatformAnalytics() {
         </button>
       </div>
 
-      {/* Tab Content */}
       <div className={styles.tabContent}>
         {activeTab === 'sales' && <SalesAnalytics />}
         {activeTab === 'profit' && <ProfitAnalytics />}
@@ -61,5 +63,3 @@ export function InventoryPlatformAnalytics() {
     </div>
   );
 }
-
-export default InventoryPlatformAnalytics;

@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useAnalyticsStore } from '@inventory-platform/store';
+import { useEffect, useMemo, useState } from 'react';
+import { useProfitAnalyticsQuery } from '../queries/hooks';
 import styles from './analytics.module.css';
 import { ProfitSummaryCards } from './ProfitSummaryCards';
 import { ProfitByGroupChart } from './ProfitByGroupChart';
@@ -9,7 +9,6 @@ import { DiscountImpactCard } from './DiscountImpactCard';
 import { LowMarginProductsTable } from './LowMarginProductsTable';
 
 export function ProfitAnalytics() {
-  const { profitData, isLoading, error, fetchProfit } = useAnalyticsStore();
   const [localFilters, setLocalFilters] = useState<{
     startDate: string;
     endDate: string;
@@ -23,6 +22,31 @@ export function ProfitAnalytics() {
     timeSeries: null,
     lowMarginThreshold: 10,
   });
+
+  const profitParams = useMemo(
+    () => ({
+      startDate: localFilters.startDate,
+      endDate: localFilters.endDate,
+      groupBy: localFilters.groupBy,
+      timeSeries: localFilters.timeSeries,
+      lowMarginThreshold: localFilters.lowMarginThreshold,
+    }),
+    [localFilters]
+  );
+
+  const {
+    data: profitData,
+    isLoading,
+    isError,
+    error: queryError,
+    refetch,
+  } = useProfitAnalyticsQuery(profitParams);
+
+  const error = isError
+    ? queryError instanceof Error
+      ? queryError.message
+      : 'Failed to fetch profit analytics'
+    : null;
 
   // Set default dates (30 days ago to now)
   useEffect(() => {
@@ -44,31 +68,12 @@ export function ProfitAnalytics() {
      
   }, []);
 
-  // Fetch data when filters change
-  useEffect(() => {
-    if (localFilters.startDate && localFilters.endDate) {
-      fetchProfit({
-        startDate: localFilters.startDate,
-        endDate: localFilters.endDate,
-        groupBy: localFilters.groupBy,
-        timeSeries: localFilters.timeSeries,
-        lowMarginThreshold: localFilters.lowMarginThreshold,
-      });
-    }
-  }, [localFilters, fetchProfit]);
-
   const handleFilterChange = (key: string, value: string | number | null) => {
     setLocalFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleApplyFilters = () => {
-    fetchProfit({
-      startDate: localFilters.startDate,
-      endDate: localFilters.endDate,
-      groupBy: localFilters.groupBy,
-      timeSeries: localFilters.timeSeries,
-      lowMarginThreshold: localFilters.lowMarginThreshold,
-    });
+    void refetch();
   };
 
   return (

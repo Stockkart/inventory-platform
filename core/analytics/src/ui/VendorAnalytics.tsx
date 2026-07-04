@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react';
-import { useAnalyticsStore } from '@inventory-platform/store';
+import { useEffect, useMemo, useState } from 'react';
+import { useVendorAnalyticsQuery } from '../queries/hooks';
 import styles from './analytics.module.css';
 
 export function VendorAnalytics() {
-  const { vendorData, isLoading, error, fetchVendors } = useAnalyticsStore();
   const [localFilters, setLocalFilters] = useState<{
     startDate: string;
     endDate: string;
@@ -11,6 +10,28 @@ export function VendorAnalytics() {
     startDate: '',
     endDate: '',
   });
+
+  const vendorParams = useMemo(
+    () => ({
+      startDate: localFilters.startDate,
+      endDate: localFilters.endDate,
+    }),
+    [localFilters]
+  );
+
+  const {
+    data: vendorData,
+    isLoading,
+    isError,
+    error: queryError,
+    refetch,
+  } = useVendorAnalyticsQuery(vendorParams);
+
+  const error = isError
+    ? queryError instanceof Error
+      ? queryError.message
+      : 'Failed to fetch vendor analytics'
+    : null;
 
   const [expandedSections, setExpandedSections] = useState<{
     stockAnalytics: boolean;
@@ -53,25 +74,12 @@ export function VendorAnalytics() {
      
   }, []);
 
-  // Fetch data when filters change
-  useEffect(() => {
-    if (localFilters.startDate && localFilters.endDate) {
-      fetchVendors({
-        startDate: localFilters.startDate,
-        endDate: localFilters.endDate,
-      });
-    }
-  }, [localFilters, fetchVendors]);
-
   const handleFilterChange = (key: string, value: string) => {
     setLocalFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleApplyFilters = () => {
-    fetchVendors({
-      startDate: localFilters.startDate,
-      endDate: localFilters.endDate,
-    });
+    void refetch();
   };
 
   const formatCurrency = (value: number) => {

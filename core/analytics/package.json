@@ -1,0 +1,39 @@
+{
+  "name": "@inventory-platform/analytics",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "@inventory-platform/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./routes/*": {
+      "@inventory-platform/source": "./src/routes/*.tsx",
+      "import": "./src/routes/*.tsx",
+      "default": "./src/routes/*.tsx"
+    }
+  },
+  "nx": {
+    "tags": ["type:core", "scope:analytics"]
+  },
+  "dependencies": {
+    "@inventory-platform/api-client": "workspace:*",
+    "@inventory-platform/query": "workspace:*",
+    "@inventory-platform/routing": "workspace:*",
+    "@inventory-platform/types": "workspace:*",
+    "recharts": "^3.6.0"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "^5.90.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router": "^7.2.0"
+  }
+}

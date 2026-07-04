@@ -25,7 +25,8 @@
         "../../features/onboarding/src/index.ts"
       ],
       "@inventory-platform/auth": ["../../features/auth/src/index.ts"],
-      "@inventory-platform/analytics": ["../../features/analytics/src/index.ts"],
+      "@inventory-platform/analytics": ["../../core/analytics/src/index.ts"],
+      "@inventory-platform/analytics/routes/*": ["../../core/analytics/src/routes/*"],
       "@inventory-platform/accounting": ["../../core/accounting/src/index.ts"],
       "@inventory-platform/accounting/routes/*": ["../../core/accounting/src/routes/*"],
       "@inventory-platform/credit": ["../../core/credit/src/index.ts"],
@@ -98,6 +99,9 @@
     },
     {
       "path": "../../core/taxation/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/analytics/tsconfig.lib.json"
     }
   ]
 }
