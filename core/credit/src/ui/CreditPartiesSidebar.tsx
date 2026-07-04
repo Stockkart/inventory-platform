@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { CreditAccountResponse } from '@inventory-platform/types';
 import { CreditAccountList } from './CreditAccountList';
-import { accountSort, presentCreditBalance } from './credit-utils';
+import { accountSort, presentCreditBalance } from '../model/credit-utils';
 import styles from './credit.module.css';
 
 type Props = {

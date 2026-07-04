@@ -11,18 +11,28 @@
     ".": {
       "@inventory-platform/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./routes/*": {
+      "@inventory-platform/source": "./src/routes/*.tsx",
+      "import": "./src/routes/*.tsx",
+      "default": "./src/routes/*.tsx"
     }
   },
   "nx": {
     "tags": ["type:core", "scope:credit"]
   },
   "dependencies": {
-    "@inventory-platform/query": "workspace:*"
+    "@inventory-platform/api-client": "workspace:*",
+    "@inventory-platform/query": "workspace:*",
+    "@inventory-platform/routing": "workspace:*",
+    "@inventory-platform/session": "workspace:*",
+    "@inventory-platform/types": "workspace:*"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.90.0",
-    "react": "^19.0.0"
+    "react": "^19.0.0",
+    "react-router": "^7.2.0"
   }
 }

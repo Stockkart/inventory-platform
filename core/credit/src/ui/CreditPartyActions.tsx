@@ -9,7 +9,7 @@ import {
   presentCreditBalance,
   todayLocalDate,
   type CreditBalanceTone,
-} from './credit-utils';
+} from '../model/credit-utils';
 import styles from './credit.module.css';
 
 type Props = {

@@ -39,7 +39,6 @@ export { default as RefundPage } from './lib/routes/dashboard.refund';
 export { default as VendorReturnPage } from './lib/routes/dashboard.vendor-return';
 export { default as PriceEditPage } from './lib/routes/dashboard.price-edit';
 export { default as TaxesPage } from './lib/routes/dashboard.taxes';
-export { default as CreditPage, meta as creditMeta } from './lib/routes/dashboard.credit';
 export { default as PlanStatusPage } from './lib/routes/dashboard.plan-status';
 export { default as PlanPaymentPage } from './lib/routes/dashboard.plan-payment';
 export { default as WhatsAppMarketingPage } from './lib/routes/dashboard.whatsapp-marketing';

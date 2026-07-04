@@ -1,1 +1,1 @@
-export { CreditPage as default, creditMeta as meta } from '@inventory-platform/dashboard';
+export { default, meta } from '@inventory-platform/credit/routes/index';

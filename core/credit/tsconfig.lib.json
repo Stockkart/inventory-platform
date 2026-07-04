@@ -13,7 +13,11 @@
     "jsx": "react-jsx",
     "types": ["node"],
     "paths": {
-      "@inventory-platform/query": ["../../platform/query/src/index.ts"]
+      "@inventory-platform/api-client": ["../../platform/api-client/src/index.ts"],
+      "@inventory-platform/query": ["../../platform/query/src/index.ts"],
+      "@inventory-platform/routing": ["../../platform/routing/src/index.ts"],
+      "@inventory-platform/session": ["../../platform/session/src/index.ts"],
+      "@inventory-platform/types": ["../../shared/types/src/index.ts"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
@@ -25,7 +29,19 @@
   ],
   "references": [
     {
+      "path": "../../shared/types/tsconfig.lib.json"
+    },
+    {
       "path": "../../platform/query/tsconfig.lib.json"
+    },
+    {
+      "path": "../../platform/api-client/tsconfig.lib.json"
+    },
+    {
+      "path": "../../platform/routing/tsconfig.lib.json"
+    },
+    {
+      "path": "../../platform/session/tsconfig.lib.json"
     }
   ]
 }

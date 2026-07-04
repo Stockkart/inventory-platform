@@ -1,6 +1,6 @@
 import type { CreditAccountResponse } from '@inventory-platform/types';
-import type { CreditBalanceTone } from './credit-utils';
-import { presentCreditBalance } from './credit-utils';
+import type { CreditBalanceTone } from '../model/credit-utils';
+import { presentCreditBalance } from '../model/credit-utils';
 import styles from './credit.module.css';
 
 type Props = {

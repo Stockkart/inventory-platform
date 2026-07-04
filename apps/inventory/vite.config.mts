@@ -18,6 +18,17 @@ const accountingRouteAliases = Object.fromEntries(
     ])
 );
 
+const creditRoutesDir = path.resolve(__dirname, '../../core/credit/src/routes');
+const creditRouteAliases = Object.fromEntries(
+  fs
+    .readdirSync(creditRoutesDir)
+    .filter((file) => file.endsWith('.tsx'))
+    .map((file) => [
+      `@inventory-platform/credit/routes/${file.replace(/\.tsx$/, '')}`,
+      path.join(creditRoutesDir, file),
+    ])
+);
+
 export default defineConfig({
   root: __dirname,
   cacheDir: '../../node_modules/.vite/apps/inventory',
@@ -33,6 +44,7 @@ export default defineConfig({
   resolve: {
     alias: {
       ...accountingRouteAliases,
+      ...creditRouteAliases,
       '@inventory-platform/ui': path.resolve(__dirname, '../../shared/ui/src/index.ts'),
       '@inventory-platform/store': path.resolve(__dirname, '../../shared/store/src/index.ts'),
       '@inventory-platform/api/customers': path.resolve(
@@ -51,6 +63,7 @@ export default defineConfig({
       '@inventory-platform/auth': path.resolve(__dirname, '../../features/auth/src/index.ts'),
       '@inventory-platform/analytics': path.resolve(__dirname, '../../features/analytics/src/index.ts'),
       '@inventory-platform/accounting': path.resolve(__dirname, '../../core/accounting/src/index.ts'),
+      '@inventory-platform/credit': path.resolve(__dirname, '../../core/credit/src/index.ts'),
       '@inventory-platform/query': path.resolve(__dirname, '../../platform/query/src/index.ts'),
       '@inventory-platform/session': path.resolve(__dirname, '../../platform/session/src/index.ts'),
       '@inventory-platform/api-client': path.resolve(__dirname, '../../platform/api-client/src/index.ts'),

@@ -1,5 +1,5 @@
 import type { CreditEntryResponse, CreditPartyType } from '@inventory-platform/types';
-import { formatCreditLedgerEntry, formatMoney } from './credit-utils';
+import { formatCreditLedgerEntry, formatMoney } from '../model/credit-utils';
 import styles from './credit.module.css';
 
 type Props = {

@@ -1,11 +1,11 @@
-import { apiClient } from './client';
-import { API_ENDPOINTS } from './endpoints';
+import { apiClient } from '@inventory-platform/api-client';
 import type {
   CreateCreditEntryDto,
   CreditAccountResponse,
   CreditEntriesPageResponse,
   CreditEntryResponse,
 } from '@inventory-platform/types';
+import { CREDIT_ENDPOINTS } from './endpoints';
 
 function unwrapApiData<T>(raw: unknown): T | undefined {
   if (raw == null) return undefined;
@@ -33,32 +33,42 @@ function normalizeAccount(a: CreditAccountResponse): CreditAccountResponse {
 
 export const creditApi = {
   charge: async (body: CreateCreditEntryDto): Promise<CreditEntryResponse> => {
-    const raw = await apiClient.post<unknown>(API_ENDPOINTS.CREDIT.CHARGE, body);
+    const raw = await apiClient.post<unknown>(CREDIT_ENDPOINTS.CHARGE, body);
     const inner = unwrapApiData<CreditEntryResponse>(raw);
     if (!inner || typeof inner !== 'object') throw new Error('Invalid charge response');
     return normalizeEntry(inner as CreditEntryResponse);
   },
 
   settlement: async (body: CreateCreditEntryDto): Promise<CreditEntryResponse> => {
-    const raw = await apiClient.post<unknown>(API_ENDPOINTS.CREDIT.SETTLEMENT, body);
+    const raw = await apiClient.post<unknown>(CREDIT_ENDPOINTS.SETTLEMENT, body);
     const inner = unwrapApiData<CreditEntryResponse>(raw);
     if (!inner || typeof inner !== 'object') throw new Error('Invalid settlement response');
     return normalizeEntry(inner as CreditEntryResponse);
   },
 
   accounts: async (): Promise<CreditAccountResponse[]> => {
-    const raw = await apiClient.get<unknown>(API_ENDPOINTS.CREDIT.ACCOUNTS);
+    const raw = await apiClient.get<unknown>(CREDIT_ENDPOINTS.ACCOUNTS);
     const inner = unwrapApiData<CreditAccountResponse[]>(raw);
-    return Array.isArray(inner) ? inner.map((a) => normalizeAccount(a as CreditAccountResponse)) : [];
+    return Array.isArray(inner)
+      ? inner.map((a) => normalizeAccount(a as CreditAccountResponse))
+      : [];
   },
 
-  entries: async (accountId: string, page = 0, size = 20): Promise<CreditEntriesPageResponse> => {
-    const raw = await apiClient.get<unknown>(API_ENDPOINTS.CREDIT.ENTRIES(accountId), {
+  entries: async (
+    accountId: string,
+    page = 0,
+    size = 20
+  ): Promise<CreditEntriesPageResponse> => {
+    const raw = await apiClient.get<unknown>(CREDIT_ENDPOINTS.ENTRIES(accountId), {
       page: String(page),
       size: String(size),
     });
     const inner = unwrapApiData<CreditEntriesPageResponse>(raw);
-    if (!inner || typeof inner !== 'object' || !Array.isArray((inner as CreditEntriesPageResponse).entries)) {
+    if (
+      !inner ||
+      typeof inner !== 'object' ||
+      !Array.isArray((inner as CreditEntriesPageResponse).entries)
+    ) {
       return { entries: [], page: 0, size, totalItems: 0, totalPages: 0 };
     }
     const p = inner as CreditEntriesPageResponse;
