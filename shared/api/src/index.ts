@@ -32,5 +32,4 @@ export * from './lib/gstr2';
 export * from './lib/gstr3b';
 export * from './lib/plans';
 export * from './lib/credit';
-export * from './lib/accounting';
 export * from './lib/resources';

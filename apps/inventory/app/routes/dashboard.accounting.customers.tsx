@@ -1,4 +1,1 @@
-export {
-  AccountingCustomersPage as default,
-  accountingCustomersMeta as meta,
-} from '@inventory-platform/dashboard';
+export { default, meta } from '@inventory-platform/accounting/routes/customers';

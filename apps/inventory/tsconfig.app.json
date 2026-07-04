@@ -26,7 +26,14 @@
       ],
       "@inventory-platform/auth": ["../../features/auth/src/index.ts"],
       "@inventory-platform/analytics": ["../../features/analytics/src/index.ts"],
-      "@inventory-platform/query": ["../../platform/query/src/index.ts"]
+      "@inventory-platform/accounting": ["../../core/accounting/src/index.ts"],
+      "@inventory-platform/accounting/routes/*": ["../../core/accounting/src/routes/*"],
+      "@inventory-platform/query": ["../../platform/query/src/index.ts"],
+      "@inventory-platform/session": ["../../platform/session/src/index.ts"],
+      "@inventory-platform/api-client": ["../../platform/api-client/src/index.ts"],
+      "@inventory-platform/routing": ["../../platform/routing/src/index.ts"],
+      "@inventory-platform/api/customers": ["../../shared/api/src/lib/customers.ts"],
+      "@inventory-platform/api/vendors": ["../../shared/api/src/lib/vendors.ts"]
     }
   },
   "include": [
@@ -78,6 +85,9 @@
     },
     {
       "path": "../../platform/query/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/accounting/tsconfig.lib.json"
     }
   ]
 }

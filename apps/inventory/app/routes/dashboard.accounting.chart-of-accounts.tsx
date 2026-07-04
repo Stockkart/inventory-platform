@@ -1,4 +1,1 @@
-export {
-  AccountingChartOfAccountsPage as default,
-  accountingChartOfAccountsMeta as meta,
-} from '@inventory-platform/dashboard';
+export { default, meta } from '@inventory-platform/accounting/routes/chart-of-accounts';

@@ -1,4 +1,1 @@
-export {
-  AccountingVendorStatementPage as default,
-  accountingVendorStatementMeta as meta,
-} from '@inventory-platform/dashboard';
+export { default, meta } from '@inventory-platform/accounting/routes/vendor-statement';

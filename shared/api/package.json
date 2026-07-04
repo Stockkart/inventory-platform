@@ -11,8 +11,18 @@
     ".": {
       "@inventory-platform/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./customers": {
+      "@inventory-platform/source": "./src/lib/customers.ts",
+      "import": "./src/lib/customers.ts",
+      "default": "./src/lib/customers.ts"
+    },
+    "./vendors": {
+      "@inventory-platform/source": "./src/lib/vendors.ts",
+      "import": "./src/lib/vendors.ts",
+      "default": "./src/lib/vendors.ts"
     }
   },
   "dependencies": {

@@ -1,4 +1,1 @@
-export {
-  AccountingTrialBalancePage as default,
-  accountingTrialBalanceMeta as meta,
-} from '@inventory-platform/dashboard';
+export { default, meta } from '@inventory-platform/accounting/routes/trial-balance';

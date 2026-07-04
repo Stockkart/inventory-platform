@@ -72,6 +72,7 @@ export default [
               onlyDependOnLibsWithTags: [
                 'type:legacy',
                 'type:platform',
+                'type:core',
                 'type:ui-kit',
               ],
             },
