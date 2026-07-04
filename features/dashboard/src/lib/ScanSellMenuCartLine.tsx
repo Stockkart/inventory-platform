@@ -45,7 +45,7 @@ export function ScanSellMenuCartLine({
         {ref && (
           <CustomerProductHistoryHint
             sellableRef={ref}
-            history={customerProductHistory}
+            history={customerProductHistory ?? null}
             loading={customerProductHistoryLoading}
           />
         )}

@@ -46,7 +46,7 @@ export function ScanSellCafeStockLine({
         </div>
         <CustomerProductHistoryHint
           sellableRef={inventorySellableRef(inventoryId)}
-          history={customerProductHistory}
+          history={customerProductHistory ?? null}
           loading={customerProductHistoryLoading}
         />
         <span className={styles.cafeMenuCartMeta}>
