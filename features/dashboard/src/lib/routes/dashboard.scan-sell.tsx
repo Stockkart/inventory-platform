@@ -14,6 +14,7 @@ import {
   cartApi,
   customersApi,
   pricingApi,
+  sellCatalogApi,
 } from '@inventory-platform/api';
 import type {
   AvailableUnit,
@@ -24,9 +25,20 @@ import type {
   PricingResponse,
   CustomerResponse,
   QuotationSummary,
+  MenuItem,
+  SellCatalog,
 } from '@inventory-platform/types';
-import { inventoryLotIdFromSellableRef, inventorySellableRef } from '@inventory-platform/types';
+import {
+  inventoryLotIdFromSellableRef,
+  inventorySellableRef,
+  lineSellableRef,
+  menuSellableRef,
+  menuItemIdFromSellableRef,
+} from '@inventory-platform/types';
 import styles from './dashboard.scan-sell.module.css';
+import { CafeSellCatalogPanel } from '../CafeSellCatalogPanel';
+import { ScanSellMenuCartLine } from '../ScanSellMenuCartLine';
+import { ScanSellCafeStockLine } from '../ScanSellCafeStockLine';
 import { useNotify, useAuthStore, useVerticalSchemaStore } from '@inventory-platform/store';
 import {
   isScanSellHidePurchaseKey,
@@ -48,6 +60,13 @@ export function meta() {
 }
 
 type SchemeTypeCart = 'FIXED_UNITS' | 'PERCENTAGE';
+
+/** True when a cart/checkout line represents a cafe menu item (not direct inventory). */
+function isMenuLine(line: CheckoutItemResponse): boolean {
+  if (line.sellMode === 'menu') return true;
+  if (line.menuItemId?.trim()) return true;
+  return menuItemIdFromSellableRef(lineSellableRef(line)) != null;
+}
 
 /** Rate option for the price selector: label + price */
 interface RateOption {
@@ -466,6 +485,10 @@ export default function ScanSellPage() {
   const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
   const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
   const [cartBusinessType, setCartBusinessType] = useState('medical');
+  const isCafeSell = cartBusinessType === 'cafe';
+  const [sellCatalog, setSellCatalog] = useState<SellCatalog | null>(null);
+  const [isLoadingCatalog, setIsLoadingCatalog] = useState(false);
+  const catalogLoadedForShopRef = useRef<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const scanSellCustomerPrefillRef = useRef<CustomerResponse | null>(null);
@@ -546,6 +569,39 @@ export default function ScanSellPage() {
       }
     });
   }, [activeShopId, fetchShopSchema]);
+
+  useEffect(() => {
+    if (!isCafeSell) {
+      setSellCatalog(null);
+      catalogLoadedForShopRef.current = null;
+      return;
+    }
+    const shopKey = activeShopId ?? '__me__';
+    if (catalogLoadedForShopRef.current === shopKey) {
+      return;
+    }
+    catalogLoadedForShopRef.current = shopKey;
+    let cancelled = false;
+    setIsLoadingCatalog(true);
+    sellCatalogApi
+      .get()
+      .then((catalog) => {
+        if (!cancelled) setSellCatalog(catalog);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        catalogLoadedForShopRef.current = null;
+        notifyError(
+          err instanceof Error ? err.message : 'Failed to load menu'
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingCatalog(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isCafeSell, activeShopId]);
 
   useEffect(() => {
     if (!detailModalItem) {
@@ -1200,7 +1256,9 @@ export default function ScanSellPage() {
   /** Build CartItem[] from cart response, reusing existing inventoryItem when possible (no API calls). */
   const mergeCartResponseToItems = useCallback(
     (cart: CartResponse, previousItems: CartItem[]): CartItem[] => {
-      return cart.items.map((resItem: CheckoutItemResponse) => {
+      return cart.items
+        .filter((resItem) => !isMenuLine(resItem))
+        .map((resItem: CheckoutItemResponse) => {
         const existing = previousItems.find(
           (i) => i.inventoryItem.id === resItem.inventoryId
         );
@@ -1885,6 +1943,81 @@ export default function ScanSellPage() {
     });
   };
 
+  /**
+   * Cafe menu lines are simple (no lots/units/schemes), so they bypass the
+   * inventory-centric syncCartToAPI path and post deltas directly, then
+   * reconcile from the server response.
+   */
+  const applyMenuCartDelta = async (sellableRef: string, delta: number) => {
+    if (delta === 0 || isUpdatingRef.current) {
+      return;
+    }
+    isUpdatingRef.current = true;
+    setIsUpdatingCart(true);
+    setError(null);
+    try {
+      let targetPurchaseId = activePurchaseId;
+      if (!targetPurchaseId) {
+        if (delta <= 0) return;
+        targetPurchaseId = await ensureActiveQuotationId();
+        if (!targetPurchaseId) return;
+      }
+      const updated = await cartApi.add({
+        businessType: cartBusinessType,
+        purchaseId: targetPurchaseId,
+        items: [{ sellableRef, quantity: delta }],
+      });
+      applyCartToState(updated, cartItems);
+      await refreshQuotationList();
+    } catch (err) {
+      notifyError(
+        err instanceof Error ? err.message : 'Failed to update order'
+      );
+    } finally {
+      isUpdatingRef.current = false;
+      setIsUpdatingCart(false);
+    }
+  };
+
+  const handleAddMenuItem = async (item: MenuItem) => {
+    if (item.available === false) {
+      notifyError('This item is unavailable');
+      return;
+    }
+    setShowSearchDropdown(false);
+    await applyMenuCartDelta(menuSellableRef(item.id), 1);
+  };
+
+  const handleAddDirectStock = (item: InventoryItem) => {
+    void handleAddToCart(item);
+  };
+
+  const handleMenuQtyChange = (sellableRef: string, delta: number) => {
+    void applyMenuCartDelta(sellableRef, delta);
+  };
+
+  const handleMenuSetQuantity = async (sellableRef: string, newQty: number) => {
+    const line = (cartData?.items ?? []).find(
+      (row) => lineSellableRef(row) === sellableRef
+    );
+    if (!line) return;
+    const current = Math.trunc(Number(line.quantity));
+    const next = Math.trunc(newQty);
+    const delta = next - current;
+    if (delta === 0) return;
+    await applyMenuCartDelta(sellableRef, delta);
+  };
+
+  const handleMenuRemove = (sellableRef: string) => {
+    const line = (cartData?.items ?? []).find(
+      (row) => lineSellableRef(row) === sellableRef
+    );
+    if (!line) return;
+    const qty = Math.trunc(Number(line.quantity));
+    if (qty <= 0) return;
+    void applyMenuCartDelta(sellableRef, -qty);
+  };
+
   const handleAdditionalDiscountChange = (
     inventoryId: string,
     value: number | null
@@ -2032,6 +2165,15 @@ export default function ScanSellPage() {
   const handleClearCart = async () => {
     // Get current cart items before clearing
     const currentItems = [...cartItems];
+    // Cafe menu lines are tracked on cartData, not cartItems.
+    const menuRemovals = menuCartLines
+      .map((line) => {
+        const ref = lineSellableRef(line);
+        const qty = Math.trunc(Number(line.quantity));
+        if (!ref || qty <= 0) return null;
+        return { sellableRef: ref, quantity: -qty };
+      })
+      .filter((d): d is { sellableRef: string; quantity: number } => d != null);
 
     // Clear local state
     setCartItems([]);
@@ -2039,16 +2181,19 @@ export default function ScanSellPage() {
     setError(null);
 
     // Send all items with negative quantities to remove them from cart
-    if (currentItems.length > 0) {
+    if (currentItems.length > 0 || menuRemovals.length > 0) {
       setIsUpdatingCart(true);
       try {
-        const itemsToSend = currentItems.map((item) => ({
-          id: item.inventoryItem.id,
-          unit: item.unit,
-          quantity: -item.quantity, // Negative quantity to remove all
-          baseQuantity: -item.baseQuantity,
-          priceToRetail: item.price,
-        }));
+        const itemsToSend = [
+          ...currentItems.map((item) => ({
+            id: item.inventoryItem.id,
+            unit: item.unit,
+            quantity: -item.quantity, // Negative quantity to remove all
+            baseQuantity: -item.baseQuantity,
+            priceToRetail: item.price,
+          })),
+          ...menuRemovals,
+        ];
 
         const cartPayload = {
           businessType: cartBusinessType,
@@ -2264,7 +2409,7 @@ export default function ScanSellPage() {
   };
 
   const handleProcessPayment = async () => {
-    if (cartItems.length === 0) {
+    if (cartItems.length === 0 && menuCartLines.length === 0) {
       notifyError('Cart is empty');
       return;
     }
@@ -2326,10 +2471,19 @@ export default function ScanSellPage() {
     }
   };
 
+  const menuCartLines = useMemo(
+    () => (cartData?.items ?? []).filter((line) => isMenuLine(line)),
+    [cartData]
+  );
+
   const cartSellableRefs = useMemo(
-    () =>
-      cartItems.map((item) => inventorySellableRef(item.inventoryItem.id)),
-    [cartItems]
+    () => [
+      ...cartItems.map((item) => inventorySellableRef(item.inventoryItem.id)),
+      ...menuCartLines
+        .map((line) => lineSellableRef(line))
+        .filter((ref): ref is string => Boolean(ref)),
+    ],
+    [cartItems, menuCartLines]
   );
 
   const { data: customerProductHistory, loading: customerProductHistoryLoading } =
@@ -2338,16 +2492,150 @@ export default function ScanSellPage() {
       customerPhone,
       sellableRefs: cartSellableRefs,
       excludePurchaseId: cartData?.purchaseId,
-      enabled: cartItems.length > 0,
+      enabled: cartItems.length > 0 || menuCartLines.length > 0,
     });
 
+  const cafeOrderItemCount = useMemo(
+    () =>
+      menuCartLines.reduce((sum, line) => sum + line.quantity, 0) +
+      cartItems.reduce((sum, item) => sum + item.quantity, 0),
+    [menuCartLines, cartItems]
+  );
+
+  const renderCafeOrderLines = () => {
+    if (isLoadingCart) {
+      return <div className={styles.cafeOrderEmpty}>Loading order…</div>;
+    }
+    if (menuCartLines.length === 0 && cartItems.length === 0) {
+      return (
+        <div className={styles.cafeOrderEmpty}>
+          Tap menu or stock items to start an order
+        </div>
+      );
+    }
+    return (
+      <>
+        {menuCartLines.map((line) => (
+          <ScanSellMenuCartLine
+            key={lineSellableRef(line) ?? line.name}
+            line={line}
+            disabled={isUpdatingCart}
+            customerProductHistory={customerProductHistory}
+            customerProductHistoryLoading={customerProductHistoryLoading}
+            onChangeQty={handleMenuQtyChange}
+            onSetQuantity={handleMenuSetQuantity}
+            onRemove={handleMenuRemove}
+          />
+        ))}
+        {cartItems.map((cartItem) => {
+          const lineTotal = cartItem.price * cartItem.quantity;
+          const unitLabel = `${cartItem.quantity} ${cartItem.unit}`;
+          return (
+            <ScanSellCafeStockLine
+              key={cartItem.inventoryItem.id}
+              name={cartItem.inventoryItem.name || 'Product'}
+              inventoryId={cartItem.inventoryItem.id}
+              unitLabel={unitLabel}
+              price={cartItem.price}
+              quantity={cartItem.quantity}
+              lineTotal={lineTotal}
+              disabled={isUpdatingCart}
+              customerProductHistory={customerProductHistory}
+              customerProductHistoryLoading={customerProductHistoryLoading}
+              onChangeQty={(delta) => {
+                void handleUpdateQuantity(
+                  cartItem.inventoryItem.id,
+                  delta,
+                  false
+                );
+              }}
+              onSetQuantity={async (newQty) => {
+                const delta = newQty - cartItem.quantity;
+                if (delta !== 0) {
+                  await handleUpdateQuantity(
+                    cartItem.inventoryItem.id,
+                    delta,
+                    false
+                  );
+                }
+              }}
+              onRemove={() => void handleRemoveItem(cartItem.inventoryItem.id)}
+            />
+          );
+        })}
+      </>
+    );
+  };
+
+  const renderCafeCheckoutBar = () => (
+    <div className={styles.cafeCheckoutBar}>
+      <div className={styles.cafeCheckoutBarInner}>
+        <div className={styles.cafeCheckoutTotals}>
+          {isLoadingCart ? (
+            <span className={styles.cafeCheckoutLoading}>Loading…</span>
+          ) : (
+            <>
+              <div className={styles.cafeCheckoutRow}>
+                <span>Subtotal</span>
+                <span>₹{calculateSubtotal().toFixed(2)}</span>
+              </div>
+              {((cartData?.taxTotal ?? 0) !== 0 ||
+                (cartData?.sgstAmount ?? 0) !== 0 ||
+                (cartData?.cgstAmount ?? 0) !== 0) && (
+                <div className={styles.cafeCheckoutRow}>
+                  <span>Tax</span>
+                  <span>₹{calculateTax().toFixed(2)}</span>
+                </div>
+              )}
+              <div className={styles.cafeCheckoutTotal}>
+                <span>Total</span>
+                <span>₹{calculateTotal().toFixed(2)}</span>
+              </div>
+            </>
+          )}
+        </div>
+        <div className={styles.cafeCheckoutActions}>
+          <button
+            type="button"
+            className={styles.clearBtn}
+            onClick={() => void handleClearCart()}
+            disabled={isUpdatingCart || isLoadingCart}
+          >
+            Clear Cart
+          </button>
+          <button
+            type="button"
+            className={styles.checkoutBtn}
+            onClick={() => void handleProcessPayment()}
+            disabled={
+              (cartItems.length === 0 && menuCartLines.length === 0) ||
+              isProcessing ||
+              isUpdatingCart ||
+              isLoadingCart
+            }
+          >
+            {isProcessing
+              ? 'Processing…'
+              : isUpdatingCart
+              ? 'Updating…'
+              : 'Process Payment'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${isCafeSell ? styles.pageCafe : ''}`}>
       {error && <div className={styles.errorMessage}>{error}</div>}
 
       <div className={styles.header}>
-        <h2 className={styles.title}>Scan and Sell</h2>
-        <p className={styles.subtitle}>Speed up sales with barcode scanning</p>
+        <h2 className={styles.title}>{isCafeSell ? 'Sell' : 'Scan and Sell'}</h2>
+        <p className={styles.subtitle}>
+          {isCafeSell
+            ? 'Tap menu items or direct stock to build the order'
+            : 'Speed up sales with barcode scanning'}
+        </p>
       </div>
 
       {isLoadingCart ? (
@@ -2363,7 +2651,271 @@ export default function ScanSellPage() {
             onCancel={handleCancelQuotation}
           />
 
-      {/* Main: cart (wider) + totals sidebar (narrow fixed) */}
+      {isCafeSell ? (
+        <>
+        <div className={styles.cafeSellShell}>
+          <div className={styles.cafeSellWorkspace}>
+            <div className={styles.cafePickerColumn}>
+              <div className={styles.cafePickerSection}>
+                <div className={styles.searchRow} ref={searchWrapperRef}>
+                  <form
+                    className={styles.searchForm}
+                    onSubmit={handleSearchSubmit}
+                  >
+                    <div className={styles.searchInputWrapper}>
+                      <span
+                        className={styles.searchIcon}
+                        role="img"
+                        aria-label="Search"
+                      >
+                        🔍
+                      </span>
+                      <input
+                        type="text"
+                        className={styles.searchInput}
+                        placeholder="Filter menu, or search more products…"
+                        value={searchQuery}
+                        onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                          setSearchQuery(e.currentTarget.value)
+                        }
+                        disabled={isSearching}
+                        aria-expanded={showSearchDropdown}
+                        aria-haspopup="listbox"
+                        aria-controls="search-results-list"
+                      />
+                      <button
+                        type="submit"
+                        className={styles.searchSubmitBtn}
+                        disabled={isSearching}
+                      >
+                        {isSearching ? 'Searching…' : 'Search'}
+                      </button>
+                    </div>
+                  </form>
+                  {showSearchDropdown && (
+                    <div
+                      id="search-results-list"
+                      className={styles.searchDropdown}
+                      role="listbox"
+                    >
+                      {isSearching ? (
+                        <div className={styles.dropdownLoading}>Searching…</div>
+                      ) : searchResults.length === 0 ? (
+                        <div className={styles.dropdownEmpty}>
+                          No products found
+                        </div>
+                      ) : (
+                        <ul className={styles.dropdownList}>
+                          {searchResults.map((item) => (
+                            <SearchDropdownItem
+                              key={item.id}
+                              item={item}
+                              onAddToCart={handleAddToCart}
+                              disabled={
+                                item.currentCount <= 0 ||
+                                (item.sellingPrice ?? item.priceToRetail) ==
+                                  null ||
+                                isUpdatingCart
+                              }
+                            />
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <CafeSellCatalogPanel
+                  catalog={sellCatalog}
+                  loading={isLoadingCatalog}
+                  disabled={isUpdatingCart || isLoadingCart}
+                  filterQuery={searchQuery}
+                  onAddMenuItem={(item) => void handleAddMenuItem(item)}
+                  onAddDirectStock={handleAddDirectStock}
+                />
+              </div>
+            </div>
+
+            <aside className={styles.cafeOrderColumn}>
+              <div className={styles.customerBlock}>
+                <button
+                  type="button"
+                  className={styles.customerToggle}
+                  onClick={() => setCustomerSectionOpen((o) => !o)}
+                  aria-expanded={customerSectionOpen}
+                >
+                  <span className={styles.customerToggleLabel}>Customer</span>
+                  {customerName || customerPhone ? (
+                    <span className={styles.customerToggleValue}>
+                      {customerName || customerPhone}
+                    </span>
+                  ) : (
+                    <span className={styles.customerToggleHint}>Optional</span>
+                  )}
+                  <span className={styles.customerToggleIcon}>
+                    {customerSectionOpen ? '▼' : '▶'}
+                  </span>
+                </button>
+                {customerSectionOpen && (
+                  <div className={styles.customerForm}>
+                    <div className={styles.customerFieldsVertical}>
+                      <div className={styles.customerField}>
+                        <label
+                          htmlFor="cafe-customerPhone"
+                          className={styles.customerLabel}
+                        >
+                          Phone
+                        </label>
+                        <div className={styles.customerInputRow}>
+                          <input
+                            id="cafe-customerPhone"
+                            type="tel"
+                            className={styles.customerInput}
+                            placeholder="Phone"
+                            value={customerPhone}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                              setCustomerPhone(e.currentTarget.value)
+                            }
+                            onBlur={handleCustomerFieldBlur}
+                            disabled={isSearchingCustomer}
+                          />
+                          <button
+                            type="button"
+                            className={styles.sidebarSearchBtn}
+                            onClick={handleCustomerSearch}
+                            disabled={
+                              isSearchingCustomer || !customerPhone.trim()
+                            }
+                            title="Search customer"
+                          >
+                            {isSearchingCustomer ? '…' : '⌕'}
+                          </button>
+                        </div>
+                      </div>
+                      <div className={styles.customerField}>
+                        <label
+                          htmlFor="cafe-customerName"
+                          className={styles.customerLabel}
+                        >
+                          Name
+                        </label>
+                        <input
+                          id="cafe-customerName"
+                          type="text"
+                          className={styles.customerInput}
+                          placeholder="Name"
+                          value={customerName}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                            setCustomerName(e.currentTarget.value)
+                          }
+                          onBlur={handleCustomerFieldBlur}
+                        />
+                      </div>
+                      <div className={styles.customerField}>
+                        <label
+                          htmlFor="cafe-customerEmail"
+                          className={styles.customerLabel}
+                        >
+                          Email
+                        </label>
+                        <div className={styles.customerInputRow}>
+                          <input
+                            id="cafe-customerEmail"
+                            type="email"
+                            className={styles.customerInput}
+                            placeholder="Email"
+                            value={customerEmail}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                              setCustomerEmail(e.currentTarget.value)
+                            }
+                            onBlur={handleCustomerFieldBlur}
+                            disabled={isSearchingCustomer}
+                          />
+                          <button
+                            type="button"
+                            className={styles.sidebarSearchBtn}
+                            onClick={handleCustomerSearchByEmail}
+                            disabled={
+                              isSearchingCustomer || !customerEmail.trim()
+                            }
+                            title="Search customer by email"
+                          >
+                            {isSearchingCustomer ? '…' : '⌕'}
+                          </button>
+                        </div>
+                      </div>
+                      <div className={styles.customerField}>
+                        <label
+                          htmlFor="cafe-customerAddress"
+                          className={styles.customerLabel}
+                        >
+                          Address
+                        </label>
+                        <input
+                          id="cafe-customerAddress"
+                          type="text"
+                          className={styles.customerInput}
+                          placeholder="Address"
+                          value={customerAddress}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                            setCustomerAddress(e.currentTarget.value)
+                          }
+                          onBlur={handleCustomerFieldBlur}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.cafeOrderPanel}>
+                <div className={styles.cafeOrderHeader}>
+                  <h3 className={styles.cafeOrderTitle}>Current order</h3>
+                  <span className={styles.cafeOrderCount}>
+                    {cafeOrderItemCount} item
+                    {cafeOrderItemCount === 1 ? '' : 's'}
+                  </span>
+                </div>
+                <div className={styles.cafeOrderList}>
+                  {renderCafeOrderLines()}
+                </div>
+              </div>
+
+              {cartData &&
+                (cartData.totalCost != null ||
+                  cartData.revenueAfterTax != null ||
+                  cartData.totalProfit != null ||
+                  cartData.marginPercent != null) && (
+                  <div className={styles.cafeAnalytics}>
+                    <div className={styles.summaryRow}>
+                      <span>Total Cost</span>
+                      <span>₹{(cartData.totalCost ?? 0).toFixed(2)}</span>
+                    </div>
+                    {cartData.revenueAfterTax != null && (
+                      <div className={styles.summaryRow}>
+                        <span>Revenue (after tax)</span>
+                        <span>₹{cartData.revenueAfterTax.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {cartData.totalProfit != null && (
+                      <div className={styles.summaryRow}>
+                        <span>Profit</span>
+                        <span>₹{cartData.totalProfit.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {cartData.marginPercent != null && (
+                      <div className={styles.summaryRow}>
+                        <span>Margin</span>
+                        <span>{cartData.marginPercent.toFixed(1)}%</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+            </aside>
+          </div>
+        </div>
+        {renderCafeCheckoutBar()}
+        </>
+      ) : (
       <div className={styles.mainRow}>
         <div className={styles.cartArea}>
           <div className={styles.cartSection}>
@@ -3437,7 +3989,7 @@ export default function ScanSellPage() {
               className={styles.checkoutBtn}
               onClick={handleProcessPayment}
               disabled={
-                cartItems.length === 0 ||
+                (cartItems.length === 0 && menuCartLines.length === 0) ||
                 isProcessing ||
                 isUpdatingCart ||
                 isLoadingCart
@@ -3452,6 +4004,7 @@ export default function ScanSellPage() {
           </div>
         </aside>
       </div>
+      )}
         </>
       )}
 

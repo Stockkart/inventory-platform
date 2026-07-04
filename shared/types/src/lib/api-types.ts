@@ -1434,6 +1434,8 @@ export interface QuotationSummary {
   customerId?: string | null;
   customerName: string;
   customerPhone?: string | null;
+  /** Daily order token (cafe). */
+  tokenNo?: string | null;
   itemCount: number;
   grandTotal: number;
   createdAt?: string;

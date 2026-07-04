@@ -19,6 +19,13 @@ export interface ScanSellQuotationStackProps {
   onCancel: (purchaseId: string) => void;
 }
 
+function quotationTabLabel(q: QuotationSummary): string {
+  if (q.tokenNo?.trim()) {
+    return `Token ${q.tokenNo.trim()}`;
+  }
+  return q.customerName?.trim() || 'Order';
+}
+
 export function ScanSellQuotationStack({
   quotations,
   activePurchaseId,
@@ -49,6 +56,7 @@ export function ScanSellQuotationStack({
         {quotations.map((q) => {
           const isActive = q.purchaseId === activePurchaseId;
           const total = formatMoney(Number(q.grandTotal) || 0);
+          const tabLabel = quotationTabLabel(q);
           return (
             <div
               key={q.purchaseId}
@@ -62,7 +70,7 @@ export function ScanSellQuotationStack({
                 onClick={() => onSelect(q.purchaseId)}
                 disabled={disabled}
               >
-                <span className={styles.chipName}>{q.customerName}</span>
+                <span className={styles.chipName}>{tabLabel}</span>
                 <span className={styles.chipMeta}>
                   {q.itemCount} item{q.itemCount === 1 ? '' : 's'} · {total}
                 </span>
@@ -75,7 +83,7 @@ export function ScanSellQuotationStack({
                   onCancel(q.purchaseId);
                 }}
                 disabled={disabled}
-                aria-label={`Cancel quotation for ${q.customerName}`}
+                aria-label={`Cancel quotation ${tabLabel}`}
                 title="Cancel quotation"
               >
                 ×
