@@ -1,92 +1,51 @@
-import { useEffect, useState, useCallback } from 'react';
-import { useSearchParams, Link, useNavigate } from 'react-router';
-import { plansApi } from '@inventory-platform/api';
+import { useMemo, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { getPaymentCheckout } from '@inventory-platform/payment';
 import { useAuthStore, usePlanStatusStore } from '@inventory-platform/store';
-import type {
-  PlanResponse,
-  PlanTransactionResponse,
-} from '@inventory-platform/types';
-import styles from './dashboard.plan-payment.module.css';
+import {
+  useCreatePlanCheckoutMutation,
+  usePlanQuery,
+  usePlansQuery,
+  usePlanTransactionsQuery,
+  useVerifyPlanPaymentMutation,
+} from '../queries/hooks';
+import styles from './plan-payment.module.css';
 
-export function meta() {
-  return [
-    { title: 'Payment - StockKart' },
-    {
-      name: 'description',
-      content: 'Manage plan payments and view transaction history',
-    },
-  ];
-}
-
-export default function PlanPaymentPage() {
+export function PlanPaymentPage() {
   const { user } = useAuthStore();
   const fetchPlanStatus = usePlanStatusStore((s) => s.fetchPlanStatus);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const planIdFromUrl = searchParams.get('planId');
-
-  const [plans, setPlans] = useState<PlanResponse[]>([]);
-  const [transactions, setTransactions] = useState<PlanTransactionResponse[]>(
-    []
-  );
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
 
-  const [planById, setPlanById] = useState<PlanResponse | null>(null);
-  const selectedPlan = plans.find((p) => p.id === planIdFromUrl) ?? planById;
+  const { data: plans = [] } = usePlansQuery();
+  const { data: planById } = usePlanQuery(
+    planIdFromUrl && !plans.some((p) => p.id === planIdFromUrl)
+      ? planIdFromUrl
+      : null
+  );
+  const {
+    data: transactions = [],
+    isLoading: transactionsLoading,
+    refetch: refetchTransactions,
+  } = usePlanTransactionsQuery();
 
-  useEffect(() => {
-    if (planIdFromUrl && !plans.find((p) => p.id === planIdFromUrl)) {
-      plansApi
-        .getById(planIdFromUrl)
-        .then(setPlanById)
-        .catch(() => {
-          /* empty */
-        });
-    } else {
-      setPlanById(null);
-    }
-  }, [planIdFromUrl, plans]);
+  const selectedPlan = useMemo(
+    () => plans.find((p) => p.id === planIdFromUrl) ?? planById ?? null,
+    [plans, planIdFromUrl, planById]
+  );
 
-  const fetchPlans = useCallback(async () => {
-    try {
-      const data = await plansApi.list();
-      setPlans(data);
-    } catch {
-      // Ignore
-    }
-  }, []);
-
-  const fetchTransactions = useCallback(async () => {
-    try {
-      const data = await plansApi.listTransactions();
-      setTransactions(data);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to load transactions'
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      await Promise.all([fetchPlans(), fetchTransactions()]);
-      setLoading(false);
-    };
-    load();
-  }, [fetchPlans, fetchTransactions]);
+  const createCheckoutMutation = useCreatePlanCheckoutMutation();
+  const verifyPaymentMutation = useVerifyPlanPaymentMutation();
 
   const handlePay = async () => {
     if (!user?.shopId || !selectedPlan) return;
     setPaying(true);
     setError(null);
     try {
-      const checkout = await plansApi.createCheckout({
+      const checkout = await createCheckoutMutation.mutateAsync({
         planId: selectedPlan.id,
         durationMonths: 12,
       });
@@ -106,7 +65,7 @@ export default function PlanPaymentPage() {
         }
       );
 
-      await plansApi.verifyPayment({
+      await verifyPaymentMutation.mutateAsync({
         orderId: checkout.orderId,
         razorpayPaymentId: result.razorpay_payment_id,
         razorpayOrderId: result.razorpay_order_id,
@@ -114,7 +73,7 @@ export default function PlanPaymentPage() {
       });
 
       await fetchPlanStatus({ force: true });
-      await fetchTransactions();
+      await refetchTransactions();
       navigate('/dashboard', { replace: true });
     } catch (err) {
       setError(
@@ -134,7 +93,7 @@ export default function PlanPaymentPage() {
       minute: '2-digit',
     });
 
-  if (loading && transactions.length === 0) {
+  if (transactionsLoading && transactions.length === 0) {
     return (
       <div className={styles.page}>
         <div className={styles.loading}>Loading...</div>
@@ -181,7 +140,7 @@ export default function PlanPaymentPage() {
                 <button
                   type="button"
                   className={styles.processBtn}
-                  onClick={handlePay}
+                  onClick={() => void handlePay()}
                   disabled={paying}
                 >
                   {paying

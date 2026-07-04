@@ -1,7 +1,6 @@
 import { create } from 'zustand';
-import { plansApi } from '@inventory-platform/api';
 import { apiClient } from '@inventory-platform/api-client';
-import type { ShopPlanStatusResponse } from '@inventory-platform/types';
+import type { ApiResponse, ShopPlanStatusResponse } from '@inventory-platform/types';
 
 interface PlanStatusState {
   byShopId: Record<string, ShopPlanStatusResponse>;
@@ -30,7 +29,10 @@ export const usePlanStatusStore = create<PlanStatusState>((set, get) => ({
     }
     set({ loading: true, error: null });
     try {
-      const status = await plansApi.getShopStatus();
+      const response = await apiClient.get<ApiResponse<ShopPlanStatusResponse>>(
+        '/plans/shop/status'
+      );
+      const status = response.data;
       set((state) => ({
         byShopId: { ...state.byShopId, [shopId]: status },
         loading: false,

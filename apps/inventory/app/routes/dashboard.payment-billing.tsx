@@ -1,1 +1,1 @@
-export { PaymentBillingPage as default, paymentBillingMeta as meta } from '@inventory-platform/dashboard';
+export { default, meta } from '@inventory-platform/plan/routes/payment-billing';

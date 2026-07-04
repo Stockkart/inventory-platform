@@ -43,6 +43,9 @@
       "path": "../api/tsconfig.lib.json"
     },
     {
+      "path": "../../core/plan/tsconfig.lib.json"
+    },
+    {
       "path": "../../platform/schema/tsconfig.lib.json"
     },
     {

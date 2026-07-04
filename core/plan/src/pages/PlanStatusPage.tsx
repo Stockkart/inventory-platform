@@ -1,57 +1,19 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useNavigate } from 'react-router';
-import { plansApi } from '@inventory-platform/api';
-import { PlanGrid } from '@inventory-platform/ui';
-import type {
-  ShopPlanStatusResponse,
-  PlanResponse,
-} from '@inventory-platform/types';
-import styles from './dashboard.plan-status.module.css';
+import { PlanGrid } from '../ui/PlanGrid';
+import type { PlanResponse } from '@inventory-platform/types';
+import { usePlansQuery, useShopPlanStatusQuery } from '../queries/hooks';
+import styles from './plan-status.module.css';
 
-export function meta() {
-  return [
-    { title: 'Plan - StockKart' },
-    {
-      name: 'description',
-      content: 'View your plan, usage, and upgrade options',
-    },
-  ];
-}
-
-export default function PlanStatusPage() {
+export function PlanStatusPage() {
   const navigate = useNavigate();
-  const [status, setStatus] = useState<ShopPlanStatusResponse | null>(null);
-  const [plans, setPlans] = useState<PlanResponse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchStatus = useCallback(async () => {
-    try {
-      const data = await plansApi.getShopStatus();
-      setStatus(data);
-      setError(null);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to load plan status'
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const fetchPlans = useCallback(async () => {
-    try {
-      const data = await plansApi.list();
-      setPlans(data);
-    } catch {
-      // Ignore - plans are optional
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchStatus();
-    fetchPlans();
-  }, [fetchStatus, fetchPlans]);
+  const {
+    data: status,
+    isLoading: statusLoading,
+    isError: statusError,
+    error: statusErr,
+  } = useShopPlanStatusQuery();
+  const { data: plans = [] } = usePlansQuery();
 
   const handleSelectPlan = useCallback(
     (plan: PlanResponse) => {
@@ -60,7 +22,7 @@ export default function PlanStatusPage() {
     [navigate]
   );
 
-  if (loading) {
+  if (statusLoading) {
     return (
       <div className={styles.page}>
         <div className={styles.loading}>Loading plan status...</div>
@@ -68,19 +30,26 @@ export default function PlanStatusPage() {
     );
   }
 
-  if (error && !status) {
+  if (statusError && !status) {
     return (
       <div className={styles.page}>
-        <div className={styles.error}>{error}</div>
+        <div className={styles.error}>
+          {statusErr instanceof Error
+            ? statusErr.message
+            : 'Failed to load plan status'}
+        </div>
       </div>
     );
   }
 
-  const s = status!;
+  if (!status) {
+    return null;
+  }
+
   const formatDate = (iso: string | null) =>
     iso ? new Date(iso).toLocaleDateString('en-IN') : '—';
-  const currentPlanIndex = s.plan
-    ? plans.findIndex((p) => p.id === s.planId)
+  const currentPlanIndex = status.plan
+    ? plans.findIndex((p) => p.id === status.planId)
     : -1;
 
   return (
@@ -93,18 +62,17 @@ export default function PlanStatusPage() {
       </div>
 
       <div className={styles.container}>
-        {/* Current Plan Summary */}
         <section className={styles.section}>
           <h3 className={styles.sectionTitle}>Current Plan</h3>
           <div className={styles.planCard}>
-            {s.trial ? (
+            {status.trial ? (
               <>
                 <div className={styles.trialBadge}>Trial</div>
                 <p className={styles.planName}>Base (Trial) — 30 days</p>
                 <p className={styles.planExpiry}>
-                  Expires: {formatDate(s.planExpiryDate)}
+                  Expires: {formatDate(status.planExpiryDate)}
                 </p>
-                {s.trialExpired && (
+                {status.trialExpired && (
                   <div className={styles.trialExpired}>
                     Your trial has ended. Choose a plan below to continue.
                   </div>
@@ -112,12 +80,12 @@ export default function PlanStatusPage() {
               </>
             ) : (
               <>
-                <p className={styles.planName}>{s.plan?.planName ?? '—'}</p>
+                <p className={styles.planName}>{status.plan?.planName ?? '—'}</p>
                 <p className={styles.planExpiry}>
-                  {s.planExpired ? 'Expired' : 'Renews'}:{' '}
-                  {formatDate(s.planExpiryDate)}
+                  {status.planExpired ? 'Expired' : 'Renews'}:{' '}
+                  {formatDate(status.planExpiryDate)}
                 </p>
-                {s.planExpired && (
+                {status.planExpired && (
                   <div className={styles.trialExpired}>
                     Your subscription has ended. Choose a plan below to continue.
                   </div>
@@ -130,7 +98,6 @@ export default function PlanStatusPage() {
           </div>
         </section>
 
-        {/* Usage */}
         <section className={styles.section}>
           <h3 className={styles.sectionTitle}>This Month&apos;s Usage</h3>
           <div className={styles.usageGrid}>
@@ -138,65 +105,71 @@ export default function PlanStatusPage() {
               <span className={styles.usageLabel}>Billing Amount</span>
               <span
                 className={
-                  s.billingLimitReached ? styles.usageLimitReached : undefined
+                  status.billingLimitReached ? styles.usageLimitReached : undefined
                 }
               >
                 ₹
-                {s.currentUsage?.billingAmountUsed?.toLocaleString('en-IN') ??
-                  0}
+                {status.currentUsage?.billingAmountUsed?.toLocaleString(
+                  'en-IN'
+                ) ?? 0}
               </span>
             </div>
             <div className={styles.usageItem}>
               <span className={styles.usageLabel}>Bills</span>
               <span
                 className={
-                  s.billCountLimitReached ? styles.usageLimitReached : undefined
+                  status.billCountLimitReached ? styles.usageLimitReached : undefined
                 }
               >
-                {s.currentUsage?.billCountUsed ?? 0}
+                {status.currentUsage?.billCountUsed ?? 0}
               </span>
             </div>
             <div className={styles.usageItem}>
               <span className={styles.usageLabel}>SMS</span>
               <span
                 className={
-                  s.smsLimitReached ? styles.usageLimitReached : undefined
+                  status.smsLimitReached ? styles.usageLimitReached : undefined
                 }
               >
-                {s.currentUsage?.smsUsed ?? 0}
+                {status.currentUsage?.smsUsed ?? 0}
               </span>
             </div>
             <div className={styles.usageItem}>
               <span className={styles.usageLabel}>WhatsApp</span>
               <span
                 className={
-                  s.whatsappLimitReached ? styles.usageLimitReached : undefined
+                  status.whatsappLimitReached ? styles.usageLimitReached : undefined
                 }
               >
-                {s.currentUsage?.whatsappUsed ?? 0}
+                {status.currentUsage?.whatsappUsed ?? 0}
               </span>
             </div>
           </div>
         </section>
 
-        {/* All Plans Grid - same design as pre-login Pricing */}
         <section className={styles.section}>
           <h3 className={styles.sectionTitle}>
-            {s.planExpired ? 'Choose a Plan' : 'Available Plans'}
+            {status.planExpired ? 'Choose a Plan' : 'Available Plans'}
           </h3>
           <p className={styles.sectionSubtitle}>
             Select a plan to proceed to payment
           </p>
           <PlanGrid
             plans={plans}
-            currentPlanId={s.trial ? null : s.planId}
+            currentPlanId={status.trial ? null : status.planId}
             onSelectPlan={handleSelectPlan}
-            ctaLabel={s.planExpired ? 'Select Plan' : 'Upgrade'}
+            ctaLabel={status.planExpired ? 'Select Plan' : 'Upgrade'}
             showTrialBadge
           />
         </section>
 
-        {error && <div className={styles.errorInline}>{error}</div>}
+        {statusError && (
+          <div className={styles.errorInline}>
+            {statusErr instanceof Error
+              ? statusErr.message
+              : 'Failed to load plan status'}
+          </div>
+        )}
       </div>
     </div>
   );

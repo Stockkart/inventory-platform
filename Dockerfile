@@ -19,6 +19,7 @@ COPY shared/types/package.json ./shared/types/
 COPY shared/ui/package.json ./shared/ui/
 COPY core/analytics/package.json ./core/analytics/
 COPY core/reminders/package.json ./core/reminders/
+COPY core/plan/package.json ./core/plan/
 COPY features/auth/package.json ./features/auth/
 COPY features/dashboard/package.json ./features/dashboard/
 COPY features/onboarding/package.json ./features/onboarding/
@@ -54,6 +55,7 @@ COPY shared/types/package.json ./shared/types/
 COPY shared/ui/package.json ./shared/ui/
 COPY core/analytics/package.json ./core/analytics/
 COPY core/reminders/package.json ./core/reminders/
+COPY core/plan/package.json ./core/plan/
 COPY features/auth/package.json ./features/auth/
 COPY features/dashboard/package.json ./features/dashboard/
 COPY features/onboarding/package.json ./features/onboarding/

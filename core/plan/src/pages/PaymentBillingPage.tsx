@@ -1,13 +1,6 @@
-import styles from './dashboard.payment-billing.module.css';
+import styles from './payment-billing.module.css';
 
-export function meta() {
-  return [
-    { title: 'Payment & Billing - StockKart' },
-    { name: 'description', content: 'Process payments and manage invoices' },
-  ];
-}
-
-export default function PaymentBillingPage() {
+export function PaymentBillingPage() {
   return (
     <div className={styles.page}>
       <div className={styles.header}>

@@ -62,6 +62,17 @@ const remindersRouteAliases = Object.fromEntries(
     ])
 );
 
+const planRoutesDir = path.resolve(__dirname, '../../core/plan/src/routes');
+const planRouteAliases = Object.fromEntries(
+  fs
+    .readdirSync(planRoutesDir)
+    .filter((file) => file.endsWith('.tsx'))
+    .map((file) => [
+      `@inventory-platform/plan/routes/${file.replace(/\.tsx$/, '')}`,
+      path.join(planRoutesDir, file),
+    ])
+);
+
 export default defineConfig({
   root: __dirname,
   cacheDir: '../../node_modules/.vite/apps/inventory',
@@ -81,6 +92,7 @@ export default defineConfig({
       ...taxationRouteAliases,
       ...analyticsRouteAliases,
       ...remindersRouteAliases,
+      ...planRouteAliases,
       '@inventory-platform/ui': path.resolve(__dirname, '../../shared/ui/src/index.ts'),
       '@inventory-platform/store': path.resolve(__dirname, '../../shared/store/src/index.ts'),
       '@inventory-platform/api/customers': path.resolve(
@@ -102,6 +114,8 @@ export default defineConfig({
       '@inventory-platform/credit': path.resolve(__dirname, '../../core/credit/src/index.ts'),
       '@inventory-platform/taxation': path.resolve(__dirname, '../../core/taxation/src/index.ts'),
       '@inventory-platform/reminders': path.resolve(__dirname, '../../core/reminders/src/index.ts'),
+      '@inventory-platform/plan/api': path.resolve(__dirname, '../../core/plan/src/api/index.ts'),
+      '@inventory-platform/plan': path.resolve(__dirname, '../../core/plan/src/index.ts'),
       '@inventory-platform/query': path.resolve(__dirname, '../../platform/query/src/index.ts'),
       '@inventory-platform/session': path.resolve(__dirname, '../../platform/session/src/index.ts'),
       '@inventory-platform/api-client': path.resolve(__dirname, '../../platform/api-client/src/index.ts'),

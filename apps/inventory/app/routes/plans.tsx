@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { plansApi } from '@inventory-platform/api';
+import { plansApi } from '@inventory-platform/plan/api';
 import {
   FormKeyboardNavScope,
   PlanGrid,

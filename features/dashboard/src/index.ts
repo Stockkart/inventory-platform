@@ -5,7 +5,6 @@ export { default as ShopsPage } from './lib/routes/dashboard.shops';
 export { default as ProfilePage } from './lib/routes/dashboard.profile';
 export { default as CustomersPage } from './lib/routes/dashboard.customers';
 export { default as VendorsPage } from './lib/routes/dashboard.vendors';
-export { default as PaymentBillingPage } from './lib/routes/dashboard.payment-billing';
 export { default as ProductRegistrationPage } from './lib/routes/dashboard.product-registration';
 export { default as ImportPage } from './lib/routes/dashboard.import';
 export { default as ProductSearchPage } from './lib/routes/dashboard.product-search';
@@ -35,13 +34,10 @@ export { default as StockCorrectionsPage } from './lib/routes/dashboard.stock-co
 export { default as RefundPage } from './lib/routes/dashboard.refund';
 export { default as VendorReturnPage } from './lib/routes/dashboard.vendor-return';
 export { default as PriceEditPage } from './lib/routes/dashboard.price-edit';
-export { default as PlanStatusPage } from './lib/routes/dashboard.plan-status';
-export { default as PlanPaymentPage } from './lib/routes/dashboard.plan-payment';
 export { default as WhatsAppMarketingPage } from './lib/routes/dashboard.whatsapp-marketing';
 
 // Re-export meta functions
 export { meta as dashboardMeta } from './lib/routes/dashboard';
-export { meta as paymentBillingMeta } from './lib/routes/dashboard.payment-billing';
 export { meta as productRegistrationMeta } from './lib/routes/dashboard.product-registration';
 export { meta as importMeta } from './lib/routes/dashboard.import';
 export { meta as productSearchMeta } from './lib/routes/dashboard.product-search';
@@ -61,5 +57,3 @@ export { meta as stockCorrectionsMeta } from './lib/routes/dashboard.stock-corre
 export { meta as refundMeta } from './lib/routes/dashboard.refund';
 export { meta as vendorReturnMeta } from './lib/routes/dashboard.vendor-return';
 export { meta as priceEditMeta } from './lib/routes/dashboard.price-edit';
-export { meta as planStatusMeta } from './lib/routes/dashboard.plan-status';
-export { meta as planPaymentMeta } from './lib/routes/dashboard.plan-payment';

@@ -35,6 +35,9 @@
       "@inventory-platform/taxation/routes/*": ["../../core/taxation/src/routes/*"],
       "@inventory-platform/reminders": ["../../core/reminders/src/index.ts"],
       "@inventory-platform/reminders/routes/*": ["../../core/reminders/src/routes/*"],
+      "@inventory-platform/plan/api": ["../../core/plan/src/api/index.ts"],
+      "@inventory-platform/plan": ["../../core/plan/src/index.ts"],
+      "@inventory-platform/plan/routes/*": ["../../core/plan/src/routes/*"],
       "@inventory-platform/query": ["../../platform/query/src/index.ts"],
       "@inventory-platform/session": ["../../platform/session/src/index.ts"],
       "@inventory-platform/api-client": ["../../platform/api-client/src/index.ts"],
@@ -107,6 +110,9 @@
     },
     {
       "path": "../../core/reminders/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/plan/tsconfig.lib.json"
     }
   ]
 }
