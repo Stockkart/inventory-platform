@@ -75,6 +75,9 @@
       "@inventory-platform/reminders/routes/*": [
         "../../core/reminders/src/routes/*"
       ],
+      "@inventory-platform/plan/marketing": [
+        "../../core/plan/src/marketing/index.ts"
+      ],
       "@inventory-platform/plan/api": [
         "../../core/plan/src/api/index.ts"
       ],

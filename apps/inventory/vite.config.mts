@@ -294,6 +294,10 @@ export default defineConfig({
       '@inventory-platform/credit': path.resolve(__dirname, '../../core/credit/src/index.ts'),
       '@inventory-platform/taxation': path.resolve(__dirname, '../../core/taxation/src/index.ts'),
       '@inventory-platform/reminders': path.resolve(__dirname, '../../core/reminders/src/index.ts'),
+      '@inventory-platform/plan/marketing': path.resolve(
+        __dirname,
+        '../../core/plan/src/marketing/index.ts'
+      ),
       '@inventory-platform/plan/api': path.resolve(__dirname, '../../core/plan/src/api/index.ts'),
       '@inventory-platform/plan': path.resolve(__dirname, '../../core/plan/src/index.ts'),
       '@inventory-platform/user': path.resolve(__dirname, '../../core/user/src/index.ts'),

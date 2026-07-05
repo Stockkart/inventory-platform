@@ -48,6 +48,12 @@
       "types": "./dist/nav.d.ts",
       "import": "./src/nav.ts",
       "default": "./src/nav.ts"
+    },
+    "./marketing": {
+      "@inventory-platform/source": "./src/marketing/index.ts",
+      "types": "./dist/marketing/index.d.ts",
+      "import": "./src/marketing/index.ts",
+      "default": "./src/marketing/index.ts"
     }
   },
   "nx": {
