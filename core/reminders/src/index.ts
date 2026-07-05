@@ -16,3 +16,4 @@ export { mapLowStockItems, type LowStockAlertRow } from './model/inventory-alert
 
 export { RemindersPage } from './pages/RemindersPage';
 export { InventoryAlertPage } from './pages/InventoryAlertPage';
+export { ReminderForm } from './ui';

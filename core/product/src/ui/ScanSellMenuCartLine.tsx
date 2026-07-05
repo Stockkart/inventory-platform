@@ -4,7 +4,7 @@ import type {
   CustomerProductHistoryResponse,
 } from '@inventory-platform/types';
 import { lineSellableRef } from '@inventory-platform/types';
-import { CustomerProductHistoryHint } from '@inventory-platform/ui';
+import { CustomerProductHistoryHint } from './CustomerProductHistoryHint';
 import styles from '../pages/scan-sell.module.css';
 
 function money(n: number): string {

@@ -29,7 +29,7 @@
     "@inventory-platform/routing": "workspace:*",
     "@inventory-platform/store": "workspace:*",
     "@inventory-platform/types": "workspace:*",
-    "@inventory-platform/ui": "workspace:*",
+    "@inventory-platform/ui-kit": "workspace:*",
     "@inventory-platform/user": "workspace:*"
   },
   "peerDependencies": {

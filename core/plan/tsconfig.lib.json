@@ -18,7 +18,9 @@
       "@inventory-platform/query": ["../../platform/query/src/index.ts"],
       "@inventory-platform/routing": ["../../platform/routing/src/index.ts"],
       "@inventory-platform/store": ["../../shared/store/src/index.ts"],
-      "@inventory-platform/types": ["../../shared/types/src/index.ts"]
+      "@inventory-platform/types": ["../../shared/types/src/index.ts"],
+      "@inventory-platform/api": ["../../shared/api/src/index.ts"],
+      "@inventory-platform/shell": ["../../platform/shell/src/index.ts"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
@@ -46,6 +48,12 @@
     },
     {
       "path": "../../shared/payment/tsconfig.lib.json"
+    },
+    {
+      "path": "../../shared/api/tsconfig.lib.json"
+    },
+    {
+      "path": "../../platform/shell/tsconfig.lib.json"
     }
   ]
 }

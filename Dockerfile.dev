@@ -16,7 +16,7 @@ COPY apps/inventory/package.json ./apps/inventory/
 COPY shared/api/package.json ./shared/api/
 COPY shared/store/package.json ./shared/store/
 COPY shared/types/package.json ./shared/types/
-COPY shared/ui/package.json ./shared/ui/
+COPY ui-kit/package.json ./ui-kit/
 COPY core/analytics/package.json ./core/analytics/
 COPY core/reminders/package.json ./core/reminders/
 COPY core/plan/package.json ./core/plan/

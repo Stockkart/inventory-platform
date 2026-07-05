@@ -7,11 +7,9 @@ import type {
   ReminderType,
   UpdateReminderDto,
 } from '@inventory-platform/types';
-import {
-  InventoryAlertDetails,
-  PaginationBar,
-  ReminderForm,
-} from '@inventory-platform/ui';
+import { InventoryAlertDetails } from '@inventory-platform/product';
+import { PaginationBar } from '@inventory-platform/ui-kit';
+import { ReminderForm } from '../ui';
 import { useNotify } from '@inventory-platform/session';
 import {
   useCreateReminderMutation,

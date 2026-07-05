@@ -2,12 +2,12 @@ import { useState, useEffect, FormEvent } from 'react';
 import { cartApi } from '../api/cart.api';
 import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
 import type { BillingMode, InventoryItem, QuotationSummary } from '@inventory-platform/types';
+import { PaginationBar } from '@inventory-platform/ui-kit';
+import { InventoryAlertDetails } from '../ui';
 import {
-  InventoryAlertDetails,
-  PaginationBar,
   formatInventoryExpiryDate,
   sortInventoryByExpirySoonest,
-} from '@inventory-platform/ui';
+} from '@inventory-platform/schema';
 import styles from './product-search.module.css';
 import { useAuthStore, useNotify, useShopAccessStore, useVerticalSchemaStore } from '@inventory-platform/store';
 import { AddToSellQuotationPicker } from '../ui/AddToSellQuotationPicker';

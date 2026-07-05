@@ -13,7 +13,7 @@
       "path": "./core/analytics"
     },
     {
-      "path": "./shared/ui"
+      "path": "./ui-kit"
     },
     {
       "path": "./shared/types"
@@ -80,9 +80,6 @@
     },
     {
       "path": "./platform/shell"
-    },
-    {
-      "path": "./ui-kit"
     },
     {
       "path": "./features/product"

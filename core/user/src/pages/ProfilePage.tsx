@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { shopsApi } from '@inventory-platform/api';
-import { ShopProfileForm } from '@inventory-platform/ui';
+import { ShopProfileForm } from '../ui';
 import type { Location as LocationType } from '@inventory-platform/types';
 import styles from './profile.module.css';
 

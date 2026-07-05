@@ -1,5 +1,5 @@
+import { FormKeyboardNavScope } from '@inventory-platform/shell';
 import {
-  FormKeyboardNavScope,
   Header,
   Hero,
   Stats,
@@ -7,7 +7,7 @@ import {
   Pricing,
   CTA,
   Footer,
-} from '@inventory-platform/ui';
+} from '@inventory-platform/plan';
 import styles from './_index.module.css';
 
 export function meta() {

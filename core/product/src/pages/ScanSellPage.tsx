@@ -40,13 +40,17 @@ import { useNotify, useAuthStore, useVerticalSchemaStore } from '@inventory-plat
 import {
   isScanSellHidePurchaseKey,
   shouldSkipScanSellHidePurchaseKey,
+} from '@inventory-platform/shell';
+import {
   formatInventoryExpiryDate,
   hasInventoryExpiryDate,
   getExtensionFieldString,
   sortInventoryByExpirySoonest,
+} from '@inventory-platform/schema';
+import {
   useCustomerProductHistory,
   CustomerProductHistoryHint,
-} from '@inventory-platform/ui';
+} from '../ui';
 import { ScanSellQuotationStack } from '../ui/ScanSellQuotationStack';
 
 export function meta() {

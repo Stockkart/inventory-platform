@@ -1,4 +1,4 @@
-import formStyles from './lib/forms.module.css';
+import formStyles from './forms/forms.module.css';
 
 export { formStyles };
 export default formStyles;

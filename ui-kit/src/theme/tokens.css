@@ -1,0 +1,103 @@
+/**
+ * StockKart design tokens (--sk-*).
+ * Legacy app variables (--bg-primary, --text-primary, …) are aliased for backward compatibility.
+ */
+:root,
+[data-theme='light'] {
+  --sk-color-bg-canvas: #ffffff;
+  --sk-color-bg-surface: #f8f9fa;
+  --sk-color-bg-elevated: #ffffff;
+  --sk-color-bg-muted: #f1f5f9;
+  --sk-color-text-primary: #1f2937;
+  --sk-color-text-secondary: #4b5563;
+  --sk-color-text-muted: #6b7280;
+  --sk-color-text-inverse: #ffffff;
+  --sk-color-border-default: #e5e7eb;
+  --sk-color-border-strong: #d1d5db;
+  --sk-color-accent: #3b82f6;
+  --sk-color-accent-hover: #2563eb;
+  --sk-color-success: #059669;
+  --sk-color-success-soft: rgba(5, 150, 105, 0.12);
+  --sk-color-warning: #d97706;
+  --sk-color-warning-soft: rgba(217, 119, 6, 0.12);
+  --sk-color-danger: #dc2626;
+  --sk-color-danger-soft: rgba(220, 38, 38, 0.12);
+  --sk-color-info: #0284c7;
+  --sk-color-info-soft: rgba(2, 132, 199, 0.12);
+  --sk-color-focus-ring: rgba(59, 130, 246, 0.45);
+  --sk-color-hover: rgba(15, 23, 42, 0.06);
+
+  --sk-space-none: 0;
+  --sk-space-xs: 4px;
+  --sk-space-sm: 8px;
+  --sk-space-md: 16px;
+  --sk-space-lg: 24px;
+  --sk-space-xl: 32px;
+  --sk-space-2xl: 48px;
+  --sk-space-3xl: 64px;
+
+  --sk-radius-none: 0;
+  --sk-radius-sm: 4px;
+  --sk-radius-md: 8px;
+  --sk-radius-lg: 12px;
+  --sk-radius-xl: 14px;
+  --sk-radius-full: 9999px;
+
+  --sk-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
+  --sk-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.12);
+  --sk-shadow-lg: 0 18px 40px rgba(15, 23, 42, 0.18);
+
+  --sk-z-dropdown: 1000;
+  --sk-z-sticky: 1100;
+  --sk-z-modal: 9000;
+  --sk-z-toast: 9500;
+
+  --sk-font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --sk-font-mono: ui-monospace, 'Cascadia Code', 'SF Mono', monospace;
+
+  /* Legacy aliases used across the app today */
+  --bg-primary: var(--sk-color-bg-canvas);
+  --bg-secondary: var(--sk-color-bg-surface);
+  --bg-card: #f3f6fb;
+  --bg-muted: var(--sk-color-bg-muted);
+  --bg-tertiary: #eef2f7;
+  --hover-bg: var(--sk-color-hover);
+  --text-primary: var(--sk-color-text-primary);
+  --text-secondary: var(--sk-color-text-secondary);
+  --text-tertiary: var(--sk-color-text-muted);
+  --border-color: var(--sk-color-border-default);
+  --border-hover: var(--sk-color-border-strong);
+  --link: #0f172a;
+  --link-hover: var(--sk-color-accent-hover);
+}
+
+[data-theme='dark'] {
+  --sk-color-bg-canvas: #0f172a;
+  --sk-color-bg-surface: #111827;
+  --sk-color-bg-elevated: #1e293b;
+  --sk-color-bg-muted: #263349;
+  --sk-color-text-primary: #f9fafb;
+  --sk-color-text-secondary: #cbd5e1;
+  --sk-color-text-muted: #94a3b8;
+  --sk-color-text-inverse: #0f172a;
+  --sk-color-border-default: #1e293b;
+  --sk-color-border-strong: #334155;
+  --sk-color-accent: #3b82f6;
+  --sk-color-accent-hover: #38bdf8;
+  --sk-color-hover: rgba(248, 250, 252, 0.08);
+  --sk-color-focus-ring: rgba(56, 189, 248, 0.45);
+
+  --bg-primary: var(--sk-color-bg-canvas);
+  --bg-secondary: var(--sk-color-bg-surface);
+  --bg-card: var(--sk-color-bg-elevated);
+  --bg-muted: var(--sk-color-bg-muted);
+  --bg-tertiary: var(--sk-color-bg-canvas);
+  --hover-bg: var(--sk-color-hover);
+  --text-primary: var(--sk-color-text-primary);
+  --text-secondary: var(--sk-color-text-secondary);
+  --text-tertiary: var(--sk-color-text-muted);
+  --border-color: var(--sk-color-border-default);
+  --border-hover: var(--sk-color-border-strong);
+  --link: #e5e7eb;
+  --link-hover: var(--sk-color-accent-hover);
+}

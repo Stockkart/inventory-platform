@@ -8,7 +8,7 @@ import type {
   Vendor,
   BillingMode,
 } from '@inventory-platform/types';
-import { PaginationBar } from '@inventory-platform/ui';
+import { PaginationBar } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/store';
 import styles from './import.module.css';
 

@@ -153,7 +153,11 @@ export default defineConfig({
       ...productRouteAliases,
       ...cafeRouteAliases,
       ...shellRouteAliases,
-      '@inventory-platform/ui': path.resolve(__dirname, '../../shared/ui/src/index.ts'),
+      '@inventory-platform/ui-kit/form-styles': path.resolve(
+        __dirname,
+        '../../ui-kit/src/form-styles.ts'
+      ),
+      '@inventory-platform/ui-kit': path.resolve(__dirname, '../../ui-kit/src/index.ts'),
       '@inventory-platform/store': path.resolve(__dirname, '../../shared/store/src/index.ts'),
       '@inventory-platform/user/customers': path.resolve(
         __dirname,
@@ -209,6 +213,7 @@ export default defineConfig({
       '@inventory-platform/api-client': path.resolve(__dirname, '../../platform/api-client/src/index.ts'),
       '@inventory-platform/routing': path.resolve(__dirname, '../../platform/routing/src/index.ts'),
       '@inventory-platform/shell': path.resolve(__dirname, '../../platform/shell/src/index.ts'),
+      '@inventory-platform/schema': path.resolve(__dirname, '../../platform/schema/src/index.ts'),
     },
   },
   // Uncomment this if you are using workers.

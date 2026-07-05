@@ -10,3 +10,10 @@ export { meta as signupMeta } from './lib/routes/signup';
 export { meta as forgotPasswordMeta } from './lib/routes/forgot-password';
 export { meta as resetPasswordMeta } from './lib/routes/reset-password';
 
+export {
+  LoginForm,
+  SignupForm,
+  ForgotPasswordForm,
+  ResetPasswordForm,
+} from './lib/forms';
+

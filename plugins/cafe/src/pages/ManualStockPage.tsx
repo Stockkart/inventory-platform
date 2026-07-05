@@ -7,12 +7,12 @@ import {
 } from '@inventory-platform/product/api';
 import type { InventoryItem } from '@inventory-platform/types';
 import { inventorySellableRef } from '@inventory-platform/types';
+import { InventoryAlertDetails } from '@inventory-platform/product';
+import { PaginationBar } from '@inventory-platform/ui-kit';
 import {
-  InventoryAlertDetails,
-  PaginationBar,
   getExtensionFieldString,
   isSellDirectInventory,
-} from '@inventory-platform/ui';
+} from '@inventory-platform/schema';
 import { useNotify, useVerticalSchemaStore, useAuthStore, useShopAccessStore } from '@inventory-platform/store';
 import searchStyles from '@inventory-platform/product/pages/product-search.module.css';
 import styles from './manual-stock.module.css';

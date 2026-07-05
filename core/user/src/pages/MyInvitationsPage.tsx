@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { InvitationList } from '@inventory-platform/ui';
+import { InvitationList } from '../ui';
 import styles from './my-invitations.module.css';
 
 export function MyInvitationsPage() {

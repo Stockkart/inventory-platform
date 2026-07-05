@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router';
 import type { InventoryItem } from '@inventory-platform/types';
-import { InventoryAlertDetails, PaginationBar } from '@inventory-platform/ui';
+import { InventoryAlertDetails } from '@inventory-platform/product';
+import { PaginationBar } from '@inventory-platform/ui-kit';
 import { useAuthStore, useShopAccessStore } from '@inventory-platform/store';
 import { useNotify } from '@inventory-platform/session';
 import { resolveInventoryDocumentId } from '../api/inventory-alert.api';

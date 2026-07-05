@@ -12,7 +12,7 @@ import {
   VerticalSchemaFieldInput,
   fieldLabel,
   getShopOnboardingFields,
-} from '@inventory-platform/ui';
+} from '@inventory-platform/schema';
 import styles from './onboarding.module.css';
 
 const STEPS: OnboardingStep[] = [

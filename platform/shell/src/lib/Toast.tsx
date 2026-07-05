@@ -1,5 +1,12 @@
 import type { ToastItem } from '@inventory-platform/session';
-import styles from './Toast.module.css';
+import { Toast as UiKitToast } from '@inventory-platform/ui-kit';
+
+const variantMap = {
+  success: 'success',
+  error: 'error',
+  info: 'default',
+  warning: 'warning',
+} as const;
 
 export function Toast({
   toast,
@@ -9,12 +16,10 @@ export function Toast({
   onClose: () => void;
 }) {
   return (
-    <div className={`${styles.toast} ${styles[toast.type]}`}>
-      <div className={styles.message}>{toast.message}</div>
-
-      <button type="button" className={styles.closeBtn} onClick={onClose}>
-        ×
-      </button>
-    </div>
+    <UiKitToast
+      message={toast.message}
+      variant={variantMap[toast.type]}
+      onClose={onClose}
+    />
   );
 }

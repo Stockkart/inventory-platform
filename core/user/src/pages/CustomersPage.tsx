@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { customersApi } from '../api/customers.api';
-import { EditModal, CustomerEditForm, PaginationBar } from '@inventory-platform/ui';
+import { EditModal, PaginationBar } from '@inventory-platform/ui-kit';
+import { CustomerEditForm } from '../ui';
 import { useResolvedSellPath } from '@inventory-platform/routing';
 import type {
   CustomerResponse,
@@ -288,6 +289,7 @@ export function CustomersPage() {
 
       {editModal && (
         <EditModal
+          open
           title="Edit Customer"
           onClose={handleCloseEdit}
           error={saveError}
@@ -305,6 +307,7 @@ export function CustomersPage() {
 
       {createModalOpen && (
         <EditModal
+          open
           title="New Customer"
           onClose={handleCloseCreate}
           error={saveError}

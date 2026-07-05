@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuthStore } from '@inventory-platform/store';
-import { InviteForm, InvitationList } from '@inventory-platform/ui';
+import { InvitationList } from '../ui';
+import { InviteForm } from '../ui';
 import styles from './invitations.module.css';
 
 export function InvitationsPage() {

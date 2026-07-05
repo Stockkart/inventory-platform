@@ -1,8 +1,6 @@
-import {
-  FormKeyboardNavScope,
-  Header,
-  ResetPasswordForm,
-} from '@inventory-platform/ui';
+import { FormKeyboardNavScope } from '@inventory-platform/shell';
+import { Header } from '@inventory-platform/plan';
+import { ResetPasswordForm } from '../forms/ResetPasswordForm';
 import styles from './login.module.css';
 
 export function meta() {

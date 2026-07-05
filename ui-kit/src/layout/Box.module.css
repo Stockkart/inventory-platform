@@ -1,0 +1,65 @@
+.box {
+  box-sizing: border-box;
+}
+
+.padding-none { padding: var(--sk-space-none); }
+.padding-xs { padding: var(--sk-space-xs); }
+.padding-sm { padding: var(--sk-space-sm); }
+.padding-md { padding: var(--sk-space-md); }
+.padding-lg { padding: var(--sk-space-lg); }
+.padding-xl { padding: var(--sk-space-xl); }
+
+.margin-none { margin: var(--sk-space-none); }
+.margin-xs { margin: var(--sk-space-xs); }
+.margin-sm { margin: var(--sk-space-sm); }
+.margin-md { margin: var(--sk-space-md); }
+.margin-lg { margin: var(--sk-space-lg); }
+.margin-xl { margin: var(--sk-space-xl); }
+
+.display-block { display: block; }
+.display-flex { display: flex; }
+.display-grid { display: grid; }
+.display-inline-flex { display: inline-flex; }
+
+.flex-row { flex-direction: row; }
+.flex-column { flex-direction: column; }
+.flex-wrap { flex-wrap: wrap; }
+
+.gap-none { gap: var(--sk-space-none); }
+.gap-xs { gap: var(--sk-space-xs); }
+.gap-sm { gap: var(--sk-space-sm); }
+.gap-md { gap: var(--sk-space-md); }
+.gap-lg { gap: var(--sk-space-lg); }
+.gap-xl { gap: var(--sk-space-xl); }
+
+.align-start { align-items: flex-start; }
+.align-center { align-items: center; }
+.align-end { align-items: flex-end; }
+.align-stretch { align-items: stretch; }
+
+.justify-start { justify-content: flex-start; }
+.justify-center { justify-content: center; }
+.justify-end { justify-content: flex-end; }
+.justify-between { justify-content: space-between; }
+
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+
+.bg-canvas { background: var(--sk-color-bg-canvas); }
+.bg-surface { background: var(--sk-color-bg-surface); }
+.bg-elevated { background: var(--sk-color-bg-elevated); }
+.bg-muted { background: var(--sk-color-bg-muted); }
+
+.border-default {
+  border: 1px solid var(--sk-color-border-default);
+}
+
+.rounded-sm { border-radius: var(--sk-radius-sm); }
+.rounded-md { border-radius: var(--sk-radius-md); }
+.rounded-lg { border-radius: var(--sk-radius-lg); }
+
+.overflow-hidden { overflow: hidden; }
+.overflow-auto { overflow: auto; }
+
+.position-relative { position: relative; }
+.position-absolute { position: absolute; }

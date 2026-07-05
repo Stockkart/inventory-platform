@@ -1,5 +1,5 @@
 import { useAuthStore } from '@inventory-platform/store';
-import { JoinRequestList } from '@inventory-platform/ui';
+import { JoinRequestList } from '../ui';
 import styles from './join-requests.module.css';
 
 export function meta() {

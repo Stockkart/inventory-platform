@@ -1,8 +1,6 @@
-import {
-  FormKeyboardNavScope,
-  Header,
-  SignupForm,
-} from '@inventory-platform/ui';
+import { FormKeyboardNavScope } from '@inventory-platform/shell';
+import { Header } from '@inventory-platform/plan';
+import { SignupForm } from '../forms/SignupForm';
 import styles from './signup.module.css';
 
 export function meta() {

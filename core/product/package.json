@@ -24,6 +24,12 @@
       "types": "./dist/api/index.d.ts",
       "import": "./src/api/index.ts",
       "default": "./src/api/index.ts"
+    },
+    "./ui": {
+      "@inventory-platform/source": "./src/ui/index.ts",
+      "types": "./dist/ui/index.d.ts",
+      "import": "./src/ui/index.ts",
+      "default": "./src/ui/index.ts"
     }
   },
   "nx": {
@@ -36,8 +42,9 @@
     "@inventory-platform/routing": "workspace:*",
     "@inventory-platform/store": "workspace:*",
     "@inventory-platform/types": "workspace:*",
-    "@inventory-platform/ui": "workspace:*",
+    "@inventory-platform/ui-kit": "workspace:*",
     "@inventory-platform/user": "workspace:*",
+    "@inventory-platform/schema": "workspace:*",
     "axios": "^1.7.9",
     "qrcode.react": "^3.1.0"
   },

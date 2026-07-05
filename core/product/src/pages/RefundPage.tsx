@@ -14,16 +14,16 @@ import {
   inventoryLotIdFromSellableRef,
   lineSellableRef,
 } from '@inventory-platform/types';
+import { PaginationBar } from '@inventory-platform/ui-kit';
+import { useCapabilityFeatureGuard } from '@inventory-platform/shell';
 import {
-  PaginationBar,
   PaymentMethodSplit,
   RefundHistoryList,
   emptyPaymentSplit,
   isCreditMethod,
   roundMoney,
-  useCapabilityFeatureGuard,
   validatePaymentSplit,
-} from '@inventory-platform/ui';
+} from '../ui';
 import styles from './refund.module.css';
 import { useNotify } from '@inventory-platform/store';
 

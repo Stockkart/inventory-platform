@@ -4,16 +4,23 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
+    "./package.json": "./package.json",
     ".": {
       "types": "./src/index.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
-    "./package.json": "./package.json"
+    "./forms": {
+      "types": "./src/lib/forms/index.ts",
+      "import": "./src/lib/forms/index.ts",
+      "default": "./src/lib/forms/index.ts"
+    }
+  },
+  "dependencies": {
+    "@inventory-platform/api": "workspace:*",
+    "@inventory-platform/store": "workspace:*"
   },
   "nx": {
-    "tags": [
-      "type:legacy"
-    ]
+    "tags": ["type:legacy"]
   }
 }

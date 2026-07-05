@@ -18,6 +18,10 @@
       "@inventory-platform/source": "./src/form-styles.ts",
       "import": "./src/form-styles.ts",
       "default": "./src/form-styles.ts"
+    },
+    "./theme/tokens.css": {
+      "import": "./src/theme/tokens.css",
+      "default": "./src/theme/tokens.css"
     }
   },
   "nx": {

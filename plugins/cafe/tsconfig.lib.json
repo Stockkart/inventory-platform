@@ -26,7 +26,9 @@
       "@inventory-platform/routing": ["../../platform/routing/src/index.ts"],
       "@inventory-platform/store": ["../../shared/store/src/index.ts"],
       "@inventory-platform/types": ["../../shared/types/src/index.ts"],
-      "@inventory-platform/ui": ["../../shared/ui/src/index.ts"],
+      "@inventory-platform/ui-kit": ["../../ui-kit/src/index.ts"],
+      "@inventory-platform/schema": ["../../platform/schema/src/index.ts"],
+      "@inventory-platform/product": ["../../core/product/src/index.ts"],
       "@inventory-platform/user/customers": [
         "../../core/user/src/api/customers.api.ts"
       ]
@@ -50,7 +52,7 @@
       "path": "../../shared/store/tsconfig.lib.json"
     },
     {
-      "path": "../../shared/ui/tsconfig.lib.json"
+      "path": "../../ui-kit/tsconfig.lib.json"
     },
     {
       "path": "../../shared/types/tsconfig.lib.json"

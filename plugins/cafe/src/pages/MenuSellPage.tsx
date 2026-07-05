@@ -25,7 +25,7 @@ import { useNotify, useVerticalSchemaStore } from '@inventory-platform/store';
 import {
   CustomerProductHistoryHint,
   useCustomerProductHistory,
-} from '@inventory-platform/ui';
+} from '@inventory-platform/product';
 import styles from '@inventory-platform/product/pages/scan-sell.module.css';
 
 export function meta() {

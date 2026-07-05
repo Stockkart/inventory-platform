@@ -19,6 +19,7 @@
     "tags": ["type:platform", "scope:shell"]
   },
   "dependencies": {
+    "@inventory-platform/ui-kit": "workspace:*",
     "@inventory-platform/api": "workspace:*",
     "@inventory-platform/api-client": "workspace:*",
     "@inventory-platform/routing": "workspace:*",

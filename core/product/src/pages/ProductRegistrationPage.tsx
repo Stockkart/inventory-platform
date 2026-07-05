@@ -36,14 +36,13 @@ import type {
   PaymentSplit,
 } from '@inventory-platform/types';
 import {
-  CustomRemindersSection,
-  KEYBOARD_NAV_GRID,
   PaymentMethodSplit,
   emptyPaymentSplit,
   isCreditMethod,
-  runFormKeyboardNavigation,
-  shouldSkipNestedFormKeyboardNav,
   validatePaymentSplit,
+  CustomRemindersSection,
+} from '../ui';
+import {
   VerticalInventoryFields,
   VerticalSchemaFieldInput,
   attachVerticalFieldsToBulkItem,
@@ -58,7 +57,12 @@ import {
   schemaModeForBilling,
   setVerticalFieldPatch,
   validateProductVerticalFields,
-} from '@inventory-platform/ui';
+} from '@inventory-platform/schema';
+import {
+  KEYBOARD_NAV_GRID,
+  runFormKeyboardNavigation,
+  shouldSkipNestedFormKeyboardNav,
+} from '@inventory-platform/shell';
 import {
   useNotify,
   useAuthStore,

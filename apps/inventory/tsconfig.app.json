@@ -13,7 +13,8 @@
     "tsBuildInfoFile": "dist/tsconfig.app.tsbuildinfo",
     "baseUrl": ".",
     "paths": {
-      "@inventory-platform/ui": ["../../shared/ui/src/index.ts"],
+      "@inventory-platform/ui-kit": ["../../ui-kit/src/index.ts"],
+      "@inventory-platform/schema": ["../../platform/schema/src/index.ts"],
       "@inventory-platform/store": ["../../shared/store/src/index.ts"],
       "@inventory-platform/api": ["../../shared/api/src/index.ts"],
       "@inventory-platform/types": ["../../shared/types/src/index.ts"],
@@ -55,6 +56,7 @@
       "@inventory-platform/user/invitations": [
         "../../core/user/src/api/invitations.api.ts"
       ],
+      "@inventory-platform/user/ui": ["../../core/user/src/ui/index.ts"],
       "@inventory-platform/user": ["../../core/user/src/index.ts"],
       "@inventory-platform/user/routes/*": ["../../core/user/src/routes/*"],
       "@inventory-platform/pricing/api": [
@@ -150,7 +152,7 @@
       "path": "../../platform/query/tsconfig.lib.json"
     },
     {
-      "path": "../../shared/ui/tsconfig.lib.json"
+      "path": "../../ui-kit/tsconfig.lib.json"
     }
   ]
 }

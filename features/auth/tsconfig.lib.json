@@ -12,9 +12,9 @@
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
     "baseUrl": ".",
     "paths": {
-      "@inventory-platform/ui": ["../../shared/ui/src/index.ts"],
       "@inventory-platform/store": ["../../shared/store/src/index.ts"],
-      "@inventory-platform/api": ["../../shared/api/src/index.ts"]
+      "@inventory-platform/api": ["../../shared/api/src/index.ts"],
+      "@inventory-platform/auth/forms": ["./src/lib/forms/index.ts"]
     }
   },
   "exclude": [
@@ -37,7 +37,10 @@
   "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
   "references": [
     {
-      "path": "../../shared/ui/tsconfig.lib.json"
+      "path": "../../shared/store/tsconfig.lib.json"
+    },
+    {
+      "path": "../../shared/api/tsconfig.lib.json"
     }
   ]
 }

@@ -1,4 +1,6 @@
-import { FormKeyboardNavScope, Header, LoginForm } from '@inventory-platform/ui';
+import { FormKeyboardNavScope } from '@inventory-platform/shell';
+import { Header } from '@inventory-platform/plan';
+import { LoginForm } from '../forms/LoginForm';
 import styles from './login.module.css';
 
 export function meta() {

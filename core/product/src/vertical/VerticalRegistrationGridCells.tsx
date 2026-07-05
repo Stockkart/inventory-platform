@@ -4,7 +4,7 @@ import {
   fieldLabel,
   getVerticalFieldValue,
   type VerticalFieldProduct,
-} from '@inventory-platform/ui';
+} from '@inventory-platform/schema';
 import styles from '../pages/product-registration.module.css';
 
 export function VerticalRegistrationGridCompanyHeader({

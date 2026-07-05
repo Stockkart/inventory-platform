@@ -8,16 +8,16 @@ import type {
   VendorResponse,
 } from '@inventory-platform/types';
 import type { PaymentMethod, PaymentSplit } from '@inventory-platform/types';
+import { PaginationBar } from '@inventory-platform/ui-kit';
+import { useCapabilityFeatureGuard } from '@inventory-platform/shell';
 import {
-  PaginationBar,
   PaymentMethodSplit,
   VendorReturnHistoryList,
   emptyPaymentSplit,
   isCreditMethod,
   roundMoney,
-  useCapabilityFeatureGuard,
   validatePaymentSplit,
-} from '@inventory-platform/ui';
+} from '../ui';
 import { useNotify } from '@inventory-platform/store';
 import refundStyles from './refund.module.css';
 import styles from './vendor-return.module.css';

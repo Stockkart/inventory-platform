@@ -29,6 +29,19 @@ export {
   userMarketingNav,
 } from './nav';
 
+export {
+  CustomerEditForm,
+  VendorEditForm,
+  ShopProfileForm,
+  InviteForm,
+  RoleBadge,
+  InvitationList,
+  InvitationCard,
+  JoinRequestList,
+  JoinRequestCard,
+  ShopUsersList,
+} from './ui';
+
 export { CustomersPage } from './pages/CustomersPage';
 export { VendorsPage } from './pages/VendorsPage';
 export { AccessControlPage } from './pages/AccessControlPage';

@@ -42,6 +42,12 @@
       "types": "./dist/api/invitations.api.d.ts",
       "import": "./src/api/invitations.api.ts",
       "default": "./src/api/invitations.api.ts"
+    },
+    "./ui": {
+      "@inventory-platform/source": "./src/ui/index.ts",
+      "types": "./dist/ui/index.d.ts",
+      "import": "./src/ui/index.ts",
+      "default": "./src/ui/index.ts"
     }
   },
   "nx": {
@@ -53,7 +59,7 @@
     "@inventory-platform/routing": "workspace:*",
     "@inventory-platform/store": "workspace:*",
     "@inventory-platform/types": "workspace:*",
-    "@inventory-platform/ui": "workspace:*"
+    "@inventory-platform/ui-kit": "workspace:*"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.90.0",

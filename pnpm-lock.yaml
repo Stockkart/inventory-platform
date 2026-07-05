@@ -319,6 +319,9 @@ importers:
 
   core/plan:
     dependencies:
+      '@inventory-platform/api':
+        specifier: workspace:*
+        version: link:../../shared/api
       '@inventory-platform/api-client':
         specifier: workspace:*
         version: link:../../platform/api-client
@@ -331,6 +334,9 @@ importers:
       '@inventory-platform/routing':
         specifier: workspace:*
         version: link:../../platform/routing
+      '@inventory-platform/shell':
+        specifier: workspace:*
+        version: link:../../platform/shell
       '@inventory-platform/store':
         specifier: workspace:*
         version: link:../../shared/store
@@ -373,9 +379,9 @@ importers:
       '@inventory-platform/types':
         specifier: workspace:*
         version: link:../../shared/types
-      '@inventory-platform/ui':
+      '@inventory-platform/ui-kit':
         specifier: workspace:*
-        version: link:../../shared/ui
+        version: link:../../ui-kit
       '@tanstack/react-query':
         specifier: ^5.90.0
         version: 5.101.2(react@19.2.0)
@@ -403,15 +409,18 @@ importers:
       '@inventory-platform/routing':
         specifier: workspace:*
         version: link:../../platform/routing
+      '@inventory-platform/schema':
+        specifier: workspace:*
+        version: link:../../platform/schema
       '@inventory-platform/store':
         specifier: workspace:*
         version: link:../../shared/store
       '@inventory-platform/types':
         specifier: workspace:*
         version: link:../../shared/types
-      '@inventory-platform/ui':
+      '@inventory-platform/ui-kit':
         specifier: workspace:*
-        version: link:../../shared/ui
+        version: link:../../ui-kit
       '@inventory-platform/user':
         specifier: workspace:*
         version: link:../user
@@ -439,6 +448,9 @@ importers:
       '@inventory-platform/api-client':
         specifier: workspace:*
         version: link:../../platform/api-client
+      '@inventory-platform/product':
+        specifier: workspace:*
+        version: link:../product
       '@inventory-platform/query':
         specifier: workspace:*
         version: link:../../platform/query
@@ -454,9 +466,9 @@ importers:
       '@inventory-platform/types':
         specifier: workspace:*
         version: link:../../shared/types
-      '@inventory-platform/ui':
+      '@inventory-platform/ui-kit':
         specifier: workspace:*
-        version: link:../../shared/ui
+        version: link:../../ui-kit
       '@tanstack/react-query':
         specifier: ^5.90.0
         version: 5.101.2(react@19.2.0)
@@ -514,9 +526,9 @@ importers:
       '@inventory-platform/types':
         specifier: workspace:*
         version: link:../../shared/types
-      '@inventory-platform/ui':
+      '@inventory-platform/ui-kit':
         specifier: workspace:*
-        version: link:../../shared/ui
+        version: link:../../ui-kit
       '@tanstack/react-query':
         specifier: ^5.90.0
         version: 5.101.2(react@19.2.0)
@@ -530,7 +542,14 @@ importers:
         specifier: ^7.2.0
         version: 7.9.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
 
-  features/auth: {}
+  features/auth:
+    dependencies:
+      '@inventory-platform/api':
+        specifier: workspace:*
+        version: link:../../shared/api
+      '@inventory-platform/store':
+        specifier: workspace:*
+        version: link:../../shared/store
 
   features/onboarding: {}
 
@@ -616,6 +635,9 @@ importers:
       '@inventory-platform/types':
         specifier: workspace:*
         version: link:../../shared/types
+      '@inventory-platform/ui-kit':
+        specifier: workspace:*
+        version: link:../../ui-kit
       lucide-react:
         specifier: ^0.554.0
         version: 0.554.0(react@19.2.0)
@@ -646,9 +668,9 @@ importers:
       '@inventory-platform/types':
         specifier: workspace:*
         version: link:../../shared/types
-      '@inventory-platform/ui':
+      '@inventory-platform/ui-kit':
         specifier: workspace:*
-        version: link:../../shared/ui
+        version: link:../../ui-kit
       '@inventory-platform/user':
         specifier: workspace:*
         version: link:../../core/user
@@ -709,39 +731,6 @@ importers:
       tslib:
         specifier: ^2.3.0
         version: 2.8.1
-
-  shared/ui:
-    dependencies:
-      '@inventory-platform/api':
-        specifier: workspace:*
-        version: link:../api
-      '@inventory-platform/api-client':
-        specifier: workspace:*
-        version: link:../../platform/api-client
-      '@inventory-platform/plan':
-        specifier: workspace:*
-        version: link:../../core/plan
-      '@inventory-platform/schema':
-        specifier: workspace:*
-        version: link:../../platform/schema
-      '@inventory-platform/shell':
-        specifier: workspace:*
-        version: link:../../platform/shell
-      '@inventory-platform/store':
-        specifier: workspace:*
-        version: link:../store
-      '@inventory-platform/types':
-        specifier: workspace:*
-        version: link:../types
-      '@inventory-platform/ui-kit':
-        specifier: workspace:*
-        version: link:../../ui-kit
-      react:
-        specifier: ^19.0.0
-        version: 19.2.0
-      react-dom:
-        specifier: ^19.0.0
-        version: 19.2.0(react@19.2.0)
 
   ui-kit:
     dependencies:

@@ -12,20 +12,18 @@ import type {
   VendorPurchaseInvoiceSummary,
 } from '@inventory-platform/types';
 import styles from './vendor-invoices.module.css';
+import { PaginationBar } from '@inventory-platform/ui-kit';
+import { isVendorReturnEnabled } from '@inventory-platform/shell';
 import {
-  PaginationBar,
-  isVendorReturnEnabled,
   HistoryListSummary,
   historyRecordListStyles,
-} from '@inventory-platform/ui';
-import type { HistoryFilters } from '@inventory-platform/ui';
-import {
   hasActiveHistoryFilters,
   isDateInRange,
   buildVendorInvoiceSearchQuery,
   paginateLocal,
   matchesRegexField,
-} from '@inventory-platform/ui';
+} from '../ui';
+import type { HistoryFilters } from '../ui';
 import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/store';
 
 const recordStyles = historyRecordListStyles;

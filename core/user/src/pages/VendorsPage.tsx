@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { vendorsApi } from '../api/vendors.api';
-import { EditModal, VendorEditForm, PaginationBar } from '@inventory-platform/ui';
+import { EditModal, PaginationBar } from '@inventory-platform/ui-kit';
+import { VendorEditForm } from '../ui';
 import type {
   VendorResponse,
   CreateVendorDto,
@@ -288,6 +289,7 @@ export function VendorsPage() {
 
       {editModal && (
         <EditModal
+          open
           title="Edit Vendor"
           onClose={handleCloseEdit}
           error={saveError}
@@ -310,6 +312,7 @@ export function VendorsPage() {
 
       {createModalOpen && (
         <EditModal
+          open
           title="New Vendor"
           onClose={handleCloseCreate}
           error={saveError}
