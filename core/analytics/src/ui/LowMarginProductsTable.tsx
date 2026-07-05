@@ -1,3 +1,13 @@
+import {
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './analytics.module.css';
 
 interface LowMarginProduct {
@@ -18,6 +28,12 @@ interface LowMarginProductsTableProps {
   data: LowMarginProduct[];
 }
 
+function marginClass(margin: number) {
+  if (margin < 20) return styles.changeDown;
+  if (margin < 30) return styles.changeUp;
+  return undefined;
+}
+
 export function LowMarginProductsTable({ data }: LowMarginProductsTableProps) {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -26,48 +42,43 @@ export function LowMarginProductsTable({ data }: LowMarginProductsTableProps) {
     }).format(value);
   };
 
-  const getMarginColor = (margin: number) => {
-    if (margin < 20) return '#ef4444'; // red
-    if (margin < 30) return '#f59e0b'; // orange
-    return '#6b7280'; // gray
-  };
-
   return (
-    <div className={styles.tableWrapper}>
-      <h3 className={styles.tableTitle}>Low Margin Products</h3>
-      <div className={styles.tableContainer}>
-        <table className={styles.dataTable}>
-          <thead>
-            <tr>
-              <th>Product Name</th>
-              <th>Company</th>
-              <th>Quantity Sold</th>
-              <th>Revenue</th>
-              <th>Cost</th>
-              <th>Profit</th>
-              <th>Margin %</th>
-              <th>Sales Count</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((product) => (
-              <tr key={product.inventoryId}>
-                <td>{product.productName}</td>
-                <td>{product.companyName}</td>
-                <td>{product.totalQuantitySold}</td>
-                <td>{formatCurrency(product.totalRevenue)}</td>
-                <td>{formatCurrency(product.totalCost)}</td>
-                <td>{formatCurrency(product.grossProfit)}</td>
-                <td style={{ color: getMarginColor(product.marginPercent), fontWeight: '600' }}>
+    <Stack gap="md">
+      <Text variant="heading4" weight="semibold">
+        Low Margin Products
+      </Text>
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableHeaderCell>Product Name</TableHeaderCell>
+            <TableHeaderCell>Company</TableHeaderCell>
+            <TableHeaderCell>Quantity Sold</TableHeaderCell>
+            <TableHeaderCell>Revenue</TableHeaderCell>
+            <TableHeaderCell>Cost</TableHeaderCell>
+            <TableHeaderCell>Profit</TableHeaderCell>
+            <TableHeaderCell>Margin %</TableHeaderCell>
+            <TableHeaderCell>Sales Count</TableHeaderCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {data.map((product) => (
+            <TableRow key={product.inventoryId}>
+              <TableCell>{product.productName}</TableCell>
+              <TableCell>{product.companyName}</TableCell>
+              <TableCell>{product.totalQuantitySold}</TableCell>
+              <TableCell>{formatCurrency(product.totalRevenue)}</TableCell>
+              <TableCell>{formatCurrency(product.totalCost)}</TableCell>
+              <TableCell>{formatCurrency(product.grossProfit)}</TableCell>
+              <TableCell>
+                <Text weight="semibold" className={marginClass(product.marginPercent)}>
                   {product.marginPercent.toFixed(2)}%
-                </td>
-                <td>{product.numberOfSales}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+                </Text>
+              </TableCell>
+              <TableCell>{product.numberOfSales}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </Stack>
   );
 }
-

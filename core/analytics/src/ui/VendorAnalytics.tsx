@@ -1,5 +1,30 @@
 import { useEffect, useMemo, useState } from 'react';
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  CardBody,
+  CenteredLoader,
+  FormField,
+  Grid,
+  Inline,
+  Input,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { useVendorAnalyticsQuery } from '../queries/hooks';
+import {
+  AnalyticsCollapsibleSection,
+  riskLevelBadgeVariant,
+} from './AnalyticsCollapsibleSection';
+import { AnalyticsMetricCard } from './AnalyticsMetricCard';
 import styles from './analytics.module.css';
 
 export function VendorAnalytics() {
@@ -54,7 +79,6 @@ export function VendorAnalytics() {
     }));
   };
 
-  // Set default dates (30 days ago to now)
   useEffect(() => {
     const endDate = new Date();
     endDate.setHours(23, 59, 59, 999);
@@ -71,7 +95,6 @@ export function VendorAnalytics() {
       startDate: prev.startDate || formatDate(startDate),
       endDate: prev.endDate || formatDate(endDate),
     }));
-     
   }, []);
 
   const handleFilterChange = (key: string, value: string) => {
@@ -94,431 +117,335 @@ export function VendorAnalytics() {
   };
 
   return (
-    <div>
-      {/* Filters */}
-      <div className={styles.filters}>
-        <div className={styles.filterGroup}>
-          <label htmlFor="vendorStartDate">Start Date</label>
-          <input
-            id="vendorStartDate"
-            type="datetime-local"
-            value={
-              localFilters.startDate
-                ? new Date(localFilters.startDate).toISOString().slice(0, 16)
-                : ''
-            }
-            onChange={(e) => {
-              const date = e.target.value ? new Date(e.target.value).toISOString() : '';
-              handleFilterChange('startDate', date);
-            }}
-            className={styles.input}
-          />
-        </div>
+    <Stack gap="md">
+      <Card className={styles.filters}>
+        <CardBody>
+          <Inline gap="md" className={styles.filterRow}>
+            <FormField label="Start Date" htmlFor="vendorStartDate">
+              <Input
+                id="vendorStartDate"
+                type="datetime-local"
+                value={
+                  localFilters.startDate
+                    ? new Date(localFilters.startDate).toISOString().slice(0, 16)
+                    : ''
+                }
+                onChange={(e) => {
+                  const date = e.target.value ? new Date(e.target.value).toISOString() : '';
+                  handleFilterChange('startDate', date);
+                }}
+              />
+            </FormField>
 
-        <div className={styles.filterGroup}>
-          <label htmlFor="vendorEndDate">End Date</label>
-          <input
-            id="vendorEndDate"
-            type="datetime-local"
-            value={
-              localFilters.endDate
-                ? new Date(localFilters.endDate).toISOString().slice(0, 16)
-                : ''
-            }
-            onChange={(e) => {
-              if (e.target.value) {
-                const date = new Date(e.target.value);
-                date.setHours(23, 59, 59, 999);
-                handleFilterChange('endDate', date.toISOString());
-              } else {
-                handleFilterChange('endDate', '');
-              }
-            }}
-            className={styles.input}
-          />
-        </div>
+            <FormField label="End Date" htmlFor="vendorEndDate">
+              <Input
+                id="vendorEndDate"
+                type="datetime-local"
+                value={
+                  localFilters.endDate
+                    ? new Date(localFilters.endDate).toISOString().slice(0, 16)
+                    : ''
+                }
+                onChange={(e) => {
+                  if (e.target.value) {
+                    const date = new Date(e.target.value);
+                    date.setHours(23, 59, 59, 999);
+                    handleFilterChange('endDate', date.toISOString());
+                  } else {
+                    handleFilterChange('endDate', '');
+                  }
+                }}
+              />
+            </FormField>
 
-        <button onClick={handleApplyFilters} className={styles.applyButton}>
-          Apply Filters
-        </button>
-      </div>
+            <Button variant="solid" onClick={handleApplyFilters}>
+              Apply Filters
+            </Button>
+          </Inline>
+        </CardBody>
+      </Card>
 
-      {/* Error State */}
-      {error && (
-        <div className={styles.error}>
-          <p>Error: {error}</p>
-        </div>
-      )}
+      {error ? <Alert variant="danger">{error}</Alert> : null}
 
-      {/* Loading State */}
-      {isLoading && (
-        <div className={styles.loading}>
-          <p>Loading vendor analytics data...</p>
-        </div>
-      )}
+      {isLoading ? (
+        <CenteredLoader label="Loading vendor analytics data…" size="md" />
+      ) : null}
 
-      {/* Vendor Analytics Content */}
-      {vendorData && !isLoading && (
+      {vendorData && !isLoading ? (
         <>
-          {/* Summary Cards */}
-          <div className={styles.summaryGrid}>
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryHeader}>
-                <span className={styles.summaryLabel}>Total Vendors</span>
-              </div>
-              <div className={styles.summaryValue}>{vendorData.totalVendors}</div>
-              <div className={styles.summaryPeriod}>Active Vendors</div>
-            </div>
+          <Grid className={styles.summaryGrid}>
+            <AnalyticsMetricCard
+              label="Total Vendors"
+              value={String(vendorData.totalVendors)}
+              period="Active Vendors"
+            />
+            <AnalyticsMetricCard
+              label="Total Inventory Value"
+              value={formatCurrency(vendorData.totalInventoryValue)}
+              period="Current Stock Value"
+            />
+            <AnalyticsMetricCard
+              label="Total Revenue"
+              value={formatCurrency(vendorData.totalRevenue)}
+              period="Revenue Generated"
+            />
+            <AnalyticsMetricCard
+              label="Total Expired Stock Value"
+              value={formatCurrency(vendorData.totalExpiredStockValue)}
+              period="Expired Inventory"
+            />
+            <AnalyticsMetricCard
+              label="Total Unsold Stock Value"
+              value={formatCurrency(vendorData.totalUnsoldStockValue)}
+              period="Unsold Inventory"
+            />
+          </Grid>
 
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryHeader}>
-                <span className={styles.summaryLabel}>Total Inventory Value</span>
-              </div>
-              <div className={styles.summaryValue}>{formatCurrency(vendorData.totalInventoryValue)}</div>
-              <div className={styles.summaryPeriod}>Current Stock Value</div>
-            </div>
+          {vendorData.vendorStockAnalytics && vendorData.vendorStockAnalytics.length > 0 ? (
+            <AnalyticsCollapsibleSection
+              title="Vendor Stock Analytics"
+              count={vendorData.vendorStockAnalytics.length}
+              expanded={expandedSections.stockAnalytics}
+              onToggle={() => toggleSection('stockAnalytics')}
+            >
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableHeaderCell>Vendor Name</TableHeaderCell>
+                    <TableHeaderCell>Company</TableHeaderCell>
+                    <TableHeaderCell>Inventory Received</TableHeaderCell>
+                    <TableHeaderCell>Quantity Sold</TableHeaderCell>
+                    <TableHeaderCell>Unsold Stock</TableHeaderCell>
+                    <TableHeaderCell>Expired Stock</TableHeaderCell>
+                    <TableHeaderCell>Sell Through %</TableHeaderCell>
+                    <TableHeaderCell>Revenue</TableHeaderCell>
+                    <TableHeaderCell>Unsold Value</TableHeaderCell>
+                    <TableHeaderCell>Expired Value</TableHeaderCell>
+                    <TableHeaderCell>Products</TableHeaderCell>
+                    <TableHeaderCell>Lots</TableHeaderCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {vendorData.vendorStockAnalytics.map((vendor) => (
+                    <TableRow key={vendor.vendorId}>
+                      <TableCell>{vendor.vendorName}</TableCell>
+                      <TableCell>{vendor.vendorCompanyName || 'N/A'}</TableCell>
+                      <TableCell>{vendor.totalInventoryReceived}</TableCell>
+                      <TableCell>{vendor.totalQuantitySold}</TableCell>
+                      <TableCell>{vendor.totalUnsoldStock}</TableCell>
+                      <TableCell>{vendor.totalExpiredStock}</TableCell>
+                      <TableCell>{formatPercentage(vendor.sellThroughPercentage)}</TableCell>
+                      <TableCell>{formatCurrency(vendor.revenueGenerated)}</TableCell>
+                      <TableCell>{formatCurrency(vendor.unsoldStockValue)}</TableCell>
+                      <TableCell>{formatCurrency(vendor.expiredStockValue)}</TableCell>
+                      <TableCell>{vendor.numberOfProducts}</TableCell>
+                      <TableCell>{vendor.numberOfLots}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </AnalyticsCollapsibleSection>
+          ) : null}
 
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryHeader}>
-                <span className={styles.summaryLabel}>Total Revenue</span>
-              </div>
-              <div className={styles.summaryValue}>{formatCurrency(vendorData.totalRevenue)}</div>
-              <div className={styles.summaryPeriod}>Revenue Generated</div>
-            </div>
+          {vendorData.vendorRevenueAnalytics && vendorData.vendorRevenueAnalytics.length > 0 ? (
+            <AnalyticsCollapsibleSection
+              title="Vendor Revenue Analytics"
+              count={vendorData.vendorRevenueAnalytics.length}
+              expanded={expandedSections.revenueAnalytics}
+              onToggle={() => toggleSection('revenueAnalytics')}
+            >
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableHeaderCell>Vendor Name</TableHeaderCell>
+                    <TableHeaderCell>Company</TableHeaderCell>
+                    <TableHeaderCell>Total Revenue</TableHeaderCell>
+                    <TableHeaderCell>Total Cost</TableHeaderCell>
+                    <TableHeaderCell>Gross Profit</TableHeaderCell>
+                    <TableHeaderCell>Margin %</TableHeaderCell>
+                    <TableHeaderCell>Items Sold</TableHeaderCell>
+                    <TableHeaderCell>Purchases</TableHeaderCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {vendorData.vendorRevenueAnalytics.map((vendor) => (
+                    <TableRow key={vendor.vendorId}>
+                      <TableCell>{vendor.vendorName}</TableCell>
+                      <TableCell>{vendor.vendorCompanyName || 'N/A'}</TableCell>
+                      <TableCell>{formatCurrency(vendor.totalRevenue)}</TableCell>
+                      <TableCell>{formatCurrency(vendor.totalCost)}</TableCell>
+                      <TableCell>{formatCurrency(vendor.grossProfit)}</TableCell>
+                      <TableCell>{formatPercentage(vendor.marginPercent)}</TableCell>
+                      <TableCell>{vendor.totalItemsSold}</TableCell>
+                      <TableCell>{vendor.totalPurchases}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </AnalyticsCollapsibleSection>
+          ) : null}
 
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryHeader}>
-                <span className={styles.summaryLabel}>Total Expired Stock Value</span>
-              </div>
-              <div className={styles.summaryValue}>{formatCurrency(vendorData.totalExpiredStockValue)}</div>
-              <div className={styles.summaryPeriod}>Expired Inventory</div>
-            </div>
+          {vendorData.vendorPerformanceAnalytics &&
+          vendorData.vendorPerformanceAnalytics.length > 0 ? (
+            <AnalyticsCollapsibleSection
+              title="Vendor Performance Analytics"
+              count={vendorData.vendorPerformanceAnalytics.length}
+              expanded={expandedSections.performanceAnalytics}
+              onToggle={() => toggleSection('performanceAnalytics')}
+            >
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableHeaderCell>Vendor Name</TableHeaderCell>
+                    <TableHeaderCell>Company</TableHeaderCell>
+                    <TableHeaderCell>Avg Days in Stock</TableHeaderCell>
+                    <TableHeaderCell>Fast Moving %</TableHeaderCell>
+                    <TableHeaderCell>Dead Stock Value</TableHeaderCell>
+                    <TableHeaderCell>Expired Stock Value</TableHeaderCell>
+                    <TableHeaderCell>Expiry Loss %</TableHeaderCell>
+                    <TableHeaderCell>Expired Items</TableHeaderCell>
+                    <TableHeaderCell>Dead Stock Items</TableHeaderCell>
+                    <TableHeaderCell>Risk Score</TableHeaderCell>
+                    <TableHeaderCell>Risk Level</TableHeaderCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {vendorData.vendorPerformanceAnalytics.map((vendor) => (
+                    <TableRow key={vendor.vendorId}>
+                      <TableCell>{vendor.vendorName}</TableCell>
+                      <TableCell>{vendor.vendorCompanyName || 'N/A'}</TableCell>
+                      <TableCell>{vendor.averageDaysInStock.toFixed(2)}</TableCell>
+                      <TableCell>{formatPercentage(vendor.fastMovingItemsPercentage)}</TableCell>
+                      <TableCell>{formatCurrency(vendor.deadStockValue)}</TableCell>
+                      <TableCell>{formatCurrency(vendor.expiredStockValue)}</TableCell>
+                      <TableCell>{formatPercentage(vendor.expiryLossPercentage)}</TableCell>
+                      <TableCell>{vendor.totalExpiredItems}</TableCell>
+                      <TableCell>{vendor.totalDeadStockItems}</TableCell>
+                      <TableCell>{vendor.riskScore.toFixed(5)}</TableCell>
+                      <TableCell>
+                        <Badge variant={riskLevelBadgeVariant(vendor.riskLevel)}>
+                          {vendor.riskLevel}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </AnalyticsCollapsibleSection>
+          ) : null}
 
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryHeader}>
-                <span className={styles.summaryLabel}>Total Unsold Stock Value</span>
-              </div>
-              <div className={styles.summaryValue}>{formatCurrency(vendorData.totalUnsoldStockValue)}</div>
-              <div className={styles.summaryPeriod}>Unsold Inventory</div>
-            </div>
-          </div>
+          {vendorData.vendorDependencyAnalytics &&
+          vendorData.vendorDependencyAnalytics.length > 0 ? (
+            <AnalyticsCollapsibleSection
+              title="Vendor Dependency Analytics"
+              count={vendorData.vendorDependencyAnalytics.length}
+              expanded={expandedSections.dependencyAnalytics}
+              onToggle={() => toggleSection('dependencyAnalytics')}
+            >
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableHeaderCell>Vendor Name</TableHeaderCell>
+                    <TableHeaderCell>Company</TableHeaderCell>
+                    <TableHeaderCell>Revenue %</TableHeaderCell>
+                    <TableHeaderCell>Inventory %</TableHeaderCell>
+                    <TableHeaderCell>Products</TableHeaderCell>
+                    <TableHeaderCell>Dependency Score</TableHeaderCell>
+                    <TableHeaderCell>Dependency Level</TableHeaderCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {vendorData.vendorDependencyAnalytics.map((vendor) => (
+                    <TableRow key={vendor.vendorId}>
+                      <TableCell>{vendor.vendorName}</TableCell>
+                      <TableCell>{vendor.vendorCompanyName || 'N/A'}</TableCell>
+                      <TableCell>{formatPercentage(vendor.revenuePercentage)}</TableCell>
+                      <TableCell>{formatPercentage(vendor.inventoryPercentage)}</TableCell>
+                      <TableCell>{vendor.numberOfProducts}</TableCell>
+                      <TableCell>{vendor.dependencyScore.toFixed(2)}</TableCell>
+                      <TableCell>
+                        <Badge variant={riskLevelBadgeVariant(vendor.dependencyLevel)}>
+                          {vendor.dependencyLevel}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </AnalyticsCollapsibleSection>
+          ) : null}
 
-          {/* Vendor Stock Analytics Table */}
-          {vendorData.vendorStockAnalytics && vendorData.vendorStockAnalytics.length > 0 && (
-            <div className={styles.accordionItem}>
-              <button
-                className={styles.accordionHeader}
-                onClick={() => toggleSection('stockAnalytics')}
-                aria-expanded={expandedSections.stockAnalytics}
-              >
-                <span className={styles.accordionTitle}>
-                  Vendor Stock Analytics
-                  <span className={styles.accordionCount}>({vendorData.vendorStockAnalytics.length})</span>
-                </span>
-                <span className={`${styles.accordionIcon} ${expandedSections.stockAnalytics ? styles.accordionIconExpanded : ''}`}>
-                  ▼
-                </span>
-              </button>
-              <div className={`${styles.accordionContent} ${expandedSections.stockAnalytics ? styles.accordionContentExpanded : ''}`}>
-                <div className={styles.tableContainer}>
-                  <table className={styles.table}>
-                    <thead>
-                      <tr>
-                        <th>Vendor Name</th>
-                        <th>Company</th>
-                        <th>Inventory Received</th>
-                        <th>Quantity Sold</th>
-                        <th>Unsold Stock</th>
-                        <th>Expired Stock</th>
-                        <th>Sell Through %</th>
-                        <th>Revenue</th>
-                        <th>Unsold Value</th>
-                        <th>Expired Value</th>
-                        <th>Products</th>
-                        <th>Lots</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {vendorData.vendorStockAnalytics.map((vendor) => (
-                        <tr key={vendor.vendorId}>
-                          <td>{vendor.vendorName}</td>
-                          <td>{vendor.vendorCompanyName || 'N/A'}</td>
-                          <td>{vendor.totalInventoryReceived}</td>
-                          <td>{vendor.totalQuantitySold}</td>
-                          <td>{vendor.totalUnsoldStock}</td>
-                          <td>{vendor.totalExpiredStock}</td>
-                          <td>{formatPercentage(vendor.sellThroughPercentage)}</td>
-                          <td>{formatCurrency(vendor.revenueGenerated)}</td>
-                          <td>{formatCurrency(vendor.unsoldStockValue)}</td>
-                          <td>{formatCurrency(vendor.expiredStockValue)}</td>
-                          <td>{vendor.numberOfProducts}</td>
-                          <td>{vendor.numberOfLots}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
+          {vendorData.categoryExpiryAnalytics && vendorData.categoryExpiryAnalytics.length > 0 ? (
+            <AnalyticsCollapsibleSection
+              title="Category Expiry Analytics"
+              count={vendorData.categoryExpiryAnalytics.length}
+              expanded={expandedSections.categoryExpiry}
+              onToggle={() => toggleSection('categoryExpiry')}
+            >
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableHeaderCell>Vendor Name</TableHeaderCell>
+                    <TableHeaderCell>Business Type</TableHeaderCell>
+                    <TableHeaderCell>Total Received</TableHeaderCell>
+                    <TableHeaderCell>Total Expired</TableHeaderCell>
+                    <TableHeaderCell>Expiry Percentage</TableHeaderCell>
+                    <TableHeaderCell>Expired Stock Value</TableHeaderCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {vendorData.categoryExpiryAnalytics.map((category, index) => (
+                    <TableRow key={`${category.vendorId}-${category.businessType}-${index}`}>
+                      <TableCell>{category.vendorName}</TableCell>
+                      <TableCell>{category.businessType}</TableCell>
+                      <TableCell>{category.totalReceived}</TableCell>
+                      <TableCell>{category.totalExpired}</TableCell>
+                      <TableCell>{formatPercentage(category.expiryPercentage)}</TableCell>
+                      <TableCell>{formatCurrency(category.expiredStockValue)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </AnalyticsCollapsibleSection>
+          ) : null}
 
-          {/* Vendor Revenue Analytics Table */}
-          {vendorData.vendorRevenueAnalytics && vendorData.vendorRevenueAnalytics.length > 0 && (
-            <div className={styles.accordionItem}>
-              <button
-                className={styles.accordionHeader}
-                onClick={() => toggleSection('revenueAnalytics')}
-                aria-expanded={expandedSections.revenueAnalytics}
-              >
-                <span className={styles.accordionTitle}>
-                  Vendor Revenue Analytics
-                  <span className={styles.accordionCount}>({vendorData.vendorRevenueAnalytics.length})</span>
-                </span>
-                <span className={`${styles.accordionIcon} ${expandedSections.revenueAnalytics ? styles.accordionIconExpanded : ''}`}>
-                  ▼
-                </span>
-              </button>
-              <div className={`${styles.accordionContent} ${expandedSections.revenueAnalytics ? styles.accordionContentExpanded : ''}`}>
-                <div className={styles.tableContainer}>
-                  <table className={styles.table}>
-                    <thead>
-                      <tr>
-                        <th>Vendor Name</th>
-                        <th>Company</th>
-                        <th>Total Revenue</th>
-                        <th>Total Cost</th>
-                        <th>Gross Profit</th>
-                        <th>Margin %</th>
-                        <th>Items Sold</th>
-                        <th>Purchases</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {vendorData.vendorRevenueAnalytics.map((vendor) => (
-                        <tr key={vendor.vendorId}>
-                          <td>{vendor.vendorName}</td>
-                          <td>{vendor.vendorCompanyName || 'N/A'}</td>
-                          <td>{formatCurrency(vendor.totalRevenue)}</td>
-                          <td>{formatCurrency(vendor.totalCost)}</td>
-                          <td>{formatCurrency(vendor.grossProfit)}</td>
-                          <td>{formatPercentage(vendor.marginPercent)}</td>
-                          <td>{vendor.totalItemsSold}</td>
-                          <td>{vendor.totalPurchases}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Vendor Performance Analytics Table */}
-          {vendorData.vendorPerformanceAnalytics && vendorData.vendorPerformanceAnalytics.length > 0 && (
-            <div className={styles.accordionItem}>
-              <button
-                className={styles.accordionHeader}
-                onClick={() => toggleSection('performanceAnalytics')}
-                aria-expanded={expandedSections.performanceAnalytics}
-              >
-                <span className={styles.accordionTitle}>
-                  Vendor Performance Analytics
-                  <span className={styles.accordionCount}>({vendorData.vendorPerformanceAnalytics.length})</span>
-                </span>
-                <span className={`${styles.accordionIcon} ${expandedSections.performanceAnalytics ? styles.accordionIconExpanded : ''}`}>
-                  ▼
-                </span>
-              </button>
-              <div className={`${styles.accordionContent} ${expandedSections.performanceAnalytics ? styles.accordionContentExpanded : ''}`}>
-                <div className={styles.tableContainer}>
-                  <table className={styles.table}>
-                    <thead>
-                      <tr>
-                        <th>Vendor Name</th>
-                        <th>Company</th>
-                        <th>Avg Days in Stock</th>
-                        <th>Fast Moving %</th>
-                        <th>Dead Stock Value</th>
-                        <th>Expired Stock Value</th>
-                        <th>Expiry Loss %</th>
-                        <th>Expired Items</th>
-                        <th>Dead Stock Items</th>
-                        <th>Risk Score</th>
-                        <th>Risk Level</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {vendorData.vendorPerformanceAnalytics.map((vendor) => (
-                        <tr key={vendor.vendorId}>
-                          <td>{vendor.vendorName}</td>
-                          <td>{vendor.vendorCompanyName || 'N/A'}</td>
-                          <td>{vendor.averageDaysInStock.toFixed(2)}</td>
-                          <td>{formatPercentage(vendor.fastMovingItemsPercentage)}</td>
-                          <td>{formatCurrency(vendor.deadStockValue)}</td>
-                          <td>{formatCurrency(vendor.expiredStockValue)}</td>
-                          <td>{formatPercentage(vendor.expiryLossPercentage)}</td>
-                          <td>{vendor.totalExpiredItems}</td>
-                          <td>{vendor.totalDeadStockItems}</td>
-                          <td>{vendor.riskScore.toFixed(5)}</td>
-                          <td>
-                            <span
-                              className={
-                                vendor.riskLevel === 'LOW'
-                                  ? styles.riskLow
-                                  : vendor.riskLevel === 'MEDIUM'
-                                  ? styles.riskMedium
-                                  : vendor.riskLevel === 'HIGH'
-                                  ? styles.riskHigh
-                                  : styles.riskCritical
-                              }
-                            >
-                              {vendor.riskLevel}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Vendor Dependency Analytics Table */}
-          {vendorData.vendorDependencyAnalytics && vendorData.vendorDependencyAnalytics.length > 0 && (
-            <div className={styles.accordionItem}>
-              <button
-                className={styles.accordionHeader}
-                onClick={() => toggleSection('dependencyAnalytics')}
-                aria-expanded={expandedSections.dependencyAnalytics}
-              >
-                <span className={styles.accordionTitle}>
-                  Vendor Dependency Analytics
-                  <span className={styles.accordionCount}>({vendorData.vendorDependencyAnalytics.length})</span>
-                </span>
-                <span className={`${styles.accordionIcon} ${expandedSections.dependencyAnalytics ? styles.accordionIconExpanded : ''}`}>
-                  ▼
-                </span>
-              </button>
-              <div className={`${styles.accordionContent} ${expandedSections.dependencyAnalytics ? styles.accordionContentExpanded : ''}`}>
-                <div className={styles.tableContainer}>
-                  <table className={styles.table}>
-                    <thead>
-                      <tr>
-                        <th>Vendor Name</th>
-                        <th>Company</th>
-                        <th>Revenue %</th>
-                        <th>Inventory %</th>
-                        <th>Products</th>
-                        <th>Dependency Score</th>
-                        <th>Dependency Level</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {vendorData.vendorDependencyAnalytics.map((vendor) => (
-                        <tr key={vendor.vendorId}>
-                          <td>{vendor.vendorName}</td>
-                          <td>{vendor.vendorCompanyName || 'N/A'}</td>
-                          <td>{formatPercentage(vendor.revenuePercentage)}</td>
-                          <td>{formatPercentage(vendor.inventoryPercentage)}</td>
-                          <td>{vendor.numberOfProducts}</td>
-                          <td>{vendor.dependencyScore.toFixed(2)}</td>
-                          <td>
-                            <span
-                              className={
-                                vendor.dependencyLevel === 'LOW'
-                                  ? styles.riskLow
-                                  : vendor.dependencyLevel === 'MEDIUM'
-                                  ? styles.riskMedium
-                                  : vendor.dependencyLevel === 'HIGH'
-                                  ? styles.riskHigh
-                                  : styles.riskCritical
-                              }
-                            >
-                              {vendor.dependencyLevel}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Category Expiry Analytics Table */}
-          {vendorData.categoryExpiryAnalytics && vendorData.categoryExpiryAnalytics.length > 0 && (
-            <div className={styles.accordionItem}>
-              <button
-                className={styles.accordionHeader}
-                onClick={() => toggleSection('categoryExpiry')}
-                aria-expanded={expandedSections.categoryExpiry}
-              >
-                <span className={styles.accordionTitle}>
-                  Category Expiry Analytics
-                  <span className={styles.accordionCount}>({vendorData.categoryExpiryAnalytics.length})</span>
-                </span>
-                <span className={`${styles.accordionIcon} ${expandedSections.categoryExpiry ? styles.accordionIconExpanded : ''}`}>
-                  ▼
-                </span>
-              </button>
-              <div className={`${styles.accordionContent} ${expandedSections.categoryExpiry ? styles.accordionContentExpanded : ''}`}>
-                <div className={styles.tableContainer}>
-                  <table className={styles.table}>
-                    <thead>
-                      <tr>
-                        <th>Vendor Name</th>
-                        <th>Business Type</th>
-                        <th>Total Received</th>
-                        <th>Total Expired</th>
-                        <th>Expiry Percentage</th>
-                        <th>Expired Stock Value</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {vendorData.categoryExpiryAnalytics.map((category, index) => (
-                        <tr key={`${category.vendorId}-${category.businessType}-${index}`}>
-                          <td>{category.vendorName}</td>
-                          <td>{category.businessType}</td>
-                          <td>{category.totalReceived}</td>
-                          <td>{category.totalExpired}</td>
-                          <td>{formatPercentage(category.expiryPercentage)}</td>
-                          <td>{formatCurrency(category.expiredStockValue)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Key Insights */}
-          <div className={styles.chartCard}>
-            <h3 className={styles.tableTitle}>Key Insights</h3>
-            <div className={styles.insightsGrid}>
-              <div className={styles.insightItem}>
-                <span className={styles.insightLabel}>Top Vendor Revenue %</span>
-                <span className={styles.insightValue}>
-                  {formatPercentage(vendorData.topVendorRevenuePercentage)}
-                </span>
-              </div>
-              <div className={styles.insightItem}>
-                <span className={styles.insightLabel}>Top 3 Vendors Revenue %</span>
-                <span className={styles.insightValue}>
-                  {formatPercentage(vendorData.top3VendorRevenuePercentage)}
-                </span>
-              </div>
-              <div className={styles.insightItem}>
-                <span className={styles.insightLabel}>Most Dependent Vendor</span>
-                <span className={styles.insightValue}>{vendorData.mostDependentVendorName}</span>
-              </div>
-            </div>
-          </div>
+          <Card>
+            <CardBody>
+              <Stack gap="md">
+                <Text variant="heading4" weight="semibold">
+                  Key Insights
+                </Text>
+                <Grid className={styles.insightsGrid}>
+                  <Stack gap="xs" className={styles.insightItem}>
+                    <Text variant="caption" color="secondary">
+                      Top Vendor Revenue %
+                    </Text>
+                    <Text variant="heading4" weight="semibold">
+                      {formatPercentage(vendorData.topVendorRevenuePercentage)}
+                    </Text>
+                  </Stack>
+                  <Stack gap="xs" className={styles.insightItem}>
+                    <Text variant="caption" color="secondary">
+                      Top 3 Vendors Revenue %
+                    </Text>
+                    <Text variant="heading4" weight="semibold">
+                      {formatPercentage(vendorData.top3VendorRevenuePercentage)}
+                    </Text>
+                  </Stack>
+                  <Stack gap="xs" className={styles.insightItem}>
+                    <Text variant="caption" color="secondary">
+                      Most Dependent Vendor
+                    </Text>
+                    <Text variant="heading4" weight="semibold">
+                      {vendorData.mostDependentVendorName}
+                    </Text>
+                  </Stack>
+                </Grid>
+              </Stack>
+            </CardBody>
+          </Card>
         </>
-      )}
-    </div>
+      ) : null}
+    </Stack>
   );
 }
-

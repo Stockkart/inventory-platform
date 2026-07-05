@@ -1,12 +1,39 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { inventoryApi } from '../api/inventory.api';
 import { vendorsApi } from '@inventory-platform/user/vendors';
 import type { BulkCreateInventoryDto, ParseInvoiceItem, BillingMode } from '@inventory-platform/product/types';
 import type { Vendor } from '@inventory-platform/user/types';
-import { PaginationBar } from '@inventory-platform/ui-kit';
+import {
+  Badge,
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  Inline,
+  Input,
+  PageHeader,
+  PaginationBar,
+  SearchInput,
+  Select,
+  Spinner,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
+  Text,
+  type SelectOptionDef,
+} from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import styles from './import.module.css';
+
+const BILLING_MODE_OPTIONS: readonly SelectOptionDef[] = [
+  { value: 'REGULAR', label: 'REGULAR' },
+  { value: 'BASIC', label: 'BASIC' },
+];
 
 export function meta() {
   return [
@@ -24,6 +51,7 @@ export function ImportPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileInputKey, setFileInputKey] = useState(0);
   const [importTableItems, setImportTableItems] = useState<
     (ParseInvoiceItem & { id: string })[]
   >([]);
@@ -39,7 +67,7 @@ export function ImportPage() {
   const [vendorSearchResults, setVendorSearchResults] = useState<Vendor[]>([]);
   const [_isSearchingVendor, setIsSearchingVendor] = useState(false);
   const [showVendorDropdown, setShowVendorDropdown] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputId = 'excel-file-input';
   const { success: notifySuccess, error: notifyError } = useNotify;
 
   const handleParseSheet = async () => {
@@ -63,7 +91,7 @@ export function ImportPage() {
           `Parsed ${response.totalItems} items. Review and import below.`
         );
         setSelectedFile(null);
-        if (fileInputRef.current) fileInputRef.current.value = '';
+        setFileInputKey((k) => k + 1);
       } else {
         notifyError('No items found. Check file format and headers.');
       }
@@ -135,8 +163,7 @@ export function ImportPage() {
     };
   };
 
-  const handleImportSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleImportSubmit = async () => {
     if (!selectedVendor?.vendorId) {
       notifyError('Please select a vendor.');
       return;
@@ -197,6 +224,11 @@ export function ImportPage() {
     setShowVendorDropdown(false);
   };
 
+  const clearSelectedFile = () => {
+    setSelectedFile(null);
+    setFileInputKey((k) => k + 1);
+  };
+
   const isEditing = (rowIdx: number, field: keyof ParseInvoiceItem) =>
     editingCell?.rowIdx === rowIdx && editingCell?.field === field;
 
@@ -214,7 +246,7 @@ export function ImportPage() {
     const editing = isEditing(rowIdx, field);
     const display = value ?? '';
     return editing ? (
-      <input
+      <Input
         type={numeric ? 'number' : 'text'}
         className={styles.cellInput}
         value={display}
@@ -250,20 +282,18 @@ export function ImportPage() {
   );
 
   return (
-    <div className={styles.page}>
-      <div className={styles.header}>
-        <h2 className={styles.title}>Import from Excel</h2>
-        <p className={styles.subtitle}>
-          Upload your stock snapshot Excel file, review and import items
-        </p>
-      </div>
+    <Stack gap="md">
+      <PageHeader
+        title="Import from Excel"
+        description="Upload your stock snapshot Excel file, review and import items"
+      />
 
-      <div className={styles.formContainer}>
-        <div className={styles.uploadSection}>
-          <div className={styles.uploadBox}>
-            <input
-              ref={fileInputRef}
-              id="excel-file-input"
+      <Card>
+        <CardBody>
+          <Stack gap="md">
+            <Input
+              key={fileInputKey}
+              id={fileInputId}
               type="file"
               accept=".xls,.xlsx"
               className={styles.fileInput}
@@ -283,277 +313,283 @@ export function ImportPage() {
                 }
               }}
             />
-            <label htmlFor="excel-file-input" className={styles.uploadLabel}>
-              {selectedFile ? (
-                <span className={styles.fileName}>{selectedFile.name}</span>
-              ) : (
-                <span>Choose Excel file (.xls / .xlsx)</span>
-              )}
-            </label>
-            {isUploading && (
-              <div className={styles.progress}>
-                <div className={styles.spinner} />
-                {uploadProgress}
-              </div>
-            )}
-            {selectedFile && !isUploading && (
-              <div className={styles.uploadActions}>
-                <button
-                  type="button"
-                  className={styles.parseBtn}
-                  onClick={handleParseSheet}
-                >
+            <Inline gap="sm" align="center">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  document.getElementById(fileInputId)?.click()
+                }
+              >
+                {selectedFile
+                  ? selectedFile.name
+                  : 'Choose Excel file (.xls / .xlsx)'}
+              </Button>
+              {isUploading ? (
+                <Inline gap="sm" align="center">
+                  <Spinner size="sm" />
+                  <Text variant="caption" color="secondary">
+                    {uploadProgress}
+                  </Text>
+                </Inline>
+              ) : null}
+            </Inline>
+            {selectedFile && !isUploading ? (
+              <Inline gap="sm">
+                <Button type="button" variant="solid" onClick={handleParseSheet}>
                   Parse Sheet
-                </button>
-                <button
-                  type="button"
-                  className={styles.clearBtn}
-                  onClick={() => {
-                    setSelectedFile(null);
-                    fileInputRef.current && (fileInputRef.current.value = '');
-                  }}
-                >
+                </Button>
+                <Button type="button" variant="outline" onClick={clearSelectedFile}>
                   Clear
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+                </Button>
+              </Inline>
+            ) : null}
+          </Stack>
+        </CardBody>
+      </Card>
 
-        {importTableItems.length > 0 && (
-          <>
-            <div className={styles.tableSection}>
-              <div className={styles.tableHeader}>
-                <h3>Review ({importTableItems.length} items)</h3>
-                {importTableItems.length > importTablePageSize && (
-                  <PaginationBar
-                    compact
-                    page={importTablePage}
-                    totalPages={Math.ceil(
-                      importTableItems.length / importTablePageSize
-                    )}
-                    totalItems={importTableItems.length}
-                    onPageChange={setImportTablePage}
-                    aria-label="Import preview pages"
-                  />
-                )}
-              </div>
-              <div className={styles.tableWrap}>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>Barcode</th>
-                      <th>Name</th>
-                      <th>Company</th>
-                      <th className={styles.numCol}>Count</th>
-                      <th className={styles.numCol}>MRP</th>
-                      <th className={styles.numCol}>Cost</th>
-                      <th className={styles.numCol}>Sales Price</th>
-                      <th>Batch</th>
-                      <th>Expiry</th>
-                      <th className={styles.numCol}>Deal</th>
-                      <th className={styles.numCol}>Free</th>
-                      <th>Rec.Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {visibleRows.map((row, idx) => {
-                      const globalIdx =
-                        importTablePage * importTablePageSize + idx;
-                      return (
-                        <tr
-                          key={row.id}
-                          className={idx % 2 === 1 ? styles.altRow : ''}
-                        >
-                          <td>{globalIdx + 1}</td>
-                          <td>
-                            <EditableCell
-                              rowIdx={globalIdx}
-                              field="barcode"
-                              value={row.barcode}
-                            />
-                          </td>
-                          <td>
-                            <EditableCell
-                              rowIdx={globalIdx}
-                              field="name"
-                              value={row.name}
-                            />
-                          </td>
-                          <td>
-                            <EditableCell
-                              rowIdx={globalIdx}
-                              field="companyName"
-                              value={row.companyName}
-                            />
-                          </td>
-                          <td className={styles.numCol}>
-                            <EditableCell
-                              rowIdx={globalIdx}
-                              field="count"
-                              value={row.count}
-                              numeric
-                            />
-                          </td>
-                          <td className={styles.numCol}>
-                            <EditableCell
-                              rowIdx={globalIdx}
-                              field="maximumRetailPrice"
-                              value={row.maximumRetailPrice}
-                              numeric
-                            />
-                          </td>
-                          <td className={styles.numCol}>
-                            <EditableCell
-                              rowIdx={globalIdx}
-                              field="costPrice"
-                              value={row.costPrice}
-                              numeric
-                            />
-                          </td>
-                          <td className={styles.numCol}>
-                            <EditableCell
-                              rowIdx={globalIdx}
-                              field="priceToRetail"
-                              value={row.priceToRetail}
-                              numeric
-                            />
-                          </td>
-                          <td>
-                            <EditableCell
-                              rowIdx={globalIdx}
-                              field="batchNo"
-                              value={row.batchNo}
-                            />
-                          </td>
-                          <td>
-                            <EditableCell
-                              rowIdx={globalIdx}
-                              field="expiryDate"
-                              value={
-                                row.expiryDate
-                                  ? row.expiryDate.slice(0, 10)
-                                  : null
-                              }
-                            />
-                          </td>
-                          <td className={styles.numCol}>
-                            <EditableCell
-                              rowIdx={globalIdx}
-                              field="schemePayFor"
-                              value={row.schemePayFor}
-                              numeric
-                            />
-                          </td>
-                          <td className={styles.numCol}>
-                            <EditableCell
-                              rowIdx={globalIdx}
-                              field="schemeFree"
-                              value={row.schemeFree}
-                              numeric
-                            />
-                          </td>
-                          <td>
-                            <EditableCell
-                              rowIdx={globalIdx}
-                              field="purchaseDate"
-                              value={
-                                row.purchaseDate
-                                  ? row.purchaseDate.slice(0, 10)
-                                  : null
-                              }
-                            />
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+      {importTableItems.length > 0 ? (
+        <Stack gap="md">
+          <Card>
+            <CardHeader className={styles.tableHeader}>
+              <Text variant="heading3" weight="semibold">
+                Review ({importTableItems.length} items)
+              </Text>
+              {importTableItems.length > importTablePageSize ? (
+                <PaginationBar
+                  compact
+                  page={importTablePage}
+                  totalPages={Math.ceil(
+                    importTableItems.length / importTablePageSize
+                  )}
+                  totalItems={importTableItems.length}
+                  onPageChange={setImportTablePage}
+                  aria-label="Import preview pages"
+                />
+              ) : null}
+            </CardHeader>
+            <CardBody className={styles.tableBody}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableHeaderCell>#</TableHeaderCell>
+                    <TableHeaderCell>Barcode</TableHeaderCell>
+                    <TableHeaderCell>Name</TableHeaderCell>
+                    <TableHeaderCell>Company</TableHeaderCell>
+                    <TableHeaderCell className={styles.numCol}>Count</TableHeaderCell>
+                    <TableHeaderCell className={styles.numCol}>MRP</TableHeaderCell>
+                    <TableHeaderCell className={styles.numCol}>Cost</TableHeaderCell>
+                    <TableHeaderCell className={styles.numCol}>
+                      Sales Price
+                    </TableHeaderCell>
+                    <TableHeaderCell>Batch</TableHeaderCell>
+                    <TableHeaderCell>Expiry</TableHeaderCell>
+                    <TableHeaderCell className={styles.numCol}>Deal</TableHeaderCell>
+                    <TableHeaderCell className={styles.numCol}>Free</TableHeaderCell>
+                    <TableHeaderCell>Rec.Date</TableHeaderCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {visibleRows.map((row, idx) => {
+                    const globalIdx =
+                      importTablePage * importTablePageSize + idx;
+                    return (
+                      <TableRow
+                        key={row.id}
+                        className={idx % 2 === 1 ? styles.altRow : undefined}
+                      >
+                        <TableCell>{globalIdx + 1}</TableCell>
+                        <TableCell>
+                          <EditableCell
+                            rowIdx={globalIdx}
+                            field="barcode"
+                            value={row.barcode}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <EditableCell
+                            rowIdx={globalIdx}
+                            field="name"
+                            value={row.name}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <EditableCell
+                            rowIdx={globalIdx}
+                            field="companyName"
+                            value={row.companyName}
+                          />
+                        </TableCell>
+                        <TableCell className={styles.numCol}>
+                          <EditableCell
+                            rowIdx={globalIdx}
+                            field="count"
+                            value={row.count}
+                            numeric
+                          />
+                        </TableCell>
+                        <TableCell className={styles.numCol}>
+                          <EditableCell
+                            rowIdx={globalIdx}
+                            field="maximumRetailPrice"
+                            value={row.maximumRetailPrice}
+                            numeric
+                          />
+                        </TableCell>
+                        <TableCell className={styles.numCol}>
+                          <EditableCell
+                            rowIdx={globalIdx}
+                            field="costPrice"
+                            value={row.costPrice}
+                            numeric
+                          />
+                        </TableCell>
+                        <TableCell className={styles.numCol}>
+                          <EditableCell
+                            rowIdx={globalIdx}
+                            field="priceToRetail"
+                            value={row.priceToRetail}
+                            numeric
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <EditableCell
+                            rowIdx={globalIdx}
+                            field="batchNo"
+                            value={row.batchNo}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <EditableCell
+                            rowIdx={globalIdx}
+                            field="expiryDate"
+                            value={
+                              row.expiryDate
+                                ? row.expiryDate.slice(0, 10)
+                                : null
+                            }
+                          />
+                        </TableCell>
+                        <TableCell className={styles.numCol}>
+                          <EditableCell
+                            rowIdx={globalIdx}
+                            field="schemePayFor"
+                            value={row.schemePayFor}
+                            numeric
+                          />
+                        </TableCell>
+                        <TableCell className={styles.numCol}>
+                          <EditableCell
+                            rowIdx={globalIdx}
+                            field="schemeFree"
+                            value={row.schemeFree}
+                            numeric
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <EditableCell
+                            rowIdx={globalIdx}
+                            field="purchaseDate"
+                            value={
+                              row.purchaseDate
+                                ? row.purchaseDate.slice(0, 10)
+                                : null
+                            }
+                          />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardBody>
+          </Card>
 
-            <div className={styles.sharedSection}>
-              <h3>Vendor</h3>
-              <div className={styles.sharedRow}>
-                <select
-                  value={billingMode}
-                  onChange={(e) =>
-                    setBillingMode(e.target.value as BillingMode)
-                  }
-                >
-                  <option value="REGULAR">REGULAR</option>
-                  <option value="BASIC">BASIC</option>
-                </select>
-                <div className={styles.vendorField}>
-                  <input
-                    type="text"
-                    placeholder="Search vendor"
-                    value={vendorSearchQuery}
-                    onChange={(e) => {
-                      setVendorSearchQuery(e.target.value);
-                      setShowVendorDropdown(false);
-                    }}
-                    onFocus={() =>
-                      vendorSearchQuery && setShowVendorDropdown(true)
+          <Card>
+            <CardBody>
+              <Stack gap="md">
+                <Text variant="heading3" weight="semibold">
+                  Vendor
+                </Text>
+                <Inline gap="sm" className={styles.sharedRow}>
+                  <Select
+                    value={billingMode}
+                    options={BILLING_MODE_OPTIONS}
+                    onChange={(e) =>
+                      setBillingMode(e.target.value as BillingMode)
                     }
                   />
-                  <button
-                    type="button"
-                    onClick={handleVendorSearch}
-                    disabled={!vendorSearchQuery.trim()}
-                  >
-                    Search
-                  </button>
-                </div>
-              </div>
-              {showVendorDropdown && vendorSearchResults.length > 0 && (
-                <ul className={styles.vendorList}>
-                  {vendorSearchResults.map((v) => (
-                    <li key={v.vendorId} onClick={() => handleSelectVendor(v)}>
-                      {v.name}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {selectedVendor && (
-                <div className={styles.selectedVendor}>
-                  {selectedVendor.name}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedVendor(null);
-                      setVendorSearchQuery('');
+                  <SearchInput
+                    value={vendorSearchQuery}
+                    onChange={(value) => {
+                      setVendorSearchQuery(value);
+                      setShowVendorDropdown(false);
                     }}
-                  >
-                    ×
-                  </button>
-                </div>
-              )}
-            </div>
+                    onSearch={() => void handleVendorSearch()}
+                    showSearchButton
+                    placeholder="Search vendor"
+                    searchLabel="Search"
+                    className={styles.vendorSearch}
+                  />
+                </Inline>
+                {showVendorDropdown && vendorSearchResults.length > 0 ? (
+                  <Stack gap="none" className={styles.vendorList}>
+                    {vendorSearchResults.map((v) => (
+                      <Button
+                        key={v.vendorId}
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className={styles.vendorListItem}
+                        onClick={() => handleSelectVendor(v)}
+                      >
+                        {v.name}
+                      </Button>
+                    ))}
+                  </Stack>
+                ) : null}
+                {selectedVendor ? (
+                  <Inline gap="sm" align="center">
+                    <Badge>{selectedVendor.name}</Badge>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedVendor(null);
+                        setVendorSearchQuery('');
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </Inline>
+                ) : null}
+              </Stack>
+            </CardBody>
+          </Card>
 
-            <div className={styles.actions}>
-              <button
-                type="button"
-                className={styles.cancelBtn}
-                onClick={() => navigate('/dashboard')}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className={styles.submitBtn}
-                onClick={handleImportSubmit}
-                disabled={isLoading || !selectedVendor}
-              >
-                {isLoading
-                  ? `Importing...`
-                  : `Import ${importTableItems.length} items`}
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+          <Inline gap="sm" justify="end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate('/dashboard')}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="solid"
+              onClick={() => void handleImportSubmit()}
+              disabled={isLoading || !selectedVendor}
+              loading={isLoading}
+            >
+              {isLoading
+                ? 'Importing…'
+                : `Import ${importTableItems.length} items`}
+            </Button>
+          </Inline>
+        </Stack>
+      ) : null}
+    </Stack>
   );
 }

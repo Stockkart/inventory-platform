@@ -1,5 +1,12 @@
 import { useState } from 'react';
 import {
+  Box,
+  Checkbox,
+  Inline,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
+import {
   LineChart,
   Line,
   XAxis,
@@ -50,40 +57,30 @@ export function CostPriceTrendsChart({ data }: CostPriceTrendsChartProps) {
   };
 
   return (
-    <div className={styles.chartWrapper}>
-      <div className={styles.chartHeader}>
-        <h3 className={styles.chartTitle}>Cost & Price Trends Over Time</h3>
-        <div className={styles.chartControls}>
-          <label className={styles.toggleLabel}>
-            <input
-              type="checkbox"
-              checked={showCost}
-              onChange={(e) => setShowCost(e.target.checked)}
-              className={styles.toggleCheckbox}
-            />
-            <span>Cost Price</span>
-          </label>
-          <label className={styles.toggleLabel}>
-            <input
-              type="checkbox"
-              checked={showSelling}
-              onChange={(e) => setShowSelling(e.target.checked)}
-              className={styles.toggleCheckbox}
-            />
-            <span>Selling Price</span>
-          </label>
-          <label className={styles.toggleLabel}>
-            <input
-              type="checkbox"
-              checked={showMargin}
-              onChange={(e) => setShowMargin(e.target.checked)}
-              className={styles.toggleCheckbox}
-            />
-            <span>Margin</span>
-          </label>
-        </div>
-      </div>
-      <div className={styles.chartContent}>
+    <Stack gap="sm" className={styles.chartWrapper}>
+      <Inline align="center" justify="between" className={styles.chartHeader}>
+        <Text variant="heading4" weight="semibold">
+          Cost &amp; Price Trends Over Time
+        </Text>
+        <Inline gap="md">
+          <Checkbox
+            label="Cost Price"
+            checked={showCost}
+            onChange={(e) => setShowCost(e.target.checked)}
+          />
+          <Checkbox
+            label="Selling Price"
+            checked={showSelling}
+            onChange={(e) => setShowSelling(e.target.checked)}
+          />
+          <Checkbox
+            label="Margin"
+            checked={showMargin}
+            onChange={(e) => setShowMargin(e.target.checked)}
+          />
+        </Inline>
+      </Inline>
+      <Box className={styles.chartContent}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -108,7 +105,7 @@ export function CostPriceTrendsChart({ data }: CostPriceTrendsChartProps) {
               }}
             />
             <Legend wrapperStyle={{ paddingTop: '10px' }} />
-            {showCost && (
+            {showCost ? (
               <Line
                 yAxisId="left"
                 type="monotone"
@@ -119,8 +116,8 @@ export function CostPriceTrendsChart({ data }: CostPriceTrendsChartProps) {
                 dot={{ r: 4 }}
                 activeDot={{ r: 6 }}
               />
-            )}
-            {showSelling && (
+            ) : null}
+            {showSelling ? (
               <Line
                 yAxisId="left"
                 type="monotone"
@@ -131,8 +128,8 @@ export function CostPriceTrendsChart({ data }: CostPriceTrendsChartProps) {
                 dot={{ r: 4 }}
                 activeDot={{ r: 6 }}
               />
-            )}
-            {showMargin && (
+            ) : null}
+            {showMargin ? (
               <Line
                 yAxisId="left"
                 type="monotone"
@@ -143,11 +140,10 @@ export function CostPriceTrendsChart({ data }: CostPriceTrendsChartProps) {
                 dot={{ r: 4 }}
                 activeDot={{ r: 6 }}
               />
-            )}
+            ) : null}
           </LineChart>
         </ResponsiveContainer>
-      </div>
-    </div>
+      </Box>
+    </Stack>
   );
 }
-

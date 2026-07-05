@@ -1,16 +1,35 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect } from 'react';
 import { cartApi } from '../api/cart.api';
 import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
 import type { BillingMode, InventoryItem, QuotationSummary } from '@inventory-platform/product/types';
-import { PaginationBar } from '@inventory-platform/ui-kit';
-import { InventoryAlertDetails } from '../ui';
 import {
-  formatInventoryExpiryDate,
-  sortInventoryByExpirySoonest,
-} from '@inventory-platform/schema';
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardBody,
+  CenteredLoader,
+  EmptyState,
+  Inline,
+  PageHeader,
+  PaginationBar,
+  SearchInput,
+  Select,
+  Stack,
+  Text,
+  type SelectOptionDef,
+} from '@inventory-platform/ui-kit';
+import { InventoryAlertDetails, ProductSearchCard, normalizedBillingMode } from '../ui';
+import { sortInventoryByExpirySoonest } from '@inventory-platform/schema';
 import styles from './product-search.module.css';
 import { useAuthStore, useNotify, useShopAccessStore, useVerticalSchemaStore } from '@inventory-platform/session';
 import { AddToSellQuotationPicker } from '../ui/AddToSellQuotationPicker';
+
+const BILLING_MODE_OPTIONS: readonly SelectOptionDef[] = [
+  { value: 'ALL', label: 'All Modes' },
+  { value: 'REGULAR', label: 'REGULAR' },
+  { value: 'BASIC', label: 'BASIC' },
+];
 
 export function meta() {
   return [
@@ -96,13 +115,7 @@ export function ProductSearchPage() {
     }
   };
 
-  const handleSearch = async (
-    e?: FormEvent<HTMLFormElement>,
-    pageNum?: number,
-    pageSize?: number
-  ) => {
-    e?.preventDefault();
-
+  const handleSearch = async (pageNum?: number, pageSize?: number) => {
     const currentPage = pageNum !== undefined ? pageNum : 0;
     const currentPageSize = pageSize !== undefined ? pageSize : searchPageSize;
 
@@ -148,19 +161,6 @@ export function ProductSearchPage() {
     setSearchTotalPages(0);
     setSearchTotalItems(0);
     fetchAllInventory(0, searchPageSize);
-  };
-
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
-    } catch {
-      return dateString;
-    }
   };
 
   const openProductDetails = async (item: InventoryItem) => {
@@ -352,282 +352,117 @@ export function ProductSearchPage() {
     }
   };
 
-  const normalizedMode = (item: InventoryItem): BillingMode =>
-    item.billingMode === 'BASIC' ? 'BASIC' : 'REGULAR';
-
   const filteredInventory = sortInventoryByExpirySoonest(
     inventory.filter((item) =>
       billingModeFilter === 'ALL'
         ? true
-        : normalizedMode(item) === billingModeFilter
+        : normalizedBillingMode(item) === billingModeFilter
     )
   );
 
   return (
-    <div className={styles.page}>
-      <div className={styles.header}>
-        <h2 className={styles.title}>Product Search</h2>
-        <p className={styles.subtitle}>
-          Search by product name, barcode, or batch number
-        </p>
-      </div>
-      <div className={styles.searchContainer}>
-        <form className={styles.searchBar} onSubmit={handleSearch}>
-          <span className={styles.searchIcon} role="img" aria-label="Search">
-            🔍
-          </span>
-          <input
-            type="text"
-            className={styles.searchInput}
-            placeholder="Name, barcode, or batch 1947304"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            disabled={isLoading}
-          />
-          <button
-            type="submit"
-            className={styles.searchBtn}
-            disabled={isLoading}
-          >
-            {isLoading ? 'Searching...' : 'Search'}
-          </button>
-          {hasActiveSearch && (
-            <button
-              type="button"
-              className={styles.clearBtn}
-              onClick={handleClearSearch}
-              disabled={isLoading}
-            >
-              Clear
-            </button>
-          )}
-          <select
-            className={styles.modeFilter}
-            value={billingModeFilter}
-            onChange={(e) =>
-              setBillingModeFilter(e.target.value as 'ALL' | BillingMode)
-            }
+    <Stack gap="md">
+      <PageHeader
+        title="Product Search"
+        description="Search by product name, barcode, or batch number"
+      />
+
+      <Inline gap="sm" className={styles.toolbar}>
+        <SearchInput
+          value={searchQuery}
+          onChange={setSearchQuery}
+          onSearch={() => void handleSearch()}
+          showSearchButton
+          placeholder="Name, barcode, or batch number"
+          disabled={isLoading}
+          searchLabel={isLoading ? 'Searching…' : 'Search'}
+          className={styles.searchField}
+        />
+        {hasActiveSearch ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleClearSearch}
             disabled={isLoading}
           >
-            <option value="ALL">All Modes</option>
-            <option value="REGULAR">REGULAR</option>
-            <option value="BASIC">BASIC</option>
-          </select>
-        </form>
-      </div>
-      {error && <div className={styles.errorMessage}>{error}</div>}
-      {successMessage && (
-        <div className={styles.successMessage}>{successMessage}</div>
-      )}
-      <div className={styles.results}>
-        <div className={styles.resultsHeader}>
-          <span className={styles.resultsCount}>
-            {isLoading
-              ? 'Loading...'
-              : `Showing ${filteredInventory.length} ${
-                  filteredInventory.length === 1 ? 'result' : 'results'
-                }`}
-          </span>
-        </div>
-        {isLoading && filteredInventory.length === 0 ? (
-          <div className={styles.loading}>Loading inventory...</div>
-        ) : filteredInventory.length === 0 ? (
-          <div className={styles.emptyState}>
-            <p>No inventory items found.</p>
-            {searchQuery && (
-              <button onClick={handleClearSearch} className={styles.clearBtn}>
-                Clear search to see all items
-              </button>
+            Clear
+          </Button>
+        ) : null}
+        <Select
+          value={billingModeFilter}
+          options={BILLING_MODE_OPTIONS}
+          onChange={(e) =>
+            setBillingModeFilter(e.target.value as 'ALL' | BillingMode)
+          }
+          disabled={isLoading}
+        />
+      </Inline>
+
+      {error ? <Alert variant="danger">{error}</Alert> : null}
+      {successMessage ? (
+        <Alert variant="success">{successMessage}</Alert>
+      ) : null}
+
+      <Card>
+        <CardBody>
+          <Stack gap="md">
+            <Text variant="caption" color="secondary">
+              {isLoading
+                ? 'Loading…'
+                : `Showing ${filteredInventory.length} ${
+                    filteredInventory.length === 1 ? 'result' : 'results'
+                  }`}
+            </Text>
+
+            {isLoading && filteredInventory.length === 0 ? (
+              <CenteredLoader label="Loading inventory…" />
+            ) : filteredInventory.length === 0 ? (
+              <EmptyState
+                title="No inventory items found"
+                action={
+                  searchQuery ? (
+                    <Button variant="outline" onClick={handleClearSearch}>
+                      Clear search to see all items
+                    </Button>
+                  ) : undefined
+                }
+              />
+            ) : (
+              <>
+                <Box className={styles.productsGrid}>
+                  {filteredInventory.map((item) => {
+                    const inventoryId = resolveInventoryDocumentId(item);
+                    return (
+                      <ProductSearchCard
+                        key={item.id || item.lotId}
+                        item={item}
+                        isPageLoading={isLoading}
+                        isDetailLoading={detailLoadingId === inventoryId}
+                        isAddingToCart={addingToCart === inventoryId}
+                        onViewDetails={openProductDetails}
+                        onAddToSell={handleAddToSell}
+                      />
+                    );
+                  })}
+                </Box>
+                <PaginationBar
+                  page={searchPage}
+                  totalPages={Math.max(searchTotalPages, 1)}
+                  totalItems={searchTotalItems}
+                  disabled={isLoading}
+                  onPageChange={(p) => void handleSearch(p)}
+                  pageSize={searchPageSize}
+                  pageSizeOptions={[10, 20, 50]}
+                  onPageSizeChange={(n) => void handleSearch(0, n)}
+                  aria-label="Product search results pages"
+                />
+              </>
             )}
-          </div>
-        ) : (
-          <>
-            <div className={styles.productsGrid}>
-              {filteredInventory.map((item) => (
-                <div key={item.id || item.lotId} className={styles.productCard}>
-                  <div className={styles.productInfo}>
-                    <h3 className={styles.productName}>
-                      {item.name || 'Unnamed Product'}
-                    </h3>
-                    <span className={styles.modeBadge}>
-                      {normalizedMode(item)}
-                    </span>
-                    {item.companyName && (
-                      <p className={styles.productCompany}>
-                        Company: {item.companyName}
-                      </p>
-                    )}
-                    {item.barcode && (
-                      <p className={styles.productBarcode}>
-                        Barcode: {item.barcode}
-                      </p>
-                    )}
-                    {item.location && (
-                      <p className={styles.productLocation}>
-                        Location: {item.location}
-                      </p>
-                    )}
-                    <div className={styles.productDetails}>
-                      <div className={styles.stockInfo}>
-                        <span className={styles.productStock}>
-                          Current: {item.currentCount}
-                        </span>
-                        <span className={styles.productStock}>
-                          Received: {item.receivedCount} | Sold:{' '}
-                          {item.soldCount}
-                        </span>
-                      </div>
-                      <div className={styles.priceInfo}>
-                        <span className={styles.productPrice}>
-                          Selling Price: ₹
-                          {(item.sellingPrice ?? item.priceToRetail) != null
-                            ? (item.sellingPrice ??
-                                item.priceToRetail)!.toFixed(2)
-                            : '—'}
-                        </span>
-                        <span className={styles.productPrice}>
-                          MRP: ₹
-                          {item.maximumRetailPrice != null
-                            ? item.maximumRetailPrice.toFixed(2)
-                            : '—'}
-                        </span>
-                        {item.saleAdditionalDiscount !== null &&
-                          item.saleAdditionalDiscount !== undefined && (
-                            <span className={styles.productPrice}>
-                              Additional Discount:{' '}
-                              {item.saleAdditionalDiscount.toFixed(2)}%
-                            </span>
-                          )}
-                      </div>
-                      <div className={styles.expiryInfo}>
-                        <span className={styles.expiryDate}>
-                          Expires: {formatInventoryExpiryDate(item)}
-                        </span>
-                      </div>
-                      {(item.itemType ||
-                        item.discountApplicable ||
-                        item.purchaseDate ||
-                        item.createdAt ||
-                        item.schemeType ||
-                        item.scheme != null) && (
-                        <>
-                          <div className={styles.productMeta}>
-                            {item.itemType && item.itemType !== 'NORMAL' && (
-                              <span className={styles.productMetaItem}>
-                                Type:{' '}
-                                {item.itemType === 'DEGREE' &&
-                                item.itemTypeDegree != null
-                                  ? `Temperature (${item.itemTypeDegree}°)`
-                                  : item.itemType === 'COSTLY'
-                                  ? 'Costly'
-                                  : item.itemType}
-                              </span>
-                            )}
-                            {item.discountApplicable && (
-                              <span className={styles.productMetaItem}>
-                                {item.discountApplicable === 'DISCOUNT'
-                                  ? 'Discount applicable'
-                                  : item.discountApplicable === 'SCHEME'
-                                  ? 'Scheme applicable'
-                                  : 'Both discount and scheme applicable'}
-                              </span>
-                            )}
-                            {(item.purchaseDate || item.createdAt) && (
-                              <span className={styles.productMetaItem}>
-                                Purchased:{' '}
-                                {formatDate(
-                                  item.purchaseDate || item.createdAt!
-                                )}
-                              </span>
-                            )}
-                          </div>
-                          {(() => {
-                            const st = item.schemeType ?? 'FIXED_UNITS';
-                            if (
-                              st === 'PERCENTAGE' &&
-                              item.schemePercentage != null
-                            ) {
-                              return (
-                                <div className={styles.productMetaScheme}>
-                                  <span className={styles.productMetaItem}>
-                                    Scheme/Deal: {item.schemePercentage}%
-                                  </span>
-                                </div>
-                              );
-                            }
-                            if (
-                              (st === 'FIXED_UNITS' || !item.schemeType) &&
-                              item.scheme != null &&
-                              item.scheme > 0
-                            ) {
-                              return (
-                                <div className={styles.productMetaScheme}>
-                                  <span className={styles.productMetaItem}>
-                                    Scheme/Deal: {item.scheme} free
-                                  </span>
-                                </div>
-                              );
-                            }
-                            return null;
-                          })()}
-                        </>
-                      )}
-                    </div>
-                    {item.description && (
-                      <p className={styles.productDescription}>
-                        {item.description}
-                      </p>
-                    )}
-                    <div className={styles.actionButtons}>
-                      <button
-                        className={styles.viewDetailsBtn}
-                        onClick={() => openProductDetails(item)}
-                        disabled={
-                          isLoading ||
-                          detailLoadingId === resolveInventoryDocumentId(item)
-                        }
-                      >
-                        {detailLoadingId === resolveInventoryDocumentId(item)
-                          ? 'Loading…'
-                          : 'View Details'}
-                      </button>
-                      <button
-                        className={styles.addToSellBtn}
-                        onClick={() => handleAddToSell(item)}
-                        disabled={
-                          isLoading ||
-                          addingToCart === resolveInventoryDocumentId(item) ||
-                          item.currentCount <= 0 ||
-                          (item.sellingPrice ?? item.priceToRetail) == null
-                        }
-                      >
-                        {addingToCart === resolveInventoryDocumentId(item)
-                          ? 'Adding...'
-                          : item.currentCount <= 0
-                          ? 'Out of Stock'
-                          : (item.sellingPrice ?? item.priceToRetail) == null
-                          ? 'Price not set'
-                          : 'Add to Sell'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <PaginationBar
-              page={searchPage}
-              totalPages={Math.max(searchTotalPages, 1)}
-              totalItems={searchTotalItems}
-              disabled={isLoading}
-              onPageChange={(p) => handleSearch(undefined, p)}
-              pageSize={searchPageSize}
-              pageSizeOptions={[10, 20, 50]}
-              onPageSizeChange={(n) => handleSearch(undefined, 0, n)}
-              aria-label="Product search results pages"
-            />
-          </>
-        )}
-      </div>
+          </Stack>
+        </CardBody>
+      </Card>
+
       <InventoryAlertDetails
         open={selectedItem !== null}
         item={selectedItem}
@@ -656,6 +491,6 @@ export function ProductSearchPage() {
           setQuotationPickerItem(null);
         }}
       />
-    </div>
+    </Stack>
   );
 }

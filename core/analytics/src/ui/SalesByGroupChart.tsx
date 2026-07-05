@@ -1,5 +1,12 @@
 import { useState } from 'react';
 import {
+  Box,
+  Checkbox,
+  Inline,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
+import {
   BarChart,
   Bar,
   XAxis,
@@ -60,31 +67,25 @@ export function SalesByGroupChart({ data, groupBy }: SalesByGroupChartProps) {
   };
 
   return (
-    <div className={styles.chartWrapper}>
-      <div className={styles.chartHeader}>
-        <h3 className={styles.chartTitle}>{getTitle()}</h3>
-        <div className={styles.chartControls}>
-          <label className={styles.toggleLabel}>
-            <input
-              type="checkbox"
-              checked={showRevenue}
-              onChange={(e) => setShowRevenue(e.target.checked)}
-              className={styles.toggleCheckbox}
-            />
-            <span>Revenue</span>
-          </label>
-          <label className={styles.toggleLabel}>
-            <input
-              type="checkbox"
-              checked={showQuantity}
-              onChange={(e) => setShowQuantity(e.target.checked)}
-              className={styles.toggleCheckbox}
-            />
-            <span>Quantity</span>
-          </label>
-        </div>
-      </div>
-      <div className={styles.chartContent}>
+    <Stack gap="sm" className={styles.chartWrapper}>
+      <Inline align="center" justify="between" className={styles.chartHeader}>
+        <Text variant="heading4" weight="semibold">
+          {getTitle()}
+        </Text>
+        <Inline gap="md">
+          <Checkbox
+            label="Revenue"
+            checked={showRevenue}
+            onChange={(e) => setShowRevenue(e.target.checked)}
+          />
+          <Checkbox
+            label="Quantity"
+            checked={showQuantity}
+            onChange={(e) => setShowQuantity(e.target.checked)}
+          />
+        </Inline>
+      </Inline>
+      <Box className={styles.chartContent}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 50 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -114,15 +115,15 @@ export function SalesByGroupChart({ data, groupBy }: SalesByGroupChartProps) {
               }}
             />
             <Legend wrapperStyle={{ paddingTop: '10px' }} />
-            {showRevenue && (
+            {showRevenue ? (
               <Bar yAxisId="left" dataKey="revenue" fill="#8884d8" name="Revenue" />
-            )}
-            {showQuantity && (
+            ) : null}
+            {showQuantity ? (
               <Bar yAxisId="right" dataKey="quantity" fill="#82ca9d" name="Quantity" />
-            )}
+            ) : null}
           </BarChart>
         </ResponsiveContainer>
-      </div>
-    </div>
+      </Box>
+    </Stack>
   );
 }

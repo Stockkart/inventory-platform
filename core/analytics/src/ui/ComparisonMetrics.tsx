@@ -1,3 +1,12 @@
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  Grid,
+  Inline,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './analytics.module.css';
 
 interface ComparisonMetricsProps {
@@ -31,6 +40,7 @@ export function ComparisonMetrics({ data }: ComparisonMetricsProps) {
   if (!data.periodComparison) {
     return null;
   }
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -40,12 +50,6 @@ export function ComparisonMetrics({ data }: ComparisonMetricsProps) {
 
   const formatPercent = (value: number) => {
     return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
-  };
-
-  const getChangeColor = (value: number) => {
-    if (value > 0) return '#10b981'; // green
-    if (value < 0) return '#ef4444'; // red
-    return '#6b7280'; // gray
   };
 
   const metrics = [
@@ -73,45 +77,65 @@ export function ComparisonMetrics({ data }: ComparisonMetricsProps) {
   ];
 
   return (
-    <div className={styles.comparisonSection}>
-      <h2 className={styles.comparisonTitle}>Period Comparison</h2>
-      <div className={styles.comparisonGrid}>
-        {metrics.map((metric) => (
-          <div key={metric.label} className={styles.comparisonCard}>
-            <div className={styles.comparisonLabel}>{metric.label}</div>
-            <div className={styles.comparisonValues}>
-              <div className={styles.comparisonValue}>
-                <span className={styles.comparisonValueLabel}>Current:</span>
-                <span className={styles.comparisonValueNumber}>
-                  {metric.label === 'Purchases'
-                    ? metric.current
-                    : formatCurrency(metric.current)}
-                </span>
-              </div>
-              <div className={styles.comparisonValue}>
-                <span className={styles.comparisonValueLabel}>Previous:</span>
-                <span className={styles.comparisonValueNumber}>
-                  {metric.label === 'Purchases'
-                    ? metric.previous
-                    : formatCurrency(metric.previous)}
-                </span>
-              </div>
-            </div>
-            <div
-              className={styles.comparisonChange}
-              style={{ color: getChangeColor(metric.changePercent) }}
-            >
-              <span>
-                {metric.label === 'Purchases'
-                  ? `${metric.change >= 0 ? '+' : ''}${metric.change}`
-                  : formatCurrency(metric.change)}{' '}
-                ({formatPercent(metric.changePercent)})
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+    <Card>
+      <CardHeader>
+        <Text variant="heading4" weight="semibold">
+          Period Comparison
+        </Text>
+      </CardHeader>
+      <CardBody>
+        <Grid className={styles.comparisonGrid}>
+          {metrics.map((metric) => (
+            <Card key={metric.label}>
+              <CardBody>
+                <Stack gap="sm">
+                  <Text variant="heading4" weight="semibold">
+                    {metric.label}
+                  </Text>
+                  <Stack gap="xs">
+                    <Inline align="center" justify="between">
+                      <Text variant="caption" color="secondary">
+                        Current:
+                      </Text>
+                      <Text weight="semibold">
+                        {metric.label === 'Purchases'
+                          ? metric.current
+                          : formatCurrency(metric.current)}
+                      </Text>
+                    </Inline>
+                    <Inline align="center" justify="between">
+                      <Text variant="caption" color="secondary">
+                        Previous:
+                      </Text>
+                      <Text weight="semibold">
+                        {metric.label === 'Purchases'
+                          ? metric.previous
+                          : formatCurrency(metric.previous)}
+                      </Text>
+                    </Inline>
+                  </Stack>
+                  <Text
+                    variant="caption"
+                    weight="semibold"
+                    className={
+                      metric.changePercent > 0
+                        ? styles.changeUp
+                        : metric.changePercent < 0
+                          ? styles.changeDown
+                          : undefined
+                    }
+                  >
+                    {metric.label === 'Purchases'
+                      ? `${metric.change >= 0 ? '+' : ''}${metric.change}`
+                      : formatCurrency(metric.change)}{' '}
+                    ({formatPercent(metric.changePercent)})
+                  </Text>
+                </Stack>
+              </CardBody>
+            </Card>
+          ))}
+        </Grid>
+      </CardBody>
+    </Card>
   );
 }
-

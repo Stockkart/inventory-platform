@@ -1,4 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
+import {
+  Alert,
+  Button,
+  Card,
+  CardBody,
+  CenteredLoader,
+  FormField,
+  Inline,
+  Input,
+  Select,
+  Stack,
+} from '@inventory-platform/ui-kit';
 import { useProfitAnalyticsQuery } from '../queries/hooks';
 import styles from './analytics.module.css';
 import { ProfitSummaryCards } from './ProfitSummaryCards';
@@ -7,6 +19,21 @@ import { ProfitByGroupPieChart } from './ProfitByGroupPieChart';
 import { CostPriceTrendsChart } from './CostPriceTrendsChart';
 import { DiscountImpactCard } from './DiscountImpactCard';
 import { LowMarginProductsTable } from './LowMarginProductsTable';
+
+const GROUP_BY_OPTIONS = [
+  { value: '', label: 'None' },
+  { value: 'product', label: 'Product' },
+  { value: 'lotId', label: 'Lot ID' },
+  { value: 'businessType', label: 'Business Type' },
+] as const;
+
+const TIME_SERIES_OPTIONS = [
+  { value: '', label: 'None' },
+  { value: 'hour', label: 'Hour' },
+  { value: 'day', label: 'Day' },
+  { value: 'week', label: 'Week' },
+  { value: 'month', label: 'Month' },
+] as const;
 
 export function ProfitAnalytics() {
   const [localFilters, setLocalFilters] = useState<{
@@ -48,7 +75,6 @@ export function ProfitAnalytics() {
       : 'Failed to fetch profit analytics'
     : null;
 
-  // Set default dates (30 days ago to now)
   useEffect(() => {
     const endDate = new Date();
     endDate.setHours(23, 59, 59, 999);
@@ -65,7 +91,6 @@ export function ProfitAnalytics() {
       startDate: prev.startDate || formatDate(startDate),
       endDate: prev.endDate || formatDate(endDate),
     }));
-     
   }, []);
 
   const handleFilterChange = (key: string, value: string | number | null) => {
@@ -77,183 +102,166 @@ export function ProfitAnalytics() {
   };
 
   return (
-    <div>
-      {/* Filters */}
-      <div className={styles.filters}>
-        <div className={styles.filterGroup}>
-          <label htmlFor="profitStartDate">Start Date</label>
-          <input
-            id="profitStartDate"
-            type="datetime-local"
-            value={
-              localFilters.startDate
-                ? new Date(localFilters.startDate).toISOString().slice(0, 16)
-                : ''
-            }
-            onChange={(e) => {
-              const date = e.target.value ? new Date(e.target.value).toISOString() : '';
-              handleFilterChange('startDate', date);
-            }}
-            className={styles.input}
-          />
-        </div>
+    <Stack gap="md">
+      <Card className={styles.filters}>
+        <CardBody>
+          <Inline gap="md" className={styles.filterRow}>
+            <FormField label="Start Date" htmlFor="profitStartDate">
+              <Input
+                id="profitStartDate"
+                type="datetime-local"
+                value={
+                  localFilters.startDate
+                    ? new Date(localFilters.startDate).toISOString().slice(0, 16)
+                    : ''
+                }
+                onChange={(e) => {
+                  const date = e.target.value ? new Date(e.target.value).toISOString() : '';
+                  handleFilterChange('startDate', date);
+                }}
+              />
+            </FormField>
 
-        <div className={styles.filterGroup}>
-          <label htmlFor="profitEndDate">End Date</label>
-          <input
-            id="profitEndDate"
-            type="datetime-local"
-            value={
-              localFilters.endDate
-                ? new Date(localFilters.endDate).toISOString().slice(0, 16)
-                : ''
-            }
-            onChange={(e) => {
-              if (e.target.value) {
-                const date = new Date(e.target.value);
-                date.setHours(23, 59, 59, 999);
-                handleFilterChange('endDate', date.toISOString());
-              } else {
-                handleFilterChange('endDate', '');
-              }
-            }}
-            className={styles.input}
-          />
-        </div>
+            <FormField label="End Date" htmlFor="profitEndDate">
+              <Input
+                id="profitEndDate"
+                type="datetime-local"
+                value={
+                  localFilters.endDate
+                    ? new Date(localFilters.endDate).toISOString().slice(0, 16)
+                    : ''
+                }
+                onChange={(e) => {
+                  if (e.target.value) {
+                    const date = new Date(e.target.value);
+                    date.setHours(23, 59, 59, 999);
+                    handleFilterChange('endDate', date.toISOString());
+                  } else {
+                    handleFilterChange('endDate', '');
+                  }
+                }}
+              />
+            </FormField>
 
-        <div className={styles.filterGroup}>
-          <label htmlFor="profitGroupBy">Group By</label>
-          <select
-            id="profitGroupBy"
-            value={localFilters.groupBy || ''}
-            onChange={(e) => {
-              const value = e.target.value;
-              handleFilterChange('groupBy', value === '' ? null : (value as 'product' | 'lotId' | 'businessType'));
-            }}
-            className={styles.select}
-          >
-            <option value="">None</option>
-            <option value="product">Product</option>
-            <option value="lotId">Lot ID</option>
-            <option value="businessType">Business Type</option>
-          </select>
-        </div>
+            <FormField label="Group By" htmlFor="profitGroupBy">
+              <Select
+                id="profitGroupBy"
+                value={localFilters.groupBy || ''}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  handleFilterChange(
+                    'groupBy',
+                    value === '' ? null : (value as 'product' | 'lotId' | 'businessType')
+                  );
+                }}
+                options={[...GROUP_BY_OPTIONS]}
+              />
+            </FormField>
 
-        <div className={styles.filterGroup}>
-          <label htmlFor="profitTimeSeries">Time Series</label>
-          <select
-            id="profitTimeSeries"
-            value={localFilters.timeSeries || ''}
-            onChange={(e) => {
-              const value = e.target.value;
-              handleFilterChange('timeSeries', value === '' ? null : (value as 'hour' | 'day' | 'week' | 'month'));
-            }}
-            className={styles.select}
-          >
-            <option value="">None</option>
-            <option value="hour">Hour</option>
-            <option value="day">Day</option>
-            <option value="week">Week</option>
-            <option value="month">Month</option>
-          </select>
-        </div>
+            <FormField label="Time Series" htmlFor="profitTimeSeries">
+              <Select
+                id="profitTimeSeries"
+                value={localFilters.timeSeries || ''}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  handleFilterChange(
+                    'timeSeries',
+                    value === '' ? null : (value as 'hour' | 'day' | 'week' | 'month')
+                  );
+                }}
+                options={[...TIME_SERIES_OPTIONS]}
+              />
+            </FormField>
 
-        <div className={styles.filterGroup}>
-          <label htmlFor="lowMarginThreshold">Low Margin Threshold (%)</label>
-          <input
-            id="lowMarginThreshold"
-            type="number"
-            min="0"
-            max="100"
-            value={localFilters.lowMarginThreshold}
-            onChange={(e) => handleFilterChange('lowMarginThreshold', parseFloat(e.target.value) || 10)}
-            className={styles.input}
-          />
-        </div>
+            <FormField label="Low Margin Threshold (%)" htmlFor="lowMarginThreshold">
+              <Input
+                id="lowMarginThreshold"
+                type="number"
+                min={0}
+                max={100}
+                value={localFilters.lowMarginThreshold}
+                onChange={(e) =>
+                  handleFilterChange('lowMarginThreshold', parseFloat(e.target.value) || 10)
+                }
+              />
+            </FormField>
 
-        <button onClick={handleApplyFilters} className={styles.applyButton}>
-          Apply Filters
-        </button>
-      </div>
+            <Button variant="solid" onClick={handleApplyFilters}>
+              Apply Filters
+            </Button>
+          </Inline>
+        </CardBody>
+      </Card>
 
-      {/* Error State */}
-      {error && (
-        <div className={styles.error}>
-          <p>Error: {error}</p>
-        </div>
-      )}
+      {error ? <Alert variant="danger">{error}</Alert> : null}
 
-      {/* Loading State */}
-      {isLoading && (
-        <div className={styles.loading}>
-          <p>Loading profit analytics data...</p>
-        </div>
-      )}
+      {isLoading ? (
+        <CenteredLoader label="Loading profit analytics data…" size="md" />
+      ) : null}
 
-      {/* Profit Analytics Content */}
-      {profitData && !isLoading && (
+      {profitData && !isLoading ? (
         <>
           <ProfitSummaryCards data={profitData} />
           <DiscountImpactCard data={profitData.discountImpact} />
-          
-          {/* Bar Charts - One per row */}
-          <div className={styles.barChartsGrid}>
-            {profitData.costPriceTrends && profitData.costPriceTrends.length > 0 && (
-              <div className={styles.chartCard}>
-                <CostPriceTrendsChart data={profitData.costPriceTrends} />
-              </div>
-            )}
-            <div className={styles.chartCard}>
-              <ProfitByGroupChart
-                data={profitData.profitByProduct}
-                groupBy="product"
-              />
-            </div>
-            <div className={styles.chartCard}>
-              <ProfitByGroupChart
-                data={profitData.profitByLotId}
-                groupBy="lotId"
-              />
-            </div>
-            <div className={styles.chartCard}>
-              <ProfitByGroupChart
-                data={profitData.profitByBusinessType}
-                groupBy="businessType"
-              />
-            </div>
-          </div>
 
-          {/* Pie Charts - Two per row */}
-          <div className={styles.pieChartsGrid}>
-            <div className={styles.chartCard}>
-              <ProfitByGroupPieChart
-                data={profitData.profitByProduct}
-                groupBy="product"
-              />
-            </div>
-            <div className={styles.chartCard}>
-              <ProfitByGroupPieChart
-                data={profitData.profitByLotId}
-                groupBy="lotId"
-              />
-            </div>
-            <div className={styles.chartCard}>
-              <ProfitByGroupPieChart
-                data={profitData.profitByBusinessType}
-                groupBy="businessType"
-              />
-            </div>
-          </div>
+          <Stack gap="md" className={styles.barChartsGrid}>
+            {profitData.costPriceTrends && profitData.costPriceTrends.length > 0 ? (
+              <Card className={styles.chartCard}>
+                <CardBody>
+                  <CostPriceTrendsChart data={profitData.costPriceTrends} />
+                </CardBody>
+              </Card>
+            ) : null}
+            <Card className={styles.chartCard}>
+              <CardBody>
+                <ProfitByGroupChart data={profitData.profitByProduct} groupBy="product" />
+              </CardBody>
+            </Card>
+            <Card className={styles.chartCard}>
+              <CardBody>
+                <ProfitByGroupChart data={profitData.profitByLotId} groupBy="lotId" />
+              </CardBody>
+            </Card>
+            <Card className={styles.chartCard}>
+              <CardBody>
+                <ProfitByGroupChart
+                  data={profitData.profitByBusinessType}
+                  groupBy="businessType"
+                />
+              </CardBody>
+            </Card>
+          </Stack>
 
-          {/* Low Margin Products Table */}
-          {profitData.lowMarginProducts && profitData.lowMarginProducts.length > 0 && (
-            <div className={styles.chartCard}>
-              <LowMarginProductsTable data={profitData.lowMarginProducts} />
-            </div>
-          )}
+          <Stack gap="md" className={styles.pieChartsGrid}>
+            <Card className={styles.chartCard}>
+              <CardBody>
+                <ProfitByGroupPieChart data={profitData.profitByProduct} groupBy="product" />
+              </CardBody>
+            </Card>
+            <Card className={styles.chartCard}>
+              <CardBody>
+                <ProfitByGroupPieChart data={profitData.profitByLotId} groupBy="lotId" />
+              </CardBody>
+            </Card>
+            <Card className={styles.chartCard}>
+              <CardBody>
+                <ProfitByGroupPieChart
+                  data={profitData.profitByBusinessType}
+                  groupBy="businessType"
+                />
+              </CardBody>
+            </Card>
+          </Stack>
+
+          {profitData.lowMarginProducts && profitData.lowMarginProducts.length > 0 ? (
+            <Card className={styles.chartCard}>
+              <CardBody>
+                <LowMarginProductsTable data={profitData.lowMarginProducts} />
+              </CardBody>
+            </Card>
+          ) : null}
         </>
-      )}
-    </div>
+      ) : null}
+    </Stack>
   );
 }
-

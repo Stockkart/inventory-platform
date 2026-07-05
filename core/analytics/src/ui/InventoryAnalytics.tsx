@@ -1,6 +1,28 @@
 import { useMemo, useState } from 'react';
 import type { InventoryItemAnalytics } from '@inventory-platform/analytics/types';
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  CardBody,
+  CenteredLoader,
+  Checkbox,
+  FormField,
+  Grid,
+  Inline,
+  Input,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
+} from '@inventory-platform/ui-kit';
 import { useExpiryBucketsQuery, useInventoryAnalyticsQuery } from '../queries/hooks';
+import { AnalyticsCollapsibleSection } from './AnalyticsCollapsibleSection';
+import { AnalyticsMetricCard } from './AnalyticsMetricCard';
 import styles from './analytics.module.css';
 
 export function InventoryAnalytics() {
@@ -104,334 +126,258 @@ export function InventoryAnalytics() {
       return null;
     }
 
-    const isExpanded = expandedSections[sectionKey];
-    const itemCount = items.length;
-
     return (
-      <div className={styles.accordionItem}>
-        <button
-          className={styles.accordionHeader}
-          onClick={() => toggleSection(sectionKey)}
-          aria-expanded={isExpanded}
-        >
-          <span className={styles.accordionTitle}>
-            {title}
-            <span className={styles.accordionCount}>({itemCount})</span>
-          </span>
-          <span className={`${styles.accordionIcon} ${isExpanded ? styles.accordionIconExpanded : ''}`}>
-            ▼
-          </span>
-        </button>
-        <div className={`${styles.accordionContent} ${isExpanded ? styles.accordionContentExpanded : ''}`}>
-          <div className={styles.tableContainer}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Product Name</th>
-                <th>Company</th>
-                <th>Barcode</th>
-                <th>Lot ID</th>
-                <th>Location</th>
-                <th>Received</th>
-                <th>Sold</th>
-                <th>Current</th>
-                <th>Stock %</th>
-                <th>Days Since Received</th>
-                <th>Days Until Expiry</th>
-                {showAllColumns && (
+      <AnalyticsCollapsibleSection
+        title={title}
+        count={items.length}
+        expanded={expandedSections[sectionKey]}
+        onToggle={() => toggleSection(sectionKey)}
+      >
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableHeaderCell>Product Name</TableHeaderCell>
+              <TableHeaderCell>Company</TableHeaderCell>
+              <TableHeaderCell>Barcode</TableHeaderCell>
+              <TableHeaderCell>Lot ID</TableHeaderCell>
+              <TableHeaderCell>Location</TableHeaderCell>
+              <TableHeaderCell>Received</TableHeaderCell>
+              <TableHeaderCell>Sold</TableHeaderCell>
+              <TableHeaderCell>Current</TableHeaderCell>
+              <TableHeaderCell>Stock %</TableHeaderCell>
+              <TableHeaderCell>Days Since Received</TableHeaderCell>
+              <TableHeaderCell>Days Until Expiry</TableHeaderCell>
+              {showAllColumns ? (
+                <>
+                  <TableHeaderCell>Cost Value</TableHeaderCell>
+                  <TableHeaderCell>Selling Value</TableHeaderCell>
+                  <TableHeaderCell>Potential Profit</TableHeaderCell>
+                  <TableHeaderCell>Margin %</TableHeaderCell>
+                  <TableHeaderCell>Turnover Ratio</TableHeaderCell>
+                  <TableHeaderCell>Received Date</TableHeaderCell>
+                  <TableHeaderCell>Expiry Date</TableHeaderCell>
+                  <TableHeaderCell>Last Sold</TableHeaderCell>
+                </>
+              ) : null}
+              <TableHeaderCell>Status</TableHeaderCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {items.map((item) => (
+              <TableRow key={item.inventoryId}>
+                <TableCell>{item.productName}</TableCell>
+                <TableCell>{item.companyName}</TableCell>
+                <TableCell>{item.barcode}</TableCell>
+                <TableCell>{item.lotId || 'N/A'}</TableCell>
+                <TableCell>{item.location}</TableCell>
+                <TableCell>{item.receivedCount}</TableCell>
+                <TableCell>{item.soldCount}</TableCell>
+                <TableCell>{item.currentCount}</TableCell>
+                <TableCell>{formatPercentage(item.stockPercentage)}</TableCell>
+                <TableCell>{item.daysSinceReceived}</TableCell>
+                <TableCell>
+                  <Badge
+                    variant={
+                      item.daysUntilExpiry < 0
+                        ? 'danger'
+                        : item.daysUntilExpiry <= localFilters.expiringSoonDays
+                          ? 'warning'
+                          : 'neutral'
+                    }
+                  >
+                    {item.daysUntilExpiry}
+                  </Badge>
+                </TableCell>
+                {showAllColumns ? (
                   <>
-                    <th>Cost Value</th>
-                    <th>Selling Value</th>
-                    <th>Potential Profit</th>
-                    <th>Margin %</th>
-                    <th>Turnover Ratio</th>
-                    <th>Received Date</th>
-                    <th>Expiry Date</th>
-                    <th>Last Sold</th>
+                    <TableCell>{formatCurrency(item.costValue)}</TableCell>
+                    <TableCell>{formatCurrency(item.retailValue)}</TableCell>
+                    <TableCell>{formatCurrency(item.potentialProfit)}</TableCell>
+                    <TableCell>{formatPercentage(item.marginPercent)}</TableCell>
+                    <TableCell>{item.turnoverRatio.toFixed(2)}</TableCell>
+                    <TableCell>{formatDate(item.receivedDate)}</TableCell>
+                    <TableCell>{formatDate(item.expiryDate)}</TableCell>
+                    <TableCell>
+                      {item.lastSoldDate ? formatDate(item.lastSoldDate) : 'Never'}
+                    </TableCell>
                   </>
-                )}
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item) => (
-                <tr key={item.inventoryId}>
-                  <td>{item.productName}</td>
-                  <td>{item.companyName}</td>
-                  <td>{item.barcode}</td>
-                  <td>{item.lotId || 'N/A'}</td>
-                  <td>{item.location}</td>
-                  <td>{item.receivedCount}</td>
-                  <td>{item.soldCount}</td>
-                  <td>{item.currentCount}</td>
-                  <td>{formatPercentage(item.stockPercentage)}</td>
-                  <td>{item.daysSinceReceived}</td>
-                  <td>
-                    <span
-                      className={
-                        item.daysUntilExpiry < 0
-                          ? styles.riskCritical
-                          : item.daysUntilExpiry <= localFilters.expiringSoonDays
-                          ? styles.riskHigh
-                          : ''
-                      }
-                    >
-                      {item.daysUntilExpiry}
-                    </span>
-                  </td>
-                  {showAllColumns && (
-                    <>
-                      <td>{formatCurrency(item.costValue)}</td>
-                      <td>{formatCurrency(item.retailValue)}</td>
-                      <td>{formatCurrency(item.potentialProfit)}</td>
-                      <td>{formatPercentage(item.marginPercent)}</td>
-                      <td>{item.turnoverRatio.toFixed(2)}</td>
-                      <td>{formatDate(item.receivedDate)}</td>
-                      <td>{formatDate(item.expiryDate)}</td>
-                      <td>{item.lastSoldDate ? formatDate(item.lastSoldDate) : 'Never'}</td>
-                    </>
-                  )}
-                  <td>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                      {item.isLowStock && (
-                        <span className={styles.riskMedium}>Low Stock</span>
-                      )}
-                      {item.isExpired && (
-                        <span className={styles.riskCritical}>Expired</span>
-                      )}
-                      {item.isExpiringSoon && !item.isExpired && (
-                        <span className={styles.riskHigh}>Expiring Soon</span>
-                      )}
-                      {item.isDeadStock && (
-                        <span className={styles.riskHigh}>Dead Stock</span>
-                      )}
-                      {!item.isLowStock && !item.isExpired && !item.isExpiringSoon && !item.isDeadStock && (
-                        <span className={styles.riskLow}>Normal</span>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          </div>
-        </div>
-      </div>
+                ) : null}
+                <TableCell>
+                  <Stack gap="xs">
+                    {item.isLowStock ? <Badge variant="warning">Low Stock</Badge> : null}
+                    {item.isExpired ? <Badge variant="danger">Expired</Badge> : null}
+                    {item.isExpiringSoon && !item.isExpired ? (
+                      <Badge variant="warning">Expiring Soon</Badge>
+                    ) : null}
+                    {item.isDeadStock ? <Badge variant="danger">Dead Stock</Badge> : null}
+                    {!item.isLowStock &&
+                    !item.isExpired &&
+                    !item.isExpiringSoon &&
+                    !item.isDeadStock ? (
+                      <Badge variant="success">Normal</Badge>
+                    ) : null}
+                  </Stack>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </AnalyticsCollapsibleSection>
     );
   };
 
   return (
-    <div>
-      {/* Filters */}
-      <div className={styles.filters}>
-        <div className={styles.filterGroup}>
-          <label htmlFor="lowStockThreshold">Low Stock Threshold (%)</label>
-          <input
-            id="lowStockThreshold"
-            type="number"
-            min="0"
-            max="100"
-            value={localFilters.lowStockThreshold}
-            onChange={(e) => handleFilterChange('lowStockThreshold', parseInt(e.target.value, 10) || 10)}
-            className={styles.input}
-          />
-        </div>
+    <Stack gap="md">
+      <Card className={styles.filters}>
+        <CardBody>
+          <Inline gap="md" className={styles.filterRow}>
+            <FormField label="Low Stock Threshold (%)" htmlFor="lowStockThreshold">
+              <Input
+                id="lowStockThreshold"
+                type="number"
+                min={0}
+                max={100}
+                value={localFilters.lowStockThreshold}
+                onChange={(e) =>
+                  handleFilterChange('lowStockThreshold', parseInt(e.target.value, 10) || 10)
+                }
+              />
+            </FormField>
 
-        <div className={styles.filterGroup}>
-          <label htmlFor="deadStockDays">Dead Stock Days</label>
-          <input
-            id="deadStockDays"
-            type="number"
-            min="0"
-            value={localFilters.deadStockDays}
-            onChange={(e) => handleFilterChange('deadStockDays', parseInt(e.target.value, 10) || 60)}
-            className={styles.input}
-          />
-        </div>
+            <FormField label="Dead Stock Days" htmlFor="deadStockDays">
+              <Input
+                id="deadStockDays"
+                type="number"
+                min={0}
+                value={localFilters.deadStockDays}
+                onChange={(e) =>
+                  handleFilterChange('deadStockDays', parseInt(e.target.value, 10) || 60)
+                }
+              />
+            </FormField>
 
-        <div className={styles.filterGroup}>
-          <label htmlFor="expiringSoonDays">Expiring Soon Days</label>
-          <input
-            id="expiringSoonDays"
-            type="number"
-            min="0"
-            value={localFilters.expiringSoonDays}
-            onChange={(e) => handleFilterChange('expiringSoonDays', parseInt(e.target.value, 10) || 15)}
-            className={styles.input}
-          />
-        </div>
+            <FormField label="Expiring Soon Days" htmlFor="expiringSoonDays">
+              <Input
+                id="expiringSoonDays"
+                type="number"
+                min={0}
+                value={localFilters.expiringSoonDays}
+                onChange={(e) =>
+                  handleFilterChange('expiringSoonDays', parseInt(e.target.value, 10) || 15)
+                }
+              />
+            </FormField>
 
-        <div className={styles.filterGroup}>
-          <label htmlFor="includeAllInventory">
-            <input
+            <Checkbox
               id="includeAllInventory"
-              type="checkbox"
+              label="Include All Items"
               checked={localFilters.includeAll}
               onChange={(e) => handleFilterChange('includeAll', e.target.checked)}
-              className={styles.checkbox}
             />
-            Include All Items
-          </label>
-        </div>
 
-        <button onClick={handleApplyFilters} className={styles.applyButton}>
-          Apply Filters
-        </button>
-      </div>
+            <Button variant="solid" onClick={handleApplyFilters}>
+              Apply Filters
+            </Button>
+          </Inline>
+        </CardBody>
+      </Card>
 
-      {/* Error State */}
-      {error && (
-        <div className={styles.error}>
-          <p>Error: {error}</p>
-        </div>
-      )}
+      {error ? <Alert variant="danger">{error}</Alert> : null}
 
-      {/* Loading State */}
-      {isLoading && (
-        <div className={styles.loading}>
-          <p>Loading inventory analytics data...</p>
-        </div>
-      )}
+      {isLoading ? (
+        <CenteredLoader label="Loading inventory analytics data…" size="md" />
+      ) : null}
 
-      {/* Inventory Analytics Content */}
-      {inventoryData && !isLoading && (
+      {inventoryData && !isLoading ? (
         <>
-          {expiryBuckets && (
-            <div className={styles.summaryGrid}>
-              <div className={styles.summaryCard}>
-                <div className={styles.summaryHeader}>
-                  <span className={styles.summaryLabel}>
-                    Expired (extension index)
-                  </span>
-                </div>
-                <div className={styles.summaryValue}>{expiryBuckets.expired}</div>
-              </div>
-              <div className={styles.summaryCard}>
-                <div className={styles.summaryHeader}>
-                  <span className={styles.summaryLabel}>Within 7 days</span>
-                </div>
-                <div className={styles.summaryValue}>
-                  {expiryBuckets.expiringWithin7Days}
-                </div>
-              </div>
-              <div className={styles.summaryCard}>
-                <div className={styles.summaryHeader}>
-                  <span className={styles.summaryLabel}>
-                    Within {expiryBuckets.expiringSoonDays} days
-                  </span>
-                </div>
-                <div className={styles.summaryValue}>
-                  {expiryBuckets.expiringSoonTotal}
-                </div>
-              </div>
-            </div>
-          )}
+          {expiryBuckets ? (
+            <Grid className={styles.summaryGrid}>
+              <AnalyticsMetricCard
+                label="Expired (extension index)"
+                value={String(expiryBuckets.expired)}
+              />
+              <AnalyticsMetricCard
+                label="Within 7 days"
+                value={String(expiryBuckets.expiringWithin7Days)}
+              />
+              <AnalyticsMetricCard
+                label={`Within ${expiryBuckets.expiringSoonDays} days`}
+                value={String(expiryBuckets.expiringSoonTotal)}
+              />
+            </Grid>
+          ) : null}
 
-          {/* Summary Cards */}
-          <div className={styles.summaryGrid}>
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryHeader}>
-                <span className={styles.summaryLabel}>Total Products</span>
-              </div>
-              <div className={styles.summaryValue}>{inventoryData.summary.totalProducts}</div>
-              <div className={styles.summaryPeriod}>Total Items</div>
-            </div>
+          <Grid className={styles.summaryGrid}>
+            <AnalyticsMetricCard
+              label="Total Products"
+              value={String(inventoryData.summary.totalProducts)}
+              period="Total Items"
+            />
+            <AnalyticsMetricCard
+              label="Low Stock Products"
+              value={String(inventoryData.summary.lowStockProducts)}
+              period="Items Below Threshold"
+            />
+            <AnalyticsMetricCard
+              label="Expired Products"
+              value={String(inventoryData.summary.expiredProducts)}
+              period="Expired Items"
+            />
+            <AnalyticsMetricCard
+              label="Expiring Soon"
+              value={String(inventoryData.summary.expiringSoonProducts)}
+              period="Items Expiring Soon"
+            />
+            <AnalyticsMetricCard
+              label="Dead Stock"
+              value={String(inventoryData.summary.deadStockProducts)}
+              period="Dead Stock Items"
+            />
+            <AnalyticsMetricCard
+              label="Total Cost Value"
+              value={formatCurrency(inventoryData.summary.totalCostValue)}
+              period="Inventory Cost"
+            />
+            <AnalyticsMetricCard
+              label="Total Selling Value"
+              value={formatCurrency(inventoryData.summary.totalRetailValue)}
+              period="Potential Revenue"
+            />
+            <AnalyticsMetricCard
+              label="Potential Profit"
+              value={formatCurrency(inventoryData.summary.totalPotentialProfit)}
+              period="Total Profit"
+            />
+            <AnalyticsMetricCard
+              label="Avg Turnover Ratio"
+              value={inventoryData.summary.averageTurnoverRatio.toFixed(2)}
+              period="Average Ratio"
+            />
+            <AnalyticsMetricCard
+              label="Avg Stock %"
+              value={formatPercentage(inventoryData.summary.averageStockPercentage)}
+              period="Average Percentage"
+            />
+          </Grid>
 
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryHeader}>
-                <span className={styles.summaryLabel}>Low Stock Products</span>
-              </div>
-              <div className={styles.summaryValue}>{inventoryData.summary.lowStockProducts}</div>
-              <div className={styles.summaryPeriod}>Items Below Threshold</div>
-            </div>
-
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryHeader}>
-                <span className={styles.summaryLabel}>Expired Products</span>
-              </div>
-              <div className={styles.summaryValue}>{inventoryData.summary.expiredProducts}</div>
-              <div className={styles.summaryPeriod}>Expired Items</div>
-            </div>
-
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryHeader}>
-                <span className={styles.summaryLabel}>Expiring Soon</span>
-              </div>
-              <div className={styles.summaryValue}>{inventoryData.summary.expiringSoonProducts}</div>
-              <div className={styles.summaryPeriod}>Items Expiring Soon</div>
-            </div>
-
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryHeader}>
-                <span className={styles.summaryLabel}>Dead Stock</span>
-              </div>
-              <div className={styles.summaryValue}>{inventoryData.summary.deadStockProducts}</div>
-              <div className={styles.summaryPeriod}>Dead Stock Items</div>
-            </div>
-
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryHeader}>
-                <span className={styles.summaryLabel}>Total Cost Value</span>
-              </div>
-              <div className={styles.summaryValue}>{formatCurrency(inventoryData.summary.totalCostValue)}</div>
-              <div className={styles.summaryPeriod}>Inventory Cost</div>
-            </div>
-
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryHeader}>
-                <span className={styles.summaryLabel}>Total Selling Value</span>
-              </div>
-              <div className={styles.summaryValue}>{formatCurrency(inventoryData.summary.totalRetailValue)}</div>
-              <div className={styles.summaryPeriod}>Potential Revenue</div>
-            </div>
-
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryHeader}>
-                <span className={styles.summaryLabel}>Potential Profit</span>
-              </div>
-              <div className={styles.summaryValue}>{formatCurrency(inventoryData.summary.totalPotentialProfit)}</div>
-              <div className={styles.summaryPeriod}>Total Profit</div>
-            </div>
-
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryHeader}>
-                <span className={styles.summaryLabel}>Avg Turnover Ratio</span>
-              </div>
-              <div className={styles.summaryValue}>{inventoryData.summary.averageTurnoverRatio.toFixed(2)}</div>
-              <div className={styles.summaryPeriod}>Average Ratio</div>
-            </div>
-
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryHeader}>
-                <span className={styles.summaryLabel}>Avg Stock %</span>
-              </div>
-              <div className={styles.summaryValue}>{formatPercentage(inventoryData.summary.averageStockPercentage)}</div>
-              <div className={styles.summaryPeriod}>Average Percentage</div>
-            </div>
-          </div>
-
-          {/* Low Stock Items Table */}
           {renderInventoryTable('Low Stock Items', inventoryData.lowStockItems, 'lowStock', true)}
-
-          {/* Not Selling Items Table */}
-          {renderInventoryTable('Not Selling Items', inventoryData.notSellingItems, 'notSelling', true)}
-
-          {/* Expiring Soon Items Table */}
-          {renderInventoryTable('Expiring Soon Items', inventoryData.expiringSoonItems, 'expiringSoon', true)}
-
-          {/* Expired Items Table */}
-          {renderInventoryTable('Expired Items', inventoryData.expiredItems, 'expired', true)}
-
-          {/* Dead Stock Items Table */}
-          {renderInventoryTable('Dead Stock Items', inventoryData.deadStockItems, 'deadStock', true)}
-
-          {/* All Items Table */}
-          {inventoryData.allItems && inventoryData.allItems.length > 0 && (
-            renderInventoryTable('All Items', inventoryData.allItems, 'allItems', true)
+          {renderInventoryTable(
+            'Not Selling Items',
+            inventoryData.notSellingItems,
+            'notSelling',
+            true
           )}
+          {renderInventoryTable(
+            'Expiring Soon Items',
+            inventoryData.expiringSoonItems,
+            'expiringSoon',
+            true
+          )}
+          {renderInventoryTable('Expired Items', inventoryData.expiredItems, 'expired', true)}
+          {renderInventoryTable('Dead Stock Items', inventoryData.deadStockItems, 'deadStock', true)}
+          {renderInventoryTable('All Items', inventoryData.allItems, 'allItems', true)}
         </>
-      )}
-    </div>
+      ) : null}
+    </Stack>
   );
 }
-

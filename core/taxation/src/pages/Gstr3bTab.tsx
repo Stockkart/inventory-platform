@@ -1,18 +1,28 @@
 import { useEffect, useState } from 'react';
+import {
+  Alert,
+  Card,
+  CardBody,
+  CenteredLoader,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { triggerBlobDownload } from '../api/download';
 import { gstr3bApi } from '../api/gstr3b.api';
 import { useGstr3bReportQuery } from '../queries/hooks';
+import {
+  formatCurrency,
+  getDefaultPeriod,
+  GstrReportHeader,
+  GstrSummaryGrid,
+} from '../ui';
 import styles from '../ui/gstr.module.css';
-
-function formatCurrency(n: number | undefined) {
-  if (n == null || isNaN(n)) return '—';
-  return `₹${n.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-}
-
-function getDefaultPeriod(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-}
 
 export function Gstr3bTab() {
   const [period, setPeriod] = useState(getDefaultPeriod);
@@ -54,187 +64,200 @@ export function Gstr3bTab() {
   const interState = data?.interStateSupplies ?? [];
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <div className={styles.headerText}>
-          <h1 className={styles.title}>GSTR-3B Report</h1>
-          <p className={styles.subtitle}>
-            Monthly summary return – outward supplies, ITC, and tax payment
-          </p>
-          {data && (
-            <p className={styles.shopInfo}>
-              GSTIN: {data.shopGstin || '—'} · {data.legalName || '—'} · Period: {data.period}
-            </p>
-          )}
-        </div>
-        <div className={styles.controls}>
-          <div className={styles.periodGroup}>
-            <label htmlFor="gstr3b-period" className={styles.periodLabel}>Period</label>
-            <input
-              id="gstr3b-period"
-              type="month"
-              className={styles.periodInput}
-              value={period}
-              onChange={(e) => setPeriod(e.target.value)}
-              disabled={isLoading}
-            />
-          </div>
-          <button
-            type="button"
-            className={styles.downloadBtn}
-            onClick={handleDownload}
-            disabled={isLoading || isDownloading}
-          >
-            {isDownloading ? 'Downloading…' : '📥 Download Excel'}
-          </button>
-        </div>
-      </header>
+    <Stack gap="md">
+      <GstrReportHeader
+        title="GSTR-3B Report"
+        description="Monthly summary return – outward supplies, ITC, and tax payment"
+        shopInfo={
+          data
+            ? `GSTIN: ${data.shopGstin || '—'} · ${data.legalName || '—'} · Period: ${data.period}`
+            : undefined
+        }
+        periodId="gstr3b-period"
+        period={period}
+        onPeriodChange={setPeriod}
+        periodDisabled={isLoading}
+        downloads={[
+          {
+            label: '📥 Download Excel',
+            loadingLabel: 'Downloading…',
+            onClick: handleDownload,
+            disabled: isLoading || isDownloading,
+            loading: isDownloading,
+          },
+        ]}
+      />
 
-      {error && (
-        <div className={styles.error} role="alert">{error}</div>
-      )}
+      {error ? <Alert variant="danger">{error}</Alert> : null}
 
       {isLoading ? (
-        <div className={styles.loading}>Loading GSTR-3B report…</div>
+        <CenteredLoader label="Loading GSTR-3B report…" />
       ) : data ? (
-        <div className={styles.contentSection}>
-          {/* Section 3.1 */}
-          <h3>3.1 Outward & Inward Supplies</h3>
-          <div className={styles.summary}>
-            <div className={styles.summaryItem}>
-              <span className={styles.summaryLabel}>Outward Taxable Value</span>
-              <span className={styles.summaryValue}>{formatCurrency(s31?.outwardTaxableValue)}</span>
-            </div>
-            <div className={styles.summaryItem}>
-              <span className={styles.summaryLabel}>Outward IGST</span>
-              <span className={styles.summaryValue}>{formatCurrency(s31?.outwardTaxableIgst)}</span>
-            </div>
-            <div className={styles.summaryItem}>
-              <span className={styles.summaryLabel}>Outward CGST</span>
-              <span className={styles.summaryValue}>{formatCurrency(s31?.outwardTaxableCgst)}</span>
-            </div>
-            <div className={styles.summaryItem}>
-              <span className={styles.summaryLabel}>Outward SGST</span>
-              <span className={styles.summaryValue}>{formatCurrency(s31?.outwardTaxableSgst)}</span>
-            </div>
-            <div className={styles.summaryItem}>
-              <span className={styles.summaryLabel}>Zero Rated (Export)</span>
-              <span className={styles.summaryValue}>{formatCurrency(s31?.zeroRatedValue)}</span>
-            </div>
-          </div>
+        <Card>
+          <CardBody>
+            <Stack gap="lg">
+              <Stack gap="md">
+                <Text variant="heading3">3.1 Outward & Inward Supplies</Text>
+                <GstrSummaryGrid
+                  items={[
+                    {
+                      label: 'Outward Taxable Value',
+                      value: formatCurrency(s31?.outwardTaxableValue),
+                    },
+                    {
+                      label: 'Outward IGST',
+                      value: formatCurrency(s31?.outwardTaxableIgst),
+                    },
+                    {
+                      label: 'Outward CGST',
+                      value: formatCurrency(s31?.outwardTaxableCgst),
+                    },
+                    {
+                      label: 'Outward SGST',
+                      value: formatCurrency(s31?.outwardTaxableSgst),
+                    },
+                    {
+                      label: 'Zero Rated (Export)',
+                      value: formatCurrency(s31?.zeroRatedValue),
+                    },
+                  ]}
+                />
+              </Stack>
 
-          {/* Section 3.2 */}
-          {interState.length > 0 && (
-            <>
-              <h3>3.2 Inter-State Supplies</h3>
-              <div className={styles.tableWrap}>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th>Place of Supply</th>
-                      <th className={styles.numCol}>Taxable Value</th>
-                      <th className={styles.numCol}>Integrated Tax</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {interState.map((row, i) => (
-                      <tr key={i}>
-                        <td>{row.placeOfSupply || '—'}</td>
-                        <td className={styles.numCol}>{formatCurrency(row.taxableValue)}</td>
-                        <td className={styles.numCol}>{formatCurrency(row.integratedTax)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
+              {interState.length > 0 ? (
+                <Stack gap="md">
+                  <Text variant="heading3">3.2 Inter-State Supplies</Text>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableHeaderCell>Place of Supply</TableHeaderCell>
+                        <TableHeaderCell className={styles.numCol}>Taxable Value</TableHeaderCell>
+                        <TableHeaderCell className={styles.numCol}>Integrated Tax</TableHeaderCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {interState.map((row, i) => (
+                        <TableRow key={i}>
+                          <TableCell>{row.placeOfSupply || '—'}</TableCell>
+                          <TableCell className={styles.numCol}>
+                            {formatCurrency(row.taxableValue)}
+                          </TableCell>
+                          <TableCell className={styles.numCol}>
+                            {formatCurrency(row.integratedTax)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </Stack>
+              ) : null}
 
-          {/* Section 4 */}
-          <h3>4. Eligible ITC</h3>
-          <div className={styles.summary}>
-            <div className={styles.summaryItem}>
-              <span className={styles.summaryLabel}>ITC Available (Other)</span>
-              <span className={styles.summaryValue}>
-                IGST: {formatCurrency(s4?.itcOtherIgst)} · CGST: {formatCurrency(s4?.itcOtherCgst)} · SGST: {formatCurrency(s4?.itcOtherSgst)}
-              </span>
-            </div>
-            <div className={styles.summaryItem}>
-              <span className={styles.summaryLabel}>ITC Reversed</span>
-              <span className={styles.summaryValue}>
-                CGST: {formatCurrency(s4?.itcReversedOthersCgst)} · SGST: {formatCurrency(s4?.itcReversedOthersSgst)}
-              </span>
-            </div>
-          </div>
+              <Stack gap="md">
+                <Text variant="heading3">4. Eligible ITC</Text>
+                <GstrSummaryGrid
+                  items={[
+                    {
+                      label: 'ITC Available (Other)',
+                      value: `IGST: ${formatCurrency(s4?.itcOtherIgst)} · CGST: ${formatCurrency(s4?.itcOtherCgst)} · SGST: ${formatCurrency(s4?.itcOtherSgst)}`,
+                    },
+                    {
+                      label: 'ITC Reversed',
+                      value: `CGST: ${formatCurrency(s4?.itcReversedOthersCgst)} · SGST: ${formatCurrency(s4?.itcReversedOthersSgst)}`,
+                    },
+                  ]}
+                />
+              </Stack>
 
-          {/* Section 5 */}
-          {(s5?.compExemptInterState != null || s5?.compExemptIntraState != null) && (
-            <>
-              <h3>5. Exempt / Nil / Non-GST Inward</h3>
-              <div className={styles.summary}>
-                <div className={styles.summaryItem}>
-                  <span className={styles.summaryLabel}>Inter-State</span>
-                  <span className={styles.summaryValue}>{formatCurrency(s5.compExemptInterState)}</span>
-                </div>
-                <div className={styles.summaryItem}>
-                  <span className={styles.summaryLabel}>Intra-State</span>
-                  <span className={styles.summaryValue}>{formatCurrency(s5.compExemptIntraState)}</span>
-                </div>
-              </div>
-            </>
-          )}
+              {s5?.compExemptInterState != null || s5?.compExemptIntraState != null ? (
+                <Stack gap="md">
+                  <Text variant="heading3">5. Exempt / Nil / Non-GST Inward</Text>
+                  <GstrSummaryGrid
+                    items={[
+                      {
+                        label: 'Inter-State',
+                        value: formatCurrency(s5.compExemptInterState),
+                      },
+                      {
+                        label: 'Intra-State',
+                        value: formatCurrency(s5.compExemptIntraState),
+                      },
+                    ]}
+                  />
+                </Stack>
+              ) : null}
 
-          {/* Section 6.1 */}
-          <h3>6.1 Payment of Tax</h3>
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Tax Type</th>
-                  <th className={styles.numCol}>Payable</th>
-                  <th className={styles.numCol}>Paid by ITC</th>
-                  <th className={styles.numCol}>Paid in Cash</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Integrated Tax</td>
-                  <td className={styles.numCol}>{formatCurrency(s61?.igstPayable)}</td>
-                  <td className={styles.numCol}>{formatCurrency(s61?.igstPaidByItc)}</td>
-                  <td className={styles.numCol}>{formatCurrency(s61?.igstPaidByCash)}</td>
-                </tr>
-                <tr>
-                  <td>Central Tax</td>
-                  <td className={styles.numCol}>{formatCurrency(s61?.cgstPayable)}</td>
-                  <td className={styles.numCol}>
-                    {formatCurrency((s61?.cgstPaidByItcIgst ?? 0) + (s61?.cgstPaidByItcCgst ?? 0) + (s61?.cgstPaidByItcSgst ?? 0))}
-                  </td>
-                  <td className={styles.numCol}>{formatCurrency(s61?.cgstPaidByCash)}</td>
-                </tr>
-                <tr>
-                  <td>State/UT Tax</td>
-                  <td className={styles.numCol}>{formatCurrency(s61?.sgstPayable)}</td>
-                  <td className={styles.numCol}>
-                    {formatCurrency(
-                      (s61?.sgstPaidByItcIgst ?? 0) +
-                      (s61?.sgstPaidByItcCgst ?? 0) +
-                      (s61?.sgstPaidByItcSgst ?? 0)
-                    )}
-                  </td>
-                  <td className={styles.numCol}>{formatCurrency(s61?.sgstPaidByCash)}</td>
-                </tr>
-                <tr>
-                  <td>Cess</td>
-                  <td className={styles.numCol}>{formatCurrency(s61?.cessPayable)}</td>
-                  <td className={styles.numCol}>—</td>
-                  <td className={styles.numCol}>—</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+              <Stack gap="md">
+                <Text variant="heading3">6.1 Payment of Tax</Text>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableHeaderCell>Tax Type</TableHeaderCell>
+                      <TableHeaderCell className={styles.numCol}>Payable</TableHeaderCell>
+                      <TableHeaderCell className={styles.numCol}>Paid by ITC</TableHeaderCell>
+                      <TableHeaderCell className={styles.numCol}>Paid in Cash</TableHeaderCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell>Integrated Tax</TableCell>
+                      <TableCell className={styles.numCol}>
+                        {formatCurrency(s61?.igstPayable)}
+                      </TableCell>
+                      <TableCell className={styles.numCol}>
+                        {formatCurrency(s61?.igstPaidByItc)}
+                      </TableCell>
+                      <TableCell className={styles.numCol}>
+                        {formatCurrency(s61?.igstPaidByCash)}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell>Central Tax</TableCell>
+                      <TableCell className={styles.numCol}>
+                        {formatCurrency(s61?.cgstPayable)}
+                      </TableCell>
+                      <TableCell className={styles.numCol}>
+                        {formatCurrency(
+                          (s61?.cgstPaidByItcIgst ?? 0) +
+                            (s61?.cgstPaidByItcCgst ?? 0) +
+                            (s61?.cgstPaidByItcSgst ?? 0)
+                        )}
+                      </TableCell>
+                      <TableCell className={styles.numCol}>
+                        {formatCurrency(s61?.cgstPaidByCash)}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell>State/UT Tax</TableCell>
+                      <TableCell className={styles.numCol}>
+                        {formatCurrency(s61?.sgstPayable)}
+                      </TableCell>
+                      <TableCell className={styles.numCol}>
+                        {formatCurrency(
+                          (s61?.sgstPaidByItcIgst ?? 0) +
+                            (s61?.sgstPaidByItcCgst ?? 0) +
+                            (s61?.sgstPaidByItcSgst ?? 0)
+                        )}
+                      </TableCell>
+                      <TableCell className={styles.numCol}>
+                        {formatCurrency(s61?.sgstPaidByCash)}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell>Cess</TableCell>
+                      <TableCell className={styles.numCol}>
+                        {formatCurrency(s61?.cessPayable)}
+                      </TableCell>
+                      <TableCell className={styles.numCol}>—</TableCell>
+                      <TableCell className={styles.numCol}>—</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </Stack>
+            </Stack>
+          </CardBody>
+        </Card>
       ) : null}
-    </div>
+    </Stack>
   );
 }
 

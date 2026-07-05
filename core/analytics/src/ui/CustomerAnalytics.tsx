@@ -1,5 +1,27 @@
 import { useEffect, useMemo, useState } from 'react';
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  CardBody,
+  CenteredLoader,
+  Checkbox,
+  FormField,
+  Grid,
+  Inline,
+  Input,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
+} from '@inventory-platform/ui-kit';
 import { useCustomerAnalyticsQuery } from '../queries/hooks';
+import { AnalyticsCollapsibleSection } from './AnalyticsCollapsibleSection';
+import { AnalyticsMetricCard } from './AnalyticsMetricCard';
 import styles from './analytics.module.css';
 
 export function CustomerAnalytics() {
@@ -54,7 +76,6 @@ export function CustomerAnalytics() {
     }));
   };
 
-  // Set default dates (30 days ago to now)
   useEffect(() => {
     const endDate = new Date();
     endDate.setHours(23, 59, 59, 999);
@@ -71,7 +92,6 @@ export function CustomerAnalytics() {
       startDate: prev.startDate || formatDate(startDate),
       endDate: prev.endDate || formatDate(endDate),
     }));
-     
   }, []);
 
   const handleFilterChange = (key: string, value: string | number | boolean) => {
@@ -101,296 +121,184 @@ export function CustomerAnalytics() {
     });
   };
 
+  const renderCustomerTable = (
+    customers: NonNullable<typeof customerData>['topCustomers']
+  ) => (
+    <Table>
+      <TableHead>
+        <TableRow>
+          <TableHeaderCell>Customer Name</TableHeaderCell>
+          <TableHeaderCell>Phone</TableHeaderCell>
+          <TableHeaderCell>Email</TableHeaderCell>
+          <TableHeaderCell>Total Purchases</TableHeaderCell>
+          <TableHeaderCell>Total Revenue</TableHeaderCell>
+          <TableHeaderCell>Avg Order Value</TableHeaderCell>
+          <TableHeaderCell>Lifetime Value</TableHeaderCell>
+          <TableHeaderCell>Purchase Frequency</TableHeaderCell>
+          <TableHeaderCell>First Purchase</TableHeaderCell>
+          <TableHeaderCell>Last Purchase</TableHeaderCell>
+          <TableHeaderCell>Days Since Last</TableHeaderCell>
+          <TableHeaderCell>Repeat Customer</TableHeaderCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {customers?.map((customer, index) => (
+          <TableRow key={customer.customerId || `customer-${index}`}>
+            <TableCell>{customer.customerName}</TableCell>
+            <TableCell>{customer.customerPhone || 'N/A'}</TableCell>
+            <TableCell>{customer.customerEmail || 'N/A'}</TableCell>
+            <TableCell>{customer.totalPurchases}</TableCell>
+            <TableCell>{formatCurrency(customer.totalRevenue)}</TableCell>
+            <TableCell>{formatCurrency(customer.averageOrderValue)}</TableCell>
+            <TableCell>{formatCurrency(customer.customerLifetimeValue)}</TableCell>
+            <TableCell>{customer.purchaseFrequency}</TableCell>
+            <TableCell>{formatDate(customer.firstPurchaseDate)}</TableCell>
+            <TableCell>{formatDate(customer.lastPurchaseDate)}</TableCell>
+            <TableCell>{customer.daysSinceLastPurchase}</TableCell>
+            <TableCell>
+              <Badge variant={customer.isRepeatCustomer ? 'success' : 'warning'}>
+                {customer.isRepeatCustomer ? 'Yes' : 'No'}
+              </Badge>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+
   return (
-    <div>
-      {/* Filters */}
-      <div className={styles.filters}>
-        <div className={styles.filterGroup}>
-          <label htmlFor="customerStartDate">Start Date</label>
-          <input
-            id="customerStartDate"
-            type="datetime-local"
-            value={
-              localFilters.startDate
-                ? new Date(localFilters.startDate).toISOString().slice(0, 16)
-                : ''
-            }
-            onChange={(e) => {
-              const date = e.target.value ? new Date(e.target.value).toISOString() : '';
-              handleFilterChange('startDate', date);
-            }}
-            className={styles.input}
-          />
-        </div>
+    <Stack gap="md">
+      <Card className={styles.filters}>
+        <CardBody>
+          <Inline gap="md" className={styles.filterRow}>
+            <FormField label="Start Date" htmlFor="customerStartDate">
+              <Input
+                id="customerStartDate"
+                type="datetime-local"
+                value={
+                  localFilters.startDate
+                    ? new Date(localFilters.startDate).toISOString().slice(0, 16)
+                    : ''
+                }
+                onChange={(e) => {
+                  const date = e.target.value ? new Date(e.target.value).toISOString() : '';
+                  handleFilterChange('startDate', date);
+                }}
+              />
+            </FormField>
 
-        <div className={styles.filterGroup}>
-          <label htmlFor="customerEndDate">End Date</label>
-          <input
-            id="customerEndDate"
-            type="datetime-local"
-            value={
-              localFilters.endDate
-                ? new Date(localFilters.endDate).toISOString().slice(0, 16)
-                : ''
-            }
-            onChange={(e) => {
-              if (e.target.value) {
-                const date = new Date(e.target.value);
-                date.setHours(23, 59, 59, 999);
-                handleFilterChange('endDate', date.toISOString());
-              } else {
-                handleFilterChange('endDate', '');
-              }
-            }}
-            className={styles.input}
-          />
-        </div>
+            <FormField label="End Date" htmlFor="customerEndDate">
+              <Input
+                id="customerEndDate"
+                type="datetime-local"
+                value={
+                  localFilters.endDate
+                    ? new Date(localFilters.endDate).toISOString().slice(0, 16)
+                    : ''
+                }
+                onChange={(e) => {
+                  if (e.target.value) {
+                    const date = new Date(e.target.value);
+                    date.setHours(23, 59, 59, 999);
+                    handleFilterChange('endDate', date.toISOString());
+                  } else {
+                    handleFilterChange('endDate', '');
+                  }
+                }}
+              />
+            </FormField>
 
-        <div className={styles.filterGroup}>
-          <label htmlFor="topN">Top N</label>
-          <input
-            id="topN"
-            type="number"
-            min="1"
-            max="100"
-            value={localFilters.topN}
-            onChange={(e) => handleFilterChange('topN', parseInt(e.target.value, 10) || 10)}
-            className={styles.input}
-          />
-        </div>
+            <FormField label="Top N" htmlFor="customerTopN">
+              <Input
+                id="customerTopN"
+                type="number"
+                min={1}
+                max={100}
+                value={localFilters.topN}
+                onChange={(e) =>
+                  handleFilterChange('topN', parseInt(e.target.value, 10) || 10)
+                }
+              />
+            </FormField>
 
-        <div className={styles.filterGroup}>
-          <label htmlFor="includeAll">
-            <input
+            <Checkbox
               id="includeAll"
-              type="checkbox"
+              label="Include All Customers"
               checked={localFilters.includeAll}
               onChange={(e) => handleFilterChange('includeAll', e.target.checked)}
-              className={styles.checkbox}
             />
-            Include All Customers
-          </label>
-        </div>
 
-        <button onClick={handleApplyFilters} className={styles.applyButton}>
-          Apply Filters
-        </button>
-      </div>
+            <Button variant="solid" onClick={handleApplyFilters}>
+              Apply Filters
+            </Button>
+          </Inline>
+        </CardBody>
+      </Card>
 
-      {/* Error State */}
-      {error && (
-        <div className={styles.error}>
-          <p>Error: {error}</p>
-        </div>
-      )}
+      {error ? <Alert variant="danger">{error}</Alert> : null}
 
-      {/* Loading State */}
-      {isLoading && (
-        <div className={styles.loading}>
-          <p>Loading customer analytics data...</p>
-        </div>
-      )}
+      {isLoading ? (
+        <CenteredLoader label="Loading customer analytics data…" size="md" />
+      ) : null}
 
-      {/* Customer Analytics Content */}
-      {customerData && !isLoading && (
+      {customerData && !isLoading ? (
         <>
-          {/* Summary Cards */}
-          <div className={styles.summaryGrid}>
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryHeader}>
-                <span className={styles.summaryLabel}>Total Customers</span>
-              </div>
-              <div className={styles.summaryValue}>{customerData.summary.totalCustomers}</div>
-              <div className={styles.summaryPeriod}>Active Customers</div>
-            </div>
+          <Grid className={styles.summaryGrid}>
+            <AnalyticsMetricCard
+              label="Total Customers"
+              value={String(customerData.summary.totalCustomers)}
+              period="Active Customers"
+            />
+            <AnalyticsMetricCard
+              label="New Customers"
+              value={String(customerData.summary.newCustomers)}
+              period={`${formatPercentage(customerData.summary.newCustomerPercentage)} of total`}
+            />
+            <AnalyticsMetricCard
+              label="Returning Customers"
+              value={String(customerData.summary.returningCustomers)}
+              period={`${formatPercentage(customerData.summary.returningCustomerPercentage)} of total`}
+            />
+            <AnalyticsMetricCard
+              label="Avg Purchase Frequency"
+              value={customerData.summary.averagePurchaseFrequency.toFixed(2)}
+              period="Purchases per customer"
+            />
+            <AnalyticsMetricCard
+              label="Avg Spend per Customer"
+              value={formatCurrency(customerData.summary.averageSpendPerCustomer)}
+              period="Average order value"
+            />
+            <AnalyticsMetricCard
+              label="Avg Customer Lifetime Value"
+              value={formatCurrency(customerData.summary.averageCustomerLifetimeValue)}
+              period="CLV per customer"
+            />
+          </Grid>
 
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryHeader}>
-                <span className={styles.summaryLabel}>New Customers</span>
-              </div>
-              <div className={styles.summaryValue}>{customerData.summary.newCustomers}</div>
-              <div className={styles.summaryPeriod}>
-                {formatPercentage(customerData.summary.newCustomerPercentage)} of total
-              </div>
-            </div>
+          {customerData.topCustomers && customerData.topCustomers.length > 0 ? (
+            <AnalyticsCollapsibleSection
+              title="Top Customers"
+              count={customerData.topCustomers.length}
+              expanded={expandedSections.topCustomers}
+              onToggle={() => toggleSection('topCustomers')}
+            >
+              {renderCustomerTable(customerData.topCustomers)}
+            </AnalyticsCollapsibleSection>
+          ) : null}
 
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryHeader}>
-                <span className={styles.summaryLabel}>Returning Customers</span>
-              </div>
-              <div className={styles.summaryValue}>{customerData.summary.returningCustomers}</div>
-              <div className={styles.summaryPeriod}>
-                {formatPercentage(customerData.summary.returningCustomerPercentage)} of total
-              </div>
-            </div>
-
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryHeader}>
-                <span className={styles.summaryLabel}>Avg Purchase Frequency</span>
-              </div>
-              <div className={styles.summaryValue}>
-                {customerData.summary.averagePurchaseFrequency.toFixed(2)}
-              </div>
-              <div className={styles.summaryPeriod}>Purchases per customer</div>
-            </div>
-
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryHeader}>
-                <span className={styles.summaryLabel}>Avg Spend per Customer</span>
-              </div>
-              <div className={styles.summaryValue}>
-                {formatCurrency(customerData.summary.averageSpendPerCustomer)}
-              </div>
-              <div className={styles.summaryPeriod}>Average order value</div>
-            </div>
-
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryHeader}>
-                <span className={styles.summaryLabel}>Avg Customer Lifetime Value</span>
-              </div>
-              <div className={styles.summaryValue}>
-                {formatCurrency(customerData.summary.averageCustomerLifetimeValue)}
-              </div>
-              <div className={styles.summaryPeriod}>CLV per customer</div>
-            </div>
-          </div>
-
-          {/* Top Customers Table */}
-          {customerData.topCustomers && customerData.topCustomers.length > 0 && (
-            <div className={styles.accordionItem}>
-              <button
-                className={styles.accordionHeader}
-                onClick={() => toggleSection('topCustomers')}
-                aria-expanded={expandedSections.topCustomers}
-              >
-                <span className={styles.accordionTitle}>
-                  Top Customers
-                  <span className={styles.accordionCount}>({customerData.topCustomers.length})</span>
-                </span>
-                <span className={`${styles.accordionIcon} ${expandedSections.topCustomers ? styles.accordionIconExpanded : ''}`}>
-                  ▼
-                </span>
-              </button>
-              <div className={`${styles.accordionContent} ${expandedSections.topCustomers ? styles.accordionContentExpanded : ''}`}>
-                <div className={styles.tableContainer}>
-                  <table className={styles.table}>
-                    <thead>
-                      <tr>
-                        <th>Customer Name</th>
-                        <th>Phone</th>
-                        <th>Email</th>
-                        <th>Total Purchases</th>
-                        <th>Total Revenue</th>
-                        <th>Avg Order Value</th>
-                        <th>Lifetime Value</th>
-                        <th>Purchase Frequency</th>
-                        <th>First Purchase</th>
-                        <th>Last Purchase</th>
-                        <th>Days Since Last</th>
-                        <th>Repeat Customer</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {customerData.topCustomers.map((customer, index) => (
-                        <tr key={customer.customerId || `customer-${index}`}>
-                          <td>{customer.customerName}</td>
-                          <td>{customer.customerPhone || 'N/A'}</td>
-                          <td>{customer.customerEmail || 'N/A'}</td>
-                          <td>{customer.totalPurchases}</td>
-                          <td>{formatCurrency(customer.totalRevenue)}</td>
-                          <td>{formatCurrency(customer.averageOrderValue)}</td>
-                          <td>{formatCurrency(customer.customerLifetimeValue)}</td>
-                          <td>{customer.purchaseFrequency}</td>
-                          <td>{formatDate(customer.firstPurchaseDate)}</td>
-                          <td>{formatDate(customer.lastPurchaseDate)}</td>
-                          <td>{customer.daysSinceLastPurchase}</td>
-                          <td>
-                            <span
-                              className={
-                                customer.isRepeatCustomer ? styles.riskLow : styles.riskMedium
-                              }
-                            >
-                              {customer.isRepeatCustomer ? 'Yes' : 'No'}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* All Customers Table */}
-          {customerData.allCustomers && customerData.allCustomers.length > 0 && (
-            <div className={styles.accordionItem}>
-              <button
-                className={styles.accordionHeader}
-                onClick={() => toggleSection('allCustomers')}
-                aria-expanded={expandedSections.allCustomers}
-              >
-                <span className={styles.accordionTitle}>
-                  All Customers
-                  <span className={styles.accordionCount}>({customerData.allCustomers.length})</span>
-                </span>
-                <span className={`${styles.accordionIcon} ${expandedSections.allCustomers ? styles.accordionIconExpanded : ''}`}>
-                  ▼
-                </span>
-              </button>
-              <div className={`${styles.accordionContent} ${expandedSections.allCustomers ? styles.accordionContentExpanded : ''}`}>
-                <div className={styles.tableContainer}>
-                  <table className={styles.table}>
-                    <thead>
-                      <tr>
-                        <th>Customer Name</th>
-                        <th>Phone</th>
-                        <th>Email</th>
-                        <th>Total Purchases</th>
-                        <th>Total Revenue</th>
-                        <th>Avg Order Value</th>
-                        <th>Lifetime Value</th>
-                        <th>Purchase Frequency</th>
-                        <th>First Purchase</th>
-                        <th>Last Purchase</th>
-                        <th>Days Since Last</th>
-                        <th>Repeat Customer</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {customerData.allCustomers.map((customer, index) => (
-                        <tr key={customer.customerId || `all-customer-${index}`}>
-                          <td>{customer.customerName}</td>
-                          <td>{customer.customerPhone || 'N/A'}</td>
-                          <td>{customer.customerEmail || 'N/A'}</td>
-                          <td>{customer.totalPurchases}</td>
-                          <td>{formatCurrency(customer.totalRevenue)}</td>
-                          <td>{formatCurrency(customer.averageOrderValue)}</td>
-                          <td>{formatCurrency(customer.customerLifetimeValue)}</td>
-                          <td>{customer.purchaseFrequency}</td>
-                          <td>{formatDate(customer.firstPurchaseDate)}</td>
-                          <td>{formatDate(customer.lastPurchaseDate)}</td>
-                          <td>{customer.daysSinceLastPurchase}</td>
-                          <td>
-                            <span
-                              className={
-                                customer.isRepeatCustomer ? styles.riskLow : styles.riskMedium
-                              }
-                            >
-                              {customer.isRepeatCustomer ? 'Yes' : 'No'}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
+          {customerData.allCustomers && customerData.allCustomers.length > 0 ? (
+            <AnalyticsCollapsibleSection
+              title="All Customers"
+              count={customerData.allCustomers.length}
+              expanded={expandedSections.allCustomers}
+              onToggle={() => toggleSection('allCustomers')}
+            >
+              {renderCustomerTable(customerData.allCustomers)}
+            </AnalyticsCollapsibleSection>
+          ) : null}
         </>
-      )}
-    </div>
+      ) : null}
+    </Stack>
   );
 }
-

@@ -1,4 +1,10 @@
-import type { HTMLAttributes, ReactNode, TdHTMLAttributes, TableHTMLAttributes } from 'react';
+import type {
+  HTMLAttributes,
+  ReactNode,
+  TdHTMLAttributes,
+  ThHTMLAttributes,
+  TableHTMLAttributes,
+} from 'react';
 import { cn } from '../utils/cn';
 import { CenteredLoader } from '../feedback/CenteredLoader';
 import styles from './data-display.module.css';
@@ -29,11 +35,11 @@ export function TableRow(props: HTMLAttributes<HTMLTableRowElement>) {
   return <tr {...props} />;
 }
 
-export function TableHeaderCell(props: HTMLAttributes<HTMLTableCellElement>) {
+export function TableHeaderCell(props: ThHTMLAttributes<HTMLTableCellElement>) {
   return <th className={cn(styles.th, props.className)} {...props} />;
 }
 
-export function TableCell(props: HTMLAttributes<HTMLTableCellElement>) {
+export function TableCell(props: TdHTMLAttributes<HTMLTableCellElement>) {
   return <td className={cn(styles.td, props.className)} {...props} />;
 }
 

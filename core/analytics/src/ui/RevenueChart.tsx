@@ -1,5 +1,12 @@
 import { useState } from 'react';
 import {
+  Box,
+  Checkbox,
+  Inline,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
+import {
   LineChart,
   Line,
   XAxis,
@@ -46,40 +53,30 @@ export function RevenueChart({ data }: RevenueChartProps) {
   };
 
   return (
-    <div className={styles.chartWrapper}>
-      <div className={styles.chartHeader}>
-        <h3 className={styles.chartTitle}>Revenue Over Time</h3>
-        <div className={styles.chartControls}>
-          <label className={styles.toggleLabel}>
-            <input
-              type="checkbox"
-              checked={showRevenue}
-              onChange={(e) => setShowRevenue(e.target.checked)}
-              className={styles.toggleCheckbox}
-            />
-            <span>Revenue</span>
-          </label>
-          <label className={styles.toggleLabel}>
-            <input
-              type="checkbox"
-              checked={showAOV}
-              onChange={(e) => setShowAOV(e.target.checked)}
-              className={styles.toggleCheckbox}
-            />
-            <span>AOV</span>
-          </label>
-          <label className={styles.toggleLabel}>
-            <input
-              type="checkbox"
-              checked={showPurchases}
-              onChange={(e) => setShowPurchases(e.target.checked)}
-              className={styles.toggleCheckbox}
-            />
-            <span>Purchases</span>
-          </label>
-        </div>
-      </div>
-      <div className={styles.chartContent}>
+    <Stack gap="sm" className={styles.chartWrapper}>
+      <Inline align="center" justify="between" className={styles.chartHeader}>
+        <Text variant="heading4" weight="semibold">
+          Revenue Over Time
+        </Text>
+        <Inline gap="md">
+          <Checkbox
+            label="Revenue"
+            checked={showRevenue}
+            onChange={(e) => setShowRevenue(e.target.checked)}
+          />
+          <Checkbox
+            label="AOV"
+            checked={showAOV}
+            onChange={(e) => setShowAOV(e.target.checked)}
+          />
+          <Checkbox
+            label="Purchases"
+            checked={showPurchases}
+            onChange={(e) => setShowPurchases(e.target.checked)}
+          />
+        </Inline>
+      </Inline>
+      <Box className={styles.chartContent}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -102,7 +99,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
               }}
             />
             <Legend wrapperStyle={{ paddingTop: '10px' }} />
-            {showRevenue && (
+            {showRevenue ? (
               <Line
                 yAxisId="left"
                 type="monotone"
@@ -113,8 +110,8 @@ export function RevenueChart({ data }: RevenueChartProps) {
                 dot={{ r: 4 }}
                 activeDot={{ r: 6 }}
               />
-            )}
-            {showAOV && (
+            ) : null}
+            {showAOV ? (
               <Line
                 yAxisId="left"
                 type="monotone"
@@ -125,8 +122,8 @@ export function RevenueChart({ data }: RevenueChartProps) {
                 dot={{ r: 4 }}
                 activeDot={{ r: 6 }}
               />
-            )}
-            {showPurchases && (
+            ) : null}
+            {showPurchases ? (
               <Line
                 yAxisId="right"
                 type="monotone"
@@ -137,10 +134,10 @@ export function RevenueChart({ data }: RevenueChartProps) {
                 dot={{ r: 4 }}
                 activeDot={{ r: 6 }}
               />
-            )}
+            ) : null}
           </LineChart>
         </ResponsiveContainer>
-      </div>
-    </div>
+      </Box>
+    </Stack>
   );
 }

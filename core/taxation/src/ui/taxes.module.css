@@ -3,54 +3,46 @@
   margin: 0 auto;
 }
 
-.header {
-  margin-bottom: 1.5rem;
-}
-
-.title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0 0 0.25rem;
-}
-
-.subtitle {
-  font-size: 0.95rem;
-  color: var(--text-secondary);
-  margin: 0;
-}
-
-.tabs {
+.tabBar {
   display: flex;
-  gap: 0.25rem;
-  flex-wrap: wrap;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 0;
+  flex-wrap: nowrap;
+  gap: 0.1rem;
+  margin: 0 -0.25rem -0.2rem;
+  padding: 0 0.25rem;
+  border-bottom: 1px solid var(--border-color, rgba(148, 163, 184, 0.3));
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
 
-.tab {
-  padding: 0.75rem 1.25rem;
-  font-size: 1rem;
-  font-weight: 500;
-  color: var(--text-secondary);
+.tabBar::-webkit-scrollbar {
+  height: 4px;
+}
+
+.tabBar::-webkit-scrollbar-thumb {
+  background: var(--border-color, rgba(148, 163, 184, 0.4));
+  border-radius: 4px;
+}
+
+.tabLink,
+.tabLinkActive {
+  position: relative;
+  padding: 0.55rem 0.75rem 0.65rem;
+  margin-bottom: -1px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary, #64748b);
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  cursor: pointer;
   white-space: nowrap;
+  transition: color 0.15s ease, border-color 0.15s ease;
 }
 
-.tab:hover {
-  color: var(--text-primary);
+.tabLink:hover {
+  color: var(--text-primary, #0f172a);
 }
 
-.tabActive {
-  color: var(--link-hover);
-  border-bottom-color: var(--link-hover);
-}
-
-.tabContent {
-  margin-top: 0;
+.tabLinkActive {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
 }

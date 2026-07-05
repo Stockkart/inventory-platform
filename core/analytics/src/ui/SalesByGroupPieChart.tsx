@@ -1,3 +1,4 @@
+import { Box, Stack, Text } from '@inventory-platform/ui-kit';
 import {
   PieChart,
   Pie,
@@ -72,11 +73,11 @@ export function SalesByGroupPieChart({ data, groupBy, showRevenue }: SalesByGrou
   };
 
   return (
-    <div className={styles.chartWrapper}>
-      <div className={styles.chartHeader}>
-        <h3 className={styles.chartTitle}>{getTitle()}</h3>
-      </div>
-      <div className={styles.pieChartContent}>
+    <Stack gap="sm" className={styles.chartWrapper}>
+      <Text variant="heading4" weight="semibold" className={styles.chartHeader}>
+        {getTitle()}
+      </Text>
+      <Box className={styles.pieChartContent}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -85,7 +86,7 @@ export function SalesByGroupPieChart({ data, groupBy, showRevenue }: SalesByGrou
               cy="50%"
               labelLine={false}
               label={({ name, percent }) => {
-                if (!percent || percent < 0.05) return ''; // Hide labels for very small slices
+                if (!percent || percent < 0.05) return '';
                 return `${name}: ${(percent * 100).toFixed(0)}%`;
               }}
               outerRadius={120}
@@ -97,7 +98,7 @@ export function SalesByGroupPieChart({ data, groupBy, showRevenue }: SalesByGrou
               ))}
             </Pie>
             <Tooltip
-              formatter={(value: number | undefined, name: string | undefined, props: any) => {
+              formatter={(value: number | undefined, name: string | undefined, props: { payload?: { fullName?: string } }) => {
                 if (value === undefined) return '';
                 const formattedValue = formatTooltip(value);
                 const fullName = props?.payload?.fullName || name || '';
@@ -112,15 +113,14 @@ export function SalesByGroupPieChart({ data, groupBy, showRevenue }: SalesByGrou
             />
             <Legend
               wrapperStyle={{ paddingTop: '10px' }}
-              formatter={(value, entry) => {
+              formatter={(value) => {
                 const item = pieData.find((d) => d.name === value);
                 return item ? item.fullName : value;
               }}
             />
           </PieChart>
         </ResponsiveContainer>
-      </div>
-    </div>
+      </Box>
+    </Stack>
   );
 }
-

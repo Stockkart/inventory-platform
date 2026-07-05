@@ -1,3 +1,10 @@
+import {
+  Card,
+  CardBody,
+  Grid,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './analytics.module.css';
 
 interface SummaryCardsProps {
@@ -12,6 +19,34 @@ interface SummaryCardsProps {
   };
 }
 
+function MetricCard({
+  label,
+  value,
+  period,
+}: {
+  label: string;
+  value: string;
+  period: string;
+}) {
+  return (
+    <Card>
+      <CardBody>
+        <Stack gap="xs">
+          <Text variant="caption" color="secondary">
+            {label}
+          </Text>
+          <Text variant="heading2" weight="bold">
+            {value}
+          </Text>
+          <Text variant="caption" color="muted">
+            {period}
+          </Text>
+        </Stack>
+      </CardBody>
+    </Card>
+  );
+}
+
 export function SummaryCards({ data }: SummaryCardsProps) {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -21,47 +56,32 @@ export function SummaryCards({ data }: SummaryCardsProps) {
   };
 
   return (
-    <div className={styles.summaryGrid}>
-      <div className={styles.summaryCard}>
-        <div className={styles.summaryHeader}>
-          <span className={styles.summaryLabel}>Total Revenue</span>
-        </div>
-        <div className={styles.summaryValue}>{formatCurrency(data.summary.totalRevenue)}</div>
-        <div className={styles.summaryPeriod}>Total Revenue</div>
-      </div>
-
-      <div className={styles.summaryCard}>
-        <div className={styles.summaryHeader}>
-          <span className={styles.summaryLabel}>Total Purchases</span>
-        </div>
-        <div className={styles.summaryValue}>{data.summary.totalPurchases}</div>
-        <div className={styles.summaryPeriod}>Number of Orders</div>
-      </div>
-
-      <div className={styles.summaryCard}>
-        <div className={styles.summaryHeader}>
-          <span className={styles.summaryLabel}>Average Order Value</span>
-        </div>
-        <div className={styles.summaryValue}>{formatCurrency(data.summary.averageOrderValue)}</div>
-        <div className={styles.summaryPeriod}>Per Order</div>
-      </div>
-
-      <div className={styles.summaryCard}>
-        <div className={styles.summaryHeader}>
-          <span className={styles.summaryLabel}>Total Tax</span>
-        </div>
-        <div className={styles.summaryValue}>{formatCurrency(data.summary.totalTax)}</div>
-        <div className={styles.summaryPeriod}>Tax Collected</div>
-      </div>
-
-      <div className={styles.summaryCard}>
-        <div className={styles.summaryHeader}>
-          <span className={styles.summaryLabel}>Total Discount</span>
-        </div>
-        <div className={styles.summaryValue}>{formatCurrency(data.summary.totalDiscount)}</div>
-        <div className={styles.summaryPeriod}>Discounts Applied</div>
-      </div>
-    </div>
+    <Grid className={styles.summaryGrid}>
+      <MetricCard
+        label="Total Revenue"
+        value={formatCurrency(data.summary.totalRevenue)}
+        period="Total Revenue"
+      />
+      <MetricCard
+        label="Total Purchases"
+        value={String(data.summary.totalPurchases)}
+        period="Number of Orders"
+      />
+      <MetricCard
+        label="Average Order Value"
+        value={formatCurrency(data.summary.averageOrderValue)}
+        period="Per Order"
+      />
+      <MetricCard
+        label="Total Tax"
+        value={formatCurrency(data.summary.totalTax)}
+        period="Tax Collected"
+      />
+      <MetricCard
+        label="Total Discount"
+        value={formatCurrency(data.summary.totalDiscount)}
+        period="Discounts Applied"
+      />
+    </Grid>
   );
 }
-

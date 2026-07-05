@@ -31,6 +31,8 @@ export { SaleHistoryCard } from './SaleHistoryCard';
 export { PrintInvoiceModal } from './PrintInvoiceModal';
 export { InventoryAlertDetails } from './InventoryAlertDetails';
 export type { InventoryAlertDetailsProps } from './InventoryAlertDetails';
+export { ProductSearchCard, normalizedBillingMode } from './ProductSearchCard';
+export type { ProductSearchCardProps } from './ProductSearchCard';
 export { CustomerProductHistoryHint } from './CustomerProductHistoryHint';
 export type { CustomerProductHistoryHintProps } from './CustomerProductHistoryHint';
 export { useCustomerProductHistory } from './useCustomerProductHistory';

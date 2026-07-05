@@ -1,4 +1,4 @@
-import type { ElementType, ReactNode } from 'react';
+import type { CSSProperties, ElementType, ReactNode } from 'react';
 import { cn } from '../utils/cn';
 import type { SpacingScale } from '../utils/types';
 import styles from './Box.module.css';
@@ -22,6 +22,7 @@ export interface BoxProps {
   rounded?: 'sm' | 'md' | 'lg';
   overflow?: 'hidden' | 'auto';
   position?: 'relative' | 'absolute';
+  style?: CSSProperties;
 }
 
 export function Box({
@@ -43,9 +44,11 @@ export function Box({
   rounded,
   overflow,
   position,
+  style,
 }: BoxProps) {
   return (
     <Component
+      style={style}
       className={cn(
         styles.box,
         padding && styles[`padding-${padding}`],

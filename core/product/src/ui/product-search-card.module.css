@@ -1,0 +1,55 @@
+.productCard {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.productCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px var(--shadow);
+  border-color: #3b82f6;
+}
+
+.modeBadge {
+  width: fit-content;
+}
+
+.productDetails {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.priceInfo {
+  margin-top: 0.25rem;
+}
+
+.price {
+  color: #3b82f6;
+}
+
+.productMeta {
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+}
+
+.description {
+  margin-top: 0.25rem;
+  font-style: italic;
+}
+
+.actionButtons {
+  margin-top: 0.75rem;
+  width: 100%;
+}
+
+.addToSellBtn:not(:disabled) {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.addToSellBtn:disabled {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}

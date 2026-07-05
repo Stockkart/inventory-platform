@@ -1,5 +1,12 @@
 import { useState } from 'react';
 import {
+  Box,
+  Checkbox,
+  Inline,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
+import {
   BarChart,
   Bar,
   XAxis,
@@ -66,40 +73,30 @@ export function ProfitByGroupChart({ data, groupBy }: ProfitByGroupChartProps) {
   };
 
   return (
-    <div className={styles.chartWrapper}>
-      <div className={styles.chartHeader}>
-        <h3 className={styles.chartTitle}>{getTitle()}</h3>
-        <div className={styles.chartControls}>
-          <label className={styles.toggleLabel}>
-            <input
-              type="checkbox"
-              checked={showRevenue}
-              onChange={(e) => setShowRevenue(e.target.checked)}
-              className={styles.toggleCheckbox}
-            />
-            <span>Revenue</span>
-          </label>
-          <label className={styles.toggleLabel}>
-            <input
-              type="checkbox"
-              checked={showCost}
-              onChange={(e) => setShowCost(e.target.checked)}
-              className={styles.toggleCheckbox}
-            />
-            <span>Cost</span>
-          </label>
-          <label className={styles.toggleLabel}>
-            <input
-              type="checkbox"
-              checked={showProfit}
-              onChange={(e) => setShowProfit(e.target.checked)}
-              className={styles.toggleCheckbox}
-            />
-            <span>Profit</span>
-          </label>
-        </div>
-      </div>
-      <div className={styles.chartContent}>
+    <Stack gap="sm" className={styles.chartWrapper}>
+      <Inline align="center" justify="between" className={styles.chartHeader}>
+        <Text variant="heading4" weight="semibold">
+          {getTitle()}
+        </Text>
+        <Inline gap="md">
+          <Checkbox
+            label="Revenue"
+            checked={showRevenue}
+            onChange={(e) => setShowRevenue(e.target.checked)}
+          />
+          <Checkbox
+            label="Cost"
+            checked={showCost}
+            onChange={(e) => setShowCost(e.target.checked)}
+          />
+          <Checkbox
+            label="Profit"
+            checked={showProfit}
+            onChange={(e) => setShowProfit(e.target.checked)}
+          />
+        </Inline>
+      </Inline>
+      <Box className={styles.chartContent}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 50 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -132,19 +129,18 @@ export function ProfitByGroupChart({ data, groupBy }: ProfitByGroupChartProps) {
               }}
             />
             <Legend wrapperStyle={{ paddingTop: '10px' }} />
-            {showRevenue && (
+            {showRevenue ? (
               <Bar yAxisId="left" dataKey="revenue" fill="#8884d8" name="Revenue" />
-            )}
-            {showCost && (
+            ) : null}
+            {showCost ? (
               <Bar yAxisId="left" dataKey="cost" fill="#ef4444" name="Cost" />
-            )}
-            {showProfit && (
+            ) : null}
+            {showProfit ? (
               <Bar yAxisId="right" dataKey="profit" fill="#10b981" name="Profit" />
-            )}
+            ) : null}
           </BarChart>
         </ResponsiveContainer>
-      </div>
-    </div>
+      </Box>
+    </Stack>
   );
 }
-

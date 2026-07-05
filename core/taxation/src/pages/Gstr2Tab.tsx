@@ -1,7 +1,29 @@
 import { useEffect, useState } from 'react';
+import {
+  Alert,
+  Box,
+  Card,
+  CardBody,
+  CenteredLoader,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { triggerBlobDownload } from '../api/download';
 import { gstr2Api } from '../api/gstr2.api';
 import { useGstr2ReportQuery } from '../queries/hooks';
+import {
+  formatCurrency,
+  formatDate,
+  getDefaultPeriod,
+  GstrReportHeader,
+  GstrSubTabs,
+} from '../ui';
 import styles from '../ui/gstr.module.css';
 
 const TABS = [
@@ -18,27 +40,16 @@ const TABS = [
   { id: 'hsnsum', label: 'HSN Summary' },
 ] as const;
 
-function formatDate(s: string) {
-  if (!s) return '—';
-  try {
-    return new Date(s).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-  } catch {
-    return s;
-  }
-}
+type Gstr2SectionId = (typeof TABS)[number]['id'];
 
-function formatCurrency(n: number | undefined) {
-  if (n == null || isNaN(n)) return '—';
-  return `₹${n.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-}
-
-function getDefaultPeriod(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+function EmptySection({ message }: { message: string }) {
+  return (
+    <Box className={styles.emptyState}>
+      <Text color="secondary" align="center">
+        {message}
+      </Text>
+    </Box>
+  );
 }
 
 export function Gstr2Tab() {
@@ -50,7 +61,7 @@ export function Gstr2Tab() {
     error: queryError,
   } = useGstr2ReportQuery(period);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<(typeof TABS)[number]['id']>('b2b');
+  const [activeTab, setActiveTab] = useState<Gstr2SectionId>('b2b');
   const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
@@ -88,495 +99,514 @@ export function Gstr2Tab() {
   const hsnData = data?.hsnsum?.lines ?? [];
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <div className={styles.headerText}>
-          <h1 className={styles.title}>GSTR-2 Report</h1>
-          <p className={styles.subtitle}>
-            View and download your GSTR-2 tax return for inward supplies
-          </p>
-          {data && (
-            <p className={styles.shopInfo}>
-              GSTIN: {data.shopGstin || '—'} · Period: {data.period}
-            </p>
-          )}
-        </div>
-        <div className={styles.controls}>
-          <div className={styles.periodGroup}>
-            <label htmlFor="gstr2-period" className={styles.periodLabel}>
-              Period
-            </label>
-            <input
-              id="gstr2-period"
-              type="month"
-              className={styles.periodInput}
-              value={period}
-              onChange={(e) => setPeriod(e.target.value)}
-              disabled={isLoading}
-            />
-          </div>
-          <button
-            type="button"
-            className={styles.downloadBtn}
-            onClick={handleDownload}
-            disabled={isLoading || isDownloading}
-          >
-            {isDownloading ? 'Downloading…' : '📥 Download Excel'}
-          </button>
-        </div>
-      </header>
+    <Stack gap="md">
+      <GstrReportHeader
+        title="GSTR-2 Report"
+        description="View and download your GSTR-2 tax return for inward supplies"
+        shopInfo={
+          data ? `GSTIN: ${data.shopGstin || '—'} · Period: ${data.period}` : undefined
+        }
+        periodId="gstr2-period"
+        period={period}
+        onPeriodChange={setPeriod}
+        periodDisabled={isLoading}
+        downloads={[
+          {
+            label: '📥 Download Excel',
+            loadingLabel: 'Downloading…',
+            onClick: handleDownload,
+            disabled: isLoading || isDownloading,
+            loading: isDownloading,
+          },
+        ]}
+      />
 
-      {error && (
-        <div className={styles.error} role="alert">
-          {error}
-        </div>
-      )}
+      {error ? <Alert variant="danger">{error}</Alert> : null}
 
       {isLoading ? (
-        <div className={styles.loading}>Loading GSTR-2 report…</div>
+        <CenteredLoader label="Loading GSTR-2 report…" />
       ) : data ? (
         <>
-          <div className={styles.tabs}>
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                className={`${styles.tab} ${activeTab === tab.id ? styles.tabActive : ''}`}
-                onClick={() => setActiveTab(tab.id)}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+          <GstrSubTabs tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
 
-          <div className={styles.contentSection}>
-            {activeTab === 'b2b' && (
-              <>
-                <h3>B2B Inward Supplies (Registered Suppliers)</h3>
-                {b2bData.length === 0 ? (
-                  <div className={styles.empty}>No B2B inward supplies for this period.</div>
-                ) : (
-                  <div className={styles.tableWrap}>
-                    <table className={styles.table}>
-                      <thead>
-                        <tr>
-                          <th>Supplier GSTIN</th>
-                          <th>Invoice No</th>
-                          <th>Date</th>
-                          <th className={styles.numCol}>Invoice Value</th>
-                          <th>Place of Supply</th>
-                          <th>Rate %</th>
-                          <th className={styles.numCol}>Taxable Value</th>
-                          <th className={styles.numCol}>CGST</th>
-                          <th className={styles.numCol}>SGST</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+          <Card>
+            <CardBody>
+              {activeTab === 'b2b' && (
+                <Stack gap="md">
+                  <Text variant="heading3">B2B Inward Supplies (Registered Suppliers)</Text>
+                  {b2bData.length === 0 ? (
+                    <EmptySection message="No B2B inward supplies for this period." />
+                  ) : (
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableHeaderCell>Supplier GSTIN</TableHeaderCell>
+                          <TableHeaderCell>Invoice No</TableHeaderCell>
+                          <TableHeaderCell>Date</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>Invoice Value</TableHeaderCell>
+                          <TableHeaderCell>Place of Supply</TableHeaderCell>
+                          <TableHeaderCell>Rate %</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>Taxable Value</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>CGST</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>SGST</TableHeaderCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
                         {b2bData.map((row, i) => (
-                          <tr key={i}>
-                            <td>{row.supplierGstin || '—'}</td>
-                            <td>{row.invoiceNo || '—'}</td>
-                            <td>{formatDate(row.invoiceDate ?? '')}</td>
-                            <td className={styles.numCol}>{formatCurrency(row.invoiceValue)}</td>
-                            <td>{row.placeOfSupply || '—'}</td>
-                            <td>{row.rate ?? '—'}%</td>
-                            <td className={styles.numCol}>{formatCurrency(row.taxableValue)}</td>
-                            <td className={styles.numCol}>{formatCurrency(row.centralTaxPaid)}</td>
-                            <td className={styles.numCol}>{formatCurrency(row.stateUtTaxPaid)}</td>
-                          </tr>
+                          <TableRow key={i}>
+                            <TableCell>{row.supplierGstin || '—'}</TableCell>
+                            <TableCell>{row.invoiceNo || '—'}</TableCell>
+                            <TableCell>{formatDate(row.invoiceDate ?? '')}</TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.invoiceValue)}
+                            </TableCell>
+                            <TableCell>{row.placeOfSupply || '—'}</TableCell>
+                            <TableCell>{row.rate ?? '—'}%</TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.taxableValue)}
+                            </TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.centralTaxPaid)}
+                            </TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.stateUtTaxPaid)}
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </>
-            )}
+                      </TableBody>
+                    </Table>
+                  )}
+                </Stack>
+              )}
 
-            {activeTab === 'b2bur' && (
-              <>
-                <h3>B2BUR Inward Supplies (Unregistered Suppliers)</h3>
-                {b2burData.length === 0 ? (
-                  <div className={styles.empty}>No B2BUR inward supplies for this period.</div>
-                ) : (
-                  <div className={styles.tableWrap}>
-                    <table className={styles.table}>
-                      <thead>
-                        <tr>
-                          <th>Supplier Name</th>
-                          <th>Invoice No</th>
-                          <th>Date</th>
-                          <th className={styles.numCol}>Invoice Value</th>
-                          <th>Place of Supply</th>
-                          <th>Rate %</th>
-                          <th className={styles.numCol}>Taxable Value</th>
-                          <th className={styles.numCol}>CGST</th>
-                          <th className={styles.numCol}>SGST</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+              {activeTab === 'b2bur' && (
+                <Stack gap="md">
+                  <Text variant="heading3">B2BUR Inward Supplies (Unregistered Suppliers)</Text>
+                  {b2burData.length === 0 ? (
+                    <EmptySection message="No B2BUR inward supplies for this period." />
+                  ) : (
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableHeaderCell>Supplier Name</TableHeaderCell>
+                          <TableHeaderCell>Invoice No</TableHeaderCell>
+                          <TableHeaderCell>Date</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>Invoice Value</TableHeaderCell>
+                          <TableHeaderCell>Place of Supply</TableHeaderCell>
+                          <TableHeaderCell>Rate %</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>Taxable Value</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>CGST</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>SGST</TableHeaderCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
                         {b2burData.map((row, i) => (
-                          <tr key={i}>
-                            <td>{row.supplierName || '—'}</td>
-                            <td>{row.invoiceNo || '—'}</td>
-                            <td>{formatDate(row.invoiceDate ?? '')}</td>
-                            <td className={styles.numCol}>{formatCurrency(row.invoiceValue)}</td>
-                            <td>{row.placeOfSupply || '—'}</td>
-                            <td>{row.rate ?? '—'}%</td>
-                            <td className={styles.numCol}>{formatCurrency(row.taxableValue)}</td>
-                            <td className={styles.numCol}>{formatCurrency(row.centralTaxPaid)}</td>
-                            <td className={styles.numCol}>{formatCurrency(row.stateUtTaxPaid)}</td>
-                          </tr>
+                          <TableRow key={i}>
+                            <TableCell>{row.supplierName || '—'}</TableCell>
+                            <TableCell>{row.invoiceNo || '—'}</TableCell>
+                            <TableCell>{formatDate(row.invoiceDate ?? '')}</TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.invoiceValue)}
+                            </TableCell>
+                            <TableCell>{row.placeOfSupply || '—'}</TableCell>
+                            <TableCell>{row.rate ?? '—'}%</TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.taxableValue)}
+                            </TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.centralTaxPaid)}
+                            </TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.stateUtTaxPaid)}
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </>
-            )}
+                      </TableBody>
+                    </Table>
+                  )}
+                </Stack>
+              )}
 
-            {activeTab === 'imps' && (
-              <>
-                <h3>Import of Services</h3>
-                {impsData.length === 0 ? (
-                  <div className={styles.empty}>No import of services for this period.</div>
-                ) : (
-                  <div className={styles.tableWrap}>
-                    <table className={styles.table}>
-                      <thead>
-                        <tr>
-                          <th>Invoice No</th>
-                          <th>Date</th>
-                          <th className={styles.numCol}>Invoice Value</th>
-                          <th>Place of Supply</th>
-                          <th>Rate %</th>
-                          <th className={styles.numCol}>Taxable Value</th>
-                          <th className={styles.numCol}>IGST</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+              {activeTab === 'imps' && (
+                <Stack gap="md">
+                  <Text variant="heading3">Import of Services</Text>
+                  {impsData.length === 0 ? (
+                    <EmptySection message="No import of services for this period." />
+                  ) : (
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableHeaderCell>Invoice No</TableHeaderCell>
+                          <TableHeaderCell>Date</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>Invoice Value</TableHeaderCell>
+                          <TableHeaderCell>Place of Supply</TableHeaderCell>
+                          <TableHeaderCell>Rate %</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>Taxable Value</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>IGST</TableHeaderCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
                         {impsData.map((row, i) => (
-                          <tr key={i}>
-                            <td>{row.invoiceNo || '—'}</td>
-                            <td>{formatDate(row.invoiceDate ?? '')}</td>
-                            <td className={styles.numCol}>{formatCurrency(row.invoiceValue)}</td>
-                            <td>{row.placeOfSupply || '—'}</td>
-                            <td>{row.rate ?? '—'}%</td>
-                            <td className={styles.numCol}>{formatCurrency(row.taxableValue)}</td>
-                            <td className={styles.numCol}>{formatCurrency(row.integratedTaxPaid)}</td>
-                          </tr>
+                          <TableRow key={i}>
+                            <TableCell>{row.invoiceNo || '—'}</TableCell>
+                            <TableCell>{formatDate(row.invoiceDate ?? '')}</TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.invoiceValue)}
+                            </TableCell>
+                            <TableCell>{row.placeOfSupply || '—'}</TableCell>
+                            <TableCell>{row.rate ?? '—'}%</TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.taxableValue)}
+                            </TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.integratedTaxPaid)}
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </>
-            )}
+                      </TableBody>
+                    </Table>
+                  )}
+                </Stack>
+              )}
 
-            {activeTab === 'impg' && (
-              <>
-                <h3>Import of Goods</h3>
-                {impgData.length === 0 ? (
-                  <div className={styles.empty}>No import of goods for this period.</div>
-                ) : (
-                  <div className={styles.tableWrap}>
-                    <table className={styles.table}>
-                      <thead>
-                        <tr>
-                          <th>Port</th>
-                          <th>Bill of Entry No</th>
-                          <th>Date</th>
-                          <th className={styles.numCol}>Bill Value</th>
-                          <th>Rate %</th>
-                          <th className={styles.numCol}>Taxable Value</th>
-                          <th className={styles.numCol}>IGST</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+              {activeTab === 'impg' && (
+                <Stack gap="md">
+                  <Text variant="heading3">Import of Goods</Text>
+                  {impgData.length === 0 ? (
+                    <EmptySection message="No import of goods for this period." />
+                  ) : (
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableHeaderCell>Port</TableHeaderCell>
+                          <TableHeaderCell>Bill of Entry No</TableHeaderCell>
+                          <TableHeaderCell>Date</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>Bill Value</TableHeaderCell>
+                          <TableHeaderCell>Rate %</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>Taxable Value</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>IGST</TableHeaderCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
                         {impgData.map((row, i) => (
-                          <tr key={i}>
-                            <td>{row.portCode || '—'}</td>
-                            <td>{row.billOfEntryNo || '—'}</td>
-                            <td>{formatDate(row.billOfEntryDate ?? '')}</td>
-                            <td className={styles.numCol}>{formatCurrency(row.billOfEntryValue)}</td>
-                            <td>{row.rate ?? '—'}%</td>
-                            <td className={styles.numCol}>{formatCurrency(row.taxableValue)}</td>
-                            <td className={styles.numCol}>{formatCurrency(row.integratedTaxPaid)}</td>
-                          </tr>
+                          <TableRow key={i}>
+                            <TableCell>{row.portCode || '—'}</TableCell>
+                            <TableCell>{row.billOfEntryNo || '—'}</TableCell>
+                            <TableCell>{formatDate(row.billOfEntryDate ?? '')}</TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.billOfEntryValue)}
+                            </TableCell>
+                            <TableCell>{row.rate ?? '—'}%</TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.taxableValue)}
+                            </TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.integratedTaxPaid)}
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </>
-            )}
+                      </TableBody>
+                    </Table>
+                  )}
+                </Stack>
+              )}
 
-            {activeTab === 'cdnr' && (
-              <>
-                <h3>Credit/Debit Notes from Registered Suppliers</h3>
-                {cdnrData.length === 0 ? (
-                  <div className={styles.empty}>No CDNR entries for this period.</div>
-                ) : (
-                  <div className={styles.tableWrap}>
-                    <table className={styles.table}>
-                      <thead>
-                        <tr>
-                          <th>Supplier GSTIN</th>
-                          <th>Note No</th>
-                          <th>Note date</th>
-                          <th>Original invoice</th>
-                          <th className={styles.numCol}>Note Value</th>
-                          <th>Rate %</th>
-                          <th className={styles.numCol}>Taxable Value</th>
-                          <th className={styles.numCol}>CGST</th>
-                          <th className={styles.numCol}>SGST</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+              {activeTab === 'cdnr' && (
+                <Stack gap="md">
+                  <Text variant="heading3">Credit/Debit Notes from Registered Suppliers</Text>
+                  {cdnrData.length === 0 ? (
+                    <EmptySection message="No CDNR entries for this period." />
+                  ) : (
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableHeaderCell>Supplier GSTIN</TableHeaderCell>
+                          <TableHeaderCell>Note No</TableHeaderCell>
+                          <TableHeaderCell>Note date</TableHeaderCell>
+                          <TableHeaderCell>Original invoice</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>Note Value</TableHeaderCell>
+                          <TableHeaderCell>Rate %</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>Taxable Value</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>CGST</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>SGST</TableHeaderCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
                         {cdnrData.map((row, i) => (
-                          <tr key={i}>
-                            <td>{row.supplierGstin || '—'}</td>
-                            <td>{row.noteNumber || '—'}</td>
-                            <td>{formatDate(row.noteDate ?? '')}</td>
-                            <td>
+                          <TableRow key={i}>
+                            <TableCell>{row.supplierGstin || '—'}</TableCell>
+                            <TableCell>{row.noteNumber || '—'}</TableCell>
+                            <TableCell>{formatDate(row.noteDate ?? '')}</TableCell>
+                            <TableCell>
                               {(row.invoiceNo || '—') +
-                                (row.invoiceDate
-                                  ? ` (${formatDate(row.invoiceDate)})`
-                                  : '')}
-                            </td>
-                            <td className={styles.numCol}>{formatCurrency(row.noteValue)}</td>
-                            <td>{row.rate ?? '—'}%</td>
-                            <td className={styles.numCol}>{formatCurrency(row.taxableValue)}</td>
-                            <td className={styles.numCol}>{formatCurrency(row.centralTaxPaid)}</td>
-                            <td className={styles.numCol}>{formatCurrency(row.stateUtTaxPaid)}</td>
-                          </tr>
+                                (row.invoiceDate ? ` (${formatDate(row.invoiceDate)})` : '')}
+                            </TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.noteValue)}
+                            </TableCell>
+                            <TableCell>{row.rate ?? '—'}%</TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.taxableValue)}
+                            </TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.centralTaxPaid)}
+                            </TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.stateUtTaxPaid)}
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </>
-            )}
+                      </TableBody>
+                    </Table>
+                  )}
+                </Stack>
+              )}
 
-            {activeTab === 'cdnur' && (
-              <>
-                <h3>Credit/Debit Notes from Unregistered Suppliers</h3>
-                {cdnurData.length === 0 ? (
-                  <div className={styles.empty}>No CDNUR entries for this period.</div>
-                ) : (
-                  <div className={styles.tableWrap}>
-                    <table className={styles.table}>
-                      <thead>
-                        <tr>
-                          <th>Note No</th>
-                          <th>Note date</th>
-                          <th>Original invoice</th>
-                          <th className={styles.numCol}>Note Value</th>
-                          <th>Rate %</th>
-                          <th className={styles.numCol}>Taxable Value</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+              {activeTab === 'cdnur' && (
+                <Stack gap="md">
+                  <Text variant="heading3">Credit/Debit Notes from Unregistered Suppliers</Text>
+                  {cdnurData.length === 0 ? (
+                    <EmptySection message="No CDNUR entries for this period." />
+                  ) : (
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableHeaderCell>Note No</TableHeaderCell>
+                          <TableHeaderCell>Note date</TableHeaderCell>
+                          <TableHeaderCell>Original invoice</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>Note Value</TableHeaderCell>
+                          <TableHeaderCell>Rate %</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>Taxable Value</TableHeaderCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
                         {cdnurData.map((row, i) => (
-                          <tr key={i}>
-                            <td>{row.noteNumber || '—'}</td>
-                            <td>{formatDate(row.noteDate ?? '')}</td>
-                            <td>
+                          <TableRow key={i}>
+                            <TableCell>{row.noteNumber || '—'}</TableCell>
+                            <TableCell>{formatDate(row.noteDate ?? '')}</TableCell>
+                            <TableCell>
                               {(row.invoiceNo || '—') +
-                                (row.invoiceDate
-                                  ? ` (${formatDate(row.invoiceDate)})`
-                                  : '')}
-                            </td>
-                            <td className={styles.numCol}>{formatCurrency(row.noteValue)}</td>
-                            <td>{row.rate ?? '—'}%</td>
-                            <td className={styles.numCol}>{formatCurrency(row.taxableValue)}</td>
-                          </tr>
+                                (row.invoiceDate ? ` (${formatDate(row.invoiceDate)})` : '')}
+                            </TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.noteValue)}
+                            </TableCell>
+                            <TableCell>{row.rate ?? '—'}%</TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.taxableValue)}
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </>
-            )}
+                      </TableBody>
+                    </Table>
+                  )}
+                </Stack>
+              )}
 
-            {activeTab === 'at' && (
-              <>
-                <h3>Tax on Advance Paid</h3>
-                {atData.length === 0 ? (
-                  <div className={styles.empty}>No advance tax entries for this period.</div>
-                ) : (
-                  <div className={styles.tableWrap}>
-                    <table className={styles.table}>
-                      <thead>
-                        <tr>
-                          <th>Place of Supply</th>
-                          <th>Rate %</th>
-                          <th className={styles.numCol}>Gross Advance Paid</th>
-                          <th className={styles.numCol}>Cess</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+              {activeTab === 'at' && (
+                <Stack gap="md">
+                  <Text variant="heading3">Tax on Advance Paid</Text>
+                  {atData.length === 0 ? (
+                    <EmptySection message="No advance tax entries for this period." />
+                  ) : (
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableHeaderCell>Place of Supply</TableHeaderCell>
+                          <TableHeaderCell>Rate %</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>Gross Advance Paid</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>Cess</TableHeaderCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
                         {atData.map((row, i) => (
-                          <tr key={i}>
-                            <td>{row.placeOfSupply || '—'}</td>
-                            <td>{row.rate ?? '—'}%</td>
-                            <td className={styles.numCol}>{formatCurrency(row.grossAdvancePaid)}</td>
-                            <td className={styles.numCol}>{formatCurrency(row.cessAmount)}</td>
-                          </tr>
+                          <TableRow key={i}>
+                            <TableCell>{row.placeOfSupply || '—'}</TableCell>
+                            <TableCell>{row.rate ?? '—'}%</TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.grossAdvancePaid)}
+                            </TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.cessAmount)}
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </>
-            )}
+                      </TableBody>
+                    </Table>
+                  )}
+                </Stack>
+              )}
 
-            {activeTab === 'atadj' && (
-              <>
-                <h3>Advance Adjustment</h3>
-                {atadjData.length === 0 ? (
-                  <div className={styles.empty}>No advance adjustment entries for this period.</div>
-                ) : (
-                  <div className={styles.tableWrap}>
-                    <table className={styles.table}>
-                      <thead>
-                        <tr>
-                          <th>Place of Supply</th>
-                          <th>Rate %</th>
-                          <th className={styles.numCol}>Advance to Adjust</th>
-                          <th className={styles.numCol}>Cess Adjusted</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+              {activeTab === 'atadj' && (
+                <Stack gap="md">
+                  <Text variant="heading3">Advance Adjustment</Text>
+                  {atadjData.length === 0 ? (
+                    <EmptySection message="No advance adjustment entries for this period." />
+                  ) : (
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableHeaderCell>Place of Supply</TableHeaderCell>
+                          <TableHeaderCell>Rate %</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>Advance to Adjust</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>Cess Adjusted</TableHeaderCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
                         {atadjData.map((row, i) => (
-                          <tr key={i}>
-                            <td>{row.placeOfSupply || '—'}</td>
-                            <td>{row.rate ?? '—'}%</td>
-                            <td className={styles.numCol}>{formatCurrency(row.grossAdvanceToBeAdjusted)}</td>
-                            <td className={styles.numCol}>{formatCurrency(row.cessAdjusted)}</td>
-                          </tr>
+                          <TableRow key={i}>
+                            <TableCell>{row.placeOfSupply || '—'}</TableCell>
+                            <TableCell>{row.rate ?? '—'}%</TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.grossAdvanceToBeAdjusted)}
+                            </TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.cessAdjusted)}
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </>
-            )}
+                      </TableBody>
+                    </Table>
+                  )}
+                </Stack>
+              )}
 
-            {activeTab === 'exemp' && (
-              <>
-                <h3>Exempt / Nil / Non-GST Supplies</h3>
-                {exempData.length === 0 ? (
-                  <div className={styles.empty}>No exempt entries for this period.</div>
-                ) : (
-                  <div className={styles.tableWrap}>
-                    <table className={styles.table}>
-                      <thead>
-                        <tr>
-                          <th>Description</th>
-                          <th className={styles.numCol}>Composition</th>
-                          <th className={styles.numCol}>Nil Rated</th>
-                          <th className={styles.numCol}>Exempted</th>
-                          <th className={styles.numCol}>Non-GST</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+              {activeTab === 'exemp' && (
+                <Stack gap="md">
+                  <Text variant="heading3">Exempt / Nil / Non-GST Supplies</Text>
+                  {exempData.length === 0 ? (
+                    <EmptySection message="No exempt entries for this period." />
+                  ) : (
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableHeaderCell>Description</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>Composition</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>Nil Rated</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>Exempted</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>Non-GST</TableHeaderCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
                         {exempData.map((row, i) => (
-                          <tr key={i}>
-                            <td>{row.description || '—'}</td>
-                            <td className={styles.numCol}>{formatCurrency(row.compositionTaxablePerson)}</td>
-                            <td className={styles.numCol}>{formatCurrency(row.nilRatedSupplies)}</td>
-                            <td className={styles.numCol}>{formatCurrency(row.exemptedOtherThanNilOrNonGst)}</td>
-                            <td className={styles.numCol}>{formatCurrency(row.nonGstSupplies)}</td>
-                          </tr>
+                          <TableRow key={i}>
+                            <TableCell>{row.description || '—'}</TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.compositionTaxablePerson)}
+                            </TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.nilRatedSupplies)}
+                            </TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.exemptedOtherThanNilOrNonGst)}
+                            </TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.nonGstSupplies)}
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </>
-            )}
+                      </TableBody>
+                    </Table>
+                  )}
+                </Stack>
+              )}
 
-            {activeTab === 'itcr' && (
-              <>
-                <h3>ITC Reversal</h3>
-                {itcrData.length === 0 ? (
-                  <div className={styles.empty}>No ITC reversal entries for this period.</div>
-                ) : (
-                  <div className={styles.tableWrap}>
-                    <table className={styles.table}>
-                      <thead>
-                        <tr>
-                          <th>Description</th>
-                          <th>Add/Reduce</th>
-                          <th className={styles.numCol}>IGST</th>
-                          <th className={styles.numCol}>CGST</th>
-                          <th className={styles.numCol}>SGST</th>
-                          <th className={styles.numCol}>Cess</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+              {activeTab === 'itcr' && (
+                <Stack gap="md">
+                  <Text variant="heading3">ITC Reversal</Text>
+                  {itcrData.length === 0 ? (
+                    <EmptySection message="No ITC reversal entries for this period." />
+                  ) : (
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableHeaderCell>Description</TableHeaderCell>
+                          <TableHeaderCell>Add/Reduce</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>IGST</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>CGST</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>SGST</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>Cess</TableHeaderCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
                         {itcrData.map((row, i) => (
-                          <tr key={i}>
-                            <td>{row.description || '—'}</td>
-                            <td>{row.toBeAddedOrReduced || '—'}</td>
-                            <td className={styles.numCol}>{formatCurrency(row.itcIntegratedTaxAmount)}</td>
-                            <td className={styles.numCol}>{formatCurrency(row.itcCentralTaxAmount)}</td>
-                            <td className={styles.numCol}>{formatCurrency(row.itcStateUtTaxAmount)}</td>
-                            <td className={styles.numCol}>{formatCurrency(row.itcCessAmount)}</td>
-                          </tr>
+                          <TableRow key={i}>
+                            <TableCell>{row.description || '—'}</TableCell>
+                            <TableCell>{row.toBeAddedOrReduced || '—'}</TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.itcIntegratedTaxAmount)}
+                            </TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.itcCentralTaxAmount)}
+                            </TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.itcStateUtTaxAmount)}
+                            </TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.itcCessAmount)}
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </>
-            )}
+                      </TableBody>
+                    </Table>
+                  )}
+                </Stack>
+              )}
 
-            {activeTab === 'hsnsum' && (
-              <>
-                <h3>HSN Summary</h3>
-                {hsnData.length === 0 ? (
-                  <div className={styles.empty}>No HSN summary for this period.</div>
-                ) : (
-                  <div className={styles.tableWrap}>
-                    <table className={styles.table}>
-                      <thead>
-                        <tr>
-                          <th>HSN</th>
-                          <th>Description</th>
-                          <th>UQC</th>
-                          <th className={styles.numCol}>Qty</th>
-                          <th className={styles.numCol}>Total Value</th>
-                          <th>Rate %</th>
-                          <th className={styles.numCol}>Taxable Value</th>
-                          <th className={styles.numCol}>CGST</th>
-                          <th className={styles.numCol}>SGST</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+              {activeTab === 'hsnsum' && (
+                <Stack gap="md">
+                  <Text variant="heading3">HSN Summary</Text>
+                  {hsnData.length === 0 ? (
+                    <EmptySection message="No HSN summary for this period." />
+                  ) : (
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableHeaderCell>HSN</TableHeaderCell>
+                          <TableHeaderCell>Description</TableHeaderCell>
+                          <TableHeaderCell>UQC</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>Qty</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>Total Value</TableHeaderCell>
+                          <TableHeaderCell>Rate %</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>Taxable Value</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>CGST</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>SGST</TableHeaderCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
                         {hsnData.map((row, i) => (
-                          <tr key={i}>
-                            <td>{row.hsn || '—'}</td>
-                            <td>{row.description || '—'}</td>
-                            <td>{row.uqc || '—'}</td>
-                            <td className={styles.numCol}>{row.totalQuantity ?? '—'}</td>
-                            <td className={styles.numCol}>{formatCurrency(row.totalValue)}</td>
-                            <td>{row.rate ?? '—'}%</td>
-                            <td className={styles.numCol}>{formatCurrency(row.taxableValue)}</td>
-                            <td className={styles.numCol}>{formatCurrency(row.centralTaxAmount)}</td>
-                            <td className={styles.numCol}>{formatCurrency(row.stateUtTaxAmount)}</td>
-                          </tr>
+                          <TableRow key={i}>
+                            <TableCell>{row.hsn || '—'}</TableCell>
+                            <TableCell>{row.description || '—'}</TableCell>
+                            <TableCell>{row.uqc || '—'}</TableCell>
+                            <TableCell className={styles.numCol}>
+                              {row.totalQuantity ?? '—'}
+                            </TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.totalValue)}
+                            </TableCell>
+                            <TableCell>{row.rate ?? '—'}%</TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.taxableValue)}
+                            </TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.centralTaxAmount)}
+                            </TableCell>
+                            <TableCell className={styles.numCol}>
+                              {formatCurrency(row.stateUtTaxAmount)}
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+                      </TableBody>
+                    </Table>
+                  )}
+                </Stack>
+              )}
+            </CardBody>
+          </Card>
         </>
       ) : null}
-    </div>
+    </Stack>
   );
 }
 

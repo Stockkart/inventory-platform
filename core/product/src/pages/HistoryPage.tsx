@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router';
 import {
+  Box,
+  Button,
+  Card,
+  CardBody,
+  Inline,
+  PageHeader,
+  Stack,
+} from '@inventory-platform/ui-kit';
+import {
   PurchaseList,
   RefundHistoryList,
   VendorReturnHistoryList,
@@ -112,90 +121,79 @@ export function HistoryPage() {
 
   const filtersActive = hasActiveHistoryFilters(appliedFilters, activeTab);
 
+  const tabs: Array<{ id: HistoryTab; label: string }> = [
+    { id: 'saleHistory', label: 'Sale history' },
+    { id: 'purchaseHistory', label: 'Purchase history' },
+  ];
+  if (customerReturnEnabled) {
+    tabs.push({
+      id: 'customerReturnHistory',
+      label: 'Customer return history',
+    });
+  }
+  if (vendorReturnEnabled) {
+    tabs.push({
+      id: 'vendorReturnHistory',
+      label: 'Supplier return history',
+    });
+  }
+
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>History</h1>
-        <p className={styles.subtitle}>{subtitle}</p>
-      </div>
+    <Stack gap="md">
+      <PageHeader title="History" description={subtitle} />
 
-      <div className={styles.tabs} role="tablist" aria-label="History sections">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'saleHistory'}
-          className={`${styles.tab} ${
-            activeTab === 'saleHistory' ? styles.activeTab : ''
-          }`}
-          onClick={() => setActiveTab('saleHistory')}
-        >
-          Sale history
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'purchaseHistory'}
-          className={`${styles.tab} ${
-            activeTab === 'purchaseHistory' ? styles.activeTab : ''
-          }`}
-          onClick={() => setActiveTab('purchaseHistory')}
-        >
-          Purchase history
-        </button>
-        {customerReturnEnabled && (
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'customerReturnHistory'}
-            className={`${styles.tab} ${
-              activeTab === 'customerReturnHistory' ? styles.activeTab : ''
-            }`}
-            onClick={() => setActiveTab('customerReturnHistory')}
-          >
-            Customer return history
-          </button>
-        )}
-        {vendorReturnEnabled && (
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'vendorReturnHistory'}
-            className={`${styles.tab} ${
-              activeTab === 'vendorReturnHistory' ? styles.activeTab : ''
-            }`}
-            onClick={() => setActiveTab('vendorReturnHistory')}
-          >
-            Supplier return history
-          </button>
-        )}
-      </div>
+      <Box as="nav" aria-label="History sections" className={styles.tabBar}>
+        <Inline gap="none">
+          {tabs.map((tab) => {
+            const active = activeTab === tab.id;
+            return (
+              <Button
+                key={tab.id}
+                type="button"
+                size="sm"
+                variant="ghost"
+                role="tab"
+                aria-selected={active}
+                className={active ? styles.tabActive : styles.tab}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                {tab.label}
+              </Button>
+            );
+          })}
+        </Inline>
+      </Box>
 
-      <div className={styles.content}>
-        <HistoryFiltersBar
-          filters={draftFilters}
-          onChange={setDraftFilters}
-          onApply={() => setAppliedFilters({ ...draftFilters })}
-          onClear={() => {
-            setDraftFilters(EMPTY_HISTORY_FILTERS);
-            setAppliedFilters(EMPTY_HISTORY_FILTERS);
-          }}
-          activeTab={activeTab}
-          hasAppliedFilters={filtersActive}
-        />
+      <Card>
+        <CardBody>
+          <Stack gap="md">
+            <HistoryFiltersBar
+              filters={draftFilters}
+              onChange={setDraftFilters}
+              onApply={() => setAppliedFilters({ ...draftFilters })}
+              onClear={() => {
+                setDraftFilters(EMPTY_HISTORY_FILTERS);
+                setAppliedFilters(EMPTY_HISTORY_FILTERS);
+              }}
+              activeTab={activeTab}
+              hasAppliedFilters={filtersActive}
+            />
 
-        {activeTab === 'saleHistory' && (
-          <PurchaseList filters={appliedFilters} />
-        )}
-        {activeTab === 'purchaseHistory' && (
-          <VendorInvoicesPage embedded filters={appliedFilters} />
-        )}
-        {customerReturnEnabled && activeTab === 'customerReturnHistory' && (
-          <RefundHistoryList filters={appliedFilters} />
-        )}
-        {vendorReturnEnabled && activeTab === 'vendorReturnHistory' && (
-          <VendorReturnHistoryList filters={appliedFilters} />
-        )}
-      </div>
-    </div>
+            {activeTab === 'saleHistory' && (
+              <PurchaseList filters={appliedFilters} />
+            )}
+            {activeTab === 'purchaseHistory' && (
+              <VendorInvoicesPage embedded filters={appliedFilters} />
+            )}
+            {customerReturnEnabled && activeTab === 'customerReturnHistory' && (
+              <RefundHistoryList filters={appliedFilters} />
+            )}
+            {vendorReturnEnabled && activeTab === 'vendorReturnHistory' && (
+              <VendorReturnHistoryList filters={appliedFilters} />
+            )}
+          </Stack>
+        </CardBody>
+      </Card>
+    </Stack>
   );
 }

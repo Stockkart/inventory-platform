@@ -1,3 +1,10 @@
+import {
+  Card,
+  CardBody,
+  Grid,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './analytics.module.css';
 
 interface ProfitSummaryCardsProps {
@@ -11,6 +18,34 @@ interface ProfitSummaryCardsProps {
   };
 }
 
+function MetricCard({
+  label,
+  value,
+  period,
+}: {
+  label: string;
+  value: string;
+  period: string;
+}) {
+  return (
+    <Card>
+      <CardBody>
+        <Stack gap="xs">
+          <Text variant="caption" color="secondary">
+            {label}
+          </Text>
+          <Text variant="heading2" weight="bold">
+            {value}
+          </Text>
+          <Text variant="caption" color="muted">
+            {period}
+          </Text>
+        </Stack>
+      </CardBody>
+    </Card>
+  );
+}
+
 export function ProfitSummaryCards({ data }: ProfitSummaryCardsProps) {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -20,55 +55,37 @@ export function ProfitSummaryCards({ data }: ProfitSummaryCardsProps) {
   };
 
   return (
-    <div className={styles.summaryGrid}>
-      <div className={styles.summaryCard}>
-        <div className={styles.summaryHeader}>
-          <span className={styles.summaryLabel}>Total Revenue</span>
-        </div>
-        <div className={styles.summaryValue}>{formatCurrency(data.totalRevenue)}</div>
-        <div className={styles.summaryPeriod}>Total Revenue</div>
-      </div>
-
-      <div className={styles.summaryCard}>
-        <div className={styles.summaryHeader}>
-          <span className={styles.summaryLabel}>Total Cost</span>
-        </div>
-        <div className={styles.summaryValue}>{formatCurrency(data.totalCost)}</div>
-        <div className={styles.summaryPeriod}>Cost of Goods</div>
-      </div>
-
-      <div className={styles.summaryCard}>
-        <div className={styles.summaryHeader}>
-          <span className={styles.summaryLabel}>Gross Profit</span>
-        </div>
-        <div className={styles.summaryValue}>{formatCurrency(data.totalGrossProfit)}</div>
-        <div className={styles.summaryPeriod}>Profit After Costs</div>
-      </div>
-
-      <div className={styles.summaryCard}>
-        <div className={styles.summaryHeader}>
-          <span className={styles.summaryLabel}>Overall Margin</span>
-        </div>
-        <div className={styles.summaryValue}>{data.overallMarginPercent.toFixed(2)}%</div>
-        <div className={styles.summaryPeriod}>Margin Percentage</div>
-      </div>
-
-      <div className={styles.summaryCard}>
-        <div className={styles.summaryHeader}>
-          <span className={styles.summaryLabel}>Total Items Sold</span>
-        </div>
-        <div className={styles.summaryValue}>{data.totalItemsSold}</div>
-        <div className={styles.summaryPeriod}>Items Sold</div>
-      </div>
-
-      <div className={styles.summaryCard}>
-        <div className={styles.summaryHeader}>
-          <span className={styles.summaryLabel}>Total Purchases</span>
-        </div>
-        <div className={styles.summaryValue}>{data.totalPurchases}</div>
-        <div className={styles.summaryPeriod}>Number of Orders</div>
-      </div>
-    </div>
+    <Grid className={styles.summaryGrid}>
+      <MetricCard
+        label="Total Revenue"
+        value={formatCurrency(data.totalRevenue)}
+        period="Total Revenue"
+      />
+      <MetricCard
+        label="Total Cost"
+        value={formatCurrency(data.totalCost)}
+        period="Cost of Goods"
+      />
+      <MetricCard
+        label="Gross Profit"
+        value={formatCurrency(data.totalGrossProfit)}
+        period="Profit After Costs"
+      />
+      <MetricCard
+        label="Overall Margin"
+        value={`${data.overallMarginPercent.toFixed(2)}%`}
+        period="Margin Percentage"
+      />
+      <MetricCard
+        label="Total Items Sold"
+        value={String(data.totalItemsSold)}
+        period="Items Sold"
+      />
+      <MetricCard
+        label="Total Purchases"
+        value={String(data.totalPurchases)}
+        period="Number of Orders"
+      />
+    </Grid>
   );
 }
-
