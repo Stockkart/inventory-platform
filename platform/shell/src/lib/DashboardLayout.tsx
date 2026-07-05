@@ -455,6 +455,7 @@ export function DashboardLayout({
       )}
       <div className={styles.dashboardBody}>
       {/* Sidebar */}
+      <div className={styles.sidebarColumn}>
       <aside
         className={`${styles.sidebar} ${
           sidebarOpen ? styles.sidebarOpen : styles.sidebarClosed
@@ -660,6 +661,7 @@ export function DashboardLayout({
           )}
         </div>
       </aside>
+      </div>
 
       {/* Main */}
       <div className={styles.mainContent}>

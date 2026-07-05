@@ -1,8 +1,36 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
+import {
+  Badge,
+  Box,
+  Button,
+  Card,
+  CardBody,
+  CenteredLoader,
+  Inline,
+  Input,
+  PageHeader,
+  PaginationBar,
+  SearchInput,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableEmptyRow,
+  TableHead,
+  TableHeaderCell,
+  TableLoadingRow,
+  TableRow,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { accountingApi } from '../api/accounting.api';
 import { useNotify } from '@inventory-platform/session';
-import type { AccountResponse, AccountType, LedgerPageResponse, TrialBalanceRow } from '@inventory-platform/accounting/types';
+import type {
+  AccountResponse,
+  AccountType,
+  LedgerPageResponse,
+  TrialBalanceRow,
+} from '@inventory-platform/accounting/types';
 import { AccountingTabs } from '../ui/AccountingTabs';
 import { formatDate, formatMoney } from '../model/format';
 import styles from '../ui/accounting.module.css';
@@ -39,6 +67,7 @@ export function LedgerPage() {
 
   const [accounts, setAccounts] = useState<AccountResponse[]>([]);
   const [balances, setBalances] = useState<BalanceMap>(new Map());
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
@@ -49,7 +78,7 @@ export function LedgerPage() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       setAccountsLoading(true);
       try {
         const [rows, tb] = await Promise.all([
@@ -101,7 +130,7 @@ export function LedgerPage() {
   }, [accountId, from, to, page, notifyError]);
 
   useEffect(() => {
-    reload();
+    void reload();
   }, [reload]);
 
   const grouped = useMemo(() => {
@@ -109,7 +138,7 @@ export function LedgerPage() {
     const filtered = q
       ? accounts.filter(
           (a) =>
-            a.code.toLowerCase().includes(q) || a.name.toLowerCase().includes(q),
+            a.code.toLowerCase().includes(q) || a.name.toLowerCase().includes(q)
         )
       : accounts;
     const byType: Record<AccountType, AccountResponse[]> = {
@@ -135,237 +164,273 @@ export function LedgerPage() {
   const selectedBalance = selected ? balances.get(selected.id) : undefined;
 
   return (
-    <div className={styles.page}>
-      <div className={styles.card}>
-        <div className={styles.header}>
-          <div>
-            <h1 className={styles.title}>Ledger</h1>
-            <p className={styles.subtitle}>
-              Every account in your books. Pick one to see its postings with a
-              running balance on its normal side.
-            </p>
-          </div>
-        </div>
+    <Stack gap="md" className={styles.page}>
+      <Stack gap="md">
+        <PageHeader
+          title="Ledger"
+          description="Every account in your books. Pick one to see its postings with a running balance on its normal side."
+        />
         <AccountingTabs />
-      </div>
+      </Stack>
 
-      <div className={styles.ledgerLayout}>
-        <aside className={`${styles.card} ${styles.acctList}`}>
-          <input
-            className={styles.acctSearch}
-            type="search"
-            placeholder="Search accounts…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          {accountsLoading ? (
-            <p className={styles.acctEmpty}>Loading accounts…</p>
-          ) : accounts.length === 0 ? (
-            <p className={styles.acctEmpty}>
-              No chart of accounts found.{' '}
-              <Link to="/dashboard/accounting/chart-of-accounts">Set it up</Link>.
-            </p>
-          ) : (
-            <>
-              {TYPE_ORDER.map((t) => {
-                const rows = grouped[t];
-                if (rows.length === 0) return null;
-                return (
-                  <div key={t} className={styles.acctGroup}>
-                    <div className={styles.acctGroupHead}>{TYPE_LABEL[t]}</div>
-                    {rows.map((a) => {
-                      const bal = balances.get(a.id);
-                      const net = netBalance(bal);
-                      const hasActivity =
-                        !!bal && (bal.debitTurnover > 0 || bal.creditTurnover > 0);
-                      return (
-                        <button
-                          key={a.id}
-                          type="button"
-                          className={
-                            a.id === accountId
-                              ? styles.acctItemActive
-                              : styles.acctItem
-                          }
-                          onClick={() => openAccount(a.id)}
-                        >
-                          <span className={styles.acctItemName}>
-                            <span className={styles.acctItemCode}>{a.code}</span>
-                            <span className={styles.acctItemLabel}>{a.name}</span>
-                          </span>
-                          <span
-                            className={`${styles.acctItemBalance} ${
-                              hasActivity ? '' : styles.acctItemBalanceMuted
-                            }`}
-                            title={`Normal balance ${a.normalBalance}`}
-                          >
-                            {hasActivity ? formatMoney(net) : '—'}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-              <div className={styles.acctSummary}>
-                <span>{accounts.length} accounts</span>
-                <Link to="/dashboard/accounting/chart-of-accounts">Manage</Link>
-              </div>
-            </>
-          )}
-        </aside>
-
-        <section className={styles.page} style={{ gap: '1rem' }}>
-          <div className={styles.card}>
-            {selected ? (
-              <div className={styles.header}>
-                <div>
-                  <h2 className={styles.title} style={{ fontSize: '1.05rem' }}>
-                    {selected.code} · {selected.name}
-                  </h2>
-                  <p className={styles.subtitle}>
-                    {TYPE_LABEL[selected.type]} · Normal balance{' '}
-                    {selected.normalBalance}
-                    {selectedBalance
-                      ? ` · Closing ${formatMoney(netBalance(selectedBalance))}`
-                      : ''}
-                  </p>
-                </div>
-                <div className={styles.toolbar}>
-                  <label className={styles.muted}>From</label>
-                  <input
-                    type="date"
-                    value={from}
-                    onChange={(e) => {
-                      setPage(0);
-                      setFrom(e.target.value);
-                    }}
-                  />
-                  <label className={styles.muted}>To</label>
-                  <input
-                    type="date"
-                    value={to}
-                    onChange={(e) => {
-                      setPage(0);
-                      setTo(e.target.value);
-                    }}
-                  />
-                  <button
-                    className={styles.btnGhost}
-                    onClick={() => {
-                      setFrom('');
-                      setTo('');
-                      setPage(0);
-                    }}
-                    disabled={!from && !to}
+      <Box display="grid" className={styles.ledgerLayout}>
+        <Card className={styles.acctList}>
+          <CardBody className={styles.acctListBody}>
+            <Stack gap="md">
+              <SearchInput
+                value={searchInput}
+                onChange={setSearchInput}
+                onSearch={() => setSearch(searchInput.trim())}
+                placeholder="Search accounts…"
+                className={styles.acctSearch}
+              />
+              {accountsLoading ? (
+                <CenteredLoader label="Loading accounts…" minHeight="8rem" />
+              ) : accounts.length === 0 ? (
+                <Stack gap="sm" align="center">
+                  <Text color="secondary">No chart of accounts found.</Text>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate('/dashboard/accounting/chart-of-accounts')}
                   >
-                    Clear
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <p className={styles.empty}>
-                Pick an account from the list to view its ledger.
-              </p>
-            )}
-          </div>
-
-          {selected && (
-            <div className={styles.card}>
-              {loading ? (
-                <p className={styles.empty}>Loading…</p>
-              ) : (data?.entries.length ?? 0) === 0 ? (
-                <p className={styles.empty}>No postings in this range.</p>
+                    Set it up
+                  </Button>
+                </Stack>
               ) : (
                 <>
-                  <table className={styles.table}>
-                    <thead>
-                      <tr>
-                        <th>Date</th>
-                        <th>Entry #</th>
-                        <th>Source</th>
-                        <th>Party</th>
-                        <th>Narration</th>
-                        <th className={styles.right}>Debit</th>
-                        <th className={styles.right}>Credit</th>
-                        <th className={styles.right}>Balance</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(data?.entries ?? []).map((row) => (
-                        <tr key={row.id}>
-                          <td>{formatDate(row.txnDate)}</td>
-                          <td>
-                            <Link
-                              to={`/dashboard/accounting/journal/${row.journalEntryId}`}
+                  {TYPE_ORDER.map((t) => {
+                    const rows = grouped[t];
+                    if (rows.length === 0) return null;
+                    return (
+                      <Stack key={t} gap="xs" className={styles.acctGroup}>
+                        <Text
+                          variant="label"
+                          weight="semibold"
+                          className={styles.acctGroupHead}
+                        >
+                          {TYPE_LABEL[t]}
+                        </Text>
+                        {rows.map((account) => {
+                          const bal = balances.get(account.id);
+                          const net = netBalance(bal);
+                          const hasActivity =
+                            !!bal && (bal.debitTurnover > 0 || bal.creditTurnover > 0);
+                          const active = account.id === accountId;
+                          return (
+                            <Button
+                              key={account.id}
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              fullWidth
+                              className={active ? styles.acctItemActive : styles.acctItem}
+                              onClick={() => openAccount(account.id)}
                             >
-                              {row.journalEntryNo}
-                            </Link>
-                          </td>
-                          <td>
-                            <span className={styles.sourcePill}>
-                              {row.sourceType}
-                            </span>
-                          </td>
-                          <td className={styles.muted}>
-                            {row.partyType
-                              ? `${row.partyType}${
-                                  row.partyDisplayName
-                                    ? ` · ${row.partyDisplayName}`
-                                    : ''
-                                }`
-                              : '—'}
-                          </td>
-                          <td className={styles.muted}>{row.narration ?? '—'}</td>
-                          <td className={`${styles.right} ${styles.number}`}>
-                            {row.debit ? formatMoney(row.debit) : ''}
-                          </td>
-                          <td className={`${styles.right} ${styles.number}`}>
-                            {row.credit ? formatMoney(row.credit) : ''}
-                          </td>
-                          <td className={`${styles.right} ${styles.number}`}>
-                            {formatMoney(row.balanceAfter)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <div
-                    className={styles.toolbar}
-                    style={{
-                      justifyContent: 'space-between',
-                      marginTop: '0.6rem',
-                    }}
-                  >
-                    <span className={styles.muted}>
-                      Page {data ? data.page + 1 : 1} of{' '}
-                      {data?.totalPages || 1} · {data?.totalItems ?? 0} postings
-                    </span>
-                    <div>
-                      <button
-                        className={styles.btnSecondary}
-                        disabled={!data || data.page <= 0}
-                        onClick={() => setPage((p) => Math.max(0, p - 1))}
-                      >
-                        ← Prev
-                      </button>{' '}
-                      <button
-                        className={styles.btnSecondary}
-                        disabled={
-                          !data || data.page + 1 >= (data?.totalPages ?? 0)
-                        }
-                        onClick={() => setPage((p) => p + 1)}
-                      >
-                        Next →
-                      </button>
-                    </div>
-                  </div>
+                              <Stack gap="none" className={styles.acctItemName}>
+                                <Text as="span" className={styles.acctItemCode}>
+                                  {account.code}
+                                </Text>
+                                <Text as="span" className={styles.acctItemLabel}>
+                                  {account.name}
+                                </Text>
+                              </Stack>
+                              <Text
+                                as="span"
+                                className={
+                                  hasActivity
+                                    ? styles.acctItemBalance
+                                    : styles.acctItemBalanceMuted
+                                }
+                              >
+                                {hasActivity ? formatMoney(net) : '—'}
+                              </Text>
+                            </Button>
+                          );
+                        })}
+                      </Stack>
+                    );
+                  })}
+                  <Inline justify="between" className={styles.acctSummary}>
+                    <Text variant="caption" color="secondary">
+                      {accounts.length} accounts
+                    </Text>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigate('/dashboard/accounting/chart-of-accounts')}
+                    >
+                      Manage
+                    </Button>
+                  </Inline>
                 </>
               )}
-            </div>
-          )}
-        </section>
-      </div>
-    </div>
+            </Stack>
+          </CardBody>
+        </Card>
+
+        <Stack gap="md">
+          <Card>
+            <CardBody>
+              {selected ? (
+                <Stack gap="md">
+                  <Stack gap="xs">
+                    <Text variant="heading3" weight="semibold">
+                      {selected.code} · {selected.name}
+                    </Text>
+                    <Text color="secondary" variant="caption">
+                      {TYPE_LABEL[selected.type]} · Normal balance{' '}
+                      {selected.normalBalance}
+                      {selectedBalance
+                        ? ` · Closing ${formatMoney(netBalance(selectedBalance))}`
+                        : ''}
+                    </Text>
+                  </Stack>
+                  <Inline gap="sm" className={styles.toolbar}>
+                    <Inline gap="sm" align="center">
+                      <Text variant="label" color="secondary">
+                        From
+                      </Text>
+                      <Input
+                        type="date"
+                        value={from}
+                        onChange={(e) => {
+                          setPage(0);
+                          setFrom(e.target.value);
+                        }}
+                      />
+                    </Inline>
+                    <Inline gap="sm" align="center">
+                      <Text variant="label" color="secondary">
+                        To
+                      </Text>
+                      <Input
+                        type="date"
+                        value={to}
+                        onChange={(e) => {
+                          setPage(0);
+                          setTo(e.target.value);
+                        }}
+                      />
+                    </Inline>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setFrom('');
+                        setTo('');
+                        setPage(0);
+                      }}
+                      disabled={!from && !to}
+                    >
+                      Clear
+                    </Button>
+                  </Inline>
+                </Stack>
+              ) : (
+                <Text color="secondary">
+                  Pick an account from the list to view its ledger.
+                </Text>
+              )}
+            </CardBody>
+          </Card>
+
+          {selected ? (
+            <Card>
+              <CardBody>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableHeaderCell>Date</TableHeaderCell>
+                      <TableHeaderCell>Entry #</TableHeaderCell>
+                      <TableHeaderCell>Source</TableHeaderCell>
+                      <TableHeaderCell>Party</TableHeaderCell>
+                      <TableHeaderCell>Narration</TableHeaderCell>
+                      <TableHeaderCell className={styles.right}>Debit</TableHeaderCell>
+                      <TableHeaderCell className={styles.right}>Credit</TableHeaderCell>
+                      <TableHeaderCell className={styles.right}>Balance</TableHeaderCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {loading ? (
+                      <TableLoadingRow colSpan={8} label="Loading ledger…" />
+                    ) : (data?.entries.length ?? 0) === 0 ? (
+                      <TableEmptyRow
+                        colSpan={8}
+                        message="No postings in this range."
+                      />
+                    ) : (
+                      (data?.entries ?? []).map((row) => (
+                        <TableRow key={row.id}>
+                          <TableCell>{formatDate(row.txnDate)}</TableCell>
+                          <TableCell>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                navigate(
+                                  `/dashboard/accounting/journal/${row.journalEntryId}`
+                                )
+                              }
+                            >
+                              {row.journalEntryNo}
+                            </Button>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={styles.sourcePill}>
+                              {row.sourceType}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Text color="secondary" variant="caption">
+                              {row.partyType
+                                ? `${row.partyType}${
+                                    row.partyDisplayName
+                                      ? ` · ${row.partyDisplayName}`
+                                      : ''
+                                  }`
+                                : '—'}
+                            </Text>
+                          </TableCell>
+                          <TableCell>
+                            <Text color="secondary" variant="caption">
+                              {row.narration ?? '—'}
+                            </Text>
+                          </TableCell>
+                          <TableCell className={`${styles.right} ${styles.number}`}>
+                            {row.debit ? formatMoney(row.debit) : '—'}
+                          </TableCell>
+                          <TableCell className={`${styles.right} ${styles.number}`}>
+                            {row.credit ? formatMoney(row.credit) : '—'}
+                          </TableCell>
+                          <TableCell className={`${styles.right} ${styles.number}`}>
+                            {formatMoney(row.balanceAfter)}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+
+                {(data?.entries.length ?? 0) > 0 || loading ? (
+                  <PaginationBar
+                    page={data?.page ?? page}
+                    totalPages={Math.max(data?.totalPages ?? 1, 1)}
+                    totalItems={data?.totalItems ?? 0}
+                    disabled={loading}
+                    onPageChange={setPage}
+                    aria-label="Ledger pages"
+                  />
+                ) : null}
+              </CardBody>
+            </Card>
+          ) : null}
+        </Stack>
+      </Box>
+    </Stack>
   );
 }

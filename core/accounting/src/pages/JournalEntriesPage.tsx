@@ -1,5 +1,27 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router';
+import { useNavigate } from 'react-router';
+import {
+  Badge,
+  Button,
+  Card,
+  CardBody,
+  Inline,
+  Input,
+  PageHeader,
+  PaginationBar,
+  Select,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableEmptyRow,
+  TableHead,
+  TableHeaderCell,
+  TableLoadingRow,
+  TableRow,
+  Text,
+  type SelectOptionDef,
+} from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import type { JournalEntryResponse, JournalSource } from '@inventory-platform/accounting/types';
 import { useJournalsQuery } from '../queries/hooks';
@@ -7,7 +29,7 @@ import { AccountingTabs } from '../ui/AccountingTabs';
 import { formatDate, formatMoney } from '../model/format';
 import styles from '../ui/accounting.module.css';
 
-const SOURCE_OPTIONS: ReadonlyArray<{ value: '' | JournalSource; label: string }> = [
+const SOURCE_OPTIONS: readonly SelectOptionDef[] = [
   { value: '', label: 'All sources' },
   { value: 'VENDOR_PURCHASE_INVOICE', label: 'Vendor Purchase' },
   { value: 'VENDOR_PURCHASE_RETURN', label: 'Vendor Return' },
@@ -21,15 +43,24 @@ const SOURCE_OPTIONS: ReadonlyArray<{ value: '' | JournalSource; label: string }
   { value: 'OPENING_BALANCE', label: 'Opening Balance' },
 ];
 
+function statusVariant(
+  status: JournalEntryResponse['status']
+): 'success' | 'warning' | 'danger' | 'neutral' {
+  if (status === 'POSTED') return 'success';
+  if (status === 'REVERSED') return 'warning';
+  return 'danger';
+}
+
 export function JournalEntriesPage() {
+  const navigate = useNavigate();
   const { error: notifyError } = useNotify;
-  const [source, setSource] = useState<'' | JournalSource>('');
+  const [source, setSource] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [page, setPage] = useState(0);
 
   const { data, isLoading, isError, error } = useJournalsQuery({
-    sourceType: source || undefined,
+    sourceType: (source || undefined) as JournalSource | undefined,
     from: from || undefined,
     to: to || undefined,
     page,
@@ -45,69 +76,68 @@ export function JournalEntriesPage() {
   const entries = useMemo<JournalEntryResponse[]>(() => data?.entries ?? [], [data]);
 
   return (
-    <div className={styles.page}>
-      <div className={styles.card}>
-        <div className={styles.header}>
-          <div>
-            <h1 className={styles.title}>Journal Entries</h1>
-            <p className={styles.subtitle}>
-              Every business event creates a balanced journal entry. Filter, drill in, or post a
-              manual entry.
-            </p>
-          </div>
-          <Link
-            to="/dashboard/accounting/journal/new"
-            className={styles.btnPrimary}
-            style={{ textDecoration: 'none' }}
-          >
-            + Manual Entry
-          </Link>
-        </div>
+    <Stack gap="md" className={styles.page}>
+      <Stack gap="md">
+        <PageHeader
+          title="Journal Entries"
+          description="Every business event creates a balanced journal entry. Filter, drill in, or post a manual entry."
+          actions={
+            <Button
+              variant="solid"
+              onClick={() => navigate('/dashboard/accounting/journal/new')}
+            >
+              Manual entry
+            </Button>
+          }
+        />
         <AccountingTabs />
-        <div className={styles.toolbar}>
-          <label className={styles.muted} htmlFor="source">
-            Source
-          </label>
-          <select
-            id="source"
-            value={source}
-            onChange={(e) => {
-              setPage(0);
-              setSource(e.target.value as '' | JournalSource);
-            }}
-          >
-            {SOURCE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-          <label className={styles.muted} htmlFor="from">
-            From
-          </label>
-          <input
-            id="from"
-            type="date"
-            value={from}
-            onChange={(e) => {
-              setPage(0);
-              setFrom(e.target.value);
-            }}
-          />
-          <label className={styles.muted} htmlFor="to">
-            To
-          </label>
-          <input
-            id="to"
-            type="date"
-            value={to}
-            onChange={(e) => {
-              setPage(0);
-              setTo(e.target.value);
-            }}
-          />
-          <button
-            className={styles.btnGhost}
+        <Inline gap="sm" className={styles.toolbar}>
+          <Inline gap="sm" align="center">
+            <Text variant="label" color="secondary">
+              Source
+            </Text>
+            <Select
+              id="source"
+              value={source}
+              options={SOURCE_OPTIONS}
+              onChange={(e) => {
+                setPage(0);
+                setSource(e.target.value);
+              }}
+            />
+          </Inline>
+          <Inline gap="sm" align="center">
+            <Text variant="label" color="secondary">
+              From
+            </Text>
+            <Input
+              id="from"
+              type="date"
+              value={from}
+              onChange={(e) => {
+                setPage(0);
+                setFrom(e.target.value);
+              }}
+            />
+          </Inline>
+          <Inline gap="sm" align="center">
+            <Text variant="label" color="secondary">
+              To
+            </Text>
+            <Input
+              id="to"
+              type="date"
+              value={to}
+              onChange={(e) => {
+                setPage(0);
+                setTo(e.target.value);
+              }}
+            />
+          </Inline>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
             onClick={() => {
               setSource('');
               setFrom('');
@@ -117,92 +147,85 @@ export function JournalEntriesPage() {
             disabled={!source && !from && !to}
           >
             Clear
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Inline>
+      </Stack>
 
-      <div className={styles.card}>
-        {isLoading ? (
-          <p className={styles.empty}>Loading…</p>
-        ) : entries.length === 0 ? (
-          <p className={styles.empty}>No journal entries match your filters.</p>
-        ) : (
-          <>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Entry #</th>
-                  <th>Source</th>
-                  <th>Narration</th>
-                  <th className={styles.right}>Debit</th>
-                  <th className={styles.right}>Credit</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map((e) => (
-                  <tr key={e.id}>
-                    <td>{formatDate(e.txnDate)}</td>
-                    <td>
-                      <Link to={`/dashboard/accounting/journal/${e.id}`}>{e.entryNo}</Link>
-                    </td>
-                    <td>
-                      <span className={styles.sourcePill}>{e.sourceType}</span>
-                    </td>
-                    <td className={styles.muted}>{e.narration ?? '—'}</td>
-                    <td className={`${styles.right} ${styles.number}`}>
-                      {formatMoney(e.totalDebit)}
-                    </td>
-                    <td className={`${styles.right} ${styles.number}`}>
-                      {formatMoney(e.totalCredit)}
-                    </td>
-                    <td>
-                      <span
-                        className={`${styles.statusPill} ${
-                          e.status === 'POSTED'
-                            ? styles.statusPosted
-                            : e.status === 'REVERSED'
-                              ? styles.statusReversed
-                              : styles.statusVoid
-                        }`}
+      <Card>
+        <CardBody>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableHeaderCell>Date</TableHeaderCell>
+                <TableHeaderCell>Entry #</TableHeaderCell>
+                <TableHeaderCell>Source</TableHeaderCell>
+                <TableHeaderCell>Narration</TableHeaderCell>
+                <TableHeaderCell className={styles.right}>Debit</TableHeaderCell>
+                <TableHeaderCell className={styles.right}>Credit</TableHeaderCell>
+                <TableHeaderCell>Status</TableHeaderCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {isLoading ? (
+                <TableLoadingRow colSpan={7} label="Loading journal entries…" />
+              ) : entries.length === 0 ? (
+                <TableEmptyRow
+                  colSpan={7}
+                  message="No journal entries match your filters."
+                />
+              ) : (
+                entries.map((entry) => (
+                  <TableRow key={entry.id}>
+                    <TableCell>{formatDate(entry.txnDate)}</TableCell>
+                    <TableCell>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          navigate(`/dashboard/accounting/journal/${entry.id}`)
+                        }
                       >
-                        {e.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                        {entry.entryNo}
+                      </Button>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={styles.sourcePill}>{entry.sourceType}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Text color="secondary" variant="caption">
+                        {entry.narration ?? '—'}
+                      </Text>
+                    </TableCell>
+                    <TableCell className={`${styles.right} ${styles.number}`}>
+                      {formatMoney(entry.totalDebit)}
+                    </TableCell>
+                    <TableCell className={`${styles.right} ${styles.number}`}>
+                      {formatMoney(entry.totalCredit)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={statusVariant(entry.status)}>
+                        {entry.status}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
 
-            <div
-              className={styles.toolbar}
-              style={{ justifyContent: 'space-between', marginTop: '0.6rem' }}
-            >
-              <span className={styles.muted}>
-                Page {data ? data.page + 1 : 1} of {data?.totalPages || 1} ·{' '}
-                {data?.totalItems ?? 0} entries
-              </span>
-              <div>
-                <button
-                  className={styles.btnSecondary}
-                  disabled={!data || data.page <= 0}
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-                >
-                  ← Prev
-                </button>{' '}
-                <button
-                  className={styles.btnSecondary}
-                  disabled={!data || data.page + 1 >= (data?.totalPages ?? 0)}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Next →
-                </button>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+          {entries.length > 0 || isLoading ? (
+            <PaginationBar
+              page={data?.page ?? page}
+              totalPages={Math.max(data?.totalPages ?? 1, 1)}
+              totalItems={data?.totalItems ?? 0}
+              disabled={isLoading}
+              onPageChange={setPage}
+              aria-label="Journal entry pages"
+            />
+          ) : null}
+        </CardBody>
+      </Card>
+    </Stack>
   );
 }
