@@ -3,7 +3,7 @@ export { IconButton, type IconButtonProps } from './IconButton';
 export { Link, type LinkProps } from './Link';
 export { Input, type InputProps } from './Input';
 export { Textarea, type TextareaProps } from './Textarea';
-export { Select, type SelectProps } from './Select';
+export { Select, type SelectProps, type SelectOptionDef } from './Select';
 export {
   Label,
   Checkbox,

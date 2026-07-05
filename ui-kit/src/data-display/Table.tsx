@@ -1,6 +1,6 @@
 import type { HTMLAttributes, ReactNode, TdHTMLAttributes, TableHTMLAttributes } from 'react';
 import { cn } from '../utils/cn';
-import { Spinner } from '../feedback/Spinner';
+import { CenteredLoader } from '../feedback/CenteredLoader';
 import styles from './data-display.module.css';
 
 export function Table({
@@ -45,15 +45,13 @@ export function TableLoadingRow({
   colSpan,
   label = 'Loading…',
   className,
+  minHeight,
   ...rest
-}: TableStatusRowProps & { label?: string }) {
+}: TableStatusRowProps & { label?: string; minHeight?: string }) {
   return (
     <TableRow>
       <td colSpan={colSpan} className={cn(styles.statusCell, className)} {...rest}>
-        <span className={styles.statusInner}>
-          <Spinner size="sm" />
-          <span>{label}</span>
-        </span>
+        <CenteredLoader label={label} size="sm" minHeight={minHeight} />
       </td>
     </TableRow>
   );
@@ -63,12 +61,18 @@ export function TableEmptyRow({
   colSpan,
   message = 'No results.',
   className,
+  minHeight,
   ...rest
-}: TableStatusRowProps & { message?: string }) {
+}: TableStatusRowProps & { message?: string; minHeight?: string }) {
   return (
     <TableRow>
       <td colSpan={colSpan} className={cn(styles.statusCell, className)} {...rest}>
-        {message}
+        <div
+          className={styles.statusMessage}
+          style={minHeight ? { minHeight } : undefined}
+        >
+          {message}
+        </div>
       </td>
     </TableRow>
   );

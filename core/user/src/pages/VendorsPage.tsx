@@ -1,16 +1,38 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
+import {
+  Alert,
+  Button,
+  EditModal,
+  Inline,
+  PageHeader,
+  PaginationBar,
+  SearchInput,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableEmptyRow,
+  TableHead,
+  TableHeaderCell,
+  TableLoadingRow,
+  TableRow,
+} from '@inventory-platform/ui-kit';
 import { vendorsApi } from '../api/vendors.api';
-import { EditModal, PaginationBar } from '@inventory-platform/ui-kit';
 import { VendorEditForm } from '../ui';
 import type { VendorResponse, CreateVendorDto, UpdateVendorDto } from '@inventory-platform/user/types';
-import styles from '././vendors.module.css';
+import styles from './vendors.module.css';
 
 export function meta() {
   return [
     { title: 'Vendors - StockKart' },
     { name: 'description', content: 'Manage your vendor contacts' },
   ];
+}
+
+function formatAddress(addr: string | null | undefined) {
+  if (!addr) return '—';
+  return addr.length > 50 ? `${addr.slice(0, 50)}…` : addr;
 }
 
 export function VendorsPage() {
@@ -51,7 +73,7 @@ export function VendorsPage() {
   }, [page, limit, query]);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const handleSearch = () => {
@@ -113,7 +135,7 @@ export function VendorsPage() {
         businessType: createForm.businessType ?? 'RETAIL',
         gstinUin: createForm.gstinUin?.trim() || undefined,
       });
-      load();
+      void load();
       handleCloseCreate();
     } catch (err) {
       setSaveError(
@@ -130,7 +152,7 @@ export function VendorsPage() {
     setSaveError(null);
     try {
       await vendorsApi.update(editModal.vendorId, editForm);
-      load();
+      void load();
       handleCloseEdit();
     } catch (err) {
       setSaveError(
@@ -139,11 +161,6 @@ export function VendorsPage() {
     } finally {
       setSaving(false);
     }
-  };
-
-  const formatAddress = (addr: string | null | undefined) => {
-    if (!addr) return '—';
-    return addr.length > 50 ? addr.slice(0, 50) + '…' : addr;
   };
 
   const goRegisterPurchaseFromVendor = (vendor: VendorResponse) => {
@@ -158,115 +175,92 @@ export function VendorsPage() {
     });
   };
 
-  if (loading && data.length === 0) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.header}>
-          <h1 className={styles.title}>Vendors</h1>
-          <p className={styles.subtitle}>Manage your vendor contacts</p>
-        </div>
-        <div className={styles.loading}>Loading…</div>
-      </div>
-    );
-  }
-
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Vendors</h1>
-        <p className={styles.subtitle}>Manage your vendor contacts</p>
-      </div>
+    <Stack gap="md">
+      <PageHeader
+        title="Vendors"
+        description="Manage your vendor contacts"
+        actions={
+          <Button variant="solid" onClick={handleOpenCreate}>
+            New vendor
+          </Button>
+        }
+      />
 
-      <div className={styles.toolbar}>
-        <input
-          type="search"
-          className={styles.searchInput}
-          placeholder="Search by name, email, phone…"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-        />
-        <button
-          type="button"
-          className={styles.searchBtn}
-          onClick={handleSearch}
-        >
-          Search
-        </button>
-        <button
-          type="button"
-          className={styles.addBtn}
-          onClick={handleOpenCreate}
-        >
-          New vendor
-        </button>
-      </div>
+      <SearchInput
+        value={searchInput}
+        onChange={setSearchInput}
+        onSearch={handleSearch}
+        showSearchButton
+        placeholder="Search by name, email, phone…"
+      />
 
-      {error && <div className={styles.error}>{error}</div>}
+      {error ? <Alert variant="danger">{error}</Alert> : null}
 
-      <div className={styles.tableWrap}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Contact Phone</th>
-              <th>Address</th>
-              <th>Email</th>
-              <th>Business Type</th>
-              <th>GSTIN</th>
-              <th className={styles.actionsCol}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.length === 0 ? (
-              <tr>
-                <td colSpan={7} className={styles.emptyCell}>
-                  No vendors found. Vendors are added when you register products
-                  with a vendor.
-                </td>
-              </tr>
-            ) : (
-              data.map((v) => (
-                <tr key={v.vendorId}>
-                  <td>{v.name ?? '—'}</td>
-                  <td>{v.contactPhone ?? '—'}</td>
-                  <td>{formatAddress(v.address)}</td>
-                  <td>{v.contactEmail ?? '—'}</td>
-                  <td>{v.businessType ?? '—'}</td>
-                  <td>{v.gstinUin ?? '—'}</td>
-                  <td>
-                    <div className={styles.rowActions}>
-                      <button
-                        type="button"
-                        className={styles.buyStockBtn}
-                        onClick={() => goRegisterPurchaseFromVendor(v)}
-                        title="Open product registration with this vendor selected"
-                      >
-                        Buy
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.returnBtn}
-                        onClick={() => goReturnToVendor(v)}
-                        title="Open Return to vendor for this supplier"
-                      >
-                        Return
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.editBtn}
-                        onClick={() => handleOpenEdit(v)}
-                      >
-                        Edit
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableHeaderCell>Name</TableHeaderCell>
+            <TableHeaderCell>Contact Phone</TableHeaderCell>
+            <TableHeaderCell>Address</TableHeaderCell>
+            <TableHeaderCell>Email</TableHeaderCell>
+            <TableHeaderCell>Business Type</TableHeaderCell>
+            <TableHeaderCell>GSTIN</TableHeaderCell>
+            <TableHeaderCell className={styles.actionsCol}>Actions</TableHeaderCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {loading ? (
+            <TableLoadingRow colSpan={7} label="Loading vendors…" />
+          ) : data.length === 0 ? (
+            <TableEmptyRow
+              colSpan={7}
+              message="No vendors found. Vendors are added when you register products with a vendor."
+            />
+          ) : (
+            data.map((vendor) => (
+              <TableRow key={vendor.vendorId}>
+                <TableCell>{vendor.name ?? '—'}</TableCell>
+                <TableCell>{vendor.contactPhone ?? '—'}</TableCell>
+                <TableCell>{formatAddress(vendor.address)}</TableCell>
+                <TableCell>{vendor.contactEmail ?? '—'}</TableCell>
+                <TableCell>{vendor.businessType ?? '—'}</TableCell>
+                <TableCell>{vendor.gstinUin ?? '—'}</TableCell>
+                <TableCell>
+                  <Inline gap="sm" className={styles.rowActions}>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => goRegisterPurchaseFromVendor(vendor)}
+                      title="Open product registration with this vendor selected"
+                    >
+                      Buy
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => goReturnToVendor(vendor)}
+                      title="Open Return to vendor for this supplier"
+                    >
+                      Return
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleOpenEdit(vendor)}
+                    >
+                      Edit
+                    </Button>
+                  </Inline>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
 
       <PaginationBar
         page={page}
@@ -283,7 +277,7 @@ export function VendorsPage() {
         aria-label="Vendor pages"
       />
 
-      {editModal && (
+      {editModal ? (
         <EditModal
           open
           title="Edit Vendor"
@@ -302,11 +296,12 @@ export function VendorsPage() {
                 businessType: v.businessType as UpdateVendorDto['businessType'],
               }))
             }
+            disabled={saving}
           />
         </EditModal>
-      )}
+      ) : null}
 
-      {createModalOpen && (
+      {createModalOpen ? (
         <EditModal
           open
           title="New Vendor"
@@ -327,9 +322,10 @@ export function VendorsPage() {
                   prev.businessType) as CreateVendorDto['businessType'],
               }))
             }
+            disabled={saving}
           />
         </EditModal>
-      )}
-    </div>
+      ) : null}
+    </Stack>
   );
 }

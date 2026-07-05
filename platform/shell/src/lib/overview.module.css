@@ -1,5 +1,6 @@
 .centered {
-  padding: var(--sk-space-3xl) var(--sk-space-md);
+  /* Fill viewport below shell header + content padding */
+  min-height: calc(100dvh - var(--header-height, 60px) - 2rem);
 }
 
 .statsGrid {

@@ -27,6 +27,28 @@
   }
 }
 
+.centeredLoader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sk-space-md);
+  width: 100%;
+  box-sizing: border-box;
+  color: var(--sk-color-text-muted);
+  text-align: center;
+}
+
+.centeredLoaderFill {
+  min-height: 100%;
+  height: 100%;
+}
+
+.centeredLoaderLabel {
+  font-size: 0.925rem;
+  line-height: 1.4;
+}
+
 .badge {
   display: inline-flex;
   align-items: center;

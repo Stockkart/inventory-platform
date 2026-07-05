@@ -49,6 +49,7 @@ export {
   type InputProps,
   type TextareaProps,
   type SelectProps,
+  type SelectOptionDef,
   type LabelProps,
   type CheckboxProps,
   type RadioGroupProps,
@@ -61,6 +62,7 @@ export {
 // Feedback — Layer 3
 export {
   Spinner,
+  CenteredLoader,
   Badge,
   Tag,
   Avatar,
@@ -69,6 +71,7 @@ export {
   Toast,
   ProgressBar,
   type SpinnerProps,
+  type CenteredLoaderProps,
   type BadgeProps,
   type TagProps,
   type AvatarProps,

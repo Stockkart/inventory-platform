@@ -87,14 +87,19 @@
 }
 
 .statusCell {
-  padding: var(--sk-space-lg) var(--sk-space-md);
-  text-align: center;
-  color: var(--sk-color-text-muted);
+  padding: 0;
+  border-bottom: none;
+  vertical-align: middle;
 }
 
-.statusInner {
-  display: inline-flex;
+.statusMessage {
+  display: flex;
   align-items: center;
-  gap: var(--sk-space-sm);
   justify-content: center;
+  min-height: 14rem;
+  width: 100%;
+  padding: var(--sk-space-md);
+  box-sizing: border-box;
+  text-align: center;
+  color: var(--sk-color-text-muted);
 }

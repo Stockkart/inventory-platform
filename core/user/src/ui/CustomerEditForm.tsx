@@ -1,6 +1,5 @@
 import type { UpdateCustomerDto } from '@inventory-platform/user/types';
-import { FormField, FormRow } from '@inventory-platform/ui-kit';
-import styles from './CustomerEditForm.module.css';
+import { FormField, FormRow, Stack } from '@inventory-platform/ui-kit';
 
 /** Derive PAN from GSTIN: 10 chars from 3rd character (1-based). */
 function derivePanFromGstin(gstin: string | null | undefined): string {
@@ -25,7 +24,7 @@ export function CustomerEditForm({
   const panDisplay = panNo ?? derivePanFromGstin(value.gstin ?? null);
 
   return (
-    <div className={styles.form}>
+    <Stack gap="md">
       <FormField
         label="Name"
         value={value.name ?? ''}
@@ -69,6 +68,6 @@ export function CustomerEditForm({
         />
       </FormRow>
       <FormField label="PAN" value={panDisplay} readOnly disabled />
-    </div>
+    </Stack>
   );
 }

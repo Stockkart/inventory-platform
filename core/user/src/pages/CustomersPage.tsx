@@ -1,18 +1,44 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { customersApi } from '../api/customers.api';
-import { EditModal, PaginationBar } from '@inventory-platform/ui-kit';
-import { CustomerEditForm } from '../ui';
+import {
+  Alert,
+  Button,
+  EditModal,
+  Inline,
+  PageHeader,
+  PaginationBar,
+  SearchInput,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableEmptyRow,
+  TableHead,
+  TableHeaderCell,
+  TableLoadingRow,
+  TableRow,
+} from '@inventory-platform/ui-kit';
 import { useResolvedSellPath } from '@inventory-platform/routing';
-import type { CustomerResponse, CreateCustomerDto, UpdateCustomerDto } from '@inventory-platform/user/types';
 import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/session';
-import styles from '././customers.module.css';
+import { customersApi } from '../api/customers.api';
+import { CustomerEditForm } from '../ui';
+import type {
+  CustomerResponse,
+  CreateCustomerDto,
+  UpdateCustomerDto,
+} from '@inventory-platform/user/types';
+import styles from './customers.module.css';
 
 export function meta() {
   return [
     { title: 'Customers - StockKart' },
     { name: 'description', content: 'Manage your customer contacts' },
   ];
+}
+
+function formatAddress(addr: string | null | undefined) {
+  if (!addr) return '—';
+  return addr.length > 50 ? `${addr.slice(0, 50)}…` : addr;
 }
 
 export function CustomersPage() {
@@ -58,7 +84,7 @@ export function CustomersPage() {
   }, [page, limit, query]);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const handleSearch = () => {
@@ -75,7 +101,6 @@ export function CustomersPage() {
       address: customer.address ?? undefined,
       gstin: customer.gstin ?? undefined,
       dlNo: customer.dlNo ?? undefined,
-      // PAN not included - derived from GSTIN, read-only in form
     });
     setSaveError(null);
   };
@@ -113,7 +138,7 @@ export function CustomersPage() {
         dlNo: createForm.dlNo?.trim() || undefined,
         pan: createForm.pan?.trim() || undefined,
       });
-      load();
+      void load();
       handleCloseCreate();
     } catch (err) {
       setSaveError(
@@ -130,7 +155,7 @@ export function CustomersPage() {
     setSaveError(null);
     try {
       await customersApi.update(editModal.customerId, editForm);
-      load();
+      void load();
       handleCloseEdit();
     } catch (err) {
       setSaveError(
@@ -139,11 +164,6 @@ export function CustomersPage() {
     } finally {
       setSaving(false);
     }
-  };
-
-  const formatAddress = (addr: string | null | undefined) => {
-    if (!addr) return '—';
-    return addr.length > 50 ? addr.slice(0, 50) + '…' : addr;
   };
 
   const goScanSellWithCustomer = (customer: CustomerResponse) => {
@@ -158,115 +178,92 @@ export function CustomersPage() {
     });
   };
 
-  if (loading && data.length === 0) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.header}>
-          <h1 className={styles.title}>Customers</h1>
-          <p className={styles.subtitle}>Manage your customer contacts</p>
-        </div>
-        <div className={styles.loading}>Loading…</div>
-      </div>
-    );
-  }
-
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Customers</h1>
-        <p className={styles.subtitle}>Manage your customer contacts</p>
-      </div>
+    <Stack gap="md">
+      <PageHeader
+        title="Customers"
+        description="Manage your customer contacts"
+        actions={
+          <Button variant="solid" onClick={handleOpenCreate}>
+            New customer
+          </Button>
+        }
+      />
 
-      <div className={styles.toolbar}>
-        <input
-          type="search"
-          className={styles.searchInput}
-          placeholder="Search by name, phone, email…"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-        />
-        <button
-          type="button"
-          className={styles.searchBtn}
-          onClick={handleSearch}
-        >
-          Search
-        </button>
-        <button
-          type="button"
-          className={styles.addBtn}
-          onClick={handleOpenCreate}
-        >
-          New customer
-        </button>
-      </div>
+      <SearchInput
+        value={searchInput}
+        onChange={setSearchInput}
+        onSearch={handleSearch}
+        showSearchButton
+        placeholder="Search by name, phone, email…"
+      />
 
-      {error && <div className={styles.error}>{error}</div>}
+      {error ? <Alert variant="danger">{error}</Alert> : null}
 
-      <div className={styles.tableWrap}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Phone</th>
-              <th>Email</th>
-              <th>Address</th>
-              <th>GSTIN</th>
-              <th>DL No</th>
-              <th className={styles.actionsCol}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.length === 0 ? (
-              <tr>
-                <td colSpan={8} className={styles.emptyCell}>
-                  No customers found. Add one with “New customer” or they’ll
-                  appear when you complete a sale.
-                </td>
-              </tr>
-            ) : (
-              data.map((c) => (
-                <tr key={c.customerId}>
-                  <td>{c.name ?? '—'}</td>
-                  <td>{c.phone ?? '—'}</td>
-                  <td>{c.email ?? '—'}</td>
-                  <td>{formatAddress(c.address)}</td>
-                  <td>{c.gstin ?? '—'}</td>
-                  <td>{c.dlNo ?? '—'}</td>
-                  <td>
-                    <div className={styles.rowActions}>
-                      <button
-                        type="button"
-                        className={styles.sellBtn}
-                        onClick={() => goScanSellWithCustomer(c)}
-                        title="Open Scan and Sell with this customer filled in"
-                      >
-                        Sell
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.returnBtn}
-                        onClick={() => goReturnWithCustomer(c)}
-                        title="Open Return to customer with this customer prefilled"
-                      >
-                        Return
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.editBtn}
-                        onClick={() => handleOpenEdit(c)}
-                      >
-                        Edit
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableHeaderCell>Name</TableHeaderCell>
+            <TableHeaderCell>Phone</TableHeaderCell>
+            <TableHeaderCell>Email</TableHeaderCell>
+            <TableHeaderCell>Address</TableHeaderCell>
+            <TableHeaderCell>GSTIN</TableHeaderCell>
+            <TableHeaderCell>DL No</TableHeaderCell>
+            <TableHeaderCell className={styles.actionsCol}>Actions</TableHeaderCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {loading ? (
+            <TableLoadingRow colSpan={7} label="Loading customers…" />
+          ) : data.length === 0 ? (
+            <TableEmptyRow
+              colSpan={7}
+              message='No customers found. Add one with "New customer" or they’ll appear when you complete a sale.'
+            />
+          ) : (
+            data.map((customer) => (
+              <TableRow key={customer.customerId}>
+                <TableCell>{customer.name ?? '—'}</TableCell>
+                <TableCell>{customer.phone ?? '—'}</TableCell>
+                <TableCell>{customer.email ?? '—'}</TableCell>
+                <TableCell>{formatAddress(customer.address)}</TableCell>
+                <TableCell>{customer.gstin ?? '—'}</TableCell>
+                <TableCell>{customer.dlNo ?? '—'}</TableCell>
+                <TableCell>
+                  <Inline gap="sm" className={styles.rowActions}>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => goScanSellWithCustomer(customer)}
+                      title="Open Scan and Sell with this customer filled in"
+                    >
+                      Sell
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => goReturnWithCustomer(customer)}
+                      title="Open Return to customer with this customer prefilled"
+                    >
+                      Return
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleOpenEdit(customer)}
+                    >
+                      Edit
+                    </Button>
+                  </Inline>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
 
       <PaginationBar
         page={page}
@@ -283,7 +280,7 @@ export function CustomersPage() {
         aria-label="Customer pages"
       />
 
-      {editModal && (
+      {editModal ? (
         <EditModal
           open
           title="Edit Customer"
@@ -299,9 +296,9 @@ export function CustomersPage() {
             panNo={editModal.panNo ?? editModal.pan}
           />
         </EditModal>
-      )}
+      ) : null}
 
-      {createModalOpen && (
+      {createModalOpen ? (
         <EditModal
           open
           title="New Customer"
@@ -317,7 +314,7 @@ export function CustomersPage() {
             onChange={(v) => setCreateForm((prev) => ({ ...prev, ...v }))}
           />
         </EditModal>
-      )}
-    </div>
+      ) : null}
+    </Stack>
   );
 }

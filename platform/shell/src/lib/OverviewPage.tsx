@@ -17,9 +17,9 @@ import {
   Card,
   CardBody,
   CardHeader,
+  CenteredLoader,
   Grid,
   Icon,
-  Spinner,
   Stack,
   Text,
 } from '@inventory-platform/ui-kit';
@@ -167,10 +167,12 @@ export function OverviewPage() {
 
   if (loading) {
     return (
-      <Stack gap="md" align="center" className={styles.centered}>
-        <Spinner size="lg" />
-        <Text color="secondary">Loading dashboard…</Text>
-      </Stack>
+      <CenteredLoader
+        label="Loading dashboard…"
+        size="lg"
+        fill
+        className={styles.centered}
+      />
     );
   }
 

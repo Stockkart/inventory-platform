@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import type { UpdateVendorDto } from '@inventory-platform/user/types';
-import { FormField } from '@inventory-platform/ui-kit';
-import { formStyles } from '@inventory-platform/ui-kit/form-styles';
-import styles from './VendorEditForm.module.css';
+import {
+  FormField,
+  Select,
+  Stack,
+  type SelectOptionDef,
+} from '@inventory-platform/ui-kit';
 
 interface VendorEditFormProps {
   value: UpdateVendorDto;
@@ -10,14 +13,22 @@ interface VendorEditFormProps {
   disabled?: boolean;
 }
 
-const BUSINESS_TYPES = [
-  'WHOLESALE',
-  'RETAIL',
-  'MANUFACTURER',
-  'DISTRIBUTOR',
-  'C&F',
-  'OTHER',
-] as const;
+const BUSINESS_TYPE_OPTIONS: readonly SelectOptionDef[] = [
+  { value: 'WHOLESALE', label: 'Wholesale' },
+  { value: 'RETAIL', label: 'Retail' },
+  { value: 'MANUFACTURER', label: 'Manufacturer' },
+  { value: 'DISTRIBUTOR', label: 'Distributor' },
+  { value: 'C&F', label: 'C&F' },
+  { value: 'OTHER', label: 'Other' },
+];
+
+const PRESET_BUSINESS_TYPES = new Set(
+  BUSINESS_TYPE_OPTIONS.map((opt) => opt.value)
+);
+
+function isPresetBusinessType(value: string): boolean {
+  return PRESET_BUSINESS_TYPES.has(value);
+}
 
 export function VendorEditForm({
   value,
@@ -28,17 +39,14 @@ export function VendorEditForm({
   const [customType, setCustomType] = useState('');
 
   useEffect(() => {
-    if (
-      value.businessType &&
-      !BUSINESS_TYPES.includes(value.businessType as any)
-    ) {
+    if (value.businessType && !isPresetBusinessType(value.businessType)) {
       setShowCustom(true);
       setCustomType(value.businessType);
     }
   }, [value.businessType]);
 
   return (
-    <div className={formStyles.form}>
+    <Stack gap="md">
       <FormField
         label="Name"
         value={value.name ?? ''}
@@ -71,54 +79,42 @@ export function VendorEditForm({
         disabled={disabled}
       />
 
-      {/* ✅ Business Type dropdown */}
-      <div className={formStyles.formGroup}>
-        <label className={formStyles.label}>Business Type</label>
+      <FormField label="Business Type">
+        <Select
+          value={showCustom ? 'OTHER' : value.businessType ?? 'RETAIL'}
+          disabled={disabled}
+          options={BUSINESS_TYPE_OPTIONS}
+          onChange={(e) => {
+            const selected = e.target.value;
 
-        <div className={styles.selectWrap}>
-          <select
-            className={`${formStyles.input} ${styles.selectInput}`}
-            value={showCustom ? 'OTHER' : value.businessType ?? 'RETAIL'}
-            disabled={disabled}
-            onChange={(e) => {
-              const val = e.target.value;
+            if (selected === 'OTHER') {
+              setShowCustom(true);
+              setCustomType('');
+              onChange({ ...value, businessType: 'OTHER' });
+            } else {
+              setShowCustom(false);
+              setCustomType('');
+              onChange({ ...value, businessType: selected });
+            }
+          }}
+        />
+      </FormField>
 
-              if (val === 'OTHER') {
-                setShowCustom(true);
-                setCustomType('');
-                onChange({ ...value, businessType: 'OTHER' });
-              } else {
-                setShowCustom(false);
-                setCustomType('');
-                onChange({ ...value, businessType: val });
-              }
-            }}
-          >
-            <option value="WHOLESALE">Wholesale</option>
-            <option value="RETAIL">Retail</option>
-            <option value="MANUFACTURER">Manufacturer</option>
-            <option value="DISTRIBUTOR">Distributor</option>
-            <option value="C&F">C&F</option>
-            <option value="OTHER">Other</option>
-          </select>
-        </div>
-
-        {showCustom && (
-          <input
-            className={formStyles.input}
-            placeholder="Custom business type"
-            value={customType}
-            disabled={disabled}
-            onChange={(e) => {
-              setCustomType(e.target.value);
-              onChange({
-                ...value,
-                businessType: e.target.value.toUpperCase(),
-              });
-            }}
-          />
-        )}
-      </div>
+      {showCustom ? (
+        <FormField
+          label="Custom business type"
+          value={customType}
+          placeholder="Custom business type"
+          disabled={disabled}
+          onChange={(v) => {
+            setCustomType(v);
+            onChange({
+              ...value,
+              businessType: v.toUpperCase(),
+            });
+          }}
+        />
+      ) : null}
 
       <FormField
         label="GSTIN"
@@ -126,6 +122,6 @@ export function VendorEditForm({
         onChange={(v) => onChange({ ...value, gstinUin: v })}
         disabled={disabled}
       />
-    </div>
+    </Stack>
   );
 }
