@@ -250,7 +250,10 @@ export default defineConfig({
         __dirname,
         '../../plugins/cafe/src/types/index.ts'
       ),
-      '@inventory-platform/payment': path.resolve(__dirname, '../../shared/payment/src/index.ts'),
+      '@inventory-platform/plan/payment': path.resolve(
+        __dirname,
+        '../../core/plan/src/payment/index.ts'
+      ),
       '@inventory-platform/onboarding': path.resolve(__dirname, '../../features/onboarding/src/index.ts'),
       '@inventory-platform/auth': path.resolve(__dirname, '../../features/auth/src/index.ts'),
       '@inventory-platform/analytics': path.resolve(__dirname, '../../core/analytics/src/index.ts'),

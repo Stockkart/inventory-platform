@@ -36,8 +36,8 @@
       "@inventory-platform/shell/api": [
         "../../platform/shell/src/api/index.ts"
       ],
-      "@inventory-platform/payment": [
-        "../../shared/payment/src/index.ts"
+      "@inventory-platform/plan/payment": [
+        "../../core/plan/src/payment/index.ts"
       ],
       "@inventory-platform/onboarding": [
         "../../features/onboarding/src/index.ts"

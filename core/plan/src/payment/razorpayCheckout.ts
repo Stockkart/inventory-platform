@@ -1,16 +1,12 @@
 import type {
   PaymentCheckoutOptions,
   PaymentCheckoutPort,
-  PlanCheckoutSession,
   RazorpayPaymentSuccess,
-} from './types';
-import { ensureRazorpayLoaded } from './razorpayScript';
+} from './types.js';
+import { ensureRazorpayLoaded } from './razorpayScript.js';
 
 export const razorpayCheckout: PaymentCheckoutPort = {
-  async openCheckout(
-    session: PlanCheckoutSession,
-    options?: PaymentCheckoutOptions
-  ): Promise<RazorpayPaymentSuccess> {
+  async openCheckout(session, options) {
     const payload = session.razorpay;
     if (!payload?.keyId || !payload.orderId) {
       throw new Error('Missing Razorpay checkout details');

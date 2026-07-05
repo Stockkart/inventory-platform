@@ -36,6 +36,12 @@
       "types": "./dist/model/index.d.ts",
       "import": "./src/model/index.ts",
       "default": "./src/model/index.ts"
+    },
+    "./payment": {
+      "@inventory-platform/source": "./src/payment/index.ts",
+      "types": "./dist/payment/index.d.ts",
+      "import": "./src/payment/index.ts",
+      "default": "./src/payment/index.ts"
     }
   },
   "nx": {
@@ -46,7 +52,6 @@
   },
   "dependencies": {
     "@inventory-platform/api-client": "workspace:*",
-    "@inventory-platform/payment": "workspace:*",
     "@inventory-platform/query": "workspace:*",
     "@inventory-platform/routing": "workspace:*",
     "@inventory-platform/session": "workspace:*",

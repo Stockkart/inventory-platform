@@ -1,18 +1,4 @@
-export type PaymentProviderId = 'razorpay' | string;
-
-export interface RazorpayCheckoutPayload {
-  keyId: string;
-  orderId: string;
-}
-
-export interface PlanCheckoutSession {
-  orderId: string;
-  provider: PaymentProviderId;
-  amount: number;
-  currency: string;
-  planName: string;
-  razorpay?: RazorpayCheckoutPayload;
-}
+import type { PlanCheckoutResponse } from '../model/types.js';
 
 export interface RazorpayPaymentSuccess {
   razorpay_payment_id: string;
@@ -28,7 +14,7 @@ export interface PaymentCheckoutOptions {
 
 export interface PaymentCheckoutPort {
   openCheckout(
-    session: PlanCheckoutSession,
+    session: PlanCheckoutResponse,
     options?: PaymentCheckoutOptions
   ): Promise<RazorpayPaymentSuccess>;
 }

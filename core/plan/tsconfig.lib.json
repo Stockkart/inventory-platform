@@ -22,9 +22,6 @@
       "@inventory-platform/api-client": [
         "../../platform/api-client/src/index.ts"
       ],
-      "@inventory-platform/payment": [
-        "../../shared/payment/src/index.ts"
-      ],
       "@inventory-platform/query": [
         "../../platform/query/src/index.ts"
       ],
@@ -109,9 +106,6 @@
     },
     {
       "path": "../../platform/session/tsconfig.lib.json"
-    },
-    {
-      "path": "../../shared/payment/tsconfig.lib.json"
     },
     {
       "path": "../../platform/shell/tsconfig.lib.json"

@@ -322,9 +322,6 @@ importers:
       '@inventory-platform/contracts':
         specifier: workspace:*
         version: link:../../platform/contracts
-      '@inventory-platform/payment':
-        specifier: workspace:*
-        version: link:../../shared/payment
       '@inventory-platform/query':
         specifier: workspace:*
         version: link:../../platform/query
@@ -689,12 +686,6 @@ importers:
       zustand:
         specifier: ^5.0.8
         version: 5.0.8(@types/react@19.2.7)(immer@11.1.0)(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))
-
-  shared/payment:
-    dependencies:
-      tslib:
-        specifier: ^2.3.0
-        version: 2.8.1
 
   ui-kit:
     dependencies:

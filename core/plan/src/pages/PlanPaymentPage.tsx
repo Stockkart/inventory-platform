@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
-import { getPaymentCheckout } from '@inventory-platform/payment';
+import { getPaymentCheckout } from '../payment/index.js';
 import { useAuthStore, usePlanStatusStore } from '@inventory-platform/session';
 import {
   useCreatePlanCheckoutMutation,
@@ -51,19 +51,9 @@ export function PlanPaymentPage() {
       });
 
       const paymentCheckout = getPaymentCheckout(checkout.provider);
-      const result = await paymentCheckout.openCheckout(
-        {
-          orderId: checkout.orderId,
-          provider: checkout.provider,
-          amount: checkout.amount,
-          currency: checkout.currency,
-          planName: checkout.planName,
-          razorpay: checkout.razorpay,
-        },
-        {
-          customerEmail: user.email ?? undefined,
-        }
-      );
+      const result = await paymentCheckout.openCheckout(checkout, {
+        customerEmail: user.email ?? undefined,
+      });
 
       await verifyPaymentMutation.mutateAsync({
         orderId: checkout.orderId,
