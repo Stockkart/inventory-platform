@@ -42,6 +42,7 @@
     "@inventory-platform/api-client": "workspace:*",
     "@inventory-platform/query": "workspace:*",
     "@inventory-platform/routing": "workspace:*",
+    "@inventory-platform/ui-kit": "workspace:*",
     "axios": "^1.13.2",
     "@inventory-platform/contracts": "workspace:*"
   },

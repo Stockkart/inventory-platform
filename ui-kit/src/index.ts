@@ -100,6 +100,8 @@ export {
   TableRow,
   TableHeaderCell,
   TableCell,
+  TableLoadingRow,
+  TableEmptyRow,
   Card,
   CardHeader,
   CardBody,

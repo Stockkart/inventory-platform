@@ -27,6 +27,10 @@
   "nx": {
     "tags": ["type:ui-kit"]
   },
+  "scripts": {
+    "storybook": "storybook dev -p 6006 -c ui-kit/.storybook",
+    "build-storybook": "storybook build -c ui-kit/.storybook -o ui-kit/storybook-static"
+  },
   "peerDependencies": {
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

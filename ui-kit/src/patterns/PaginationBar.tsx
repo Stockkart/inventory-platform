@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, KeyboardEvent } from 'react';
 import { cn } from '../utils/cn';
 import { Button } from '../forms/Button';
 import { Select } from '../forms/Select';
@@ -171,7 +171,10 @@ export function PageHeader({
 export interface SearchInputProps {
   value: string;
   onChange: (value: string) => void;
+  onSearch?: () => void;
   placeholder?: string;
+  searchLabel?: string;
+  showSearchButton?: boolean;
   className?: string;
   disabled?: boolean;
 }
@@ -179,19 +182,55 @@ export interface SearchInputProps {
 export function SearchInput({
   value,
   onChange,
+  onSearch,
   placeholder = 'Search…',
+  searchLabel = 'Search',
+  showSearchButton = false,
   className,
   disabled,
 }: SearchInputProps) {
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && onSearch) {
+      e.preventDefault();
+      onSearch();
+    }
+  };
+
+  if (!showSearchButton) {
+    return (
+      <Input
+        type="search"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        disabled={disabled}
+        className={cn(styles.searchInput, className)}
+      />
+    );
+  }
+
   return (
-    <Input
-      type="search"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      disabled={disabled}
-      className={cn(styles.searchInput, className)}
-    />
+    <Inline className={cn(styles.searchToolbar, className)} gap="sm">
+      <Input
+        type="search"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        disabled={disabled}
+        className={styles.searchInput}
+      />
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={disabled}
+        onClick={onSearch}
+      >
+        {searchLabel}
+      </Button>
+    </Inline>
   );
 }
 

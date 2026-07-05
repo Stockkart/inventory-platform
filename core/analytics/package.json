@@ -42,6 +42,7 @@
     "@inventory-platform/api-client": "workspace:*",
     "@inventory-platform/query": "workspace:*",
     "@inventory-platform/routing": "workspace:*",
+    "@inventory-platform/ui-kit": "workspace:*",
     "recharts": "^3.6.0",
     "@inventory-platform/contracts": "workspace:*"
   },

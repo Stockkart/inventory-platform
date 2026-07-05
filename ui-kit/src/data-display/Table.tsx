@@ -1,5 +1,6 @@
-import type { HTMLAttributes, ReactNode, TableHTMLAttributes } from 'react';
+import type { HTMLAttributes, ReactNode, TdHTMLAttributes, TableHTMLAttributes } from 'react';
 import { cn } from '../utils/cn';
+import { Spinner } from '../feedback/Spinner';
 import styles from './data-display.module.css';
 
 export function Table({
@@ -34,6 +35,43 @@ export function TableHeaderCell(props: HTMLAttributes<HTMLTableCellElement>) {
 
 export function TableCell(props: HTMLAttributes<HTMLTableCellElement>) {
   return <td className={cn(styles.td, props.className)} {...props} />;
+}
+
+export interface TableStatusRowProps extends TdHTMLAttributes<HTMLTableCellElement> {
+  colSpan: number;
+}
+
+export function TableLoadingRow({
+  colSpan,
+  label = 'Loading…',
+  className,
+  ...rest
+}: TableStatusRowProps & { label?: string }) {
+  return (
+    <TableRow>
+      <td colSpan={colSpan} className={cn(styles.statusCell, className)} {...rest}>
+        <span className={styles.statusInner}>
+          <Spinner size="sm" />
+          <span>{label}</span>
+        </span>
+      </td>
+    </TableRow>
+  );
+}
+
+export function TableEmptyRow({
+  colSpan,
+  message = 'No results.',
+  className,
+  ...rest
+}: TableStatusRowProps & { message?: string }) {
+  return (
+    <TableRow>
+      <td colSpan={colSpan} className={cn(styles.statusCell, className)} {...rest}>
+        {message}
+      </td>
+    </TableRow>
+  );
 }
 
 export function Card({ className, children, ...rest }: HTMLAttributes<HTMLDivElement>) {

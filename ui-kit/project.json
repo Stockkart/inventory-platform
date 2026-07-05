@@ -1,0 +1,24 @@
+{
+  "name": "@inventory-platform/ui-kit",
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "ui-kit/src",
+  "projectType": "library",
+  "tags": ["type:ui-kit"],
+  "targets": {
+    "storybook": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "STORYBOOK_DISABLE_TELEMETRY=1 storybook dev -p 6006 -c ui-kit/.storybook",
+        "cwd": "{workspaceRoot}"
+      }
+    },
+    "build-storybook": {
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/storybook-static"],
+      "options": {
+        "command": "STORYBOOK_DISABLE_TELEMETRY=1 storybook build -c ui-kit/.storybook -o ui-kit/storybook-static",
+        "cwd": "{workspaceRoot}"
+      }
+    }
+  }
+}

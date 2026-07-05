@@ -59,3 +59,14 @@
   width: 100%;
   max-width: 24rem;
 }
+
+.searchToolbar {
+  flex: 1;
+  min-width: 12rem;
+  max-width: 28rem;
+}
+
+.searchToolbar .searchInput {
+  flex: 1;
+  max-width: none;
+}

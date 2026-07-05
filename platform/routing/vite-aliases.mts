@@ -81,6 +81,10 @@ export function generateInventoryWorkspaceAliases({
       workspaceRoot,
       'ui-kit/src/form-styles.ts'
     ),
+    '@inventory-platform/ui-kit/theme/tokens.css': path.resolve(
+      workspaceRoot,
+      'ui-kit/src/theme/tokens.css'
+    ),
     '@inventory-platform/ui-kit': path.resolve(workspaceRoot, 'ui-kit/src/index.ts'),
     '@inventory-platform/session/api': platform('session/src/api/index.ts'),
     '@inventory-platform/shell/api': platform('shell/src/api/index.ts'),

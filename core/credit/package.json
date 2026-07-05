@@ -43,6 +43,7 @@
     "@inventory-platform/query": "workspace:*",
     "@inventory-platform/routing": "workspace:*",
     "@inventory-platform/session": "workspace:*",
+    "@inventory-platform/ui-kit": "workspace:*",
     "@inventory-platform/contracts": "workspace:*"
   },
   "peerDependencies": {

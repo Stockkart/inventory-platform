@@ -1,72 +1,4 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-/* ---------- LIGHT MODE ---------- */
-:root {
-  /* Backgrounds */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
-  --bg-card: #f3f6fb;
-  --bg-muted: #f1f5f9;
-  --bg-tertiary: #eef2f7;
-  --bg-header: radial-gradient(circle at top left, #eef2ff 0%, #ffffff 50%, #f8fafc 100%);
-  --hover-bg: rgba(15, 23, 42, 0.06);
-
-  /* Text */
-  --text-primary: #1f2937;
-  --text-secondary: #4b5563;
-  --text-tertiary: #6b7280;
-  --link: #0f172a;
-  --link-hover: #2563eb;
-
-  /* Buttons */
-  --btn-primary: linear-gradient(135deg, #2563eb 0%, #3b82f6 40%, #06b6d4 100%);
-  --btn-text: #ffffff;
-
-  /* Borders / Shadows */
-  --border-color: #e5e7eb;
-  --border-hover: #d1d5db;
-  --shadow: rgba(0, 0, 0, 0.1);
-
-  /* Header */
-  --header-height: 70px;
-  --header-blur: rgba(255,255,255,0.6);
-}
-
-
-/* ---------- DARK MODE ---------- */
-[data-theme='dark'] {
-  /* Backgrounds */
-  --bg-primary: #0f172a;
-  --bg-secondary: #111827;
-  --bg-header: radial-gradient(circle at top left, #111827 0%, #020617 40%, #020617 100%);
-  --bg-card: #1e293b;
-  --bg-muted: #263349;
-  --bg-tertiary: #0f172a;
-  --hover-bg: rgba(248, 250, 252, 0.08);
-
-  /* Text */
-  --text-primary: #f9fafb;
-  --text-secondary: #cbd5e1;
-  --text-tertiary: #94a3b8;
-  --link: #e5e7eb;
-  --link-hover: #38bdf8;
-
-  /* Buttons */
-  --btn-primary: linear-gradient(135deg, #2563eb 0%, #3b82f6 40%, #06b6d4 100%);
-  --btn-text: #ffffff;
-
-  /* Borders / Shadows */
-  --border-color: #1e293b;
-  --border-hover: #334155;
-  --shadow: rgba(0, 0, 0, 0.35);
-
-  /* Header */
-  --header-blur: rgba(15,23,42,0.7);
-}
+@import '@inventory-platform/ui-kit/theme/tokens.css';
 
 /* ---------- BASE STYLES ---------- */
 
@@ -77,7 +9,7 @@ body {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--sk-font-sans);
   background-color: var(--bg-primary);
   color: var(--text-primary);
   transition: background-color 0.3s ease, color 0.3s ease;
