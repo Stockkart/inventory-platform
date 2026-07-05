@@ -60,6 +60,11 @@
   border-color: var(--border-hover);
 }
 
+.emptyState {
+  min-height: 14rem;
+  width: 100%;
+}
+
 .alertsList {
   display: flex;
   flex-direction: column;

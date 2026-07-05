@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
   Alert,
+  Box,
   Button,
   Card,
   CardBody,
@@ -20,6 +21,7 @@ import {
   CenteredLoader,
   Grid,
   Icon,
+  Inline,
   Stack,
   Text,
 } from '@inventory-platform/ui-kit';
@@ -61,10 +63,10 @@ function MetricCard({ icon, label, value, subtext, change }: MetricCardProps) {
   return (
     <Card>
       <CardBody>
-        <div className={styles.metricRow}>
-          <div className={styles.metricIcon}>
+        <Inline align="start" gap="md" className={styles.metricRow}>
+          <Box className={styles.metricIcon}>
             <Icon icon={icon} size="md" />
-          </div>
+          </Box>
           <Stack gap="xs">
             <Text variant="heading3" weight="bold">
               {value}
@@ -86,7 +88,7 @@ function MetricCard({ icon, label, value, subtext, change }: MetricCardProps) {
               </Text>
             ) : null}
           </Stack>
-        </div>
+        </Inline>
       </CardBody>
     </Card>
   );
@@ -99,14 +101,14 @@ interface InsightItemProps {
 
 function InsightItem({ label, value }: InsightItemProps) {
   return (
-    <div className={styles.insightItem}>
+    <Box className={styles.insightItem}>
       <Text color="secondary" variant="caption">
         {label}
       </Text>
       <Text variant="heading4" weight="semibold">
         {value}
       </Text>
-    </div>
+    </Box>
   );
 }
 
@@ -118,17 +120,17 @@ interface RevenueItemProps {
 
 function RevenueItem({ icon, label, value }: RevenueItemProps) {
   return (
-    <div className={styles.revenueItem}>
-      <Stack direction="row" gap="sm" align="center">
+    <Stack gap="sm" className={styles.revenueItem}>
+      <Inline gap="sm" align="center">
         <Icon icon={icon} size="sm" />
         <Text color="secondary" variant="caption">
           {label}
         </Text>
-      </Stack>
+      </Inline>
       <Text variant="heading4" weight="semibold">
         {value}
       </Text>
-    </div>
+    </Stack>
   );
 }
 
@@ -233,7 +235,7 @@ export function OverviewPage() {
             </Text>
           </CardHeader>
           <CardBody>
-            <div className={styles.quickActions}>
+            <Grid columns={2} gap="md" className={styles.quickActions}>
               <Button
                 variant="outline"
                 fullWidth
@@ -266,7 +268,7 @@ export function OverviewPage() {
               >
                 Analytics
               </Button>
-            </div>
+            </Grid>
           </CardBody>
         </Card>
 
@@ -277,7 +279,7 @@ export function OverviewPage() {
             </Text>
           </CardHeader>
           <CardBody>
-            <div className={styles.insightsGrid}>
+            <Grid columns={2} gap="md" className={styles.insightsGrid}>
               <InsightItem
                 label="Unique Products"
                 value={formatNumber(productInsights.totalUniqueProducts)}
@@ -294,7 +296,7 @@ export function OverviewPage() {
                 label="Out of Stock"
                 value={formatNumber(productInsights.outOfStockItems)}
               />
-            </div>
+            </Grid>
           </CardBody>
         </Card>
       </Grid>
@@ -306,7 +308,7 @@ export function OverviewPage() {
           </Text>
         </CardHeader>
         <CardBody>
-          <div className={styles.revenueGrid}>
+          <Grid columns={2} gap="md" className={styles.revenueGrid}>
             <RevenueItem
               icon={Calendar}
               label="Today"
@@ -327,7 +329,7 @@ export function OverviewPage() {
               label="This Month"
               value={formatCurrency(revenueBreakdown.thisMonth)}
             />
-          </div>
+          </Grid>
         </CardBody>
       </Card>
     </Stack>

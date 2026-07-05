@@ -1,9 +1,6 @@
 .page { display: grid; gap: 1rem; }
 .grid { display: grid; gap: 1rem; grid-template-columns: 20rem 1fr; }
-.card { background: var(--card-bg, #fff); border: 1px solid var(--border-color, rgba(148, 163, 184, 0.35)); border-radius: 12px; padding: 0.9rem; }
-.title { margin: 0; font-size: 1.25rem; }
-.detailTitle { margin: 0 0 0.75rem; font-size: 1rem; font-weight: 600; color: var(--text-primary, #0f172a); }
-.timelineTitle { margin: 1.25rem 0 0.6rem; font-size: 0.92rem; font-weight: 600; color: var(--text-primary, #0f172a); }
+.panel { height: fit-content; }
 .subtitle { margin: 0.35rem 0 0; color: var(--text-secondary, #64748b); font-size: 0.88rem; }
 .accountList { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.45rem; }
 .accountBtn { width: 100%; text-align: left; border: 1px solid var(--border-color, rgba(148, 163, 184, 0.3)); background: #fff; border-radius: 10px; padding: 0.6rem 0.65rem; cursor: pointer; display: grid; gap: 0.28rem; }

@@ -2,7 +2,18 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router';
 import type { InventoryItem } from '@inventory-platform/product/types';
 import { InventoryAlertDetails } from '@inventory-platform/product';
-import { PaginationBar } from '@inventory-platform/ui-kit';
+import {
+  Box,
+  Button,
+  CenteredLoader,
+  FormField,
+  Inline,
+  Modal,
+  PageHeader,
+  PaginationBar,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { useAuthStore, useShopAccessStore } from '@inventory-platform/session';
 import { useNotify } from '@inventory-platform/session';
 import { resolveInventoryDocumentId } from '../api/inventory-alert.api';
@@ -27,9 +38,7 @@ export function InventoryAlertPage() {
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
   const [detailItemId, setDetailItemId] = useState<string | null>(null);
-  const [detailFallback, setDetailFallback] = useState<InventoryItem | null>(
-    null
-  );
+  const [detailFallback, setDetailFallback] = useState<InventoryItem | null>(null);
   const [thresholdModal, setThresholdModal] = useState<{
     open: boolean;
     item: InventoryItem | null;
@@ -68,56 +77,71 @@ export function InventoryAlertPage() {
     setDetailItemId(id);
   };
 
+  const closeThresholdModal = () => {
+    setThresholdModal({ open: false, item: null, threshold: 10 });
+  };
+
   useEffect(() => {
     if (!inventoryIdFromNotification || alerts.length === 0) return;
     const found = alerts.find((a) => a.id === inventoryIdFromNotification);
     if (found) openInventoryDetails(found.raw);
   }, [inventoryIdFromNotification, alerts]);
 
-  if (isLoading) return <p>Loading…</p>;
+  const productLabel =
+    thresholdModal.item?.name ?? thresholdModal.item?.barcode ?? 'Unknown';
 
   return (
-    <div className={styles.page}>
-      <div className={styles.header}>
-        <h2 className={styles.title}>Inventory Low Alert</h2>
-        <p className={styles.subtitle}>
-          Monitor products with low stock levels
-        </p>
-      </div>
+    <Stack gap="md">
+      <PageHeader
+        title="Inventory Low Alert"
+        description="Monitor products with low stock levels"
+      />
 
-      <div className={styles.alertsContainer}>
-        <div className={styles.alertsHeader}>
-          <div className={styles.headerInfo}>
-            <span className={styles.alertCount}>
-              {alerts.length} items need attention
-            </span>
-          </div>
-        </div>
+      <Text color="secondary" variant="caption">
+        {isLoading
+          ? 'Loading alerts…'
+          : `${alerts.length} item${alerts.length === 1 ? '' : 's'} need attention`}
+      </Text>
 
-        <div className={styles.alertsList}>
+      {isLoading ? (
+        <CenteredLoader label="Loading low stock alerts…" />
+      ) : alerts.length === 0 ? (
+        <Stack align="center" justify="center" className={styles.emptyState}>
+          <Text color="secondary">No low stock alerts right now.</Text>
+        </Stack>
+      ) : (
+        <Stack gap="md" className={styles.alertsList}>
           {alerts.map((alert: LowStockAlertRow) => (
-            <div
+            <Box
               key={alert.id}
               className={`${styles.alertCard} ${styles[alert.status]}`}
             >
-              <div className={styles.alertIcon}>
+              <Box className={styles.alertIcon}>
                 {alert.status === 'critical' ? '🔴' : '🟡'}
-              </div>
+              </Box>
 
-              <div className={styles.alertInfo}>
-                <h3 className={styles.alertProduct}>{alert.product}</h3>
+              <Stack gap="sm" className={styles.alertInfo}>
+                <Text variant="heading3" weight="semibold" className={styles.alertProduct}>
+                  {alert.product}
+                </Text>
 
-                <div className={styles.alertDetails}>
-                  <span>
-                    Current Stock: <strong>{alert.current}</strong>
-                  </span>
-                  <span>
-                    Threshold: <strong>{alert.threshold}</strong>
-                  </span>
-                </div>
+                <Inline gap="md" className={styles.alertDetails}>
+                  <Text variant="caption">
+                    Current Stock:{' '}
+                    <Text as="span" weight="semibold">
+                      {alert.current}
+                    </Text>
+                  </Text>
+                  <Text variant="caption">
+                    Threshold:{' '}
+                    <Text as="span" weight="semibold">
+                      {alert.threshold}
+                    </Text>
+                  </Text>
+                </Inline>
 
-                <div className={styles.stockBar}>
-                  <div
+                <Box className={styles.stockBar}>
+                  <Box
                     className={styles.stockFill}
                     style={{
                       width: `${Math.min(
@@ -126,19 +150,23 @@ export function InventoryAlertPage() {
                       )}%`,
                     }}
                   />
-                </div>
-              </div>
+                </Box>
+              </Stack>
 
-              <div className={styles.alertActions}>
-                <button
-                  className={styles.actionBtnSecondary}
+              <Inline gap="sm" className={styles.alertActions}>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
                   onClick={() => openInventoryDetails(alert.raw)}
                   disabled={detailLoading}
                 >
                   View Details
-                </button>
-                <button
-                  className={styles.actionBtn}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="solid"
                   onClick={() =>
                     setThresholdModal({
                       open: true,
@@ -149,11 +177,14 @@ export function InventoryAlertPage() {
                   }
                 >
                   Configure Threshold
-                </button>
-              </div>
-            </div>
+                </Button>
+              </Inline>
+            </Box>
           ))}
-        </div>
+        </Stack>
+      )}
+
+      {!isLoading && alerts.length > 0 ? (
         <PaginationBar
           page={page}
           totalPages={Math.max(totalPages, 1)}
@@ -168,7 +199,8 @@ export function InventoryAlertPage() {
           }}
           aria-label="Low stock alert pages"
         />
-      </div>
+      ) : null}
+
       <InventoryAlertDetails
         open={!!selected}
         item={selected}
@@ -184,106 +216,69 @@ export function InventoryAlertPage() {
         }}
       />
 
-      {thresholdModal.open && (
-        <div
-          className={styles.modalBackdrop}
-          onClick={() =>
-            setThresholdModal({ open: false, item: null, threshold: 10 })
-          }
-        >
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3>Configure Threshold</h3>
-              <button
-                className={styles.closeBtn}
-                onClick={() =>
-                  setThresholdModal({ open: false, item: null, threshold: 10 })
-                }
-              >
-                ✕
-              </button>
-            </div>
+      <Modal open={thresholdModal.open} onClose={closeThresholdModal} size="sm">
+        <Modal.Header title="Configure Threshold" onClose={closeThresholdModal} />
+        <Modal.Body>
+          <Stack gap="md">
+            <Text>
+              <Text as="span" weight="semibold">
+                Product:
+              </Text>{' '}
+              {productLabel}
+            </Text>
+            <Text>
+              <Text as="span" weight="semibold">
+                Current Stock:
+              </Text>{' '}
+              {thresholdModal.item?.currentCount ?? 0}
+            </Text>
+            <Text>
+              <Text as="span" weight="semibold">
+                Current Threshold:
+              </Text>{' '}
+              {thresholdModal.item?.thresholdCount ?? 10}
+            </Text>
+            <FormField
+              label="New Threshold Count"
+              type="number"
+              value={String(thresholdModal.threshold)}
+              disabled={updateThresholdMutation.isPending}
+              onChange={(value) =>
+                setThresholdModal({
+                  ...thresholdModal,
+                  threshold: Math.max(1, parseInt(value, 10) || 1),
+                })
+              }
+            />
+          </Stack>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant="outline"
+            onClick={closeThresholdModal}
+            disabled={updateThresholdMutation.isPending}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="solid"
+            loading={updateThresholdMutation.isPending}
+            onClick={() => {
+              const id = resolveInventoryDocumentId(thresholdModal.item);
+              if (!id) return;
 
-            <div className={styles.modalBody}>
-              <p>
-                <strong>Product:</strong>{' '}
-                {thresholdModal.item?.name ??
-                  thresholdModal.item?.barcode ??
-                  'Unknown'}
-              </p>
-              <p>
-                <strong>Current Stock:</strong>{' '}
-                {thresholdModal.item?.currentCount ?? 0}
-              </p>
-              <p>
-                <strong>Current Threshold:</strong>{' '}
-                {thresholdModal.item?.thresholdCount ?? 10}
-              </p>
-
-              <div style={{ marginTop: '1.5rem' }}>
-                <label className={styles.label} htmlFor="threshold">
-                  New Threshold Count
-                </label>
-                <input
-                  id="threshold"
-                  type="number"
-                  min="1"
-                  className={styles.input}
-                  value={thresholdModal.threshold}
-                  onChange={(e) =>
-                    setThresholdModal({
-                      ...thresholdModal,
-                      threshold: parseInt(e.target.value, 10) || 1,
-                    })
-                  }
-                  disabled={updateThresholdMutation.isPending}
-                />
-              </div>
-
-              <div className={styles.modalActions}>
-                <button
-                  className={styles.secondaryBtn}
-                  onClick={() =>
-                    setThresholdModal({
-                      open: false,
-                      item: null,
-                      threshold: 10,
-                    })
-                  }
-                  disabled={updateThresholdMutation.isPending}
-                >
-                  Cancel
-                </button>
-                <button
-                  className={styles.primaryBtn}
-                  onClick={() => {
-                    const id = resolveInventoryDocumentId(thresholdModal.item);
-                    if (!id) return;
-
-                    void updateThresholdMutation
-                      .mutateAsync({
-                        inventoryId: id,
-                        thresholdCount: thresholdModal.threshold,
-                      })
-                      .then(() => {
-                        setThresholdModal({
-                          open: false,
-                          item: null,
-                          threshold: 10,
-                        });
-                      });
-                  }}
-                  disabled={updateThresholdMutation.isPending}
-                >
-                  {updateThresholdMutation.isPending
-                    ? 'Updating...'
-                    : 'Update Threshold'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+              void updateThresholdMutation
+                .mutateAsync({
+                  inventoryId: id,
+                  thresholdCount: thresholdModal.threshold,
+                })
+                .then(closeThresholdModal);
+            }}
+          >
+            Update Threshold
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </Stack>
   );
 }

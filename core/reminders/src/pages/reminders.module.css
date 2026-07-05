@@ -502,6 +502,8 @@
 }
 
 .emptyState {
+  min-height: 14rem;
+  width: 100%;
   text-align: center;
   padding: 3rem;
   color: var(--text-secondary);

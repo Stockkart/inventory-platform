@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { CreateCreditEntryDto } from '@inventory-platform/credit/types';
+import {
+  Box,
+  Card,
+  CardBody,
+  CenteredLoader,
+  PageHeader,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import {
   useChargeMutation,
@@ -85,64 +94,80 @@ export function CreditPage() {
   }
 
   return (
-    <div className={styles.page}>
-      <div className={styles.card}>
-        <h1 className={styles.title}>Credit balances</h1>
-      </div>
+    <Stack gap="md">
+      <PageHeader
+        title="Credit balances"
+        description="Track amounts due and settlements with customers and vendors"
+      />
 
       {isLoading ? (
-        <div className={styles.card}>
-          <p className={styles.empty}>Loading...</p>
-        </div>
+        <Card>
+          <CardBody>
+            <CenteredLoader label="Loading credit accounts…" />
+          </CardBody>
+        </Card>
       ) : (
-        <div className={styles.grid}>
-          <section className={styles.card}>
-            <CreditPartiesSidebar
-              allAccounts={accounts}
-              pendingAccounts={pendingAccounts}
-              favourAccounts={favourAccounts}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
-              pendingListEmptyMessage={
-                accounts.length === 0
-                  ? 'No credit accounts yet. Add a charge or settlement first.'
-                  : favourAccounts.length > 0
-                    ? 'No amounts due right now. See “In your favour” below (e.g. supplier credit from returns).'
-                    : 'No outstanding dues right now.'
-              }
-            />
-          </section>
+        <Box display="grid" className={styles.grid}>
+          <Card className={styles.panel}>
+            <CardBody>
+              <CreditPartiesSidebar
+                allAccounts={accounts}
+                pendingAccounts={pendingAccounts}
+                favourAccounts={favourAccounts}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+                pendingListEmptyMessage={
+                  accounts.length === 0
+                    ? 'No credit accounts yet. Add a charge or settlement first.'
+                    : favourAccounts.length > 0
+                      ? 'No amounts due right now. See “In your favour” below (e.g. supplier credit from returns).'
+                      : 'No outstanding dues right now.'
+                }
+              />
+            </CardBody>
+          </Card>
 
-          <section className={styles.card}>
-            {!accounts.length ? (
-              <>
-                <h2 className={styles.detailTitle}>Get started</h2>
-                <CreditManualChargeForm
-                  submitting={submitting}
-                  onSubmit={(b) => submit('charge', b)}
-                />
-              </>
-            ) : selected ? (
-              <>
-                <h2 className={styles.detailTitle}>Record activity</h2>
-                <CreditPartyActions
-                  account={selected}
-                  submitting={submitting}
-                  onSubmitCharge={(b) => submit('charge', b)}
-                  onSubmitSettlement={(b) => submit('settlement', b)}
-                />
-                <h3 className={styles.timelineTitle}>Ledger timeline</h3>
-                <CreditEntriesTimeline entries={entries} partyType={selected.partyType} />
-              </>
-            ) : (
-              <p className={styles.empty}>
-                Search the sidebar for a party to view their history, or add an outstanding charge
-                to see them under Due now.
-              </p>
-            )}
-          </section>
-        </div>
+          <Card className={styles.panel}>
+            <CardBody>
+              {!accounts.length ? (
+                <Stack gap="md">
+                  <Text variant="title" weight="semibold">
+                    Get started
+                  </Text>
+                  <CreditManualChargeForm
+                    submitting={submitting}
+                    onSubmit={(b) => submit('charge', b)}
+                  />
+                </Stack>
+              ) : selected ? (
+                <Stack gap="md">
+                  <Text variant="title" weight="semibold">
+                    Record activity
+                  </Text>
+                  <CreditPartyActions
+                    account={selected}
+                    submitting={submitting}
+                    onSubmitCharge={(b) => submit('charge', b)}
+                    onSubmitSettlement={(b) => submit('settlement', b)}
+                  />
+                  <Text variant="heading3" weight="semibold">
+                    Ledger timeline
+                  </Text>
+                  <CreditEntriesTimeline
+                    entries={entries}
+                    partyType={selected.partyType}
+                  />
+                </Stack>
+              ) : (
+                <Text color="secondary">
+                  Search the sidebar for a party to view their history, or add an
+                  outstanding charge to see them under Due now.
+                </Text>
+              )}
+            </CardBody>
+          </Card>
+        </Box>
       )}
-    </div>
+    </Stack>
   );
 }

@@ -2,7 +2,23 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router';
 import type { CreateReminderDto, Reminder, ReminderInventorySummary, ReminderType, UpdateReminderDto } from '@inventory-platform/reminders/types';
 import { InventoryAlertDetails } from '@inventory-platform/product';
-import { PaginationBar } from '@inventory-platform/ui-kit';
+import {
+  Badge,
+  Box,
+  Button,
+  Card,
+  CardBody,
+  CenteredLoader,
+  ConfirmDialog,
+  FormField,
+  Grid,
+  Inline,
+  Modal,
+  PageHeader,
+  PaginationBar,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { ReminderForm } from '../ui';
 import { useNotify } from '@inventory-platform/session';
 import {
@@ -162,273 +178,244 @@ export function RemindersPage() {
     }
   };
 
+  const closeFormModal = () => {
+    setShowCreateForm(false);
+    setEditingReminder(null);
+  };
+
+  const formModalOpen = !fromNotification && (showCreateForm || !!editingReminder);
+
   return (
-    <div className={styles.page}>
-      <div className={styles.header}>
-        <div>
-          <h2 className={styles.title}>Reminders</h2>
-          <p className={styles.subtitle}>
-            {fromNotification
-              ? 'Reminder details from notification'
-              : 'Manage your inventory reminders'}
-          </p>
-        </div>
-
-        {!fromNotification && (
-          <button
-            className={styles.createButton}
-            onClick={() => {
-              setShowCreateForm(true);
-              setEditingReminder(null);
-            }}
-          >
-            + Create Reminder
-          </button>
-        )}
-      </div>
-
-      {!fromNotification && expiryBuckets && (
-        <div className={styles.expiryBuckets}>
-          <div className={styles.bucketCard}>
-            <span className={styles.bucketLabel}>Expired</span>
-            <span className={styles.bucketValue}>{expiryBuckets.expired}</span>
-          </div>
-          <div className={styles.bucketCard}>
-            <span className={styles.bucketLabel}>Within 7 days</span>
-            <span className={styles.bucketValue}>
-              {expiryBuckets.expiringWithin7Days}
-            </span>
-          </div>
-          <div className={styles.bucketCard}>
-            <span className={styles.bucketLabel}>
-              Within {expiryBuckets.expiringSoonDays} days
-            </span>
-            <span className={styles.bucketValue}>
-              {expiryBuckets.expiringSoonTotal}
-            </span>
-          </div>
-          <div className={styles.bucketCard}>
-            <span className={styles.bucketLabel}>Tracked expiry</span>
-            <span className={styles.bucketValue}>
-              {expiryBuckets.totalWithExpiry}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {!fromNotification && (showCreateForm || editingReminder) && (
-        <div className={styles.modal}>
-          <div className={styles.modalContent}>
-            <div className={styles.modalHeader}>
-              <h3>{editingReminder ? 'Edit Reminder' : 'Create Reminder'}</h3>
-              <button
-                className={styles.closeButton}
-                onClick={() => {
-                  setShowCreateForm(false);
-                  setEditingReminder(null);
-                }}
-              >
-                ×
-              </button>
-            </div>
-            <ReminderForm
-              reminder={editingReminder || undefined}
-              onSubmit={handleSubmit}
-              onCancel={() => {
-                setShowCreateForm(false);
+    <Stack gap="md" className={styles.page}>
+      <PageHeader
+        title="Reminders"
+        description={
+          fromNotification
+            ? 'Reminder details from notification'
+            : 'Manage your inventory reminders'
+        }
+        actions={
+          !fromNotification ? (
+            <Button
+              variant="solid"
+              onClick={() => {
+                setShowCreateForm(true);
                 setEditingReminder(null);
               }}
-              isLoading={isSubmitting}
-            />
-          </div>
-        </div>
-      )}
+            >
+              Create reminder
+            </Button>
+          ) : undefined
+        }
+      />
 
-      {deletingReminderId && (
-        <div className={styles.modal}>
-          <div className={styles.modalContent}>
-            <div className={styles.modalHeader}>
-              <h3>Delete Reminder</h3>
-              <button
-                className={styles.closeButton}
-                onClick={() => setDeletingReminderId(null)}
-              >
-                ×
-              </button>
-            </div>
-            <div className={styles.confirmContent}>
-              <p>
-                Are you sure you want to delete this reminder? This action
-                cannot be undone.
-              </p>
-              <div className={styles.confirmActions}>
-                <button
-                  className={styles.cancelButton}
-                  onClick={() => setDeletingReminderId(null)}
-                >
-                  Cancel
-                </button>
-                <button
-                  className={styles.confirmButton}
-                  onClick={() => void handleDeleteConfirm()}
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {!fromNotification && expiryBuckets ? (
+        <Grid className={styles.expiryBuckets}>
+          <Card>
+            <CardBody>
+              <Text variant="caption" color="secondary">
+                Expired
+              </Text>
+              <Text variant="heading2" weight="bold">
+                {expiryBuckets.expired}
+              </Text>
+            </CardBody>
+          </Card>
+          <Card>
+            <CardBody>
+              <Text variant="caption" color="secondary">
+                Within 7 days
+              </Text>
+              <Text variant="heading2" weight="bold">
+                {expiryBuckets.expiringWithin7Days}
+              </Text>
+            </CardBody>
+          </Card>
+          <Card>
+            <CardBody>
+              <Text variant="caption" color="secondary">
+                Within {expiryBuckets.expiringSoonDays} days
+              </Text>
+              <Text variant="heading2" weight="bold">
+                {expiryBuckets.expiringSoonTotal}
+              </Text>
+            </CardBody>
+          </Card>
+          <Card>
+            <CardBody>
+              <Text variant="caption" color="secondary">
+                Tracked expiry
+              </Text>
+              <Text variant="heading2" weight="bold">
+                {expiryBuckets.totalWithExpiry}
+              </Text>
+            </CardBody>
+          </Card>
+        </Grid>
+      ) : null}
 
-      <div className={styles.remindersContainer}>
+      <Modal open={formModalOpen} onClose={closeFormModal} size="md">
+        <Modal.Header
+          title={editingReminder ? 'Edit Reminder' : 'Create Reminder'}
+          onClose={closeFormModal}
+        />
+        <Modal.Body>
+          <ReminderForm
+            reminder={editingReminder || undefined}
+            onSubmit={handleSubmit}
+            onCancel={closeFormModal}
+            isLoading={isSubmitting}
+          />
+        </Modal.Body>
+      </Modal>
+
+      <ConfirmDialog
+        open={!!deletingReminderId}
+        title="Delete Reminder"
+        message="Are you sure you want to delete this reminder? This action cannot be undone."
+        confirmLabel="Delete"
+        loading={deleteMutation.isPending}
+        onCancel={() => setDeletingReminderId(null)}
+        onConfirm={handleDeleteConfirm}
+      />
+
+      <Stack gap="md" className={styles.remindersContainer}>
         {!fromNotification && (
-          <div className={styles.filters}>
-            <div className={styles.filterGroup}>
-              <span className={styles.filterLabel}>Status:</span>
-              <button
-                className={`${styles.filterBtn} ${
-                  filter === 'all' ? styles.active : ''
-                }`}
-                onClick={() => setFilter('all')}
-              >
-                All
-              </button>
-              <button
-                className={`${styles.filterBtn} ${
-                  filter === 'PENDING' ? styles.active : ''
-                }`}
-                onClick={() => setFilter('PENDING')}
-              >
-                Pending
-              </button>
-              <button
-                className={`${styles.filterBtn} ${
-                  filter === 'COMPLETED' ? styles.active : ''
-                }`}
-                onClick={() => setFilter('COMPLETED')}
-              >
-                Completed
-              </button>
-            </div>
-            <div className={styles.filterGroup}>
-              <span className={styles.filterLabel}>Type:</span>
-              <button
-                className={`${styles.filterBtn} ${
-                  typeFilter === 'all' ? styles.active : ''
-                }`}
-                onClick={() => setTypeFilter('all')}
-              >
-                All
-              </button>
-              <button
-                className={`${styles.filterBtn} ${
-                  typeFilter === 'EXPIRY' ? styles.active : ''
-                }`}
-                onClick={() => setTypeFilter('EXPIRY')}
-              >
-                Expiry
-              </button>
-              <button
-                className={`${styles.filterBtn} ${
-                  typeFilter === 'CUSTOM' ? styles.active : ''
-                }`}
-                onClick={() => setTypeFilter('CUSTOM')}
-              >
-                Custom
-              </button>
-            </div>
-          </div>
+          <Stack gap="md" className={styles.filters}>
+            <Inline gap="sm" className={styles.filterGroup}>
+              <Text variant="label" color="secondary">
+                Status:
+              </Text>
+              {(['all', 'PENDING', 'COMPLETED'] as const).map((value) => (
+                <Button
+                  key={value}
+                  type="button"
+                  size="sm"
+                  variant={filter === value ? 'solid' : 'outline'}
+                  onClick={() => setFilter(value)}
+                >
+                  {value === 'all' ? 'All' : value.charAt(0) + value.slice(1).toLowerCase()}
+                </Button>
+              ))}
+            </Inline>
+            <Inline gap="sm" className={styles.filterGroup}>
+              <Text variant="label" color="secondary">
+                Type:
+              </Text>
+              {(['all', 'EXPIRY', 'CUSTOM'] as const).map((value) => (
+                <Button
+                  key={value}
+                  type="button"
+                  size="sm"
+                  variant={typeFilter === value ? 'solid' : 'outline'}
+                  onClick={() => setTypeFilter(value)}
+                >
+                  {value === 'all' ? 'All' : value.charAt(0) + value.slice(1).toLowerCase()}
+                </Button>
+              ))}
+            </Inline>
+          </Stack>
         )}
 
         {isLoading ? (
-          <div className={styles.loading}>Loading reminders...</div>
+          <CenteredLoader label="Loading reminders…" />
         ) : filteredReminders.length === 0 ? (
-          <div className={styles.emptyState}>
-            <p>No reminders found.</p>
-            {!showCreateForm && !fromNotification && (
-              <button
-                className={styles.createButton}
-                onClick={() => setShowCreateForm(true)}
-              >
-                Create Your First Reminder
-              </button>
-            )}
-          </div>
+          <Stack gap="md" align="center" className={styles.emptyState}>
+            <Text color="secondary">No reminders found.</Text>
+            {!showCreateForm && !fromNotification ? (
+              <Button variant="solid" onClick={() => setShowCreateForm(true)}>
+                Create your first reminder
+              </Button>
+            ) : null}
+          </Stack>
         ) : (
           <>
-            <div className={styles.remindersList}>
+            <Stack gap="md" className={styles.remindersList}>
               {filteredReminders.map((reminder) => {
                 const daysLeft = getDaysUntilReminder(reminder.reminderAt);
                 const priority = getPriority(daysLeft);
 
                 return (
-                  <div
+                  <Box
                     key={reminder.id}
                     className={`${styles.reminderCard} ${styles[priority]}`}
                   >
-                    <div className={styles.reminderIcon}>
+                    <Box className={styles.reminderIcon}>
                       {reminder.type === 'EXPIRY' ? '📅' : '🔔'}
-                    </div>
-                    <div className={styles.reminderInfo}>
-                      <div className={styles.reminderHeader}>
-                        <h3 className={styles.reminderTitle}>
+                    </Box>
+                    <Stack gap="sm" className={styles.reminderInfo}>
+                      <Inline
+                        justify="between"
+                        align="start"
+                        className={styles.reminderHeader}
+                      >
+                        <Text variant="heading3" weight="semibold" className={styles.reminderTitle}>
                           {reminder.type === 'EXPIRY'
                             ? 'Expiry Reminder'
                             : 'Custom Reminder'}
-                        </h3>
-                        <div className={styles.badges}>
-                          <span
-                            className={`${styles.statusBadge} ${
-                              styles[reminder.status]
-                            }`}
+                        </Text>
+                        <Inline gap="sm" className={styles.badges}>
+                          <Badge
+                            className={`${styles.statusBadge} ${styles[reminder.status]}`}
                           >
                             {reminder.status}
-                          </span>
-                          {reminder.type && (
-                            <span className={styles.typeBadge}>
-                              {reminder.type}
-                            </span>
-                          )}
-                          <span
+                          </Badge>
+                          {reminder.type ? (
+                            <Badge className={styles.typeBadge}>{reminder.type}</Badge>
+                          ) : null}
+                          <Badge
                             className={`${styles.priorityBadge} ${styles[priority]}`}
                           >
                             {priority}
-                          </span>
-                        </div>
-                      </div>
-                      <div className={styles.reminderDetails}>
-                        <div>
-                          <strong>Reminder:</strong>{' '}
+                          </Badge>
+                        </Inline>
+                      </Inline>
+                      <Stack gap="sm" className={styles.reminderDetails}>
+                        <Text variant="caption">
+                          <Text as="span" weight="semibold">
+                            Reminder:
+                          </Text>{' '}
                           {formatDate(reminder.reminderAt)}
-                        </div>
-                        {reminder.expiryDate && (
-                          <div>
-                            <strong>End Date:</strong>{' '}
+                        </Text>
+                        {reminder.expiryDate ? (
+                          <Text variant="caption">
+                            <Text as="span" weight="semibold">
+                              End Date:
+                            </Text>{' '}
                             {formatDate(reminder.expiryDate)}
-                          </div>
-                        )}
-                        {reminder.notes && (
-                          <div className={styles.notes}>
-                            <strong>Notes:</strong> {reminder.notes}
-                          </div>
-                        )}
-                        {reminder.inventory && (
-                          <div className={styles.inventoryBox}>
-                            <div>
-                              <strong>Product:</strong>{' '}
+                          </Text>
+                        ) : null}
+                        {reminder.notes ? (
+                          <Text variant="caption" className={styles.notes}>
+                            <Text as="span" weight="semibold">
+                              Notes:
+                            </Text>{' '}
+                            {reminder.notes}
+                          </Text>
+                        ) : null}
+                        {reminder.inventory ? (
+                          <Stack gap="xs" className={styles.inventoryBox}>
+                            <Text variant="caption">
+                              <Text as="span" weight="semibold">
+                                Product:
+                              </Text>{' '}
                               {reminder.inventory.name ?? '—'}
-                            </div>
-                            <div>
-                              <strong>Company:</strong>{' '}
+                            </Text>
+                            <Text variant="caption">
+                              <Text as="span" weight="semibold">
+                                Company:
+                              </Text>{' '}
                               {reminder.inventory.companyName ?? '—'}
-                            </div>
-                            <div>
-                              <strong>Location:</strong>{' '}
+                            </Text>
+                            <Text variant="caption">
+                              <Text as="span" weight="semibold">
+                                Location:
+                              </Text>{' '}
                               {reminder.inventory.location ?? '—'}
-                            </div>
-                          </div>
-                        )}
-                        <div className={styles.daysLeft}>
+                            </Text>
+                          </Stack>
+                        ) : null}
+                        <Text variant="caption" weight="semibold" className={styles.daysLeft}>
                           {daysLeft < 0
                             ? `${Math.abs(daysLeft)} days overdue`
                             : daysLeft === 0
@@ -436,47 +423,45 @@ export function RemindersPage() {
                               : `${daysLeft} ${
                                   daysLeft === 1 ? 'day' : 'days'
                                 } left`}
-                        </div>
-                      </div>
-                    </div>
+                        </Text>
+                      </Stack>
+                    </Stack>
 
-                    <div className={styles.reminderActions}>
+                    <Box className={styles.reminderActions}>
                       {fromNotification ? (
-                        <div className={styles.snoozeActions}>
-                          <div className={styles.snoozePresetRow}>
+                        <Stack gap="sm" className={styles.snoozeActions}>
+                          <Inline gap="sm" className={styles.snoozePresetRow}>
                             {SNOOZE_OPTIONS.map((days) => (
-                              <button
+                              <Button
                                 key={days}
                                 type="button"
-                                className={styles.snoozeChip}
+                                size="sm"
+                                variant="outline"
                                 disabled={snoozingReminderId === reminder.id}
-                                onClick={() =>
-                                  void handleSnooze(reminder.id, days)
-                                }
+                                onClick={() => void handleSnooze(reminder.id, days)}
                               >
                                 {days}d
-                              </button>
+                              </Button>
                             ))}
-                          </div>
+                          </Inline>
 
-                          <div className={styles.snoozeCustomRow}>
-                            <input
+                          <Inline gap="sm" className={styles.snoozeCustomRow}>
+                            <FormField
+                              label="Custom days"
                               type="number"
-                              min={1}
-                              className={styles.snoozeInput}
-                              placeholder="Custom days"
-                              value={customSnoozeDays}
-                              onChange={(e) =>
+                              value={
+                                customSnoozeDays === '' ? '' : String(customSnoozeDays)
+                              }
+                              onChange={(value) =>
                                 setCustomSnoozeDays(
-                                  e.target.value === ''
-                                    ? ''
-                                    : Number(e.target.value)
+                                  value === '' ? '' : Number(value)
                                 )
                               }
                             />
-                            <button
+                            <Button
                               type="button"
-                              className={styles.actionBtn}
+                              size="sm"
+                              variant="solid"
                               disabled={
                                 snoozingReminderId === reminder.id ||
                                 customSnoozeDays === '' ||
@@ -491,62 +476,70 @@ export function RemindersPage() {
                               }
                             >
                               {snoozingReminderId === reminder.id
-                                ? 'Snoozing...'
+                                ? 'Snoozing…'
                                 : 'Snooze'}
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                               type="button"
-                              className={styles.actionBtnDanger}
+                              size="sm"
+                              variant="danger"
                               onClick={() => setDeletingReminderId(reminder.id)}
                             >
                               Delete
-                            </button>
-                          </div>
-                          {reminder.inventory && (
-                            <button
+                            </Button>
+                          </Inline>
+                          {reminder.inventory ? (
+                            <Button
                               type="button"
-                              className={styles.viewDetailsBtn}
+                              size="sm"
+                              variant="ghost"
                               onClick={() =>
                                 setSelectedInventory(reminder.inventory)
                               }
                             >
                               View Details
-                            </button>
-                          )}
-                        </div>
+                            </Button>
+                          ) : null}
+                        </Stack>
                       ) : (
-                        <div className={styles.actionButtonsContainer}>
-                          <div className={styles.actionButtonsRow}>
-                            <button
-                              className={styles.actionBtn}
+                        <Stack gap="sm" className={styles.actionButtonsContainer}>
+                          <Inline gap="sm" className={styles.actionButtonsRow}>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
                               onClick={() => setEditingReminder(reminder)}
                             >
                               Edit
-                            </button>
-                            <button
-                              className={styles.actionBtnDanger}
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="danger"
                               onClick={() => setDeletingReminderId(reminder.id)}
                             >
                               Delete
-                            </button>
-                          </div>
-                          {reminder.inventory && (
-                            <button
-                              className={styles.viewDetailsBtn}
+                            </Button>
+                          </Inline>
+                          {reminder.inventory ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
                               onClick={() =>
                                 setSelectedInventory(reminder.inventory)
                               }
                             >
                               View Details
-                            </button>
-                          )}
-                        </div>
+                            </Button>
+                          ) : null}
+                        </Stack>
                       )}
-                    </div>
-                  </div>
+                    </Box>
+                  </Box>
                 );
               })}
-            </div>
+            </Stack>
             {!focusReminderId && (
               <PaginationBar
                 page={page}
@@ -564,7 +557,7 @@ export function RemindersPage() {
             )}
           </>
         )}
-      </div>
+      </Stack>
       {selectedInventory && (
         <InventoryAlertDetails
           open={selectedInventory !== null}
@@ -572,6 +565,6 @@ export function RemindersPage() {
           onClose={() => setSelectedInventory(null)}
         />
       )}
-    </div>
+    </Stack>
   );
 }
