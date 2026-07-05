@@ -5,19 +5,10 @@ import {
   resolveInventoryDocumentId,
 } from '../api/inventory.api';
 import { vendorsApi } from '@inventory-platform/user/vendors';
-import type {
-  VendorResponse,
-  InventoryItem,
-  UpdateInventoryRequest,
-  SchemeType,
-  ItemType,
-  DiscountApplicable,
-  ShopProductSearchAccess,
-} from '@inventory-platform/types';
-import {
-  canEditProductSearchUiField,
-  hasProductSearchEditAccess,
-} from '@inventory-platform/types';
+import type { VendorResponse } from '@inventory-platform/user/types';
+import type { InventoryItem, UpdateInventoryRequest, SchemeType, ItemType, DiscountApplicable } from '@inventory-platform/product/types';
+import type { ShopProductSearchAccess } from '@inventory-platform/access';
+import { canEditProductSearchUiField, hasProductSearchEditAccess } from '@inventory-platform/access';
 import { useNotify } from '@inventory-platform/session';
 import {
   itemUsesExtensionBag,

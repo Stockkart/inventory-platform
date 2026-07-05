@@ -158,6 +158,22 @@ export default defineConfig({
         '../../ui-kit/src/form-styles.ts'
       ),
       '@inventory-platform/ui-kit': path.resolve(__dirname, '../../ui-kit/src/index.ts'),
+      '@inventory-platform/session/api': path.resolve(
+        __dirname,
+        '../../platform/session/src/api/index.ts'
+      ),
+      '@inventory-platform/shell/api': path.resolve(
+        __dirname,
+        '../../platform/shell/src/api/index.ts'
+      ),
+      '@inventory-platform/user/shops': path.resolve(
+        __dirname,
+        '../../core/user/src/api/shops.api.ts'
+      ),
+      '@inventory-platform/user/users': path.resolve(
+        __dirname,
+        '../../core/user/src/api/user-lookup.api.ts'
+      ),
       '@inventory-platform/user/customers': path.resolve(
         __dirname,
         '../../core/user/src/api/customers.api.ts'
@@ -174,8 +190,66 @@ export default defineConfig({
         __dirname,
         '../../core/user/src/api/invitations.api.ts'
       ),
-      '@inventory-platform/api': path.resolve(__dirname, '../../shared/api/src/index.ts'),
-      '@inventory-platform/types': path.resolve(__dirname, '../../shared/types/src/index.ts'),
+      '@inventory-platform/contracts': path.resolve(
+        __dirname,
+        '../../platform/contracts/src/index.ts'
+      ),
+      '@inventory-platform/access': path.resolve(
+        __dirname,
+        '../../platform/access/src/index.ts'
+      ),
+      '@inventory-platform/session/types': path.resolve(
+        __dirname,
+        '../../platform/session/src/model/index.ts'
+      ),
+      '@inventory-platform/schema/types': path.resolve(
+        __dirname,
+        '../../platform/schema/src/types/index.ts'
+      ),
+      '@inventory-platform/shell/types': path.resolve(
+        __dirname,
+        '../../platform/shell/src/model/index.ts'
+      ),
+      '@inventory-platform/plan/types': path.resolve(
+        __dirname,
+        '../../core/plan/src/model/index.ts'
+      ),
+      '@inventory-platform/product/types': path.resolve(
+        __dirname,
+        '../../core/product/src/model/index.ts'
+      ),
+      '@inventory-platform/user/types': path.resolve(
+        __dirname,
+        '../../core/user/src/model/index.ts'
+      ),
+      '@inventory-platform/accounting/types': path.resolve(
+        __dirname,
+        '../../core/accounting/src/model/index.ts'
+      ),
+      '@inventory-platform/analytics/types': path.resolve(
+        __dirname,
+        '../../core/analytics/src/model/index.ts'
+      ),
+      '@inventory-platform/credit/types': path.resolve(
+        __dirname,
+        '../../core/credit/src/model/index.ts'
+      ),
+      '@inventory-platform/taxation/types': path.resolve(
+        __dirname,
+        '../../core/taxation/src/model/index.ts'
+      ),
+      '@inventory-platform/reminders/types': path.resolve(
+        __dirname,
+        '../../core/reminders/src/model/index.ts'
+      ),
+      '@inventory-platform/pricing/types': path.resolve(
+        __dirname,
+        '../../core/pricing/src/model/index.ts'
+      ),
+      '@inventory-platform/plugin-cafe/types': path.resolve(
+        __dirname,
+        '../../plugins/cafe/src/types/index.ts'
+      ),
       '@inventory-platform/payment': path.resolve(__dirname, '../../shared/payment/src/index.ts'),
       '@inventory-platform/onboarding': path.resolve(__dirname, '../../features/onboarding/src/index.ts'),
       '@inventory-platform/auth': path.resolve(__dirname, '../../features/auth/src/index.ts'),

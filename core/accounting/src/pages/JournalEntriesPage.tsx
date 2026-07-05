@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { useNotify } from '@inventory-platform/session';
-import type { JournalEntryResponse, JournalSource } from '@inventory-platform/types';
+import type { JournalEntryResponse, JournalSource } from '@inventory-platform/accounting/types';
 import { useJournalsQuery } from '../queries/hooks';
 import { AccountingTabs } from '../ui/AccountingTabs';
 import { formatDate, formatMoney } from '../model/format';

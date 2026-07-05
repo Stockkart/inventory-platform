@@ -1,12 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router';
-import type {
-  CreateReminderDto,
-  Reminder,
-  ReminderInventorySummary,
-  ReminderType,
-  UpdateReminderDto,
-} from '@inventory-platform/types';
+import type { CreateReminderDto, Reminder, ReminderInventorySummary, ReminderType, UpdateReminderDto } from '@inventory-platform/reminders/types';
 import { InventoryAlertDetails } from '@inventory-platform/product';
 import { PaginationBar } from '@inventory-platform/ui-kit';
 import { ReminderForm } from '../ui';

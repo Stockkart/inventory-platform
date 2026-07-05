@@ -1,13 +1,7 @@
 import { apiClient } from '@inventory-platform/api-client';
-import type {
-  ApiResponse,
-  SalesAnalytics,
-  ProfitAnalytics,
-  VendorAnalytics,
-  CustomerAnalytics,
-  InventoryAnalytics,
-  InventoryExpiryBuckets,
-} from '@inventory-platform/types';
+import type { ApiResponse } from '@inventory-platform/contracts';
+import type { SalesAnalytics, ProfitAnalytics, VendorAnalytics, CustomerAnalytics, InventoryAnalytics } from '@inventory-platform/analytics/types';
+import type { InventoryExpiryBuckets } from '@inventory-platform/product/types';
 import { ANALYTICS_ENDPOINTS } from './endpoints';
 
 export type SalesAnalyticsParams = {

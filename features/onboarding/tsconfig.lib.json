@@ -2,7 +2,11 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "lib": ["DOM", "DOM.Iterable", "ES2019"],
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ES2019"
+    ],
     "types": [
       "node",
       "@nx/react/typings/cssmodule.d.ts",
@@ -13,10 +17,60 @@
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
     "baseUrl": ".",
     "paths": {
-      "@inventory-platform/session": ["../../platform/session/src/index.ts"],
-      "@inventory-platform/api": ["../../shared/api/src/index.ts"],
-      "@inventory-platform/types": ["../../shared/types/src/index.ts"],
-      "@inventory-platform/schema": ["../../platform/schema/src/index.ts"]
+      "@inventory-platform/session/api": [
+        "../../platform/session/src/api/index.ts"
+      ],
+      "@inventory-platform/user/shops": [
+        "../../core/user/src/api/shops.api.ts"
+      ],
+      "@inventory-platform/schema": [
+        "../../platform/schema/src/index.ts"
+      ],
+      "@inventory-platform/contracts": [
+        "../../platform/contracts/src/index.ts"
+      ],
+      "@inventory-platform/access": [
+        "../../platform/access/src/index.ts"
+      ],
+      "@inventory-platform/schema/types": [
+        "../../platform/schema/src/types/index.ts"
+      ],
+      "@inventory-platform/session/types": [
+        "../../platform/session/src/model/index.ts"
+      ],
+      "@inventory-platform/shell/types": [
+        "../../platform/shell/src/model/index.ts"
+      ],
+      "@inventory-platform/user/types": [
+        "../../core/user/src/model/index.ts"
+      ],
+      "@inventory-platform/product/types": [
+        "../../core/product/src/model/index.ts"
+      ],
+      "@inventory-platform/analytics/types": [
+        "../../core/analytics/src/model/index.ts"
+      ],
+      "@inventory-platform/reminders/types": [
+        "../../core/reminders/src/model/index.ts"
+      ],
+      "@inventory-platform/credit/types": [
+        "../../core/credit/src/model/index.ts"
+      ],
+      "@inventory-platform/plan/types": [
+        "../../core/plan/src/model/index.ts"
+      ],
+      "@inventory-platform/pricing/types": [
+        "../../core/pricing/src/model/index.ts"
+      ],
+      "@inventory-platform/taxation/types": [
+        "../../core/taxation/src/model/index.ts"
+      ],
+      "@inventory-platform/accounting/types": [
+        "../../core/accounting/src/model/index.ts"
+      ],
+      "@inventory-platform/plugin-cafe/types": [
+        "../../plugins/cafe/src/types/index.ts"
+      ]
     }
   },
   "exclude": [
@@ -36,16 +90,21 @@
     "eslint.config.cjs",
     "eslint.config.mjs"
   ],
-  "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
+  "include": [
+    "src/**/*.js",
+    "src/**/*.jsx",
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ],
   "references": [
     {
-      "path": "../../shared/types/tsconfig.lib.json"
-    },
-    {
-      "path": "../../shared/api/tsconfig.lib.json"
-    },
-    {
       "path": "../../platform/session/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/user/tsconfig.lib.json"
+    },
+    {
+      "path": "../../platform/contracts/tsconfig.lib.json"
     }
   ]
 }

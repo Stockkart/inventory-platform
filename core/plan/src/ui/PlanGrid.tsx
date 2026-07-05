@@ -1,4 +1,4 @@
-import type { PlanResponse } from '@inventory-platform/types';
+import type { PlanResponse } from '@inventory-platform/plan/types';
 import styles from './PlanGrid.module.css';
 
 const EXTRA_USER_PLAN = 'Extra User Plan';

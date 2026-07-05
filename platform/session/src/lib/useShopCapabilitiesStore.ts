@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { shopCapabilitiesApi } from '@inventory-platform/api';
+import { shopCapabilitiesApi } from '../api/capabilities.api';
 import { apiClient } from '@inventory-platform/api-client';
-import type { ShopUiCapabilities } from '@inventory-platform/types';
+import type { ShopUiCapabilities } from '@inventory-platform/access';
 
 interface ShopCapabilitiesState {
   byShopId: Record<string, ShopUiCapabilities>;

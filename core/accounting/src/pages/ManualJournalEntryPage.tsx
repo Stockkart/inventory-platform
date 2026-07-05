@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { accountingApi } from '../api/accounting.api';
 import { useNotify } from '@inventory-platform/session';
-import type { AccountResponse } from '@inventory-platform/types';
+import type { AccountResponse } from '@inventory-platform/accounting/types';
 import { AccountingTabs } from '../ui/AccountingTabs';
 import { JournalEntryEditor } from '../ui/JournalEntryEditor';
 import { emptyLine } from '../model/journalEntryFormUtils';

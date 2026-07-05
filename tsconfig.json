@@ -16,10 +16,10 @@
       "path": "./ui-kit"
     },
     {
-      "path": "./shared/types"
+      "path": "./platform/contracts"
     },
     {
-      "path": "./shared/api"
+      "path": "./platform/access"
     },
     {
       "path": "./features/onboarding"

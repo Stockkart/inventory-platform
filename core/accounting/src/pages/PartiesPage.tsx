@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { accountingApi } from '../api/accounting.api';
 import { useNotify } from '@inventory-platform/session';
-import type { PartySummariesResponse } from '@inventory-platform/types';
+import type { PartySummariesResponse } from '@inventory-platform/accounting/types';
 import { AccountingTabs } from '../ui/AccountingTabs';
 import { formatDate, formatMoney } from '../model/format';
 import styles from '../ui/accounting.module.css';

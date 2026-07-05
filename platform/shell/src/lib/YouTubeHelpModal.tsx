@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { X } from 'lucide-react';
-import type { TutorialResourceResponse } from '@inventory-platform/types';
+import type { TutorialResourceResponse } from '@inventory-platform/shell/types';
 import styles from './YouTubeHelpModal.module.css';
 
 type YouTubeHelpModalProps = {

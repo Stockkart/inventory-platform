@@ -2,12 +2,8 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { inventoryApi } from '../api/inventory.api';
 import { vendorsApi } from '@inventory-platform/user/vendors';
-import type {
-  BulkCreateInventoryDto,
-  ParseInvoiceItem,
-  Vendor,
-  BillingMode,
-} from '@inventory-platform/types';
+import type { BulkCreateInventoryDto, ParseInvoiceItem, BillingMode } from '@inventory-platform/product/types';
+import type { Vendor } from '@inventory-platform/user/types';
 import { PaginationBar } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import styles from './import.module.css';
@@ -91,7 +87,7 @@ export function ImportPage() {
 
   const toBulkItem = (
     row: ParseInvoiceItem & { id: string }
-  ): import('@inventory-platform/types').BulkCreateInventoryItem => {
+  ): import('@inventory-platform/product/types').BulkCreateInventoryItem => {
     const loc = row.location?.trim() || '';
     const expiry = row.expiryDate?.trim()
       ? row.expiryDate.includes('T')
@@ -123,7 +119,7 @@ export function ImportPage() {
       schemePayFor: row.schemePayFor ?? null,
       schemeFree: row.schemeFree ?? null,
       schemeType: (row.schemeType ??
-        'FIXED_UNITS') as import('@inventory-platform/types').SchemeType,
+        'FIXED_UNITS') as import('@inventory-platform/product/types').SchemeType,
       schemePercentage: row.schemePercentage ?? null,
       sgst: row.sgst || null,
       cgst: row.cgst || null,

@@ -1,17 +1,6 @@
 import { apiClient } from '@inventory-platform/api-client';
-import type {
-  ApiResponse,
-  AssignPlanRequest,
-  CreatePlanCheckoutRequest,
-  PaymentConfigResponse,
-  PlanCheckoutResponse,
-  PlanResponse,
-  PlanTransactionResponse,
-  ShopPlanStatusResponse,
-  UsageResponse,
-  VerifyPlanPaymentRequest,
-  VerifyPlanPaymentResponse,
-} from '@inventory-platform/types';
+import type { ApiResponse } from '@inventory-platform/contracts';
+import type { AssignPlanRequest, CreatePlanCheckoutRequest, PaymentConfigResponse, PlanCheckoutResponse, PlanResponse, PlanTransactionResponse, ShopPlanStatusResponse, UsageResponse, VerifyPlanPaymentRequest, VerifyPlanPaymentResponse } from '@inventory-platform/plan/types';
 import { PLAN_ENDPOINTS } from './endpoints';
 
 export const plansApi = {

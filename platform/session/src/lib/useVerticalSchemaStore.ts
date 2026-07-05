@@ -1,11 +1,11 @@
 import { create } from 'zustand';
-import { verticalsApi } from '@inventory-platform/api';
+import { verticalsApi } from '../api/verticals.api';
 import { apiClient } from '@inventory-platform/api-client';
 import type {
   SchemaDisplayMode,
   ShopSchemaResponse,
   VerticalSchemaResponse,
-} from '@inventory-platform/types';
+} from '@inventory-platform/schema/types';
 
 interface VerticalSchemaState {
   shopSchemaByKey: Record<string, ShopSchemaResponse>;

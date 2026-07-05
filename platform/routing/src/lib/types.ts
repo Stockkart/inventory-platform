@@ -1,4 +1,4 @@
-import type { SellSurface } from '@inventory-platform/types';
+import type { SellSurface } from '@inventory-platform/access';
 
 export interface LazyRouteModule {
   index?: boolean;

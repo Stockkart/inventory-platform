@@ -5,8 +5,8 @@ import {
   inventoryApi,
   resolveInventoryDocumentId,
 } from '@inventory-platform/product/api';
-import type { InventoryItem } from '@inventory-platform/types';
-import { inventorySellableRef } from '@inventory-platform/types';
+import type { InventoryItem } from '@inventory-platform/product/types';
+import { inventorySellableRef } from '@inventory-platform/product/types';
 import { InventoryAlertDetails } from '@inventory-platform/product';
 import { PaginationBar } from '@inventory-platform/ui-kit';
 import {

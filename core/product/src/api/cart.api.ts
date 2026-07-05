@@ -1,13 +1,7 @@
 import axios from 'axios';
 import { apiClient } from '@inventory-platform/api-client';
-import type {
-  AddToCartDto,
-  ApiResponse,
-  CartResponse,
-  CreateQuotationDto,
-  QuotationListResponse,
-  UpdateCartStatusDto,
-} from '@inventory-platform/types';
+import type { AddToCartDto, CartResponse, CreateQuotationDto, QuotationListResponse, UpdateCartStatusDto } from '@inventory-platform/product/types';
+import type { ApiResponse } from '@inventory-platform/contracts';
 import { CART_ENDPOINTS, INVOICE_ENDPOINTS } from './endpoints';
 
 const API_BASE_URL =

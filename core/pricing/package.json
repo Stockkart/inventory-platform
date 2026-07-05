@@ -24,20 +24,28 @@
       "types": "./dist/api/index.d.ts",
       "import": "./src/api/index.ts",
       "default": "./src/api/index.ts"
+    },
+    "./types": {
+      "@inventory-platform/source": "./src/model/index.ts",
+      "types": "./dist/model/index.d.ts",
+      "import": "./src/model/index.ts",
+      "default": "./src/model/index.ts"
     }
   },
   "nx": {
-    "tags": ["type:core", "scope:pricing"]
+    "tags": [
+      "type:core",
+      "scope:pricing"
+    ]
   },
   "dependencies": {
-    "@inventory-platform/api": "workspace:*",
     "@inventory-platform/api-client": "workspace:*",
     "@inventory-platform/product": "workspace:*",
     "@inventory-platform/query": "workspace:*",
     "@inventory-platform/routing": "workspace:*",
     "@inventory-platform/session": "workspace:*",
-    "@inventory-platform/types": "workspace:*",
-    "@inventory-platform/ui-kit": "workspace:*"
+    "@inventory-platform/ui-kit": "workspace:*",
+    "@inventory-platform/contracts": "workspace:*"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.90.0",

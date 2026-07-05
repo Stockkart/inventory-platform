@@ -1,6 +1,6 @@
 import { apiClient } from '@inventory-platform/api-client';
-import type { ApiResponse, PricingResponse } from '@inventory-platform/types';
-
+import type { ApiResponse } from '@inventory-platform/contracts';
+import type { PricingResponse } from '@inventory-platform/pricing/types';
 /** Avoid product ↔ pricing module cycle; only methods needed for sell flows. */
 export const pricingClient = {
   getById: async (pricingId: string): Promise<PricingResponse> => {

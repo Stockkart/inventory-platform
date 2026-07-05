@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Purchase } from '@inventory-platform/types';
+import type { Purchase } from '@inventory-platform/product/types';
 import { PrintInvoiceModal } from './PrintInvoiceModal';
 import styles from './PurchaseCard.module.css';
 import { useNotify } from '@inventory-platform/session';

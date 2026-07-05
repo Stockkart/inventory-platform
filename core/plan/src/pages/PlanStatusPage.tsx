@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { PlanGrid } from '../ui/PlanGrid';
-import type { PlanResponse } from '@inventory-platform/types';
+import type { PlanResponse } from '@inventory-platform/plan/types';
 import { usePlansQuery, useShopPlanStatusQuery } from '../queries/hooks';
 import styles from './plan-status.module.css';
 

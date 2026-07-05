@@ -5,12 +5,7 @@ import {
   type UseMutationOptions,
   type UseQueryOptions,
 } from '@tanstack/react-query';
-import type {
-  CreateCreditEntryDto,
-  CreditAccountResponse,
-  CreditEntriesPageResponse,
-  CreditEntryResponse,
-} from '@inventory-platform/types';
+import type { CreateCreditEntryDto, CreditAccountResponse, CreditEntriesPageResponse, CreditEntryResponse } from '@inventory-platform/credit/types';
 import { creditApi } from '../api/credit.api';
 import { creditKeys } from './keys';
 

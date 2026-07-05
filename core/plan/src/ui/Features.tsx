@@ -1,4 +1,4 @@
-import type { Feature } from '@inventory-platform/types';
+import type { Feature } from '@inventory-platform/shell/types';
 import styles from './Features.module.css';
 
 export function Features() {

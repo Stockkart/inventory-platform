@@ -1,9 +1,5 @@
 import { useState } from 'react';
-import type {
-  CreateReminderDto,
-  UpdateReminderDto,
-  Reminder,
-} from '@inventory-platform/types';
+import type { CreateReminderDto, UpdateReminderDto, Reminder } from '@inventory-platform/reminders/types';
 import styles from './ReminderForm.module.css';
 import { useNotify } from '@inventory-platform/session';
 

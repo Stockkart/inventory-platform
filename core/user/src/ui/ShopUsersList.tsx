@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { invitationsApi } from '../api/invitations.api';
-import type { ShopUser, UserRole } from '@inventory-platform/types';
+import type { ShopUser, UserRole } from '@inventory-platform/user/types';
 import { RoleBadge } from './RoleBadge';
 import styles from './ShopUsersList.module.css';
 import { useNotify } from '@inventory-platform/session';

@@ -4,11 +4,7 @@ import {
   type UseMutationOptions,
   type UseQueryOptions,
 } from '@tanstack/react-query';
-import type {
-  Gstr1ReportResponse,
-  Gstr2ReportResponse,
-  Gstr3bReportResponse,
-} from '@inventory-platform/types';
+import type { Gstr1ReportResponse, Gstr2ReportResponse, Gstr3bReportResponse } from '@inventory-platform/taxation/types';
 import { gstr1Api } from '../api/gstr1.api';
 import { gstr2Api } from '../api/gstr2.api';
 import { gstr3bApi } from '../api/gstr3b.api';

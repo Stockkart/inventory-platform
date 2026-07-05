@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import type { InventoryItemAnalytics } from '@inventory-platform/types';
+import type { InventoryItemAnalytics } from '@inventory-platform/analytics/types';
 import { useExpiryBucketsQuery, useInventoryAnalyticsQuery } from '../queries/hooks';
 import styles from './analytics.module.css';
 

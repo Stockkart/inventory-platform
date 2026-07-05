@@ -1,8 +1,5 @@
 import { useState } from 'react';
-import type {
-  CustomerProductHistoryGroup,
-  CustomerProductHistoryResponse,
-} from '@inventory-platform/types';
+import type { CustomerProductHistoryGroup, CustomerProductHistoryResponse } from '@inventory-platform/product/types';
 import styles from './CustomerProductHistoryHint.module.css';
 
 const dateFormatter = new Intl.DateTimeFormat('en-IN', {

@@ -1,12 +1,6 @@
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import type {
-  CustomerAnalytics,
-  InventoryAnalytics,
-  InventoryExpiryBuckets,
-  ProfitAnalytics,
-  SalesAnalytics,
-  VendorAnalytics,
-} from '@inventory-platform/types';
+import type { CustomerAnalytics, InventoryAnalytics, ProfitAnalytics, SalesAnalytics, VendorAnalytics } from '@inventory-platform/analytics/types';
+import type { InventoryExpiryBuckets } from '@inventory-platform/product/types';
 import {
   analyticsApi,
   type CustomerAnalyticsParams,

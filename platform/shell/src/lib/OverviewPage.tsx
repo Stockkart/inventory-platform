@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { dashboardApi } from '@inventory-platform/api';
-import type { DashboardData } from '@inventory-platform/types';
+import { dashboardApi } from '../api/dashboard.api';
+import type { DashboardData } from '@inventory-platform/shell/types';
 import { useResolvedSellPath } from '@inventory-platform/routing';
 import styles from './overview.module.css';
 import { useAuthStore, useNotify, useShopCapabilitiesStore } from '@inventory-platform/session';

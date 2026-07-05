@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { CreateCreditEntryDto, CreditPartyType } from '@inventory-platform/types';
+import type { CreateCreditEntryDto, CreditPartyType } from '@inventory-platform/credit/types';
 import styles from './credit.module.css';
 
 type Props = {

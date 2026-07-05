@@ -5,7 +5,7 @@ import {
   useState,
   type KeyboardEvent,
 } from 'react';
-import type { PackagingUnit } from '@inventory-platform/types';
+import type { PackagingUnit } from '@inventory-platform/product/types';
 import styles from './../pages/product-registration.module.css';
 
 /** Map free-text or datalist selection to a UQC code (catalog or legacy). */

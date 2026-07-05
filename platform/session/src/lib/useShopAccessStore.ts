@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { apiClient } from '@inventory-platform/api-client';
-import type { ApiResponse, ShopAccess } from '@inventory-platform/types';
+import type { ApiResponse } from '@inventory-platform/contracts';
+import type { ShopAccess } from '@inventory-platform/access';
 
 interface ShopAccessState {
   byShopId: Record<string, ShopAccess>;

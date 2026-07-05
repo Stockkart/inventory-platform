@@ -1,10 +1,6 @@
 import { apiClient } from '@inventory-platform/api-client';
-import type {
-  ApiResponse,
-  BulkPricingUpdateDto,
-  PatchPricingDto,
-  PricingResponse,
-} from '@inventory-platform/types';
+import type { ApiResponse } from '@inventory-platform/contracts';
+import type { BulkPricingUpdateDto, PatchPricingDto, PricingResponse } from '@inventory-platform/pricing/types';
 import { PRICING_ENDPOINTS } from './endpoints';
 
 export const pricingApi = {

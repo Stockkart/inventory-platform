@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuthStore } from '@inventory-platform/session';
-import type { ShopMembership } from '@inventory-platform/types';
+import type { ShopMembership } from '@inventory-platform/session/types';
 import styles from './ShopSwitcher.module.css';
 
 export function ShopSwitcher() {

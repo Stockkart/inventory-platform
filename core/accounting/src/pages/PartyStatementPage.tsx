@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { accountingApi } from '../api/accounting.api';
 import { useNotify } from '@inventory-platform/session';
-import type { PartyStatementResponse } from '@inventory-platform/types';
+import type { PartyStatementResponse } from '@inventory-platform/accounting/types';
 import { AccountingTabs } from '../ui/AccountingTabs';
 import type { SubsidiaryPartyType } from './PartiesPage';
 import { formatDate, formatMoney } from '../model/format';

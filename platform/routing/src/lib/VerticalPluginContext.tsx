@@ -4,7 +4,7 @@ import {
   useMemo,
   type ReactNode,
 } from 'react';
-import type { ShopUiCapabilities } from '@inventory-platform/types';
+import type { ShopUiCapabilities } from '@inventory-platform/access';
 import type { VerticalPlugin } from './types';
 import { resolveSellPath } from './sell-surface';
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Purchase } from '@inventory-platform/types';
+import type { Purchase } from '@inventory-platform/product/types';
 import { PrintInvoiceModal } from './PrintInvoiceModal';
 import { formatPaymentMethod, formatPaymentSplit } from './paymentMethod';
 import styles from './HistoryRecordList.module.css';

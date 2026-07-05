@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { purchasesApi } from '@inventory-platform/api';
-import type { CustomerProductHistoryResponse } from '@inventory-platform/types';
-
+import { purchasesApi } from '@inventory-platform/product/api';
+import type { CustomerProductHistoryResponse } from '@inventory-platform/product/types';
 const DEBOUNCE_MS = 300;
 const historyCache = new Map<string, CustomerProductHistoryResponse>();
 

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { invitationsApi } from '../api/invitations.api';
 import { useNotify } from '@inventory-platform/session';
-import type { UserRole } from '@inventory-platform/types';
+import type { UserRole } from '@inventory-platform/user/types';
 import styles from './InviteForm.module.css';
 const { error: notifyError, success: notifySuccess } = useNotify;
 

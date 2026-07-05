@@ -1,4 +1,4 @@
-import type { UserRole } from '@inventory-platform/types';
+import type { UserRole } from '@inventory-platform/user/types';
 import { Badge, type BadgeVariant } from '@inventory-platform/ui-kit';
 
 interface RoleBadgeProps {

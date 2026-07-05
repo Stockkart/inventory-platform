@@ -1,12 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { shopAccessApi } from '../api/shop-access.api';
-import type {
-  MemberModulePermissions,
-  ProductSearchEditMode,
-  ShopMemberAccess,
-  ShopRbacAdmin,
-} from '@inventory-platform/types';
-import { CORE_PRODUCT_SEARCH_FIELDS } from '@inventory-platform/types';
+import type { MemberModulePermissions, ProductSearchEditMode, ShopMemberAccess, ShopRbacAdmin } from '@inventory-platform/access';
+import { CORE_PRODUCT_SEARCH_FIELDS } from '@inventory-platform/access';
 import { useAuthStore, useNotify, useShopAccessStore } from '@inventory-platform/session';
 import styles from './access-control.module.css';
 

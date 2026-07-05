@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { shopsApi } from '@inventory-platform/api';
-import type { JoinRequest } from '@inventory-platform/types';
+import { shopsApi } from '../api/shops.api';
+import type { JoinRequest } from '@inventory-platform/user/types';
 import { JoinRequestCard } from './JoinRequestCard';
 import styles from './JoinRequestList.module.css';
 import { useNotify } from '@inventory-platform/session';

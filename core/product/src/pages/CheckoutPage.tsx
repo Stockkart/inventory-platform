@@ -1,12 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { cartApi } from '../api/cart.api';
-import type {
-  CartResponse,
-  PaymentMethod,
-  PaymentSplit,
-  UpdateCartStatusDto,
-} from '@inventory-platform/types';
+import type { CartResponse, UpdateCartStatusDto } from '@inventory-platform/product/types';
+import type { PaymentMethod, PaymentSplit } from '@inventory-platform/contracts';
 import {
   PaymentMethodSplit,
   emptyPaymentSplit,

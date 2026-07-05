@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { accountingApi } from '../api/accounting.api';
 import { useNotify } from '@inventory-platform/session';
-import type { ProfitAndLossResponse } from '@inventory-platform/types';
+import type { ProfitAndLossResponse } from '@inventory-platform/accounting/types';
 import { AccountingTabs } from '../ui/AccountingTabs';
 import { formatDate, formatMoney, todayLocalDate } from '../model/format';
 import styles from '../ui/accounting.module.css';

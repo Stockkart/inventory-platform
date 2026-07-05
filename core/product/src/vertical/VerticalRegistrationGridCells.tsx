@@ -1,4 +1,4 @@
-import type { VerticalSchemaFieldDef } from '@inventory-platform/types';
+import type { VerticalSchemaFieldDef } from '@inventory-platform/schema/types';
 import {
   VerticalSchemaFieldInput,
   fieldLabel,

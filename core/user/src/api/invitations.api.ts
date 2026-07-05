@@ -1,14 +1,6 @@
 import { apiClient } from '@inventory-platform/api-client';
-import type {
-  AcceptInvitationResponse,
-  ApiResponse,
-  Invitation,
-  InvitationsResponse,
-  SendInvitationDto,
-  SendInvitationResponse,
-  ShopUser,
-  ShopUsersResponse,
-} from '@inventory-platform/types';
+import type { AcceptInvitationResponse, Invitation, InvitationsResponse, SendInvitationDto, SendInvitationResponse, ShopUser, ShopUsersResponse } from '@inventory-platform/user/types';
+import type { ApiResponse } from '@inventory-platform/contracts';
 import { INVITATION_ENDPOINTS, SHOP_ACCESS_ENDPOINTS } from './endpoints';
 
 export const invitationsApi = {

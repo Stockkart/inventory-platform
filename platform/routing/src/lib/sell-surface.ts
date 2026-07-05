@@ -1,4 +1,4 @@
-import type { SellSurface, ShopUiCapabilities } from '@inventory-platform/types';
+import type { SellSurface, ShopUiCapabilities } from '@inventory-platform/access';
 import type { VerticalPlugin } from './types';
 
 export const DEFAULT_SKU_SCAN_SELL_PATH = '/dashboard/scan-sell';

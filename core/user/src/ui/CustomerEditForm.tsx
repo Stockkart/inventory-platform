@@ -1,4 +1,4 @@
-import type { UpdateCustomerDto } from '@inventory-platform/types';
+import type { UpdateCustomerDto } from '@inventory-platform/user/types';
 import { FormField, FormRow } from '@inventory-platform/ui-kit';
 import styles from './CustomerEditForm.module.css';
 

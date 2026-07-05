@@ -3,11 +3,7 @@ import { useNavigate } from 'react-router';
 import { vendorsApi } from '../api/vendors.api';
 import { EditModal, PaginationBar } from '@inventory-platform/ui-kit';
 import { VendorEditForm } from '../ui';
-import type {
-  VendorResponse,
-  CreateVendorDto,
-  UpdateVendorDto,
-} from '@inventory-platform/types';
+import type { VendorResponse, CreateVendorDto, UpdateVendorDto } from '@inventory-platform/user/types';
 import styles from '././vendors.module.css';
 
 export function meta() {

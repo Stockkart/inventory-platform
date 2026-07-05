@@ -1,9 +1,5 @@
 import { useEffect, useState } from 'react';
-import type {
-  CreateCreditEntryDto,
-  CreditAccountResponse,
-  CreditSettlementPaymentMethod,
-} from '@inventory-platform/types';
+import type { CreateCreditEntryDto, CreditAccountResponse, CreditSettlementPaymentMethod } from '@inventory-platform/credit/types';
 import {
   creditActionCopy,
   presentCreditBalance,

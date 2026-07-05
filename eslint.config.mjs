@@ -21,8 +21,6 @@ export default [
           enforceBuildableLibDependency: true,
           allow: [
             '^.*/eslint(\\.base)?\\.config\\.[cm]?[jt]s$',
-            '@inventory-platform/api',
-            '@inventory-platform/types',
           ],
           depConstraints: [
             {

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuthStore } from '@inventory-platform/session';
-import { shopsApi } from '@inventory-platform/api';
-import type { UserRole, OwnerShopSummary } from '@inventory-platform/types';
+import { shopsApi } from '@inventory-platform/user/shops';
+import type { UserRole, OwnerShopSummary } from '@inventory-platform/user/types';
 import styles from './request-join-shop.module.css';
 import { useNotify } from '@inventory-platform/session';
 

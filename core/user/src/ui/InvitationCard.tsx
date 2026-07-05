@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { invitationsApi } from '../api/invitations.api';
-import type { Invitation, UserRole } from '@inventory-platform/types';
+import type { Invitation, UserRole } from '@inventory-platform/user/types';
 import { RoleBadge } from './RoleBadge';
 import styles from './InvitationCard.module.css';
 import { useNotify } from '@inventory-platform/session';

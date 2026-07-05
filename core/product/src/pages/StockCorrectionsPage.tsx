@@ -7,13 +7,7 @@ import {
 } from 'react';
 import { inventoryApi } from '../api/inventory.api';
 import { useAuthStore, useShopAccessStore } from '@inventory-platform/session';
-import type {
-  InventoryCorrection,
-  InventoryCorrectionLine,
-  InventoryItem,
-  VendorPurchaseInvoiceDetail,
-  VendorPurchaseInvoiceSummary,
-} from '@inventory-platform/types';
+import type { InventoryCorrection, InventoryCorrectionLine, InventoryItem, VendorPurchaseInvoiceDetail, VendorPurchaseInvoiceSummary } from '@inventory-platform/product/types';
 import styles from './stock-corrections.module.css';
 
 export function meta() {

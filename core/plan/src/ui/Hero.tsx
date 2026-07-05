@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Play } from 'lucide-react';
-import { resourcesApi } from '@inventory-platform/api';
-import type { TutorialResourceResponse } from '@inventory-platform/types';
+import { resourcesApi } from '@inventory-platform/shell/api';
+import type { TutorialResourceResponse } from '@inventory-platform/shell/types';
 import { YouTubeHelpModal } from '@inventory-platform/shell';
 import styles from './Hero.module.css';
 

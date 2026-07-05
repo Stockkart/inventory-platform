@@ -18,19 +18,27 @@
       "@inventory-platform/source": "./src/routes/*.tsx",
       "import": "./src/routes/*.tsx",
       "default": "./src/routes/*.tsx"
+    },
+    "./types": {
+      "@inventory-platform/source": "./src/types/index.ts",
+      "types": "./dist/types/index.d.ts",
+      "import": "./src/types/index.ts",
+      "default": "./src/types/index.ts"
     }
   },
   "nx": {
-    "tags": ["type:plugin", "scope:cafe"]
+    "tags": [
+      "type:plugin",
+      "scope:cafe"
+    ]
   },
   "dependencies": {
-    "@inventory-platform/api": "workspace:*",
+    "@inventory-platform/user": "workspace:*",
     "@inventory-platform/product": "workspace:*",
     "@inventory-platform/routing": "workspace:*",
     "@inventory-platform/session": "workspace:*",
-    "@inventory-platform/types": "workspace:*",
     "@inventory-platform/ui-kit": "workspace:*",
-    "@inventory-platform/user": "workspace:*"
+    "@inventory-platform/contracts": "workspace:*"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.90.0",

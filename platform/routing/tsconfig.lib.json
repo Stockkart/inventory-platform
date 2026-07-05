@@ -13,7 +13,7 @@
     "jsx": "react-jsx",
     "types": ["node"],
     "paths": {
-      "@inventory-platform/types": ["../../shared/types/src/index.ts"]
+      "@inventory-platform/access": ["../../platform/access/src/index.ts"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
@@ -23,7 +23,7 @@
   ],
   "references": [
     {
-      "path": "../../shared/types/tsconfig.lib.json"
+      "path": "../access/tsconfig.lib.json"
     }
   ]
 }

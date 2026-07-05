@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { purchasesApi } from '@inventory-platform/api';
-import type { Purchase } from '@inventory-platform/types';
+import { purchasesApi } from '@inventory-platform/product/api';
+import type { Purchase } from '@inventory-platform/product/types';
 import { PaginationBar } from '@inventory-platform/ui-kit';
 import { SaleHistoryCard } from './SaleHistoryCard';
 import { HistoryListSummary } from './HistoryListSummary';

@@ -1,13 +1,7 @@
 import { apiClient } from '@inventory-platform/api-client';
-import type {
-  ApiResponse,
-  CreateReminderDto,
-  InventoryExpiryBuckets,
-  Reminder,
-  ReminderDetail,
-  ReminderDetailListResponse,
-  UpdateReminderDto,
-} from '@inventory-platform/types';
+import type { ApiResponse } from '@inventory-platform/contracts';
+import type { CreateReminderDto, Reminder, ReminderDetail, ReminderDetailListResponse, UpdateReminderDto } from '@inventory-platform/reminders/types';
+import type { InventoryExpiryBuckets } from '@inventory-platform/product/types';
 import { REMINDERS_ENDPOINTS } from './endpoints';
 
 export interface RemindersListResponse {

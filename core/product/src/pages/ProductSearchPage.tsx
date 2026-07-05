@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { cartApi } from '../api/cart.api';
 import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
-import type { BillingMode, InventoryItem, QuotationSummary } from '@inventory-platform/types';
+import type { BillingMode, InventoryItem, QuotationSummary } from '@inventory-platform/product/types';
 import { PaginationBar } from '@inventory-platform/ui-kit';
 import { InventoryAlertDetails } from '../ui';
 import {

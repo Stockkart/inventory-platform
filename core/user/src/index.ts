@@ -2,11 +2,15 @@ export { customersApi, type CustomersListParams } from './api/customers.api';
 export { vendorsApi, type VendorsListParams } from './api/vendors.api';
 export { shopAccessApi } from './api/shop-access.api';
 export { invitationsApi } from './api/invitations.api';
+export { shopsApi } from './api/shops.api';
+export { userLookupApi } from './api/user-lookup.api';
 export {
   CUSTOMER_ENDPOINTS,
   VENDOR_ENDPOINTS,
   SHOP_ACCESS_ENDPOINTS,
   INVITATION_ENDPOINTS,
+  SHOP_ENDPOINTS,
+  USER_ENDPOINTS,
 } from './api/endpoints';
 export { userKeys, USER_MODULE_VERSION } from './queries/keys';
 export * from './queries/hooks';

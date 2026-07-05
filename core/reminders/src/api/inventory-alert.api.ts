@@ -1,9 +1,6 @@
 import { apiClient } from '@inventory-platform/api-client';
-import type {
-  ApiResponse,
-  InventoryItem,
-  PaginationInventoryResponse,
-} from '@inventory-platform/types';
+import type { ApiResponse } from '@inventory-platform/contracts';
+import type { InventoryItem, PaginationInventoryResponse } from '@inventory-platform/product/types';
 import { INVENTORY_ALERT_ENDPOINTS } from './endpoints';
 
 /** Resolve inventory document id for GET/PUT `/inventory/{id}`. */

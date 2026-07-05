@@ -1,12 +1,6 @@
 import { apiClient } from '@inventory-platform/api-client';
-import type {
-  ApiResponse,
-  ShopAccess,
-  ShopMemberAccess,
-  ShopRbacAdmin,
-  UpdateMemberPermissionsRequest,
-  UpdateShopRbacPolicyRequest,
-} from '@inventory-platform/types';
+import type { ApiResponse } from '@inventory-platform/contracts';
+import type { ShopAccess, ShopMemberAccess, ShopRbacAdmin, UpdateMemberPermissionsRequest, UpdateShopRbacPolicyRequest } from '@inventory-platform/access';
 import { SHOP_ACCESS_ENDPOINTS } from './endpoints';
 
 export const shopAccessApi = {

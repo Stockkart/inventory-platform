@@ -16,10 +16,13 @@
     }
   },
   "nx": {
-    "tags": ["type:platform", "scope:routing"]
+    "tags": [
+      "type:platform",
+      "scope:routing"
+    ]
   },
   "dependencies": {
-    "@inventory-platform/types": "workspace:*"
+    "@inventory-platform/access": "workspace:*"
   },
   "peerDependencies": {
     "react": "^19.0.0"

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { invitationsApi } from '../api/invitations.api';
-import type { Invitation } from '@inventory-platform/types';
+import type { Invitation } from '@inventory-platform/user/types';
 import { InvitationCard } from './InvitationCard';
 import styles from './InvitationList.module.css';
 import { useNotify } from '@inventory-platform/session';

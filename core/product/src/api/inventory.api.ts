@@ -5,31 +5,8 @@ import {
   VENDOR_PURCHASE_INVOICES_ENDPOINTS,
   VENDOR_PURCHASE_RETURNS_ENDPOINTS,
 } from './endpoints';
-import type {
-  ApiResponse,
-  CreateInventoryDto,
-  InventoryResponse,
-  InventoryListResponse,
-  InventoryExpiryBuckets,
-  InventorySearchParams,
-  LotsListResponse,
-  PaginationInventoryResponse,
-  BulkCreateInventoryDto,
-  BulkCreateInventoryResponse,
-  ParseInvoiceResponse,
-  UpdateInventoryRequest,
-  InventoryItem,
-  VendorPurchaseInvoiceDetail,
-  VendorPurchaseInvoiceListResponse,
-  VendorPurchaseReturnPayload,
-  VendorPurchaseReturnResult,
-  VendorPurchaseReturnListDto,
-  GetVendorPurchaseReturnsParams,
-  CreateInventoryCorrectionRequest,
-  InventoryCorrection,
-  InventoryCorrectionListResponse,
-  PackagingUnit,
-} from '@inventory-platform/types';
+import type { ApiResponse } from '@inventory-platform/contracts';
+import type { CreateInventoryDto, InventoryResponse, InventoryListResponse, InventoryExpiryBuckets, InventorySearchParams, LotsListResponse, PaginationInventoryResponse, BulkCreateInventoryDto, BulkCreateInventoryResponse, ParseInvoiceResponse, UpdateInventoryRequest, InventoryItem, VendorPurchaseInvoiceDetail, VendorPurchaseInvoiceListResponse, VendorPurchaseReturnPayload, VendorPurchaseReturnResult, VendorPurchaseReturnListDto, GetVendorPurchaseReturnsParams, CreateInventoryCorrectionRequest, InventoryCorrection, InventoryCorrectionListResponse, PackagingUnit } from '@inventory-platform/product/types';
 import axios from 'axios';
 
 /** Resolve inventory document id for GET/PUT `/inventory/{id}`. */

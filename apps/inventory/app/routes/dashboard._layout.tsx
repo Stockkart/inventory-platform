@@ -7,8 +7,8 @@ import {
   useShopCapabilitiesStore,
   useShopAccessStore,
 } from '@inventory-platform/session';
-import { apiClient } from '@inventory-platform/api';
-import { isPlanExpiryAllowedPath } from '@inventory-platform/types';
+import { apiClient } from '@inventory-platform/api-client';
+import { isPlanExpiryAllowedPath } from '@inventory-platform/plan/types';
 import { VerticalPluginProvider } from '@inventory-platform/routing';
 import {
   DashboardLayout,

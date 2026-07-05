@@ -13,14 +13,23 @@
       "types": "./dist/index.d.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./types": {
+      "@inventory-platform/source": "./src/types/index.ts",
+      "types": "./dist/types/index.d.ts",
+      "import": "./src/types/index.ts",
+      "default": "./src/types/index.ts"
     }
   },
   "nx": {
-    "tags": ["type:platform", "scope:schema"]
+    "tags": [
+      "type:platform",
+      "scope:schema"
+    ]
   },
   "dependencies": {
-    "@inventory-platform/types": "workspace:*",
-    "@inventory-platform/ui-kit": "workspace:*"
+    "@inventory-platform/ui-kit": "workspace:*",
+    "@inventory-platform/contracts": "workspace:*"
   },
   "peerDependencies": {
     "react": "^19.0.0"

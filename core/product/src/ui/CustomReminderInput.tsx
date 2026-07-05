@@ -1,4 +1,4 @@
-import type { CustomReminderInput } from '@inventory-platform/types';
+import type { CustomReminderInput } from '@inventory-platform/reminders/types';
 import styles from './CustomReminderInput.module.css';
 
 interface CustomReminderInputProps {

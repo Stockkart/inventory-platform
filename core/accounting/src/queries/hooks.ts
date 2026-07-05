@@ -5,15 +5,7 @@ import {
   type UseMutationOptions,
   type UseQueryOptions,
 } from '@tanstack/react-query';
-import type {
-  AccountResponse,
-  CreateAccountRequest,
-  CreateJournalEntryRequest,
-  JournalEntriesPageResponse,
-  JournalEntryResponse,
-  ReverseJournalRequest,
-  UpdateAccountRequest,
-} from '@inventory-platform/types';
+import type { AccountResponse, CreateAccountRequest, CreateJournalEntryRequest, JournalEntriesPageResponse, JournalEntryResponse, ReverseJournalRequest, UpdateAccountRequest } from '@inventory-platform/accounting/types';
 import {
   accountingApi,
   type JournalListParams,

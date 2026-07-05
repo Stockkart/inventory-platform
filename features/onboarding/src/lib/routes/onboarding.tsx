@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { useAuthStore, useVerticalSchemaStore, useNotify } from '@inventory-platform/session';
-import { shopsApi, verticalsApi } from '@inventory-platform/api';
-import type {
-  OnboardingStep,
-  ShopType,
-  VerticalSchemaFieldDef,
-  VerticalSummary,
-} from '@inventory-platform/types';
+import { shopsApi } from '@inventory-platform/user/shops';
+import { verticalsApi } from '@inventory-platform/session/api';
+import type { OnboardingStep } from '@inventory-platform/shell/types';
+import type { ShopType } from '@inventory-platform/user/types';
+import type { VerticalSchemaFieldDef, VerticalSummary } from '@inventory-platform/schema/types';
 import {
   VerticalSchemaFieldInput,
   fieldLabel,

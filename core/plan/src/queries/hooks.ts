@@ -5,15 +5,7 @@ import {
   type UseMutationOptions,
   type UseQueryOptions,
 } from '@tanstack/react-query';
-import type {
-  CreatePlanCheckoutRequest,
-  PlanCheckoutResponse,
-  PlanResponse,
-  PlanTransactionResponse,
-  ShopPlanStatusResponse,
-  VerifyPlanPaymentRequest,
-  VerifyPlanPaymentResponse,
-} from '@inventory-platform/types';
+import type { CreatePlanCheckoutRequest, PlanCheckoutResponse, PlanResponse, PlanTransactionResponse, ShopPlanStatusResponse, VerifyPlanPaymentRequest, VerifyPlanPaymentResponse } from '@inventory-platform/plan/types';
 import { plansApi } from '../api/plans.api';
 import { planKeys } from './keys';
 

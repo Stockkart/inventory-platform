@@ -12,8 +12,7 @@
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
     "baseUrl": ".",
     "paths": {
-      "@inventory-platform/session": ["../../platform/session/src/index.ts"],
-      "@inventory-platform/api": ["../../shared/api/src/index.ts"],
+      "@inventory-platform/session/api": ["../../platform/session/src/api/index.ts"],
       "@inventory-platform/auth/forms": ["./src/lib/forms/index.ts"]
     }
   },
@@ -38,9 +37,6 @@
   "references": [
     {
       "path": "../../platform/session/tsconfig.lib.json"
-    },
-    {
-      "path": "../../shared/api/tsconfig.lib.json"
     }
   ]
 }

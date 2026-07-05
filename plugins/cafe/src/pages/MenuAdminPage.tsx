@@ -7,8 +7,8 @@ import {
   type FormEvent,
 } from 'react';
 import { cartApi, shopMenuApi } from '@inventory-platform/product/api';
-import type { MenuItem, MenuSection, ShopMenu } from '@inventory-platform/types';
-import { menuSellableRef } from '@inventory-platform/types';
+import type { MenuItem, MenuSection, ShopMenu } from '@inventory-platform/plugin-cafe/types';
+import { menuSellableRef } from '@inventory-platform/product/types';
 import { useNotify, useVerticalSchemaStore } from '@inventory-platform/session';
 import styles from './menu.module.css';
 

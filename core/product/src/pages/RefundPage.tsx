@@ -1,19 +1,10 @@
 import { useState, FormEvent, useEffect, useMemo, useCallback } from 'react';
 import { useLocation } from 'react-router';
-import { refundsApi } from '@inventory-platform/api';
-import type {
-  CheckoutItemResponse,
-  CustomerResponse,
-  PaymentMethod,
-  PaymentSplit,
-  Purchase,
-  RefundItem,
-  SearchPurchasesParams,
-} from '@inventory-platform/types';
-import {
-  inventoryLotIdFromSellableRef,
-  lineSellableRef,
-} from '@inventory-platform/types';
+import { refundsApi } from '@inventory-platform/product/api';
+import type { CheckoutItemResponse, Purchase, RefundItem, SearchPurchasesParams } from '@inventory-platform/product/types';
+import type { CustomerResponse } from '@inventory-platform/user/types';
+import type { PaymentMethod, PaymentSplit } from '@inventory-platform/contracts';
+import { inventoryLotIdFromSellableRef, lineSellableRef } from '@inventory-platform/product/types';
 import { PaginationBar } from '@inventory-platform/ui-kit';
 import { useCapabilityFeatureGuard } from '@inventory-platform/shell';
 import {

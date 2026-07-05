@@ -5,20 +5,8 @@ import {
   type UseMutationOptions,
   type UseQueryOptions,
 } from '@tanstack/react-query';
-import type {
-  CreateCustomerDto,
-  CreateVendorDto,
-  CustomerListResponse,
-  CustomerResponse,
-  ShopMemberAccess,
-  ShopRbacAdmin,
-  UpdateCustomerDto,
-  UpdateMemberPermissionsRequest,
-  UpdateShopRbacPolicyRequest,
-  UpdateVendorDto,
-  VendorListResponse,
-  VendorResponse,
-} from '@inventory-platform/types';
+import type { CreateCustomerDto, CreateVendorDto, CustomerListResponse, CustomerResponse, UpdateCustomerDto, UpdateVendorDto, VendorListResponse, VendorResponse } from '@inventory-platform/user/types';
+import type { ShopMemberAccess, ShopRbacAdmin, UpdateMemberPermissionsRequest, UpdateShopRbacPolicyRequest } from '@inventory-platform/access';
 import {
   customersApi,
   type CustomersListParams,

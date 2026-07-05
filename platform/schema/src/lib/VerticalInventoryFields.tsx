@@ -1,4 +1,4 @@
-import type { VerticalSchemaFieldDef } from '@inventory-platform/types';
+import type { VerticalSchemaFieldDef } from '@inventory-platform/schema/types';
 import { formStyles } from '@inventory-platform/ui-kit/form-styles';
 import { VerticalSchemaFieldInput } from './VerticalSchemaFieldInput';
 import {

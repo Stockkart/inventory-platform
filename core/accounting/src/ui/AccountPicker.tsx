@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import type { AccountResponse } from '@inventory-platform/types';
+import type { AccountResponse } from '@inventory-platform/accounting/types';
 import styles from './accounting.module.css';
 
 type Props = {

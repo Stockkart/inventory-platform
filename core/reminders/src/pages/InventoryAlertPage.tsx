@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router';
-import type { InventoryItem } from '@inventory-platform/types';
+import type { InventoryItem } from '@inventory-platform/product/types';
 import { InventoryAlertDetails } from '@inventory-platform/product';
 import { PaginationBar } from '@inventory-platform/ui-kit';
 import { useAuthStore, useShopAccessStore } from '@inventory-platform/session';

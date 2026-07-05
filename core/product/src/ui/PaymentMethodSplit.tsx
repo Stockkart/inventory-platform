@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useMemo, useRef } from 'react';
-import type { PaymentMethod, PaymentSplit } from '@inventory-platform/types';
+import type { PaymentMethod, PaymentSplit } from '@inventory-platform/contracts';
 import styles from './PaymentMethodSplit.module.css';
 import {
   PAYMENT_METHODS,

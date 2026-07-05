@@ -5,16 +5,8 @@ import {
   type UseMutationOptions,
   type UseQueryOptions,
 } from '@tanstack/react-query';
-import type {
-  CreateReminderDto,
-  InventoryExpiryBuckets,
-  InventoryItem,
-  PaginationInventoryResponse,
-  Reminder,
-  ReminderDetail,
-  ReminderDetailListResponse,
-  UpdateReminderDto,
-} from '@inventory-platform/types';
+import type { CreateReminderDto, Reminder, ReminderDetail, ReminderDetailListResponse, UpdateReminderDto } from '@inventory-platform/reminders/types';
+import type { InventoryExpiryBuckets, InventoryItem, PaginationInventoryResponse } from '@inventory-platform/product/types';
 import { inventoryAlertApi } from '../api/inventory-alert.api';
 import {
   remindersApi,

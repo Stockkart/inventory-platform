@@ -1,4 +1,4 @@
-import type { CreditAccountResponse } from '@inventory-platform/types';
+import type { CreditAccountResponse } from '@inventory-platform/credit/types';
 import type { CreditBalanceTone } from '../model/credit-utils';
 import { presentCreditBalance } from '../model/credit-utils';
 import styles from './credit.module.css';

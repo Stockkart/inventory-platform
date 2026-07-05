@@ -1,9 +1,4 @@
-import type {
-  CreditAccountResponse,
-  CreditEntryResponse,
-  CreditPartyType,
-} from '@inventory-platform/types';
-
+import type { CreditAccountResponse, CreditEntryResponse, CreditPartyType } from '@inventory-platform/credit/types';
 export function formatMoney(n: number): string {
   return new Intl.NumberFormat('en-IN', {
     minimumFractionDigits: 2,

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { inventoryApi } from '../api/inventory.api';
-import type { VendorPurchaseReturnSummary } from '@inventory-platform/types';
+import type { VendorPurchaseReturnSummary } from '@inventory-platform/product/types';
 import { useNotify } from '@inventory-platform/session';
 import recordStyles from './HistoryRecordList.module.css';
 import { PaginationBar } from '@inventory-platform/ui-kit';

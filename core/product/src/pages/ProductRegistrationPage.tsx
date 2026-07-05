@@ -9,32 +9,16 @@ import {
 } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { QRCodeSVG } from 'qrcode.react';
-import { uploadApi, usersApi, apiClient } from '@inventory-platform/api';
+import { uploadApi } from '@inventory-platform/product/api';
+import { apiClient } from '@inventory-platform/api-client';
+import { userLookupApi } from '@inventory-platform/user/users';
 import { inventoryApi } from '../api/inventory.api';
 import { vendorsApi } from '@inventory-platform/user/vendors';
-import type {
-  CreateInventoryDto,
-  CustomReminderInput,
-  LinkableUser,
-  Vendor,
-  VendorResponse,
-  CreateVendorDto,
-  VendorBusinessType,
-  BulkCreateInventoryDto,
-  ParseInvoiceItem,
-  ParsedVendorInvoiceDto,
-  VendorPurchaseInvoicePayload,
-  PricingRate,
-  UploadStatus,
-  ItemType,
-  DiscountApplicable,
-  SchemeType,
-  PurchaseSchemeInputType,
-  PackagingUnit,
-  BillingMode,
-  PaymentMethod,
-  PaymentSplit,
-} from '@inventory-platform/types';
+import type { CreateInventoryDto, BulkCreateInventoryDto, ParseInvoiceItem, ParsedVendorInvoiceDto, VendorPurchaseInvoicePayload, UploadStatus, ItemType, DiscountApplicable, SchemeType, PurchaseSchemeInputType, PackagingUnit, BillingMode } from '@inventory-platform/product/types';
+import type { CustomReminderInput } from '@inventory-platform/reminders/types';
+import type { LinkableUser, Vendor, VendorResponse, CreateVendorDto, VendorBusinessType } from '@inventory-platform/user/types';
+import type { PricingRate } from '@inventory-platform/pricing/types';
+import type { PaymentMethod, PaymentSplit } from '@inventory-platform/contracts';
 import {
   PaymentMethodSplit,
   emptyPaymentSplit,
@@ -70,7 +54,7 @@ import {
   useShopCapabilitiesStore,
   shopSchemaCacheKey,
 } from '@inventory-platform/session';
-import type { VerticalSchemaFieldDef } from '@inventory-platform/types';
+import type { VerticalSchemaFieldDef } from '@inventory-platform/schema/types';
 import {
   VerticalRegistrationGridCells,
   VerticalRegistrationGridCompanyCell,
@@ -2471,7 +2455,7 @@ export function ProductRegistrationPage() {
     setUserSearchMessage(null);
     setLinkedUser(null);
     try {
-      const user = await usersApi.searchByEmail(email);
+      const user = await userLookupApi.searchByEmail(email);
       if (user) {
         setLinkedUser(user);
         setUserSearchMessage(`Found: ${user.name} (${user.email})`);

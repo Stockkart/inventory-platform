@@ -8,19 +8,12 @@ import {
   useState,
 } from 'react';
 import { useNavigate } from 'react-router';
-import { usersApi } from '@inventory-platform/api';
+import { userLookupApi } from '@inventory-platform/user/users';
 import { cartApi, sellCatalogApi } from '@inventory-platform/product/api';
 import { customersApi } from '@inventory-platform/user/customers';
-import type {
-  CartResponse,
-  MenuItem,
-  SellCatalog,
-  ShopMenu,
-} from '@inventory-platform/types';
-import {
-  lineSellableRef,
-  menuSellableRef,
-} from '@inventory-platform/types';
+import type { CartResponse } from '@inventory-platform/product/types';
+import type { MenuItem, SellCatalog, ShopMenu } from '@inventory-platform/plugin-cafe/types';
+import { lineSellableRef, menuSellableRef } from '@inventory-platform/product/types';
 import { useNotify, useVerticalSchemaStore } from '@inventory-platform/session';
 import {
   CustomerProductHistoryHint,
@@ -526,7 +519,7 @@ export function MenuSellPage() {
     setUserSearchMessage(null);
     setLinkedUser(null);
     try {
-      const user = await usersApi.searchByEmail(email);
+      const user = await userLookupApi.searchByEmail(email);
       if (user) {
         setLinkedUser({
           userId: user.userId,

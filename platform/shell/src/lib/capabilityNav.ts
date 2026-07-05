@@ -1,4 +1,5 @@
-import type { ShopUiCapabilities, ShopAccess, DashboardVerticalPlugin } from '@inventory-platform/types';
+import type { ShopUiCapabilities, ShopAccess } from '@inventory-platform/access';
+import type { DashboardVerticalPlugin } from '@inventory-platform/shell/types';
 import type { VerticalPlugin } from '@inventory-platform/routing';
 import { resolveSellPath } from '@inventory-platform/routing';
 import type { DashboardMenuGroup, DashboardMenuItem } from './dashboardNavConfig';

@@ -13,25 +13,11 @@ import { cartApi } from '../api/cart.api';
 import { sellCatalogApi } from '../api/sell-catalog.api';
 import { pricingClient } from '../api/pricing-client.api';
 import { customersApi } from '@inventory-platform/user/customers';
-import type {
-  AvailableUnit,
-  BillingMode,
-  InventoryItem,
-  CartResponse,
-  CheckoutItemResponse,
-  PricingResponse,
-  CustomerResponse,
-  QuotationSummary,
-  MenuItem,
-  SellCatalog,
-} from '@inventory-platform/types';
-import {
-  inventoryLotIdFromSellableRef,
-  inventorySellableRef,
-  lineSellableRef,
-  menuSellableRef,
-  menuItemIdFromSellableRef,
-} from '@inventory-platform/types';
+import type { AvailableUnit, BillingMode, InventoryItem, CartResponse, CheckoutItemResponse, QuotationSummary } from '@inventory-platform/product/types';
+import type { PricingResponse } from '@inventory-platform/pricing/types';
+import type { CustomerResponse } from '@inventory-platform/user/types';
+import type { MenuItem, SellCatalog } from '@inventory-platform/plugin-cafe/types';
+import { inventoryLotIdFromSellableRef, inventorySellableRef, lineSellableRef, menuSellableRef, menuItemIdFromSellableRef } from '@inventory-platform/product/types';
 import styles from './scan-sell.module.css';
 import { CafeSellCatalogPanel } from '../ui/CafeSellCatalogPanel';
 import { ScanSellMenuCartLine } from '../ui/ScanSellMenuCartLine';

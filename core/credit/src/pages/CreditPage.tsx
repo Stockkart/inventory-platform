@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { CreateCreditEntryDto } from '@inventory-platform/types';
+import type { CreateCreditEntryDto } from '@inventory-platform/credit/types';
 import { useNotify } from '@inventory-platform/session';
 import {
   useChargeMutation,

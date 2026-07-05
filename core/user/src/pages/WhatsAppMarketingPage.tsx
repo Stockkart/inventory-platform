@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { customersApi } from '@inventory-platform/user/customers';
 import { EditModal, PaginationBar } from '@inventory-platform/ui-kit';
-import type { CustomerResponse } from '@inventory-platform/types';
+import type { CustomerResponse } from '@inventory-platform/user/types';
 import styles from './whatsapp-marketing.module.css';
 
 const MOCK_TEMPLATES = [

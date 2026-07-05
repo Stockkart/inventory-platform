@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuthStore } from '@inventory-platform/session';
-import type { ShopMembership } from '@inventory-platform/types';
+import type { ShopMembership } from '@inventory-platform/session/types';
 import styles from './UserMenuShopSection.module.css';
 
 export interface UserMenuShopSectionProps {

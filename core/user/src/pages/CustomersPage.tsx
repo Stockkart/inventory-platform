@@ -4,11 +4,7 @@ import { customersApi } from '../api/customers.api';
 import { EditModal, PaginationBar } from '@inventory-platform/ui-kit';
 import { CustomerEditForm } from '../ui';
 import { useResolvedSellPath } from '@inventory-platform/routing';
-import type {
-  CustomerResponse,
-  CreateCustomerDto,
-  UpdateCustomerDto,
-} from '@inventory-platform/types';
+import type { CustomerResponse, CreateCustomerDto, UpdateCustomerDto } from '@inventory-platform/user/types';
 import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/session';
 import styles from '././customers.module.css';
 

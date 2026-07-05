@@ -1,5 +1,6 @@
 import { apiClient } from '@inventory-platform/api-client';
-import type { ApiResponse, Gstr2ReportResponse } from '@inventory-platform/types';
+import type { ApiResponse } from '@inventory-platform/contracts';
+import type { Gstr2ReportResponse } from '@inventory-platform/taxation/types';
 import { downloadTaxationBlob } from './download';
 import { TAXATION_ENDPOINTS } from './endpoints';
 

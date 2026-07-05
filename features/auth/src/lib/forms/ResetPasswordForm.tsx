@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router';
-import { authApi } from '@inventory-platform/api';
+import { authApi } from '@inventory-platform/session/api';
 import styles from './LoginForm.module.css';
 
 export function ResetPasswordForm() {

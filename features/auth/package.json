@@ -17,7 +17,6 @@
     }
   },
   "dependencies": {
-    "@inventory-platform/api": "workspace:*",
     "@inventory-platform/session": "workspace:*"
   },
   "nx": {

@@ -30,10 +30,19 @@
       "types": "./dist/ui/index.d.ts",
       "import": "./src/ui/index.ts",
       "default": "./src/ui/index.ts"
+    },
+    "./types": {
+      "@inventory-platform/source": "./src/model/index.ts",
+      "types": "./dist/model/index.d.ts",
+      "import": "./src/model/index.ts",
+      "default": "./src/model/index.ts"
     }
   },
   "nx": {
-    "tags": ["type:core", "scope:plan"]
+    "tags": [
+      "type:core",
+      "scope:plan"
+    ]
   },
   "dependencies": {
     "@inventory-platform/api-client": "workspace:*",
@@ -41,9 +50,8 @@
     "@inventory-platform/query": "workspace:*",
     "@inventory-platform/routing": "workspace:*",
     "@inventory-platform/session": "workspace:*",
-    "@inventory-platform/types": "workspace:*",
     "@inventory-platform/shell": "workspace:*",
-    "@inventory-platform/api": "workspace:*"
+    "@inventory-platform/contracts": "workspace:*"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.90.0",

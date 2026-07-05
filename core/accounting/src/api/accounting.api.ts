@@ -1,23 +1,5 @@
 import { apiClient } from '@inventory-platform/api-client';
-import type {
-  AccountResponse,
-  AccountingPartyType,
-  BackfillResult,
-  CreateAccountRequest,
-  BalanceSheetResponse,
-  CreateJournalEntryRequest,
-  JournalEntriesPageResponse,
-  JournalEntryResponse,
-  JournalSource,
-  LedgerPageResponse,
-  OpeningBalanceRequest,
-  PartyStatementResponse,
-  PartySummariesResponse,
-  ProfitAndLossResponse,
-  ReverseJournalRequest,
-  TrialBalanceResponse,
-  UpdateAccountRequest,
-} from '@inventory-platform/types';
+import type { AccountResponse, AccountingPartyType, BackfillResult, CreateAccountRequest, BalanceSheetResponse, CreateJournalEntryRequest, JournalEntriesPageResponse, JournalEntryResponse, JournalSource, LedgerPageResponse, OpeningBalanceRequest, PartyStatementResponse, PartySummariesResponse, ProfitAndLossResponse, ReverseJournalRequest, TrialBalanceResponse, UpdateAccountRequest } from '@inventory-platform/accounting/types';
 import { ACCOUNTING_ENDPOINTS } from './endpoints';
 
 function unwrap<T>(raw: unknown): T | undefined {

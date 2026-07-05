@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react';
-import type {
-  CheckoutItemResponse,
-  CustomerProductHistoryResponse,
-} from '@inventory-platform/types';
-import { lineSellableRef } from '@inventory-platform/types';
+import type { CheckoutItemResponse, CustomerProductHistoryResponse } from '@inventory-platform/product/types';
+import { lineSellableRef } from '@inventory-platform/product/types';
 import { CustomerProductHistoryHint } from './CustomerProductHistoryHint';
 import styles from '../pages/scan-sell.module.css';
 

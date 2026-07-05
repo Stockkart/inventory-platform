@@ -5,10 +5,7 @@ import {
   type UseMutationOptions,
   type UseQueryOptions,
 } from '@tanstack/react-query';
-import type {
-  PatchPricingDto,
-  PricingResponse,
-} from '@inventory-platform/types';
+import type { PatchPricingDto, PricingResponse } from '@inventory-platform/pricing/types';
 import { pricingApi } from '../api/pricing.api';
 import { pricingKeys } from './keys';
 

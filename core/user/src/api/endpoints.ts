@@ -28,3 +28,20 @@ export const INVITATION_ENDPOINTS = {
   ACCEPT: (invitationId: string) => `/invitations/${invitationId}/accept`,
   MY_INVITATIONS: '/users/invitations',
 } as const;
+
+/** Shop registration and join-request paths. */
+export const SHOP_ENDPOINTS = {
+  REGISTER: '/shops/register',
+  ACTIVE_SHOP: '/shops/active-shop',
+  BY_ID: (shopId: string) => `/shops/${shopId}`,
+  BY_OWNER_EMAIL: '/shops/by-owner-email',
+  JOIN_REQUEST: '/shops/join-request',
+  JOIN_REQUESTS: '/shops/join-requests',
+  PROCESS_JOIN_REQUEST: (requestId: string) =>
+    `/shops/join-requests/${requestId}/process`,
+} as const;
+
+/** User lookup paths (vendor/customer linking). */
+export const USER_ENDPOINTS = {
+  SEARCH: '/users/search',
+} as const;

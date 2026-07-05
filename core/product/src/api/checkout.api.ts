@@ -1,9 +1,6 @@
 import { apiClient } from '@inventory-platform/api-client';
-import type {
-  ApiResponse,
-  CheckoutResponse,
-  CreateCheckoutDto,
-} from '@inventory-platform/types';
+import type { ApiResponse } from '@inventory-platform/contracts';
+import type { CheckoutResponse, CreateCheckoutDto } from '@inventory-platform/product/types';
 import { CHECKOUT_ENDPOINTS } from './endpoints';
 
 export const checkoutApi = {

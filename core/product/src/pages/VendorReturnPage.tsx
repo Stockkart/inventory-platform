@@ -1,13 +1,9 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router';
 import { inventoryApi } from '@inventory-platform/product/api';
-import type {
-  InventoryItem,
-  VendorPurchaseInvoiceDetail,
-  VendorPurchaseInvoiceSummary,
-  VendorResponse,
-} from '@inventory-platform/types';
-import type { PaymentMethod, PaymentSplit } from '@inventory-platform/types';
+import type { InventoryItem, VendorPurchaseInvoiceDetail, VendorPurchaseInvoiceSummary } from '@inventory-platform/product/types';
+import type { VendorResponse } from '@inventory-platform/user/types';
+import type { PaymentMethod, PaymentSplit } from '@inventory-platform/contracts';
 import { PaginationBar } from '@inventory-platform/ui-kit';
 import { useCapabilityFeatureGuard } from '@inventory-platform/shell';
 import {

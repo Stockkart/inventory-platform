@@ -1,9 +1,4 @@
-import type {
-  SchemaDisplayMode,
-  VerticalSchemaFieldDef,
-  VerticalSchemaSurface,
-} from '@inventory-platform/types';
-
+import type { SchemaDisplayMode, VerticalSchemaFieldDef, VerticalSchemaSurface } from '@inventory-platform/schema/types';
 /** Product or form row that may carry core props and/or a verticalFields bag. */
 export type VerticalFieldProduct = {
   id?: string;

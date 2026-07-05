@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { authApi } from '@inventory-platform/api';
+import { authApi } from '@inventory-platform/session/api';
 import styles from './LoginForm.module.css';
 
 export function ForgotPasswordForm() {

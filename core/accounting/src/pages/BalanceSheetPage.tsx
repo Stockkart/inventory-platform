@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { accountingApi } from '../api/accounting.api';
 import { useNotify } from '@inventory-platform/session';
-import type { BalanceSheetResponse, FinancialReportLineDto } from '@inventory-platform/types';
+import type { BalanceSheetResponse, FinancialReportLineDto } from '@inventory-platform/accounting/types';
 import { AccountingTabs } from '../ui/AccountingTabs';
 import { formatDate, formatMoney, todayLocalDate } from '../model/format';
 import styles from '../ui/accounting.module.css';

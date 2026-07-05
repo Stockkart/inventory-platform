@@ -2,7 +2,7 @@ import { useState, FormEvent, useEffect } from 'react';
 import { useParams, useLocation, Link } from 'react-router';
 import { pricingApi } from '../api/pricing.api';
 import { useNotify } from '@inventory-platform/session';
-import type { PricingRate } from '@inventory-platform/types';
+import type { PricingRate } from '@inventory-platform/pricing/types';
 import styles from '././price-edit.module.css';
 
 export function meta() {

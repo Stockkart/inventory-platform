@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import type { AccountResponse, CreateJournalLineRequest } from '@inventory-platform/types';
+import type { AccountResponse, CreateJournalLineRequest } from '@inventory-platform/accounting/types';
 import { AccountPicker } from './AccountPicker';
 import { PartyLineFields } from './PartyLineFields';
 import {

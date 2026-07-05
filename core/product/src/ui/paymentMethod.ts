@@ -1,5 +1,4 @@
-import type { PaymentMethod, PaymentSplit } from '@inventory-platform/types';
-
+import type { PaymentMethod, PaymentSplit } from '@inventory-platform/contracts';
 /**
  * The set of canonical payment methods (mirrors the union in api-types). Kept
  * as a runtime array so the UI can iterate / validate without depending on

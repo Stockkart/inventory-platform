@@ -1,4 +1,4 @@
-import type { QuotationSummary } from '@inventory-platform/types';
+import type { QuotationSummary } from '@inventory-platform/product/types';
 import styles from './AddToSellQuotationPicker.module.css';
 
 function formatMoney(n: number): string {

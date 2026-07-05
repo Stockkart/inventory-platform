@@ -1,11 +1,6 @@
 import { apiClient } from '@inventory-platform/api-client';
-import type {
-  ApiResponse,
-  CreateVendorDto,
-  UpdateVendorDto,
-  VendorListResponse,
-  VendorResponse,
-} from '@inventory-platform/types';
+import type { ApiResponse } from '@inventory-platform/contracts';
+import type { CreateVendorDto, UpdateVendorDto, VendorListResponse, VendorResponse } from '@inventory-platform/user/types';
 import { VENDOR_ENDPOINTS } from './endpoints';
 
 export type VendorsListParams = {

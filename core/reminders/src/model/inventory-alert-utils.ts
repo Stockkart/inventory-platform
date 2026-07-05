@@ -1,5 +1,4 @@
-import type { InventoryItem } from '@inventory-platform/types';
-
+import type { InventoryItem } from '@inventory-platform/product/types';
 export type LowStockAlertRow = {
   id: string;
   product: string;

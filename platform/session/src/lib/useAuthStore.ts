@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { authApi, usersApi } from '@inventory-platform/api';
+import { authApi } from '../api/auth.api';
+import { usersApi } from '../api/users.api';
 import { apiClient } from '@inventory-platform/api-client';
-import type { LoginDto, SignupDto } from '@inventory-platform/types';
-import type { AuthState } from '@inventory-platform/types';
+import type { LoginDto, SignupDto, AuthState } from '../model/index.js';
 import { useVerticalSchemaStore } from './useVerticalSchemaStore';
 import { usePlanStatusStore } from './usePlanStatusStore';
 import { useShopAccessStore } from './useShopAccessStore';

@@ -1,4 +1,4 @@
-import type { CreateJournalLineRequest } from '@inventory-platform/types';
+import type { CreateJournalLineRequest } from '@inventory-platform/accounting/types';
 import { needsPartyOnLine } from './accountingConstants';
 
 export type DraftLine = {

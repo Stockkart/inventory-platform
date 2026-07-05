@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import type { PlanResponse } from '@inventory-platform/types';
+import type { PlanResponse } from '@inventory-platform/plan/types';
 import { buildPlanFeatures } from './PlanGrid';
 import styles from './PlanCarousel.module.css';
 

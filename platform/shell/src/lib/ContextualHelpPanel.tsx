@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ExternalLink, Loader2, Play, X } from 'lucide-react';
-import { resourcesApi } from '@inventory-platform/api';
-import type { TutorialResourceResponse } from '@inventory-platform/types';
+import { resourcesApi } from '../api/resources.api';
+import type { TutorialResourceResponse } from '@inventory-platform/shell/types';
 import { YouTubeHelpModal } from './YouTubeHelpModal';
 import styles from './ContextualHelpPanel.module.css';
 

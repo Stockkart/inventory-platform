@@ -1,10 +1,5 @@
 import { apiClient } from '@inventory-platform/api-client';
-import type {
-  CreateCreditEntryDto,
-  CreditAccountResponse,
-  CreditEntriesPageResponse,
-  CreditEntryResponse,
-} from '@inventory-platform/types';
+import type { CreateCreditEntryDto, CreditAccountResponse, CreditEntriesPageResponse, CreditEntryResponse } from '@inventory-platform/credit/types';
 import { CREDIT_ENDPOINTS } from './endpoints';
 
 function unwrapApiData<T>(raw: unknown): T | undefined {

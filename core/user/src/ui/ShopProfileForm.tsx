@@ -1,4 +1,4 @@
-import type { Location } from '@inventory-platform/types';
+import type { Location } from '@inventory-platform/user/types';
 import { FormField, FormRow } from '@inventory-platform/ui-kit';
 import styles from './ShopProfileForm.module.css';
 

@@ -61,3 +61,24 @@ export const INVOICE_ENDPOINTS = {
       ? `/invoices/${purchaseId}/pdf?printerType=${printerType}`
       : `/invoices/${purchaseId}/pdf`,
 } as const;
+
+/** Purchase history paths. */
+export const PURCHASE_ENDPOINTS = {
+  BASE: '/purchases',
+  SEARCH: '/purchases/search',
+  CUSTOMER_PRODUCT_HISTORY: '/purchases/customer-product-history',
+} as const;
+
+/** Refund paths. */
+export const REFUND_ENDPOINTS = {
+  BASE: '/refund',
+} as const;
+
+/** QR upload pairing paths. */
+export const UPLOAD_ENDPOINTS = {
+  CREATE_TOKEN: '/session/create-upload-token',
+  VALIDATE_TOKEN: (token: string) => `/m/upload/validate?token=${token}`,
+  UPLOAD_IMAGE: (token: string) => `/m/upload?token=${token}`,
+  STATUS: (token: string) => `/upload/status?token=${token}`,
+  PARSED_ITEMS: (token: string) => `/upload/parsed-items?token=${token}`,
+} as const;
