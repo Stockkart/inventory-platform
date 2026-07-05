@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { DASHBOARD_HOTKEY, getShortcutHelpRows } from './dashboardHotkeys';
-import type { DashboardNavRow } from './dashboardNavConfig';
+import type { DashboardNavRow } from '@inventory-platform/plugin-registry';
 import type { FavoritePageShortcut } from './favoritePageShortcuts';
 import {
   addOrUpdateFavoritePageShortcut,

@@ -620,6 +620,9 @@ importers:
       '@inventory-platform/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@inventory-platform/plugin-registry':
+        specifier: workspace:*
+        version: link:../../plugins/registry
       '@inventory-platform/routing':
         specifier: workspace:*
         version: link:../routing
@@ -680,9 +683,36 @@ importers:
 
   plugins/registry:
     dependencies:
+      '@inventory-platform/accounting':
+        specifier: workspace:*
+        version: link:../../core/accounting
+      '@inventory-platform/analytics':
+        specifier: workspace:*
+        version: link:../../core/analytics
+      '@inventory-platform/credit':
+        specifier: workspace:*
+        version: link:../../core/credit
+      '@inventory-platform/plan':
+        specifier: workspace:*
+        version: link:../../core/plan
+      '@inventory-platform/pricing':
+        specifier: workspace:*
+        version: link:../../core/pricing
+      '@inventory-platform/product':
+        specifier: workspace:*
+        version: link:../../core/product
+      '@inventory-platform/reminders':
+        specifier: workspace:*
+        version: link:../../core/reminders
       '@inventory-platform/routing':
         specifier: workspace:*
         version: link:../../platform/routing
+      '@inventory-platform/taxation':
+        specifier: workspace:*
+        version: link:../../core/taxation
+      '@inventory-platform/user':
+        specifier: workspace:*
+        version: link:../../core/user
       zustand:
         specifier: ^5.0.8
         version: 5.0.8(@types/react@19.2.7)(immer@11.1.0)(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))

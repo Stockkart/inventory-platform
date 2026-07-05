@@ -4,6 +4,5 @@ packages:
   - 'features/*'
   - 'platform/*'
   - 'plugins/*'
-  - 'shared/*'
   - 'ui-kit'
 autoInstallPeers: true

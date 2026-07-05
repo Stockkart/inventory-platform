@@ -37,6 +37,7 @@
     "@inventory-platform/ui-kit": "workspace:*",
     "@inventory-platform/access": "workspace:*",
     "@inventory-platform/api-client": "workspace:*",
+    "@inventory-platform/plugin-registry": "workspace:*",
     "@inventory-platform/routing": "workspace:*",
     "@inventory-platform/session": "workspace:*",
     "@inventory-platform/user": "workspace:*",

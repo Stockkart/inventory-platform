@@ -30,6 +30,12 @@
       "types": "./dist/model/index.d.ts",
       "import": "./src/model/index.ts",
       "default": "./src/model/index.ts"
+    },
+    "./nav": {
+      "@inventory-platform/source": "./src/nav.ts",
+      "types": "./dist/nav.d.ts",
+      "import": "./src/nav.ts",
+      "default": "./src/nav.ts"
     }
   },
   "nx": {

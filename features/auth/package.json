@@ -20,6 +20,6 @@
     "@inventory-platform/session": "workspace:*"
   },
   "nx": {
-    "tags": ["type:legacy"]
+    "tags": ["type:journey", "scope:auth"]
   }
 }

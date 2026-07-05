@@ -1,9 +1,12 @@
 import type { ShopUiCapabilities, ShopAccess } from '@inventory-platform/access';
 import type { DashboardVerticalPlugin } from '@inventory-platform/shell/types';
 import type { VerticalPlugin } from '@inventory-platform/routing';
+import {
+  getDashboardMenuGroupsForRole,
+  type DashboardMenuGroup,
+  type DashboardMenuItem,
+} from '@inventory-platform/plugin-registry';
 import { resolveSellPath } from '@inventory-platform/routing';
-import type { DashboardMenuGroup, DashboardMenuItem } from './dashboardNavConfig';
-import { getDashboardMenuGroupsForRole } from './dashboardNavConfig';
 import { filterDashboardMenuGroupsByAccess } from './accessNav';
 
 const SKU_ONLY_PRODUCT_PATHS = new Set([

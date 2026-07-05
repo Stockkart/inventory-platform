@@ -19,7 +19,16 @@
     "tags": ["type:plugin", "scope:registry"]
   },
   "dependencies": {
+    "@inventory-platform/accounting": "workspace:*",
+    "@inventory-platform/analytics": "workspace:*",
+    "@inventory-platform/credit": "workspace:*",
+    "@inventory-platform/plan": "workspace:*",
+    "@inventory-platform/pricing": "workspace:*",
+    "@inventory-platform/product": "workspace:*",
+    "@inventory-platform/reminders": "workspace:*",
     "@inventory-platform/routing": "workspace:*",
+    "@inventory-platform/taxation": "workspace:*",
+    "@inventory-platform/user": "workspace:*",
     "zustand": "^5.0.8"
   }
 }

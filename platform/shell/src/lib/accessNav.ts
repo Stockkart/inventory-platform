@@ -1,5 +1,8 @@
 import type { ShopAccess } from '@inventory-platform/access';
-import type { DashboardMenuGroup, DashboardMenuItem } from './dashboardNavConfig';
+import type {
+  DashboardMenuGroup,
+  DashboardMenuItem,
+} from '@inventory-platform/plugin-registry';
 
 const ACCOUNTING_PREFIX = '/dashboard/accounting';
 

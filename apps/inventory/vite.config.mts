@@ -254,6 +254,33 @@ export default defineConfig({
         __dirname,
         '../../core/plan/src/payment/index.ts'
       ),
+      '@inventory-platform/accounting/nav': path.resolve(
+        __dirname,
+        '../../core/accounting/src/nav.ts'
+      ),
+      '@inventory-platform/analytics/nav': path.resolve(
+        __dirname,
+        '../../core/analytics/src/nav.ts'
+      ),
+      '@inventory-platform/credit/nav': path.resolve(__dirname, '../../core/credit/src/nav.ts'),
+      '@inventory-platform/plan/nav': path.resolve(__dirname, '../../core/plan/src/nav.ts'),
+      '@inventory-platform/pricing/nav': path.resolve(
+        __dirname,
+        '../../core/pricing/src/nav.ts'
+      ),
+      '@inventory-platform/product/nav': path.resolve(
+        __dirname,
+        '../../core/product/src/nav.ts'
+      ),
+      '@inventory-platform/reminders/nav': path.resolve(
+        __dirname,
+        '../../core/reminders/src/nav.ts'
+      ),
+      '@inventory-platform/taxation/nav': path.resolve(
+        __dirname,
+        '../../core/taxation/src/nav.ts'
+      ),
+      '@inventory-platform/user/nav': path.resolve(__dirname, '../../core/user/src/nav.ts'),
       '@inventory-platform/onboarding': path.resolve(__dirname, '../../features/onboarding/src/index.ts'),
       '@inventory-platform/auth': path.resolve(__dirname, '../../features/auth/src/index.ts'),
       '@inventory-platform/analytics': path.resolve(__dirname, '../../core/analytics/src/index.ts'),

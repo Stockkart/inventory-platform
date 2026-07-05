@@ -1,4 +1,4 @@
-import type { DashboardNavRow } from './dashboardNavConfig';
+import type { DashboardNavRow } from '@inventory-platform/plugin-registry';
 import { DASHBOARD_HOTKEY } from './dashboardHotkeys';
 
 const STORAGE_KEY = 'dashboardFavoritePageShortcuts';

@@ -17,12 +17,14 @@ export {
 } from '@inventory-platform/routing';
 export { filterDashboardMenuGroupsByAccess, canAccessDashboardPath } from './lib/accessNav';
 export {
+  COMPOSED_DASHBOARD_MENU_GROUPS,
   DASHBOARD_MENU_GROUPS,
   getDashboardMenuGroupsForRole,
+  getDashboardNavRowsForRole,
   type DashboardMenuGroup,
   type DashboardMenuItem,
   type DashboardNavRow,
-} from './lib/dashboardNavConfig';
+} from '@inventory-platform/plugin-registry';
 export { AuthInitializer } from './lib/AuthInitializer';
 export { CommandPalette } from './lib/CommandPalette';
 export { KeyboardShortcutsModal } from './lib/KeyboardShortcutsModal';
