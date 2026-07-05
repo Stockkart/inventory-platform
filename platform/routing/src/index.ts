@@ -18,3 +18,10 @@ export {
   useDashboardVerticalPlugin,
   useResolvedSellPath,
 } from './lib/VerticalPluginContext';
+export {
+  composeDashboardRouteEntries,
+  flattenRouteModules,
+  joinRoutePath,
+  type ComposedRouteEntry,
+  type RoutePackageRegistration,
+} from './lib/compose-routes';

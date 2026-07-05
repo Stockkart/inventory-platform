@@ -3,6 +3,8 @@ import type { SellSurface } from '@inventory-platform/access';
 export interface LazyRouteModule {
   index?: boolean;
   path?: string;
+  /** Route module file relative to the domain package `src/` root (e.g. `routes/journal.tsx`). */
+  file: string;
   lazy: () => Promise<{ default: unknown; meta?: unknown }>;
   children?: LazyRouteModule[];
 }

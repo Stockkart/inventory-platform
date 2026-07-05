@@ -25,6 +25,12 @@
       "types": "./dist/model/index.d.ts",
       "import": "./src/model/index.ts",
       "default": "./src/model/index.ts"
+    },
+    "./guards": {
+      "@inventory-platform/source": "./src/guards/index.ts",
+      "types": "./dist/guards/index.d.ts",
+      "import": "./src/guards/index.ts",
+      "default": "./src/guards/index.ts"
     }
   },
   "nx": {
@@ -38,6 +44,7 @@
     "@inventory-platform/access": "workspace:*",
     "@inventory-platform/api-client": "workspace:*",
     "@inventory-platform/plugin-registry": "workspace:*",
+    "@inventory-platform/plan": "workspace:*",
     "@inventory-platform/routing": "workspace:*",
     "@inventory-platform/session": "workspace:*",
     "@inventory-platform/user": "workspace:*",

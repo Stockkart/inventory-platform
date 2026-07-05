@@ -25,11 +25,19 @@
       "@inventory-platform/product/types": [
         "../../core/product/src/model/index.ts"
       ],
-      "@inventory-platform/contracts": ["../../platform/contracts/src/index.ts"],
+      "@inventory-platform/contracts": [
+        "../../platform/contracts/src/index.ts"
+      ],
       "@inventory-platform/access": ["../../platform/access/src/index.ts"],
-      "@inventory-platform/schema/types": ["../../platform/schema/src/types/index.ts"],
-      "@inventory-platform/session/types": ["../../platform/session/src/model/index.ts"],
-      "@inventory-platform/shell/types": ["../../platform/shell/src/model/index.ts"],
+      "@inventory-platform/schema/types": [
+        "../../platform/schema/src/types/index.ts"
+      ],
+      "@inventory-platform/session/types": [
+        "../../platform/session/src/model/index.ts"
+      ],
+      "@inventory-platform/shell/types": [
+        "../../platform/shell/src/model/index.ts"
+      ],
       "@inventory-platform/user/types": ["../../core/user/src/model/index.ts"],
       "@inventory-platform/plugin-cafe/types": ["src/types/index.ts"],
       "@inventory-platform/routing": ["../../platform/routing/src/index.ts"],
@@ -51,16 +59,22 @@
   ],
   "references": [
     {
-      "path": "../../core/product/tsconfig.lib.json"
+      "path": "../../platform/schema/tsconfig.lib.json"
     },
     {
-      "path": "../../platform/routing/tsconfig.lib.json"
+      "path": "../../platform/contracts/tsconfig.lib.json"
+    },
+    {
+      "path": "../../ui-kit/tsconfig.lib.json"
     },
     {
       "path": "../../platform/session/tsconfig.lib.json"
     },
     {
-      "path": "../../ui-kit/tsconfig.lib.json"
+      "path": "../../platform/routing/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/product/tsconfig.lib.json"
     },
     {
       "path": "../../core/user/tsconfig.lib.json"

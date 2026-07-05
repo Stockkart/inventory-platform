@@ -53,6 +53,11 @@ export {
   shouldSkipNestedFormKeyboardNav,
 } from './lib/formKeyboardNav';
 export { FormKeyboardNavScope } from './lib/FormKeyboardNavScope';
+export {
+  DashboardRouteGuard,
+  useDashboardRouteGuard,
+  type DashboardRouteGuardState,
+} from './guards';
 export { UserMenuShopSection } from './lib/UserMenuShopSection';
 export { ShopSwitcher } from './lib/ShopSwitcher';
 export { ContextualHelpPanel } from './lib/ContextualHelpPanel';

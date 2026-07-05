@@ -13,7 +13,9 @@
     "types": ["node"],
     "paths": {
       "@inventory-platform/routing": ["../../platform/routing/src/index.ts"],
-      "@inventory-platform/accounting/nav": ["../../core/accounting/src/nav.ts"],
+      "@inventory-platform/accounting/nav": [
+        "../../core/accounting/src/nav.ts"
+      ],
       "@inventory-platform/analytics/nav": ["../../core/analytics/src/nav.ts"],
       "@inventory-platform/credit/nav": ["../../core/credit/src/nav.ts"],
       "@inventory-platform/plan/nav": ["../../core/plan/src/nav.ts"],
@@ -28,34 +30,40 @@
   "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts"],
   "references": [
     {
-      "path": "../../core/accounting/tsconfig.lib.json"
-    },
-    {
-      "path": "../../core/analytics/tsconfig.lib.json"
-    },
-    {
-      "path": "../../core/credit/tsconfig.lib.json"
-    },
-    {
-      "path": "../../core/plan/tsconfig.lib.json"
-    },
-    {
-      "path": "../../core/pricing/tsconfig.lib.json"
-    },
-    {
-      "path": "../../core/product/tsconfig.lib.json"
-    },
-    {
-      "path": "../../core/reminders/tsconfig.lib.json"
-    },
-    {
-      "path": "../../core/taxation/tsconfig.lib.json"
+      "path": "../cafe/tsconfig.lib.json"
     },
     {
       "path": "../../core/user/tsconfig.lib.json"
     },
     {
+      "path": "../../core/taxation/tsconfig.lib.json"
+    },
+    {
+      "path": "../../platform/shell/tsconfig.lib.json"
+    },
+    {
       "path": "../../platform/routing/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/reminders/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/product/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/pricing/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/plan/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/credit/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/analytics/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/accounting/tsconfig.lib.json"
     }
   ]
 }

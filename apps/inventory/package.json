@@ -5,7 +5,9 @@
   "scripts": {},
   "sideEffects": false,
   "dependencies": {
+    "@inventory-platform/plugin-registry": "workspace:*",
     "@inventory-platform/query": "workspace:*",
+    "@inventory-platform/shell": "workspace:*",
     "@react-router/node": "^7.2.0",
     "@react-router/serve": "^7.2.0",
     "@tanstack/react-query": "^5.90.12",

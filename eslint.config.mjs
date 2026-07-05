@@ -28,10 +28,7 @@ export default [
               onlyDependOnLibsWithTags: [
                 'type:app',
                 'type:platform',
-                'type:core',
                 'type:plugin',
-                'type:journey',
-                'type:ui-kit',
               ],
             },
             {
@@ -78,16 +75,36 @@ export default [
     },
   },
   {
-    files: [
-      '**/*.ts',
-      '**/*.tsx',
-      '**/*.cts',
-      '**/*.mts',
-      '**/*.js',
-      '**/*.jsx',
-      '**/*.cjs',
-      '**/*.mjs',
-    ],
-    rules: {},
+    files: ['apps/inventory/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@inventory-platform/*/api', '@inventory-platform/*/ui', '@inventory-platform/*/pages/*'],
+              message:
+                'App shell must compose routes only — import from @inventory-platform/plugin-registry/routes, @inventory-platform/shell, @inventory-platform/query, or @inventory-platform/session.',
+            },
+            {
+              group: [
+                '@inventory-platform/accounting',
+                '@inventory-platform/analytics',
+                '@inventory-platform/credit',
+                '@inventory-platform/plan',
+                '@inventory-platform/pricing',
+                '@inventory-platform/product',
+                '@inventory-platform/reminders',
+                '@inventory-platform/taxation',
+                '@inventory-platform/user',
+                '@inventory-platform/plugin-cafe',
+              ],
+              message:
+                'App shell must not import domain packages directly — use @inventory-platform/plugin-registry/routes.',
+            },
+          ],
+        },
+      ],
+    },
   },
 ];

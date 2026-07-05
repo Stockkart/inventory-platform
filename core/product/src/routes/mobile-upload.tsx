@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router';
 import { uploadApi } from '@inventory-platform/product/api';
 import type { UploadStatus } from '@inventory-platform/product/types';
-import styles from './m.upload.module.css';
+import styles from './mobile-upload.module.css';
 
 const MAX_INVOICE_IMAGES = 20;
 const MAX_INVOICE_IMAGE_BYTES = 10 * 1024 * 1024;
