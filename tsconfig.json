@@ -22,12 +22,6 @@
       "path": "./platform/access"
     },
     {
-      "path": "./features/onboarding"
-    },
-    {
-      "path": "./features/auth"
-    },
-    {
       "path": "./platform/query"
     },
     {

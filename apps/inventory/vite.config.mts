@@ -281,8 +281,14 @@ export default defineConfig({
         '../../core/taxation/src/nav.ts'
       ),
       '@inventory-platform/user/nav': path.resolve(__dirname, '../../core/user/src/nav.ts'),
-      '@inventory-platform/onboarding': path.resolve(__dirname, '../../features/onboarding/src/index.ts'),
-      '@inventory-platform/auth': path.resolve(__dirname, '../../features/auth/src/index.ts'),
+      '@inventory-platform/user/journey/auth': path.resolve(
+        __dirname,
+        '../../core/user/src/journey/auth/index.ts'
+      ),
+      '@inventory-platform/user/journey/onboarding': path.resolve(
+        __dirname,
+        '../../core/user/src/journey/onboarding/index.ts'
+      ),
       '@inventory-platform/analytics': path.resolve(__dirname, '../../core/analytics/src/index.ts'),
       '@inventory-platform/accounting': path.resolve(__dirname, '../../core/accounting/src/index.ts'),
       '@inventory-platform/credit': path.resolve(__dirname, '../../core/credit/src/index.ts'),

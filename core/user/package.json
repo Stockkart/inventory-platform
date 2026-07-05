@@ -72,6 +72,24 @@
       "types": "./dist/nav.d.ts",
       "import": "./src/nav.ts",
       "default": "./src/nav.ts"
+    },
+    "./journey": {
+      "@inventory-platform/source": "./src/journey/index.ts",
+      "types": "./dist/journey/index.d.ts",
+      "import": "./src/journey/index.ts",
+      "default": "./src/journey/index.ts"
+    },
+    "./journey/auth": {
+      "@inventory-platform/source": "./src/journey/auth/index.ts",
+      "types": "./dist/journey/auth/index.d.ts",
+      "import": "./src/journey/auth/index.ts",
+      "default": "./src/journey/auth/index.ts"
+    },
+    "./journey/onboarding": {
+      "@inventory-platform/source": "./src/journey/onboarding/index.ts",
+      "types": "./dist/journey/onboarding/index.d.ts",
+      "import": "./src/journey/onboarding/index.ts",
+      "default": "./src/journey/onboarding/index.ts"
     }
   },
   "nx": {
@@ -82,9 +100,12 @@
   },
   "dependencies": {
     "@inventory-platform/api-client": "workspace:*",
+    "@inventory-platform/plan": "workspace:*",
     "@inventory-platform/query": "workspace:*",
     "@inventory-platform/routing": "workspace:*",
+    "@inventory-platform/schema": "workspace:*",
     "@inventory-platform/session": "workspace:*",
+    "@inventory-platform/shell": "workspace:*",
     "@inventory-platform/ui-kit": "workspace:*",
     "@inventory-platform/contracts": "workspace:*"
   },

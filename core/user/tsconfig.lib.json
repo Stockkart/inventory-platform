@@ -22,6 +22,18 @@
       "@inventory-platform/api-client": [
         "../../platform/api-client/src/index.ts"
       ],
+      "@inventory-platform/plan": [
+        "../plan/src/index.ts"
+      ],
+      "@inventory-platform/shell": [
+        "../../platform/shell/src/index.ts"
+      ],
+      "@inventory-platform/schema": [
+        "../../platform/schema/src/index.ts"
+      ],
+      "@inventory-platform/session/api": [
+        "../../platform/session/src/api/index.ts"
+      ],
       "@inventory-platform/query": [
         "../../platform/query/src/index.ts"
       ],
@@ -112,6 +124,15 @@
     },
     {
       "path": "../../platform/contracts/tsconfig.lib.json"
+    },
+    {
+      "path": "../plan/tsconfig.lib.json"
+    },
+    {
+      "path": "../../platform/shell/tsconfig.lib.json"
+    },
+    {
+      "path": "../../platform/schema/tsconfig.lib.json"
     }
   ]
 }

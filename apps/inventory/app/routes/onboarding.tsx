@@ -1,1 +1,1 @@
-export { OnboardingPage as default, onboardingMeta as meta } from '@inventory-platform/onboarding';
+export { OnboardingPage as default, onboardingMeta as meta } from '@inventory-platform/user/journey/onboarding';

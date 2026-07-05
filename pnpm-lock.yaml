@@ -499,15 +499,24 @@ importers:
       '@inventory-platform/contracts':
         specifier: workspace:*
         version: link:../../platform/contracts
+      '@inventory-platform/plan':
+        specifier: workspace:*
+        version: link:../plan
       '@inventory-platform/query':
         specifier: workspace:*
         version: link:../../platform/query
       '@inventory-platform/routing':
         specifier: workspace:*
         version: link:../../platform/routing
+      '@inventory-platform/schema':
+        specifier: workspace:*
+        version: link:../../platform/schema
       '@inventory-platform/session':
         specifier: workspace:*
         version: link:../../platform/session
+      '@inventory-platform/shell':
+        specifier: workspace:*
+        version: link:../../platform/shell
       '@inventory-platform/ui-kit':
         specifier: workspace:*
         version: link:../../ui-kit
@@ -523,14 +532,6 @@ importers:
       react-router:
         specifier: ^7.2.0
         version: 7.9.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-
-  features/auth:
-    dependencies:
-      '@inventory-platform/session':
-        specifier: workspace:*
-        version: link:../../platform/session
-
-  features/onboarding: {}
 
   features/product: {}
 

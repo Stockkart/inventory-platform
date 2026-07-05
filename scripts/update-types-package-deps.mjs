@@ -23,8 +23,6 @@ const PACKAGE_DIRS = [
   'platform/schema',
   'platform/shell',
   'plugins/cafe',
-  'features/onboarding',
-  'features/auth',
 ];
 
 for (const dir of PACKAGE_DIRS) {

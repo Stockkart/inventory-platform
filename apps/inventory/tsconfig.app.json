@@ -39,11 +39,11 @@
       "@inventory-platform/plan/payment": [
         "../../core/plan/src/payment/index.ts"
       ],
-      "@inventory-platform/onboarding": [
-        "../../features/onboarding/src/index.ts"
+      "@inventory-platform/user/journey/auth": [
+        "../../core/user/src/journey/auth/index.ts"
       ],
-      "@inventory-platform/auth": [
-        "../../features/auth/src/index.ts"
+      "@inventory-platform/user/journey/onboarding": [
+        "../../core/user/src/journey/onboarding/index.ts"
       ],
       "@inventory-platform/analytics": [
         "../../core/analytics/src/index.ts"
@@ -233,10 +233,7 @@
       "path": "../../core/plan/tsconfig.lib.json"
     },
     {
-      "path": "../../features/onboarding/tsconfig.lib.json"
-    },
-    {
-      "path": "../../features/auth/tsconfig.lib.json"
+      "path": "../../core/user/tsconfig.lib.json"
     },
     {
       "path": "../../plugins/registry/tsconfig.lib.json"

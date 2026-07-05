@@ -1,4 +1,4 @@
 export {
   ForgotPasswordPage as default,
   forgotPasswordMeta as meta,
-} from '@inventory-platform/auth';
+} from '@inventory-platform/user/journey/auth';

@@ -1,4 +1,4 @@
 export {
   MyRequestsInvitationsPage as default,
   myRequestsInvitationsMeta as meta,
-} from '@inventory-platform/onboarding';
+} from '@inventory-platform/user/journey/onboarding';
