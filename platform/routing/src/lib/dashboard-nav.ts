@@ -1,11 +1,12 @@
 import type { NavContribution, NavContributionItem } from './types';
+import type { NavIconName } from './nav-icon-name';
 
 export type DashboardMenuItem = NavContributionItem;
 
 export type DashboardMenuGroup = {
   id: string;
   label: string;
-  icon: string;
+  icon: NavIconName;
   items: DashboardMenuItem[];
 };
 

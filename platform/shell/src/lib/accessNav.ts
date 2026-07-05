@@ -94,7 +94,7 @@ export function filterDashboardMenuGroupsByAccess(
         items.push({
           path: '/dashboard/access-control',
           label: 'Access control',
-          icon: '🔐',
+          icon: 'lock',
         });
       }
     }

@@ -75,7 +75,7 @@ function capabilityNavItems(
   return capabilities.navigation.map((n) => ({
     path: n.path,
     label: n.label,
-    icon: '•',
+    icon: 'circle' as const,
   }));
 }
 

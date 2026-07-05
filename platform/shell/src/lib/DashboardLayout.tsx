@@ -7,6 +7,7 @@ import type { DashboardLayoutProps } from '@inventory-platform/shell/types';
 import type { Location as LocationType } from '@inventory-platform/user/types';
 import styles from './DashboardLayout.module.css';
 import { ThemeToggle } from './ThemeToggle';
+import { Avatar, IconButton, Text } from '@inventory-platform/ui-kit';
 import { ToastProvider } from './ToastProvider';
 import {
   getDashboardMenuGroupsWithCapabilities,
@@ -36,6 +37,7 @@ import {
 } from './formKeyboardNav';
 import {
   Menu,
+  Bell,
   Headphones,
   Phone,
   Mail,
@@ -44,8 +46,11 @@ import {
   ChevronUp,
   Keyboard,
   Info,
+  LogOut,
+  User,
 } from 'lucide-react';
 import { ContextualHelpPanel } from './ContextualHelpPanel';
+import { NavIcon } from './NavIcon';
 
 function isTypingInField(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -402,7 +407,11 @@ export function DashboardLayout({
   };
 
   return (
-    <div className={styles.dashboard}>
+    <div
+      className={`${styles.dashboard} ${
+        sidebarOpen ? '' : styles.dashboardCollapsed
+      }`}
+    >
       <CommandPalette
         open={commandPaletteOpen}
         onClose={() => setCommandPaletteOpen(false)}
@@ -444,6 +453,7 @@ export function DashboardLayout({
           aria-hidden="true"
         />
       )}
+      <div className={styles.dashboardBody}>
       {/* Sidebar */}
       <aside
         className={`${styles.sidebar} ${
@@ -486,7 +496,9 @@ export function DashboardLayout({
                     onClick={() => toggleGroup(group.id)}
                     aria-expanded={isExpanded}
                   >
-                    <span className={styles.navGroupIcon}>{group.icon}</span>
+                    <span className={styles.navGroupIcon}>
+                      <NavIcon name={group.icon} size="sm" />
+                    </span>
                     <span className={styles.navGroupLabel}>{group.label}</span>
                     <span
                       className={`${styles.navGroupChevron} ${
@@ -506,7 +518,9 @@ export function DashboardLayout({
                             currentPath === item.path ? styles.active : ''
                           }`}
                         >
-                          <span className={styles.navIcon}>{item.icon}</span>
+                          <span className={styles.navIcon}>
+                            <NavIcon name={item.icon} size="sm" />
+                          </span>
                           <span className={styles.navLabel}>{item.label}</span>
                         </Link>
                       ))}
@@ -526,7 +540,9 @@ export function DashboardLayout({
                   }`}
                   title={item.label}
                 >
-                  <span className={styles.navIcon}>{item.icon}</span>
+                  <span className={styles.navIcon}>
+                    <NavIcon name={item.icon} size="sm" />
+                  </span>
                 </Link>
               ))}
             </div>
@@ -652,90 +668,113 @@ export function DashboardLayout({
             <h1 className={styles.pageTitle}>{currentPageLabel}</h1>
 
             <div className={styles.headerActions}>
-              <button
-                type="button"
-                className={styles.helpBtn}
-                onClick={() => {
-                  setShowNotificationMenu(false);
-                  setContextualHelpOpen(true);
-                }}
-                title="Help for this page"
-                aria-label="Help for this page"
-              >
-                <Info size={18} aria-hidden />
-              </button>
-
-              {/* Notifications */}
-              <div className={styles.notificationWrapper}>
-                <button
-                  className={styles.notificationBtn}
-                  onClick={() => setShowNotificationMenu((o) => !o)}
+              <div className={styles.headerToolbar}>
+                <IconButton
+                  label="Help for this page"
+                  size="sm"
+                  className={styles.headerToolBtn}
+                  onClick={() => {
+                    setShowNotificationMenu(false);
+                    setContextualHelpOpen(true);
+                  }}
+                  title="Help for this page"
                 >
-                  🔔
-                  {unreadCount > 0 && (
-                    <span className={styles.notificationBadge}>
-                      {unreadCount}
-                    </span>
-                  )}
-                </button>
+                  <Info size={18} aria-hidden />
+                </IconButton>
 
-                {showNotificationMenu && (
-                  <div className={styles.notificationMenu}>
-                    {notifications.length === 0 ? (
-                      <div className={styles.notificationEmpty}>
-                        No notifications
-                      </div>
-                    ) : (
-                      notifications.map((n) => (
-                        <button
-                          key={n.id}
-                          className={styles.notificationItem}
-                          onClick={() => handleNotificationClick(n.id)}
-                        >
-                          <div className={styles.notificationTitle}>
-                            <span>{n.title}</span>
-                            {!n.read && (
-                              <span className={styles.notificationDot} />
-                            )}
-                          </div>
-                          <div className={styles.notificationMessage}>
-                            {n.message}
-                          </div>
-                        </button>
-                      ))
+                <div className={styles.notificationWrapper}>
+                  <IconButton
+                    label="Notifications"
+                    size="sm"
+                    className={styles.headerToolBtn}
+                    onClick={() => setShowNotificationMenu((o) => !o)}
+                  >
+                    <Bell size={18} aria-hidden />
+                    {unreadCount > 0 && (
+                      <span className={styles.notificationBadge}>
+                        {unreadCount}
+                      </span>
                     )}
-                  </div>
-                )}
+                  </IconButton>
+
+                  {showNotificationMenu && (
+                    <div className={styles.notificationMenu}>
+                      {notifications.length === 0 ? (
+                        <div className={styles.notificationEmpty}>
+                          No notifications
+                        </div>
+                      ) : (
+                        notifications.map((n) => (
+                          <button
+                            key={n.id}
+                            className={styles.notificationItem}
+                            onClick={() => handleNotificationClick(n.id)}
+                          >
+                            <div className={styles.notificationTitle}>
+                              <span>{n.title}</span>
+                              {!n.read && (
+                                <span className={styles.notificationDot} />
+                              )}
+                            </div>
+                            <div className={styles.notificationMessage}>
+                              {n.message}
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <IconButton
+                  label="Keyboard shortcuts"
+                  size="sm"
+                  className={styles.headerToolBtn}
+                  onClick={() => setShortcutsHelpOpen(true)}
+                  title={`Keyboard shortcuts (${DASHBOARD_HOTKEY.shortcutsHelp})`}
+                >
+                  <Keyboard size={18} aria-hidden />
+                </IconButton>
               </div>
 
-              <button
-                type="button"
-                className={styles.hotkeysBtn}
-                onClick={() => setShortcutsHelpOpen(true)}
-                title={`Keyboard shortcuts (${DASHBOARD_HOTKEY.shortcutsHelp})`}
-                aria-label="Keyboard shortcuts"
-              >
-                <Keyboard size={18} aria-hidden />
-              </button>
+              <div className={styles.headerDivider} aria-hidden />
 
-              <ThemeToggle />
+              <div className={styles.headerAccount}>
+                <ThemeToggle
+                  size="sm"
+                  variant="outline"
+                  className={styles.headerThemeBtn}
+                />
 
-              {/* User Menu */}
-              <div ref={userMenuRef} style={{ position: 'relative' }}>
-                <button
-                  className={styles.userBtn}
-                  onClick={() => setUserMenuOpen((o) => !o)}
-                  disabled={isLoading}
-                >
-                  👤 {user?.name || user?.email || 'User'}
-                </button>
+                <div ref={userMenuRef} className={styles.userMenuAnchor}>
+                  <button
+                    type="button"
+                    className={styles.userBtn}
+                    onClick={() => setUserMenuOpen((o) => !o)}
+                    disabled={isLoading}
+                  >
+                    <Avatar
+                      name={user?.name || user?.email || 'User'}
+                      size="sm"
+                    />
+                    <Text
+                      as="span"
+                      variant="caption"
+                      weight="medium"
+                      className={styles.userBtnLabel}
+                    >
+                      {user?.name || user?.email || 'User'}
+                    </Text>
+                  </button>
 
                 {userMenuOpen && (
                   <div className={styles.userMenu}>
                     <div className={styles.userMenuHeader}>
                       <div className={styles.userIdentity}>
-                        <div className={styles.avatar}>👤</div>
-
+                        <Avatar
+                          name={user?.name || user?.email || 'User'}
+                          size="md"
+                        />
                         <div className={styles.userMeta}>
                           <div className={styles.userMenuName}>
                             {user?.name || 'User'}
@@ -745,7 +784,6 @@ export function DashboardLayout({
                           </div>
                         </div>
                       </div>
-
                     </div>
 
                     <UserMenuShopSection onClose={() => setUserMenuOpen(false)} />
@@ -758,14 +796,17 @@ export function DashboardLayout({
                         navigate('/dashboard/profile');
                       }}
                     >
+                      <User size={16} aria-hidden />
                       View profile
                     </button>
 
                     <button onClick={handleLogout} className={styles.logoutBtn}>
-                      🚪 Logout
+                      <LogOut size={16} aria-hidden />
+                      Logout
                     </button>
                   </div>
                 )}
+                </div>
               </div>
             </div>
           </div>
@@ -791,6 +832,7 @@ export function DashboardLayout({
         >
           {children}
         </main>
+      </div>
       </div>
 
       {editModalOpen && (

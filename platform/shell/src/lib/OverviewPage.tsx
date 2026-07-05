@@ -1,10 +1,33 @@
+import type { LucideIcon } from 'lucide-react';
+import {
+  Calendar,
+  IndianRupee,
+  Package,
+  Search,
+  ShoppingCart,
+  Smartphone,
+  TrendingUp,
+  TriangleAlert,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { dashboardApi } from '../api/dashboard.api';
-import type { DashboardData } from '@inventory-platform/shell/types';
+import {
+  Alert,
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  Grid,
+  Icon,
+  Spinner,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { useResolvedSellPath } from '@inventory-platform/routing';
-import styles from './overview.module.css';
 import { useAuthStore, useNotify, useShopCapabilitiesStore } from '@inventory-platform/session';
+import type { DashboardData } from '@inventory-platform/shell/types';
+import { dashboardApi } from '../api/dashboard.api';
+import styles from './overview.module.css';
 
 export function meta() {
   return [
@@ -26,6 +49,89 @@ function formatNumber(value: number): string {
   return new Intl.NumberFormat('en-US').format(value);
 }
 
+interface MetricCardProps {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  subtext?: string;
+  change?: number;
+}
+
+function MetricCard({ icon, label, value, subtext, change }: MetricCardProps) {
+  return (
+    <Card>
+      <CardBody>
+        <div className={styles.metricRow}>
+          <div className={styles.metricIcon}>
+            <Icon icon={icon} size="md" />
+          </div>
+          <Stack gap="xs">
+            <Text variant="heading3" weight="bold">
+              {value}
+            </Text>
+            <Text color="secondary" variant="caption">
+              {label}
+            </Text>
+            {change !== undefined && change !== 0 ? (
+              <Text
+                variant="caption"
+                className={change > 0 ? styles.changeUp : styles.changeDown}
+              >
+                {change > 0 ? '↑' : '↓'} {Math.abs(change).toFixed(1)}%
+              </Text>
+            ) : null}
+            {subtext ? (
+              <Text color="muted" variant="caption">
+                {subtext}
+              </Text>
+            ) : null}
+          </Stack>
+        </div>
+      </CardBody>
+    </Card>
+  );
+}
+
+interface InsightItemProps {
+  label: string;
+  value: string;
+}
+
+function InsightItem({ label, value }: InsightItemProps) {
+  return (
+    <div className={styles.insightItem}>
+      <Text color="secondary" variant="caption">
+        {label}
+      </Text>
+      <Text variant="heading4" weight="semibold">
+        {value}
+      </Text>
+    </div>
+  );
+}
+
+interface RevenueItemProps {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+}
+
+function RevenueItem({ icon, label, value }: RevenueItemProps) {
+  return (
+    <div className={styles.revenueItem}>
+      <Stack direction="row" gap="sm" align="center">
+        <Icon icon={icon} size="sm" />
+        <Text color="secondary" variant="caption">
+          {label}
+        </Text>
+      </Stack>
+      <Text variant="heading4" weight="semibold">
+        {value}
+      </Text>
+    </div>
+  );
+}
+
 export function OverviewPage() {
   const navigate = useNavigate();
   const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
@@ -33,9 +139,7 @@ export function OverviewPage() {
     activeShopId ? s.byShopId[activeShopId] : undefined
   );
   const sellPath = useResolvedSellPath(shopCapabilities ?? null);
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(
-    null
-  );
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { error: notifyError } = useNotify;
@@ -47,195 +151,183 @@ export function OverviewPage() {
         setError(null);
         const data = await dashboardApi.getDashboard();
         setDashboardData(data);
-      } catch (err: any) {
-        notifyError(err?.message || 'Failed to load dashboard data');
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : 'Failed to load dashboard data';
+        setError(message);
+        notifyError(message);
         console.error('Error fetching dashboard data:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchDashboardData();
-  }, []);
+    void fetchDashboardData();
+  }, [notifyError]);
 
   if (loading) {
     return (
-      <div className={styles.dashboard}>
-        <div className={styles.loading}>Loading dashboard...</div>
-      </div>
+      <Stack gap="md" align="center" className={styles.centered}>
+        <Spinner size="lg" />
+        <Text color="secondary">Loading dashboard…</Text>
+      </Stack>
     );
   }
 
   if (error) {
     return (
-      <div className={styles.dashboard}>
-        <div className={styles.error}>Error: {error}</div>
-      </div>
+      <Alert variant="danger" role="alert">
+        {error}
+      </Alert>
     );
   }
 
   if (!dashboardData) {
     return (
-      <div className={styles.dashboard}>
-        <div className={styles.error}>No data available</div>
-      </div>
+      <Alert variant="warning" role="status">
+        No dashboard data available.
+      </Alert>
     );
   }
 
   const { keyMetrics, revenueBreakdown, productInsights } = dashboardData;
 
   return (
-    <div className={styles.dashboard}>
-      <div className={styles.statsGrid}>
-        <div className={styles.statCard}>
-          <div className={styles.statIcon}>📦</div>
-          <div className={styles.statInfo}>
-            <div className={styles.statValue}>
-              {formatNumber(keyMetrics.totalProducts)}
+    <Stack gap="lg">
+      <Text color="secondary" variant="body">
+        Today&apos;s snapshot across products, sales, and inventory.
+      </Text>
+
+      <Grid columns={4} gap="md" className={styles.statsGrid}>
+        <MetricCard
+          icon={Package}
+          label="Total Products"
+          value={formatNumber(keyMetrics.totalProducts)}
+        />
+        <MetricCard
+          icon={IndianRupee}
+          label="Revenue Today"
+          value={formatCurrency(keyMetrics.totalRevenueToday)}
+          change={revenueBreakdown.percentageChangeToday}
+        />
+        <MetricCard
+          icon={ShoppingCart}
+          label="Orders Today"
+          value={formatNumber(keyMetrics.ordersToday)}
+          subtext={`Avg: ${formatCurrency(keyMetrics.averageOrderValue)}`}
+        />
+        <MetricCard
+          icon={TriangleAlert}
+          label="Low Stock Items"
+          value={formatNumber(keyMetrics.lowStockItemsCount)}
+        />
+      </Grid>
+
+      <Grid columns={2} gap="md" className={styles.contentGrid}>
+        <Card>
+          <CardHeader>
+            <Text variant="heading4" weight="semibold">
+              Quick Actions
+            </Text>
+          </CardHeader>
+          <CardBody>
+            <div className={styles.quickActions}>
+              <Button
+                variant="outline"
+                fullWidth
+                leftIcon={<Icon icon={Package} size="sm" />}
+                onClick={() => navigate('/dashboard/product-registration')}
+              >
+                Add Product
+              </Button>
+              <Button
+                variant="outline"
+                fullWidth
+                leftIcon={<Icon icon={Search} size="sm" />}
+                onClick={() => navigate('/dashboard/product-search')}
+              >
+                Search Product
+              </Button>
+              <Button
+                variant="outline"
+                fullWidth
+                leftIcon={<Icon icon={Smartphone} size="sm" />}
+                onClick={() => navigate(sellPath)}
+              >
+                Scan &amp; Sell
+              </Button>
+              <Button
+                variant="outline"
+                fullWidth
+                leftIcon={<Icon icon={TrendingUp} size="sm" />}
+                onClick={() => navigate('/dashboard/analytics')}
+              >
+                Analytics
+              </Button>
             </div>
-            <div className={styles.statLabel}>Total Products</div>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <Text variant="heading4" weight="semibold">
+              Product Insights
+            </Text>
+          </CardHeader>
+          <CardBody>
+            <div className={styles.insightsGrid}>
+              <InsightItem
+                label="Unique Products"
+                value={formatNumber(productInsights.totalUniqueProducts)}
+              />
+              <InsightItem
+                label="Added Today"
+                value={formatNumber(productInsights.productsAddedToday)}
+              />
+              <InsightItem
+                label="Added This Week"
+                value={formatNumber(productInsights.productsAddedThisWeek)}
+              />
+              <InsightItem
+                label="Out of Stock"
+                value={formatNumber(productInsights.outOfStockItems)}
+              />
+            </div>
+          </CardBody>
+        </Card>
+      </Grid>
+
+      <Card>
+        <CardHeader>
+          <Text variant="heading4" weight="semibold">
+            Revenue Breakdown
+          </Text>
+        </CardHeader>
+        <CardBody>
+          <div className={styles.revenueGrid}>
+            <RevenueItem
+              icon={Calendar}
+              label="Today"
+              value={formatCurrency(revenueBreakdown.today)}
+            />
+            <RevenueItem
+              icon={Calendar}
+              label="Yesterday"
+              value={formatCurrency(revenueBreakdown.yesterday)}
+            />
+            <RevenueItem
+              icon={TrendingUp}
+              label="This Week"
+              value={formatCurrency(revenueBreakdown.thisWeek)}
+            />
+            <RevenueItem
+              icon={IndianRupee}
+              label="This Month"
+              value={formatCurrency(revenueBreakdown.thisMonth)}
+            />
           </div>
-        </div>
-        <div className={styles.statCard}>
-          <div className={styles.statIcon}>💰</div>
-          <div className={styles.statInfo}>
-            <div className={styles.statValue}>
-              {formatCurrency(keyMetrics.totalRevenueToday)}
-            </div>
-            <div className={styles.statLabel}>Revenue Today</div>
-            {revenueBreakdown.percentageChangeToday !== 0 && (
-              <div className={styles.statChange}>
-                {revenueBreakdown.percentageChangeToday > 0 ? '↑' : '↓'}{' '}
-                {Math.abs(revenueBreakdown.percentageChangeToday).toFixed(1)}%
-              </div>
-            )}
-          </div>
-        </div>
-        <div className={styles.statCard}>
-          <div className={styles.statIcon}>🛒</div>
-          <div className={styles.statInfo}>
-            <div className={styles.statValue}>
-              {formatNumber(keyMetrics.ordersToday)}
-            </div>
-            <div className={styles.statLabel}>Orders Today</div>
-            <div className={styles.statSubtext}>
-              Avg: {formatCurrency(keyMetrics.averageOrderValue)}
-            </div>
-          </div>
-        </div>
-        <div className={styles.statCard}>
-          <div className={styles.statIcon}>⚠️</div>
-          <div className={styles.statInfo}>
-            <div className={styles.statValue}>
-              {formatNumber(keyMetrics.lowStockItemsCount)}
-            </div>
-            <div className={styles.statLabel}>Low Stock Items</div>
-          </div>
-        </div>
-      </div>
-      <div className={styles.contentGrid}>
-        <div className={styles.card}>
-          <h2 className={styles.cardTitle}>Quick Actions</h2>
-          <div className={styles.quickActions}>
-            <button
-              className={styles.actionBtn}
-              onClick={() => navigate('/dashboard/product-registration')}
-            >
-              <span className={styles.actionIcon}>📦</span>
-              <span>Add Product</span>
-            </button>
-            <button
-              className={styles.actionBtn}
-              onClick={() => navigate('/dashboard/product-search')}
-            >
-              <span className={styles.actionIcon}>🔍</span>
-              <span>Search Product</span>
-            </button>
-            <button
-              className={styles.actionBtn}
-              onClick={() => navigate(sellPath)}
-            >
-              <span className={styles.actionIcon}>📱</span>
-              <span>Scan & Sell</span>
-            </button>
-            <button
-              className={styles.actionBtn}
-              onClick={() => navigate('/dashboard/analytics')}
-            >
-              <span className={styles.actionIcon}>📊</span>
-              <span>Analytics</span>
-            </button>
-          </div>
-        </div>
-        <div className={styles.card}>
-          <h2 className={styles.cardTitle}>Product Insights</h2>
-          <div className={styles.insightsGrid}>
-            <div className={styles.insightItem}>
-              <div className={styles.insightLabel}>Unique Products</div>
-              <div className={styles.insightValue}>
-                {formatNumber(productInsights.totalUniqueProducts)}
-              </div>
-            </div>
-            <div className={styles.insightItem}>
-              <div className={styles.insightLabel}>Added Today</div>
-              <div className={styles.insightValue}>
-                {formatNumber(productInsights.productsAddedToday)}
-              </div>
-            </div>
-            <div className={styles.insightItem}>
-              <div className={styles.insightLabel}>Added This Week</div>
-              <div className={styles.insightValue}>
-                {formatNumber(productInsights.productsAddedThisWeek)}
-              </div>
-            </div>
-            <div className={styles.insightItem}>
-              <div className={styles.insightLabel}>Out of Stock</div>
-              <div className={styles.insightValue}>
-                {formatNumber(productInsights.outOfStockItems)}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className={styles.contentGrid}>
-        <div className={styles.card}>
-          <h2 className={styles.cardTitle}>Revenue Breakdown</h2>
-          <div className={styles.revenueBreakdown}>
-            <div className={styles.revenueBreakdownItem}>
-              <div className={styles.revenueBreakdownLabel}>
-                <span>📅</span> Today
-              </div>
-              <div className={styles.revenueBreakdownValue}>
-                {formatCurrency(revenueBreakdown.today)}
-              </div>
-            </div>
-            <div className={styles.revenueBreakdownItem}>
-              <div className={styles.revenueBreakdownLabel}>
-                <span>📅</span> Yesterday
-              </div>
-              <div className={styles.revenueBreakdownValue}>
-                {formatCurrency(revenueBreakdown.yesterday)}
-              </div>
-            </div>
-            <div className={styles.revenueBreakdownItem}>
-              <div className={styles.revenueBreakdownLabel}>
-                <span>📊</span> This Week
-              </div>
-              <div className={styles.revenueBreakdownValue}>
-                {formatCurrency(revenueBreakdown.thisWeek)}
-              </div>
-            </div>
-            <div className={styles.revenueBreakdownItem}>
-              <div className={styles.revenueBreakdownLabel}>
-                <span>📈</span> This Month
-              </div>
-              <div className={styles.revenueBreakdownValue}>
-                {formatCurrency(revenueBreakdown.thisMonth)}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+        </CardBody>
+      </Card>
+    </Stack>
   );
 }

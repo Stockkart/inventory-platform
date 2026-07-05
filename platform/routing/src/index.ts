@@ -1,3 +1,5 @@
+export type { NavIconName } from './lib/nav-icon-name';
+export { NAV_ICON_NAMES } from './lib/nav-icon-name';
 export type {
   LazyRouteModule,
   RouteModule,

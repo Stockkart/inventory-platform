@@ -47,8 +47,8 @@ const NAV_GROUP_ORDER: string[] = [
 export const shellOverviewNav: NavContribution = {
   groupId: 'overview',
   label: 'Overview',
-  icon: '📊',
-  items: [{ path: '/dashboard', label: 'Dashboard', icon: '📊' }],
+  icon: 'layout-dashboard',
+  items: [{ path: '/dashboard', label: 'Dashboard', icon: 'layout-dashboard' }],
 };
 
 /** Core domain nav contributions (vertical plugin nav is merged separately). */

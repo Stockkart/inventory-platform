@@ -126,6 +126,9 @@ export {
   type EditModalProps,
 } from './patterns';
 
+// Icons
+export { Icon, type IconProps } from './icons';
+
 // Utils / types
 export { cn } from './utils/cn';
 export type {

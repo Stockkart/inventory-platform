@@ -4,7 +4,7 @@ import type { NavContribution } from '@inventory-platform/routing';
 export const taxationNav: NavContribution = {
   groupId: 'taxation',
   label: 'Taxes',
-  icon: '📋',
+  icon: 'clipboard-list',
   requiredCapability: 'taxes',
-  items: [{ path: '/dashboard/taxes', label: 'Taxes', icon: '📋' }],
+  items: [{ path: '/dashboard/taxes', label: 'Taxes', icon: 'clipboard-list' }],
 };

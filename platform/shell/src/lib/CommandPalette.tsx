@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useNavigate } from 'react-router';
 import { Search } from 'lucide-react';
+import { Input, Modal } from '@inventory-platform/ui-kit';
 import type { DashboardNavRow } from '@inventory-platform/routing';
 import {
   DASHBOARD_HOTKEY,
@@ -9,6 +10,7 @@ import {
 } from './dashboardHotkeys';
 import { KEYBOARD_NAV_SKIP } from './formKeyboardNav';
 import styles from './CommandPalette.module.css';
+import { NavIcon } from './NavIcon';
 
 type CommandPaletteProps = {
   open: boolean;
@@ -30,7 +32,6 @@ export function CommandPalette({
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
-  const inputRef = useRef<HTMLInputElement>(null);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const filteredRef = useRef<DashboardNavRow[]>([]);
@@ -63,7 +64,9 @@ export function CommandPalette({
       setQuery('');
       setActive(0);
       activeRef.current = 0;
-      requestAnimationFrame(() => inputRef.current?.focus());
+      requestAnimationFrame(() => {
+        document.getElementById('command-palette-input')?.focus();
+      });
     }
   }, [open]);
 
@@ -161,7 +164,6 @@ export function CommandPalette({
           e.preventDefault();
           e.stopPropagation();
           openQuickIndex(Number(digit[1]));
-          return;
         }
       }
     },
@@ -173,25 +175,17 @@ export function CommandPalette({
   itemRefs.current = [];
 
   return (
-    <div
-      className={styles.overlay}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Go to page"
-      {...{ 'data-keyboard-nav': KEYBOARD_NAV_SKIP }}
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
+    <Modal open={open} onClose={onClose} size="md" className={styles.paletteModal}>
       <div
-        className={styles.dialog}
+        {...{ 'data-keyboard-nav': KEYBOARD_NAV_SKIP }}
         onKeyDownCapture={onPaletteKeyDownCapture}
+        className={styles.palette}
       >
         <div className={styles.searchRow}>
           <Search className={styles.searchIcon} size={20} aria-hidden />
-          <input
-            ref={inputRef}
-            type="text"
+          <Input
+            id="command-palette-input"
+            type="search"
             inputMode="search"
             enterKeyHint="go"
             className={styles.input}
@@ -234,7 +228,7 @@ export function CommandPalette({
                   {idx < 9 ? String(idx + 1) : ''}
                 </span>
                 <span className={styles.itemIcon} aria-hidden>
-                  {row.icon}
+                  <NavIcon name={row.icon} size="sm" />
                 </span>
                 <span className={styles.itemBody}>
                   <div className={styles.itemLabel}>{row.label}</div>
@@ -260,6 +254,6 @@ export function CommandPalette({
           ))}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

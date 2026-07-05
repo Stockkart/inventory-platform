@@ -1,4 +1,5 @@
 import type { SellSurface } from '@inventory-platform/access';
+import type { NavIconName } from './nav-icon-name';
 
 export interface LazyRouteModule {
   index?: boolean;
@@ -17,13 +18,13 @@ export interface RouteModule {
 export interface NavContributionItem {
   path: string;
   label: string;
-  icon: string;
+  icon: NavIconName;
 }
 
 export interface NavContribution {
   groupId: string;
   label: string;
-  icon: string;
+  icon: NavIconName;
   requiredCapability?: string;
   items: NavContributionItem[];
 }

@@ -4,13 +4,13 @@ import type { NavContribution } from '@inventory-platform/routing';
 export const remindersNav: NavContribution = {
   groupId: 'reminders-alerts',
   label: 'Reminders & Alerts',
-  icon: '📅',
+  icon: 'calendar',
   items: [
-    { path: '/dashboard/reminders', label: 'Reminder', icon: '📅' },
+    { path: '/dashboard/reminders', label: 'Reminder', icon: 'calendar' },
     {
       path: '/dashboard/inventory-alert',
       label: 'Inventory Alert',
-      icon: '⚠️',
+      icon: 'triangle-alert',
     },
   ],
 };

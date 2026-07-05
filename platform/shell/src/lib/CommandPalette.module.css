@@ -1,13 +1,17 @@
-.overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 500;
-  background: rgba(15, 23, 42, 0.45);
+.paletteModal {
+  padding: 0;
+  overflow: hidden;
+  max-width: 520px;
+}
+
+.palette {
   display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 12vh 1rem 2rem;
-  animation: fadeIn 0.12s ease;
+  flex-direction: column;
+  max-height: min(70vh, 560px);
+}
+
+.overlay {
+  display: none;
 }
 
 :global([data-theme='dark']) .overlay {
@@ -63,11 +67,11 @@
 .input {
   flex: 1;
   min-width: 0;
-  border: none;
-  background: transparent;
-  font-size: 1rem;
-  color: var(--text-primary);
-  outline: none;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .input::placeholder {

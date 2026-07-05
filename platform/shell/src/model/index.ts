@@ -1,15 +1,10 @@
 import type { ReactNode } from 'react';
 import type { SellSurface } from '@inventory-platform/access';
+import type { NavContribution } from '@inventory-platform/routing';
 
 export interface DashboardVerticalPlugin {
   id: string;
-  navContributions?: Array<{
-    groupId: string;
-    label: string;
-    icon: string;
-    requiredCapability?: string;
-    items: Array<{ path: string; label: string; icon: string }>;
-  }>;
+  navContributions?: NavContribution[];
   sellSurfaces?: Array<{
     sellSurface: SellSurface;
     path: string;

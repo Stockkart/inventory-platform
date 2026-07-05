@@ -5,17 +5,19 @@
 :root,
 [data-theme='light'] {
   --sk-color-bg-canvas: #ffffff;
-  --sk-color-bg-surface: #f8f9fa;
+  --sk-color-bg-surface: #f8fafc;
   --sk-color-bg-elevated: #ffffff;
   --sk-color-bg-muted: #f1f5f9;
-  --sk-color-text-primary: #1f2937;
-  --sk-color-text-secondary: #4b5563;
-  --sk-color-text-muted: #6b7280;
+  --sk-color-bg-sidebar: #f8fafc;
+  --sk-color-text-primary: #0f172a;
+  --sk-color-text-secondary: #475569;
+  --sk-color-text-muted: #64748b;
   --sk-color-text-inverse: #ffffff;
-  --sk-color-border-default: #e5e7eb;
-  --sk-color-border-strong: #d1d5db;
-  --sk-color-accent: #3b82f6;
-  --sk-color-accent-hover: #2563eb;
+  --sk-color-border-default: #e2e8f0;
+  --sk-color-border-strong: #cbd5e1;
+  --sk-color-accent: #4f46e5;
+  --sk-color-accent-hover: #4338ca;
+  --sk-color-accent-soft: rgba(79, 70, 229, 0.1);
   --sk-color-success: #059669;
   --sk-color-success-soft: rgba(5, 150, 105, 0.12);
   --sk-color-warning: #d97706;
@@ -24,8 +26,8 @@
   --sk-color-danger-soft: rgba(220, 38, 38, 0.12);
   --sk-color-info: #0284c7;
   --sk-color-info-soft: rgba(2, 132, 199, 0.12);
-  --sk-color-focus-ring: rgba(59, 130, 246, 0.45);
-  --sk-color-hover: rgba(15, 23, 42, 0.06);
+  --sk-color-focus-ring: rgba(79, 70, 229, 0.35);
+  --sk-color-hover: rgba(15, 23, 42, 0.04);
 
   --sk-space-none: 0;
   --sk-space-xs: 4px;
@@ -43,38 +45,43 @@
   --sk-radius-xl: 14px;
   --sk-radius-full: 9999px;
 
-  --sk-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
-  --sk-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.12);
-  --sk-shadow-lg: 0 18px 40px rgba(15, 23, 42, 0.18);
+  --sk-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --sk-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+  --sk-shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.12);
 
   --sk-z-dropdown: 1000;
   --sk-z-sticky: 1100;
   --sk-z-modal: 9000;
   --sk-z-toast: 9500;
 
-  --sk-font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --sk-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --sk-font-mono: ui-monospace, 'Cascadia Code', 'SF Mono', monospace;
+
+  --sk-text-page-title: 1.5rem;
+  --sk-text-section: 0.75rem;
+  --sk-text-body: 0.9375rem;
+  --sk-text-caption: 0.8125rem;
 
   /* Legacy aliases used across the app today */
   --bg-primary: var(--sk-color-bg-canvas);
-  --bg-secondary: var(--sk-color-bg-surface);
-  --bg-card: #f3f6fb;
+  --bg-secondary: var(--sk-color-bg-sidebar);
+  --bg-card: var(--sk-color-bg-elevated);
   --bg-muted: var(--sk-color-bg-muted);
-  --bg-tertiary: #eef2f7;
+  --bg-tertiary: var(--sk-color-bg-surface);
   --hover-bg: var(--sk-color-hover);
   --text-primary: var(--sk-color-text-primary);
   --text-secondary: var(--sk-color-text-secondary);
   --text-tertiary: var(--sk-color-text-muted);
   --border-color: var(--sk-color-border-default);
   --border-hover: var(--sk-color-border-strong);
-  --link: #0f172a;
+  --link: var(--sk-color-accent);
   --link-hover: var(--sk-color-accent-hover);
-  --bg-header: radial-gradient(circle at top left, #eef2ff 0%, #ffffff 50%, #f8fafc 100%);
-  --btn-primary: linear-gradient(135deg, #2563eb 0%, #3b82f6 40%, #06b6d4 100%);
+  --bg-header: var(--sk-color-bg-canvas);
+  --btn-primary: var(--sk-color-accent);
   --btn-text: #ffffff;
-  --shadow: rgba(0, 0, 0, 0.1);
-  --header-height: 70px;
-  --header-blur: rgba(255, 255, 255, 0.6);
+  --shadow: rgba(15, 23, 42, 0.08);
+  --header-height: 60px;
+  --header-blur: rgba(255, 255, 255, 0.92);
 }
 
 [data-theme='dark'] {
@@ -82,34 +89,36 @@
   --sk-color-bg-surface: #111827;
   --sk-color-bg-elevated: #1e293b;
   --sk-color-bg-muted: #263349;
-  --sk-color-text-primary: #f9fafb;
+  --sk-color-bg-sidebar: #111827;
+  --sk-color-text-primary: #f8fafc;
   --sk-color-text-secondary: #cbd5e1;
   --sk-color-text-muted: #94a3b8;
   --sk-color-text-inverse: #0f172a;
   --sk-color-border-default: #1e293b;
   --sk-color-border-strong: #334155;
-  --sk-color-accent: #3b82f6;
-  --sk-color-accent-hover: #38bdf8;
-  --sk-color-hover: rgba(248, 250, 252, 0.08);
-  --sk-color-focus-ring: rgba(56, 189, 248, 0.45);
+  --sk-color-accent: #6366f1;
+  --sk-color-accent-hover: #818cf8;
+  --sk-color-accent-soft: rgba(99, 102, 241, 0.15);
+  --sk-color-hover: rgba(248, 250, 252, 0.06);
+  --sk-color-focus-ring: rgba(129, 140, 248, 0.4);
 
   --bg-primary: var(--sk-color-bg-canvas);
-  --bg-secondary: var(--sk-color-bg-surface);
+  --bg-secondary: var(--sk-color-bg-sidebar);
   --bg-card: var(--sk-color-bg-elevated);
   --bg-muted: var(--sk-color-bg-muted);
-  --bg-tertiary: var(--sk-color-bg-canvas);
+  --bg-tertiary: var(--sk-color-bg-surface);
   --hover-bg: var(--sk-color-hover);
   --text-primary: var(--sk-color-text-primary);
   --text-secondary: var(--sk-color-text-secondary);
   --text-tertiary: var(--sk-color-text-muted);
   --border-color: var(--sk-color-border-default);
   --border-hover: var(--sk-color-border-strong);
-  --link: #e5e7eb;
+  --link: #a5b4fc;
   --link-hover: var(--sk-color-accent-hover);
-  --bg-header: radial-gradient(circle at top left, #111827 0%, #020617 40%, #020617 100%);
-  --btn-primary: linear-gradient(135deg, #2563eb 0%, #3b82f6 40%, #06b6d4 100%);
+  --bg-header: var(--sk-color-bg-canvas);
+  --btn-primary: var(--sk-color-accent);
   --btn-text: #ffffff;
   --shadow: rgba(0, 0, 0, 0.35);
-  --header-height: 70px;
-  --header-blur: rgba(15, 23, 42, 0.7);
+  --header-height: 60px;
+  --header-blur: rgba(15, 23, 42, 0.92);
 }

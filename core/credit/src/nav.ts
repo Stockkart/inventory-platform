@@ -4,7 +4,7 @@ import type { NavContribution } from '@inventory-platform/routing';
 export const creditNav: NavContribution = {
   groupId: 'credit',
   label: 'Credit',
-  icon: '🤝',
+  icon: 'handshake',
   requiredCapability: 'credit',
-  items: [{ path: '/dashboard/credit', label: 'Credit balances', icon: '🤝' }],
+  items: [{ path: '/dashboard/credit', label: 'Credit balances', icon: 'handshake' }],
 };

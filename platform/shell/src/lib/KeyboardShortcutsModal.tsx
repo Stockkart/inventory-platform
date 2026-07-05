@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Button, Modal, Select } from '@inventory-platform/ui-kit';
 import { DASHBOARD_HOTKEY, getShortcutHelpRows } from './dashboardHotkeys';
 import type { DashboardNavRow } from '@inventory-platform/routing';
 import type { FavoritePageShortcut } from './favoritePageShortcuts';
@@ -107,8 +108,6 @@ export function KeyboardShortcutsModal({
     onFavoritesChange,
   ]);
 
-  if (!open) return null;
-
   const selectedRow = sortedNav.find((r) => r.path === selectedPath);
   const canAssign = Boolean(selectedPath && selectedRow && sortedNav.length > 0);
 
@@ -124,31 +123,10 @@ export function KeyboardShortcutsModal({
   };
 
   return (
-    <div
-      className={styles.overlay}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="keyboard-shortcuts-title"
-      {...{ 'data-keyboard-nav': KEYBOARD_NAV_SKIP }}
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className={styles.dialog}>
-        <div className={styles.header}>
-          <h2 id="keyboard-shortcuts-title" className={styles.title}>
-            Keyboard shortcuts
-          </h2>
-          <button
-            type="button"
-            className={styles.closeBtn}
-            onClick={onClose}
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </div>
-        <div className={styles.body}>
+    <Modal open={open} onClose={onClose} size="lg" className={styles.modalPanel}>
+      <div {...{ 'data-keyboard-nav': KEYBOARD_NAV_SKIP }}>
+        <Modal.Header title="Keyboard shortcuts" onClose={onClose} />
+        <Modal.Body>
           <p className={styles.intro}>
             Most shortcuts work when focus is not in a field. While{' '}
             <strong>quick navigation</strong> is open (
@@ -208,7 +186,7 @@ export function KeyboardShortcutsModal({
             <label className={styles.srOnly} htmlFor="favorite-page-select">
               Page to assign
             </label>
-            <select
+            <Select
               id="favorite-page-select"
               className={styles.pageSelect}
               value={selectedPath}
@@ -220,24 +198,25 @@ export function KeyboardShortcutsModal({
                   {r.label}
                 </option>
               ))}
-            </select>
+            </Select>
             {!recordingPath ? (
-              <button
+              <Button
                 type="button"
-                className={styles.assignBtn}
+                size="sm"
                 disabled={!canAssign}
                 onClick={startRecording}
               >
                 Assign shortcut
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button
                 type="button"
-                className={styles.cancelAssignBtn}
+                size="sm"
+                variant="outline"
                 onClick={cancelRecording}
               >
                 Cancel
-              </button>
+              </Button>
             )}
           </div>
 
@@ -290,9 +269,10 @@ export function KeyboardShortcutsModal({
                       )}
                     </td>
                     <td className={styles.colActions}>
-                      <button
+                      <Button
                         type="button"
-                        className={styles.removeBtn}
+                        size="sm"
+                        variant="ghost"
                         onClick={() =>
                           onFavoritesChange(
                             removeFavoritePageShortcut(favorites, f.id)
@@ -300,7 +280,7 @@ export function KeyboardShortcutsModal({
                         }
                       >
                         Remove
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -320,8 +300,8 @@ export function KeyboardShortcutsModal({
             <kbd>1</kbd>–<kbd>9</kbd> to jump straight to the matching row
             (shown at the left of each line).
           </p>
-        </div>
+        </Modal.Body>
       </div>
-    </div>
+    </Modal>
   );
 }

@@ -4,7 +4,7 @@ import type { NavContribution } from '@inventory-platform/routing';
 export const analyticsNav: NavContribution = {
   groupId: 'analytics-history',
   label: 'Analytics',
-  icon: '📈',
+  icon: 'trending-up',
   requiredCapability: 'analytics',
-  items: [{ path: '/dashboard/analytics', label: 'Analytics', icon: '📈' }],
+  items: [{ path: '/dashboard/analytics', label: 'Analytics', icon: 'trending-up' }],
 };

@@ -1,8 +1,19 @@
 .dashboard {
-  display: flex;
+  --shell-sidebar-width: 260px;
   min-height: 100vh;
   background-color: var(--bg-primary);
   transition: background-color 0.3s ease;
+}
+
+.dashboardCollapsed {
+  --shell-sidebar-width: 80px;
+}
+
+.dashboardBody {
+  display: grid;
+  grid-template-columns: var(--shell-sidebar-width) minmax(0, 1fr);
+  min-height: 100vh;
+  transition: grid-template-columns 0.3s ease;
 }
 
 .logo {
@@ -22,31 +33,26 @@
 }
 
 .sidebar {
-  width: 260px;
+  width: 100%;
   background-color: var(--bg-secondary);
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  transition: all 0.3s ease;
-  position: fixed;
-  height: 100vh;
-  left: 0;
+  transition: width 0.3s ease;
+  position: sticky;
   top: 0;
+  height: 100vh;
   z-index: 100;
-  transform: translateX(0);
+  min-width: 0;
 }
 
-.sidebarClosed {
-  width: 80px;
-}
-
-/* When collapsed, stack logo and toggle to avoid overlap */
 .sidebarClosed .sidebarHeader {
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.75rem;
+  gap: 0.375rem;
+  padding: 0.5rem;
   justify-content: center;
-  min-height: 70px;
+  height: auto;
+  min-height: var(--header-height, 60px);
 }
 
 .sidebarClosed .logo {
@@ -62,9 +68,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem;
+  box-sizing: border-box;
+  height: var(--header-height, 60px);
+  min-height: var(--header-height, 60px);
+  padding: 0 1rem;
   border-bottom: 1px solid var(--border-color);
-  min-height: 70px;
+  flex-shrink: 0;
 }
 
 .logo {
@@ -76,7 +85,7 @@
 }
 
 .logoImg {
-  height: 40px;
+  height: 32px;
   width: auto;
   max-width: 140px;
   object-fit: contain;
@@ -140,8 +149,14 @@
 }
 
 .navGroupIcon {
-  font-size: 0.9rem;
-  opacity: 0.8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: inherit;
+  opacity: 0.85;
 }
 
 .navGroupLabel {
@@ -208,22 +223,19 @@
 }
 
 .navItem.active {
-  background: linear-gradient(
-    135deg,
-    rgba(59, 130, 246, 0.1) 0%,
-    rgba(6, 182, 212, 0.1) 100%
-  );
-  color: #3b82f6;
+  background: var(--sk-color-accent-soft, rgba(79, 70, 229, 0.1));
+  color: var(--sk-color-accent, #4f46e5);
   font-weight: 500;
 }
 
 .navIcon {
-  font-size: 1.25rem;
-  width: 24px;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  color: inherit;
 }
 
 .navLabel {
@@ -312,7 +324,7 @@
 .supportLink {
   display: block;
   font-size: 0.85rem;
-  color: #3b82f6;
+  color: var(--sk-color-accent, #4f46e5);
   text-decoration: none;
   margin-top: 0.25rem;
   word-break: break-all;
@@ -409,22 +421,18 @@
 }
 
 .mainContent {
-  flex: 1;
   min-width: 0;
-  margin-left: 260px;
   display: flex;
   flex-direction: column;
-  transition: margin-left 0.3s ease;
-}
-
-.sidebarClosed ~ .mainContent {
-  margin-left: 80px;
 }
 
 .header {
-  background-color: var(--bg-secondary);
+  background-color: var(--bg-header);
   border-bottom: 1px solid var(--border-color);
-  padding: 1rem 2rem;
+  box-sizing: border-box;
+  height: var(--header-height, 60px);
+  min-height: var(--header-height, 60px);
+  padding: 0 1rem;
   position: sticky;
   top: 0;
   z-index: 50;
@@ -435,20 +443,76 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 1rem;
+  height: 100%;
   max-width: 100%;
 }
 
 .pageTitle {
-  font-size: 1.5rem;
-  font-weight: 700;
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.3;
   color: var(--text-primary);
-  transition: color 0.3s ease;
+  letter-spacing: -0.01em;
 }
 
 .headerActions {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.headerToolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.headerToolBtn {
+  position: relative;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--sk-radius-full, 9999px);
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.headerToolBtn:hover:not(:disabled) {
+  background: var(--bg-card);
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+
+.headerDivider {
+  width: 1px;
+  height: 1.625rem;
+  margin: 0 0.75rem;
+  background: var(--border-color);
+  flex-shrink: 0;
+}
+
+.headerAccount {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.headerThemeBtn {
+  height: 2.25rem;
+  min-width: 2.25rem;
+  padding: 0 0.75rem;
+  border-radius: var(--sk-radius-full, 9999px);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.userMenuAnchor {
+  position: relative;
+  min-width: 0;
 }
 
 .helpBtn {
@@ -498,14 +562,23 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  height: 2.25rem;
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-size: 0.95rem;
+  padding: 0 0.75rem 0 0.25rem;
+  border-radius: var(--sk-radius-full, 9999px);
+  font-size: 0.8125rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  max-width: 12rem;
+  min-width: 0;
+}
+
+.userBtnLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .userBtn:hover {
@@ -610,6 +683,13 @@
   white-space: nowrap;
 }
 
+.profileMenuBtn,
+.logoutBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .profileMenuBtn {
   width: 100%;
   padding: 0.75rem 1rem;
@@ -647,8 +727,8 @@
 .content {
   flex: 1;
   min-width: 0;
-  padding: 2rem;
-  background-color: var(--bg-primary);
+  padding: 1rem;
+  background-color: var(--sk-color-bg-surface, var(--bg-tertiary));
   transition: background-color 0.3s ease;
 }
 
@@ -703,9 +783,16 @@
 
   /* sidebar */
 
+  .dashboardBody {
+    display: block;
+  }
+
   .sidebar {
-    transform: translateX(-100%);
+    position: fixed;
+    left: 0;
+    top: 0;
     width: 260px;
+    transform: translateX(-100%);
     z-index: 180;
   }
 
@@ -722,7 +809,7 @@
   }
 
   .header {
-    padding: 1rem;
+    padding: 0.5rem 0.75rem;
   }
 }
 
@@ -769,19 +856,21 @@
 
 .notificationBadge {
   position: absolute;
-  top: -4px;
-  right: -4px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 4px;
-  border-radius: 999px;
-  background-color: #ef4444;
+  top: -2px;
+  right: -2px;
+  min-width: 1rem;
+  height: 1rem;
+  padding: 0 0.25rem;
+  border-radius: var(--sk-radius-full, 9999px);
+  background-color: var(--sk-color-danger, #dc2626);
   color: #ffffff;
-  font-size: 0.7rem;
+  font-size: 0.625rem;
   font-weight: 600;
+  line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 2px solid var(--bg-header);
 }
 
 /* Dropdown */

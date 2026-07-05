@@ -3,48 +3,48 @@ import type { NavContribution } from '@inventory-platform/routing';
 export const userContactNav: NavContribution = {
   groupId: 'contact',
   label: 'Contact',
-  icon: '📇',
+  icon: 'contact',
   items: [
-    { path: '/dashboard/customers', label: 'Customer', icon: '👥' },
-    { path: '/dashboard/vendors', label: 'Vendor', icon: '🚚' },
+    { path: '/dashboard/customers', label: 'Customer', icon: 'users' },
+    { path: '/dashboard/vendors', label: 'Vendor', icon: 'truck' },
   ],
 };
 
 export const userOverviewNav: NavContribution = {
   groupId: 'overview',
   label: 'Overview',
-  icon: '📊',
+  icon: 'layout-dashboard',
   items: [
-    { path: '/dashboard/shops', label: 'Shops', icon: '🏪' },
-    { path: '/dashboard/profile', label: 'Profile', icon: '👤' },
+    { path: '/dashboard/shops', label: 'Shops', icon: 'store' },
+    { path: '/dashboard/profile', label: 'Profile', icon: 'user' },
   ],
 };
 
 export const userTeamNav: NavContribution = {
   groupId: 'team',
   label: 'Team & Collaboration',
-  icon: '👥',
+  icon: 'users',
   items: [
-    { path: '/dashboard/invitations', label: 'Invitations', icon: '✉️' },
+    { path: '/dashboard/invitations', label: 'Invitations', icon: 'mail' },
     {
       path: '/dashboard/my-invitations',
       label: 'My Invitations',
-      icon: '📬',
+      icon: 'inbox',
     },
-    { path: '/dashboard/join-requests', label: 'Join Requests', icon: '🤝' },
-    { path: '/dashboard/shop-users', label: 'Shop Users', icon: '👥' },
+    { path: '/dashboard/join-requests', label: 'Join Requests', icon: 'handshake' },
+    { path: '/dashboard/shop-users', label: 'Shop Users', icon: 'users' },
   ],
 };
 
 export const userMarketingNav: NavContribution = {
   groupId: 'marketing',
   label: 'Marketing',
-  icon: '📣',
+  icon: 'megaphone',
   items: [
     {
       path: '/dashboard/whatsapp-marketing',
       label: 'WhatsApp Marketing',
-      icon: '💬',
+      icon: 'message-circle',
     },
   ],
 };
