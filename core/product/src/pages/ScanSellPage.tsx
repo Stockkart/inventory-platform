@@ -14,9 +14,9 @@ import { sellCatalogApi } from '../api/sell-catalog.api';
 import { pricingClient } from '../api/pricing-client.api';
 import { customersApi } from '@inventory-platform/user/customers';
 import type { AvailableUnit, BillingMode, InventoryItem, CartResponse, CheckoutItemResponse, QuotationSummary } from '@inventory-platform/product/types';
-import type { PricingResponse } from '@inventory-platform/pricing/types';
+import type { PricingResponse } from '@inventory-platform/contracts';
 import type { CustomerResponse } from '@inventory-platform/user/types';
-import type { MenuItem, SellCatalog } from '@inventory-platform/plugin-cafe/types';
+import type { MenuItem, SellCatalog } from '@inventory-platform/product/types';
 import { inventoryLotIdFromSellableRef, inventorySellableRef, lineSellableRef, menuSellableRef, menuItemIdFromSellableRef } from '@inventory-platform/product/types';
 import styles from './scan-sell.module.css';
 import { CafeSellCatalogPanel } from '../ui/CafeSellCatalogPanel';
@@ -26,7 +26,7 @@ import { useNotify, useAuthStore, useVerticalSchemaStore } from '@inventory-plat
 import {
   isScanSellHidePurchaseKey,
   shouldSkipScanSellHidePurchaseKey,
-} from '@inventory-platform/shell';
+} from '@inventory-platform/routing';
 import {
   formatInventoryExpiryDate,
   hasInventoryExpiryDate,

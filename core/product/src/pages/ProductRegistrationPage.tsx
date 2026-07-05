@@ -15,9 +15,9 @@ import { userLookupApi } from '@inventory-platform/user/users';
 import { inventoryApi } from '../api/inventory.api';
 import { vendorsApi } from '@inventory-platform/user/vendors';
 import type { CreateInventoryDto, BulkCreateInventoryDto, ParseInvoiceItem, ParsedVendorInvoiceDto, VendorPurchaseInvoicePayload, UploadStatus, ItemType, DiscountApplicable, SchemeType, PurchaseSchemeInputType, PackagingUnit, BillingMode } from '@inventory-platform/product/types';
-import type { CustomReminderInput } from '@inventory-platform/reminders/types';
+import type { CustomReminderInput } from '@inventory-platform/contracts';
 import type { LinkableUser, Vendor, VendorResponse, CreateVendorDto, VendorBusinessType } from '@inventory-platform/user/types';
-import type { PricingRate } from '@inventory-platform/pricing/types';
+import type { PricingRate } from '@inventory-platform/contracts';
 import type { PaymentMethod, PaymentSplit } from '@inventory-platform/contracts';
 import {
   PaymentMethodSplit,
@@ -46,7 +46,7 @@ import {
   KEYBOARD_NAV_GRID,
   runFormKeyboardNavigation,
   shouldSkipNestedFormKeyboardNav,
-} from '@inventory-platform/shell';
+} from '@inventory-platform/routing';
 import {
   useNotify,
   useAuthStore,

@@ -19,6 +19,7 @@ export interface DashboardVerticalPlugin {
 export interface DashboardLayoutProps {
   children: ReactNode;
   verticalPlugin?: DashboardVerticalPlugin | null;
+  baseMenuGroups: import('@inventory-platform/routing').DashboardMenuGroup[];
 }
 
 export type Theme = 'light' | 'dark';

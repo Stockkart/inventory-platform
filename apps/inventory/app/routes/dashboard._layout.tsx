@@ -1,7 +1,10 @@
 import { useAuthStore, useVerticalSchemaStore } from '@inventory-platform/session';
 import { VerticalPluginProvider } from '@inventory-platform/routing';
 import { DashboardLayout, DashboardRouteGuard } from '@inventory-platform/shell';
-import { useVerticalPluginStore } from '@inventory-platform/plugin-registry';
+import {
+  COMPOSED_DASHBOARD_MENU_GROUPS,
+  useVerticalPluginStore,
+} from '@inventory-platform/plugin-registry';
 import { Outlet } from 'react-router';
 
 export default function DashboardLayoutRoute() {
@@ -26,7 +29,10 @@ function DashboardLayoutShell() {
 
   return (
     <VerticalPluginProvider plugin={verticalPlugin}>
-      <DashboardLayout verticalPlugin={verticalPlugin ?? null}>
+      <DashboardLayout
+        verticalPlugin={verticalPlugin ?? null}
+        baseMenuGroups={COMPOSED_DASHBOARD_MENU_GROUPS}
+      >
         <Outlet />
       </DashboardLayout>
     </VerticalPluginProvider>

@@ -22,9 +22,6 @@
       ],
       "@inventory-platform/access": ["../access/src/index.ts"],
       "@inventory-platform/routing": ["../../platform/routing/src/index.ts"],
-      "@inventory-platform/plugin-registry": [
-        "../../plugins/registry/src/index.ts"
-      ],
       "@inventory-platform/ui-kit": ["../../ui-kit/src/index.ts"],
       "@inventory-platform/contracts": ["../contracts/src/index.ts"],
       "@inventory-platform/schema/types": ["../schema/src/types/index.ts"],
@@ -43,7 +40,6 @@
       "@inventory-platform/credit/types": [
         "../../core/credit/src/model/index.ts"
       ],
-      "@inventory-platform/plan/types": ["../../core/plan/src/model/index.ts"],
       "@inventory-platform/pricing/types": [
         "../../core/pricing/src/model/index.ts"
       ],
@@ -67,9 +63,6 @@
   ],
   "references": [
     {
-      "path": "../../core/reminders/tsconfig.lib.json"
-    },
-    {
       "path": "../contracts/tsconfig.lib.json"
     },
     {
@@ -80,12 +73,6 @@
     },
     {
       "path": "../routing/tsconfig.lib.json"
-    },
-    {
-      "path": "../../core/plan/tsconfig.lib.json"
-    },
-    {
-      "path": "../../plugins/registry/tsconfig.lib.json"
     },
     {
       "path": "../api-client/tsconfig.lib.json"

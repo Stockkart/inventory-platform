@@ -5,7 +5,7 @@ import type { InventoryItem, VendorPurchaseInvoiceDetail, VendorPurchaseInvoiceS
 import type { VendorResponse } from '@inventory-platform/user/types';
 import type { PaymentMethod, PaymentSplit } from '@inventory-platform/contracts';
 import { PaginationBar } from '@inventory-platform/ui-kit';
-import { useCapabilityFeatureGuard } from '@inventory-platform/shell';
+import { useCapabilityFeatureGuard } from '@inventory-platform/routing';
 import {
   PaymentMethodSplit,
   VendorReturnHistoryList,

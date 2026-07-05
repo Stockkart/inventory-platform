@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { eventsApi } from '../api/events.api';
-import type { ReminderDetail, ReminderNotification, InventoryLowEvent } from '@inventory-platform/reminders/types';
+import type { ReminderDetail, ReminderNotification, InventoryLowEvent } from '@inventory-platform/contracts';
 const STORAGE_KEY = 'reminder_notifications';
 
 /* SAFE LOCAL STORAGE HYDRATION */

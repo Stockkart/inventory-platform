@@ -33,7 +33,6 @@
         "../../core/user/src/api/user-lookup.api.ts"
       ],
       "@inventory-platform/schema": ["../../platform/schema/src/index.ts"],
-      "@inventory-platform/shell": ["../../platform/shell/src/index.ts"],
       "@inventory-platform/access": ["../../platform/access/src/index.ts"],
       "@inventory-platform/schema/types": [
         "../../platform/schema/src/types/index.ts"
@@ -41,26 +40,15 @@
       "@inventory-platform/session/types": [
         "../../platform/session/src/model/index.ts"
       ],
-      "@inventory-platform/shell/types": [
-        "../../platform/shell/src/model/index.ts"
-      ],
       "@inventory-platform/user/types": ["../user/src/model/index.ts"],
       "@inventory-platform/product/types": ["./src/model/index.ts"],
       "@inventory-platform/analytics/types": [
         "../analytics/src/model/index.ts"
       ],
-      "@inventory-platform/reminders/types": [
-        "../reminders/src/model/index.ts"
-      ],
       "@inventory-platform/credit/types": ["../credit/src/model/index.ts"],
-      "@inventory-platform/plan/types": ["../plan/src/model/index.ts"],
-      "@inventory-platform/pricing/types": ["../pricing/src/model/index.ts"],
       "@inventory-platform/taxation/types": ["../taxation/src/model/index.ts"],
       "@inventory-platform/accounting/types": [
         "../accounting/src/model/index.ts"
-      ],
-      "@inventory-platform/plugin-cafe/types": [
-        "../../plugins/cafe/src/types/index.ts"
       ]
     }
   },
@@ -74,18 +62,6 @@
   "references": [
     {
       "path": "../../platform/access/tsconfig.lib.json"
-    },
-    {
-      "path": "../reminders/tsconfig.lib.json"
-    },
-    {
-      "path": "../../platform/shell/tsconfig.lib.json"
-    },
-    {
-      "path": "../pricing/tsconfig.lib.json"
-    },
-    {
-      "path": "../../plugins/cafe/tsconfig.lib.json"
     },
     {
       "path": "../../platform/contracts/tsconfig.lib.json"

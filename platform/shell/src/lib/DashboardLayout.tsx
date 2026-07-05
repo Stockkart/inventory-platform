@@ -55,7 +55,11 @@ function isTypingInField(target: EventTarget | null): boolean {
   return Boolean(target.closest('[contenteditable="true"]'));
 }
 
-export function DashboardLayout({ children, verticalPlugin = null }: DashboardLayoutProps) {
+export function DashboardLayout({
+  children,
+  verticalPlugin = null,
+  baseMenuGroups,
+}: DashboardLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, shop, logout, isLoading } = useAuthStore();
@@ -128,12 +132,13 @@ export function DashboardLayout({ children, verticalPlugin = null }: DashboardLa
   const filteredMenuGroups = useMemo(
     () =>
       getDashboardMenuGroupsWithCapabilities(
+        baseMenuGroups,
         user?.role,
         shopCapabilities ?? null,
         shopAccess ?? null,
         verticalPlugin ?? null
       ),
-    [user?.role, shopCapabilities, shopAccess, verticalPlugin]
+    [baseMenuGroups, user?.role, shopCapabilities, shopAccess, verticalPlugin]
   );
 
   const navRowsForPalette = useMemo(

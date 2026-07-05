@@ -1,5 +1,5 @@
-import { FormKeyboardNavScope } from '@inventory-platform/shell';
-import { Header } from '@inventory-platform/plan';
+import { FormKeyboardNavScope } from '@inventory-platform/routing';
+import { JourneyHeader } from '../../ui/JourneyHeader';
 import { ForgotPasswordForm } from '../forms/ForgotPasswordForm';
 import styles from './login.module.css';
 
@@ -16,7 +16,7 @@ export function meta() {
 export default function ForgotPasswordPage() {
   return (
     <div className={styles.page}>
-      <Header />
+      <JourneyHeader />
       <main className={styles.main}>
         <FormKeyboardNavScope className={styles.container}>
           <ForgotPasswordForm />

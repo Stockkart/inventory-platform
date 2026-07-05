@@ -6,7 +6,7 @@ import type { CustomerResponse } from '@inventory-platform/user/types';
 import type { PaymentMethod, PaymentSplit } from '@inventory-platform/contracts';
 import { inventoryLotIdFromSellableRef, lineSellableRef } from '@inventory-platform/product/types';
 import { PaginationBar } from '@inventory-platform/ui-kit';
-import { useCapabilityFeatureGuard } from '@inventory-platform/shell';
+import { useCapabilityFeatureGuard } from '@inventory-platform/routing';
 import {
   PaymentMethodSplit,
   RefundHistoryList,

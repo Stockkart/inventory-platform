@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { InventoryItem } from '@inventory-platform/product/types';
-import type { MenuItem, SellCatalog } from '@inventory-platform/plugin-cafe/types';
+import type { MenuItem, SellCatalog } from '@inventory-platform/product/types';
 import styles from './CafeSellCatalogPanel.module.css';
 
 function money(n: number): string {

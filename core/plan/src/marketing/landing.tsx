@@ -1,4 +1,4 @@
-import { FormKeyboardNavScope } from '@inventory-platform/shell';
+import { FormKeyboardNavScope } from '@inventory-platform/routing';
 import {
   Header,
   Hero,

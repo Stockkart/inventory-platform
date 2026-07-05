@@ -9,7 +9,7 @@ import { inventoryApi } from '../api/inventory.api';
 import type { InventoryItem, VendorPurchaseInvoiceDetail, VendorPurchaseInvoiceSummary } from '@inventory-platform/product/types';
 import styles from './vendor-invoices.module.css';
 import { PaginationBar } from '@inventory-platform/ui-kit';
-import { isVendorReturnEnabled } from '@inventory-platform/shell';
+import { isVendorReturnEnabled } from '@inventory-platform/routing';
 import {
   HistoryListSummary,
   historyRecordListStyles,

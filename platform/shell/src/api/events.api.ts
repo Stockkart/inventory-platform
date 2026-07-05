@@ -1,5 +1,5 @@
 import { apiClient } from '@inventory-platform/api-client';
-import type { ReminderDetail, InventoryLowEvent } from '@inventory-platform/reminders/types';
+import type { ReminderDetail, InventoryLowEvent } from '@inventory-platform/contracts';
 import { EVENT_ENDPOINTS } from './endpoints';
 
 export const eventsApi = {

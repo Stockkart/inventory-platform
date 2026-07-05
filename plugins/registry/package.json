@@ -33,7 +33,6 @@
     "@inventory-platform/product": "workspace:*",
     "@inventory-platform/reminders": "workspace:*",
     "@inventory-platform/routing": "workspace:*",
-    "@inventory-platform/shell": "workspace:*",
     "@inventory-platform/taxation": "workspace:*",
     "@inventory-platform/user": "workspace:*",
     "@inventory-platform/plugin-cafe": "workspace:*",

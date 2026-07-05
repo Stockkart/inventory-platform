@@ -100,12 +100,10 @@
   },
   "dependencies": {
     "@inventory-platform/api-client": "workspace:*",
-    "@inventory-platform/plan": "workspace:*",
     "@inventory-platform/query": "workspace:*",
     "@inventory-platform/routing": "workspace:*",
     "@inventory-platform/schema": "workspace:*",
     "@inventory-platform/session": "workspace:*",
-    "@inventory-platform/shell": "workspace:*",
     "@inventory-platform/ui-kit": "workspace:*",
     "@inventory-platform/contracts": "workspace:*"
   },

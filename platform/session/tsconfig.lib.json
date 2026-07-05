@@ -19,34 +19,27 @@
       "@inventory-platform/contracts": [
         "../../platform/contracts/src/index.ts"
       ],
-      "@inventory-platform/access": [
-        "../../platform/access/src/index.ts"
-      ],
+      "@inventory-platform/access": ["../../platform/access/src/index.ts"],
       "@inventory-platform/schema/types": [
         "../../platform/schema/src/types/index.ts"
       ],
-      "@inventory-platform/plan/types": [
-        "../../core/plan/src/model/index.ts"
-      ]
+      "@inventory-platform/plan/types": ["../../core/plan/src/model/index.ts"]
     }
   },
   "include": ["src/**/*.ts"],
   "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts"],
   "references": [
     {
-      "path": "../api-client/tsconfig.lib.json"
+      "path": "../schema/tsconfig.lib.json"
     },
     {
       "path": "../contracts/tsconfig.lib.json"
     },
     {
+      "path": "../api-client/tsconfig.lib.json"
+    },
+    {
       "path": "../access/tsconfig.lib.json"
-    },
-    {
-      "path": "../schema/tsconfig.lib.json"
-    },
-    {
-      "path": "../../core/plan/tsconfig.lib.json"
     }
   ]
 }

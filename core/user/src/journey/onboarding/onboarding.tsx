@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router';
 import { useAuthStore, useVerticalSchemaStore, useNotify } from '@inventory-platform/session';
 import { shopsApi } from '@inventory-platform/user/shops';
 import { verticalsApi } from '@inventory-platform/session/api';
-import type { OnboardingStep } from '@inventory-platform/shell/types';
+import type { OnboardingStep } from '@inventory-platform/user/types';
 import type { ShopType } from '@inventory-platform/user/types';
 import type { VerticalSchemaFieldDef, VerticalSummary } from '@inventory-platform/schema/types';
 import {

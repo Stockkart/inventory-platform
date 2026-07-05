@@ -30,6 +30,9 @@
   "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts"],
   "references": [
     {
+      "path": "../../platform/shell/tsconfig.lib.json"
+    },
+    {
       "path": "../cafe/tsconfig.lib.json"
     },
     {
@@ -37,9 +40,6 @@
     },
     {
       "path": "../../core/taxation/tsconfig.lib.json"
-    },
-    {
-      "path": "../../platform/shell/tsconfig.lib.json"
     },
     {
       "path": "../../platform/routing/tsconfig.lib.json"

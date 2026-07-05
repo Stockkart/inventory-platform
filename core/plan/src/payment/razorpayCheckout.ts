@@ -1,5 +1,4 @@
 import type {
-  PaymentCheckoutOptions,
   PaymentCheckoutPort,
   RazorpayPaymentSuccess,
 } from './types.js';

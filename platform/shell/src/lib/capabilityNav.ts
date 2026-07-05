@@ -1,13 +1,13 @@
 import type { ShopUiCapabilities, ShopAccess } from '@inventory-platform/access';
-import type { DashboardVerticalPlugin } from '@inventory-platform/shell/types';
-import type { VerticalPlugin } from '@inventory-platform/routing';
-import {
-  getDashboardMenuGroupsForRole,
-  type DashboardMenuGroup,
-  type DashboardMenuItem,
-} from '@inventory-platform/plugin-registry';
+import type { VerticalPlugin, DashboardMenuGroup, DashboardMenuItem } from '@inventory-platform/routing';
 import { resolveSellPath } from '@inventory-platform/routing';
+import {
+  isCustomerReturnEnabled,
+  isVendorReturnEnabled,
+} from '@inventory-platform/routing';
 import { filterDashboardMenuGroupsByAccess } from './accessNav';
+
+export { isCustomerReturnEnabled, isVendorReturnEnabled };
 
 const SKU_ONLY_PRODUCT_PATHS = new Set([
   '/dashboard/scan-sell',
@@ -17,20 +17,6 @@ const SKU_ONLY_PRODUCT_PATHS = new Set([
 
 const CUSTOMER_RETURN_PATH = '/dashboard/refund';
 const VENDOR_RETURN_PATH = '/dashboard/vendor-return';
-
-/** Defaults to enabled when capabilities are absent (medical / legacy). */
-export function isCustomerReturnEnabled(
-  capabilities: ShopUiCapabilities | null | undefined
-): boolean {
-  return capabilities?.features?.customerReturn !== false;
-}
-
-/** Defaults to enabled when capabilities are absent (medical / legacy). */
-export function isVendorReturnEnabled(
-  capabilities: ShopUiCapabilities | null | undefined
-): boolean {
-  return capabilities?.features?.vendorReturn !== false;
-}
 
 function filterReturnsGroup(
   groups: DashboardMenuGroup[],
@@ -57,8 +43,10 @@ function filterReturnsGroup(
     .filter((group) => group.id !== 'returns' || group.items.length > 0);
 }
 
+type NavCapablePlugin = Pick<VerticalPlugin, 'navContributions'>;
+
 function pluginNavItemsForCapabilities(
-  plugin: VerticalPlugin | DashboardVerticalPlugin,
+  plugin: NavCapablePlugin,
   capabilities: ShopUiCapabilities
 ): DashboardMenuItem[] {
   const enabledPaths = new Set(capabilities.navigation.map((n) => n.path));
@@ -115,20 +103,20 @@ function mergeMenuListProductNav(
 export { resolveSellPath };
 
 export function getDashboardMenuGroupsWithCapabilities(
+  baseMenuGroups: DashboardMenuGroup[],
   role: string | undefined,
   capabilities: ShopUiCapabilities | null | undefined,
   access?: ShopAccess | null,
-  plugin?: VerticalPlugin | DashboardVerticalPlugin | null
+  plugin?: NavCapablePlugin | null
 ): DashboardMenuGroup[] {
-  const base = getDashboardMenuGroupsForRole(role);
-
-  let groups = base;
+  void role;
+  let groups = baseMenuGroups;
   if (capabilities?.sellSurface === 'MENU_LIST') {
     const capItems =
       plugin?.navContributions?.length
         ? pluginNavItemsForCapabilities(plugin, capabilities)
         : capabilityNavItems(capabilities);
-    groups = mergeMenuListProductNav(base, capItems);
+    groups = mergeMenuListProductNav(baseMenuGroups, capItems);
   }
 
   return filterDashboardMenuGroupsByAccess(

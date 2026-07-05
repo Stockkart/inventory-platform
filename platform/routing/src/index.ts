@@ -25,3 +25,29 @@ export {
   type ComposedRouteEntry,
   type RoutePackageRegistration,
 } from './lib/compose-routes';
+export {
+  mergeNavContributions,
+  getDashboardNavRows,
+  type DashboardMenuGroup,
+  type DashboardMenuItem,
+  type DashboardNavRow,
+} from './lib/dashboard-nav';
+export {
+  KEYBOARD_NAV_ATTR,
+  KEYBOARD_NAV_SKIP,
+  KEYBOARD_NAV_GRID,
+  runFormKeyboardNavigation,
+  shouldSkipGlobalMainKeyboardNav,
+  shouldSkipNestedFormKeyboardNav,
+  shouldSkipContainerKeyboardNav,
+} from './lib/formKeyboardNav';
+export { FormKeyboardNavScope } from './lib/FormKeyboardNavScope';
+export {
+  isCustomerReturnEnabled,
+  isVendorReturnEnabled,
+} from './lib/capability-guards';
+export { useCapabilityFeatureGuard } from './lib/useCapabilityFeatureGuard';
+export {
+  isScanSellHidePurchaseKey,
+  shouldSkipScanSellHidePurchaseKey,
+} from './lib/scan-sell-hotkeys';

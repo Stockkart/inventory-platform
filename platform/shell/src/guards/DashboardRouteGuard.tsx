@@ -7,16 +7,15 @@ import {
   useShopAccessStore,
 } from '@inventory-platform/session';
 import { apiClient } from '@inventory-platform/api-client';
-import { isPlanExpiryAllowedPath } from '@inventory-platform/plan/types';
+import { isPlanExpiryAllowedPath } from '@inventory-platform/contracts';
 import { canAccessDashboardPath } from '../lib/accessNav';
-import { useVerticalPluginStore } from '@inventory-platform/plugin-registry';
 
 export type DashboardRouteGuardState = {
   isReady: boolean;
   blockingContent: ReactNode | null;
 };
 
-/** Session, plan, access, and vertical plugin bootstrap for dashboard routes. */
+/** Session, plan expiry, and shop-access bootstrap for dashboard routes. */
 export function useDashboardRouteGuard(): DashboardRouteGuardState {
   const navigate = useNavigate();
   const location = useLocation();
@@ -33,11 +32,6 @@ export function useDashboardRouteGuard(): DashboardRouteGuardState {
   const accessLoading = useShopAccessStore((s) => s.loading);
   const fetchAccess = useShopAccessStore((s) => s.fetchAccess);
   const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
-  const shopSchema = useVerticalSchemaStore((s) => {
-    if (!user?.shopId) return undefined;
-    return s.shopSchemaByKey[`shop:${user.shopId}:regular`];
-  });
-  const fetchVerticalPlugin = useVerticalPluginStore((s) => s.fetchPlugin);
   const hasCheckedAuth = useRef(false);
   const isCheckingRef = useRef(false);
 
@@ -64,14 +58,6 @@ export function useDashboardRouteGuard(): DashboardRouteGuardState {
     fetchAccess,
     fetchShopSchema,
   ]);
-
-  useEffect(() => {
-    const verticalId = shopSchema?.verticalId;
-    if (!verticalId) {
-      return;
-    }
-    void fetchVerticalPlugin(verticalId);
-  }, [shopSchema?.verticalId, fetchVerticalPlugin]);
 
   useEffect(() => {
     if (!isAuthenticated || !user?.shopId || accessLoading || !shopAccess) {

@@ -2,7 +2,7 @@ import type { ShopAccess } from '@inventory-platform/access';
 import type {
   DashboardMenuGroup,
   DashboardMenuItem,
-} from '@inventory-platform/plugin-registry';
+} from '@inventory-platform/routing';
 
 const ACCOUNTING_PREFIX = '/dashboard/accounting';
 

@@ -34,7 +34,6 @@
     "@inventory-platform/access": "workspace:*",
     "@inventory-platform/api-client": "workspace:*",
     "@inventory-platform/contracts": "workspace:*",
-    "@inventory-platform/plan": "workspace:*",
     "tslib": "^2.3.0",
     "zustand": "^5.0.8"
   }

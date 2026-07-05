@@ -340,6 +340,9 @@ importers:
       '@inventory-platform/shell':
         specifier: workspace:*
         version: link:../../platform/shell
+      '@inventory-platform/ui-kit':
+        specifier: workspace:*
+        version: link:../../ui-kit
       '@tanstack/react-query':
         specifier: ^5.90.0
         version: 5.101.2(react@19.2.0)
@@ -505,9 +508,6 @@ importers:
       '@inventory-platform/contracts':
         specifier: workspace:*
         version: link:../../platform/contracts
-      '@inventory-platform/plan':
-        specifier: workspace:*
-        version: link:../plan
       '@inventory-platform/query':
         specifier: workspace:*
         version: link:../../platform/query
@@ -520,9 +520,6 @@ importers:
       '@inventory-platform/session':
         specifier: workspace:*
         version: link:../../platform/session
-      '@inventory-platform/shell':
-        specifier: workspace:*
-        version: link:../../platform/shell
       '@inventory-platform/ui-kit':
         specifier: workspace:*
         version: link:../../ui-kit
@@ -577,9 +574,15 @@ importers:
       '@inventory-platform/access':
         specifier: workspace:*
         version: link:../access
+      '@inventory-platform/session':
+        specifier: workspace:*
+        version: link:../session
       react:
         specifier: ^19.0.0
         version: 19.2.0
+      react-router:
+        specifier: ^7.2.0
+        version: 7.9.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
 
   platform/schema:
     dependencies:
@@ -604,9 +607,6 @@ importers:
       '@inventory-platform/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@inventory-platform/plan':
-        specifier: workspace:*
-        version: link:../../core/plan
       tslib:
         specifier: ^2.3.0
         version: 2.8.1
@@ -625,12 +625,6 @@ importers:
       '@inventory-platform/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@inventory-platform/plan':
-        specifier: workspace:*
-        version: link:../../core/plan
-      '@inventory-platform/plugin-registry':
-        specifier: workspace:*
-        version: link:../../plugins/registry
       '@inventory-platform/routing':
         specifier: workspace:*
         version: link:../routing
@@ -718,9 +712,6 @@ importers:
       '@inventory-platform/routing':
         specifier: workspace:*
         version: link:../../platform/routing
-      '@inventory-platform/shell':
-        specifier: workspace:*
-        version: link:../../platform/shell
       '@inventory-platform/taxation':
         specifier: workspace:*
         version: link:../../core/taxation

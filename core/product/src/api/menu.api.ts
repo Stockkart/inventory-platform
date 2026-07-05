@@ -1,6 +1,6 @@
 import { apiClient } from '@inventory-platform/api-client';
 import type { ApiResponse } from '@inventory-platform/contracts';
-import type { ShopMenu } from '@inventory-platform/plugin-cafe/types';
+import type { ShopMenu } from '@inventory-platform/contracts';
 import { SHOP_SELL_ENDPOINTS } from './endpoints';
 
 export const shopMenuApi = {

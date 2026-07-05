@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { plansApi } from '../api';
-import { FormKeyboardNavScope } from '@inventory-platform/shell';
+import { FormKeyboardNavScope } from '@inventory-platform/routing';
 import { PlanGrid, Header, Footer } from '../ui';
 import { useAuthStore } from '@inventory-platform/session';
 import styles from './plans.module.css';

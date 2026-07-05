@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useNavigate } from 'react-router';
 import { Search } from 'lucide-react';
-import type { DashboardNavRow } from '@inventory-platform/plugin-registry';
+import type { DashboardNavRow } from '@inventory-platform/routing';
 import {
   DASHBOARD_HOTKEY,
   getQuickNavFooterHints,
