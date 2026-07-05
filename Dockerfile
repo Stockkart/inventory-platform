@@ -23,7 +23,6 @@ COPY core/plan/package.json ./core/plan/
 COPY core/user/package.json ./core/user/
 COPY core/pricing/package.json ./core/pricing/
 COPY core/product/package.json ./core/product/
-COPY features/product/package.json ./features/product/
 
 # Install all dependencies (including dev dependencies for build)
 RUN pnpm install --frozen-lockfile
@@ -59,7 +58,6 @@ COPY core/plan/package.json ./core/plan/
 COPY core/user/package.json ./core/user/
 COPY core/pricing/package.json ./core/pricing/
 COPY core/product/package.json ./core/product/
-COPY features/product/package.json ./features/product/
 
 # Install production dependencies only
 RUN pnpm install --frozen-lockfile --prod

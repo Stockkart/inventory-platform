@@ -1,7 +1,6 @@
 packages:
   - 'apps/*'
   - 'core/*'
-  - 'features/*'
   - 'platform/*'
   - 'plugins/*'
   - 'ui-kit'

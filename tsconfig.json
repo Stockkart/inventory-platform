@@ -71,9 +71,6 @@
     },
     {
       "path": "./platform/shell"
-    },
-    {
-      "path": "./features/product"
     }
   ]
 }
