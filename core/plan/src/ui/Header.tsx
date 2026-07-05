@@ -1,6 +1,6 @@
 import { Link } from 'react-router';
 import { ThemeToggle } from '@inventory-platform/shell';
-import { useAuthStore } from '@inventory-platform/store';
+import { useAuthStore } from '@inventory-platform/session';
 import styles from './Header.module.css';
 
 export function Header() {

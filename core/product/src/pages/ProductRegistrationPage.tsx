@@ -69,7 +69,7 @@ import {
   useVerticalSchemaStore,
   useShopCapabilitiesStore,
   shopSchemaCacheKey,
-} from '@inventory-platform/store';
+} from '@inventory-platform/session';
 import type { VerticalSchemaFieldDef } from '@inventory-platform/types';
 import {
   VerticalRegistrationGridCells,

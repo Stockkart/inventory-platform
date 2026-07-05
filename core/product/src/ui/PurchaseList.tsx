@@ -5,7 +5,7 @@ import { PaginationBar } from '@inventory-platform/ui-kit';
 import { SaleHistoryCard } from './SaleHistoryCard';
 import { HistoryListSummary } from './HistoryListSummary';
 import recordStyles from './HistoryRecordList.module.css';
-import { useNotify } from '@inventory-platform/store';
+import { useNotify } from '@inventory-platform/session';
 import type { HistoryFilters } from './historyFilters';
 import {
   hasActiveHistoryFilters,

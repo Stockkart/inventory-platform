@@ -18,7 +18,6 @@
         "../../platform/api-client/src/index.ts"
       ],
       "@inventory-platform/session": ["../../platform/session/src/index.ts"],
-      "@inventory-platform/store": ["../../shared/store/src/index.ts"],
       "@inventory-platform/types": ["../../shared/types/src/index.ts"],
       "@inventory-platform/routing": ["../../platform/routing/src/index.ts"],
       "@inventory-platform/ui-kit": ["../../ui-kit/src/index.ts"]
@@ -37,9 +36,6 @@
     },
     {
       "path": "../../shared/types/tsconfig.lib.json"
-    },
-    {
-      "path": "../../shared/store/tsconfig.lib.json"
     },
     {
       "path": "../session/tsconfig.lib.json"

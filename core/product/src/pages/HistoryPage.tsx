@@ -10,7 +10,7 @@ import {
 } from '../ui';
 import type { HistoryFilters, HistoryTab } from '../ui';
 import { isCustomerReturnEnabled, isVendorReturnEnabled } from '@inventory-platform/shell';
-import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/store';
+import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/session';
 import { VendorInvoicesPage } from './VendorInvoicesPage';
 import styles from './history.module.css';
 

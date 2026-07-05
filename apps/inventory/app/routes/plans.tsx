@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router';
 import { plansApi } from '@inventory-platform/plan/api';
 import { FormKeyboardNavScope } from '@inventory-platform/shell';
 import { PlanGrid, Header, Footer } from '@inventory-platform/plan';
-import { useAuthStore } from '@inventory-platform/store';
+import { useAuthStore } from '@inventory-platform/session';
 import styles from './plans.module.css';
 
 export function meta() {

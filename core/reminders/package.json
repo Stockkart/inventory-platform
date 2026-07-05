@@ -28,7 +28,6 @@
     "@inventory-platform/query": "workspace:*",
     "@inventory-platform/routing": "workspace:*",
     "@inventory-platform/session": "workspace:*",
-    "@inventory-platform/store": "workspace:*",
     "@inventory-platform/types": "workspace:*",
     "@inventory-platform/ui-kit": "workspace:*",
     "@inventory-platform/product": "workspace:*"

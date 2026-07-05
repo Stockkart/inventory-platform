@@ -22,9 +22,6 @@
       "path": "./shared/api"
     },
     {
-      "path": "./shared/store"
-    },
-    {
       "path": "./features/onboarding"
     },
     {

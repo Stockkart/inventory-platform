@@ -3,7 +3,7 @@ import { invitationsApi } from '../api/invitations.api';
 import type { Invitation, UserRole } from '@inventory-platform/types';
 import { RoleBadge } from './RoleBadge';
 import styles from './InvitationCard.module.css';
-import { useNotify } from '@inventory-platform/store';
+import { useNotify } from '@inventory-platform/session';
 
 interface InvitationCardProps {
   invitation: Invitation;

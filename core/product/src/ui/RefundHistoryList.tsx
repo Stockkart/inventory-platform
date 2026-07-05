@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { refundsApi } from '@inventory-platform/api';
 import type { Refund } from '@inventory-platform/types';
-import { useNotify } from '@inventory-platform/store';
+import { useNotify } from '@inventory-platform/session';
 import recordStyles from './HistoryRecordList.module.css';
 import { PaginationBar } from '@inventory-platform/ui-kit';
 import { HistoryListSummary } from './HistoryListSummary';

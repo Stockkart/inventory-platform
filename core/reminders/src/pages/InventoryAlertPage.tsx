@@ -3,7 +3,7 @@ import { useLocation } from 'react-router';
 import type { InventoryItem } from '@inventory-platform/types';
 import { InventoryAlertDetails } from '@inventory-platform/product';
 import { PaginationBar } from '@inventory-platform/ui-kit';
-import { useAuthStore, useShopAccessStore } from '@inventory-platform/store';
+import { useAuthStore, useShopAccessStore } from '@inventory-platform/session';
 import { useNotify } from '@inventory-platform/session';
 import { resolveInventoryDocumentId } from '../api/inventory-alert.api';
 import { mapLowStockItems, type LowStockAlertRow } from '../model/inventory-alert-utils';

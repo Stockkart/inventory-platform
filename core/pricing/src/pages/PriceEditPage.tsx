@@ -1,7 +1,7 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { useParams, useLocation, Link } from 'react-router';
 import { pricingApi } from '../api/pricing.api';
-import { useNotify } from '@inventory-platform/store';
+import { useNotify } from '@inventory-platform/session';
 import type { PricingRate } from '@inventory-platform/types';
 import styles from '././price-edit.module.css';
 

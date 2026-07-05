@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { useAuthStore } from '@inventory-platform/store';
+import { useAuthStore } from '@inventory-platform/session';
 import { usersApi } from '@inventory-platform/api';
 import type { ShopMembership } from '@inventory-platform/types';
 import styles from './shops.module.css';

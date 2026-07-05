@@ -5,7 +5,7 @@ import type {
   Reminder,
 } from '@inventory-platform/types';
 import styles from './ReminderForm.module.css';
-import { useNotify } from '@inventory-platform/store';
+import { useNotify } from '@inventory-platform/session';
 
 interface ReminderFormProps {
   reminder?: Reminder;

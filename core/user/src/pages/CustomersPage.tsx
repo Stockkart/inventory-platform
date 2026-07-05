@@ -9,7 +9,7 @@ import type {
   CreateCustomerDto,
   UpdateCustomerDto,
 } from '@inventory-platform/types';
-import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/store';
+import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/session';
 import styles from '././customers.module.css';
 
 export function meta() {

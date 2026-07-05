@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuthStore } from '@inventory-platform/store';
+import { useAuthStore } from '@inventory-platform/session';
 import { ShopUsersList } from '../ui';
 import styles from './shop-users.module.css';
 

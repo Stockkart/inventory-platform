@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { Purchase } from '@inventory-platform/types';
 import { PrintInvoiceModal } from './PrintInvoiceModal';
 import styles from './PurchaseCard.module.css';
-import { useNotify } from '@inventory-platform/store';
+import { useNotify } from '@inventory-platform/session';
 import { formatPaymentMethod, formatPaymentSplit } from './paymentMethod';
 
 interface PurchaseCardProps {

@@ -13,7 +13,7 @@ import {
   getExtensionFieldString,
   isSellDirectInventory,
 } from '@inventory-platform/schema';
-import { useNotify, useVerticalSchemaStore, useAuthStore, useShopAccessStore } from '@inventory-platform/store';
+import { useNotify, useVerticalSchemaStore, useAuthStore, useShopAccessStore } from '@inventory-platform/session';
 import searchStyles from '@inventory-platform/product/pages/product-search.module.css';
 import styles from './manual-stock.module.css';
 

@@ -6,7 +6,7 @@ import {
   useVerticalSchemaStore,
   useShopCapabilitiesStore,
   useShopAccessStore,
-} from '@inventory-platform/store';
+} from '@inventory-platform/session';
 import { apiClient } from '@inventory-platform/api';
 import { isPlanExpiryAllowedPath } from '@inventory-platform/types';
 import { VerticalPluginProvider } from '@inventory-platform/routing';

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { useAuthStore } from '@inventory-platform/store';
+import { useAuthStore } from '@inventory-platform/session';
 import styles from './shop-selection.module.css';
 
 export function meta() {

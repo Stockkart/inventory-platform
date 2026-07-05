@@ -36,7 +36,7 @@ import styles from './scan-sell.module.css';
 import { CafeSellCatalogPanel } from '../ui/CafeSellCatalogPanel';
 import { ScanSellMenuCartLine } from '../ui/ScanSellMenuCartLine';
 import { ScanSellCafeStockLine } from '../ui/ScanSellCafeStockLine';
-import { useNotify, useAuthStore, useVerticalSchemaStore } from '@inventory-platform/store';
+import { useNotify, useAuthStore, useVerticalSchemaStore } from '@inventory-platform/session';
 import {
   isScanSellHidePurchaseKey,
   shouldSkipScanSellHidePurchaseKey,

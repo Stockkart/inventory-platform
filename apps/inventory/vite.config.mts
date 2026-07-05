@@ -158,7 +158,6 @@ export default defineConfig({
         '../../ui-kit/src/form-styles.ts'
       ),
       '@inventory-platform/ui-kit': path.resolve(__dirname, '../../ui-kit/src/index.ts'),
-      '@inventory-platform/store': path.resolve(__dirname, '../../shared/store/src/index.ts'),
       '@inventory-platform/user/customers': path.resolve(
         __dirname,
         '../../core/user/src/api/customers.api.ts'

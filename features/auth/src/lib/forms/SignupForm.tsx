@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
-import { useAuthStore } from '@inventory-platform/store';
+import { useAuthStore } from '@inventory-platform/session';
 import styles from './SignupForm.module.css';
 
 export function SignupForm() {

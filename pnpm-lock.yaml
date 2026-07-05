@@ -334,12 +334,12 @@ importers:
       '@inventory-platform/routing':
         specifier: workspace:*
         version: link:../../platform/routing
+      '@inventory-platform/session':
+        specifier: workspace:*
+        version: link:../../platform/session
       '@inventory-platform/shell':
         specifier: workspace:*
         version: link:../../platform/shell
-      '@inventory-platform/store':
-        specifier: workspace:*
-        version: link:../../shared/store
       '@inventory-platform/types':
         specifier: workspace:*
         version: link:../../shared/types
@@ -373,9 +373,9 @@ importers:
       '@inventory-platform/routing':
         specifier: workspace:*
         version: link:../../platform/routing
-      '@inventory-platform/store':
+      '@inventory-platform/session':
         specifier: workspace:*
-        version: link:../../shared/store
+        version: link:../../platform/session
       '@inventory-platform/types':
         specifier: workspace:*
         version: link:../../shared/types
@@ -412,9 +412,9 @@ importers:
       '@inventory-platform/schema':
         specifier: workspace:*
         version: link:../../platform/schema
-      '@inventory-platform/store':
+      '@inventory-platform/session':
         specifier: workspace:*
-        version: link:../../shared/store
+        version: link:../../platform/session
       '@inventory-platform/types':
         specifier: workspace:*
         version: link:../../shared/types
@@ -460,9 +460,6 @@ importers:
       '@inventory-platform/session':
         specifier: workspace:*
         version: link:../../platform/session
-      '@inventory-platform/store':
-        specifier: workspace:*
-        version: link:../../shared/store
       '@inventory-platform/types':
         specifier: workspace:*
         version: link:../../shared/types
@@ -520,9 +517,9 @@ importers:
       '@inventory-platform/routing':
         specifier: workspace:*
         version: link:../../platform/routing
-      '@inventory-platform/store':
+      '@inventory-platform/session':
         specifier: workspace:*
-        version: link:../../shared/store
+        version: link:../../platform/session
       '@inventory-platform/types':
         specifier: workspace:*
         version: link:../../shared/types
@@ -547,9 +544,9 @@ importers:
       '@inventory-platform/api':
         specifier: workspace:*
         version: link:../../shared/api
-      '@inventory-platform/store':
+      '@inventory-platform/session':
         specifier: workspace:*
-        version: link:../../shared/store
+        version: link:../../platform/session
 
   features/onboarding: {}
 
@@ -629,9 +626,6 @@ importers:
       '@inventory-platform/session':
         specifier: workspace:*
         version: link:../session
-      '@inventory-platform/store':
-        specifier: workspace:*
-        version: link:../../shared/store
       '@inventory-platform/types':
         specifier: workspace:*
         version: link:../../shared/types
@@ -662,9 +656,9 @@ importers:
       '@inventory-platform/routing':
         specifier: workspace:*
         version: link:../../platform/routing
-      '@inventory-platform/store':
+      '@inventory-platform/session':
         specifier: workspace:*
-        version: link:../../shared/store
+        version: link:../../platform/session
       '@inventory-platform/types':
         specifier: workspace:*
         version: link:../../shared/types
@@ -713,18 +707,6 @@ importers:
       tslib:
         specifier: ^2.3.0
         version: 2.8.1
-
-  shared/store:
-    dependencies:
-      '@inventory-platform/session':
-        specifier: workspace:*
-        version: link:../../platform/session
-      tslib:
-        specifier: ^2.3.0
-        version: 2.8.1
-      zustand:
-        specifier: ^5.0.8
-        version: 5.0.8(@types/react@19.2.7)(immer@11.1.0)(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))
 
   shared/types:
     dependencies:

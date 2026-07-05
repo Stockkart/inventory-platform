@@ -19,7 +19,7 @@ import {
 } from '../ui';
 import { useResolvedSellPath } from '@inventory-platform/routing';
 import styles from './checkout.module.css';
-import { useAuthStore, useNotify, useShopCapabilitiesStore } from '@inventory-platform/store';
+import { useAuthStore, useNotify, useShopCapabilitiesStore } from '@inventory-platform/session';
 
 export function meta() {
   return [

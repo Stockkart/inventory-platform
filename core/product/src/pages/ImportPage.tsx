@@ -9,7 +9,7 @@ import type {
   BillingMode,
 } from '@inventory-platform/types';
 import { PaginationBar } from '@inventory-platform/ui-kit';
-import { useNotify } from '@inventory-platform/store';
+import { useNotify } from '@inventory-platform/session';
 import styles from './import.module.css';
 
 export function meta() {

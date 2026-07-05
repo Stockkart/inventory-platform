@@ -18,7 +18,7 @@ import {
   roundMoney,
   validatePaymentSplit,
 } from '../ui';
-import { useNotify } from '@inventory-platform/store';
+import { useNotify } from '@inventory-platform/session';
 import refundStyles from './refund.module.css';
 import styles from './vendor-return.module.css';
 

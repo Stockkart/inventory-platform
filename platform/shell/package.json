@@ -24,7 +24,6 @@
     "@inventory-platform/api-client": "workspace:*",
     "@inventory-platform/routing": "workspace:*",
     "@inventory-platform/session": "workspace:*",
-    "@inventory-platform/store": "workspace:*",
     "@inventory-platform/types": "workspace:*",
     "lucide-react": "^0.554.0"
   },

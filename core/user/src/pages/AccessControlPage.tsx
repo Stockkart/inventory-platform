@@ -7,7 +7,7 @@ import type {
   ShopRbacAdmin,
 } from '@inventory-platform/types';
 import { CORE_PRODUCT_SEARCH_FIELDS } from '@inventory-platform/types';
-import { useAuthStore, useNotify, useShopAccessStore } from '@inventory-platform/store';
+import { useAuthStore, useNotify, useShopAccessStore } from '@inventory-platform/session';
 import styles from './access-control.module.css';
 
 const MODULE_COLUMNS: {

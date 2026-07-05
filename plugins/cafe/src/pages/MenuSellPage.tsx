@@ -21,7 +21,7 @@ import {
   lineSellableRef,
   menuSellableRef,
 } from '@inventory-platform/types';
-import { useNotify, useVerticalSchemaStore } from '@inventory-platform/store';
+import { useNotify, useVerticalSchemaStore } from '@inventory-platform/session';
 import {
   CustomerProductHistoryHint,
   useCustomerProductHistory,

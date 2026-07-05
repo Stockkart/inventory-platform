@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuthStore } from '@inventory-platform/store';
+import { useAuthStore } from '@inventory-platform/session';
 import { InvitationList } from '../ui';
 import { InviteForm } from '../ui';
 import styles from './invitations.module.css';

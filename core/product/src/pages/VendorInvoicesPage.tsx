@@ -24,7 +24,7 @@ import {
   matchesRegexField,
 } from '../ui';
 import type { HistoryFilters } from '../ui';
-import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/store';
+import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/session';
 
 const recordStyles = historyRecordListStyles;
 

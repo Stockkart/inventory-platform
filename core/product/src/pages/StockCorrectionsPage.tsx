@@ -6,7 +6,7 @@ import {
   useState,
 } from 'react';
 import { inventoryApi } from '../api/inventory.api';
-import { useAuthStore, useShopAccessStore } from '@inventory-platform/store';
+import { useAuthStore, useShopAccessStore } from '@inventory-platform/session';
 import type {
   InventoryCorrection,
   InventoryCorrectionLine,

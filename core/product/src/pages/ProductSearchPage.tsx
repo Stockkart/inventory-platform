@@ -9,7 +9,7 @@ import {
   sortInventoryByExpirySoonest,
 } from '@inventory-platform/schema';
 import styles from './product-search.module.css';
-import { useAuthStore, useNotify, useShopAccessStore, useVerticalSchemaStore } from '@inventory-platform/store';
+import { useAuthStore, useNotify, useShopAccessStore, useVerticalSchemaStore } from '@inventory-platform/session';
 import { AddToSellQuotationPicker } from '../ui/AddToSellQuotationPicker';
 
 export function meta() {

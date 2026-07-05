@@ -14,7 +14,7 @@ COPY nx.json tsconfig.base.json tsconfig.json ./
 # Copy package.json files from workspace (Docker doesn't support glob, copy individually)
 COPY apps/inventory/package.json ./apps/inventory/
 COPY shared/api/package.json ./shared/api/
-COPY shared/store/package.json ./shared/store/
+COPY platform/session/package.json ./platform/session/
 COPY shared/types/package.json ./shared/types/
 COPY ui-kit/package.json ./ui-kit/
 COPY core/analytics/package.json ./core/analytics/
@@ -52,7 +52,7 @@ COPY nx.json tsconfig.base.json tsconfig.json ./
 # Copy package.json files for all workspace packages (Docker doesn't support glob, copy individually)
 COPY apps/inventory/package.json ./apps/inventory/
 COPY shared/api/package.json ./shared/api/
-COPY shared/store/package.json ./shared/store/
+COPY platform/session/package.json ./platform/session/
 COPY shared/types/package.json ./shared/types/
 COPY ui-kit/package.json ./ui-kit/
 COPY core/analytics/package.json ./core/analytics/

@@ -25,7 +25,7 @@ import {
   validatePaymentSplit,
 } from '../ui';
 import styles from './refund.module.css';
-import { useNotify } from '@inventory-platform/store';
+import { useNotify } from '@inventory-platform/session';
 
 export function meta() {
   return [

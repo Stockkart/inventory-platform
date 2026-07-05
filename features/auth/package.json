@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@inventory-platform/api": "workspace:*",
-    "@inventory-platform/store": "workspace:*"
+    "@inventory-platform/session": "workspace:*"
   },
   "nx": {
     "tags": ["type:legacy"]

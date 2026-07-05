@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { useAuthStore, useShopCapabilitiesStore, useShopAccessStore } from '@inventory-platform/session';
-import { useNotifications } from '@inventory-platform/store';
+import { useNotifications } from './useNotifications';
 import { shopsApi } from '@inventory-platform/api';
 import type { DashboardLayoutProps } from '@inventory-platform/types';
 import type { Location as LocationType } from '@inventory-platform/types';

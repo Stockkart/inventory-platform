@@ -3,7 +3,7 @@ import { invitationsApi } from '../api/invitations.api';
 import type { ShopUser, UserRole } from '@inventory-platform/types';
 import { RoleBadge } from './RoleBadge';
 import styles from './ShopUsersList.module.css';
-import { useNotify } from '@inventory-platform/store';
+import { useNotify } from '@inventory-platform/session';
 
 interface ShopUsersListProps {
   shopId: string;

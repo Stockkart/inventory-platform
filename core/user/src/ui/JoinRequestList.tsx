@@ -3,7 +3,7 @@ import { shopsApi } from '@inventory-platform/api';
 import type { JoinRequest } from '@inventory-platform/types';
 import { JoinRequestCard } from './JoinRequestCard';
 import styles from './JoinRequestList.module.css';
-import { useNotify } from '@inventory-platform/store';
+import { useNotify } from '@inventory-platform/session';
 
 interface JoinRequestListProps {
   shopId?: string;

@@ -15,7 +15,7 @@
     "paths": {
       "@inventory-platform/ui-kit": ["../../ui-kit/src/index.ts"],
       "@inventory-platform/schema": ["../../platform/schema/src/index.ts"],
-      "@inventory-platform/store": ["../../shared/store/src/index.ts"],
+      "@inventory-platform/session": ["../../platform/session/src/index.ts"],
       "@inventory-platform/api": ["../../shared/api/src/index.ts"],
       "@inventory-platform/types": ["../../shared/types/src/index.ts"],
       "@inventory-platform/payment": ["../../shared/payment/src/index.ts"],
@@ -77,7 +77,6 @@
         "../../core/product/src/routes/*"
       ],
       "@inventory-platform/query": ["../../platform/query/src/index.ts"],
-      "@inventory-platform/session": ["../../platform/session/src/index.ts"],
       "@inventory-platform/api-client": [
         "../../platform/api-client/src/index.ts"
       ],
@@ -146,7 +145,7 @@
       "path": "../../shared/api/tsconfig.lib.json"
     },
     {
-      "path": "../../shared/store/tsconfig.lib.json"
+      "path": "../../platform/session/tsconfig.lib.json"
     },
     {
       "path": "../../platform/query/tsconfig.lib.json"

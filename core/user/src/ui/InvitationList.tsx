@@ -3,7 +3,7 @@ import { invitationsApi } from '../api/invitations.api';
 import type { Invitation } from '@inventory-platform/types';
 import { InvitationCard } from './InvitationCard';
 import styles from './InvitationList.module.css';
-import { useNotify } from '@inventory-platform/store';
+import { useNotify } from '@inventory-platform/session';
 
 interface InvitationListProps {
   shopId?: string;

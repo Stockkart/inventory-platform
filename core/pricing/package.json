@@ -35,7 +35,7 @@
     "@inventory-platform/product": "workspace:*",
     "@inventory-platform/query": "workspace:*",
     "@inventory-platform/routing": "workspace:*",
-    "@inventory-platform/store": "workspace:*",
+    "@inventory-platform/session": "workspace:*",
     "@inventory-platform/types": "workspace:*",
     "@inventory-platform/ui-kit": "workspace:*"
   },

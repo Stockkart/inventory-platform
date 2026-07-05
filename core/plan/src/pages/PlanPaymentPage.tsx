@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { getPaymentCheckout } from '@inventory-platform/payment';
-import { useAuthStore, usePlanStatusStore } from '@inventory-platform/store';
+import { useAuthStore, usePlanStatusStore } from '@inventory-platform/session';
 import {
   useCreatePlanCheckoutMutation,
   usePlanQuery,

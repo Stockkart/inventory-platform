@@ -18,7 +18,7 @@ import {
   canEditProductSearchUiField,
   hasProductSearchEditAccess,
 } from '@inventory-platform/types';
-import { useNotify } from '@inventory-platform/store';
+import { useNotify } from '@inventory-platform/session';
 import {
   itemUsesExtensionBag,
   getInventoryBatchNo,

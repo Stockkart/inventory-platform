@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
-import { useAuthStore, useVerticalSchemaStore, useNotify } from '@inventory-platform/store';
+import { useAuthStore, useVerticalSchemaStore, useNotify } from '@inventory-platform/session';
 import { shopsApi, verticalsApi } from '@inventory-platform/api';
 import type {
   OnboardingStep,

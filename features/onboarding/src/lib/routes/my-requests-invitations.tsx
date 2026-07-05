@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { useAuthStore } from '@inventory-platform/store';
+import { useAuthStore } from '@inventory-platform/session';
 import { InvitationList } from '@inventory-platform/user';
 import styles from './my-requests-invitations.module.css';
 

@@ -3,7 +3,7 @@ import { shopsApi } from '@inventory-platform/api';
 import type { JoinRequest, UserRole } from '@inventory-platform/types';
 import { RoleBadge } from './RoleBadge';
 import styles from './JoinRequestCard.module.css';
-import { useNotify } from '@inventory-platform/store';
+import { useNotify } from '@inventory-platform/session';
 
 interface JoinRequestCardProps {
   joinRequest: JoinRequest;

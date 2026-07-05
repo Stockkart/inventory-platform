@@ -40,7 +40,7 @@
     "@inventory-platform/payment": "workspace:*",
     "@inventory-platform/query": "workspace:*",
     "@inventory-platform/routing": "workspace:*",
-    "@inventory-platform/store": "workspace:*",
+    "@inventory-platform/session": "workspace:*",
     "@inventory-platform/types": "workspace:*",
     "@inventory-platform/shell": "workspace:*",
     "@inventory-platform/api": "workspace:*"
