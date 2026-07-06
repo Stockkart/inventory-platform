@@ -1,5 +1,19 @@
 import { useEffect, useState } from 'react';
-import { ExternalLink, Loader2, Play, X } from 'lucide-react';
+import { ExternalLink, Play, X } from 'lucide-react';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardBody,
+  EmptyState,
+  IconButton,
+  Inline,
+  Link,
+  Spinner,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { resourcesApi } from '../api/resources.api';
 import type { TutorialResourceResponse } from '@inventory-platform/shell/types';
 import { YouTubeHelpModal } from './YouTubeHelpModal';
@@ -70,74 +84,86 @@ export function ContextualHelpPanel({
 
   return (
     <>
-      <div
+      <Box
         className={styles.backdrop}
         role="presentation"
         onClick={onClose}
       />
-      <aside
+      <Box
+        as="aside"
         className={styles.panel}
         role="dialog"
         aria-modal="true"
         aria-labelledby="contextual-help-title"
       >
-        <div className={styles.header}>
-          <div>
-            <p className={styles.kicker}>Help for this page</p>
-            <h2 id="contextual-help-title" className={styles.title}>
+        <Inline className={styles.header} align="start" justify="between">
+          <Stack gap="xs">
+            <Text className={styles.kicker}>Help for this page</Text>
+            <Text
+              id="contextual-help-title"
+              variant="title"
+              className={styles.title}
+            >
               {pageLabel}
-            </h2>
-          </div>
-          <button
-            type="button"
+            </Text>
+          </Stack>
+          <IconButton
+            label="Close help"
             className={styles.closeBtn}
             onClick={onClose}
-            aria-label="Close help"
           >
             <X size={20} />
-          </button>
-        </div>
+          </IconButton>
+        </Inline>
 
-        <p className={styles.hint}>
-          Tutorial videos matched to <code>{currentPath}</code>
-        </p>
+        <Text className={styles.hint}>
+          Tutorial videos matched to{' '}
+          <Text as="code">{currentPath}</Text>
+        </Text>
 
         {loading ? (
-          <div className={styles.status}>
-            <Loader2 size={20} className={styles.spinner} aria-hidden />
-            Loading videos…
-          </div>
+          <Inline className={styles.status} gap="sm">
+            <Spinner size="sm" aria-hidden />
+            <Text>Loading videos…</Text>
+          </Inline>
         ) : null}
 
-        {error ? <p className={styles.error}>{error}</p> : null}
+        {error ? (
+          <Alert variant="danger" className={styles.error}>
+            {error}
+          </Alert>
+        ) : null}
 
         {!loading && !error && videos.length === 0 ? (
-          <p className={styles.empty}>
-            No videos are mapped to this page yet. Try the StockKart overview
-            from the home page demo, or check back after your admin adds
-            tutorials.
-          </p>
+          <EmptyState
+            className={styles.empty}
+            title="No videos yet"
+            description="No videos are mapped to this page yet. Try the StockKart overview from the home page demo, or check back after your admin adds tutorials."
+          />
         ) : null}
 
-        <ul className={styles.list}>
+        <Stack gap="sm" className={styles.list}>
           {videos.map((video) => (
-            <li key={video.id} className={styles.card}>
-              <div className={styles.cardBody}>
-                <h3 className={styles.cardTitle}>{video.title}</h3>
+            <Card key={video.id} className={styles.card}>
+              <CardBody className={styles.cardBody}>
+                <Text variant="heading3" className={styles.cardTitle}>
+                  {video.title}
+                </Text>
                 {video.description ? (
-                  <p className={styles.cardDesc}>{video.description}</p>
+                  <Text className={styles.cardDesc}>{video.description}</Text>
                 ) : null}
-              </div>
-              <div className={styles.cardActions}>
-                <button
+              </CardBody>
+              <Inline className={styles.cardActions} gap="xs">
+                <Button
                   type="button"
+                  size="sm"
                   className={styles.playBtn}
+                  leftIcon={<Play size={16} aria-hidden />}
                   onClick={() => setSelectedVideo(video)}
                 >
-                  <Play size={16} aria-hidden />
                   Watch
-                </button>
-                <a
+                </Button>
+                <Link
                   className={styles.linkBtn}
                   href={video.youtubeUrl}
                   target="_blank"
@@ -145,12 +171,12 @@ export function ContextualHelpPanel({
                   aria-label={`Open ${video.title} on YouTube`}
                 >
                   <ExternalLink size={16} aria-hidden />
-                </a>
-              </div>
-            </li>
+                </Link>
+              </Inline>
+            </Card>
           ))}
-        </ul>
-      </aside>
+        </Stack>
+      </Box>
 
       <YouTubeHelpModal
         video={selectedVideo}

@@ -1,5 +1,4 @@
-import { useEffect } from 'react';
-import { X } from 'lucide-react';
+import { Box, Link, Modal, Text } from '@inventory-platform/ui-kit';
 import type { TutorialResourceResponse } from '@inventory-platform/shell/types';
 import styles from './YouTubeHelpModal.module.css';
 
@@ -16,52 +15,23 @@ export function YouTubeHelpModal({
   onClose,
   title,
 }: YouTubeHelpModalProps) {
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
-
-  if (!open || !video) return null;
+  if (!video) return null;
 
   const embedSrc = video.youtubeVideoId
     ? `https://www.youtube.com/embed/${video.youtubeVideoId}`
     : null;
 
+  const displayTitle = title ?? video.title;
+
   return (
-    <div
-      className={styles.backdrop}
-      role="presentation"
-      onClick={onClose}
-    >
-      <div
-        className={styles.modal}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="youtube-help-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className={styles.header}>
-          <h2 id="youtube-help-title" className={styles.title}>
-            {title ?? video.title}
-          </h2>
-          <button
-            type="button"
-            className={styles.closeBtn}
-            onClick={onClose}
-            aria-label="Close video"
-          >
-            <X size={20} />
-          </button>
-        </div>
+    <Modal open={open} onClose={onClose} size="lg" className={styles.modal}>
+      <Modal.Header title={displayTitle} onClose={onClose} />
+      <Modal.Body>
         {video.description ? (
-          <p className={styles.description}>{video.description}</p>
+          <Text className={styles.description}>{video.description}</Text>
         ) : null}
         {embedSrc ? (
-          <div className={styles.playerWrap}>
+          <Box className={styles.playerWrap}>
             <iframe
               className={styles.player}
               src={`${embedSrc}?rel=0`}
@@ -69,15 +39,15 @@ export function YouTubeHelpModal({
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             />
-          </div>
+          </Box>
         ) : (
-          <p className={styles.fallback}>
-            <a href={video.youtubeUrl} target="_blank" rel="noopener noreferrer">
+          <Box className={styles.fallback}>
+            <Link href={video.youtubeUrl} target="_blank" rel="noopener noreferrer">
               Watch on YouTube
-            </a>
-          </p>
+            </Link>
+          </Box>
         )}
-      </div>
-    </div>
+      </Modal.Body>
+    </Modal>
   );
 }

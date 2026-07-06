@@ -2,6 +2,14 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuthStore } from '@inventory-platform/session';
 import type { ShopMembership } from '@inventory-platform/session/types';
+import {
+  Badge,
+  Box,
+  Button,
+  Inline,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './UserMenuShopSection.module.css';
 
 export interface UserMenuShopSectionProps {
@@ -48,62 +56,75 @@ export function UserMenuShopSection({ onClose }: UserMenuShopSectionProps) {
   };
 
   return (
-    <div className={styles.section}>
-      <div className={styles.currentBlock}>
-        <span className={styles.sectionLabel}>Current shop</span>
-        <div className={styles.currentShop}>
-          <span className={styles.shopIcon} aria-hidden>
+    <Box className={styles.section}>
+      <Box className={styles.currentBlock}>
+        <Text as="span" className={styles.sectionLabel}>
+          Current shop
+        </Text>
+        <Inline className={styles.currentShop} align="center">
+          <Text as="span" className={styles.shopIcon} aria-hidden>
             🏪
-          </span>
-          <span className={styles.currentShopName}>{activeShopName}</span>
-          <span className={styles.activeTag}>Active</span>
-        </div>
-      </div>
+          </Text>
+          <Text as="span" className={styles.currentShopName}>
+            {activeShopName}
+          </Text>
+          <Badge variant="success" className={styles.activeTag}>
+            Active
+          </Badge>
+        </Inline>
+      </Box>
 
       {otherShops.length > 0 && (
-        <div className={styles.switchBlock}>
-          <span className={styles.sectionLabel}>Switch shop</span>
-          <div className={styles.shopList}>
+        <Box className={styles.switchBlock}>
+          <Text as="span" className={styles.sectionLabel}>
+            Switch shop
+          </Text>
+          <Stack className={styles.shopList} gap="none">
             {otherShops.map((membership) => {
               const isSwitching = switchingId === membership.shopId;
               return (
-                <button
+                <Button
                   key={membership.shopId}
                   type="button"
+                  variant="ghost"
                   className={styles.shopOption}
                   onClick={() => void handleSwitch(membership)}
                   disabled={isLoading || isSwitching}
                 >
-                  <span className={styles.shopOptionName}>
+                  <Text as="span" className={styles.shopOptionName}>
                     {membership.shopName}
-                  </span>
-                  <span className={styles.shopOptionRole}>{membership.role}</span>
-                  <span className={styles.switchHint}>
+                  </Text>
+                  <Text as="span" className={styles.shopOptionRole}>
+                    {membership.role}
+                  </Text>
+                  <Text as="span" className={styles.switchHint}>
                     {isSwitching ? 'Switching…' : 'Use this shop'}
-                  </span>
-                </button>
+                  </Text>
+                </Button>
               );
             })}
-          </div>
-        </div>
+          </Stack>
+        </Box>
       )}
 
-      <div className={styles.actions}>
-        <button
+      <Inline className={styles.actions} gap="none">
+        <Button
           type="button"
+          variant="ghost"
           className={styles.actionBtn}
           onClick={goToShops}
         >
           Manage shops
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="solid"
           className={styles.actionBtnPrimary}
           onClick={goToAddShop}
         >
           + Add shop
-        </button>
-      </div>
-    </div>
+        </Button>
+      </Inline>
+    </Box>
   );
 }

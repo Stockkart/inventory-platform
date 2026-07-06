@@ -1,5 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Button, Modal, Select } from '@inventory-platform/ui-kit';
+import {
+  Alert,
+  Box,
+  Button,
+  Label,
+  Modal,
+  Select,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { DASHBOARD_HOTKEY, getShortcutHelpRows } from './dashboardHotkeys';
 import type { DashboardNavRow } from '@inventory-platform/routing';
 import type { FavoritePageShortcut } from './favoritePageShortcuts';
@@ -20,6 +34,38 @@ type KeyboardShortcutsModalProps = {
   favorites: FavoritePageShortcut[];
   onFavoritesChange: (next: FavoritePageShortcut[]) => void;
 };
+
+function ShortcutKeys({
+  alternatives,
+}: {
+  alternatives: string[][];
+}) {
+  return (
+    <>
+      {alternatives.map((segments, altIdx) => (
+        <Text key={altIdx} as="span" className={styles.keyCombo}>
+          {segments.map((seg, segIdx) => (
+            <Text key={`${seg}-${segIdx}`} as="span" className={styles.kbdGroup}>
+              {segIdx > 0 ? (
+                <Text as="span" className={styles.kbdJoin}>
+                  {' '}
+                  +{' '}
+                </Text>
+              ) : null}
+              <Text as="kbd">{seg}</Text>
+            </Text>
+          ))}
+          {altIdx < alternatives.length - 1 ? (
+            <Text as="span" className={styles.altSep}>
+              {' '}
+              or{' '}
+            </Text>
+          ) : null}
+        </Text>
+      ))}
+    </>
+  );
+}
 
 export function KeyboardShortcutsModal({
   open,
@@ -124,68 +170,61 @@ export function KeyboardShortcutsModal({
 
   return (
     <Modal open={open} onClose={onClose} size="lg" className={styles.modalPanel}>
-      <div {...{ 'data-keyboard-nav': KEYBOARD_NAV_SKIP }}>
+      <Box {...{ 'data-keyboard-nav': KEYBOARD_NAV_SKIP }}>
         <Modal.Header title="Keyboard shortcuts" onClose={onClose} />
         <Modal.Body>
-          <p className={styles.intro}>
+          <Text className={styles.intro}>
             Most shortcuts work when focus is not in a field. While{' '}
-            <strong>quick navigation</strong> is open (
-            <kbd>{modLabel}</kbd> +{' '}
-            <kbd>{DASHBOARD_HOTKEY.quickNavToggleModKey.toUpperCase()}</kbd> or{' '}
-            <kbd>{DASHBOARD_HOTKEY.quickNavOpenSlash}</kbd>), use arrows,{' '}
-            <kbd>Enter</kbd>, and <kbd>Alt</kbd> + <kbd>1</kbd>–<kbd>9</kbd>{' '}
-            there. Close any dialog with <kbd>Esc</kbd> or ×.
-          </p>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Action</th>
-                <th>Shortcut</th>
-              </tr>
-            </thead>
-            <tbody>
+            <Text as="strong">quick navigation</Text> is open (
+            <Text as="kbd">{modLabel}</Text> +{' '}
+            <Text as="kbd">
+              {DASHBOARD_HOTKEY.quickNavToggleModKey.toUpperCase()}
+            </Text>{' '}
+            or <Text as="kbd">{DASHBOARD_HOTKEY.quickNavOpenSlash}</Text>), use
+            arrows, <Text as="kbd">Enter</Text>, and <Text as="kbd">Alt</Text> +{' '}
+            <Text as="kbd">1</Text>–<Text as="kbd">9</Text> there. Close any
+            dialog with <Text as="kbd">Esc</Text> or ×.
+          </Text>
+          <Table className={styles.table}>
+            <TableHead>
+              <TableRow>
+                <TableHeaderCell>Action</TableHeaderCell>
+                <TableHeaderCell>Shortcut</TableHeaderCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
               {helpRows.map((row) => (
-                <tr key={row.action}>
-                  <td className={styles.action}>{row.action}</td>
-                  <td className={styles.keys}>
-                    {row.alternatives.map((segments, altIdx) => (
-                      <span key={altIdx} className={styles.keyCombo}>
-                        {segments.map((seg, segIdx) => (
-                          <span key={`${seg}-${segIdx}`} className={styles.kbdGroup}>
-                            {segIdx > 0 ? (
-                              <span className={styles.kbdJoin}> + </span>
-                            ) : null}
-                            <kbd>{seg}</kbd>
-                          </span>
-                        ))}
-                        {altIdx < row.alternatives.length - 1 ? (
-                          <span className={styles.altSep}> or </span>
-                        ) : null}
-                      </span>
-                    ))}
-                  </td>
-                </tr>
+                <TableRow key={row.action}>
+                  <TableCell className={styles.action}>{row.action}</TableCell>
+                  <TableCell className={styles.keys}>
+                    <ShortcutKeys alternatives={row.alternatives} />
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
 
-          <div className={styles.divider} />
+          <Box className={styles.divider} />
 
-          <h3 className={styles.sectionTitle}>My page shortcuts</h3>
-          <p className={styles.sectionIntro}>
+          <Text variant="heading3" className={styles.sectionTitle}>
+            My page shortcuts
+          </Text>
+          <Text className={styles.sectionIntro}>
             Jump straight to a screen you use often. Pick a page below, click{' '}
-            <strong>Assign shortcut</strong>, then press one of: a{' '}
-            <strong>function key</strong> alone (<kbd>F1</kbd>–<kbd>F12</kbd>
-            ), or a <strong>two-part</strong> shortcut such as{' '}
-            <kbd>{modLabel}</kbd> + <kbd>G</kbd>, <kbd>Alt</kbd> + <kbd>G</kbd>,{' '}
-            or <kbd>{modLabel}</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd>. Saved on
-            this device only.
-          </p>
+            <Text as="strong">Assign shortcut</Text>, then press one of: a{' '}
+            <Text as="strong">function key</Text> alone (
+            <Text as="kbd">F1</Text>–<Text as="kbd">F12</Text>), or a{' '}
+            <Text as="strong">two-part</Text> shortcut such as{' '}
+            <Text as="kbd">{modLabel}</Text> + <Text as="kbd">G</Text>,{' '}
+            <Text as="kbd">Alt</Text> + <Text as="kbd">G</Text>, or{' '}
+            <Text as="kbd">{modLabel}</Text> + <Text as="kbd">Shift</Text> +{' '}
+            <Text as="kbd">S</Text>. Saved on this device only.
+          </Text>
 
-          <div className={styles.favoriteToolbar}>
-            <label className={styles.srOnly} htmlFor="favorite-page-select">
+          <Box className={styles.favoriteToolbar}>
+            <Label htmlFor="favorite-page-select" className={styles.srOnly}>
               Page to assign
-            </label>
+            </Label>
             <Select
               id="favorite-page-select"
               className={styles.pageSelect}
@@ -218,57 +257,43 @@ export function KeyboardShortcutsModal({
                 Cancel
               </Button>
             )}
-          </div>
+          </Box>
 
           {recordingPath ? (
-            <p className={styles.recordingHint} role="status">
-              Press your shortcut — e.g. <kbd>F7</kbd>,{' '}
-              <kbd>{modLabel}</kbd> + <kbd>R</kbd>, or <kbd>Alt</kbd> +{' '}
-              <kbd>2</kbd>.{' '}
-              <span className={styles.recordingMuted}>
+            <Alert variant="info" role="status" className={styles.recordingHint}>
+              Press your shortcut — e.g. <Text as="kbd">F7</Text>,{' '}
+              <Text as="kbd">{modLabel}</Text> + <Text as="kbd">R</Text>, or{' '}
+              <Text as="kbd">Alt</Text> + <Text as="kbd">2</Text>.{' '}
+              <Text as="span" className={styles.recordingMuted}>
                 Esc cancels recording.
-              </span>
-            </p>
+              </Text>
+            </Alert>
           ) : null}
           {formError ? (
-            <p className={styles.formError} role="alert">
+            <Alert variant="danger" className={styles.formError}>
               {formError}
-            </p>
+            </Alert>
           ) : null}
 
           {favorites.length > 0 ? (
-            <table className={`${styles.table} ${styles.favoritesTable}`}>
-              <thead>
-                <tr>
-                  <th>Page</th>
-                  <th>Shortcut</th>
-                  <th className={styles.colActions} />
-                </tr>
-              </thead>
-              <tbody>
+            <Table className={`${styles.table} ${styles.favoritesTable}`}>
+              <TableHead>
+                <TableRow>
+                  <TableHeaderCell>Page</TableHeaderCell>
+                  <TableHeaderCell>Shortcut</TableHeaderCell>
+                  <TableHeaderCell className={styles.colActions} />
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {favorites.map((f) => (
-                  <tr key={f.id}>
-                    <td className={styles.action}>{f.label}</td>
-                    <td className={styles.keys}>
-                      {formatFavoriteShortcutDisplay(f, modLabel).map(
-                        (segments, altIdx) => (
-                          <span key={altIdx} className={styles.keyCombo}>
-                            {segments.map((seg, segIdx) => (
-                              <span
-                                key={`${seg}-${segIdx}`}
-                                className={styles.kbdGroup}
-                              >
-                                {segIdx > 0 ? (
-                                  <span className={styles.kbdJoin}> + </span>
-                                ) : null}
-                                <kbd>{seg}</kbd>
-                              </span>
-                            ))}
-                          </span>
-                        )
-                      )}
-                    </td>
-                    <td className={styles.colActions}>
+                  <TableRow key={f.id}>
+                    <TableCell className={styles.action}>{f.label}</TableCell>
+                    <TableCell className={styles.keys}>
+                      <ShortcutKeys
+                        alternatives={formatFavoriteShortcutDisplay(f, modLabel)}
+                      />
+                    </TableCell>
+                    <TableCell className={styles.colActions}>
                       <Button
                         type="button"
                         size="sm"
@@ -281,27 +306,28 @@ export function KeyboardShortcutsModal({
                       >
                         Remove
                       </Button>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           ) : (
             !recordingPath && (
-              <p className={styles.emptyFavorites}>
+              <Text className={styles.emptyFavorites}>
                 No custom shortcuts yet. Assign one using the controls above.
-              </p>
+              </Text>
             )
           )}
 
-          <p className={styles.note}>
-            Quick navigation: <kbd>↑</kbd> <kbd>↓</kbd> highlight a page,{' '}
-            <kbd>Enter</kbd> opens it. Hold <kbd>Alt</kbd> and press{' '}
-            <kbd>1</kbd>–<kbd>9</kbd> to jump straight to the matching row
+          <Text className={styles.note}>
+            Quick navigation: <Text as="kbd">↑</Text> <Text as="kbd">↓</Text>{' '}
+            highlight a page, <Text as="kbd">Enter</Text> opens it. Hold{' '}
+            <Text as="kbd">Alt</Text> and press <Text as="kbd">1</Text>–
+            <Text as="kbd">9</Text> to jump straight to the matching row
             (shown at the left of each line).
-          </p>
+          </Text>
         </Modal.Body>
-      </div>
+      </Box>
     </Modal>
   );
 }

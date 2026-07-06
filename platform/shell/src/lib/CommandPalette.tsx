@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useNavigate } from 'react-router';
 import { Search } from 'lucide-react';
-import { Input, Modal } from '@inventory-platform/ui-kit';
+import { Box, Input, Modal, Text } from '@inventory-platform/ui-kit';
 import type { DashboardNavRow } from '@inventory-platform/routing';
 import {
   DASHBOARD_HOTKEY,
@@ -32,7 +32,7 @@ export function CommandPalette({
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
-  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const itemRefs = useRef<(HTMLElement | null)[]>([]);
 
   const filteredRef = useRef<DashboardNavRow[]>([]);
   const activeRef = useRef(0);
@@ -123,7 +123,7 @@ export function CommandPalette({
   );
 
   const onPaletteKeyDownCapture = useCallback(
-    (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    (e: ReactKeyboardEvent<HTMLElement>) => {
       const key = e.key;
       const len = filteredRef.current.length;
 
@@ -176,12 +176,12 @@ export function CommandPalette({
 
   return (
     <Modal open={open} onClose={onClose} size="md" className={styles.paletteModal}>
-      <div
+      <Box
         {...{ 'data-keyboard-nav': KEYBOARD_NAV_SKIP }}
         onKeyDownCapture={onPaletteKeyDownCapture}
         className={styles.palette}
       >
-        <div className={styles.searchRow}>
+        <Box className={styles.searchRow}>
           <Search className={styles.searchIcon} size={20} aria-hidden />
           <Input
             id="command-palette-input"
@@ -200,16 +200,18 @@ export function CommandPalette({
             autoCorrect="off"
             spellCheck={false}
           />
-          <span className={styles.hint}>Esc</span>
-        </div>
-        <div className={styles.list} role="listbox">
+          <Text as="span" className={styles.hint}>
+            Esc
+          </Text>
+        </Box>
+        <Box className={styles.list} role="listbox">
           {filtered.length === 0 ? (
-            <div className={styles.empty}>No pages match your search.</div>
+            <Text className={styles.empty}>No pages match your search.</Text>
           ) : (
             filtered.map((row, idx) => (
-              <button
+              <Box
                 key={`${row.path}-${idx}`}
-                type="button"
+                as="button"
                 role="option"
                 aria-selected={idx === active}
                 ref={(el) => {
@@ -224,36 +226,40 @@ export function CommandPalette({
                 }}
                 onClick={() => go(row.path)}
               >
-                <span className={styles.itemIndex} aria-hidden>
+                <Text as="span" className={styles.itemIndex} aria-hidden>
                   {idx < 9 ? String(idx + 1) : ''}
-                </span>
-                <span className={styles.itemIcon} aria-hidden>
+                </Text>
+                <Text as="span" className={styles.itemIcon} aria-hidden>
                   <NavIcon name={row.icon} size="sm" />
-                </span>
-                <span className={styles.itemBody}>
-                  <div className={styles.itemLabel}>{row.label}</div>
-                  <div className={styles.itemMeta}>{row.groupLabel}</div>
-                </span>
-              </button>
+                </Text>
+                <Box className={styles.itemBody}>
+                  <Text className={styles.itemLabel}>{row.label}</Text>
+                  <Text className={styles.itemMeta}>{row.groupLabel}</Text>
+                </Box>
+              </Box>
             ))
           )}
-        </div>
-        <div className={styles.footer}>
+        </Box>
+        <Box className={styles.footer}>
           {footerHints.map((hint) => (
-            <span key={hint.description} className={styles.footerHint}>
+            <Text key={hint.description} as="span" className={styles.footerHint}>
               {hint.keys.map((k, i) => (
-                <span key={`${hint.description}-${k}-${i}`}>
+                <Text key={`${hint.description}-${k}-${i}`} as="span">
                   {i > 0 ? (
-                    <span className={styles.footerPlus}>+</span>
+                    <Text as="span" className={styles.footerPlus}>
+                      +
+                    </Text>
                   ) : null}
-                  <kbd>{k}</kbd>
-                </span>
+                  <Text as="kbd">{k}</Text>
+                </Text>
               ))}{' '}
-              <span className={styles.footerDesc}>{hint.description}</span>
-            </span>
+              <Text as="span" className={styles.footerDesc}>
+                {hint.description}
+              </Text>
+            </Text>
           ))}
-        </div>
-      </div>
+        </Box>
+      </Box>
     </Modal>
   );
 }

@@ -7,7 +7,23 @@ import type { DashboardLayoutProps } from '@inventory-platform/shell/types';
 import type { Location as LocationType } from '@inventory-platform/user/types';
 import styles from './DashboardLayout.module.css';
 import { ThemeToggle } from './ThemeToggle';
-import { Avatar, IconButton, Text } from '@inventory-platform/ui-kit';
+import {
+  Alert,
+  Avatar,
+  Badge,
+  Box,
+  Button,
+  CenteredLoader,
+  Divider,
+  FormField,
+  IconButton,
+  Input,
+  Label,
+  Link as UiLink,
+  Modal,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { ToastProvider } from './ToastProvider';
 import {
   getDashboardMenuGroupsWithCapabilities,
@@ -129,7 +145,7 @@ export function DashboardLayout({
     FavoritePageShortcut[]
   >(() => loadFavoritePageShortcuts());
 
-  const userMenuRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLElement>(null);
   const mainContentRef = useRef<HTMLElement>(null);
 
   const modLabel = useMemo(() => getDashboardModLabel(), []);
@@ -407,7 +423,7 @@ export function DashboardLayout({
   };
 
   return (
-    <div
+    <Box
       className={`${styles.dashboard} ${
         sidebarOpen ? '' : styles.dashboardCollapsed
       }`}
@@ -438,30 +454,31 @@ export function DashboardLayout({
       />
       <ToastProvider />
       {!sidebarOpen && window.innerWidth <= 768 && (
-        <button
+        <IconButton
+          label="Open menu"
           className={styles.mobileMenuFloating}
           onClick={() => setSidebarOpen(true)}
-          type="button"
         >
           <Menu size={18} />
-        </button>
+        </IconButton>
       )}
       {sidebarOpen && (
-        <div
+        <Box
           className={styles.sidebarBackdrop}
           onClick={() => setSidebarOpen(false)}
           aria-hidden="true"
         />
       )}
-      <div className={styles.dashboardBody}>
+      <Box className={styles.dashboardBody}>
       {/* Sidebar */}
-      <div className={styles.sidebarColumn}>
-      <aside
+      <Box className={styles.sidebarColumn}>
+      <Box
+        as="aside"
         className={`${styles.sidebar} ${
           sidebarOpen ? styles.sidebarOpen : styles.sidebarClosed
         }`}
       >
-        <div className={styles.sidebarHeader}>
+        <Box className={styles.sidebarHeader}>
           <Link to="/dashboard" className={styles.logo}>
             <img
               src={
@@ -474,43 +491,47 @@ export function DashboardLayout({
             />
           </Link>
 
-          <button
+          <IconButton
+            label="Toggle sidebar"
             className={styles.toggleBtn}
             onClick={() => setSidebarOpen((s) => !s)}
-            aria-label="Toggle sidebar"
           >
             <Menu size={18} />
-          </button>
-        </div>
+          </IconButton>
+        </Box>
 
-        <nav className={styles.nav}>
+        <Box as="nav" className={styles.nav}>
           {sidebarOpen ? (
             filteredMenuGroups.map((group) => {
               const isExpanded =
                 expandedGroups.has(group.id) ||
                 isPathInGroup(group.id, currentPath);
               return (
-                <div key={group.id} className={styles.navGroup}>
-                  <button
+                <Box key={group.id} className={styles.navGroup}>
+                  <Button
                     type="button"
+                    variant="ghost"
                     className={styles.navGroupHeader}
                     onClick={() => toggleGroup(group.id)}
                     aria-expanded={isExpanded}
                   >
-                    <span className={styles.navGroupIcon}>
+                    <Text as="span" className={styles.navGroupIcon}>
                       <NavIcon name={group.icon} size="sm" />
-                    </span>
-                    <span className={styles.navGroupLabel}>{group.label}</span>
-                    <span
+                    </Text>
+                    <Text as="span" className={styles.navGroupLabel}>
+                      {group.label}
+                    </Text>
+                    <Text
+                      as="span"
                       className={`${styles.navGroupChevron} ${
                         isExpanded ? styles.navGroupChevronOpen : ''
                       }`}
                     >
                       ▾
-                    </span>
-                  </button>
+                    </Text>
+                  </Button>
                   {isExpanded && (
-                    <div className={styles.navGroupItems}>
+                    <Box className={styles.navGroupItems}>
                       {group.items.map((item) => (
                         <Link
                           key={item.path}
@@ -519,19 +540,21 @@ export function DashboardLayout({
                             currentPath === item.path ? styles.active : ''
                           }`}
                         >
-                          <span className={styles.navIcon}>
+                          <Text as="span" className={styles.navIcon}>
                             <NavIcon name={item.icon} size="sm" />
-                          </span>
-                          <span className={styles.navLabel}>{item.label}</span>
+                          </Text>
+                          <Text as="span" className={styles.navLabel}>
+                            {item.label}
+                          </Text>
                         </Link>
                       ))}
-                    </div>
+                    </Box>
                   )}
-                </div>
+                </Box>
               );
             })
           ) : (
-            <div className={styles.navCollapsed}>
+            <Box className={styles.navCollapsed}>
               {allMenuItems.map((item) => (
                 <Link
                   key={item.path}
@@ -541,19 +564,20 @@ export function DashboardLayout({
                   }`}
                   title={item.label}
                 >
-                  <span className={styles.navIcon}>
+                  <Text as="span" className={styles.navIcon}>
                     <NavIcon name={item.icon} size="sm" />
-                  </span>
+                  </Text>
                 </Link>
               ))}
-            </div>
+            </Box>
           )}
-        </nav>
+        </Box>
 
         {/* Support section at bottom */}
-        <div className={styles.sidebarSupport}>
-          <button
+        <Box className={styles.sidebarSupport}>
+          <Button
             type="button"
+            variant="ghost"
             className={styles.supportToggle}
             onClick={() => {
               if (!sidebarOpen) {
@@ -568,7 +592,9 @@ export function DashboardLayout({
           >
             <Headphones size={18} className={styles.supportIcon} />
             {sidebarOpen && (
-              <span className={styles.supportLabel}>Support</span>
+              <Text as="span" className={styles.supportLabel}>
+                Support
+              </Text>
             )}
             {sidebarOpen &&
               (supportOpen ? (
@@ -576,56 +602,60 @@ export function DashboardLayout({
               ) : (
                 <ChevronDown size={16} />
               ))}
-          </button>
+          </Button>
 
           {supportOpen && (
-            <div
+            <Box
               className={styles.supportPanel}
               {...{ 'data-keyboard-nav': KEYBOARD_NAV_SKIP }}
             >
               {/* Phone */}
-              <div className={styles.supportSection}>
+              <Box className={styles.supportSection}>
                 <Phone size={14} className={styles.supportSectionIcon} />
-                <span className={styles.supportSectionTitle}>Call us</span>
-                <a href="tel:+919828606899" className={styles.supportLink}>
+                <Text as="span" className={styles.supportSectionTitle}>
+                  Call us
+                </Text>
+                <UiLink href="tel:+919828606899" className={styles.supportLink}>
                   +91-9828606899
-                </a>
-                <a href="tel:+918800107393" className={styles.supportLink}>
+                </UiLink>
+                <UiLink href="tel:+918800107393" className={styles.supportLink}>
                   +91-8800107393
-                </a>
-              </div>
+                </UiLink>
+              </Box>
 
               {/* Email */}
-              <div className={styles.supportSection}>
+              <Box className={styles.supportSection}>
                 <Mail size={14} className={styles.supportSectionIcon} />
-                <span className={styles.supportSectionTitle}>Email</span>
-                <a
+                <Text as="span" className={styles.supportSectionTitle}>
+                  Email
+                </Text>
+                <UiLink
                   href="mailto:stockkartofficial@gmail.com"
                   className={styles.supportLink}
                 >
                   stockkartofficial@gmail.com
-                </a>
-              </div>
+                </UiLink>
+              </Box>
 
               {/* Online chat placeholder */}
-              <div className={styles.supportSection}>
+              <Box className={styles.supportSection}>
                 <MessageCircle
                   size={14}
                   className={styles.supportSectionIcon}
                 />
-                <span className={styles.supportSectionTitle}>
+                <Text as="span" className={styles.supportSectionTitle}>
                   Instant online support
-                </span>
-                <div className={styles.chatPlaceholder}>
-                  <div className={styles.chatMessages}>
+                </Text>
+                <Box className={styles.chatPlaceholder}>
+                  <Box className={styles.chatMessages}>
                     {chatMessages.length === 0 && (
-                      <p className={styles.chatEmpty}>
+                      <Text as="span" className={styles.chatEmpty}>
                         Start a conversation. We&apos;ll integrate with backend
                         soon.
-                      </p>
+                      </Text>
                     )}
                     {chatMessages.map((m, i) => (
-                      <div
+                      <Box
                         key={i}
                         className={
                           m.from === 'user'
@@ -634,11 +664,11 @@ export function DashboardLayout({
                         }
                       >
                         {m.text}
-                      </div>
+                      </Box>
                     ))}
-                  </div>
-                  <div className={styles.chatInputRow}>
-                    <input
+                  </Box>
+                  <Box className={styles.chatInputRow}>
+                    <Input
                       type="text"
                       placeholder="Type your message..."
                       value={chatMessage}
@@ -646,31 +676,39 @@ export function DashboardLayout({
                       onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
                       className={styles.chatInput}
                     />
-                    <button
+                    <Button
                       type="button"
+                      variant="solid"
                       onClick={handleChatSend}
                       className={styles.chatSendBtn}
                       aria-label="Send message"
                     >
                       Send
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+                    </Button>
+                  </Box>
+                </Box>
+              </Box>
+            </Box>
           )}
-        </div>
-      </aside>
-      </div>
+        </Box>
+      </Box>
+      </Box>
 
       {/* Main */}
-      <div className={styles.mainContent}>
-        <header className={styles.header}>
-          <div className={styles.headerContent}>
-            <h1 className={styles.pageTitle}>{currentPageLabel}</h1>
+      <Box className={styles.mainContent}>
+        <Box as="header" className={styles.header}>
+          <Box className={styles.headerContent}>
+            <Text
+              as="span"
+              role="heading"
+              aria-level={1}
+              className={styles.pageTitle}
+            >
+              {currentPageLabel}
+            </Text>
 
-            <div className={styles.headerActions}>
-              <div className={styles.headerToolbar}>
+            <Box className={styles.headerActions}>
+              <Box className={styles.headerToolbar}>
                 <IconButton
                   label="Help for this page"
                   size="sm"
@@ -684,7 +722,7 @@ export function DashboardLayout({
                   <Info size={18} aria-hidden />
                 </IconButton>
 
-                <div className={styles.notificationWrapper}>
+                <Box className={styles.notificationWrapper}>
                   <IconButton
                     label="Notifications"
                     size="sm"
@@ -693,40 +731,45 @@ export function DashboardLayout({
                   >
                     <Bell size={18} aria-hidden />
                     {unreadCount > 0 && (
-                      <span className={styles.notificationBadge}>
+                      <Badge variant="danger" className={styles.notificationBadge}>
                         {unreadCount}
-                      </span>
+                      </Badge>
                     )}
                   </IconButton>
 
                   {showNotificationMenu && (
-                    <div className={styles.notificationMenu}>
+                    <Box className={styles.notificationMenu}>
                       {notifications.length === 0 ? (
-                        <div className={styles.notificationEmpty}>
+                        <Box className={styles.notificationEmpty}>
                           No notifications
-                        </div>
+                        </Box>
                       ) : (
                         notifications.map((n) => (
-                          <button
+                          <Button
                             key={n.id}
+                            type="button"
+                            variant="ghost"
                             className={styles.notificationItem}
                             onClick={() => handleNotificationClick(n.id)}
                           >
-                            <div className={styles.notificationTitle}>
-                              <span>{n.title}</span>
+                            <Box className={styles.notificationTitle}>
+                              <Text as="span">{n.title}</Text>
                               {!n.read && (
-                                <span className={styles.notificationDot} />
+                                <Box
+                                  as="span"
+                                  className={styles.notificationDot}
+                                />
                               )}
-                            </div>
-                            <div className={styles.notificationMessage}>
+                            </Box>
+                            <Box className={styles.notificationMessage}>
                               {n.message}
-                            </div>
-                          </button>
+                            </Box>
+                          </Button>
                         ))
                       )}
-                    </div>
+                    </Box>
                   )}
-                </div>
+                </Box>
 
                 <IconButton
                   label="Keyboard shortcuts"
@@ -737,20 +780,25 @@ export function DashboardLayout({
                 >
                   <Keyboard size={18} aria-hidden />
                 </IconButton>
-              </div>
+              </Box>
 
-              <div className={styles.headerDivider} aria-hidden />
+              <Divider
+                orientation="vertical"
+                className={styles.headerDivider}
+                aria-hidden
+              />
 
-              <div className={styles.headerAccount}>
+              <Box className={styles.headerAccount}>
                 <ThemeToggle
                   size="sm"
                   variant="outline"
                   className={styles.headerThemeBtn}
                 />
 
-                <div ref={userMenuRef} className={styles.userMenuAnchor}>
-                  <button
+                <Box ref={userMenuRef} className={styles.userMenuAnchor}>
+                  <Button
                     type="button"
+                    variant="ghost"
                     className={styles.userBtn}
                     onClick={() => setUserMenuOpen((o) => !o)}
                     disabled={isLoading}
@@ -767,31 +815,32 @@ export function DashboardLayout({
                     >
                       {user?.name || user?.email || 'User'}
                     </Text>
-                  </button>
+                  </Button>
 
                 {userMenuOpen && (
-                  <div className={styles.userMenu}>
-                    <div className={styles.userMenuHeader}>
-                      <div className={styles.userIdentity}>
+                  <Box className={styles.userMenu}>
+                    <Box className={styles.userMenuHeader}>
+                      <Box className={styles.userIdentity}>
                         <Avatar
                           name={user?.name || user?.email || 'User'}
                           size="md"
                         />
-                        <div className={styles.userMeta}>
-                          <div className={styles.userMenuName}>
+                        <Box className={styles.userMeta}>
+                          <Box className={styles.userMenuName}>
                             {user?.name || 'User'}
-                          </div>
-                          <div className={styles.userMenuEmail}>
+                          </Box>
+                          <Box className={styles.userMenuEmail}>
                             {user?.email}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                          </Box>
+                        </Box>
+                      </Box>
+                    </Box>
 
                     <UserMenuShopSection onClose={() => setUserMenuOpen(false)} />
 
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
                       className={styles.profileMenuBtn}
                       onClick={() => {
                         setUserMenuOpen(false);
@@ -800,21 +849,27 @@ export function DashboardLayout({
                     >
                       <User size={16} aria-hidden />
                       View profile
-                    </button>
+                    </Button>
 
-                    <button onClick={handleLogout} className={styles.logoutBtn}>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={handleLogout}
+                      className={styles.logoutBtn}
+                    >
                       <LogOut size={16} aria-hidden />
                       Logout
-                    </button>
-                  </div>
+                    </Button>
+                  </Box>
                 )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
+                </Box>
+              </Box>
+            </Box>
+          </Box>
+        </Box>
 
-        <main
+        <Box
+          as="main"
           ref={mainContentRef}
           className={styles.content}
           onKeyDownCapture={(e) => {
@@ -833,34 +888,32 @@ export function DashboardLayout({
           }}
         >
           {children}
-        </main>
-      </div>
-      </div>
+        </Box>
+      </Box>
+      </Box>
 
-      {editModalOpen && (
-        <div className={styles.modalBackdrop} onClick={closeEditModal}>
-          <div
-            className={styles.modal}
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="edit-shop-title"
-          >
-            <h2 id="edit-shop-title" className={styles.modalTitle}>
-              Edit tagline &amp; location
-            </h2>
-            {editLoading ? (
-              <div className={styles.modalLoading}>Loading…</div>
-            ) : (
-              <>
-                {editError && (
-                  <div className={styles.editError}>{editError}</div>
-                )}
-                <div className={styles.modalForm}>
-                  <label className={styles.modalLabel} htmlFor="edit-tagline">
-                    Tagline (optional)
-                  </label>
-                  <input
+      <Modal
+        open={editModalOpen}
+        onClose={closeEditModal}
+        className={styles.modal}
+      >
+        <Modal.Header
+          title="Edit tagline & location"
+          onClose={closeEditModal}
+        />
+        <Modal.Body>
+          {editLoading ? (
+            <CenteredLoader className={styles.modalLoading} />
+          ) : (
+            <Stack gap="md">
+              {editError ? (
+                <Alert variant="danger" className={styles.editError}>
+                  {editError}
+                </Alert>
+              ) : null}
+              <Stack className={styles.modalForm} gap="md">
+                <FormField label="Tagline (optional)" id="edit-tagline">
+                  <Input
                     id="edit-tagline"
                     type="text"
                     className={styles.modalInput}
@@ -868,106 +921,111 @@ export function DashboardLayout({
                     onChange={(e) => setEditTagline(e.target.value)}
                     placeholder="e.g. Your Trusted Pharmacy"
                   />
-                  <label className={styles.modalLabel}>Location</label>
-                  <input
+                </FormField>
+                <Label className={styles.modalLabel}>Location</Label>
+                <Input
+                  type="text"
+                  className={styles.modalInput}
+                  placeholder="Primary address *"
+                  value={editLocation.primaryAddress}
+                  onChange={(e) =>
+                    setEditLocation((prev) => ({
+                      ...prev,
+                      primaryAddress: e.target.value,
+                    }))
+                  }
+                />
+                <Input
+                  type="text"
+                  className={styles.modalInput}
+                  placeholder="Secondary address"
+                  value={editLocation.secondaryAddress ?? ''}
+                  onChange={(e) =>
+                    setEditLocation((prev) => ({
+                      ...prev,
+                      secondaryAddress: e.target.value,
+                    }))
+                  }
+                />
+                <Box className={styles.modalRow}>
+                  <Input
                     type="text"
                     className={styles.modalInput}
-                    placeholder="Primary address *"
-                    value={editLocation.primaryAddress}
+                    placeholder="City *"
+                    value={editLocation.city}
                     onChange={(e) =>
                       setEditLocation((prev) => ({
                         ...prev,
-                        primaryAddress: e.target.value,
+                        city: e.target.value,
                       }))
                     }
                   />
-                  <input
+                  <Input
                     type="text"
                     className={styles.modalInput}
-                    placeholder="Secondary address"
-                    value={editLocation.secondaryAddress ?? ''}
+                    placeholder="State *"
+                    value={editLocation.state}
                     onChange={(e) =>
                       setEditLocation((prev) => ({
                         ...prev,
-                        secondaryAddress: e.target.value,
+                        state: e.target.value,
                       }))
                     }
                   />
-                  <div className={styles.modalRow}>
-                    <input
-                      type="text"
-                      className={styles.modalInput}
-                      placeholder="City *"
-                      value={editLocation.city}
-                      onChange={(e) =>
-                        setEditLocation((prev) => ({
-                          ...prev,
-                          city: e.target.value,
-                        }))
-                      }
-                    />
-                    <input
-                      type="text"
-                      className={styles.modalInput}
-                      placeholder="State *"
-                      value={editLocation.state}
-                      onChange={(e) =>
-                        setEditLocation((prev) => ({
-                          ...prev,
-                          state: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className={styles.modalRow}>
-                    <input
-                      type="text"
-                      className={styles.modalInput}
-                      placeholder="PIN *"
-                      value={editLocation.pin}
-                      onChange={(e) =>
-                        setEditLocation((prev) => ({
-                          ...prev,
-                          pin: e.target.value,
-                        }))
-                      }
-                    />
-                    <input
-                      type="text"
-                      className={styles.modalInput}
-                      placeholder="Country *"
-                      value={editLocation.country}
-                      onChange={(e) =>
-                        setEditLocation((prev) => ({
-                          ...prev,
-                          country: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                </div>
-                <div className={styles.modalActions}>
-                  <button
-                    type="button"
-                    className={styles.modalCancelBtn}
-                    onClick={closeEditModal}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.modalSaveBtn}
-                    onClick={handleSaveEdit}
-                    disabled={editSaving}
-                  >
-                    {editSaving ? 'Saving…' : 'Save'}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
+                </Box>
+                <Box className={styles.modalRow}>
+                  <Input
+                    type="text"
+                    className={styles.modalInput}
+                    placeholder="PIN *"
+                    value={editLocation.pin}
+                    onChange={(e) =>
+                      setEditLocation((prev) => ({
+                        ...prev,
+                        pin: e.target.value,
+                      }))
+                    }
+                  />
+                  <Input
+                    type="text"
+                    className={styles.modalInput}
+                    placeholder="Country *"
+                    value={editLocation.country}
+                    onChange={(e) =>
+                      setEditLocation((prev) => ({
+                        ...prev,
+                        country: e.target.value,
+                      }))
+                    }
+                  />
+                </Box>
+              </Stack>
+            </Stack>
+          )}
+        </Modal.Body>
+        {!editLoading && (
+          <Modal.Footer>
+            <Button
+              type="button"
+              variant="outline"
+              className={styles.modalCancelBtn}
+              onClick={closeEditModal}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="solid"
+              className={styles.modalSaveBtn}
+              onClick={handleSaveEdit}
+              disabled={editSaving}
+              loading={editSaving}
+            >
+              {editSaving ? 'Saving…' : 'Save'}
+            </Button>
+          </Modal.Footer>
+        )}
+      </Modal>
+    </Box>
   );
 }
