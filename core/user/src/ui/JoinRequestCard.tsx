@@ -2,6 +2,15 @@ import { useState } from 'react';
 import { shopsApi } from '../api/shops.api';
 import type { JoinRequest, UserRole } from '@inventory-platform/user/types';
 import { RoleBadge } from './RoleBadge';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  Inline,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './JoinRequestCard.module.css';
 import { useNotify } from '@inventory-platform/session';
 
@@ -9,6 +18,15 @@ interface JoinRequestCardProps {
   joinRequest: JoinRequest;
   onProcess?: () => void;
   showActions?: boolean;
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <Inline className={styles.detailRow} align="start">
+      <Text className={styles.label}>{label}</Text>
+      <Text className={styles.value}>{value}</Text>
+    </Inline>
+  );
 }
 
 export function JoinRequestCard({
@@ -56,73 +74,71 @@ export function JoinRequestCard({
   const isPending = joinRequest.status === 'PENDING';
 
   return (
-    <div className={styles.card}>
-      <div className={styles.header}>
-        <div className={styles.topRow}>
-          <div className={styles.userInfo}>
-            <h3 className={styles.userName}>{joinRequest.userName}</h3>
-            <span className={styles.userEmail}>{joinRequest.userEmail}</span>
-          </div>
+    <Card className={styles.card}>
+      <Stack className={styles.header} gap="sm">
+        <Inline className={styles.topRow} align="start">
+          <Stack className={styles.userInfo} gap="xs">
+            <Text variant="heading3" weight="semibold" className={styles.userName}>
+              {joinRequest.userName}
+            </Text>
+            <Text color="secondary" className={styles.userEmail}>
+              {joinRequest.userEmail}
+            </Text>
+          </Stack>
           <RoleBadge role={joinRequest.requestedRole as UserRole} />
-        </div>
-        <span
+        </Inline>
+        <Box
+          as="span"
           className={`${styles.status} ${getStatusColor(joinRequest.status)}`}
         >
           {joinRequest.status}
-        </span>
-      </div>
+        </Box>
+      </Stack>
 
-      <div className={styles.details}>
-        <div className={styles.detailRow}>
-          <span className={styles.label}>Shop:</span>
-          <span className={styles.value}>{joinRequest.shopName}</span>
-        </div>
-        <div className={styles.detailRow}>
-          <span className={styles.label}>Requested Role:</span>
-          <span className={styles.value}>{joinRequest.requestedRole}</span>
-        </div>
-        {joinRequest.message && (
-          <div className={styles.detailRow}>
-            <span className={styles.label}>Message:</span>
-            <span className={styles.value}>{joinRequest.message}</span>
-          </div>
-        )}
-        <div className={styles.detailRow}>
-          <span className={styles.label}>Requested:</span>
-          <span className={styles.value}>
-            {new Date(joinRequest.createdAt).toLocaleDateString()}
-          </span>
-        </div>
-        {joinRequest.reviewedAt && (
-          <div className={styles.detailRow}>
-            <span className={styles.label}>Reviewed:</span>
-            <span className={styles.value}>
-              {new Date(joinRequest.reviewedAt).toLocaleDateString()}
-            </span>
-          </div>
-        )}
-      </div>
+      <Stack className={styles.details} gap="sm">
+        <DetailRow label="Shop:" value={joinRequest.shopName} />
+        <DetailRow label="Requested Role:" value={joinRequest.requestedRole} />
+        {joinRequest.message ? (
+          <DetailRow label="Message:" value={joinRequest.message} />
+        ) : null}
+        <DetailRow
+          label="Requested:"
+          value={new Date(joinRequest.createdAt).toLocaleDateString()}
+        />
+        {joinRequest.reviewedAt ? (
+          <DetailRow
+            label="Reviewed:"
+            value={new Date(joinRequest.reviewedAt).toLocaleDateString()}
+          />
+        ) : null}
+      </Stack>
 
-      {error && <div className={styles.errorMessage}>{error}</div>}
+      {error ? (
+        <Alert variant="danger" className={styles.errorMessage}>
+          {error}
+        </Alert>
+      ) : null}
 
-      {showActions && isPending && (
-        <div className={styles.actions}>
-          <button
+      {showActions && isPending ? (
+        <Inline className={styles.actions} gap="sm" justify="end">
+          <Button
+            variant="outline"
             className={styles.rejectButton}
             onClick={() => handleProcess('REJECT')}
             disabled={isProcessing}
           >
             {isProcessing ? 'Processing...' : 'Reject'}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="solid"
             className={styles.acceptButton}
             onClick={() => handleProcess('ACCEPT')}
             disabled={isProcessing}
           >
             {isProcessing ? 'Processing...' : 'Accept'}
-          </button>
-        </div>
-      )}
-    </div>
+          </Button>
+        </Inline>
+      ) : null}
+    </Card>
   );
 }

@@ -2,6 +2,14 @@ import { useState } from 'react';
 import { invitationsApi } from '../api/invitations.api';
 import { useNotify } from '@inventory-platform/session';
 import type { UserRole } from '@inventory-platform/user/types';
+import {
+  Alert,
+  Button,
+  FormField,
+  Select,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './InviteForm.module.css';
 const { error: notifyError, success: notifySuccess } = useNotify;
 
@@ -12,6 +20,8 @@ interface InviteFormProps {
 }
 
 const AVAILABLE_ROLES: UserRole[] = ['ADMIN', 'MANAGER', 'CASHIER'];
+
+const ROLE_OPTIONS = AVAILABLE_ROLES.map((r) => ({ value: r, label: r }));
 
 export function InviteForm({ shopId, onInviteSent, onError }: InviteFormProps) {
   const [inviteeEmail, setInviteeEmail] = useState('');
@@ -25,8 +35,7 @@ export function InviteForm({ shopId, onInviteSent, onError }: InviteFormProps) {
     return emailRegex.test(email);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setError(null);
     setSuccess(null);
 
@@ -68,44 +77,49 @@ export function InviteForm({ shopId, onInviteSent, onError }: InviteFormProps) {
   };
 
   return (
-    <div className={styles.formContainer}>
-      <div className={styles.header}>
-        <h2 className={styles.title}>Send Invitation</h2>
-        <p className={styles.subtitle}>Invite a user to join your shop</p>
-      </div>
+    <Stack className={styles.formContainer} gap="md">
+      <Stack className={styles.header} gap="xs">
+        <Text variant="title" className={styles.title}>
+          Send Invitation
+        </Text>
+        <Text color="secondary" className={styles.subtitle}>
+          Invite a user to join your shop
+        </Text>
+      </Stack>
 
-      {error && <div className={styles.errorMessage}>{error}</div>}
+      {error ? (
+        <Alert variant="danger" className={styles.errorMessage}>
+          {error}
+        </Alert>
+      ) : null}
 
-      {success && <div className={styles.successMessage}>{success}</div>}
+      {success ? (
+        <Alert variant="success" className={styles.successMessage}>
+          {success}
+        </Alert>
+      ) : null}
 
-      <form className={styles.form} onSubmit={handleSubmit}>
-        <div className={styles.formGroup}>
-          <label htmlFor="inviteeEmail" className={styles.label}>
-            Email Address
-          </label>
-          <input
-            id="inviteeEmail"
-            type="email"
-            className={styles.input}
-            placeholder="user@example.com"
-            value={inviteeEmail}
-            onChange={(e) => {
-              setInviteeEmail(e.target.value);
-              if (error) setError(null);
-              if (success) setSuccess(null);
-            }}
-            disabled={isLoading}
-            required
-          />
-        </div>
+      <Stack className={styles.form} gap="md">
+        <FormField
+          label="Email Address"
+          id="inviteeEmail"
+          type="email"
+          placeholder="user@example.com"
+          value={inviteeEmail}
+          onChange={(v) => {
+            setInviteeEmail(v);
+            if (error) setError(null);
+            if (success) setSuccess(null);
+          }}
+          disabled={isLoading}
+          required
+        />
 
-        <div className={styles.formGroup}>
-          <label htmlFor="role" className={styles.label}>
-            Role
-          </label>
-          <select
+        <FormField label="Role" id="role" required>
+          <Select
             id="role"
             className={styles.select}
+            options={ROLE_OPTIONS}
             value={role}
             onChange={(e) => {
               setRole(e.target.value as UserRole);
@@ -113,23 +127,18 @@ export function InviteForm({ shopId, onInviteSent, onError }: InviteFormProps) {
             }}
             disabled={isLoading}
             required
-          >
-            {AVAILABLE_ROLES.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-        </div>
+          />
+        </FormField>
 
-        <button
-          type="submit"
+        <Button
+          variant="solid"
           className={styles.submitButton}
+          onClick={handleSubmit}
           disabled={isLoading || !inviteeEmail.trim()}
         >
           {isLoading ? 'Sending...' : 'Send Invitation'}
-        </button>
-      </form>
-    </div>
+        </Button>
+      </Stack>
+    </Stack>
   );
 }

@@ -1,5 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  CardBody,
+  CenteredLoader,
+  Grid,
+  Inline,
+  PageHeader,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { useAuthStore } from '@inventory-platform/session';
 import { usersApi } from '@inventory-platform/session/api';
 import type { ShopMembership } from '@inventory-platform/session/types';
@@ -58,63 +71,78 @@ export function ShopsPage() {
 
   if (loading) {
     return (
-      <div className={styles.container}>
-        <div className={styles.loading}>Loading shops...</div>
-      </div>
+      <Stack gap="md" className={styles.container}>
+        <CenteredLoader label="Loading shops…" />
+      </Stack>
     );
   }
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Your Shops</h1>
-        <p className={styles.subtitle}>
-          Switch between your shops or add a new one
-        </p>
-      </div>
+    <Stack gap="md" className={styles.container}>
+      <PageHeader
+        title="Your Shops"
+        description="Switch between your shops or add a new one"
+      />
 
-      {error && <div className={styles.error}>{error}</div>}
+      {error ? <Alert variant="danger">{error}</Alert> : null}
 
-      <div className={styles.content}>
-        <div className={styles.shopGrid}>
+      <Stack gap="lg" className={styles.content}>
+        <Grid className={styles.shopGrid}>
           {shops.map((s) => {
             const isActive = s.shopId === activeShopId;
             return (
-              <div
+              <Card
                 key={s.shopId}
                 className={`${styles.shopCard} ${isActive ? styles.active : ''}`}
               >
-                <div className={styles.shopCardHeader}>
-                  <span className={styles.shopIcon}>🏪</span>
-                  <h2 className={styles.shopName}>{s.shopName}</h2>
-                </div>
-                <div className={styles.shopMeta}>
-                  <span className={styles.role}>{s.role}</span>
-                  {s.relationship && (
-                    <span className={styles.relationship}>{s.relationship}</span>
+                <CardBody>
+                  <Inline gap="sm" className={styles.shopCardHeader}>
+                    <Text className={styles.shopIcon}>🏪</Text>
+                    <Text variant="title" weight="semibold" className={styles.shopName}>
+                      {s.shopName}
+                    </Text>
+                  </Inline>
+                  <Inline gap="sm" className={styles.shopMeta}>
+                    <Badge variant="info" className={styles.role}>
+                      {s.role}
+                    </Badge>
+                    {s.relationship ? (
+                      <Text color="secondary" className={styles.relationship}>
+                        {s.relationship}
+                      </Text>
+                    ) : null}
+                  </Inline>
+                  {isActive ? (
+                    <Badge variant="info" className={styles.activeBadge}>
+                      Current shop
+                    </Badge>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className={styles.switchBtn}
+                      onClick={() => handleSwitch(s.shopId)}
+                      disabled={!!switchingId}
+                    >
+                      {switchingId === s.shopId ? 'Switching…' : 'Use this shop'}
+                    </Button>
                   )}
-                </div>
-                {isActive ? (
-                  <span className={styles.activeBadge}>Current shop</span>
-                ) : (
-                  <button
-                    type="button"
-                    className={styles.switchBtn}
-                    onClick={() => handleSwitch(s.shopId)}
-                    disabled={!!switchingId}
-                  >
-                    {switchingId === s.shopId ? 'Switching…' : 'Use this shop'}
-                  </button>
-                )}
-              </div>
+                </CardBody>
+              </Card>
             );
           })}
-        </div>
+        </Grid>
 
-        <button type="button" className={styles.addBtn} onClick={handleAddShop}>
+        <Button
+          type="button"
+          variant="outline"
+          className={styles.addBtn}
+          onClick={handleAddShop}
+        >
           + Add another shop
-        </button>
-      </div>
-    </div>
+        </Button>
+      </Stack>
+    </Stack>
   );
 }

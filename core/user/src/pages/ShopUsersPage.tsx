@@ -1,4 +1,11 @@
 import { useState } from 'react';
+import {
+  Alert,
+  Card,
+  CardBody,
+  PageHeader,
+  Stack,
+} from '@inventory-platform/ui-kit';
 import { useAuthStore } from '@inventory-platform/session';
 import { ShopUsersList } from '../ui';
 import styles from './shop-users.module.css';
@@ -11,40 +18,40 @@ export function ShopUsersPage() {
 
   if (!shopId) {
     return (
-      <div className={styles.container}>
-        <div className={styles.error}>
+      <Stack gap="md" className={styles.container}>
+        <Alert variant="danger">
           You need to be part of a shop to view users.
-        </div>
-      </div>
+        </Alert>
+      </Stack>
     );
   }
 
   if (user?.role === 'CASHIER') {
     return (
-      <div className={styles.container}>
-        <div className={styles.error}>
+      <Stack gap="md" className={styles.container}>
+        <Alert variant="danger">
           You don&apos;t have permission to view shop users.
-        </div>
-      </div>
+        </Alert>
+      </Stack>
     );
   }
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Shop Users</h1>
-        <p className={styles.subtitle}>
-          View all users associated with your shop
-        </p>
-      </div>
+    <Stack gap="md" className={styles.container}>
+      <PageHeader
+        title="Shop Users"
+        description="View all users associated with your shop"
+      />
 
-      <div className={styles.content}>
-        <ShopUsersList
-          key={refreshKey}
-          shopId={shopId}
-          onUserChange={() => setRefreshKey((prev) => prev + 1)}
-        />
-      </div>
-    </div>
+      <Card className={styles.content}>
+        <CardBody>
+          <ShopUsersList
+            key={refreshKey}
+            shopId={shopId}
+            onUserChange={() => setRefreshKey((prev) => prev + 1)}
+          />
+        </CardBody>
+      </Card>
+    </Stack>
   );
 }

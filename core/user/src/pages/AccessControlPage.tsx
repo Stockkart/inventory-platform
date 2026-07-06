@@ -1,8 +1,36 @@
 import { useCallback, useEffect, useState } from 'react';
 import { shopAccessApi } from '../api/shop-access.api';
-import type { MemberModulePermissions, ProductSearchEditMode, ShopMemberAccess, ShopRbacAdmin } from '@inventory-platform/access';
+import type {
+  MemberModulePermissions,
+  ProductSearchEditMode,
+  ShopMemberAccess,
+  ShopRbacAdmin,
+} from '@inventory-platform/access';
 import { CORE_PRODUCT_SEARCH_FIELDS } from '@inventory-platform/access';
 import { useAuthStore, useNotify, useShopAccessStore } from '@inventory-platform/session';
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  CardBody,
+  CenteredLoader,
+  Checkbox,
+  FormField,
+  Inline,
+  PageHeader,
+  Select,
+  Stack,
+  Switch,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
+  Text,
+  VisuallyHidden,
+} from '@inventory-platform/ui-kit';
 import styles from './access-control.module.css';
 
 const MODULE_COLUMNS: {
@@ -17,6 +45,11 @@ const MODULE_COLUMNS: {
   { key: 'marketing', label: 'Marketing', short: 'Mkt' },
   { key: 'paymentPlan', label: 'Payment & plan', short: 'Plan' },
 ];
+
+const EDIT_MODE_OPTIONS = [
+  { value: 'FULL_EDIT', label: 'Full edit access' },
+  { value: 'PERMISSION_BASED', label: 'Permission-based access' },
+] as const;
 
 export function meta() {
   return [
@@ -101,19 +134,19 @@ export function AccessControlPage() {
 
   if (!shopId) {
     return (
-      <div className={styles.container}>
-        <div className={styles.error}>Select a shop to manage access.</div>
-      </div>
+      <Stack gap="md" className={styles.container}>
+        <Alert variant="danger">Select a shop to manage access.</Alert>
+      </Stack>
     );
   }
 
   if (!shopAccess?.canManageAccess) {
     return (
-      <div className={styles.container}>
-        <div className={styles.error}>
+      <Stack gap="md" className={styles.container}>
+        <Alert variant="danger">
           Only the shop owner can manage access settings.
-        </div>
-      </div>
+        </Alert>
+      </Stack>
     );
   }
 
@@ -199,87 +232,100 @@ export function AccessControlPage() {
       : MODULE_COLUMNS;
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Access control</h1>
-        <p className={styles.subtitle}>
-          Choose which modules each team member can open. Cashiers start with
-          limited access; you can grant Accounting, Analytics, Taxes, and more
-          as needed.
-        </p>
-      </div>
+    <Stack gap="md" className={styles.container}>
+      <PageHeader
+        title="Access control"
+        description="Choose which modules each team member can open. Cashiers start with limited access; you can grant Accounting, Analytics, Taxes, and more as needed."
+      />
 
-      <div className={styles.card}>
-        <h2 className={styles.cardTitle}>Product search editing</h2>
-        <p className={styles.cardHint}>
-          <strong>Full edit</strong> uses the <strong>Edit</strong> column in
-          the module table below. <strong>Permission-based</strong> uses the
-          field checkboxes above — no separate Edit toggle needed.
-        </p>
-        <div className={styles.policyRow}>
-          <select
-            className={styles.select}
-            value={editMode}
-            disabled={policySaving}
-            onChange={(e) =>
-              void handlePolicyChange(e.target.value as ProductSearchEditMode)
-            }
-          >
-            <option value="FULL_EDIT">Full edit access</option>
-            <option value="PERMISSION_BASED">Permission-based access</option>
-          </select>
-        </div>
-      </div>
+      <Card className={styles.card}>
+        <CardBody>
+          <Text variant="title" weight="semibold" className={styles.cardTitle}>
+            Product search editing
+          </Text>
+          <Text color="secondary" className={styles.cardHint}>
+            <Text as="span" weight="semibold">
+              Full edit
+            </Text>{' '}
+            uses the{' '}
+            <Text as="span" weight="semibold">
+              Edit
+            </Text>{' '}
+            column in the module table below.{' '}
+            <Text as="span" weight="semibold">
+              Permission-based
+            </Text>{' '}
+            uses the field checkboxes above — no separate Edit toggle needed.
+          </Text>
+          <Inline gap="sm" className={styles.policyRow}>
+            <Select
+              className={styles.select}
+              value={editMode}
+              disabled={policySaving}
+              onChange={(e) =>
+                void handlePolicyChange(e.target.value as ProductSearchEditMode)
+              }
+              options={EDIT_MODE_OPTIONS.map((opt) => ({
+                value: opt.value,
+                label: opt.label,
+              }))}
+            />
+          </Inline>
+        </CardBody>
+      </Card>
 
-      {editMode === 'PERMISSION_BASED' && (
-        <div className={styles.card}>
-          <h2 className={styles.cardTitle}>Product search field access</h2>
-          <p className={styles.cardHint}>
-            Choose which fields each member can edit in product search. Checking
-            any field enables edit for that member (only those fields are
-            editable).
-          </p>
-          {loading ? (
-            <p className={styles.loading}>Loading…</p>
-          ) : editableMembers.length === 0 ? (
-            <p className={styles.loading}>No team members to configure.</p>
-          ) : (
-            <>
-              <div className={styles.policyRow}>
-                <label className={styles.fieldMemberLabel} htmlFor="field-member">
-                  Member
-                </label>
-                <select
-                  id="field-member"
-                  className={styles.select}
-                  value={fieldMemberId}
-                  onChange={(e) => setFieldMemberId(e.target.value)}
-                >
-                  {editableMembers.map((m) => (
-                    <option key={m.userId} value={m.userId}>
-                      {m.name || m.email} ({m.role})
-                    </option>
-                  ))}
-                </select>
+      {editMode === 'PERMISSION_BASED' ? (
+        <Card className={styles.card}>
+          <CardBody>
+            <Text variant="title" weight="semibold" className={styles.cardTitle}>
+              Product search field access
+            </Text>
+            <Text color="secondary" className={styles.cardHint}>
+              Choose which fields each member can edit in product search. Checking
+              any field enables edit for that member (only those fields are
+              editable).
+            </Text>
+            {loading ? (
+              <CenteredLoader label="Loading…" />
+            ) : editableMembers.length === 0 ? (
+              <Text color="secondary">No team members to configure.</Text>
+            ) : (
+              <Stack gap="md">
+                <Inline gap="sm" className={styles.policyRow} align="end">
+                  <FormField label="Member" id="field-member">
+                    <Select
+                      id="field-member"
+                      className={styles.select}
+                      value={fieldMemberId}
+                      onChange={(e) => setFieldMemberId(e.target.value)}
+                      options={editableMembers.map((m) => ({
+                        value: m.userId,
+                        label: `${m.name || m.email} (${m.role})`,
+                      }))}
+                    />
+                  </FormField>
+                  {selectedFieldMember ? (
+                    <Button
+                      type="button"
+                      variant="solid"
+                      size="sm"
+                      className={styles.saveBtn}
+                      disabled={savingUserId === selectedFieldMember.userId}
+                      onClick={() => void saveMember(selectedFieldMember)}
+                    >
+                      {savingUserId === selectedFieldMember.userId
+                        ? 'Saving…'
+                        : 'Save fields'}
+                    </Button>
+                  ) : null}
+                </Inline>
                 {selectedFieldMember ? (
-                  <button
-                    type="button"
-                    className={styles.saveBtn}
-                    disabled={savingUserId === selectedFieldMember.userId}
-                    onClick={() => void saveMember(selectedFieldMember)}
-                  >
-                    {savingUserId === selectedFieldMember.userId
-                      ? 'Saving…'
-                      : 'Save fields'}
-                  </button>
-                ) : null}
-              </div>
-              {selectedFieldMember ? (
-                <div className={styles.fieldGrid}>
-                  {CORE_PRODUCT_SEARCH_FIELDS.map((field) => (
-                    <label key={field.key} className={styles.fieldChip}>
-                      <input
-                        type="checkbox"
+                  <Inline gap="sm" className={styles.fieldGrid} flexWrap>
+                    {CORE_PRODUCT_SEARCH_FIELDS.map((field) => (
+                      <Checkbox
+                        key={field.key}
+                        className={styles.fieldChip}
+                        label={field.label}
                         checked={(draftFields[selectedFieldMember.userId] ?? []).includes(
                           field.key
                         )}
@@ -291,67 +337,75 @@ export function AccessControlPage() {
                           )
                         }
                       />
-                      <span>{field.label}</span>
-                    </label>
-                  ))}
-                </div>
-              ) : null}
-            </>
-          )}
-        </div>
-      )}
+                    ))}
+                  </Inline>
+                ) : null}
+              </Stack>
+            )}
+          </CardBody>
+        </Card>
+      ) : null}
 
-      <div className={styles.card}>
-        <h2 className={styles.cardTitle}>Team module access</h2>
-        <p className={styles.cardHint}>
-          Toggle modules for each member, then click Save on their row. The shop
-          owner always has full access. Stock corrections: any member can create
-          pending corrections; only owner/manager can approve.
-        </p>
+      <Card className={styles.card}>
+        <CardBody>
+          <Text variant="title" weight="semibold" className={styles.cardTitle}>
+            Team module access
+          </Text>
+          <Text color="secondary" className={styles.cardHint}>
+            Toggle modules for each member, then click Save on their row. The shop
+            owner always has full access. Stock corrections: any member can create
+            pending corrections; only owner/manager can approve.
+          </Text>
 
-        {loading ? (
-          <p className={styles.loading}>Loading team access…</p>
-        ) : !admin?.members.length ? (
-          <p className={styles.loading}>No team members found.</p>
-        ) : (
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Member</th>
+          {loading ? (
+            <CenteredLoader label="Loading team access…" />
+          ) : !admin?.members.length ? (
+            <Text color="secondary">No team members found.</Text>
+          ) : (
+            <Table className={styles.table}>
+              <TableHead>
+                <TableRow>
+                  <TableHeaderCell>Member</TableHeaderCell>
                   {moduleColumns.map((col) => (
-                    <th key={col.key} className={styles.toggleCell}>
-                      <span title={col.label}>{col.short}</span>
-                    </th>
+                    <TableHeaderCell key={col.key} className={styles.toggleCell}>
+                      <Text title={col.label}>{col.short}</Text>
+                    </TableHeaderCell>
                   ))}
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
+                  <TableHeaderCell />
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {admin.members.map((member) => {
                   const isOwner = member.relationship === 'OWNER';
                   const draft = draftModules[member.userId];
                   return (
-                    <tr key={member.userId}>
-                      <td className={styles.userCell}>
-                        <div className={styles.userName}>
+                    <TableRow key={member.userId}>
+                      <TableCell className={styles.userCell}>
+                        <Text weight="semibold" className={styles.userName}>
                           {member.name || member.email}
-                        </div>
-                        <div className={styles.userMeta}>
+                        </Text>
+                        <Text color="secondary" variant="caption" className={styles.userMeta}>
                           {member.role}
                           {isOwner ? (
                             <>
                               {' '}
-                              · <span className={styles.ownerBadge}>Owner</span>
+                              ·{' '}
+                              <Badge variant="info" className={styles.ownerBadge}>
+                                Owner
+                              </Badge>
                             </>
                           ) : null}
-                        </div>
-                      </td>
+                        </Text>
+                      </TableCell>
                       {moduleColumns.map((col) => (
-                        <td key={col.key} className={styles.toggleCell}>
-                          <input
-                            type="checkbox"
+                        <TableCell key={col.key} className={styles.toggleCell}>
+                          <Switch
                             className={styles.toggle}
+                            label={
+                              <VisuallyHidden>
+                                {`${col.label} for ${member.name || member.email}`}
+                              </VisuallyHidden>
+                            }
                             checked={Boolean(draft?.[col.key])}
                             disabled={isOwner || savingUserId === member.userId}
                             onChange={(e) =>
@@ -361,36 +415,39 @@ export function AccessControlPage() {
                                 e.target.checked
                               )
                             }
-                            aria-label={`${col.label} for ${member.name}`}
                           />
-                        </td>
+                        </TableCell>
                       ))}
-                      <td>
+                      <TableCell>
                         {isOwner ? (
-                          <span className={styles.userMeta}>—</span>
+                          <Text color="secondary" variant="caption" className={styles.userMeta}>
+                            —
+                          </Text>
                         ) : (
-                          <button
+                          <Button
                             type="button"
+                            variant="solid"
+                            size="sm"
                             className={styles.saveBtn}
                             disabled={savingUserId === member.userId}
                             onClick={() => void saveMember(member)}
                           >
                             {savingUserId === member.userId ? 'Saving…' : 'Save'}
-                          </button>
+                          </Button>
                         )}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
-          </div>
-        )}
-        <p className={styles.saveHint}>
-          Invitations and shop user management remain owner/manager only.
-          Cashiers cannot see Payment &amp; Plan unless you enable Plan here.
-        </p>
-      </div>
-    </div>
+              </TableBody>
+            </Table>
+          )}
+          <Text color="secondary" variant="caption" className={styles.saveHint}>
+            Invitations and shop user management remain owner/manager only.
+            Cashiers cannot see Payment &amp; Plan unless you enable Plan here.
+          </Text>
+        </CardBody>
+      </Card>
+    </Stack>
   );
 }

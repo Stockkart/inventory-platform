@@ -1,7 +1,14 @@
 import { useState } from 'react';
+import {
+  Alert,
+  Card,
+  CardBody,
+  PageHeader,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { useAuthStore } from '@inventory-platform/session';
-import { InvitationList } from '../ui';
-import { InviteForm } from '../ui';
+import { InvitationList, InviteForm } from '../ui';
 import styles from './invitations.module.css';
 
 export function InvitationsPage() {
@@ -12,47 +19,50 @@ export function InvitationsPage() {
 
   if (!shopId) {
     return (
-      <div className={styles.container}>
-        <div className={styles.error}>
+      <Stack gap="md" className={styles.container}>
+        <Alert variant="danger">
           You need to be part of a shop to manage invitations.
-        </div>
-      </div>
+        </Alert>
+      </Stack>
     );
   }
 
   if (user?.role === 'CASHIER') {
     return (
-      <div className={styles.container}>
-        <div className={styles.error}>
+      <Stack gap="md" className={styles.container}>
+        <Alert variant="danger">
           You don&apos;t have permission to manage invitations.
-        </div>
-      </div>
+        </Alert>
+      </Stack>
     );
   }
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Manage Invitations</h1>
-        <p className={styles.subtitle}>
-          Send invitations to users to join your shop and manage existing
-          invitations
-        </p>
-      </div>
+    <Stack gap="md" className={styles.container}>
+      <PageHeader
+        title="Manage Invitations"
+        description="Send invitations to users to join your shop and manage existing invitations"
+      />
 
-      <div className={styles.content}>
-        <div className={styles.section}>
-          <InviteForm
-            shopId={shopId}
-            onInviteSent={() => setRefreshKey((prev) => prev + 1)}
-          />
-        </div>
+      <Stack gap="lg" className={styles.content}>
+        <Card className={styles.section}>
+          <CardBody>
+            <InviteForm
+              shopId={shopId}
+              onInviteSent={() => setRefreshKey((prev) => prev + 1)}
+            />
+          </CardBody>
+        </Card>
 
-        <div className={styles.section}>
-          <h2 className={styles.sectionTitle}>Shop Invitations</h2>
-          <InvitationList key={refreshKey} shopId={shopId} />
-        </div>
-      </div>
-    </div>
+        <Card className={styles.section}>
+          <CardBody>
+            <Text variant="title" weight="semibold" className={styles.sectionTitle}>
+              Shop Invitations
+            </Text>
+            <InvitationList key={refreshKey} shopId={shopId} />
+          </CardBody>
+        </Card>
+      </Stack>
+    </Stack>
   );
 }

@@ -1,5 +1,5 @@
 import type { Location } from '@inventory-platform/user/types';
-import { FormField, FormRow } from '@inventory-platform/ui-kit';
+import { FormField, FormRow, Stack } from '@inventory-platform/ui-kit';
 import styles from './ShopProfileForm.module.css';
 
 interface ShopProfileFormProps {
@@ -18,7 +18,7 @@ export function ShopProfileForm({
   disabled = false,
 }: ShopProfileFormProps) {
   return (
-    <div className={styles.form}>
+    <Stack className={styles.form} gap="md">
       <FormField
         label="Tagline (optional)"
         value={tagline}
@@ -74,6 +74,6 @@ export function ShopProfileForm({
           disabled={disabled}
         />
       </FormRow>
-    </div>
+    </Stack>
   );
 }

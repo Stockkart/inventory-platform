@@ -1,3 +1,10 @@
+import {
+  Alert,
+  Card,
+  CardBody,
+  PageHeader,
+  Stack,
+} from '@inventory-platform/ui-kit';
 import { useAuthStore } from '@inventory-platform/session';
 import { JoinRequestList } from '../ui';
 import styles from './join-requests.module.css';
@@ -16,37 +23,36 @@ export function JoinRequestsPage() {
 
   if (!shopId) {
     return (
-      <div className={styles.container}>
-        <div className={styles.error}>
+      <Stack gap="md" className={styles.container}>
+        <Alert variant="danger">
           You need to be part of a shop to manage join requests.
-        </div>
-      </div>
+        </Alert>
+      </Stack>
     );
   }
 
-  // Restrict access for CASHIER role
   if (user?.role === 'CASHIER') {
     return (
-      <div className={styles.container}>
-        <div className={styles.error}>
-          You don't have permission to manage join requests.
-        </div>
-      </div>
+      <Stack gap="md" className={styles.container}>
+        <Alert variant="danger">
+          You don&apos;t have permission to manage join requests.
+        </Alert>
+      </Stack>
     );
   }
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Join Requests</h1>
-        <p className={styles.subtitle}>
-          Review and manage requests from users who want to join your shop
-        </p>
-      </div>
+    <Stack gap="md" className={styles.container}>
+      <PageHeader
+        title="Join Requests"
+        description="Review and manage requests from users who want to join your shop"
+      />
 
-      <div className={styles.content}>
-        <JoinRequestList shopId={shopId} />
-      </div>
-    </div>
+      <Card className={styles.content}>
+        <CardBody>
+          <JoinRequestList shopId={shopId} />
+        </CardBody>
+      </Card>
+    </Stack>
   );
 }

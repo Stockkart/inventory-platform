@@ -2,12 +2,101 @@ import { useState, useEffect, useCallback } from 'react';
 import { invitationsApi } from '../api/invitations.api';
 import type { ShopUser, UserRole } from '@inventory-platform/user/types';
 import { RoleBadge } from './RoleBadge';
+import {
+  Box,
+  Button,
+  Card,
+  CenteredLoader,
+  EmptyState,
+  Inline,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './ShopUsersList.module.css';
 import { useNotify } from '@inventory-platform/session';
 
 interface ShopUsersListProps {
   shopId: string;
   onUserChange?: () => void;
+}
+
+interface ShopUserCardProps {
+  user: ShopUser;
+  showUserId?: boolean;
+}
+
+function ShopUserCard({ user, showUserId = false }: ShopUserCardProps) {
+  return (
+    <Card className={styles.card}>
+      <Box className={styles.header}>
+        <Box className={styles.userInfo}>
+          <Text weight="semibold" className={styles.userName}>
+            {user.name}
+          </Text>
+          <Text color="secondary" className={styles.userEmail}>
+            {user.email}
+          </Text>
+        </Box>
+        <RoleBadge role={user.role as UserRole} />
+      </Box>
+      <Stack className={styles.details} gap="xs">
+        {showUserId ? (
+          <Inline className={styles.detailRow}>
+            <Text className={styles.label}>User ID:</Text>
+            <Text className={styles.value}>{user.userId}</Text>
+          </Inline>
+        ) : null}
+        <Inline className={styles.detailRow}>
+          <Text className={styles.label}>Joined:</Text>
+          <Text className={styles.value}>
+            {user.joinedAt
+              ? new Date(user.joinedAt).toLocaleDateString()
+              : 'N/A'}
+          </Text>
+        </Inline>
+        <Inline className={styles.detailRow}>
+          <Text className={styles.label}>Status:</Text>
+          <Box
+            as="span"
+            className={`${styles.status} ${
+              user.active ? styles.statusActive : styles.statusInactive
+            }`}
+          >
+            {user.active ? 'Active' : 'Inactive'}
+          </Box>
+        </Inline>
+      </Stack>
+    </Card>
+  );
+}
+
+interface UserSectionProps {
+  title: string;
+  users: ShopUser[];
+  showUserId?: boolean;
+}
+
+function UserSection({ title, users, showUserId = false }: UserSectionProps) {
+  if (users.length === 0) {
+    return null;
+  }
+
+  return (
+    <Stack className={styles.section} gap="md">
+      <Text variant="heading3" weight="semibold" className={styles.sectionTitle}>
+        {title}
+      </Text>
+      <Box className={styles.grid}>
+        {users.map((user) => (
+          <ShopUserCard
+            key={user.userId}
+            user={user}
+            showUserId={showUserId}
+          />
+        ))}
+      </Box>
+    </Stack>
+  );
 }
 
 export function ShopUsersList({ shopId, onUserChange }: ShopUsersListProps) {
@@ -36,32 +125,33 @@ export function ShopUsersList({ shopId, onUserChange }: ShopUsersListProps) {
 
   if (isLoading) {
     return (
-      <div className={styles.container}>
-        <div className={styles.loading}>Loading users...</div>
-      </div>
+      <Box className={styles.container}>
+        <CenteredLoader label="Loading users..." className={styles.loading} />
+      </Box>
     );
   }
 
   if (error) {
     return (
-      <div className={styles.container}>
-        <div className={styles.error}>
-          {error}
-          <button className={styles.retryButton} onClick={fetchUsers}>
+      <Box className={styles.container}>
+        <Stack className={styles.error} gap="md" align="center">
+          <Text color="danger">{error}</Text>
+          <Button className={styles.retryButton} onClick={fetchUsers}>
             Retry
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Stack>
+      </Box>
     );
   }
 
   if (users.length === 0) {
     return (
-      <div className={styles.container}>
-        <div className={styles.empty}>
-          <p>No users found for this shop</p>
-        </div>
-      </div>
+      <Box className={styles.container}>
+        <EmptyState
+          title="No users found for this shop"
+          className={styles.empty}
+        />
+      </Box>
     );
   }
 
@@ -80,174 +170,17 @@ export function ShopUsersList({ shopId, onUserChange }: ShopUsersListProps) {
   const inactive = users.filter((u) => !u.active);
 
   return (
-    <div className={styles.container}>
-      {owners.length > 0 && (
-        <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>Owners ({owners.length})</h3>
-          <div className={styles.grid}>
-            {owners.map((user) => (
-              <div key={user.userId} className={styles.card}>
-                <div className={styles.header}>
-                  <div className={styles.userInfo}>
-                    <h4 className={styles.userName}>{user.name}</h4>
-                    <span className={styles.userEmail}>{user.email}</span>
-                  </div>
-                  <RoleBadge role={user.role as UserRole} />
-                </div>
-                <div className={styles.details}>
-                  <div className={styles.detailRow}>
-                    <span className={styles.label}>Joined:</span>
-                    <span className={styles.value}>
-                      {user.joinedAt
-                        ? new Date(user.joinedAt).toLocaleDateString()
-                        : 'N/A'}
-                    </span>
-                  </div>
-                  <div className={styles.detailRow}>
-                    <span className={styles.label}>Status:</span>
-                    <span
-                      className={`${styles.status} ${
-                        user.active
-                          ? styles.statusActive
-                          : styles.statusInactive
-                      }`}
-                    >
-                      {user.active ? 'Active' : 'Inactive'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {invited.length > 0 && (
-        <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>
-            Invited Users ({invited.length})
-          </h3>
-          <div className={styles.grid}>
-            {invited.map((user) => (
-              <div key={user.userId} className={styles.card}>
-                <div className={styles.header}>
-                  <div className={styles.userInfo}>
-                    <h4 className={styles.userName}>{user.name}</h4>
-                    <span className={styles.userEmail}>{user.email}</span>
-                  </div>
-                  <RoleBadge role={user.role as UserRole} />
-                </div>
-                <div className={styles.details}>
-                  <div className={styles.detailRow}>
-                    <span className={styles.label}>Joined:</span>
-                    <span className={styles.value}>
-                      {user.joinedAt
-                        ? new Date(user.joinedAt).toLocaleDateString()
-                        : 'N/A'}
-                    </span>
-                  </div>
-                  <div className={styles.detailRow}>
-                    <span className={styles.label}>Status:</span>
-                    <span
-                      className={`${styles.status} ${
-                        user.active
-                          ? styles.statusActive
-                          : styles.statusInactive
-                      }`}
-                    >
-                      {user.active ? 'Active' : 'Inactive'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {otherUsers.length > 0 && (
-        <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>Users ({otherUsers.length})</h3>
-          <div className={styles.grid}>
-            {otherUsers.map((user) => (
-              <div key={user.userId} className={styles.card}>
-                <div className={styles.header}>
-                  <div className={styles.userInfo}>
-                    <h4 className={styles.userName}>{user.name}</h4>
-                    <span className={styles.userEmail}>{user.email}</span>
-                  </div>
-                  <RoleBadge role={user.role as UserRole} />
-                </div>
-                <div className={styles.details}>
-                  <div className={styles.detailRow}>
-                    <span className={styles.label}>Joined:</span>
-                    <span className={styles.value}>
-                      {user.joinedAt
-                        ? new Date(user.joinedAt).toLocaleDateString()
-                        : 'N/A'}
-                    </span>
-                  </div>
-                  <div className={styles.detailRow}>
-                    <span className={styles.label}>Status:</span>
-                    <span
-                      className={`${styles.status} ${
-                        user.active
-                          ? styles.statusActive
-                          : styles.statusInactive
-                      }`}
-                    >
-                      {user.active ? 'Active' : 'Inactive'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {active.length === 0 && inactive.length > 0 && (
-        <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>
-            Inactive Users ({inactive.length})
-          </h3>
-          <div className={styles.grid}>
-            {inactive.map((user) => (
-              <div key={user.userId} className={styles.card}>
-                <div className={styles.header}>
-                  <div className={styles.userInfo}>
-                    <h4 className={styles.userName}>{user.name}</h4>
-                    <span className={styles.userEmail}>{user.email}</span>
-                  </div>
-                  <RoleBadge role={user.role as UserRole} />
-                </div>
-                <div className={styles.details}>
-                  <div className={styles.detailRow}>
-                    <span className={styles.label}>User ID:</span>
-                    <span className={styles.value}>{user.userId}</span>
-                  </div>
-                  <div className={styles.detailRow}>
-                    <span className={styles.label}>Joined:</span>
-                    <span className={styles.value}>
-                      {user.joinedAt
-                        ? new Date(user.joinedAt).toLocaleDateString()
-                        : 'N/A'}
-                    </span>
-                  </div>
-                  <div className={styles.detailRow}>
-                    <span className={styles.label}>Status:</span>
-                    <span
-                      className={`${styles.status} ${styles.statusInactive}`}
-                    >
-                      Inactive
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
+    <Stack className={styles.container} gap="md">
+      <UserSection title={`Owners (${owners.length})`} users={owners} />
+      <UserSection title={`Invited Users (${invited.length})`} users={invited} />
+      <UserSection title={`Users (${otherUsers.length})`} users={otherUsers} />
+      {active.length === 0 && inactive.length > 0 ? (
+        <UserSection
+          title={`Inactive Users (${inactive.length})`}
+          users={inactive}
+          showUserId
+        />
+      ) : null}
+    </Stack>
   );
 }

@@ -2,12 +2,56 @@ import { useState, useEffect, useCallback } from 'react';
 import { shopsApi } from '../api/shops.api';
 import type { JoinRequest } from '@inventory-platform/user/types';
 import { JoinRequestCard } from './JoinRequestCard';
+import {
+  Box,
+  Button,
+  CenteredLoader,
+  EmptyState,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './JoinRequestList.module.css';
 import { useNotify } from '@inventory-platform/session';
 
 interface JoinRequestListProps {
   shopId?: string;
   onRequestChange?: () => void;
+}
+
+interface JoinRequestSectionProps {
+  title: string;
+  requests: JoinRequest[];
+  showActions: boolean;
+  onProcess?: () => void;
+}
+
+function JoinRequestSection({
+  title,
+  requests,
+  showActions,
+  onProcess,
+}: JoinRequestSectionProps) {
+  if (requests.length === 0) {
+    return null;
+  }
+
+  return (
+    <Stack className={styles.section} gap="md">
+      <Text variant="heading2" weight="semibold" className={styles.sectionTitle}>
+        {title}
+      </Text>
+      <Stack className={styles.list} gap="md">
+        {requests.map((request) => (
+          <JoinRequestCard
+            key={request.requestId}
+            joinRequest={request}
+            onProcess={onProcess}
+            showActions={showActions}
+          />
+        ))}
+      </Stack>
+    </Stack>
+  );
 }
 
 export function JoinRequestList({ shopId, onRequestChange }: JoinRequestListProps) {
@@ -48,86 +92,54 @@ export function JoinRequestList({ shopId, onRequestChange }: JoinRequestListProp
 
   if (isLoading) {
     return (
-      <div className={styles.container}>
-        <div className={styles.loading}>Loading join requests...</div>
-      </div>
+      <Box className={styles.container}>
+        <CenteredLoader
+          label="Loading join requests..."
+          className={styles.loading}
+        />
+      </Box>
     );
   }
 
   if (error) {
     return (
-      <div className={styles.container}>
-        <div className={styles.error}>
-          <p>{error}</p>
-          <button onClick={fetchJoinRequests} className={styles.retryButton}>
+      <Box className={styles.container}>
+        <Stack className={styles.error} gap="md" align="center">
+          <Text color="danger">{error}</Text>
+          <Button className={styles.retryButton} onClick={fetchJoinRequests}>
             Retry
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Stack>
+      </Box>
     );
   }
 
   return (
-    <div className={styles.container}>
-      {pendingRequests.length > 0 && (
-        <div className={styles.section}>
-          <h2 className={styles.sectionTitle}>
-            Pending Requests ({pendingRequests.length})
-          </h2>
-          <div className={styles.list}>
-            {pendingRequests.map((request) => (
-              <JoinRequestCard
-                key={request.requestId}
-                joinRequest={request}
-                onProcess={handleRequestProcess}
-                showActions={true}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {approvedRequests.length > 0 && (
-        <div className={styles.section}>
-          <h2 className={styles.sectionTitle}>
-            Approved Requests ({approvedRequests.length})
-          </h2>
-          <div className={styles.list}>
-            {approvedRequests.map((request) => (
-              <JoinRequestCard
-                key={request.requestId}
-                joinRequest={request}
-                onProcess={handleRequestProcess}
-                showActions={false}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {rejectedRequests.length > 0 && (
-        <div className={styles.section}>
-          <h2 className={styles.sectionTitle}>
-            Rejected Requests ({rejectedRequests.length})
-          </h2>
-          <div className={styles.list}>
-            {rejectedRequests.map((request) => (
-              <JoinRequestCard
-                key={request.requestId}
-                joinRequest={request}
-                onProcess={handleRequestProcess}
-                showActions={false}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {joinRequests.length === 0 && (
-        <div className={styles.emptyState}>
-          <p>No join requests found.</p>
-        </div>
-      )}
-    </div>
+    <Stack className={styles.container} gap="md">
+      <JoinRequestSection
+        title={`Pending Requests (${pendingRequests.length})`}
+        requests={pendingRequests}
+        showActions
+        onProcess={handleRequestProcess}
+      />
+      <JoinRequestSection
+        title={`Approved Requests (${approvedRequests.length})`}
+        requests={approvedRequests}
+        showActions={false}
+        onProcess={handleRequestProcess}
+      />
+      <JoinRequestSection
+        title={`Rejected Requests (${rejectedRequests.length})`}
+        requests={rejectedRequests}
+        showActions={false}
+        onProcess={handleRequestProcess}
+      />
+      {joinRequests.length === 0 ? (
+        <EmptyState
+          title="No join requests found."
+          className={styles.emptyState}
+        />
+      ) : null}
+    </Stack>
   );
 }

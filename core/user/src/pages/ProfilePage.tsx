@@ -1,4 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  CenteredLoader,
+  Inline,
+  PageHeader,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { shopsApi } from '../api/shops.api';
 import { ShopProfileForm } from '../ui';
 import type { Location as LocationType } from '@inventory-platform/user/types';
@@ -19,6 +32,17 @@ const emptyLocation: LocationType = {
   pin: '',
   country: 'IND',
 };
+
+function formatAddress(location: LocationType) {
+  return [
+    location.primaryAddress,
+    location.secondaryAddress,
+    [location.city, location.state, location.pin].filter(Boolean).join(', '),
+    location.country,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
 
 export function ProfilePage() {
   const [loading, setLoading] = useState(true);
@@ -123,141 +147,145 @@ export function ProfilePage() {
 
   if (loading) {
     return (
-      <div className={styles.container}>
-        <div className={styles.loading}>Loading profile…</div>
-      </div>
+      <Stack gap="md" className={styles.container}>
+        <CenteredLoader label="Loading profile…" />
+      </Stack>
     );
   }
 
   if (error || !shop) {
     return (
-      <div className={styles.container}>
-        <div className={styles.error}>{error ?? 'Shop not found'}</div>
-      </div>
+      <Stack gap="md" className={styles.container}>
+        <Alert variant="danger">{error ?? 'Shop not found'}</Alert>
+      </Stack>
     );
   }
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Shop Profile</h1>
-        <p className={styles.subtitle}>
-          View and edit your active shop information
-        </p>
-      </div>
+    <Stack gap="md" className={styles.container}>
+      <PageHeader
+        title="Shop Profile"
+        description="View and edit your active shop information"
+      />
 
       {!editing ? (
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <h2 className={styles.cardTitle}>{shop.name}</h2>
-            <button
-              type="button"
-              className={styles.editBtn}
-              onClick={handleStartEdit}
-            >
+        <Card className={styles.card}>
+          <CardHeader className={styles.cardHeader}>
+            <Text variant="title" weight="semibold" className={styles.cardTitle}>
+              {shop.name}
+            </Text>
+            <Button type="button" variant="outline" size="sm" onClick={handleStartEdit}>
               Edit
-            </button>
-          </div>
-          <dl className={styles.dl}>
-            <div className={styles.field}>
-              <div className={styles.dt}>Shop Name</div>
-              <div className={styles.dd}>{shop.name}</div>
-            </div>
-            <div className={styles.row2}>
-              {shop.contactEmail && (
-                <div>
-                  <div className={styles.dt}>Email</div>
-                  <div className={styles.dd}>{shop.contactEmail}</div>
-                </div>
-              )}
+            </Button>
+          </CardHeader>
+          <CardBody>
+            <Stack gap="md" className={styles.dl}>
+              <Stack gap="xs" className={styles.field}>
+                <Text variant="label" color="secondary" className={styles.dt}>
+                  Shop Name
+                </Text>
+                <Text className={styles.dd}>{shop.name}</Text>
+              </Stack>
 
-              {shop.contactPhone && (
-                <div>
-                  <div className={styles.dt}>Phone</div>
-                  <div className={styles.dd}>{shop.contactPhone}</div>
-                </div>
-              )}
-            </div>
+              <Box display="grid" className={styles.row2}>
+                {shop.contactEmail ? (
+                  <Stack gap="xs">
+                    <Text variant="label" color="secondary" className={styles.dt}>
+                      Email
+                    </Text>
+                    <Text className={styles.dd}>{shop.contactEmail}</Text>
+                  </Stack>
+                ) : null}
 
-            <div className={styles.row2}>
-              {shop.gstinNo && (
-                <div>
-                  <div className={styles.dt}>GSTIN</div>
-                  <div className={styles.dd}>{shop.gstinNo}</div>
-                </div>
-              )}
+                {shop.contactPhone ? (
+                  <Stack gap="xs">
+                    <Text variant="label" color="secondary" className={styles.dt}>
+                      Phone
+                    </Text>
+                    <Text className={styles.dd}>{shop.contactPhone}</Text>
+                  </Stack>
+                ) : null}
+              </Box>
 
-              {shop.panNo && (
-                <div>
-                  <div className={styles.dt}>PAN</div>
-                  <div className={styles.dd}>{shop.panNo}</div>
-                </div>
-              )}
-            </div>
+              <Box display="grid" className={styles.row2}>
+                {shop.gstinNo ? (
+                  <Stack gap="xs">
+                    <Text variant="label" color="secondary" className={styles.dt}>
+                      GSTIN
+                    </Text>
+                    <Text className={styles.dd}>{shop.gstinNo}</Text>
+                  </Stack>
+                ) : null}
 
-            {shop.dlNo && (
-              <div className={styles.field}>
-                <div className={styles.dt}>DL No</div>
-                <div className={styles.dd}>{shop.dlNo}</div>
-              </div>
-            )}
+                {shop.panNo ? (
+                  <Stack gap="xs">
+                    <Text variant="label" color="secondary" className={styles.dt}>
+                      PAN
+                    </Text>
+                    <Text className={styles.dd}>{shop.panNo}</Text>
+                  </Stack>
+                ) : null}
+              </Box>
 
-            {shop.tagline && (
-              <div className={styles.field}>
-                <dt className={styles.dt}>Tagline</dt>
-                <dd className={styles.dd}>{shop.tagline}</dd>
-              </div>
-            )}
+              {shop.dlNo ? (
+                <Stack gap="xs" className={styles.field}>
+                  <Text variant="label" color="secondary" className={styles.dt}>
+                    DL No
+                  </Text>
+                  <Text className={styles.dd}>{shop.dlNo}</Text>
+                </Stack>
+              ) : null}
 
-            {shop.location && (
-              <div className={styles.field}>
-                <dt className={styles.dt}>Address</dt>
-                <dd className={styles.dd}>
-                  {[
-                    shop.location.primaryAddress,
-                    shop.location.secondaryAddress,
-                    [shop.location.city, shop.location.state, shop.location.pin]
-                      .filter(Boolean)
-                      .join(', '),
-                    shop.location.country,
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </dd>
-              </div>
-            )}
-          </dl>
-        </div>
+              {shop.tagline ? (
+                <Stack gap="xs" className={styles.field}>
+                  <Text variant="label" color="secondary" className={styles.dt}>
+                    Tagline
+                  </Text>
+                  <Text className={styles.dd}>{shop.tagline}</Text>
+                </Stack>
+              ) : null}
+
+              {shop.location ? (
+                <Stack gap="xs" className={styles.field}>
+                  <Text variant="label" color="secondary" className={styles.dt}>
+                    Address
+                  </Text>
+                  <Text className={styles.dd}>{formatAddress(shop.location)}</Text>
+                </Stack>
+              ) : null}
+            </Stack>
+          </CardBody>
+        </Card>
       ) : (
-        <div className={styles.card}>
-          <h2 className={styles.cardTitle}>Edit shop</h2>
-          {saveError && <div className={styles.saveError}>{saveError}</div>}
-          <ShopProfileForm
-            tagline={editTagline}
-            onTaglineChange={setEditTagline}
-            location={editLocation}
-            onLocationChange={setEditLocation}
-            disabled={saving}
-          />
-          <div className={styles.actions}>
-            <button
-              type="button"
-              className={styles.cancelBtn}
-              onClick={handleCancelEdit}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              className={styles.saveBtn}
-              onClick={handleSave}
+        <Card className={styles.card}>
+          <CardBody>
+            <Text variant="title" weight="semibold" className={styles.cardTitle}>
+              Edit shop
+            </Text>
+            {saveError ? <Alert variant="danger">{saveError}</Alert> : null}
+            <ShopProfileForm
+              tagline={editTagline}
+              onTaglineChange={setEditTagline}
+              location={editLocation}
+              onLocationChange={setEditLocation}
               disabled={saving}
-            >
-              {saving ? 'Saving…' : 'Save'}
-            </button>
-          </div>
-        </div>
+            />
+            <Inline gap="sm" className={styles.actions} justify="end">
+              <Button type="button" variant="outline" onClick={handleCancelEdit}>
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="solid"
+                onClick={handleSave}
+                disabled={saving}
+              >
+                {saving ? 'Saving…' : 'Save'}
+              </Button>
+            </Inline>
+          </CardBody>
+        </Card>
       )}
-    </div>
+    </Stack>
   );
 }

@@ -2,6 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { invitationsApi } from '../api/invitations.api';
 import type { Invitation } from '@inventory-platform/user/types';
 import { InvitationCard } from './InvitationCard';
+import {
+  Box,
+  Button,
+  CenteredLoader,
+  EmptyState,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './InvitationList.module.css';
 import { useNotify } from '@inventory-platform/session';
 
@@ -10,6 +18,42 @@ interface InvitationListProps {
   showMyInvitations?: boolean;
   showAcceptButton?: boolean;
   onInvitationChange?: () => void;
+}
+
+interface InvitationSectionProps {
+  title: string;
+  invitations: Invitation[];
+  showAcceptButton: boolean;
+  onAccept?: () => void;
+}
+
+function InvitationSection({
+  title,
+  invitations,
+  showAcceptButton,
+  onAccept,
+}: InvitationSectionProps) {
+  if (invitations.length === 0) {
+    return null;
+  }
+
+  return (
+    <Stack className={styles.section} gap="md">
+      <Text variant="heading3" weight="semibold" className={styles.sectionTitle}>
+        {title}
+      </Text>
+      <Box className={styles.grid}>
+        {invitations.map((invitation) => (
+          <InvitationCard
+            key={invitation.invitationId}
+            invitation={invitation}
+            showAcceptButton={showAcceptButton}
+            onAccept={onAccept}
+          />
+        ))}
+      </Box>
+    </Stack>
+  );
 }
 
 export function InvitationList({
@@ -59,32 +103,33 @@ export function InvitationList({
 
   if (isLoading) {
     return (
-      <div className={styles.container}>
-        <div className={styles.loading}>Loading invitations...</div>
-      </div>
+      <Box className={styles.container}>
+        <CenteredLoader
+          label="Loading invitations..."
+          className={styles.loading}
+        />
+      </Box>
     );
   }
 
   if (error) {
     return (
-      <div className={styles.container}>
-        <div className={styles.error}>
-          {error}
-          <button className={styles.retryButton} onClick={fetchInvitations}>
+      <Box className={styles.container}>
+        <Stack className={styles.error} gap="md" align="center">
+          <Text color="danger">{error}</Text>
+          <Button className={styles.retryButton} onClick={fetchInvitations}>
             Retry
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Stack>
+      </Box>
     );
   }
 
   if (invitations.length === 0) {
     return (
-      <div className={styles.container}>
-        <div className={styles.empty}>
-          <p>No invitations found</p>
-        </div>
-      </div>
+      <Box className={styles.container}>
+        <EmptyState title="No invitations found" className={styles.empty} />
+      </Box>
     );
   }
 
@@ -101,67 +146,28 @@ export function InvitationList({
   const rejected = invitations.filter((inv) => inv.status === 'REJECTED');
 
   return (
-    <div className={styles.container}>
-      {pending.length > 0 && (
-        <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>Pending ({pending.length})</h3>
-          <div className={styles.grid}>
-            {pending.map((invitation) => (
-              <InvitationCard
-                key={invitation.invitationId}
-                invitation={invitation}
-                showAcceptButton={showAcceptButton}
-                onAccept={handleInvitationAccept}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {accepted.length > 0 && (
-        <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>Accepted ({accepted.length})</h3>
-          <div className={styles.grid}>
-            {accepted.map((invitation) => (
-              <InvitationCard
-                key={invitation.invitationId}
-                invitation={invitation}
-                showAcceptButton={false}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {rejected.length > 0 && (
-        <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>Rejected ({rejected.length})</h3>
-          <div className={styles.grid}>
-            {rejected.map((invitation) => (
-              <InvitationCard
-                key={invitation.invitationId}
-                invitation={invitation}
-                showAcceptButton={false}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {expired.length > 0 && (
-        <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>Expired ({expired.length})</h3>
-          <div className={styles.grid}>
-            {expired.map((invitation) => (
-              <InvitationCard
-                key={invitation.invitationId}
-                invitation={invitation}
-                showAcceptButton={false}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
+    <Stack className={styles.container} gap="md">
+      <InvitationSection
+        title={`Pending (${pending.length})`}
+        invitations={pending}
+        showAcceptButton={showAcceptButton}
+        onAccept={handleInvitationAccept}
+      />
+      <InvitationSection
+        title={`Accepted (${accepted.length})`}
+        invitations={accepted}
+        showAcceptButton={false}
+      />
+      <InvitationSection
+        title={`Rejected (${rejected.length})`}
+        invitations={rejected}
+        showAcceptButton={false}
+      />
+      <InvitationSection
+        title={`Expired (${expired.length})`}
+        invitations={expired}
+        showAcceptButton={false}
+      />
+    </Stack>
   );
 }

@@ -2,6 +2,15 @@ import { useState } from 'react';
 import { invitationsApi } from '../api/invitations.api';
 import type { Invitation, UserRole } from '@inventory-platform/user/types';
 import { RoleBadge } from './RoleBadge';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  Inline,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './InvitationCard.module.css';
 import { useNotify } from '@inventory-platform/session';
 
@@ -9,6 +18,15 @@ interface InvitationCardProps {
   invitation: Invitation;
   onAccept?: () => void;
   showAcceptButton?: boolean;
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <Inline className={styles.detailRow} align="start">
+      <Text className={styles.label}>{label}</Text>
+      <Text className={styles.value}>{value}</Text>
+    </Inline>
+  );
 }
 
 export function InvitationCard({
@@ -57,75 +75,71 @@ export function InvitationCard({
 
   const isExpired = new Date(invitation.expiresAt) < new Date();
   const isPending = invitation.status === 'PENDING' && !isExpired;
+  const statusLabel =
+    isExpired && invitation.status === 'PENDING'
+      ? 'EXPIRED'
+      : invitation.status;
 
   return (
-    <div className={styles.card}>
-      <div className={styles.header}>
-        <div className={styles.topRow}>
-          <div className={styles.shopInfo}>
-            <h3 className={styles.shopName}>{invitation.shopName}</h3>
-          </div>
+    <Card className={styles.card}>
+      <Stack className={styles.header} gap="sm">
+        <Inline className={styles.topRow} align="start" justify="between">
+          <Box className={styles.shopInfo}>
+            <Text variant="heading3" weight="semibold" className={styles.shopName}>
+              {invitation.shopName}
+            </Text>
+          </Box>
           <RoleBadge role={invitation.role as UserRole} />
-        </div>
-        <span
+        </Inline>
+        <Box
+          as="span"
           className={`${styles.status} ${getStatusColor(invitation.status)}`}
         >
-          {isExpired && invitation.status === 'PENDING'
-            ? 'EXPIRED'
-            : invitation.status}
-        </span>
-      </div>
+          {statusLabel}
+        </Box>
+      </Stack>
 
-      <div className={styles.details}>
-        <div className={styles.detailRow}>
-          <span className={styles.label}>Invited by:</span>
-          <span className={styles.value}>
-            {invitation.inviterName || invitation.inviterUserId}
-          </span>
-        </div>
-        <div className={styles.detailRow}>
-          <span className={styles.label}>Email:</span>
-          <span className={styles.value}>{invitation.inviteeEmail}</span>
-        </div>
-        {invitation.inviteeName && (
-          <div className={styles.detailRow}>
-            <span className={styles.label}>Name:</span>
-            <span className={styles.value}>{invitation.inviteeName}</span>
-          </div>
-        )}
-        <div className={styles.detailRow}>
-          <span className={styles.label}>Invited:</span>
-          <span className={styles.value}>
-            {new Date(invitation.createdAt).toLocaleDateString()}
-          </span>
-        </div>
-        <div className={styles.detailRow}>
-          <span className={styles.label}>Expires:</span>
-          <span className={styles.value}>
-            {new Date(invitation.expiresAt).toLocaleDateString()}
-          </span>
-        </div>
-        {invitation.acceptedAt && (
-          <div className={styles.detailRow}>
-            <span className={styles.label}>Accepted:</span>
-            <span className={styles.value}>
-              {new Date(invitation.acceptedAt).toLocaleDateString()}
-            </span>
-          </div>
-        )}
-      </div>
+      <Stack className={styles.details} gap="sm">
+        <DetailRow
+          label="Invited by:"
+          value={invitation.inviterName || invitation.inviterUserId}
+        />
+        <DetailRow label="Email:" value={invitation.inviteeEmail} />
+        {invitation.inviteeName ? (
+          <DetailRow label="Name:" value={invitation.inviteeName} />
+        ) : null}
+        <DetailRow
+          label="Invited:"
+          value={new Date(invitation.createdAt).toLocaleDateString()}
+        />
+        <DetailRow
+          label="Expires:"
+          value={new Date(invitation.expiresAt).toLocaleDateString()}
+        />
+        {invitation.acceptedAt ? (
+          <DetailRow
+            label="Accepted:"
+            value={new Date(invitation.acceptedAt).toLocaleDateString()}
+          />
+        ) : null}
+      </Stack>
 
-      {error && <div className={styles.errorMessage}>{error}</div>}
+      {error ? (
+        <Alert variant="danger" className={styles.errorMessage}>
+          {error}
+        </Alert>
+      ) : null}
 
-      {showAcceptButton && isPending && (
-        <button
+      {showAcceptButton && isPending ? (
+        <Button
+          variant="solid"
           className={styles.acceptButton}
           onClick={handleAccept}
           disabled={isAccepting}
         >
           {isAccepting ? 'Accepting...' : 'Accept Invitation'}
-        </button>
-      )}
-    </div>
+        </Button>
+      ) : null}
+    </Card>
   );
 }
