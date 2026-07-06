@@ -508,28 +508,27 @@ export function DashboardLayout({
                 isPathInGroup(group.id, currentPath);
               return (
                 <Box key={group.id} className={styles.navGroup}>
-                  <Button
-                    type="button"
-                    variant="ghost"
+                  <Box
+                    as="button"
                     className={styles.navGroupHeader}
                     onClick={() => toggleGroup(group.id)}
                     aria-expanded={isExpanded}
                   >
-                    <Text as="span" className={styles.navGroupIcon}>
+                    <Box as="span" className={styles.navGroupIcon}>
                       <NavIcon name={group.icon} size="sm" />
-                    </Text>
-                    <Text as="span" className={styles.navGroupLabel}>
+                    </Box>
+                    <Box as="span" className={styles.navGroupLabel}>
                       {group.label}
-                    </Text>
-                    <Text
+                    </Box>
+                    <Box
                       as="span"
                       className={`${styles.navGroupChevron} ${
                         isExpanded ? styles.navGroupChevronOpen : ''
                       }`}
                     >
                       ▾
-                    </Text>
-                  </Button>
+                    </Box>
+                  </Box>
                   {isExpanded && (
                     <Box className={styles.navGroupItems}>
                       {group.items.map((item) => (
@@ -540,12 +539,12 @@ export function DashboardLayout({
                             currentPath === item.path ? styles.active : ''
                           }`}
                         >
-                          <Text as="span" className={styles.navIcon}>
+                          <Box as="span" className={styles.navIcon}>
                             <NavIcon name={item.icon} size="sm" />
-                          </Text>
-                          <Text as="span" className={styles.navLabel}>
+                          </Box>
+                          <Box as="span" className={styles.navLabel}>
                             {item.label}
-                          </Text>
+                          </Box>
                         </Link>
                       ))}
                     </Box>
@@ -564,9 +563,9 @@ export function DashboardLayout({
                   }`}
                   title={item.label}
                 >
-                  <Text as="span" className={styles.navIcon}>
+                  <Box as="span" className={styles.navIcon}>
                     <NavIcon name={item.icon} size="sm" />
-                  </Text>
+                  </Box>
                 </Link>
               ))}
             </Box>
@@ -575,9 +574,8 @@ export function DashboardLayout({
 
         {/* Support section at bottom */}
         <Box className={styles.sidebarSupport}>
-          <Button
-            type="button"
-            variant="ghost"
+          <Box
+            as="button"
             className={styles.supportToggle}
             onClick={() => {
               if (!sidebarOpen) {
@@ -592,9 +590,9 @@ export function DashboardLayout({
           >
             <Headphones size={18} className={styles.supportIcon} />
             {sidebarOpen && (
-              <Text as="span" className={styles.supportLabel}>
+              <Box as="span" className={styles.supportLabel}>
                 Support
-              </Text>
+              </Box>
             )}
             {sidebarOpen &&
               (supportOpen ? (
@@ -602,7 +600,7 @@ export function DashboardLayout({
               ) : (
                 <ChevronDown size={16} />
               ))}
-          </Button>
+          </Box>
 
           {supportOpen && (
             <Box
