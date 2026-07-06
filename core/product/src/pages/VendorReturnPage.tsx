@@ -1,10 +1,34 @@
-import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router';
 import { inventoryApi } from '@inventory-platform/product/api';
 import type { InventoryItem, VendorPurchaseInvoiceDetail, VendorPurchaseInvoiceSummary } from '@inventory-platform/product/types';
 import type { VendorResponse } from '@inventory-platform/user/types';
 import type { PaymentMethod, PaymentSplit } from '@inventory-platform/contracts';
-import { PaginationBar } from '@inventory-platform/ui-kit';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardBody,
+  CenteredLoader,
+  cn,
+  EmptyState,
+  FormField,
+  FormRow,
+  Grid,
+  Inline,
+  Input,
+  PageHeader,
+  PaginationBar,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { useCapabilityFeatureGuard } from '@inventory-platform/routing';
 import {
   PaymentMethodSplit,
@@ -15,7 +39,6 @@ import {
   validatePaymentSplit,
 } from '../ui';
 import { useNotify } from '@inventory-platform/session';
-import refundStyles from './refund.module.css';
 import styles from './vendor-return.module.css';
 
 function escapeRegExp(value: string): string {
@@ -261,6 +284,19 @@ function buildInvoiceSearchPattern(
   return escapeRegExp(ven);
 }
 
+function DetailLine({ label, value }: { label: string; value: string }) {
+  return (
+    <Inline gap="xs">
+      <Text variant="caption" color="secondary" weight="semibold">
+        {label}:
+      </Text>
+      <Text variant="caption" color="secondary">
+        {value}
+      </Text>
+    </Inline>
+  );
+}
+
 export function VendorReturnPage() {
   const { enabled, loading: guardLoading } =
     useCapabilityFeatureGuard('vendorReturn');
@@ -408,8 +444,7 @@ export function VendorReturnPage() {
     resetSelection();
   }, [page]);
 
-  const handleSearch = (e: FormEvent) => {
-    e.preventDefault();
+  const handleSearch = () => {
     resetSelection();
     setAppliedInvoiceNo(invoiceNo);
     setAppliedVendorName(vendorName);
@@ -591,427 +626,501 @@ export function VendorReturnPage() {
   const vendorHint =
     hydrateBusy || detailBusy ? 'Loading invoice…' : null;
 
+  const handleTabChange = (tab: 'process' | 'history') => {
+    setActiveTab(tab);
+  };
+
   if (guardLoading || !enabled) {
     return null;
   }
 
   return (
-    <div className={refundStyles.page}>
-      <div className={refundStyles.header}>
-        <h2 className={refundStyles.title}>Return stock to supplier</h2>
-        <p className={refundStyles.subtitle}>
-          Find a supplier purchase invoice, then enter how many selling units you are
-          sending back—the same counting unit as stock on the shelf (like “Return to
-          customer”). Credit notes appear in GSTR‑2 CDNR / CDNUR when applicable.
-        </p>
-      </div>
+    <Stack gap="md" className={styles.page}>
+      <PageHeader
+        title="Return stock to supplier"
+        description="Find a supplier purchase invoice, then enter how many selling units you are sending back—the same counting unit as stock on the shelf (like “Return to customer”). Credit notes appear in GSTR‑2 CDNR / CDNUR when applicable."
+      />
 
-      <div className={refundStyles.tabs}>
-        <button
-          type="button"
-          className={`${refundStyles.tab} ${
-            activeTab === 'process' ? refundStyles.activeTab : ''
-          }`}
-          onClick={() => setActiveTab('process')}
-        >
-          Process return
-        </button>
-        <button
-          type="button"
-          className={`${refundStyles.tab} ${
-            activeTab === 'history' ? refundStyles.activeTab : ''
-          }`}
-          onClick={() => setActiveTab('history')}
-        >
-          Return history
-        </button>
-      </div>
+      <Box as="nav" aria-label="Return sections" className={styles.tabBar}>
+        <Inline gap="none">
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            role="tab"
+            aria-selected={activeTab === 'process'}
+            className={activeTab === 'process' ? styles.tabActive : styles.tab}
+            onClick={() => handleTabChange('process')}
+          >
+            Process return
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            role="tab"
+            aria-selected={activeTab === 'history'}
+            className={activeTab === 'history' ? styles.tabActive : styles.tab}
+            onClick={() => handleTabChange('history')}
+          >
+            Return history
+          </Button>
+        </Inline>
+      </Box>
 
-      {activeTab === 'history' && (
-        <div className={refundStyles.content}>
-          <div className={refundStyles.historySection}>
-            <h3 className={refundStyles.sectionTitle}>Supplier return history</h3>
-            <VendorReturnHistoryList refreshTrigger={historyRefreshTrigger} />
-          </div>
-        </div>
-      )}
+      {activeTab === 'history' ? (
+        <Card>
+          <CardBody>
+            <Stack gap="md">
+              <Text variant="heading3" weight="semibold">
+                Supplier return history
+              </Text>
+              <VendorReturnHistoryList refreshTrigger={historyRefreshTrigger} />
+            </Stack>
+          </CardBody>
+        </Card>
+      ) : null}
 
-      {activeTab === 'process' && (
-      <div className={refundStyles.content}>
-        <div className={refundStyles.searchSection}>
-          <h3 className={refundStyles.sectionTitle}>Search purchase invoice</h3>
-          <p className={styles.hint}>
-            Recent supplier purchase invoices load automatically. Narrow the list with
-            search (same Java regex rules as History → Purchase history). When invoice
-            number is set, product/barcode is omitted from the server search.
-          </p>
-          <form onSubmit={handleSearch} className={refundStyles.searchForm}>
-            <div className={refundStyles.formRow}>
-              <div className={refundStyles.formGroup}>
-                <label htmlFor="vendorName" className={refundStyles.label}>
-                  Vendor name
-                </label>
-                <input
-                  id="vendorName"
-                  type="text"
-                  className={refundStyles.input}
-                  placeholder="Supplier name"
-                  value={vendorName}
-                  onChange={(e) => setVendorName(e.target.value)}
-                  disabled={searchLoading}
-                />
-              </div>
-              <div className={refundStyles.formGroup}>
-                <label htmlFor="invoiceNo" className={refundStyles.label}>
-                  Invoice number
-                </label>
-                <input
-                  id="invoiceNo"
-                  type="text"
-                  className={refundStyles.input}
-                  placeholder="Purchase invoice no."
-                  value={invoiceNo}
-                  onChange={(e) => setInvoiceNo(e.target.value)}
-                  disabled={searchLoading}
-                />
-              </div>
-              <div className={refundStyles.formGroup}>
-                <label htmlFor="productHint" className={refundStyles.label}>
-                  Product / barcode
-                </label>
-                <input
-                  id="productHint"
-                  type="text"
-                  className={refundStyles.input}
-                  placeholder="Matches line names or barcode"
-                  value={productOrBarcode}
-                  onChange={(e) => setProductOrBarcode(e.target.value)}
-                  disabled={searchLoading}
-                />
-              </div>
-            </div>
-            <button
-              type="submit"
-              className={refundStyles.searchBtn}
-              disabled={searchLoading}
-            >
-              {searchLoading ? 'Searching…' : 'Search invoices'}
-            </button>
-            {hasActiveSearch ? (
-              <button
-                type="button"
-                className={refundStyles.searchBtn}
-                disabled={searchLoading}
-                onClick={clearSearch}
-                style={{ marginLeft: '0.5rem' }}
-              >
-                Clear
-              </button>
-            ) : null}
-          </form>
-        </div>
-
-        {vendorHint ? (
-          <p className={styles.hint} role="status">
-            {vendorHint}
-          </p>
-        ) : null}
-
-        <div className={refundStyles.purchasesSection}>
-          <h3 className={refundStyles.sectionTitle}>
-            {hasActiveSearch ? 'Matching invoices' : 'Recent purchase invoices'}
-          </h3>
-          {searchLoading ? (
-            <p className={refundStyles.loading}>Loading invoices…</p>
-          ) : invoices.length === 0 ? (
-            <p className={refundStyles.emptyState}>
-              {hasActiveSearch
-                ? 'No purchase invoices matched. Try broader text or clear the search.'
-                : 'No supplier purchase invoices yet.'}
-            </p>
-          ) : (
-            <>
-            <div className={refundStyles.purchasesList}>
-              {invoices.map((inv) => (
-                <div key={inv.id}>
-                  <div
-                    className={`${refundStyles.purchaseCard} ${
-                      selected?.id === inv.id ? refundStyles.selectedPurchase : ''
-                    }`}
-                    onClick={() => void selectInvoice(inv)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(ev) => {
-                      if (ev.key === 'Enter' || ev.key === ' ') {
-                        ev.preventDefault();
-                        void selectInvoice(inv);
-                      }
-                    }}
-                  >
-                    <div className={refundStyles.purchaseHeader}>
-                      <div>
-                        <strong>Invoice:</strong> {inv.invoiceNo}
-                        {inv.synthetic ? (
-                          <span style={{ marginLeft: 8, opacity: 0.85 }}>
-                            {' '}
-                            (auto no.)
-                          </span>
-                        ) : null}
-                      </div>
-                      <div>
-                        <strong>Date:</strong> {formatDate(inv.invoiceDate)}
-                      </div>
-                    </div>
-                    <div className={refundStyles.purchaseDetails}>
-                      <div>
-                        <strong>Vendor:</strong>{' '}
-                        {inv.vendorName?.trim() || '—'}
-                      </div>
-                      <div>
-                        <strong>Lines:</strong> {inv.lineCount}
-                      </div>
-                      <div>
-                        <strong>Total:</strong>{' '}
-                        {formatMoney(inv.invoiceTotal)}
-                      </div>
-                    </div>
-                  </div>
-
-                  {selected?.id === inv.id && detail && (
-                    <div className={refundStyles.refundSection}>
-                      <h3 className={refundStyles.sectionTitle}>
-                        Select items to return
-                      </h3>
-                      <div className={refundStyles.purchaseInfo}>
-                        <div>
-                          <strong>Invoice:</strong> {detail.invoiceNo}
-                        </div>
-                        <div>
-                          <strong>Vendor:</strong>{' '}
-                          {detail.vendorName?.trim() || '—'}
-                        </div>
-                        <div>
-                          <strong>Dated:</strong>{' '}
-                          {formatDate(detail.invoiceDate)}
-                        </div>
-                      </div>
-
-                      {stockLines.length === 0 ? (
-                        <p className={styles.hint}>No inventoried lines on this bill.</p>
-                      ) : (
-                        <>
-                          {hydrateBusy ? (
-                            <p className={styles.hint} role="status">
-                              Loading shelf stock and pricing for this invoice…
-                            </p>
-                          ) : (
-                            <p className={styles.hint}>
-                              Quantities use the same <strong>selling unit</strong> as{' '}
-                              <strong>Current qty</strong> (shelf / POS). Return qty cannot
-                              exceed current qty when that figure is loaded; if base stock on
-                              the lot is tighter, the allowed maximum is lower than current
-                              qty. <strong>Est. debit note</strong> follows cost × return qty
-                              (ex-GST), with CGST/SGST added on top — matching the supplier
-                              credit note logic.
-                            </p>
-                          )}
-                          <div className={refundStyles.itemsTable}>
-                            <table>
-                              <thead>
-                                <tr>
-                                  <th>Item name</th>
-                                  <th>MRP</th>
-                                  <th>Cost</th>
-                                  <th>Qty on bill</th>
-                                  <th>Current qty</th>
-                                  <th>GST rates</th>
-                                  <th className={styles.numericCell}>Est. debit note</th>
-                                  <th>Return qty</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {stockLines.map((line) => {
-                                  const id = line.inventoryId!;
-                                  const invRow = inventoryById[id];
-                                  const maxSell = maxReturnableSellUnits(invRow, line.count);
-                                  const rqRaw = (qtyByInventoryId[id] ?? '').trim();
-                                  const rqParsed = Number.parseInt(rqRaw, 10);
-                                  const rq =
-                                    rqRaw !== '' &&
-                                    Number.isFinite(rqParsed) &&
-                                    rqParsed > 0
-                                      ? rqParsed
-                                      : 0;
-                                  const unitCostRaw = Number(
-                                    line.costPrice ?? invRow?.costPrice
-                                  );
-                                  const debitEst =
-                                    rq > 0 &&
-                                    Number.isFinite(unitCostRaw) &&
-                                    unitCostRaw >= 0
-                                      ? estimateDebitNoteLine(rq, unitCostRaw, invRow)
-                                      : null;
-                                  const debitTitle =
-                                    debitEst != null
-                                      ? [
-                                          `Taxable ${formatMoney(debitEst.taxable)}`,
-                                          debitEst.cgst > 0 ||
-                                          debitEst.sgst > 0
-                                            ? `CGST ${formatMoney(debitEst.cgst)}, SGST ${formatMoney(debitEst.sgst)}`
-                                            : 'No GST on row',
-                                          `Total ${formatMoney(debitEst.total)}`,
-                                        ].join(' · ')
-                                      : undefined;
-                                  return (
-                                    <tr key={`${line.lineIndex}-${id}`}>
-                                      <td>{line.name}</td>
-                                      <td>{formatMoney(invRow?.maximumRetailPrice)}</td>
-                                      <td>
-                                        {formatMoney(
-                                          line.costPrice ?? invRow?.costPrice
-                                        )}
-                                      </td>
-                                      <td>{line.count ?? '—'}</td>
-                                      <td>{formatCurrentSellQtyDisplay(invRow)}</td>
-                                      <td>{formatGstRatesLabel(invRow)}</td>
-                                      <td
-                                        className={styles.numericCell}
-                                        title={debitTitle}
-                                      >
-                                        {debitEst != null
-                                          ? formatMoney(debitEst.total)
-                                          : '—'}
-                                      </td>
-                                      <td>
-                                        <input
-                                          type="number"
-                                          min={0}
-                                          max={maxSell > 0 ? maxSell : undefined}
-                                          className={refundStyles.quantityInput}
-                                          inputMode="numeric"
-                                          placeholder="0"
-                                          title={
-                                            maxSell > 0
-                                              ? `Maximum return: ${maxSell} (≤ current qty / stock)`
-                                              : undefined
-                                          }
-                                          disabled={
-                                            returnRecording ||
-                                            detailBusy ||
-                                            maxSell <= 0
-                                          }
-                                          value={qtyByInventoryId[id] ?? ''}
-                                          onChange={(ev) => {
-                                            const raw = ev.target.value.trim();
-                                            if (raw === '') {
-                                              setQtyByInventoryId((prev) => ({
-                                                ...prev,
-                                                [id]: '',
-                                              }));
-                                              return;
-                                            }
-                                            const num = Number.parseInt(raw, 10);
-                                            if (!Number.isFinite(num)) {
-                                              return;
-                                            }
-                                            const clampedLow = Math.max(0, num);
-                                            const capped =
-                                              maxSell > 0
-                                                ? Math.min(clampedLow, maxSell)
-                                                : clampedLow;
-                                            setQtyByInventoryId((prev) => ({
-                                              ...prev,
-                                              [id]: String(capped),
-                                            }));
-                                          }}
-                                          aria-label={`Return quantity selling units for ${line.name}; maximum ${maxSell}`}
-                                        />
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
-                          </div>
-                          {returnDebitNoteEstimate.linesWithQty > 0 ? (
-                            <p className={styles.returnEstimateBanner} role="status">
-                              <strong>Estimated debit note total (incl. GST):</strong>{' '}
-                              {formatMoney(returnDebitNoteEstimate.grandTotal)}
-                              <span className={styles.returnEstimateMuted}>
-                                {' '}
-                                Per-line breakdown on hover · final amount set when you
-                                record the return.
-                              </span>
-                            </p>
-                          ) : null}
-                        </>
-                      )}
-
-                      <label className={styles.reasonLabel}>
-                        <span>Reason (optional)</span>
-                        <textarea
-                          className={styles.reasonArea}
-                          rows={2}
-                          disabled={returnRecording}
-                          value={reason}
-                          onChange={(e) => setReason(e.target.value)}
-                          placeholder="e.g. Damaged batch, shortage"
-                        />
-                      </label>
-
-                      {returnDebitNoteEstimate.linesWithQty > 0 ? (
-                        <div className={refundStyles.returnPaymentSection}>
-                          <PaymentMethodSplit
-                            context="purchase"
-                            title="How are you receiving the refund?"
-                            intro="Cash or online = money back now. Credit = reduces what you owe this vendor. Independent of how you paid the original invoice."
-                            total={returnTotalNum}
-                            value={{ method: paymentMethod, split: paymentSplit }}
-                            onChange={(next) => {
-                              setPaymentMethod(next.method);
-                              setPaymentSplit(next.split);
-                            }}
-                            disabled={returnRecording || detailBusy}
-                          />
-                          {paymentMethod &&
-                          isCreditMethod(paymentMethod) &&
-                          paymentSplit.creditAmount > 0 ? (
-                            <p className={refundStyles.returnPaymentHint}>
-                              ₹{paymentSplit.creditAmount.toFixed(2)} reduces vendor
-                              credit (you owe them less).
-                            </p>
-                          ) : null}
-                        </div>
-                      ) : null}
-
-                      <button
+      {activeTab === 'process' ? (
+        <Card>
+          <CardBody>
+            <Stack gap="lg">
+              <Stack gap="sm">
+                <Text variant="heading3" weight="semibold">
+                  Search purchase invoice
+                </Text>
+                <Text variant="caption" color="secondary" className={styles.hint}>
+                  Recent supplier purchase invoices load automatically. Narrow the list with
+                  search (same Java regex rules as History → Purchase history). When invoice
+                  number is set, product/barcode is omitted from the server search.
+                </Text>
+                <Stack gap="md">
+                  <FormRow>
+                      <FormField
+                        label="Vendor name"
+                        id="vendorName"
+                        value={vendorName}
+                        onChange={setVendorName}
+                        placeholder="Supplier name"
+                        disabled={searchLoading}
+                      />
+                      <FormField
+                        label="Invoice number"
+                        id="invoiceNo"
+                        value={invoiceNo}
+                        onChange={setInvoiceNo}
+                        placeholder="Purchase invoice no."
+                        disabled={searchLoading}
+                      />
+                      <FormField
+                        label="Product / barcode"
+                        id="productHint"
+                        value={productOrBarcode}
+                        onChange={setProductOrBarcode}
+                        placeholder="Matches line names or barcode"
+                        disabled={searchLoading}
+                      />
+                    </FormRow>
+                    <Inline gap="sm">
+                      <Button
                         type="button"
-                        className={refundStyles.processRefundBtn}
-                        disabled={!canRecordReturn || stockLines.length === 0}
-                        onClick={() => void submitReturn()}
+                        disabled={searchLoading}
+                        onClick={handleSearch}
                       >
-                        {returnRecording
-                          ? 'Recording…'
-                          : 'Record return to supplier'}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-            <PaginationBar
-              page={page}
-              totalPages={totalPages}
-              totalItems={totalItems}
-              onPageChange={setPage}
-              disabled={searchLoading}
-              aria-label="Purchase invoice pages"
-            />
-            </>
-          )}
-        </div>
-      </div>
-      )}
-    </div>
+                        {searchLoading ? 'Searching…' : 'Search invoices'}
+                      </Button>
+                      {hasActiveSearch ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={searchLoading}
+                          onClick={clearSearch}
+                        >
+                          Clear
+                        </Button>
+                      ) : null}
+                    </Inline>
+                  </Stack>
+              </Stack>
+
+              {vendorHint ? (
+                <Alert variant="info" role="status">
+                  {vendorHint}
+                </Alert>
+              ) : null}
+
+              <Stack gap="md">
+                <Text variant="heading3" weight="semibold">
+                  {hasActiveSearch ? 'Matching invoices' : 'Recent purchase invoices'}
+                </Text>
+                {searchLoading ? (
+                  <CenteredLoader label="Loading invoices…" />
+                ) : invoices.length === 0 ? (
+                  <EmptyState
+                    title={
+                      hasActiveSearch
+                        ? 'No purchase invoices matched. Try broader text or clear the search.'
+                        : 'No supplier purchase invoices yet.'
+                    }
+                  />
+                ) : (
+                  <>
+                    <Stack gap="md" className={styles.purchasesList}>
+                      {invoices.map((inv) => (
+                        <Stack key={inv.id} gap="sm">
+                          <Card
+                            className={cn(
+                              styles.purchaseCard,
+                              selected?.id === inv.id && styles.selectedPurchase
+                            )}
+                            onClick={() => void selectInvoice(inv)}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(ev) => {
+                              if (ev.key === 'Enter' || ev.key === ' ') {
+                                ev.preventDefault();
+                                void selectInvoice(inv);
+                              }
+                            }}
+                          >
+                            <CardBody>
+                              <Inline
+                                justify="between"
+                                className={styles.purchaseHeader}
+                              >
+                                <Inline gap="xs">
+                                  <Text variant="caption" weight="semibold">
+                                    Invoice:
+                                  </Text>
+                                  <Text variant="caption">{inv.invoiceNo}</Text>
+                                  {inv.synthetic ? (
+                                    <Text variant="caption" color="secondary">
+                                      (auto no.)
+                                    </Text>
+                                  ) : null}
+                                </Inline>
+                                <Inline gap="xs">
+                                  <Text variant="caption" weight="semibold">
+                                    Date:
+                                  </Text>
+                                  <Text variant="caption" color="secondary">
+                                    {formatDate(inv.invoiceDate)}
+                                  </Text>
+                                </Inline>
+                              </Inline>
+                              <Grid
+                                columns={2}
+                                gap="sm"
+                                className={styles.purchaseDetails}
+                              >
+                                <DetailLine
+                                  label="Vendor"
+                                  value={inv.vendorName?.trim() || '—'}
+                                />
+                                <DetailLine
+                                  label="Lines"
+                                  value={String(inv.lineCount)}
+                                />
+                                <DetailLine
+                                  label="Total"
+                                  value={formatMoney(inv.invoiceTotal)}
+                                />
+                              </Grid>
+                            </CardBody>
+                          </Card>
+
+                          {selected?.id === inv.id && detail ? (
+                            <Card className={styles.returnSection}>
+                              <CardBody>
+                                <Stack gap="md">
+                                  <Text variant="heading3" weight="semibold">
+                                    Select items to return
+                                  </Text>
+                                  <Grid
+                                    columns={3}
+                                    gap="sm"
+                                    className={styles.purchaseInfo}
+                                  >
+                                    <DetailLine
+                                      label="Invoice"
+                                      value={detail.invoiceNo}
+                                    />
+                                    <DetailLine
+                                      label="Vendor"
+                                      value={detail.vendorName?.trim() || '—'}
+                                    />
+                                    <DetailLine
+                                      label="Dated"
+                                      value={formatDate(detail.invoiceDate)}
+                                    />
+                                  </Grid>
+
+                                  {stockLines.length === 0 ? (
+                                    <Text variant="caption" color="secondary" className={styles.hint}>
+                                      No inventoried lines on this bill.
+                                    </Text>
+                                  ) : (
+                                    <Stack gap="md">
+                                      {hydrateBusy ? (
+                                        <Alert variant="info" role="status">
+                                          Loading shelf stock and pricing for this invoice…
+                                        </Alert>
+                                      ) : (
+                                        <Text variant="caption" color="secondary" className={styles.hint}>
+                                          Quantities use the same{' '}
+                                          <Text as="span" weight="semibold">
+                                            selling unit
+                                          </Text>{' '}
+                                          as{' '}
+                                          <Text as="span" weight="semibold">
+                                            Current qty
+                                          </Text>{' '}
+                                          (shelf / POS). Return qty cannot exceed current qty when
+                                          that figure is loaded; if base stock on the lot is
+                                          tighter, the allowed maximum is lower than current qty.{' '}
+                                          <Text as="span" weight="semibold">
+                                            Est. debit note
+                                          </Text>{' '}
+                                          follows cost × return qty (ex-GST), with CGST/SGST added
+                                          on top — matching the supplier credit note logic.
+                                        </Text>
+                                      )}
+                                      <Table>
+                                        <TableHead>
+                                          <TableRow>
+                                            <TableHeaderCell>Item name</TableHeaderCell>
+                                            <TableHeaderCell>MRP</TableHeaderCell>
+                                            <TableHeaderCell>Cost</TableHeaderCell>
+                                            <TableHeaderCell>Qty on bill</TableHeaderCell>
+                                            <TableHeaderCell>Current qty</TableHeaderCell>
+                                            <TableHeaderCell>GST rates</TableHeaderCell>
+                                            <TableHeaderCell
+                                              className={styles.numericCell}
+                                            >
+                                              Est. debit note
+                                            </TableHeaderCell>
+                                            <TableHeaderCell>Return qty</TableHeaderCell>
+                                          </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                          {stockLines.map((line) => {
+                                            const id = line.inventoryId!;
+                                            const invRow = inventoryById[id];
+                                            const maxSell = maxReturnableSellUnits(
+                                              invRow,
+                                              line.count
+                                            );
+                                            const rqRaw = (
+                                              qtyByInventoryId[id] ?? ''
+                                            ).trim();
+                                            const rqParsed = Number.parseInt(rqRaw, 10);
+                                            const rq =
+                                              rqRaw !== '' &&
+                                              Number.isFinite(rqParsed) &&
+                                              rqParsed > 0
+                                                ? rqParsed
+                                                : 0;
+                                            const unitCostRaw = Number(
+                                              line.costPrice ?? invRow?.costPrice
+                                            );
+                                            const debitEst =
+                                              rq > 0 &&
+                                              Number.isFinite(unitCostRaw) &&
+                                              unitCostRaw >= 0
+                                                ? estimateDebitNoteLine(
+                                                    rq,
+                                                    unitCostRaw,
+                                                    invRow
+                                                  )
+                                                : null;
+                                            const debitTitle =
+                                              debitEst != null
+                                                ? [
+                                                    `Taxable ${formatMoney(debitEst.taxable)}`,
+                                                    debitEst.cgst > 0 ||
+                                                    debitEst.sgst > 0
+                                                      ? `CGST ${formatMoney(debitEst.cgst)}, SGST ${formatMoney(debitEst.sgst)}`
+                                                      : 'No GST on row',
+                                                    `Total ${formatMoney(debitEst.total)}`,
+                                                  ].join(' · ')
+                                                : undefined;
+                                            return (
+                                              <TableRow key={`${line.lineIndex}-${id}`}>
+                                                <TableCell>{line.name}</TableCell>
+                                                <TableCell>
+                                                  {formatMoney(invRow?.maximumRetailPrice)}
+                                                </TableCell>
+                                                <TableCell>
+                                                  {formatMoney(
+                                                    line.costPrice ?? invRow?.costPrice
+                                                  )}
+                                                </TableCell>
+                                                <TableCell>{line.count ?? '—'}</TableCell>
+                                                <TableCell>
+                                                  {formatCurrentSellQtyDisplay(invRow)}
+                                                </TableCell>
+                                                <TableCell>
+                                                  {formatGstRatesLabel(invRow)}
+                                                </TableCell>
+                                                <TableCell
+                                                  className={styles.numericCell}
+                                                  title={debitTitle}
+                                                >
+                                                  {debitEst != null
+                                                    ? formatMoney(debitEst.total)
+                                                    : '—'}
+                                                </TableCell>
+                                                <TableCell>
+                                                  <Input
+                                                    type="number"
+                                                    min={0}
+                                                    max={maxSell > 0 ? maxSell : undefined}
+                                                    className={styles.quantityInput}
+                                                    inputMode="numeric"
+                                                    placeholder="0"
+                                                    title={
+                                                      maxSell > 0
+                                                        ? `Maximum return: ${maxSell} (≤ current qty / stock)`
+                                                        : undefined
+                                                    }
+                                                    disabled={
+                                                      returnRecording ||
+                                                      detailBusy ||
+                                                      maxSell <= 0
+                                                    }
+                                                    value={qtyByInventoryId[id] ?? ''}
+                                                    onChange={(ev) => {
+                                                      const raw = ev.target.value.trim();
+                                                      if (raw === '') {
+                                                        setQtyByInventoryId((prev) => ({
+                                                          ...prev,
+                                                          [id]: '',
+                                                        }));
+                                                        return;
+                                                      }
+                                                      const num = Number.parseInt(raw, 10);
+                                                      if (!Number.isFinite(num)) {
+                                                        return;
+                                                      }
+                                                      const clampedLow = Math.max(0, num);
+                                                      const capped =
+                                                        maxSell > 0
+                                                          ? Math.min(clampedLow, maxSell)
+                                                          : clampedLow;
+                                                      setQtyByInventoryId((prev) => ({
+                                                        ...prev,
+                                                        [id]: String(capped),
+                                                      }));
+                                                    }}
+                                                    aria-label={`Return quantity selling units for ${line.name}; maximum ${maxSell}`}
+                                                  />
+                                                </TableCell>
+                                              </TableRow>
+                                            );
+                                          })}
+                                        </TableBody>
+                                      </Table>
+                                      {returnDebitNoteEstimate.linesWithQty > 0 ? (
+                                        <Alert
+                                          variant="info"
+                                          role="status"
+                                          className={styles.returnEstimateBanner}
+                                        >
+                                          <Text as="span" weight="semibold">
+                                            Estimated debit note total (incl. GST):
+                                          </Text>{' '}
+                                          {formatMoney(returnDebitNoteEstimate.grandTotal)}
+                                          <Text
+                                            variant="caption"
+                                            color="secondary"
+                                            className={styles.returnEstimateMuted}
+                                          >
+                                            Per-line breakdown on hover · final amount set when
+                                            you record the return.
+                                          </Text>
+                                        </Alert>
+                                      ) : null}
+                                    </Stack>
+                                  )}
+
+                                  <FormField
+                                    label="Reason (optional)"
+                                    id="returnReason"
+                                    multiline
+                                    rows={2}
+                                    value={reason}
+                                    onChange={setReason}
+                                    placeholder="e.g. Damaged batch, shortage"
+                                    disabled={returnRecording}
+                                  />
+
+                                  {returnDebitNoteEstimate.linesWithQty > 0 ? (
+                                    <Stack
+                                      gap="sm"
+                                      className={styles.returnPaymentSection}
+                                    >
+                                      <PaymentMethodSplit
+                                        context="purchase"
+                                        title="How are you receiving the refund?"
+                                        intro="Cash or online = money back now. Credit = reduces what you owe this vendor. Independent of how you paid the original invoice."
+                                        total={returnTotalNum}
+                                        value={{
+                                          method: paymentMethod,
+                                          split: paymentSplit,
+                                        }}
+                                        onChange={(next) => {
+                                          setPaymentMethod(next.method);
+                                          setPaymentSplit(next.split);
+                                        }}
+                                        disabled={returnRecording || detailBusy}
+                                      />
+                                      {paymentMethod &&
+                                      isCreditMethod(paymentMethod) &&
+                                      paymentSplit.creditAmount > 0 ? (
+                                        <Text
+                                          variant="caption"
+                                          color="secondary"
+                                          className={styles.returnPaymentHint}
+                                        >
+                                          ₹{paymentSplit.creditAmount.toFixed(2)} reduces vendor
+                                          credit (you owe them less).
+                                        </Text>
+                                      ) : null}
+                                    </Stack>
+                                  ) : null}
+
+                                  <Button
+                                    type="button"
+                                    className={styles.recordBtn}
+                                    disabled={!canRecordReturn || stockLines.length === 0}
+                                    onClick={() => void submitReturn()}
+                                  >
+                                    {returnRecording
+                                      ? 'Recording…'
+                                      : 'Record return to supplier'}
+                                  </Button>
+                                </Stack>
+                              </CardBody>
+                            </Card>
+                          ) : null}
+                        </Stack>
+                      ))}
+                    </Stack>
+                    <PaginationBar
+                      page={page}
+                      totalPages={totalPages}
+                      totalItems={totalItems}
+                      onPageChange={setPage}
+                      disabled={searchLoading}
+                      aria-label="Purchase invoice pages"
+                    />
+                  </>
+                )}
+              </Stack>
+            </Stack>
+          </CardBody>
+        </Card>
+      ) : null}
+    </Stack>
   );
 }

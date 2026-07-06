@@ -1,11 +1,33 @@
-import { useState, FormEvent, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLocation } from 'react-router';
 import { refundsApi } from '@inventory-platform/product/api';
 import type { CheckoutItemResponse, Purchase, RefundItem, SearchPurchasesParams } from '@inventory-platform/product/types';
 import type { CustomerResponse } from '@inventory-platform/user/types';
 import type { PaymentMethod, PaymentSplit } from '@inventory-platform/contracts';
 import { inventoryLotIdFromSellableRef, lineSellableRef } from '@inventory-platform/product/types';
-import { PaginationBar } from '@inventory-platform/ui-kit';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardBody,
+  CenteredLoader,
+  EmptyState,
+  FormField,
+  Grid,
+  Inline,
+  Input,
+  PageHeader,
+  PaginationBar,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { useCapabilityFeatureGuard } from '@inventory-platform/routing';
 import {
   PaymentMethodSplit,
@@ -110,6 +132,19 @@ function formatDate(dateString: string): string {
   } catch {
     return dateString;
   }
+}
+
+function DetailLine({ label, value }: { label: string; value: string }) {
+  return (
+    <Inline gap="xs">
+      <Text variant="caption" color="secondary" weight="semibold">
+        {label}:
+      </Text>
+      <Text variant="caption" color="secondary">
+        {value}
+      </Text>
+    </Inline>
+  );
 }
 
 export function RefundPage() {
@@ -229,8 +264,7 @@ export function RefundPage() {
     setPaymentSplit(emptyPaymentSplit());
   }, [page]);
 
-  const handleSearchPurchases = (e: FormEvent) => {
-    e.preventDefault();
+  const handleSearchPurchases = () => {
     setSuccess(null);
     setSelectedPurchase(null);
     setRefundItems({});
@@ -421,355 +455,464 @@ export function RefundPage() {
     return null;
   }
 
+  const processTabs: Array<{ id: 'process' | 'history'; label: string }> = [
+    { id: 'process', label: 'Process Return' },
+    { id: 'history', label: 'Return History' },
+  ];
+
   return (
-    <div className={styles.page}>
-      <div className={styles.header}>
-        <h2 className={styles.title}>Return to customer</h2>
-        <p className={styles.subtitle}>
-          Process customer sale returns and view return history
-        </p>
-      </div>
+    <Stack gap="md">
+      <PageHeader
+        title="Return to customer"
+        description="Process customer sale returns and view return history"
+      />
 
-      <div className={styles.tabs}>
-        <button
-          className={`${styles.tab} ${
-            activeTab === 'process' ? styles.activeTab : ''
-          }`}
-          onClick={() => handleTabChange('process')}
-        >
-          Process Return
-        </button>
-        <button
-          className={`${styles.tab} ${
-            activeTab === 'history' ? styles.activeTab : ''
-          }`}
-          onClick={() => handleTabChange('history')}
-        >
-          Return History
-        </button>
-      </div>
-
-      {error && <div className={styles.errorMessage}>{error}</div>}
-      {success && <div className={styles.successMessage}>{success}</div>}
-
-      {activeTab === 'process' && (
-        <div className={styles.content}>
-          <div className={styles.searchSection}>
-            <h3 className={styles.sectionTitle}>Search purchase</h3>
-            <p className={styles.subtitle} style={{ marginBottom: '1rem' }}>
-              Recent sales load automatically. Use the fields below to narrow the list.
-            </p>
-            <form
-              onSubmit={handleSearchPurchases}
-              className={styles.searchForm}
-            >
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label htmlFor="customerName" className={styles.label}>
-                    Customer Name
-                  </label>
-                  <input
-                    type="text"
-                    id="customerName"
-                    className={styles.input}
-                    placeholder="Enter customer name"
-                    value={searchParams.customerName || ''}
-                    onChange={(e) =>
-                      handleSearchChange('customerName', e.target.value)
-                    }
-                    disabled={isLoading}
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label htmlFor="customerPhone" className={styles.label}>
-                    Customer Phone
-                  </label>
-                  <input
-                    type="text"
-                    id="customerPhone"
-                    className={styles.input}
-                    placeholder="Enter customer phone"
-                    value={searchParams.customerPhone || ''}
-                    onChange={(e) =>
-                      handleSearchChange('customerPhone', e.target.value)
-                    }
-                    disabled={isLoading}
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label htmlFor="customerEmail" className={styles.label}>
-                    Customer Email
-                  </label>
-                  <input
-                    type="email"
-                    id="customerEmail"
-                    className={styles.input}
-                    placeholder="Enter customer email"
-                    value={searchParams.customerEmail || ''}
-                    onChange={(e) =>
-                      handleSearchChange('customerEmail', e.target.value)
-                    }
-                    disabled={isLoading}
-                  />
-                </div>
-              </div>
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label htmlFor="invoiceNo" className={styles.label}>
-                    Invoice Number
-                  </label>
-                  <input
-                    type="text"
-                    id="invoiceNo"
-                    className={styles.input}
-                    placeholder="Enter invoice number"
-                    value={searchParams.invoiceNo || ''}
-                    onChange={(e) =>
-                      handleSearchChange('invoiceNo', e.target.value)
-                    }
-                    disabled={isLoading}
-                  />
-                </div>
-              </div>
-              <button
-                type="submit"
-                className={styles.searchBtn}
-                disabled={isLoading}
+      <Box as="nav" aria-label="Return sections" className={styles.tabBar}>
+        <Inline gap="none">
+          {processTabs.map((tab) => {
+            const active = activeTab === tab.id;
+            return (
+              <Button
+                key={tab.id}
+                type="button"
+                size="sm"
+                variant="ghost"
+                role="tab"
+                aria-selected={active}
+                className={active ? styles.tabActive : styles.tab}
+                onClick={() => handleTabChange(tab.id)}
               >
-                {isLoading ? 'Searching...' : 'Search purchases'}
-              </button>
-              {hasActiveSearch ? (
-                <button
-                  type="button"
-                  className={styles.searchBtn}
-                  disabled={isLoading}
-                  onClick={clearSearch}
-                  style={{ marginLeft: '0.5rem' }}
-                >
-                  Clear
-                </button>
-              ) : null}
-            </form>
-          </div>
+                {tab.label}
+              </Button>
+            );
+          })}
+        </Inline>
+      </Box>
 
-          <div className={styles.purchasesSection}>
-            <h3 className={styles.sectionTitle}>
-              {hasActiveSearch ? 'Matching sales' : 'Recent sales'}
-            </h3>
-            {isLoading ? (
-              <p className={styles.loading}>Loading purchases…</p>
-            ) : purchases.length === 0 ? (
-              <p className={styles.emptyState}>
-                {hasActiveSearch
-                  ? 'No sales matched your search. Try different criteria or clear the search.'
-                  : 'No sales yet.'}
-              </p>
-            ) : (
-              <>
-              <div className={styles.purchasesList}>
-                {purchases.map((purchase) => (
-                  <div key={purchase.purchaseId}>
-                    <div
-                      className={`${styles.purchaseCard} ${
-                        selectedPurchase?.purchaseId === purchase.purchaseId
-                          ? styles.selectedPurchase
-                          : ''
-                      }`}
-                      onClick={() => handleSelectPurchase(purchase)}
+      {error ? <Alert variant="danger">{error}</Alert> : null}
+      {success ? <Alert variant="success">{success}</Alert> : null}
+
+      {activeTab === 'process' ? (
+        <Card>
+          <CardBody>
+            <Stack gap="lg">
+              <Stack gap="md">
+                <Text variant="heading3" weight="semibold">
+                  Search purchase
+                </Text>
+                <Text color="secondary">
+                  Recent sales load automatically. Use the fields below to narrow
+                  the list.
+                </Text>
+                <Stack gap="sm">
+                  <Grid columns={3} gap="sm" className={styles.searchGrid}>
+                    <FormField label="Customer Name" id="customerName">
+                      <Input
+                        id="customerName"
+                        type="text"
+                        placeholder="Enter customer name"
+                        value={searchParams.customerName || ''}
+                        onChange={(e) =>
+                          handleSearchChange('customerName', e.target.value)
+                        }
+                        disabled={isLoading}
+                      />
+                    </FormField>
+                    <FormField label="Customer Phone" id="customerPhone">
+                      <Input
+                        id="customerPhone"
+                        type="text"
+                        placeholder="Enter customer phone"
+                        value={searchParams.customerPhone || ''}
+                        onChange={(e) =>
+                          handleSearchChange('customerPhone', e.target.value)
+                        }
+                        disabled={isLoading}
+                      />
+                    </FormField>
+                    <FormField label="Customer Email" id="customerEmail">
+                      <Input
+                        id="customerEmail"
+                        type="email"
+                        placeholder="Enter customer email"
+                        value={searchParams.customerEmail || ''}
+                        onChange={(e) =>
+                          handleSearchChange('customerEmail', e.target.value)
+                        }
+                        disabled={isLoading}
+                      />
+                    </FormField>
+                  </Grid>
+                  <FormField label="Invoice Number" id="invoiceNo">
+                    <Input
+                      id="invoiceNo"
+                      type="text"
+                      placeholder="Enter invoice number"
+                      value={searchParams.invoiceNo || ''}
+                      onChange={(e) =>
+                        handleSearchChange('invoiceNo', e.target.value)
+                      }
+                      disabled={isLoading}
+                    />
+                  </FormField>
+                  <Inline gap="sm">
+                    <Button
+                      type="button"
+                      variant="solid"
+                      disabled={isLoading}
+                      onClick={handleSearchPurchases}
                     >
-                      <div className={styles.purchaseHeader}>
-                        <div>
-                          <strong>Invoice No:</strong> {purchase.invoiceNo}
-                        </div>
-                        <div>
-                          <strong>Date:</strong> {formatDate(purchase.soldAt)}
-                        </div>
-                      </div>
-                      <div className={styles.purchaseDetails}>
-                        <div>
-                          <strong>Customer:</strong>{' '}
-                          {purchase.customerName || 'N/A'}
-                        </div>
-                        <div>
-                          <strong>Phone:</strong>{' '}
-                          {purchase.customerPhone || 'N/A'}
-                        </div>
-                        <div>
-                          <strong>Total:</strong>{' '}
-                          {formatCurrency(purchase.grandTotal)}
-                        </div>
-                        <div>
-                          <strong>Payment:</strong> {purchase.paymentMethod}
-                        </div>
-                      </div>
-                    </div>
+                      {isLoading ? 'Searching...' : 'Search purchases'}
+                    </Button>
+                    {hasActiveSearch ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={isLoading}
+                        onClick={clearSearch}
+                      >
+                        Clear
+                      </Button>
+                    ) : null}
+                  </Inline>
+                </Stack>
+              </Stack>
 
-                    {selectedPurchase?.purchaseId === purchase.purchaseId && (
-                      <div className={styles.refundSection}>
-                        <h3 className={styles.sectionTitle}>
-                          Select Items to Return
-                        </h3>
-                        <div className={styles.purchaseInfo}>
-                          <div>
-                            <strong>Invoice No:</strong>{' '}
-                            {selectedPurchase.invoiceNo}
-                          </div>
-                          <div>
-                            <strong>Customer:</strong>{' '}
-                            {selectedPurchase.customerName || 'N/A'}
-                          </div>
-                          <div>
-                            <strong>Date:</strong>{' '}
-                            {formatDate(selectedPurchase.soldAt)}
-                          </div>
-                        </div>
-
-                        <div className={styles.itemsTable}>
-                          <table>
-                            <thead>
-                              <tr>
-                                <th>Item Name</th>
-                                <th>MRP</th>
-                                <th>Selling Price</th>
-                                <th>Purchased Qty</th>
-                                <th>GST rates</th>
-                                <th className={styles.numericTh}>
-                                  Est. credit
-                                </th>
-                                <th>Return Qty</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {selectedPurchase.items.map((item, index) => {
-                                const lineKey = refundLineKey(item, index);
-                                const refundItem = refundItems[lineKey];
-                                const rq = refundItem?.quantity ?? 0;
-                                const lineEst =
-                                  rq > 0
-                                    ? estimateCustomerRefundLine(rq, item)
-                                    : null;
-                                return (
-                                  <tr key={lineKey}>
-                                    <td>{item.name}</td>
-                                    <td>
-                                      {formatCurrency(item.maximumRetailPrice)}
-                                    </td>
-                                    <td>{formatCurrency(item.priceToRetail)}</td>
-                                    <td>{item.quantity}</td>
-                                    <td>{formatGstRatesLabelForSaleLine(item)}</td>
-                                    <td
-                                      className={styles.numericCell}
-                                      title={lineEst?.title}
-                                    >
-                                      {lineEst != null
-                                        ? formatCurrency(lineEst.total)
-                                        : '—'}
-                                    </td>
-                                    <td>
-                                      <input
-                                        type="number"
-                                        min="0"
-                                        max={item.quantity}
-                                        value={refundItem?.quantity || 0}
-                                        onChange={(e) =>
-                                          handleRefundQuantityChange(
-                                            lineKey,
-                                            e.target.value
-                                          )
-                                        }
-                                        className={styles.quantityInput}
-                                        disabled={isLoading}
-                                      />
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-
-                        <div className={styles.refundSummary}>
-                          <div className={styles.summaryRow}>
-                            <span>Estimated return amount:</span>
-                            <strong>
-                              {formatCurrency(estimatedRefund.grandTotal)}
-                            </strong>
-                          </div>
-                        </div>
-                        {estimatedRefund.linesWithQty > 0 ? (
-                          <p
-                            className={styles.returnEstimateBanner}
-                            role="status"
+              <Stack gap="md">
+                <Text variant="heading3" weight="semibold">
+                  {hasActiveSearch ? 'Matching sales' : 'Recent sales'}
+                </Text>
+                {isLoading ? (
+                  <CenteredLoader label="Loading purchases…" />
+                ) : purchases.length === 0 ? (
+                  <EmptyState
+                    title={
+                      hasActiveSearch
+                        ? 'No sales matched your search'
+                        : 'No sales yet'
+                    }
+                    description={
+                      hasActiveSearch
+                        ? 'Try different criteria or clear the search.'
+                        : undefined
+                    }
+                  />
+                ) : (
+                  <>
+                    <Stack gap="md">
+                      {purchases.map((purchase) => {
+                        const isSelected =
+                          selectedPurchase?.purchaseId === purchase.purchaseId;
+                        return (
+                          <Card
+                            key={purchase.purchaseId}
+                            className={`${styles.selectableCard} ${
+                              isSelected ? styles.selectedCard : ''
+                            }`}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => handleSelectPurchase(purchase)}
+                            onKeyDown={(ev) => {
+                              if (ev.key === 'Enter' || ev.key === ' ') {
+                                ev.preventDefault();
+                                handleSelectPurchase(purchase);
+                              }
+                            }}
                           >
-                            <strong>Estimated credit total:</strong>{' '}
-                            {formatCurrency(estimatedRefund.grandTotal)}
-                            <span className={styles.returnEstimateMuted}>
-                              Same as server: selling price × return qty per line.
-                              Hover “Est. credit” for a notional GST split when rates
-                              apply. Final amount is set when you process the return.
-                            </span>
-                          </p>
-                        ) : null}
+                            <CardBody>
+                              <Stack gap="md">
+                                <Inline justify="between" align="start" gap="md">
+                                  <DetailLine
+                                    label="Invoice No"
+                                    value={purchase.invoiceNo}
+                                  />
+                                  <DetailLine
+                                    label="Date"
+                                    value={formatDate(purchase.soldAt)}
+                                  />
+                                </Inline>
+                                <Grid columns={2} gap="sm">
+                                  <DetailLine
+                                    label="Customer"
+                                    value={purchase.customerName || 'N/A'}
+                                  />
+                                  <DetailLine
+                                    label="Phone"
+                                    value={purchase.customerPhone || 'N/A'}
+                                  />
+                                  <DetailLine
+                                    label="Total"
+                                    value={formatCurrency(purchase.grandTotal)}
+                                  />
+                                  <DetailLine
+                                    label="Payment"
+                                    value={purchase.paymentMethod}
+                                  />
+                                </Grid>
 
-                        {estimatedRefund.linesWithQty > 0 ? (
-                          <div className={styles.returnPaymentSection}>
-                            <PaymentMethodSplit
-                              context="sale"
-                              title="How are you refunding?"
-                              intro="Choose cash, online, credit (reduces what they owe), or a mix. This drives accounting — not the original sale payment."
-                              total={returnTotalNum}
-                              value={{ method: paymentMethod, split: paymentSplit }}
-                              onChange={(next) => {
-                                setPaymentMethod(next.method);
-                                setPaymentSplit(next.split);
-                              }}
-                              disabled={isLoading}
-                            />
-                            {paymentMethod &&
-                            isCreditMethod(paymentMethod) &&
-                            paymentSplit.creditAmount > 0 ? (
-                              <p className={styles.returnPaymentHint}>
-                                ₹{paymentSplit.creditAmount.toFixed(2)} reduces
-                                customer credit (they owe you less).
-                              </p>
-                            ) : null}
-                          </div>
-                        ) : null}
+                                {isSelected && selectedPurchase ? (
+                                  <Stack
+                                    gap="md"
+                                    className={styles.refundSection}
+                                  >
+                                    <Text variant="heading3" weight="semibold">
+                                      Select Items to Return
+                                    </Text>
+                                    <Grid columns={3} gap="sm">
+                                      <DetailLine
+                                        label="Invoice No"
+                                        value={selectedPurchase.invoiceNo}
+                                      />
+                                      <DetailLine
+                                        label="Customer"
+                                        value={
+                                          selectedPurchase.customerName || 'N/A'
+                                        }
+                                      />
+                                      <DetailLine
+                                        label="Date"
+                                        value={formatDate(
+                                          selectedPurchase.soldAt
+                                        )}
+                                      />
+                                    </Grid>
 
-                        <button
-                          className={styles.processRefundBtn}
-                          onClick={handleProcessRefund}
-                          disabled={!canProcessReturn}
-                        >
-                          {isLoading ? 'Processing...' : 'Process Return'}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <PaginationBar
-                page={page}
-                totalPages={totalPages}
-                totalItems={totalItems}
-                onPageChange={setPage}
-                disabled={isLoading}
-                aria-label="Sale pages"
+                                    <Box className={styles.tableScroll}>
+                                      <Table>
+                                        <TableHead>
+                                          <TableRow>
+                                            <TableHeaderCell>
+                                              Item Name
+                                            </TableHeaderCell>
+                                            <TableHeaderCell>MRP</TableHeaderCell>
+                                            <TableHeaderCell>
+                                              Selling Price
+                                            </TableHeaderCell>
+                                            <TableHeaderCell>
+                                              Purchased Qty
+                                            </TableHeaderCell>
+                                            <TableHeaderCell>
+                                              GST rates
+                                            </TableHeaderCell>
+                                            <TableHeaderCell
+                                              className={styles.numericCol}
+                                            >
+                                              Est. credit
+                                            </TableHeaderCell>
+                                            <TableHeaderCell>
+                                              Return Qty
+                                            </TableHeaderCell>
+                                          </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                          {selectedPurchase.items.map(
+                                            (item, index) => {
+                                              const lineKey = refundLineKey(
+                                                item,
+                                                index
+                                              );
+                                              const refundItem =
+                                                refundItems[lineKey];
+                                              const rq =
+                                                refundItem?.quantity ?? 0;
+                                              const lineEst =
+                                                rq > 0
+                                                  ? estimateCustomerRefundLine(
+                                                      rq,
+                                                      item
+                                                    )
+                                                  : null;
+                                              return (
+                                                <TableRow key={lineKey}>
+                                                  <TableCell>{item.name}</TableCell>
+                                                  <TableCell>
+                                                    {formatCurrency(
+                                                      item.maximumRetailPrice
+                                                    )}
+                                                  </TableCell>
+                                                  <TableCell>
+                                                    {formatCurrency(
+                                                      item.priceToRetail
+                                                    )}
+                                                  </TableCell>
+                                                  <TableCell>
+                                                    {item.quantity}
+                                                  </TableCell>
+                                                  <TableCell>
+                                                    {formatGstRatesLabelForSaleLine(
+                                                      item
+                                                    )}
+                                                  </TableCell>
+                                                  <TableCell
+                                                    className={styles.numericCol}
+                                                    title={lineEst?.title}
+                                                  >
+                                                    {lineEst != null
+                                                      ? formatCurrency(
+                                                          lineEst.total
+                                                        )
+                                                      : '—'}
+                                                  </TableCell>
+                                                  <TableCell>
+                                                    <Input
+                                                      type="number"
+                                                      min={0}
+                                                      max={item.quantity}
+                                                      value={
+                                                        refundItem?.quantity || 0
+                                                      }
+                                                      onChange={(e) =>
+                                                        handleRefundQuantityChange(
+                                                          lineKey,
+                                                          e.target.value
+                                                        )
+                                                      }
+                                                      className={
+                                                        styles.quantityInput
+                                                      }
+                                                      disabled={isLoading}
+                                                      aria-label={`Return quantity for ${item.name}`}
+                                                    />
+                                                  </TableCell>
+                                                </TableRow>
+                                              );
+                                            }
+                                          )}
+                                        </TableBody>
+                                      </Table>
+                                    </Box>
+
+                                    <Box className={styles.refundSummary}>
+                                      <Inline
+                                        justify="between"
+                                        align="center"
+                                      >
+                                        <Text>
+                                          Estimated return amount:
+                                        </Text>
+                                        <Text weight="semibold" variant="title">
+                                          {formatCurrency(
+                                            estimatedRefund.grandTotal
+                                          )}
+                                        </Text>
+                                      </Inline>
+                                    </Box>
+
+                                    {estimatedRefund.linesWithQty > 0 ? (
+                                      <Stack
+                                        gap="xs"
+                                        className={styles.returnEstimateBanner}
+                                      >
+                                        <Text weight="semibold">
+                                          Estimated credit total:{' '}
+                                          {formatCurrency(
+                                            estimatedRefund.grandTotal
+                                          )}
+                                        </Text>
+                                        <Text
+                                          variant="caption"
+                                          color="secondary"
+                                          className={
+                                            styles.returnEstimateMuted
+                                          }
+                                        >
+                                          Same as server: selling price × return
+                                          qty per line. Hover “Est. credit” for a
+                                          notional GST split when rates apply.
+                                          Final amount is set when you process the
+                                          return.
+                                        </Text>
+                                      </Stack>
+                                    ) : null}
+
+                                    {estimatedRefund.linesWithQty > 0 ? (
+                                      <Stack
+                                        gap="sm"
+                                        className={styles.returnPaymentSection}
+                                      >
+                                        <PaymentMethodSplit
+                                          context="sale"
+                                          title="How are you refunding?"
+                                          intro="Choose cash, online, credit (reduces what they owe), or a mix. This drives accounting — not the original sale payment."
+                                          total={returnTotalNum}
+                                          value={{
+                                            method: paymentMethod,
+                                            split: paymentSplit,
+                                          }}
+                                          onChange={(next) => {
+                                            setPaymentMethod(next.method);
+                                            setPaymentSplit(next.split);
+                                          }}
+                                          disabled={isLoading}
+                                        />
+                                        {paymentMethod &&
+                                        isCreditMethod(paymentMethod) &&
+                                        paymentSplit.creditAmount > 0 ? (
+                                          <Text
+                                            variant="caption"
+                                            color="secondary"
+                                            className={styles.returnPaymentHint}
+                                          >
+                                            ₹
+                                            {paymentSplit.creditAmount.toFixed(
+                                              2
+                                            )}{' '}
+                                            reduces customer credit (they owe you
+                                            less).
+                                          </Text>
+                                        ) : null}
+                                      </Stack>
+                                    ) : null}
+
+                                    <Button
+                                      type="button"
+                                      variant="solid"
+                                      fullWidth
+                                      disabled={!canProcessReturn}
+                                      onClick={() => void handleProcessRefund()}
+                                    >
+                                      {isLoading
+                                        ? 'Processing...'
+                                        : 'Process Return'}
+                                    </Button>
+                                  </Stack>
+                                ) : null}
+                              </Stack>
+                            </CardBody>
+                          </Card>
+                        );
+                      })}
+                    </Stack>
+                    <PaginationBar
+                      page={page}
+                      totalPages={totalPages}
+                      totalItems={totalItems}
+                      onPageChange={setPage}
+                      disabled={isLoading}
+                      aria-label="Sale pages"
+                    />
+                  </>
+                )}
+              </Stack>
+            </Stack>
+          </CardBody>
+        </Card>
+      ) : null}
+
+      {activeTab === 'history' ? (
+        <Card>
+          <CardBody>
+            <Stack gap="md">
+              <Text variant="heading3" weight="semibold">
+                Return History
+              </Text>
+              <RefundHistoryList
+                refreshTrigger={refundHistoryRefreshTrigger}
               />
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'history' && (
-        <div className={styles.content}>
-          <div className={styles.historySection}>
-            <h3 className={styles.sectionTitle}>Return History</h3>
-            <RefundHistoryList refreshTrigger={refundHistoryRefreshTrigger} />
-          </div>
-        </div>
-      )}
-    </div>
+            </Stack>
+          </CardBody>
+        </Card>
+      ) : null}
+    </Stack>
   );
 }

@@ -1,3 +1,108 @@
+/* RefundPage (ui-kit) */
+.tabBar {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.1rem;
+  margin: 0 -0.25rem;
+  padding: 0 0.25rem;
+  border-bottom: 1px solid var(--border-color);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.tabBar::-webkit-scrollbar {
+  height: 4px;
+}
+
+.tabBar::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+.tab,
+.tabActive {
+  position: relative;
+  margin-bottom: -1px;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+}
+
+.tabActive {
+  border-bottom-color: #3b82f6;
+  color: var(--text-primary);
+}
+
+.searchGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.selectableCard {
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.selectableCard:hover {
+  border-color: #3b82f6;
+}
+
+.selectedCard {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.refundSection {
+  margin-top: 1rem;
+  padding: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-card);
+  border-radius: 8px;
+}
+
+.tableScroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.numericCol {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.quantityInput {
+  width: 5rem;
+  text-align: center;
+}
+
+.refundSummary {
+  padding: 1rem 1.25rem;
+  background: var(--bg-primary);
+  border-radius: 8px;
+}
+
+.returnEstimateBanner {
+  padding: 0.75rem 0.9rem;
+  border-radius: 8px;
+  background: var(--hover-bg, rgba(59, 130, 246, 0.06));
+  border: 1px solid var(--border-color);
+}
+
+.returnEstimateMuted {
+  display: block;
+  margin-top: 0.35rem;
+}
+
+.returnPaymentSection {
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color, #e5e7eb);
+}
+
+.returnPaymentHint {
+  margin-top: 0.25rem;
+}
+
+/* VendorReturnPage (legacy — pending ui-kit migration) */
 .page {
   max-width: 1200px;
   margin: 0 auto;
@@ -26,7 +131,7 @@
   border-bottom: 2px solid var(--border-color);
 }
 
-.tab {
+.tabs .tab {
   padding: 0.75rem 1.5rem;
   background: none;
   border: none;
@@ -39,34 +144,14 @@
   margin-bottom: -2px;
 }
 
-.tab:hover {
+.tabs .tab:hover {
   color: var(--text-primary);
   background: var(--hover-bg);
 }
 
-.activeTab {
+.tabs .activeTab {
   color: var(--text-primary);
   border-bottom-color: #3b82f6;
-}
-
-.errorMessage {
-  padding: 1rem;
-  background: #fee2e2;
-  border: 1px solid #fca5a5;
-  border-radius: 8px;
-  color: #dc2626;
-  margin-bottom: 1.5rem;
-  font-size: 0.9rem;
-}
-
-.successMessage {
-  padding: 1rem;
-  background: #d1fae5;
-  border: 1px solid #86efac;
-  border-radius: 8px;
-  color: #059669;
-  margin-bottom: 1.5rem;
-  font-size: 0.9rem;
 }
 
 .content {
@@ -196,17 +281,6 @@
   color: var(--text-secondary);
 }
 
-.refundSection {
-  margin-top: 1rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--border-color);
-  background: var(--bg-card);
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-left: 0;
-  margin-right: 0;
-}
-
 .purchaseInfo {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -248,21 +322,6 @@
   font-size: 0.95rem;
 }
 
-.quantityInput {
-  width: 80px;
-  padding: 0.5rem;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  font-size: 0.95rem;
-  text-align: center;
-}
-
-.quantityInput:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px var(--focus-ring);
-}
-
 .numericCell {
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -271,31 +330,6 @@
 
 .numericTh {
   text-align: right;
-}
-
-.returnEstimateBanner {
-  margin: 1rem 0 0;
-  padding: 0.75rem 0.9rem;
-  border-radius: 8px;
-  background: var(--hover-bg, rgba(59, 130, 246, 0.06));
-  border: 1px solid var(--border-color);
-  font-size: 0.95rem;
-  color: var(--text-primary);
-}
-
-.returnEstimateMuted {
-  display: block;
-  margin-top: 0.35rem;
-  font-size: 0.8rem;
-  font-weight: 400;
-  color: var(--text-secondary);
-}
-
-.refundSummary {
-  padding: 1.5rem;
-  background: var(--bg-primary);
-  border-radius: 8px;
-  margin-bottom: 1.5rem;
 }
 
 .summaryRow {
@@ -308,18 +342,6 @@
 .summaryRow strong {
   font-size: 1.25rem;
   color: var(--text-primary);
-}
-
-.returnPaymentSection {
-  margin-top: 1.25rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-color, #e5e7eb);
-}
-
-.returnPaymentHint {
-  margin: 0.75rem 0 0;
-  font-size: 0.9rem;
-  color: var(--text-secondary, #6b7280);
 }
 
 .processRefundBtn {
@@ -348,37 +370,6 @@
   margin-top: 0;
 }
 
-.refundsList {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.refundCard {
-  padding: 1.5rem;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-}
-
-.refundHeader {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-  font-size: 0.95rem;
-  color: var(--text-primary);
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.refundDetails {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.75rem;
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-}
-
 .loading,
 .emptyState {
   text-align: center;
@@ -387,43 +378,11 @@
   font-size: 1rem;
 }
 
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 2rem;
-  padding-top: 2rem;
-  border-top: 1px solid var(--border-color);
-}
-
-.pageBtn {
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.pageBtn:hover:not(:disabled) {
-  background: var(--hover-bg);
-  border-color: var(--border-hover);
-}
-
-.pageBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.pageInfo {
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-}
-
 @media (max-width: 768px) {
+  .searchGrid {
+    grid-template-columns: 1fr;
+  }
+
   .page {
     padding: 1rem;
   }
@@ -433,13 +392,11 @@
   }
 
   .purchaseDetails,
-  .refundDetails,
   .purchaseInfo {
     grid-template-columns: 1fr;
   }
 
-  .purchaseHeader,
-  .refundHeader {
+  .purchaseHeader {
     flex-direction: column;
     gap: 0.5rem;
   }
@@ -452,5 +409,9 @@
   .itemsTable td {
     padding: 0.5rem;
   }
-}
 
+  .tabBar .tab,
+  .tabBar .tabActive {
+    font-size: 0.875rem;
+  }
+}

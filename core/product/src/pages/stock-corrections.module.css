@@ -2,153 +2,59 @@
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  display: grid;
-  gap: 1rem;
   padding-bottom: 2rem;
 }
 
-.header {
-  margin-bottom: 0.4rem;
-}
-
-.title {
-  margin: 0;
-  font-size: 1.7rem;
-  font-weight: 700;
-}
-
-.subtitle {
-  margin: 0.35rem 0 0;
-  color: var(--text-secondary);
-}
-
-.card {
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  background: var(--bg-primary);
-  padding: 1rem;
-}
-
-.sectionTitle {
-  font-weight: 700;
-  margin-bottom: 0.75rem;
-}
-
-.row {
+.tabBar {
   display: flex;
-  gap: 0.6rem;
-  margin-bottom: 0.75rem;
+  flex-wrap: nowrap;
+  gap: 0.1rem;
+  margin: 0 -0.25rem;
+  padding: 0 0.25rem;
+  border-bottom: 1px solid var(--border-color);
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
 
-.input {
+.tabBar::-webkit-scrollbar {
+  height: 4px;
+}
+
+.tabBar::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+.tab,
+.tabActive {
+  position: relative;
+  margin-bottom: -1px;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+}
+
+.tabActive {
+  border-bottom-color: #3b82f6;
+  color: var(--text-primary);
+}
+
+.tableScroll {
+  overflow-x: auto;
+}
+
+.searchField {
   flex: 1;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 0.55rem 0.65rem;
-  background: var(--bg-primary);
+  min-width: 200px;
 }
 
 .inputSmall {
   width: 100px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  padding: 0.35rem 0.5rem;
-  background: var(--bg-primary);
-}
-
-.btn {
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background: var(--bg-primary);
-  padding: 0.5rem 0.85rem;
-  cursor: pointer;
-}
-
-.btnLink {
-  border: none;
-  background: transparent;
-  color: #2563eb;
-  cursor: pointer;
-  padding: 0;
-}
-
-.btnLinkDanger {
-  border: none;
-  background: transparent;
-  color: #b91c1c;
-  cursor: pointer;
-  padding: 0;
-}
-
-.tableWrap {
-  overflow-x: auto;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-
-.table th,
-.table td {
-  border-bottom: 1px solid var(--border-color);
-  padding: 0.55rem 0.7rem;
-  text-align: left;
-}
-
-.table th {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-  background: var(--hover-bg);
-}
-
-.table tr:last-child td {
-  border-bottom: none;
-}
-
-.muted {
-  color: var(--text-secondary);
-  padding: 0.75rem;
-}
-
-.error {
-  background: rgb(239 68 68 / 0.1);
-  color: #b91c1c;
-  border-radius: 8px;
-  padding: 0.65rem 0.8rem;
-}
-
-.success {
-  background: rgb(16 185 129 / 0.12);
-  color: #047857;
-  border-radius: 8px;
-  padding: 0.65rem 0.8rem;
-}
-
-.meta {
-  margin: 0.1rem 0 0.6rem;
-  color: var(--text-secondary);
-  font-size: 0.88rem;
-}
-
-.actions {
-  margin-top: 0.7rem;
 }
 
 .block {
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 0.7rem;
-  margin-bottom: 0.7rem;
-}
-
-.rowActions {
-  display: inline-flex;
-  gap: 0.6rem;
 }
 
 .deltaPositive {
@@ -171,45 +77,8 @@
   color: #047857;
 }
 
-.tabs {
-  display: flex;
-  gap: 0.35rem;
-  margin-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 0;
-}
-
-.tabBtn {
-  appearance: none;
-  border: none;
-  background: transparent;
-  padding: 0.65rem 1rem;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  cursor: pointer;
-  border-radius: 8px 8px 0 0;
-  margin-bottom: -1px;
-  border-bottom: 2px solid transparent;
-}
-
-.tabBtn:hover {
-  color: var(--text-primary);
-  background: var(--hover-bg);
-}
-
-.tabActive {
-  color: var(--text-primary);
-  border-bottom-color: #2563eb;
-}
-
-.detailToggle {
-  font-size: 0.8125rem;
-  font-weight: 600;
-}
-
-.historyDetail {
-  padding: 0.75rem 0.5rem;
+.detailCell {
+  padding: 0.75rem 0.5rem !important;
   border-top: 1px dashed var(--border-color);
 }
 
@@ -234,3 +103,6 @@
   font-size: 0.8125rem;
 }
 
+.detailToggle {
+  font-size: 0.8125rem;
+}

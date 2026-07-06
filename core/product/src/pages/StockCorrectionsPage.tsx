@@ -8,6 +8,29 @@ import {
 import { inventoryApi } from '../api/inventory.api';
 import { useAuthStore, useShopAccessStore } from '@inventory-platform/session';
 import type { InventoryCorrection, InventoryCorrectionLine, InventoryItem, VendorPurchaseInvoiceDetail, VendorPurchaseInvoiceSummary } from '@inventory-platform/product/types';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardBody,
+  CenteredLoader,
+  EmptyState,
+  Inline,
+  Input,
+  PageHeader,
+  SearchInput,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableEmptyRow,
+  TableHead,
+  TableHeaderCell,
+  TableLoadingRow,
+  TableRow,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './stock-corrections.module.css';
 
 export function meta() {
@@ -162,6 +185,18 @@ function summarizeApprovedNetImpact(
   if (partial && counted === 0)
     return { total: null, partial: true };
   return { total: sum, partial };
+}
+
+function qtyDeltaClassName(display: string): string | undefined {
+  if (display.startsWith('+')) return styles.deltaPositive;
+  if (display.startsWith('-')) return styles.deltaNegative;
+  return undefined;
+}
+
+function impactClassName(kind: 'neutral' | 'loss' | 'gain' | 'na'): string | undefined {
+  if (kind === 'loss') return styles.impactLoss;
+  if (kind === 'gain') return styles.impactGain;
+  return undefined;
 }
 
 export function StockCorrectionsPage() {
@@ -421,534 +456,597 @@ export function StockCorrectionsPage() {
   };
 
   return (
-    <div className={styles.page}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Correct stock / price</h1>
-        <p className={styles.subtitle}>
-          Search invoices by product, barcode, invoice no, or vendor name;
-          propose quantity corrections and approve lines;
-          and review correction history.
-        </p>
-      </div>
+    <Stack gap="md" className={styles.page}>
+      <PageHeader
+        title="Correct stock / price"
+        description="Search invoices by product, barcode, invoice no, or vendor name; propose quantity corrections and approve lines; and review correction history."
+      />
 
-      {error ? <div className={styles.error}>{error}</div> : null}
-      {success ? <div className={styles.success}>{success}</div> : null}
+      {error ? <Alert variant="danger">{error}</Alert> : null}
+      {success ? <Alert variant="success">{success}</Alert> : null}
 
-      <div
-        className={styles.tabs}
-        role="tablist"
-        aria-label="Stock corrections"
-      >
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'workbench'}
-          className={`${styles.tabBtn} ${activeTab === 'workbench' ? styles.tabActive : ''}`}
-          onClick={() => {
-            if (activeTab !== 'workbench')
-              setExpandedHistoryId(null);
-            setActiveTab('workbench');
-          }}
-        >
-          Workbench
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'history'}
-          className={`${styles.tabBtn} ${activeTab === 'history' ? styles.tabActive : ''}`}
-          onClick={() => {
-            if (activeTab !== 'history')
-              setExpandedHistoryId(null);
-            setActiveTab('history');
-          }}
-        >
-          History
-        </button>
-      </div>
+      <Box as="nav" aria-label="Stock corrections" className={styles.tabBar}>
+        <Inline gap="none">
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            role="tab"
+            aria-selected={activeTab === 'workbench'}
+            className={activeTab === 'workbench' ? styles.tabActive : styles.tab}
+            onClick={() => {
+              if (activeTab !== 'workbench') setExpandedHistoryId(null);
+              setActiveTab('workbench');
+            }}
+          >
+            Workbench
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            role="tab"
+            aria-selected={activeTab === 'history'}
+            className={activeTab === 'history' ? styles.tabActive : styles.tab}
+            onClick={() => {
+              if (activeTab !== 'history') setExpandedHistoryId(null);
+              setActiveTab('history');
+            }}
+          >
+            History
+          </Button>
+        </Inline>
+      </Box>
 
       {activeTab === 'workbench' ? (
-      <>
-      <section className={styles.card}>
-        <div className={styles.row}>
-          <input
-            className={styles.input}
-            placeholder="Product, barcode, invoice no, or vendor"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          <button
-            type="button"
-            className={styles.btn}
-            disabled={searching}
-            onClick={searchInvoices}
-          >
-            {searching ? 'Searching...' : 'Search'}
-          </button>
-        </div>
-        <div className={styles.tableWrap}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Invoice</th>
-                <th>Vendor</th>
-                <th>Date</th>
-                <th>Lines</th>
-                <th>Total</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {invoiceResults.map((inv) => (
-                <tr key={inv.id}>
-                  <td>{inv.invoiceNo}</td>
-                  <td>{vendorName(inv)}</td>
-                  <td>{dt(inv.invoiceDate)}</td>
-                  <td>{inv.lineCount}</td>
-                  <td>{money(inv.invoiceTotal)}</td>
-                  <td>
-                    <button
-                      type="button"
-                      className={styles.btnLink}
-                      onClick={() => pickInvoice(inv.id)}
-                    >
-                      Select
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {invoiceResults.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className={styles.muted}>
-                    No results yet.
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section className={styles.card}>
-        <div className={styles.sectionTitle}>Create pending correction</div>
-        {!selectedInvoice ? (
-          <div className={styles.muted}>Select an invoice above first.</div>
-        ) : (
-          <>
-            <div className={styles.meta}>
-              <strong>{selectedInvoice.invoiceNo}</strong> ·{' '}
-              {vendorName(selectedInvoice)} ·{' '}
-              {correctionInvoiceSubtitle(selectedInvoice)}
-            </div>
-            <div className={styles.tableWrap}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Product</th>
-                    <th>Batch</th>
-                    <th title="Quantity received on this stock-in">
-                      Received qty
-                    </th>
-                    <th>Current qty</th>
-                    <th>Corrected qty</th>
-                    <th>Change</th>
-                    <th title="Loss at cost when qty drops; gain at selling price when qty rises">
-                      Impact
-                    </th>
-                    <th>Cost price</th>
-                    <th>Selling price</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {correctionRows.map((row) => (
-                    <tr key={row.inventoryId}>
-                      <td>{row.name}</td>
-                      <td>{row.batchNo ?? '-'}</td>
-                      <td>
-                        {row.receivedQty != null &&
-                        Number.isFinite(Number(row.receivedQty))
-                          ? row.receivedQty
-                          : '—'}
-                      </td>
-                      <td>{row.currentCount ?? '-'}</td>
-                      <td>
-                        <input
-                          className={styles.inputSmall}
-                          value={row.requestedCount}
-                          onChange={(e) =>
-                            setDraftQtyByInventoryId((prev) => ({
-                              ...prev,
-                              [row.inventoryId]: e.target.value,
-                            }))
-                          }
-                          placeholder="new qty"
-                        />
-                      </td>
-                      <td>
-                        <span
-                          className={
-                            row.qtyDeltaDisplay.startsWith('+')
-                              ? styles.deltaPositive
-                              : row.qtyDeltaDisplay.startsWith('-')
-                                ? styles.deltaNegative
-                                : undefined
-                          }
-                        >
-                          {row.qtyDeltaDisplay}
-                        </span>
-                      </td>
-                      <td>
-                        <span
-                          className={
-                            row.impact.kind === 'loss'
-                              ? styles.impactLoss
-                              : row.impact.kind === 'gain'
-                                ? styles.impactGain
-                                : undefined
-                          }
-                        >
-                          {row.impact.text}
-                        </span>
-                      </td>
-                      <td>{money(row.costPrice)}</td>
-                      <td>{money(row.sellingPrice)}</td>
-                    </tr>
-                  ))}
-                  {correctionRows.length === 0 ? (
-                    <tr>
-                      <td colSpan={9} className={styles.muted}>
-                        No inventory lines found for correction.
-                      </td>
-                    </tr>
-                  ) : null}
-                </tbody>
-              </table>
-            </div>
-            <div className={styles.actions}>
-              <button
-                type="button"
-                className={styles.btn}
-                disabled={submitting}
-                onClick={submitCorrection}
-              >
-                {submitting ? 'Submitting...' : 'Send to pending'}
-              </button>
-            </div>
-          </>
-        )}
-      </section>
-
-      <section className={styles.card}>
-        <div className={styles.sectionTitle}>Pending approvals</div>
-        {!canApproveCorrections ? (
-          <p className={styles.muted}>
-            Pending corrections are listed below. Only the shop owner or a manager
-            can approve or reject them.
-          </p>
-        ) : null}
-        {pendingLoading ? (
-          <div className={styles.muted}>Loading pending...</div>
-        ) : pending.length === 0 ? (
-          <div className={styles.muted}>No pending corrections.</div>
-        ) : (
-          pending.map((c) => (
-            <div key={c.id} className={styles.block}>
-              <div className={styles.meta}>
-                <strong>{c.invoiceNo ?? 'No invoice'}</strong> ·{' '}
-                {c.vendorName ?? 'Unknown vendor'} · {dt(c.createdAt)}
-              </div>
-              <div className={styles.tableWrap}>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th>Product</th>
-                      <th>Prev qty</th>
-                      <th>Requested qty</th>
-                      <th>Status</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {c.lines.map((line) => (
-                      <tr key={line.lineId}>
-                        <td>{line.productName ?? line.inventoryId}</td>
-                        <td>{line.previousCurrentCount ?? '-'}</td>
-                        <td>{line.requestedCurrentCount}</td>
-                        <td>{line.status}</td>
-                        <td>
-                          {line.status === 'PENDING' && canApproveCorrections ? (
-                            <div className={styles.rowActions}>
-                              <button
+        <>
+          <Card>
+            <CardBody>
+              <Stack gap="md">
+                <SearchInput
+                  value={query}
+                  onChange={setQuery}
+                  onSearch={searchInvoices}
+                  showSearchButton
+                  placeholder="Product, barcode, invoice no, or vendor"
+                  className={styles.searchField}
+                />
+                <Box className={styles.tableScroll}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableHeaderCell>Invoice</TableHeaderCell>
+                        <TableHeaderCell>Vendor</TableHeaderCell>
+                        <TableHeaderCell>Date</TableHeaderCell>
+                        <TableHeaderCell>Lines</TableHeaderCell>
+                        <TableHeaderCell>Total</TableHeaderCell>
+                        <TableHeaderCell></TableHeaderCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {searching ? (
+                        <TableLoadingRow colSpan={6} label="Searching…" />
+                      ) : invoiceResults.length === 0 ? (
+                        <TableEmptyRow colSpan={6} message="No results yet." />
+                      ) : (
+                        invoiceResults.map((inv) => (
+                          <TableRow key={inv.id}>
+                            <TableCell>{inv.invoiceNo}</TableCell>
+                            <TableCell>{vendorName(inv)}</TableCell>
+                            <TableCell>{dt(inv.invoiceDate)}</TableCell>
+                            <TableCell>{inv.lineCount}</TableCell>
+                            <TableCell>{money(inv.invoiceTotal)}</TableCell>
+                            <TableCell>
+                              <Button
                                 type="button"
-                                className={styles.btnLink}
-                                disabled={lineBusy != null}
-                                onClick={() =>
-                                  processLine(c.id, line.lineId, 'approve')
-                                }
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => pickInvoice(inv.id)}
                               >
-                                {lineBusy === `${c.id}:${line.lineId}:approve`
-                                  ? 'Approving...'
-                                  : 'Approve'}
-                              </button>
-                              <button
-                                type="button"
-                                className={styles.btnLinkDanger}
-                                disabled={lineBusy != null}
-                                onClick={() =>
-                                  processLine(c.id, line.lineId, 'reject')
-                                }
-                              >
-                                {lineBusy === `${c.id}:${line.lineId}:reject`
-                                  ? 'Rejecting...'
-                                  : 'Reject'}
-                              </button>
-                            </div>
+                                Select
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </Box>
+              </Stack>
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardBody>
+              <Stack gap="md">
+                <Text variant="heading3" weight="semibold">
+                  Create pending correction
+                </Text>
+                {!selectedInvoice ? (
+                  <Text color="secondary">Select an invoice above first.</Text>
+                ) : (
+                  <>
+                    <Text color="secondary" variant="caption">
+                      <Text as="span" weight="semibold">
+                        {selectedInvoice.invoiceNo}
+                      </Text>
+                      {' · '}
+                      {vendorName(selectedInvoice)}
+                      {' · '}
+                      {correctionInvoiceSubtitle(selectedInvoice)}
+                    </Text>
+                    <Box className={styles.tableScroll}>
+                      <Table>
+                        <TableHead>
+                          <TableRow>
+                            <TableHeaderCell>Product</TableHeaderCell>
+                            <TableHeaderCell>Batch</TableHeaderCell>
+                            <TableHeaderCell title="Quantity received on this stock-in">
+                              Received qty
+                            </TableHeaderCell>
+                            <TableHeaderCell>Current qty</TableHeaderCell>
+                            <TableHeaderCell>Corrected qty</TableHeaderCell>
+                            <TableHeaderCell>Change</TableHeaderCell>
+                            <TableHeaderCell title="Loss at cost when qty drops; gain at selling price when qty rises">
+                              Impact
+                            </TableHeaderCell>
+                            <TableHeaderCell>Cost price</TableHeaderCell>
+                            <TableHeaderCell>Selling price</TableHeaderCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {correctionRows.length === 0 ? (
+                            <TableEmptyRow
+                              colSpan={9}
+                              message="No inventory lines found for correction."
+                            />
                           ) : (
-                            '-'
+                            correctionRows.map((row) => (
+                              <TableRow key={row.inventoryId}>
+                                <TableCell>{row.name}</TableCell>
+                                <TableCell>{row.batchNo ?? '-'}</TableCell>
+                                <TableCell>
+                                  {row.receivedQty != null &&
+                                  Number.isFinite(Number(row.receivedQty))
+                                    ? row.receivedQty
+                                    : '—'}
+                                </TableCell>
+                                <TableCell>{row.currentCount ?? '-'}</TableCell>
+                                <TableCell>
+                                  <Input
+                                    className={styles.inputSmall}
+                                    value={row.requestedCount}
+                                    onChange={(e) =>
+                                      setDraftQtyByInventoryId((prev) => ({
+                                        ...prev,
+                                        [row.inventoryId]: e.target.value,
+                                      }))
+                                    }
+                                    placeholder="new qty"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Text
+                                    as="span"
+                                    weight="semibold"
+                                    className={qtyDeltaClassName(row.qtyDeltaDisplay)}
+                                  >
+                                    {row.qtyDeltaDisplay}
+                                  </Text>
+                                </TableCell>
+                                <TableCell>
+                                  <Text
+                                    as="span"
+                                    weight="semibold"
+                                    className={impactClassName(row.impact.kind)}
+                                  >
+                                    {row.impact.text}
+                                  </Text>
+                                </TableCell>
+                                <TableCell>{money(row.costPrice)}</TableCell>
+                                <TableCell>{money(row.sellingPrice)}</TableCell>
+                              </TableRow>
+                            ))
                           )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ))
-        )}
-      </section>
-      </>
+                        </TableBody>
+                      </Table>
+                    </Box>
+                    <Inline>
+                      <Button
+                        type="button"
+                        loading={submitting}
+                        disabled={submitting}
+                        onClick={submitCorrection}
+                      >
+                        {submitting ? 'Submitting...' : 'Send to pending'}
+                      </Button>
+                    </Inline>
+                  </>
+                )}
+              </Stack>
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardBody>
+              <Stack gap="md">
+                <Text variant="heading3" weight="semibold">
+                  Pending approvals
+                </Text>
+                {!canApproveCorrections ? (
+                  <Text color="secondary">
+                    Pending corrections are listed below. Only the shop owner or a
+                    manager can approve or reject them.
+                  </Text>
+                ) : null}
+                {pendingLoading ? (
+                  <CenteredLoader label="Loading pending…" />
+                ) : pending.length === 0 ? (
+                  <EmptyState title="No pending corrections." />
+                ) : (
+                  pending.map((c) => (
+                    <Box key={c.id} className={styles.block}>
+                      <Stack gap="sm">
+                        <Text color="secondary" variant="caption">
+                          <Text as="span" weight="semibold">
+                            {c.invoiceNo ?? 'No invoice'}
+                          </Text>
+                          {' · '}
+                          {c.vendorName ?? 'Unknown vendor'}
+                          {' · '}
+                          {dt(c.createdAt)}
+                        </Text>
+                        <Box className={styles.tableScroll}>
+                          <Table>
+                            <TableHead>
+                              <TableRow>
+                                <TableHeaderCell>Product</TableHeaderCell>
+                                <TableHeaderCell>Prev qty</TableHeaderCell>
+                                <TableHeaderCell>Requested qty</TableHeaderCell>
+                                <TableHeaderCell>Status</TableHeaderCell>
+                                <TableHeaderCell></TableHeaderCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {c.lines.map((line) => (
+                                <TableRow key={line.lineId}>
+                                  <TableCell>
+                                    {line.productName ?? line.inventoryId}
+                                  </TableCell>
+                                  <TableCell>
+                                    {line.previousCurrentCount ?? '-'}
+                                  </TableCell>
+                                  <TableCell>{line.requestedCurrentCount}</TableCell>
+                                  <TableCell>{line.status}</TableCell>
+                                  <TableCell>
+                                    {line.status === 'PENDING' &&
+                                    canApproveCorrections ? (
+                                      <Inline gap="sm">
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="ghost"
+                                          disabled={lineBusy != null}
+                                          loading={
+                                            lineBusy ===
+                                            `${c.id}:${line.lineId}:approve`
+                                          }
+                                          onClick={() =>
+                                            processLine(c.id, line.lineId, 'approve')
+                                          }
+                                        >
+                                          {lineBusy ===
+                                          `${c.id}:${line.lineId}:approve`
+                                            ? 'Approving...'
+                                            : 'Approve'}
+                                        </Button>
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="outline"
+                                          disabled={lineBusy != null}
+                                          loading={
+                                            lineBusy ===
+                                            `${c.id}:${line.lineId}:reject`
+                                          }
+                                          onClick={() =>
+                                            processLine(c.id, line.lineId, 'reject')
+                                          }
+                                        >
+                                          {lineBusy ===
+                                          `${c.id}:${line.lineId}:reject`
+                                            ? 'Rejecting...'
+                                            : 'Reject'}
+                                        </Button>
+                                      </Inline>
+                                    ) : (
+                                      '-'
+                                    )}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </Box>
+                      </Stack>
+                    </Box>
+                  ))
+                )}
+              </Stack>
+            </CardBody>
+          </Card>
+        </>
       ) : null}
 
       {activeTab === 'history' ? (
-      <section className={styles.card}>
-        <div className={styles.sectionTitle}>Correction history</div>
-        <p className={styles.historyDetailCaption}>
-          Net impact sums <strong>approved</strong> lines only — shrinkage valued at{' '}
-          <strong>cost</strong>, extras at <strong>selling price</strong> (from current
-          inventory pricing when you open this tab).
-        </p>
-        {historyLoading ? (
-          <div className={styles.muted}>Loading history…</div>
-        ) : history.length === 0 ? (
-          <div className={styles.muted}>No correction history yet.</div>
-        ) : (
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th></th>
-                  <th>Invoice</th>
-                  <th>Vendor</th>
-                  <th>Status</th>
-                  <th>Lines</th>
-                  <th>Approved</th>
-                  <th>Net impact</th>
-                  <th>Created</th>
-                </tr>
-              </thead>
-              <tbody>
-                {history.map((c) => {
-                  const approvedCount = c.lines.filter(
-                    (l) => l.status === 'APPROVED'
-                  ).length;
-                  const { total: netTotal, partial: netPartial } =
-                    summarizeApprovedNetImpact(c, historyInventoryById);
-                  const open = expandedHistoryId === c.id;
-                  return (
-                    <Fragment key={c.id}>
-                      <tr>
-                        <td>
-                          <button
-                            type="button"
-                            className={`${styles.btnLink} ${styles.detailToggle}`}
-                            onClick={() =>
-                              setExpandedHistoryId(open ? null : c.id)
-                            }
-                            aria-expanded={open}
-                          >
-                            {open ? 'Hide' : 'Details'}
-                          </button>
-                        </td>
-                        <td>{c.invoiceNo ?? '-'}</td>
-                        <td>{c.vendorName ?? '-'}</td>
-                        <td>{c.status}</td>
-                        <td>{c.lines.length}</td>
-                        <td>{approvedCount}</td>
-                        <td className={styles.netCell}>
-                          {approvedCount === 0 ? (
-                            '—'
-                          ) : netTotal == null ? (
-                            <>
-                              <span>—</span>
-                              {netPartial ? (
-                                <span
-                                  className={styles.estPartial}
-                                  title="Approved lines missing cost or selling price on file"
+        <Card>
+          <CardBody>
+            <Stack gap="md">
+              <Text variant="heading3" weight="semibold">
+                Correction history
+              </Text>
+              <Text
+                variant="caption"
+                color="secondary"
+                className={styles.historyDetailCaption}
+              >
+                Net impact sums{' '}
+                <Text as="span" weight="semibold">
+                  approved
+                </Text>{' '}
+                lines only — shrinkage valued at{' '}
+                <Text as="span" weight="semibold">
+                  cost
+                </Text>
+                , extras at{' '}
+                <Text as="span" weight="semibold">
+                  selling price
+                </Text>{' '}
+                (from current inventory pricing when you open this tab).
+              </Text>
+              {historyLoading ? (
+                <CenteredLoader label="Loading history…" />
+              ) : history.length === 0 ? (
+                <EmptyState title="No correction history yet." />
+              ) : (
+                <Box className={styles.tableScroll}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableHeaderCell></TableHeaderCell>
+                        <TableHeaderCell>Invoice</TableHeaderCell>
+                        <TableHeaderCell>Vendor</TableHeaderCell>
+                        <TableHeaderCell>Status</TableHeaderCell>
+                        <TableHeaderCell>Lines</TableHeaderCell>
+                        <TableHeaderCell>Approved</TableHeaderCell>
+                        <TableHeaderCell>Net impact</TableHeaderCell>
+                        <TableHeaderCell>Created</TableHeaderCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {history.map((c) => {
+                        const approvedCount = c.lines.filter(
+                          (l) => l.status === 'APPROVED'
+                        ).length;
+                        const { total: netTotal, partial: netPartial } =
+                          summarizeApprovedNetImpact(c, historyInventoryById);
+                        const open = expandedHistoryId === c.id;
+                        return (
+                          <Fragment key={c.id}>
+                            <TableRow>
+                              <TableCell>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  className={styles.detailToggle}
+                                  onClick={() =>
+                                    setExpandedHistoryId(open ? null : c.id)
+                                  }
+                                  aria-expanded={open}
                                 >
-                                  {' '}
-                                  *
-                                </span>
-                              ) : null}
-                            </>
-                          ) : (
-                            <>
-                              <span
-                                className={
-                                  netTotal > 0
-                                    ? styles.impactGain
-                                    : netTotal < 0
-                                      ? styles.impactLoss
-                                      : undefined
-                                }
-                              >
-                                {money(netTotal)}
-                              </span>
-                              {netPartial ? (
-                                <span
-                                  className={styles.estPartial}
-                                  title="Some approved lines had no cost or selling price — total excludes those lines"
-                                >
-                                  {' '}
-                                  *
-                                </span>
-                              ) : null}
-                            </>
-                          )}
-                        </td>
-                        <td>{dt(c.createdAt)}</td>
-                      </tr>
-                      {open ? (
-                        <tr>
-                          <td colSpan={8} className={styles.historyDetail}>
-                            <div className={styles.historyDetailCaption}>
-                              Line breakdown: change vs quantity before correction. Impact
-                              uses the same rules as Workbench (loss at cost, gain at
-                              selling price). Rejected lines were not applied. An
-                              asterisk on net impact means some approved lines lack
-                              pricing on file or were excluded from the total.
-                              {netPartial && approvedCount > 0 ? (
-                                <> Some rows above may show “—” for impact until pricing loads or is filled in.</>
-                              ) : null}
-                            </div>
-                            <div className={styles.tableWrap}>
-                              <table className={styles.table}>
-                                <thead>
-                                  <tr>
-                                    <th>Product</th>
-                                    <th>Prev qty</th>
-                                    <th>Requested</th>
-                                    <th>Change</th>
-                                    <th>Impact</th>
-                                    <th>Status</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {c.lines.map((line) => {
-                                    const inv =
-                                      historyInventoryById[line.inventoryId];
-                                    const prev = parseDisplayNumber(
-                                      line.previousCurrentCount
-                                    );
-                                    const req = Number(line.requestedCurrentCount);
-                                    const qtyOk =
-                                      prev != null && Number.isFinite(req);
-                                    const qtyDisplay = qtyOk
-                                      ? formatQtyDelta(req, prev)
-                                      : '—';
-                                    const impactUi =
-                                      qtyOk
-                                        ? formatStockImpact({
-                                            corrected: req,
-                                            current: prev,
-                                            costPrice:
-                                              inv?.costPrice != null
-                                                ? Number(inv.costPrice)
-                                                : null,
-                                            sellingPrice:
-                                              inv?.sellingPrice != null
-                                                ? Number(inv.sellingPrice)
-                                                : inv?.priceToRetail != null
-                                                  ? Number(inv.priceToRetail)
-                                                  : null,
-                                          })
-                                        : {
-                                            text: '—',
-                                            kind: 'neutral' as const,
-                                          };
+                                  {open ? 'Hide' : 'Details'}
+                                </Button>
+                              </TableCell>
+                              <TableCell>{c.invoiceNo ?? '-'}</TableCell>
+                              <TableCell>{c.vendorName ?? '-'}</TableCell>
+                              <TableCell>{c.status}</TableCell>
+                              <TableCell>{c.lines.length}</TableCell>
+                              <TableCell>{approvedCount}</TableCell>
+                              <TableCell className={styles.netCell}>
+                                {approvedCount === 0 ? (
+                                  '—'
+                                ) : netTotal == null ? (
+                                  <Inline gap="none" align="center">
+                                    <Text as="span">—</Text>
+                                    {netPartial ? (
+                                      <Text
+                                        as="span"
+                                        className={styles.estPartial}
+                                      >
+                                        {' '}
+                                        *
+                                      </Text>
+                                    ) : null}
+                                  </Inline>
+                                ) : (
+                                  <Inline gap="none" align="center">
+                                    <Text
+                                      as="span"
+                                      weight="semibold"
+                                      className={
+                                        netTotal > 0
+                                          ? styles.impactGain
+                                          : netTotal < 0
+                                            ? styles.impactLoss
+                                            : undefined
+                                      }
+                                    >
+                                      {money(netTotal)}
+                                    </Text>
+                                    {netPartial ? (
+                                      <Text
+                                        as="span"
+                                        className={styles.estPartial}
+                                      >
+                                        {' '}
+                                        *
+                                      </Text>
+                                    ) : null}
+                                  </Inline>
+                                )}
+                              </TableCell>
+                              <TableCell>{dt(c.createdAt)}</TableCell>
+                            </TableRow>
+                            {open ? (
+                              <TableRow>
+                                <TableCell colSpan={8} className={styles.detailCell}>
+                                  <Stack gap="sm">
+                                    <Text
+                                      variant="caption"
+                                      color="secondary"
+                                      className={styles.historyDetailCaption}
+                                    >
+                                      Line breakdown: change vs quantity before
+                                      correction. Impact uses the same rules as
+                                      Workbench (loss at cost, gain at selling
+                                      price). Rejected lines were not applied. An
+                                      asterisk on net impact means some approved
+                                      lines lack pricing on file or were excluded
+                                      from the total.
+                                      {netPartial && approvedCount > 0 ? (
+                                        <>
+                                          {' '}
+                                          Some rows above may show “—” for impact
+                                          until pricing loads or is filled in.
+                                        </>
+                                      ) : null}
+                                    </Text>
+                                    <Box className={styles.tableScroll}>
+                                      <Table>
+                                        <TableHead>
+                                          <TableRow>
+                                            <TableHeaderCell>Product</TableHeaderCell>
+                                            <TableHeaderCell>Prev qty</TableHeaderCell>
+                                            <TableHeaderCell>Requested</TableHeaderCell>
+                                            <TableHeaderCell>Change</TableHeaderCell>
+                                            <TableHeaderCell>Impact</TableHeaderCell>
+                                            <TableHeaderCell>Status</TableHeaderCell>
+                                          </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                          {c.lines.map((line) => {
+                                            const inv =
+                                              historyInventoryById[line.inventoryId];
+                                            const prev = parseDisplayNumber(
+                                              line.previousCurrentCount
+                                            );
+                                            const req = Number(
+                                              line.requestedCurrentCount
+                                            );
+                                            const qtyOk =
+                                              prev != null && Number.isFinite(req);
+                                            const qtyDisplay = qtyOk
+                                              ? formatQtyDelta(req, prev)
+                                              : '—';
+                                            const impactUi = qtyOk
+                                              ? formatStockImpact({
+                                                  corrected: req,
+                                                  current: prev,
+                                                  costPrice:
+                                                    inv?.costPrice != null
+                                                      ? Number(inv.costPrice)
+                                                      : null,
+                                                  sellingPrice:
+                                                    inv?.sellingPrice != null
+                                                      ? Number(inv.sellingPrice)
+                                                      : inv?.priceToRetail != null
+                                                        ? Number(inv.priceToRetail)
+                                                        : null,
+                                                })
+                                              : {
+                                                  text: '—',
+                                                  kind: 'neutral' as const,
+                                                };
 
-                                    const statusHint =
-                                      line.status === 'REJECTED'
-                                        ? ' (not applied)'
-                                        : line.status !== 'APPROVED'
-                                          ? ''
-                                          : '';
-                                    return (
-                                      <tr key={line.lineId}>
-                                        <td>
-                                          {line.productName ?? '—'}{' '}
-                                          {inv?.batchNo ? (
-                                            <span className={styles.estPartial}>
-                                              · batch {inv.batchNo}
-                                            </span>
-                                          ) : null}
-                                        </td>
-                                        <td>
-                                          {line.previousCurrentCount ?? '—'}
-                                        </td>
-                                        <td>{line.requestedCurrentCount}</td>
-                                        <td>
-                                          <span
-                                            className={
-                                              qtyDisplay.startsWith('+')
-                                                ? styles.deltaPositive
-                                                : qtyDisplay.startsWith('-')
-                                                  ? styles.deltaNegative
-                                                  : undefined
-                                            }
-                                          >
-                                            {qtyDisplay}
-                                          </span>
-                                        </td>
-                                        <td>
-                                          <span
-                                            className={
-                                              impactUi.kind === 'loss'
-                                                ? styles.impactLoss
-                                                : impactUi.kind === 'gain'
-                                                  ? styles.impactGain
-                                                  : undefined
-                                            }
-                                          >
-                                            {impactUi.text}
-                                          </span>
-                                        </td>
-                                        <td className={styles.lineStatusMuted}>
-                                          {line.status}
-                                          {statusHint}
-                                          {line.rejectionReason &&
-                                          line.status === 'REJECTED' ? (
-                                            <> — {line.rejectionReason}</>
-                                          ) : null}
-                                        </td>
-                                      </tr>
-                                    );
-                                  })}
-                                </tbody>
-                              </table>
-                            </div>
-                          </td>
-                        </tr>
-                      ) : null}
-                    </Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+                                            const statusHint =
+                                              line.status === 'REJECTED'
+                                                ? ' (not applied)'
+                                                : line.status !== 'APPROVED'
+                                                  ? ''
+                                                  : '';
+                                            return (
+                                              <TableRow key={line.lineId}>
+                                                <TableCell>
+                                                  {line.productName ?? '—'}{' '}
+                                                  {inv?.batchNo ? (
+                                                    <Text
+                                                      as="span"
+                                                      className={styles.estPartial}
+                                                    >
+                                                      · batch {inv.batchNo}
+                                                    </Text>
+                                                  ) : null}
+                                                </TableCell>
+                                                <TableCell>
+                                                  {line.previousCurrentCount ?? '—'}
+                                                </TableCell>
+                                                <TableCell>
+                                                  {line.requestedCurrentCount}
+                                                </TableCell>
+                                                <TableCell>
+                                                  <Text
+                                                    as="span"
+                                                    weight="semibold"
+                                                    className={qtyDeltaClassName(
+                                                      qtyDisplay
+                                                    )}
+                                                  >
+                                                    {qtyDisplay}
+                                                  </Text>
+                                                </TableCell>
+                                                <TableCell>
+                                                  <Text
+                                                    as="span"
+                                                    weight="semibold"
+                                                    className={impactClassName(
+                                                      impactUi.kind
+                                                    )}
+                                                  >
+                                                    {impactUi.text}
+                                                  </Text>
+                                                </TableCell>
+                                                <TableCell
+                                                  className={styles.lineStatusMuted}
+                                                >
+                                                  {line.status}
+                                                  {statusHint}
+                                                  {line.rejectionReason &&
+                                                  line.status === 'REJECTED' ? (
+                                                    <> — {line.rejectionReason}</>
+                                                  ) : null}
+                                                </TableCell>
+                                              </TableRow>
+                                            );
+                                          })}
+                                        </TableBody>
+                                      </Table>
+                                    </Box>
+                                  </Stack>
+                                </TableCell>
+                              </TableRow>
+                            ) : null}
+                          </Fragment>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </Box>
+              )}
+            </Stack>
+          </CardBody>
+        </Card>
       ) : null}
-    </div>
+    </Stack>
   );
 }
-

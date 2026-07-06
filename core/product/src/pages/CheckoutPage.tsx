@@ -1,8 +1,29 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { cartApi } from '../api/cart.api';
 import type { CartResponse, UpdateCartStatusDto } from '@inventory-platform/product/types';
 import type { PaymentMethod, PaymentSplit } from '@inventory-platform/contracts';
+import {
+  Alert,
+  Badge,
+  Box,
+  Button,
+  Card,
+  CardBody,
+  CenteredLoader,
+  EmptyState,
+  Grid,
+  Inline,
+  PageHeader,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
+  Text,
+} from '@inventory-platform/ui-kit';
 import {
   PaymentMethodSplit,
   emptyPaymentSplit,
@@ -22,6 +43,47 @@ export function meta() {
     { title: 'Checkout - StockKart' },
     { name: 'description', content: 'Review and complete your purchase' },
   ];
+}
+
+function InfoField({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <Stack gap="xs">
+      <Text variant="label" color="secondary" weight="medium">
+        {label}
+      </Text>
+      <Text weight="semibold">{value}</Text>
+    </Stack>
+  );
+}
+
+function SummaryRow({
+  label,
+  value,
+  total,
+}: {
+  label: string;
+  value: string;
+  total?: boolean;
+}) {
+  if (total) {
+    return (
+      <Inline justify="between" width="full" className={styles.summaryRowTotal}>
+        <Text variant="title" weight="bold">
+          {label}
+        </Text>
+        <Text variant="title" weight="bold">
+          {value}
+        </Text>
+      </Inline>
+    );
+  }
+
+  return (
+    <Inline justify="between" width="full" className={styles.summaryRow}>
+      <Text color="secondary">{label}</Text>
+      <Text color="secondary">{value}</Text>
+    </Inline>
+  );
 }
 
 export function CheckoutPage() {
@@ -117,29 +179,29 @@ export function CheckoutPage() {
 
   if (isLoading) {
     return (
-      <div className={styles.page}>
-        <div className={styles.errorContainer}>
-          <h2>Loading...</h2>
-          <p>Please wait while we load your cart data.</p>
-        </div>
-      </div>
+      <Stack gap="md" className={styles.page}>
+        <Card>
+          <CardBody>
+            <CenteredLoader label="Please wait while we load your cart data." />
+          </CardBody>
+        </Card>
+      </Stack>
     );
   }
 
   if (!checkoutData) {
     return (
-      <div className={styles.page}>
-        <div className={styles.errorContainer}>
-          <h2>No checkout data found</h2>
-          <p>Please start a new transaction from the sell page.</p>
-          <button
-            className={styles.backBtn}
-            onClick={() => navigate(sellPath)}
-          >
-            Go to Sell
-          </button>
-        </div>
-      </div>
+      <Stack gap="md" className={styles.page}>
+        <EmptyState
+          title="No checkout data found"
+          description="Please start a new transaction from the sell page."
+          action={
+            <Button variant="solid" onClick={() => navigate(sellPath)}>
+              Go to Sell
+            </Button>
+          }
+        />
+      </Stack>
     );
   }
 
@@ -270,397 +332,414 @@ export function CheckoutPage() {
     minute: '2-digit',
   });
 
+  const paymentSplitLine = formatPaymentSplit({
+    cashAmount: checkoutData.cashAmount ?? undefined,
+    onlineAmount: checkoutData.onlineAmount ?? undefined,
+    creditAmount: checkoutData.creditAmount ?? undefined,
+  });
+
+  const statusBadgeVariant =
+    checkoutData.status === 'COMPLETED' ? 'success' : 'warning';
+
+  const invoiceSubtitle = `Invoice #${checkoutData.invoiceNo}${
+    showTokenOnReceipt && checkoutData.tokenNo != null
+      ? ` · Token #${checkoutData.tokenNo}`
+      : ''
+  }`;
+
   // Show success overlay
   if (showSuccess) {
     return (
-      <div className={styles.successOverlay}>
-        <div className={styles.successContainer}>
-          <div className={styles.successIcon}>
-            <div className={styles.checkmarkContainer}>
-              <svg
-                className={styles.checkmark}
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 52 52"
+      <Box
+        className={styles.successOverlay}
+        display="flex"
+        align="center"
+        justify="center"
+      >
+        <Card className={styles.successContainer}>
+          <CardBody>
+            <Stack gap="md" align="center">
+              <Box
+                className={styles.checkmarkContainer}
+                display="flex"
+                align="center"
+                justify="center"
               >
-                <circle
-                  className={styles.checkmarkCircle}
-                  cx="26"
-                  cy="26"
-                  r="25"
-                  fill="none"
-                />
-                <path
-                  className={styles.checkmarkCheck}
-                  fill="none"
-                  d="M14.1 27.2l7.1 7.2 16.7-16.8"
-                />
-              </svg>
-            </div>
-          </div>
-          <h2 className={styles.successTitle}>Order Successful!</h2>
-          {showTokenOnReceipt && checkoutData?.tokenNo != null && (
-            <p className={styles.tokenNo}>
-              Token #{checkoutData.tokenNo}
-            </p>
-          )}
-          <p className={styles.successMessage}>
-            Your payment has been processed successfully.
-          </p>
-        </div>
-      </div>
+                <Text className={styles.checkmark} weight="bold">
+                  ✓
+                </Text>
+              </Box>
+              <Text
+                variant="title"
+                weight="bold"
+                align="center"
+                className={styles.successTitle}
+              >
+                Order Successful!
+              </Text>
+              {showTokenOnReceipt && checkoutData?.tokenNo != null && (
+                <Text
+                  variant="heading3"
+                  weight="bold"
+                  align="center"
+                  className={styles.tokenNo}
+                >
+                  Token #{checkoutData.tokenNo}
+                </Text>
+              )}
+              <Text
+                color="secondary"
+                align="center"
+                className={styles.successMessage}
+              >
+                Your payment has been processed successfully.
+              </Text>
+            </Stack>
+          </CardBody>
+        </Card>
+      </Box>
     );
   }
 
   return (
-    <div className={styles.page}>
-      <div className={styles.header}>
-        <h2 className={styles.title}>Checkout</h2>
-        <p className={styles.subtitle}>
-          Invoice #{checkoutData.invoiceNo}
-          {showTokenOnReceipt && checkoutData.tokenNo != null && (
-            <> · Token #{checkoutData.tokenNo}</>
-          )}
-        </p>
-      </div>
+    <Stack gap="md" className={styles.page}>
+      <PageHeader title="Checkout" description={invoiceSubtitle} />
 
-      {error && <div className={styles.errorMessage}>{error}</div>}
+      {error ? <Alert variant="danger">{error}</Alert> : null}
 
-      <div className={styles.container}>
-        {/* Invoice Details */}
-        <div className={styles.invoiceSection}>
-          <div className={styles.invoiceHeader}>
-            <div>
-              <h3 className={styles.invoiceTitle}>Invoice Details</h3>
-            </div>
-            <div className={styles.headerActions}>
-              <div
-                className={`${styles.statusBadge} ${
-                  checkoutData.status === 'COMPLETED'
-                    ? styles.statusBadgeCompleted
-                    : ''
-                }`}
-              >
-                <span className={styles.statusText}>{checkoutData.status}</span>
-              </div>
-              {checkoutData.status === 'COMPLETED' && (
-                <button
-                  type="button"
-                  className={styles.printBtn}
-                  onClick={() => {
-                    if (!checkoutData.purchaseId) {
-                      notifyError('Invoice is not ready to print yet.');
-                      return;
+      <Stack gap="lg">
+        <Card>
+          <CardBody>
+            <Stack gap="md">
+              <Inline justify="between" align="start" width="full">
+                <Text variant="heading3" weight="semibold">
+                  Invoice Details
+                </Text>
+                <Inline gap="sm" align="center">
+                  <Badge variant={statusBadgeVariant}>{checkoutData.status}</Badge>
+                  {checkoutData.status === 'COMPLETED' && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        if (!checkoutData.purchaseId) {
+                          notifyError('Invoice is not ready to print yet.');
+                          return;
+                        }
+                        setShowPrintModal(true);
+                      }}
+                      aria-label="Print Invoice"
+                      title="Print Invoice"
+                    >
+                      Print
+                    </Button>
+                  )}
+                </Inline>
+              </Inline>
+
+              <Grid columns={2} gap="md" className={styles.infoGrid}>
+                <InfoField label="Billing Mode" value={billingMode} />
+                {checkoutData.customerName ? (
+                  <InfoField
+                    label="Customer Name"
+                    value={checkoutData.customerName}
+                  />
+                ) : null}
+                {checkoutData.customerPhone ? (
+                  <InfoField
+                    label="Customer Phone"
+                    value={checkoutData.customerPhone}
+                  />
+                ) : null}
+                <InfoField
+                  label="Address"
+                  value={checkoutData.customerAddress || 'Not specified'}
+                />
+                {checkoutData.customerGstin &&
+                checkoutData.customerGstin.trim() ? (
+                  <InfoField
+                    label="Customer GSTIN"
+                    value={checkoutData.customerGstin}
+                  />
+                ) : null}
+                {checkoutData.customerDlNo && checkoutData.customerDlNo.trim() ? (
+                  <InfoField
+                    label="Customer DL No"
+                    value={checkoutData.customerDlNo}
+                  />
+                ) : null}
+                {checkoutData.customerPan && checkoutData.customerPan.trim() ? (
+                  <InfoField
+                    label="Customer PAN"
+                    value={checkoutData.customerPan}
+                  />
+                ) : null}
+                <InfoField
+                  label="Payment Method"
+                  value={
+                    <Stack gap="xs">
+                      <Text weight="semibold">
+                        {formatPaymentMethod(checkoutData.paymentMethod)}
+                      </Text>
+                      {paymentSplitLine ? (
+                        <Text variant="caption" color="secondary">
+                          {paymentSplitLine}
+                        </Text>
+                      ) : null}
+                    </Stack>
+                  }
+                />
+                <InfoField label="Date" value={currentDate} />
+              </Grid>
+            </Stack>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardBody>
+            <Stack gap="md">
+              <Text variant="heading3" weight="semibold">
+                Items
+              </Text>
+              <Box overflow="auto" className={styles.tableContainer}>
+                <Table className={styles.itemsTable}>
+                  <TableHead>
+                    <TableRow>
+                      <TableHeaderCell>Product Name</TableHeaderCell>
+                      <TableHeaderCell>Quantity</TableHeaderCell>
+                      <TableHeaderCell>MRP</TableHeaderCell>
+                      <TableHeaderCell>Selling Price</TableHeaderCell>
+                      <TableHeaderCell>Discount</TableHeaderCell>
+                      <TableHeaderCell>Additional Discount</TableHeaderCell>
+                      <TableHeaderCell>Scheme/Deal</TableHeaderCell>
+                      {billingMode === 'REGULAR' ? (
+                        <TableHeaderCell>CGST%</TableHeaderCell>
+                      ) : null}
+                      {billingMode === 'REGULAR' ? (
+                        <TableHeaderCell>SGST%</TableHeaderCell>
+                      ) : null}
+                      <TableHeaderCell>Total</TableHeaderCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {checkoutData.items.map((item, index: number) => {
+                      const discountAmount =
+                        (item.maximumRetailPrice - item.priceToRetail) *
+                        item.quantity;
+                      return (
+                        <TableRow key={index}>
+                          <TableCell>{item.name}</TableCell>
+                          <TableCell>{item.quantity}</TableCell>
+                          <TableCell>
+                            ₹{item.maximumRetailPrice.toFixed(2)}
+                          </TableCell>
+                          <TableCell>₹{item.priceToRetail.toFixed(2)}</TableCell>
+                          <TableCell>₹{discountAmount.toFixed(2)}</TableCell>
+                          <TableCell>
+                            {item.saleAdditionalDiscount !== null &&
+                            item.saleAdditionalDiscount !== undefined
+                              ? `${item.saleAdditionalDiscount.toFixed(2)}%`
+                              : '—'}
+                          </TableCell>
+                          <TableCell>
+                            {item.schemePayFor != null || item.schemeFree != null
+                              ? `${item.schemePayFor ?? '—'} + ${
+                                  item.schemeFree ?? '—'
+                                }`
+                              : '—'}
+                          </TableCell>
+                          {billingMode === 'REGULAR' ? (
+                            <TableCell>
+                              {item.cgst !== null && item.cgst !== undefined
+                                ? `${item.cgst}%`
+                                : '—'}
+                            </TableCell>
+                          ) : null}
+                          {billingMode === 'REGULAR' ? (
+                            <TableCell>
+                              {item.sgst !== null && item.sgst !== undefined
+                                ? `${item.sgst}%`
+                                : '—'}
+                            </TableCell>
+                          ) : null}
+                          <TableCell>₹{item.totalAmount.toFixed(2)}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </Box>
+            </Stack>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardBody>
+            <Stack gap="md">
+              <Text variant="heading3" weight="semibold">
+                Summary
+              </Text>
+              <Stack gap="sm">
+                <SummaryRow
+                  label="Subtotal:"
+                  value={`₹${checkoutData.subTotal.toFixed(2)}`}
+                />
+                {checkoutData.sgstAmount !== undefined &&
+                checkoutData.sgstAmount > 0 ? (
+                  <SummaryRow
+                    label={`SGST (${sgstPercentage}%):`}
+                    value={`₹${checkoutData.sgstAmount.toFixed(2)}`}
+                  />
+                ) : null}
+                {checkoutData.cgstAmount !== undefined &&
+                checkoutData.cgstAmount > 0 ? (
+                  <SummaryRow
+                    label={`CGST (${cgstPercentage}%):`}
+                    value={`₹${checkoutData.cgstAmount.toFixed(2)}`}
+                  />
+                ) : null}
+                {((checkoutData.taxTotal ?? 0) !== 0 ||
+                  (checkoutData.sgstAmount ?? 0) !== 0 ||
+                  (checkoutData.cgstAmount ?? 0) !== 0) && (
+                  <SummaryRow
+                    label="Tax:"
+                    value={`₹${checkoutData.taxTotal.toFixed(2)}`}
+                  />
+                )}
+                {checkoutData.saleAdditionalDiscountTotal !== 0 &&
+                checkoutData.saleAdditionalDiscountTotal != null ? (
+                  <SummaryRow
+                    label={
+                      checkoutData.saleAdditionalDiscountTotal > 0
+                        ? 'Additional Discount:'
+                        : 'Additional (markup):'
                     }
-                    setShowPrintModal(true);
-                  }}
-                  aria-label="Print Invoice"
-                  title="Print Invoice"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                    <rect x="6" y="14" width="12" height="8"></rect>
-                  </svg>
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className={styles.infoGrid}>
-            <div className={styles.infoItem}>
-              <span className={styles.infoLabel}>Billing Mode:</span>
-              <span className={styles.infoValue}>{billingMode}</span>
-            </div>
-            {checkoutData.customerName && (
-              <div className={styles.infoItem}>
-                <span className={styles.infoLabel}>Customer Name:</span>
-                <span className={styles.infoValue}>
-                  {checkoutData.customerName}
-                </span>
-              </div>
-            )}
-            {checkoutData.customerPhone && (
-              <div className={styles.infoItem}>
-                <span className={styles.infoLabel}>Customer Phone:</span>
-                <span className={styles.infoValue}>
-                  {checkoutData.customerPhone}
-                </span>
-              </div>
-            )}
-            <div className={styles.infoItem}>
-              <span className={styles.infoLabel}>Address:</span>
-              <span className={styles.infoValue}>
-                {checkoutData.customerAddress || 'Not specified'}
-              </span>
-            </div>
-            {checkoutData.customerGstin &&
-              checkoutData.customerGstin.trim() && (
-                <div className={styles.infoItem}>
-                  <span className={styles.infoLabel}>Customer GSTIN:</span>
-                  <span className={styles.infoValue}>
-                    {checkoutData.customerGstin}
-                  </span>
-                </div>
-              )}
-            {checkoutData.customerDlNo && checkoutData.customerDlNo.trim() && (
-              <div className={styles.infoItem}>
-                <span className={styles.infoLabel}>Customer DL No:</span>
-                <span className={styles.infoValue}>
-                  {checkoutData.customerDlNo}
-                </span>
-              </div>
-            )}
-            {checkoutData.customerPan && checkoutData.customerPan.trim() && (
-              <div className={styles.infoItem}>
-                <span className={styles.infoLabel}>Customer PAN:</span>
-                <span className={styles.infoValue}>
-                  {checkoutData.customerPan}
-                </span>
-              </div>
-            )}
-            <div className={styles.infoItem}>
-              <span className={styles.infoLabel}>Payment Method:</span>
-              <span className={styles.infoValue}>
-                {formatPaymentMethod(checkoutData.paymentMethod)}
-                {(() => {
-                  const split = formatPaymentSplit({
-                    cashAmount: checkoutData.cashAmount ?? undefined,
-                    onlineAmount: checkoutData.onlineAmount ?? undefined,
-                    creditAmount: checkoutData.creditAmount ?? undefined,
-                  });
-                  return split ? (
-                    <>
-                      <br />
-                      <small>{split}</small>
-                    </>
-                  ) : null;
-                })()}
-              </span>
-            </div>
-            <div className={styles.infoItem}>
-              <span className={styles.infoLabel}>Date:</span>
-              <span className={styles.infoValue}>{currentDate}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Items Table */}
-        <div className={styles.itemsSection}>
-          <h3 className={styles.sectionTitle}>Items</h3>
-          <div className={styles.tableContainer}>
-            <table className={styles.itemsTable}>
-              <thead>
-                <tr>
-                  <th>Product Name</th>
-                  <th>Quantity</th>
-                  <th>MRP</th>
-                  <th>Selling Price</th>
-                  <th>Discount</th>
-                  <th>Additional Discount</th>
-                  <th>Scheme/Deal</th>
-                  {billingMode === 'REGULAR' && <th>CGST%</th>}
-                  {billingMode === 'REGULAR' && <th>SGST%</th>}
-                  <th>Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {checkoutData.items.map((item, index: number) => {
-                  // Calculate discount amount: (MRP - Selling Price) * quantity
-                  const discountAmount =
-                    (item.maximumRetailPrice - item.priceToRetail) *
-                    item.quantity;
-                  return (
-                    <tr key={index}>
-                      <td>{item.name}</td>
-                      <td>{item.quantity}</td>
-                      <td>₹{item.maximumRetailPrice.toFixed(2)}</td>
-                      <td>₹{item.priceToRetail.toFixed(2)}</td>
-                      <td>₹{discountAmount.toFixed(2)}</td>
-                      <td>
-                        {item.saleAdditionalDiscount !== null &&
-                        item.saleAdditionalDiscount !== undefined
-                          ? `${item.saleAdditionalDiscount.toFixed(2)}%`
-                          : '—'}
-                      </td>
-                      <td>
-                        {item.schemePayFor != null || item.schemeFree != null
-                          ? `${item.schemePayFor ?? '—'} + ${
-                              item.schemeFree ?? '—'
-                            }`
-                          : '—'}
-                      </td>
-                      {billingMode === 'REGULAR' && (
-                        <td>
-                          {item.cgst !== null && item.cgst !== undefined
-                            ? `${item.cgst}%`
-                            : '—'}
-                        </td>
-                      )}
-                      {billingMode === 'REGULAR' && (
-                        <td>
-                          {item.sgst !== null && item.sgst !== undefined
-                            ? `${item.sgst}%`
-                            : '—'}
-                        </td>
-                      )}
-                      <td>₹{item.totalAmount.toFixed(2)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Summary */}
-        <div className={styles.summarySection}>
-          <h3 className={styles.sectionTitle}>Summary</h3>
-          <div className={styles.summaryTable}>
-            <div className={styles.summaryRow}>
-              <span>Subtotal:</span>
-              <span>₹{checkoutData.subTotal.toFixed(2)}</span>
-            </div>
-            {checkoutData.sgstAmount !== undefined &&
-              checkoutData.sgstAmount > 0 && (
-                <div className={styles.summaryRow}>
-                  <span>SGST ({sgstPercentage}%):</span>
-                  <span>₹{checkoutData.sgstAmount.toFixed(2)}</span>
-                </div>
-              )}
-            {checkoutData.cgstAmount !== undefined &&
-              checkoutData.cgstAmount > 0 && (
-                <div className={styles.summaryRow}>
-                  <span>CGST ({cgstPercentage}%):</span>
-                  <span>₹{checkoutData.cgstAmount.toFixed(2)}</span>
-                </div>
-              )}
-            {((checkoutData.taxTotal ?? 0) !== 0 ||
-              (checkoutData.sgstAmount ?? 0) !== 0 ||
-              (checkoutData.cgstAmount ?? 0) !== 0) && (
-              <div className={styles.summaryRow}>
-                <span>Tax:</span>
-                <span>₹{checkoutData.taxTotal.toFixed(2)}</span>
-              </div>
-            )}
-            {checkoutData.saleAdditionalDiscountTotal !== 0 &&
-              checkoutData.saleAdditionalDiscountTotal != null && (
-                <div className={styles.summaryRow}>
-                  <span>
-                    {checkoutData.saleAdditionalDiscountTotal > 0
-                      ? 'Additional Discount:'
-                      : 'Additional (markup):'}
-                  </span>
-                  <span>
-                    {checkoutData.saleAdditionalDiscountTotal > 0
-                      ? `-₹${checkoutData.saleAdditionalDiscountTotal.toFixed(
-                          2
-                        )}`
-                      : `+₹${Math.abs(
-                          checkoutData.saleAdditionalDiscountTotal
-                        ).toFixed(2)}`}
-                  </span>
-                </div>
-              )}
-            <div className={styles.summaryRowTotal}>
-              <span>Grand Total:</span>
-              <span>₹{checkoutData.grandTotal.toFixed(2)}</span>
-            </div>
-            {(checkoutData.totalCost != null ||
-              checkoutData.revenueAfterTax != null ||
-              checkoutData.totalProfit != null ||
-              checkoutData.marginPercent != null) && (
-              <>
-                <div className={styles.summaryDivider} />
-                <div className={styles.summaryRow}>
-                  <span>Total Cost:</span>
-                  <span>₹{(checkoutData.totalCost ?? 0).toFixed(2)}</span>
-                </div>
-                {checkoutData.revenueAfterTax != null && (
-                  <div className={styles.summaryRow}>
-                    <span>Revenue (after tax):</span>
-                    <span>₹{checkoutData.revenueAfterTax.toFixed(2)}</span>
-                  </div>
+                    value={
+                      checkoutData.saleAdditionalDiscountTotal > 0
+                        ? `-₹${checkoutData.saleAdditionalDiscountTotal.toFixed(2)}`
+                        : `+₹${Math.abs(
+                            checkoutData.saleAdditionalDiscountTotal
+                          ).toFixed(2)}`
+                    }
+                  />
+                ) : null}
+                <SummaryRow
+                  label="Grand Total:"
+                  value={`₹${checkoutData.grandTotal.toFixed(2)}`}
+                  total
+                />
+                {(checkoutData.totalCost != null ||
+                  checkoutData.revenueAfterTax != null ||
+                  checkoutData.totalProfit != null ||
+                  checkoutData.marginPercent != null) && (
+                  <>
+                    <Box className={styles.summaryDivider} />
+                    <SummaryRow
+                      label="Total Cost:"
+                      value={`₹${(checkoutData.totalCost ?? 0).toFixed(2)}`}
+                    />
+                    {checkoutData.revenueAfterTax != null ? (
+                      <SummaryRow
+                        label="Revenue (after tax):"
+                        value={`₹${checkoutData.revenueAfterTax.toFixed(2)}`}
+                      />
+                    ) : null}
+                    {checkoutData.totalProfit != null ? (
+                      <SummaryRow
+                        label="Profit:"
+                        value={`₹${checkoutData.totalProfit.toFixed(2)}`}
+                      />
+                    ) : null}
+                    {checkoutData.marginPercent != null ? (
+                      <SummaryRow
+                        label="Margin:"
+                        value={`${checkoutData.marginPercent.toFixed(1)}%`}
+                      />
+                    ) : null}
+                  </>
                 )}
-                {checkoutData.totalProfit != null && (
-                  <div className={styles.summaryRow}>
-                    <span>Profit:</span>
-                    <span>₹{checkoutData.totalProfit.toFixed(2)}</span>
-                  </div>
-                )}
-                {checkoutData.marginPercent != null && (
-                  <div className={styles.summaryRow}>
-                    <span>Margin:</span>
-                    <span>{checkoutData.marginPercent.toFixed(1)}%</span>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </div>
+              </Stack>
+            </Stack>
+          </CardBody>
+        </Card>
 
-        {/* Payment Options */}
         {checkoutData.status !== 'COMPLETED' && (
-          <div className={styles.paymentSection}>
-            <h3 className={styles.sectionTitle}>Payment</h3>
+          <Card>
+            <CardBody>
+              <Stack gap="md">
+                <Text variant="heading3" weight="semibold">
+                  Payment
+                </Text>
 
-            <PaymentMethodSplit
-              context="sale"
-              title="How was this bill settled?"
-              intro="Pick one of the six tenders. For split sales (e.g. Credit + Cash), enter the deposit and the remainder posts to Credit balances."
-              total={grandTotalNum}
-              value={{ method: paymentMethod, split: paymentSplit }}
-              onChange={(next) => {
-                setPaymentMethod(next.method);
-                setPaymentSplit(next.split);
-              }}
-              disabled={isProcessingPayment || isUpdating}
-            />
+                <PaymentMethodSplit
+                  context="sale"
+                  title="How was this bill settled?"
+                  intro="Pick one of the six tenders. For split sales (e.g. Credit + Cash), enter the deposit and the remainder posts to Credit balances."
+                  total={grandTotalNum}
+                  value={{ method: paymentMethod, split: paymentSplit }}
+                  onChange={(next) => {
+                    setPaymentMethod(next.method);
+                    setPaymentSplit(next.split);
+                  }}
+                  disabled={isProcessingPayment || isUpdating}
+                />
 
-            {paymentMethod && isCreditMethod(paymentMethod) && paymentSplit.creditAmount > 0 ? (
-              <p className={styles.splitSellFoot}>
-                <Link className={styles.splitSellLink} to="/dashboard/credit">
-                  Credit balances
-                </Link>{' '}
-                · <strong>Owes you</strong> ₹{paymentSplit.creditAmount.toFixed(2)}
-              </p>
-            ) : null}
+                {paymentMethod &&
+                isCreditMethod(paymentMethod) &&
+                paymentSplit.creditAmount > 0 ? (
+                  <Text
+                    variant="caption"
+                    color="secondary"
+                    className={styles.splitSellFoot}
+                  >
+                    <Link to="/dashboard/credit">
+                      <Text as="span" className={styles.splitSellLink}>
+                        Credit balances
+                      </Text>
+                    </Link>{' '}
+                    ·{' '}
+                    <Text as="span" weight="semibold">
+                      Owes you
+                    </Text>{' '}
+                    ₹{paymentSplit.creditAmount.toFixed(2)}
+                  </Text>
+                ) : null}
 
-            <div className={styles.paymentButtons}>
-              <button
-                className={`${styles.paymentBtn} ${styles.cashBtn}`}
-                onClick={handlePayment}
-                disabled={isProcessingPayment || isUpdating || !canSubmitPayment}
-              >
-                <span role="img" aria-label="Complete sale">
-                  ✅
-                </span>
-                {isProcessingPayment ? 'Processing…' : 'Complete sale'}
-              </button>
-            </div>
-          </div>
+                <Button
+                  variant="solid"
+                  fullWidth
+                  onClick={handlePayment}
+                  disabled={
+                    isProcessingPayment || isUpdating || !canSubmitPayment
+                  }
+                  loading={isProcessingPayment}
+                  leftIcon={
+                    !isProcessingPayment ? (
+                      <Text as="span" aria-hidden>
+                        ✅
+                      </Text>
+                    ) : undefined
+                  }
+                >
+                  {isProcessingPayment ? 'Processing…' : 'Complete sale'}
+                </Button>
+              </Stack>
+            </CardBody>
+          </Card>
         )}
 
-        {/* Actions */}
-        <div className={styles.actionsSection}>
-          <button
-            className={styles.backBtn}
+        <Inline justify="center" width="full" className={styles.actionsSection}>
+          <Button
+            variant="outline"
             onClick={handleGoBack}
             disabled={isUpdating}
+            loading={isUpdating}
           >
             {isUpdating ? 'Updating...' : 'Go Back and Sell'}
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Inline>
+      </Stack>
 
       {checkoutData?.purchaseId && (
         <PrintInvoiceModal
@@ -671,6 +750,6 @@ export function CheckoutPage() {
           onError={(msg) => msg && notifyError(msg)}
         />
       )}
-    </div>
+    </Stack>
   );
 }
