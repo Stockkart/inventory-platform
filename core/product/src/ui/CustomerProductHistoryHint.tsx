@@ -1,5 +1,13 @@
 import { useState } from 'react';
 import type { CustomerProductHistoryGroup, CustomerProductHistoryResponse } from '@inventory-platform/product/types';
+import {
+  Badge,
+  Box,
+  Button,
+  Inline,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './CustomerProductHistoryHint.module.css';
 
 const dateFormatter = new Intl.DateTimeFormat('en-IN', {
@@ -49,22 +57,25 @@ function HistoryEntryRow({
   const invoice = entry.invoiceNo?.trim();
 
   return (
-    <div
-      className={
-        variant === 'primary' ? styles.entryRow : styles.entryRowPrior
-      }
+    <Inline
+      gap="xs"
+      className={variant === 'primary' ? styles.entryRow : styles.entryRowPrior}
     >
-      <span className={styles.entryDate}>{date}</span>
-      <span className={styles.entryDot} aria-hidden>
+      <Text variant="caption" className={styles.entryDate}>
+        {date}
+      </Text>
+      <Text variant="caption" aria-hidden className={styles.entryDot}>
         ·
-      </span>
-      <span className={styles.entryQtyRate}>{qtyAtRate}</span>
+      </Text>
+      <Text variant="caption" className={styles.entryQtyRate}>
+        {qtyAtRate}
+      </Text>
       {invoice ? (
-        <span className={styles.entryInvoice} title="Invoice number">
+        <Text variant="caption" className={styles.entryInvoice}>
           {invoice}
-        </span>
+        </Text>
       ) : null}
-    </div>
+    </Inline>
   );
 }
 
@@ -84,18 +95,24 @@ export function CustomerProductHistoryHint({
 
   if (loading && !group) {
     return (
-      <div className={styles.hint} role="status" aria-live="polite">
-        <span className={styles.loadingPulse} />
-        <span className={styles.loadingText}>Checking past purchases…</span>
-      </div>
+      <Box className={styles.hint}>
+        <Inline gap="xs" align="center">
+          <Box className={styles.loadingPulse} />
+          <Text variant="caption" className={styles.loadingText}>
+            Checking past purchases…
+          </Text>
+        </Inline>
+      </Box>
     );
   }
 
   if (!group?.lastSale) {
     return (
-      <div className={`${styles.hint} ${styles.hintNew}`}>
-        <span className={styles.newBadge}>New for customer</span>
-      </div>
+      <Box className={`${styles.hint} ${styles.hintNew}`}>
+        <Badge variant="neutral" className={styles.newBadge}>
+          New for customer
+        </Badge>
+      </Box>
     );
   }
 
@@ -104,12 +121,16 @@ export function CustomerProductHistoryHint({
     prior.length === 1 ? '1 earlier' : `${prior.length} earlier`;
 
   return (
-    <div className={`${styles.hint} ${styles.hintHasHistory}`}>
-      <div className={styles.header}>
-        <span className={styles.historyBadge}>Bought before</span>
+    <Box className={`${styles.hint} ${styles.hintHasHistory}`}>
+      <Inline className={styles.header} justify="between" width="full">
+        <Badge variant="info" className={styles.historyBadge}>
+          Bought before
+        </Badge>
         {prior.length > 0 ? (
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             className={styles.expandBtn}
             onClick={() => setExpanded((open) => !open)}
             aria-expanded={expanded}
@@ -119,30 +140,33 @@ export function CustomerProductHistoryHint({
                 : `Show ${prior.length} earlier purchase${prior.length === 1 ? '' : 's'}`
             }
           >
-            <span className={styles.expandLabel}>
-              {expanded ? 'Hide' : priorLabel}
-            </span>
-            <span
-              className={`${styles.chevron} ${expanded ? styles.chevronOpen : ''}`}
-              aria-hidden
-            >
-              ▾
-            </span>
-          </button>
+            <Inline gap="xs" align="center">
+              <Text variant="caption" className={styles.expandLabel}>
+                {expanded ? 'Hide' : priorLabel}
+              </Text>
+              <Text
+                variant="caption"
+                aria-hidden
+                className={`${styles.chevron} ${expanded ? styles.chevronOpen : ''}`}
+              >
+                ▾
+              </Text>
+            </Inline>
+          </Button>
         ) : null}
-      </div>
+      </Inline>
 
       <HistoryEntryRow entry={group.lastSale} variant="primary" />
 
       {expanded && prior.length > 0 ? (
-        <ul className={styles.priorList}>
+        <Stack as="ul" gap="xs" className={styles.priorList}>
           {prior.map((entry) => (
-            <li key={`${entry.purchaseId}-${entry.soldAt}`}>
+            <Box as="li" key={`${entry.purchaseId}-${entry.soldAt}`}>
               <HistoryEntryRow entry={entry} variant="prior" />
-            </li>
+            </Box>
           ))}
-        </ul>
+        </Stack>
       ) : null}
-    </div>
+    </Box>
   );
 }

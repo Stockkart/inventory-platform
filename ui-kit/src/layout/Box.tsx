@@ -1,9 +1,10 @@
-import type { CSSProperties, ElementType, ReactNode } from 'react';
+import { forwardRef } from 'react';
+import type { ComponentPropsWithoutRef, CSSProperties, ElementType, ReactNode } from 'react';
 import { cn } from '../utils/cn';
 import type { SpacingScale } from '../utils/types';
 import styles from './Box.module.css';
 
-export interface BoxProps {
+type BoxOwnProps = {
   children?: ReactNode;
   className?: string;
   as?: ElementType;
@@ -23,31 +24,39 @@ export interface BoxProps {
   overflow?: 'hidden' | 'auto';
   position?: 'relative' | 'absolute';
   style?: CSSProperties;
-}
+};
 
-export function Box({
-  children,
-  className,
-  as: Component = 'div',
-  padding,
-  margin,
-  display,
-  flexDirection,
-  flexWrap,
-  gap,
-  align,
-  justify,
-  width,
-  height,
-  bg,
-  border,
-  rounded,
-  overflow,
-  position,
-  style,
-}: BoxProps) {
+export type BoxProps = BoxOwnProps &
+  Omit<ComponentPropsWithoutRef<'div'>, keyof BoxOwnProps>;
+
+export const Box = forwardRef<HTMLElement, BoxProps>(function Box(
+  {
+    children,
+    className,
+    as: Component = 'div',
+    padding,
+    margin,
+    display,
+    flexDirection,
+    flexWrap,
+    gap,
+    align,
+    justify,
+    width,
+    height,
+    bg,
+    border,
+    rounded,
+    overflow,
+    position,
+    style,
+    ...rest
+  },
+  ref
+) {
   return (
     <Component
+      ref={ref}
       style={style}
       className={cn(
         styles.box,
@@ -68,8 +77,9 @@ export function Box({
         position && styles[`position-${position}`],
         className
       )}
+      {...rest}
     >
       {children}
     </Component>
   );
-}
+});

@@ -6,6 +6,16 @@ import {
   type KeyboardEvent,
 } from 'react';
 import type { PackagingUnit } from '@inventory-platform/product/types';
+import {
+  Box,
+  Button,
+  FormField,
+  IconButton,
+  Inline,
+  Input,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './../pages/product-registration.module.css';
 
 /** Map free-text or datalist selection to a UQC code (catalog or legacy). */
@@ -249,141 +259,151 @@ export function PackagingUnitInput({
   const listboxId = id ? `${id}-listbox` : undefined;
   const qtyInputId = id ? `${id}-qty` : undefined;
 
-  return (
-    <div
-      className={label || hint ? styles.formGroup : styles.formGroupBare}
-    >
-      {label ? (
-        <label htmlFor={id} className={styles.label}>
-          {label}
-          {required ? ' *' : ''}
-        </label>
-      ) : null}
-      <div className={wrapClass}>
-        <div className={styles.factorLeadGroup}>
-          <span className={styles.factorPrefix}>1 ×</span>
-          <input
-            id={qtyInputId}
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            className={styles.factorQtyInput}
-            placeholder="1"
-            value={qtyDraft}
-            onChange={(e) => {
-              const v = e.target.value;
-              if (v === '' || /^\d+$/.test(v)) {
-                setQtyDraft(v);
-                const n = v === '' ? 1 : parseInt(v, 10);
-                onChange(baseUnit, n);
-              }
-            }}
-            onFocus={() => {
-              qtyFocusedRef.current = true;
-            }}
-            onBlur={() => {
-              qtyFocusedRef.current = false;
-              if (qtyDraft.trim() === '') {
-                setQtyDraft('1');
-                onChange(baseUnit, 1);
-              }
-            }}
-            onKeyDown={(e) => e.stopPropagation()}
-            disabled={disabled}
-            data-keyboard-nav="skip"
-            aria-label={`${label} quantity per pack`}
-          />
-        </div>
-        <div
-          ref={unitWrapRef}
-          className={styles.factorUnitWrap}
+  const fieldContent = (
+    <Box className={wrapClass}>
+      <Inline align="center" className={styles.factorLeadGroup}>
+        <Text className={styles.factorPrefix}>1 ×</Text>
+        <Input
+          id={qtyInputId}
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          className={styles.factorQtyInput}
+          placeholder="1"
+          value={qtyDraft}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (v === '' || /^\d+$/.test(v)) {
+              setQtyDraft(v);
+              const n = v === '' ? 1 : parseInt(v, 10);
+              onChange(baseUnit, n);
+            }
+          }}
+          onFocus={() => {
+            qtyFocusedRef.current = true;
+          }}
+          onBlur={() => {
+            qtyFocusedRef.current = false;
+            if (qtyDraft.trim() === '') {
+              setQtyDraft('1');
+              onChange(baseUnit, 1);
+            }
+          }}
+          onKeyDown={(e) => e.stopPropagation()}
+          disabled={disabled}
           data-keyboard-nav="skip"
-        >
-          <input
-            ref={unitInputRef}
-            id={id}
-            type="text"
-            className={styles.factorInput}
-            value={unitDraft}
-            onChange={(e) => {
-              setUnitDraft(e.target.value);
-              openList();
-            }}
-            onFocus={() => {
-              unitFocusedRef.current = true;
-              openList();
-            }}
-            onBlur={() => {
-              unitFocusedRef.current = false;
-              window.setTimeout(() => {
-                if (!unitWrapRef.current?.contains(document.activeElement)) {
-                  setListOpen(false);
-                  commitUnit();
-                }
-              }, 120);
-            }}
-            onKeyDown={onUnitKeyDown}
-            disabled={disabled}
-            placeholder="Unit (e.g. TBS)"
-            autoComplete="off"
-            aria-label={`${label} unit`}
-            aria-expanded={listOpen}
-            aria-controls={listboxId}
-            aria-autocomplete="list"
-            role="combobox"
-            required={required}
-          />
-          <button
-            type="button"
-            className={styles.factorUnitToggle}
-            tabIndex={-1}
-            disabled={disabled || packagingUnits.length === 0}
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => {
-              if (listOpen) {
+          aria-label={`${label} quantity per pack`}
+        />
+      </Inline>
+      <Box
+        ref={unitWrapRef}
+        className={styles.factorUnitWrap}
+        data-keyboard-nav="skip"
+        position="relative"
+      >
+        <Input
+          ref={unitInputRef}
+          id={id}
+          type="text"
+          className={styles.factorInput}
+          value={unitDraft}
+          onChange={(e) => {
+            setUnitDraft(e.target.value);
+            openList();
+          }}
+          onFocus={() => {
+            unitFocusedRef.current = true;
+            openList();
+          }}
+          onBlur={() => {
+            unitFocusedRef.current = false;
+            window.setTimeout(() => {
+              if (!unitWrapRef.current?.contains(document.activeElement)) {
                 setListOpen(false);
-              } else {
-                openList();
-                unitInputRef.current?.focus();
+                commitUnit();
               }
-            }}
-            aria-label="Show unit list"
+            }, 120);
+          }}
+          onKeyDown={onUnitKeyDown}
+          disabled={disabled}
+          placeholder="Unit (e.g. TBS)"
+          autoComplete="off"
+          aria-label={`${label} unit`}
+          aria-expanded={listOpen}
+          aria-controls={listboxId}
+          aria-autocomplete="list"
+          role="combobox"
+          required={required}
+        />
+        <IconButton
+          type="button"
+          className={styles.factorUnitToggle}
+          tabIndex={-1}
+          disabled={disabled || packagingUnits.length === 0}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => {
+            if (listOpen) {
+              setListOpen(false);
+            } else {
+              openList();
+              unitInputRef.current?.focus();
+            }
+          }}
+          label="Show unit list"
+        >
+          ▾
+        </IconButton>
+        {listOpen && filteredUnits.length > 0 ? (
+          <Stack
+            id={listboxId}
+            className={styles.unitDropdown}
+            role="listbox"
+            gap="none"
           >
-            ▾
-          </button>
-          {listOpen && filteredUnits.length > 0 ? (
-            <ul
-              id={listboxId}
-              className={styles.unitDropdown}
-              role="listbox"
-            >
-              {filteredUnits.map((u, i) => (
-                <li
-                  key={u.uqc}
-                  role="option"
-                  aria-selected={i === highlightIdx}
-                  className={
-                    i === highlightIdx
-                      ? `${styles.unitDropdownItem} ${styles.unitDropdownItemActive}`
-                      : styles.unitDropdownItem
-                  }
-                  onMouseDown={(e) => e.preventDefault()}
-                  onMouseEnter={() => setHighlightIdx(i)}
-                  onClick={() => selectUnit(u)}
-                >
-                  {formatUnitOption(u)}
-                </li>
-              ))}
-            </ul>
-          ) : null}
-          {listOpen &&
-          filteredUnits.length === 0 &&
-          packagingUnits.length > 0 ? (
-            <div className={styles.unitDropdownEmpty}>No matching units</div>
-          ) : null}
-        </div>
-      </div>
-      {hint ? <span className={styles.unitHint}>{hint}</span> : null}
-    </div>
+            {filteredUnits.map((u, i) => (
+              <Button
+                key={u.uqc}
+                type="button"
+                role="option"
+                aria-selected={i === highlightIdx}
+                variant="ghost"
+                className={
+                  i === highlightIdx
+                    ? `${styles.unitDropdownItem} ${styles.unitDropdownItemActive}`
+                    : styles.unitDropdownItem
+                }
+                onMouseDown={(e) => e.preventDefault()}
+                onMouseEnter={() => setHighlightIdx(i)}
+                onClick={() => selectUnit(u)}
+              >
+                {formatUnitOption(u)}
+              </Button>
+            ))}
+          </Stack>
+        ) : null}
+        {listOpen &&
+        filteredUnits.length === 0 &&
+        packagingUnits.length > 0 ? (
+          <Text className={styles.unitDropdownEmpty}>No matching units</Text>
+        ) : null}
+      </Box>
+    </Box>
   );
+
+  if (label || hint) {
+    return (
+      <FormField
+        label={label}
+        id={id}
+        htmlFor={id}
+        required={required}
+        hint={hint}
+        className={styles.formGroup}
+      >
+        {fieldContent}
+      </FormField>
+    );
+  }
+
+  return <Box className={styles.formGroupBare}>{fieldContent}</Box>;
 }

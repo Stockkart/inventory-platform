@@ -1,6 +1,17 @@
 import { useMemo, useState } from 'react';
 import type { InventoryItem } from '@inventory-platform/product/types';
 import type { MenuItem, SellCatalog } from '@inventory-platform/product/types';
+import {
+  Badge,
+  Box,
+  Button,
+  CenteredLoader,
+  EmptyState,
+  Grid,
+  Inline,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './CafeSellCatalogPanel.module.css';
 
 function money(n: number): string {
@@ -104,36 +115,39 @@ export function CafeSellCatalogPanel({
 
   if (loading) {
     return (
-      <div className={styles.panel}>
-        <div className={styles.loading}>Loading menu…</div>
-      </div>
+      <Box className={styles.panel}>
+        <CenteredLoader label="Loading menu…" />
+      </Box>
     );
   }
 
   if (!hasMenu && !hasDirectStock) {
     return (
-      <div className={styles.panel}>
-        <div className={styles.empty}>
-          {normalizedFilter
-            ? 'No items match your search'
-            : 'No menu items yet. Add items in Menu admin.'}
-        </div>
-      </div>
+      <Box className={styles.panel}>
+        <EmptyState
+          title={
+            normalizedFilter
+              ? 'No items match your search'
+              : 'No menu items yet. Add items in Menu admin.'
+          }
+        />
+      </Box>
     );
   }
 
   return (
-    <div className={styles.panel}>
-      {tabs.length > 1 && (
-        <div
+    <Stack gap="md" className={styles.panel}>
+      {tabs.length > 1 ? (
+        <Inline
           className={styles.tabBar}
-          role="tablist"
-          aria-label="Menu categories"
+          gap="none"
         >
           {tabs.map((tab) => (
-            <button
+            <Button
               key={tab.id}
               type="button"
+              variant="ghost"
+              size="sm"
               role="tab"
               aria-selected={resolvedTab === tab.id}
               className={`${styles.tab} ${
@@ -142,83 +156,97 @@ export function CafeSellCatalogPanel({
               onClick={() => setActiveTab(tab.id)}
             >
               {tab.label}
-            </button>
+            </Button>
           ))}
-        </div>
-      )}
+        </Inline>
+      ) : null}
 
-      <div className={styles.scrollArea}>
+      <Box className={styles.scrollArea}>
         {menuSectionsToRender.map((section) => (
-          <section key={section.id} className={styles.section}>
-            <div className={styles.sectionHead}>
-              <h4 className={styles.sectionTitle}>{section.title || 'Menu'}</h4>
-              <span className={styles.sectionCount}>
+          <Box as="section" key={section.id} className={styles.section}>
+            <Inline className={styles.sectionHead} justify="between" align="center">
+              <Text variant="heading3" className={styles.sectionTitle}>
+                {section.title || 'Menu'}
+              </Text>
+              <Badge variant="neutral" className={styles.sectionCount}>
                 {section.items.length}
-              </span>
-            </div>
-            <div className={styles.grid}>
+              </Badge>
+            </Inline>
+            <Grid className={styles.grid}>
               {section.items.map((item) => (
-                <button
+                <Button
                   key={item.id}
                   type="button"
+                  variant="outline"
                   className={styles.tile}
                   disabled={disabled}
                   onClick={() => onAddMenuItem(item)}
                 >
-                  <span className={styles.tileName}>{item.name}</span>
-                  <span className={styles.tileFooter}>
-                    <span className={styles.tilePrice}>
-                      {money(item.sellingPrice)}
-                    </span>
-                    <span className={styles.tileAdd} aria-hidden>
-                      +
-                    </span>
-                  </span>
-                </button>
+                  <Stack gap="xs" width="full">
+                    <Text weight="semibold" className={styles.tileName}>
+                      {item.name}
+                    </Text>
+                    <Inline className={styles.tileFooter} justify="between" align="center" width="full">
+                      <Text weight="semibold" className={styles.tilePrice}>
+                        {money(item.sellingPrice)}
+                      </Text>
+                      <Text aria-hidden className={styles.tileAdd}>
+                        +
+                      </Text>
+                    </Inline>
+                  </Stack>
+                </Button>
               ))}
-            </div>
-          </section>
+            </Grid>
+          </Box>
         ))}
 
-        {showStock && hasDirectStock && (
-          <section className={styles.section}>
-            <div className={styles.sectionHead}>
-              <h4 className={styles.sectionTitle}>Direct stock</h4>
-              <span className={styles.sectionCount}>
+        {showStock && hasDirectStock ? (
+          <Box as="section" className={styles.section}>
+            <Inline className={styles.sectionHead} justify="between" align="center">
+              <Text variant="heading3" className={styles.sectionTitle}>
+                Direct stock
+              </Text>
+              <Badge variant="neutral" className={styles.sectionCount}>
                 {filteredDirectStock.length}
-              </span>
-            </div>
-            <div className={styles.grid}>
+              </Badge>
+            </Inline>
+            <Grid className={styles.grid}>
               {filteredDirectStock.map((item) => {
                 const available = stockAvailable(item);
                 const outOfStock = available <= 0;
                 return (
-                  <button
+                  <Button
                     key={item.id}
                     type="button"
+                    variant="outline"
                     className={`${styles.tile} ${styles.tileStock}`}
                     disabled={disabled || outOfStock}
                     onClick={() => onAddDirectStock(item)}
                   >
-                    <span className={styles.tileName}>{item.name}</span>
-                    <span className={styles.tileMeta}>
-                      {outOfStock ? 'Out of stock' : `${available} in stock`}
-                    </span>
-                    <span className={styles.tileFooter}>
-                      <span className={styles.tilePrice}>
-                        {money(stockPrice(item))}
-                      </span>
-                      <span className={styles.tileAdd} aria-hidden>
-                        +
-                      </span>
-                    </span>
-                  </button>
+                    <Stack gap="xs" width="full">
+                      <Text weight="semibold" className={styles.tileName}>
+                        {item.name}
+                      </Text>
+                      <Text variant="caption" color="secondary" className={styles.tileMeta}>
+                        {outOfStock ? 'Out of stock' : `${available} in stock`}
+                      </Text>
+                      <Inline className={styles.tileFooter} justify="between" align="center" width="full">
+                        <Text weight="semibold" className={styles.tilePrice}>
+                          {money(stockPrice(item))}
+                        </Text>
+                        <Text aria-hidden className={styles.tileAdd}>
+                          +
+                        </Text>
+                      </Inline>
+                    </Stack>
+                  </Button>
                 );
               })}
-            </div>
-          </section>
-        )}
-      </div>
-    </div>
+            </Grid>
+          </Box>
+        ) : null}
+      </Box>
+    </Stack>
   );
 }

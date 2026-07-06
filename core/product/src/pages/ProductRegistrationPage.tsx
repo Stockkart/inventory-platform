@@ -1,6 +1,5 @@
 import {
   useState,
-  FormEvent,
   useRef,
   useEffect,
   useLayoutEffect,
@@ -67,6 +66,28 @@ import {
   packagingFactorToUnitsPerPack,
   resolvePackagingUqc,
 } from '../ui/PackagingFactorInput';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardBody,
+  Input,
+  Label,
+  Modal,
+  PageHeader,
+  Select,
+  Spinner,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
+  Text,
+  Textarea,
+} from '@inventory-platform/ui-kit';
 import styles from './product-registration.module.css';
 
 function optionalNumFromString(s: string): number | undefined {
@@ -1718,8 +1739,7 @@ export function ProductRegistrationPage() {
     notifySuccess('Updated all rows with the values you entered above.');
   };
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setError(null);
     setSuccess(null);
 
@@ -2562,69 +2582,68 @@ export function ProductRegistrationPage() {
   };
 
   return (
-    <div className={styles.page}>
-      <div className={styles.header}>
-        <h2 className={styles.title}>Product Registration</h2>
-        <p className={styles.subtitle}>
-          Register multiple products at once with shared vendor and stock-in
-          (invoice) information
-        </p>
-      </div>
+    <Stack gap="lg" className={styles.page}>
+      <PageHeader
+        title="Product Registration"
+        description="Register multiple products at once with shared vendor and stock-in (invoice) information"
+      />
 
-      <div className={styles.formContainer}>
-        {error && <div className={styles.errorMessage}>{error}</div>}
-        {success && <div className={styles.successMessage}>{success}</div>}
+      <Card className={styles.formContainer}>
+        <CardBody>
+          <Stack gap="lg">
+        {error ? <Alert variant="danger">{error}</Alert> : null}
+        {success ? <Alert variant="success">{success}</Alert> : null}
 
-        <form className={styles.form} onSubmit={handleSubmit}>
-          <div className={styles.uploadSection}>
-            <div className={styles.uploadHeader}>
-              <h3 className={styles.sectionTitle}>
+        <Stack className={styles.form} gap="lg">
+          <Box className={styles.uploadSection}>
+            <Box className={styles.uploadHeader}>
+              <Text variant="heading3" className={styles.sectionTitle}>
                 Upload Invoice Image (Optional)
-              </h3>
-              <ul className={styles.helperText}>
-                <li>Upload invoice image to auto-parse product details</li>
-                <li>Review and edit parsed products before bulk save</li>
-              </ul>
-            </div>
-            <div className={styles.uploadOptionsHeader}>
-              <span className={styles.uploadOptionsLabel}>
+              </Text>
+              <Box as="ul" className={styles.helperText}>
+                <Box as="li">Upload invoice image to auto-parse product details</Box>
+                <Box as="li">Review and edit parsed products before bulk save</Box>
+              </Box>
+            </Box>
+            <Box className={styles.uploadOptionsHeader}>
+              <Text as="span" className={styles.uploadOptionsLabel}>
                 Choose upload method:
-              </span>
-            </div>
-            <div className={styles.uploadOptionsGrid}>
-              <button
+              </Text>
+            </Box>
+            <Box className={styles.uploadOptionsGrid}>
+              <Button
                 type="button"
                 className={styles.qrUploadBtn}
                 onClick={handleCreateQrCode}
                 disabled={isUploading || isLoading || isPolling}
               >
-                <div className={styles.qrBtnIcon}>
-                  <span role="img" aria-label="QR Code icon">
+                <Box className={styles.qrBtnIcon}>
+                  <Text as="span" role="img" aria-label="QR Code icon">
                     📱
-                  </span>
-                </div>
-                <div className={styles.qrBtnContent}>
-                  <span className={styles.qrBtnTitle}>Upload via QR Code</span>
-                  <span className={styles.qrBtnSubtitle}>
+                  </Text>
+                </Box>
+                <Box className={styles.qrBtnContent}>
+                  <Text as="span" className={styles.qrBtnTitle}>Upload via QR Code</Text>
+                  <Text as="span" className={styles.qrBtnSubtitle}>
                     Use mobile device to scan & upload
-                  </span>
-                </div>
-              </button>
-              <div className={styles.uploadOptionsOr}>
-                <div className={styles.uploadOptionsOrLine}></div>
-                <span className={styles.uploadOptionsOrText}>OR</span>
-                <div className={styles.uploadOptionsOrLine}></div>
-              </div>
-              <div className={styles.uploadContainer}>
-                <div className={styles.uploadOptionLabel}>
-                  <span className={styles.uploadOptionTitle}>
+                  </Text>
+                </Box>
+              </Button>
+              <Box className={styles.uploadOptionsOr}>
+                <Box className={styles.uploadOptionsOrLine}></Box>
+                <Text as="span" className={styles.uploadOptionsOrText}>OR</Text>
+                <Box className={styles.uploadOptionsOrLine}></Box>
+              </Box>
+              <Box className={styles.uploadContainer}>
+                <Box className={styles.uploadOptionLabel}>
+                  <Text as="span" className={styles.uploadOptionTitle}>
                     Upload from this device
-                  </span>
-                  <span className={styles.uploadOptionSubtitle}>
+                  </Text>
+                  <Text as="span" className={styles.uploadOptionSubtitle}>
                     Choose one or more photos (multi-page invoice)
-                  </span>
-                </div>
-                <input
+                  </Text>
+                </Box>
+                <Input
                   ref={fileInputRef}
                   type="file"
                   accept="image/*"
@@ -2634,117 +2653,117 @@ export function ProductRegistrationPage() {
                   id="invoice-upload"
                   disabled={isUploading || isLoading}
                 />
-                <div className={styles.uploadControls}>
-                  <label
+                <Box className={styles.uploadControls}>
+                  <Label
                     htmlFor="invoice-upload"
                     className={styles.fileInputLabel}
                   >
                     {selectedFiles.length > 0 ? (
-                      <div className={styles.fileListSummary}>
-                        <span
+                      <Box className={styles.fileListSummary}>
+                        <Text as="span"
                           className={styles.fileIcon}
                           role="img"
                           aria-label="Files selected"
                         >
                           📄
-                        </span>
-                        <span className={styles.fileListCount}>
+                        </Text>
+                        <Text as="span" className={styles.fileListCount}>
                           {selectedFiles.length} image
                           {selectedFiles.length === 1 ? '' : 's'} selected
-                        </span>
-                        <span className={styles.fileListHint}>
+                        </Text>
+                        <Text as="span" className={styles.fileListHint}>
                           Click to add more
-                        </span>
-                      </div>
+                        </Text>
+                      </Box>
                     ) : (
-                      <div className={styles.uploadPlaceholder}>
-                        <span
+                      <Box className={styles.uploadPlaceholder}>
+                        <Text as="span"
                           className={styles.uploadIcon}
                           role="img"
                           aria-label="Upload icon"
                         >
                           📤
-                        </span>
-                        <span>Click to browse images</span>
-                      </div>
+                        </Text>
+                        <Text as="span">Click to browse images</Text>
+                      </Box>
                     )}
-                  </label>
+                  </Label>
 
                   {selectedFiles.length > 0 && (
-                    <ul className={styles.fileList}>
+                    <Box as="ul" className={styles.fileList}>
                       {selectedFiles.map((file, index) => (
-                        <li key={`${file.name}-${index}`} className={styles.fileListItem}>
-                          <span className={styles.fileName} title={file.name}>
+                        <Box as="li" key={`${file.name}-${index}`} className={styles.fileListItem}>
+                          <Text as="span" className={styles.fileName} title={file.name}>
                             {index + 1}. {file.name}
-                          </span>
-                          <span className={styles.fileSize}>
+                          </Text>
+                          <Text as="span" className={styles.fileSize}>
                             ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                          </span>
+                          </Text>
                           {!isUploading && (
-                            <button
+                            <Button
                               type="button"
                               className={styles.fileRemoveBtn}
                               onClick={() => handleRemoveSelectedFile(index)}
                               aria-label={`Remove ${file.name}`}
                             >
                               ×
-                            </button>
+                            </Button>
                           )}
-                        </li>
+                        </Box>
                       ))}
-                    </ul>
+                    </Box>
                   )}
 
                   {isUploading && (
-                    <div className={styles.uploadProgress}>
-                      <div className={styles.progressSpinner}></div>
-                      <div className={styles.progressText}>
+                    <Box className={styles.uploadProgress}>
+                      <Spinner size="sm" />
+                      <Box className={styles.progressText}>
                         {uploadProgress}
-                      </div>
-                    </div>
+                      </Box>
+                    </Box>
                   )}
 
                   {selectedFiles.length > 0 && !isUploading && (
-                    <div className={styles.uploadActions}>
-                      <button
+                    <Box className={styles.uploadActions}>
+                      <Button
                         type="button"
                         className={styles.uploadBtn}
                         onClick={handleUploadInvoice}
                         disabled={isLoading}
                       >
-                        <span
+                        <Text as="span"
                           className={styles.btnIcon}
                           role="img"
                           aria-label="Rocket icon"
                         >
                           🚀
-                        </span>
+                        </Text>
                         Parse{' '}
                         {selectedFiles.length > 1 ? 'Invoices' : 'Invoice'}
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="button"
                         className={styles.clearUploadBtn}
                         onClick={handleClearUpload}
                         disabled={isLoading}
                       >
                         Clear
-                      </button>
-                    </div>
+                      </Button>
+                    </Box>
                   )}
-                </div>
-              </div>
-            </div>
-          </div>
+                </Box>
+              </Box>
+            </Box>
+          </Box>
 
           {/* Shared vendor & billing */}
-          <div className={styles.sharedSection}>
-            <h3 className={styles.sectionTitle}>Shared Information</h3>
-            <div className={styles.sharedTopRow}>
-              <span className={styles.sharedHint}>
+          <Box className={styles.sharedSection}>
+            <Text variant="heading3" className={styles.sectionTitle}>Shared Information</Text>
+            <Box className={styles.sharedTopRow}>
+              <Text as="span" className={styles.sharedHint}>
                 Applies to all products.
-              </span>
-              <select
+              </Text>
+              <Select
                 className={`${styles.input} ${styles.sharedModeSelect}`}
                 value={billingMode}
                 onChange={(e) =>
@@ -2755,19 +2774,19 @@ export function ProductRegistrationPage() {
               >
                 <option value="REGULAR">REGULAR</option>
                 <option value="BASIC">BASIC</option>
-              </select>
-            </div>
+              </Select>
+            </Box>
 
             {/* Vendor Section */}
-            <div className={styles.vendorSection}>
-              <h4 className={styles.subsectionTitle}>Vendor Information *</h4>
-              <div className={styles.formGroup}>
-                <label htmlFor="vendorSearch" className={styles.label}>
+            <Box className={styles.vendorSection}>
+              <Text variant="heading4" className={styles.subsectionTitle}>Vendor Information *</Text>
+              <Box className={styles.formGroup}>
+                <Label htmlFor="vendorSearch" className={styles.label}>
                   Vendor Search *
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <input
+                </Label>
+                <Box style={{ position: 'relative' }}>
+                  <Box style={{ display: 'flex', gap: '8px' }}>
+                    <Input
                       type="text"
                       id="vendorSearch"
                       className={styles.input}
@@ -2781,7 +2800,7 @@ export function ProductRegistrationPage() {
                       disabled={isLoading || isSearchingVendor}
                       style={{ flex: 1 }}
                     />
-                    <button
+                    <Button
                       type="button"
                       className={styles.searchBtn}
                       onClick={handleVendorSearch}
@@ -2792,68 +2811,68 @@ export function ProductRegistrationPage() {
                       }
                     >
                       {isSearchingVendor ? 'Searching...' : 'Search'}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
                       className={styles.createVendorBtn}
                       onClick={() => setShowVendorModal(true)}
                       disabled={isLoading || isCreatingVendor}
                     >
                       Create New
-                    </button>
+                    </Button>
                     {selectedVendor && (
-                      <button
+                      <Button
                         type="button"
                         className={styles.clearBtn}
                         onClick={handleClearVendor}
                         disabled={isLoading}
                       >
                         Clear
-                      </button>
+                      </Button>
                     )}
-                  </div>
+                  </Box>
                   {showVendorDropdown && vendorSearchResults.length > 0 && (
-                    <div className={styles.dropdown}>
+                    <Box className={styles.dropdown}>
                       {vendorSearchResults.map((vendor) => (
-                        <div
+                        <Box
                           key={vendor.vendorId}
                           className={styles.dropdownItem}
                           onClick={() => handleSelectVendor(vendor)}
                         >
-                          <div style={{ fontWeight: 500 }}>{vendor.name}</div>
+                          <Box style={{ fontWeight: 500 }}>{vendor.name}</Box>
                           {vendor.contactPhone && (
-                            <div
+                            <Box
                               style={{
                                 fontSize: '0.85rem',
                                 color: 'var(--text-secondary)',
                               }}
                             >
                               {vendor.contactPhone}
-                            </div>
+                            </Box>
                           )}
                           {vendor.gstinUin && (
-                            <div
+                            <Box
                               style={{
                                 fontSize: '0.8rem',
                                 color: 'var(--text-tertiary)',
                               }}
                             >
                               GSTIN: {vendor.gstinUin}
-                            </div>
+                            </Box>
                           )}
-                        </div>
+                        </Box>
                       ))}
-                    </div>
+                    </Box>
                   )}
                   {showVendorDropdown &&
                     vendorSearchResults.length === 0 &&
                     !isSearchingVendor && (
-                      <div className={styles.vendorNotFound}>
-                        <p>
+                      <Box className={styles.vendorNotFound}>
+                        <Text>
                           No vendors found. Would you like to create a new
                           vendor?
-                        </p>
-                        <button
+                        </Text>
+                        <Button
                           type="button"
                           className={styles.createVendorBtn}
                           onClick={() => {
@@ -2863,81 +2882,81 @@ export function ProductRegistrationPage() {
                           disabled={isLoading}
                         >
                           Create New Vendor
-                        </button>
-                      </div>
+                        </Button>
+                      </Box>
                     )}
-                </div>
-              </div>
+                </Box>
+              </Box>
               {selectedVendor && (
-                <div className={styles.vendorInfo}>
-                  <div className={styles.vendorCard}>
+                <Box className={styles.vendorInfo}>
+                  <Box className={styles.vendorCard}>
                     {selectedVendor.userId && (
-                      <span className={styles.stockkartUserBadge}>
+                      <Text as="span" className={styles.stockkartUserBadge}>
                         StockKart user
-                      </span>
+                      </Text>
                     )}
-                    <h4>{selectedVendor.name}</h4>
-                    <p>
-                      <strong>Phone:</strong> {selectedVendor.contactPhone}
-                    </p>
+                    <Text variant="heading4">{selectedVendor.name}</Text>
+                    <Text>
+                      <Text as="span" weight="bold">Phone:</Text> {selectedVendor.contactPhone}
+                    </Text>
                     {selectedVendor.contactEmail && (
-                      <p>
-                        <strong>Email:</strong> {selectedVendor.contactEmail}
-                      </p>
+                      <Text>
+                        <Text as="span" weight="bold">Email:</Text> {selectedVendor.contactEmail}
+                      </Text>
                     )}
                     {selectedVendor.address && (
-                      <p>
-                        <strong>Address:</strong> {selectedVendor.address}
-                      </p>
+                      <Text>
+                        <Text as="span" weight="bold">Address:</Text> {selectedVendor.address}
+                      </Text>
                     )}
                     {selectedVendor.gstinUin && (
-                      <p>
-                        <strong>GSTIN / UIN:</strong> {selectedVendor.gstinUin}
-                      </p>
+                      <Text>
+                        <Text as="span" weight="bold">GSTIN / UIN:</Text> {selectedVendor.gstinUin}
+                      </Text>
                     )}
-                    <p>
-                      <strong>Business Type:</strong>{' '}
+                    <Text>
+                      <Text as="span" weight="bold">Business Type:</Text>{' '}
                       {selectedVendor.businessType}
-                    </p>
-                  </div>
-                </div>
+                    </Text>
+                  </Box>
+                </Box>
               )}
 
-              <div
+              <Box
                 className={styles.vendorSection}
                 style={{ marginTop: '1.25rem' }}
               >
-                <h4 className={styles.subsectionTitle}>
+                <Text variant="heading4" className={styles.subsectionTitle}>
                   Vendor purchase invoice (optional)
-                </h4>
-                <p
+                </Text>
+                <Text
                   className={styles.helperText}
                   style={{ marginBottom: '0.75rem' }}
                 >
                   Add the supplier&apos;s invoice number and amounts to keep a
                   history of what was bought on each bill. Leave blank to
                   register stock without an invoice record.
-                </p>
+                </Text>
                 {products.length > 0 ? (
-                  <p
+                  <Text
                     className={styles.helperText}
                     style={{ marginBottom: '0.75rem', fontSize: '0.85rem' }}
                   >
                     Amounts tracked here follow each row&apos;s{' '}
-                    <strong>PTS (price from stockist)</strong> × quantity when
-                    PTS is set; <strong>PTR</strong> is only used when PTS is
+                    <Text as="span" weight="bold">PTS (price from stockist)</Text> × quantity when
+                    PTS is set; <Text as="span" weight="bold">PTR</Text> is only used when PTS is
                     empty.{' '}
                     {billingMode !== 'BASIC'
                       ? 'With CGST/SGST on the row, PTS × qty is taxable value (ex‑GST); tax is added on top for line subtotal + tax totals.'
                       : null}
-                  </p>
+                  </Text>
                 ) : null}
-                <div className={styles.sharedInfoGrid}>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="vendorInvoiceNo" className={styles.label}>
+                <Box className={styles.sharedInfoGrid}>
+                  <Box className={styles.formGroup}>
+                    <Label htmlFor="vendorInvoiceNo" className={styles.label}>
                       Invoice number
-                    </label>
-                    <input
+                    </Label>
+                    <Input
                       id="vendorInvoiceNo"
                       type="text"
                       className={styles.input}
@@ -2946,15 +2965,15 @@ export function ProductRegistrationPage() {
                       placeholder="e.g. INV-2024-001"
                       disabled={isLoading}
                     />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label
+                  </Box>
+                  <Box className={styles.formGroup}>
+                    <Label
                       htmlFor="vendorInvoiceDate"
                       className={styles.label}
                     >
                       Invoice date
-                    </label>
-                    <input
+                    </Label>
+                    <Input
                       id="vendorInvoiceDate"
                       type="date"
                       className={styles.input}
@@ -2962,15 +2981,15 @@ export function ProductRegistrationPage() {
                       onChange={(e) => setVendorInvoiceDate(e.target.value)}
                       disabled={isLoading}
                     />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label
+                  </Box>
+                  <Box className={styles.formGroup}>
+                    <Label
                       htmlFor="vendorLineSubTotal"
                       className={styles.label}
                     >
                       Line subtotal
-                    </label>
-                    <input
+                    </Label>
+                    <Input
                       id="vendorLineSubTotal"
                       type="text"
                       inputMode="decimal"
@@ -2980,12 +2999,12 @@ export function ProductRegistrationPage() {
                       placeholder="0"
                       disabled={isLoading}
                     />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="vendorTaxTotal" className={styles.label}>
+                  </Box>
+                  <Box className={styles.formGroup}>
+                    <Label htmlFor="vendorTaxTotal" className={styles.label}>
                       Tax total
-                    </label>
-                    <input
+                    </Label>
+                    <Input
                       id="vendorTaxTotal"
                       type="text"
                       inputMode="decimal"
@@ -2995,15 +3014,15 @@ export function ProductRegistrationPage() {
                       placeholder="0"
                       disabled={isLoading}
                     />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label
+                  </Box>
+                  <Box className={styles.formGroup}>
+                    <Label
                       htmlFor="vendorShippingCharge"
                       className={styles.label}
                     >
                       Shipping / delivery
-                    </label>
-                    <input
+                    </Label>
+                    <Input
                       id="vendorShippingCharge"
                       type="text"
                       inputMode="decimal"
@@ -3015,15 +3034,15 @@ export function ProductRegistrationPage() {
                       placeholder="0"
                       disabled={isLoading}
                     />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label
+                  </Box>
+                  <Box className={styles.formGroup}>
+                    <Label
                       htmlFor="vendorOtherCharges"
                       className={styles.label}
                     >
                       Other charges
-                    </label>
-                    <input
+                    </Label>
+                    <Input
                       id="vendorOtherCharges"
                       type="text"
                       inputMode="decimal"
@@ -3033,15 +3052,15 @@ export function ProductRegistrationPage() {
                       placeholder="0"
                       disabled={isLoading}
                     />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label
+                  </Box>
+                  <Box className={styles.formGroup}>
+                    <Label
                       htmlFor="vendorOverallDiscount"
                       className={styles.label}
                     >
                       Overall discount
-                    </label>
-                    <input
+                    </Label>
+                    <Input
                       id="vendorOverallDiscount"
                       type="text"
                       inputMode="decimal"
@@ -3053,12 +3072,12 @@ export function ProductRegistrationPage() {
                       placeholder="0"
                       disabled={isLoading}
                     />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="vendorRoundOff" className={styles.label}>
+                  </Box>
+                  <Box className={styles.formGroup}>
+                    <Label htmlFor="vendorRoundOff" className={styles.label}>
                       Round off
-                    </label>
-                    <input
+                    </Label>
+                    <Input
                       id="vendorRoundOff"
                       type="text"
                       inputMode="decimal"
@@ -3068,17 +3087,17 @@ export function ProductRegistrationPage() {
                       placeholder="0"
                       disabled={isLoading}
                     />
-                  </div>
-                  <div
+                  </Box>
+                  <Box
                     className={`${styles.formGroup} ${styles.sharedInfoGridSpanFull}`}
                   >
-                    <label
+                    <Label
                       htmlFor="vendorInvoiceTotal"
                       className={styles.label}
                     >
                       Invoice total
-                    </label>
-                    <input
+                    </Label>
+                    <Input
                       id="vendorInvoiceTotal"
                       type="text"
                       inputMode="decimal"
@@ -3088,69 +3107,69 @@ export function ProductRegistrationPage() {
                       disabled={isLoading}
                       readOnly
                     />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+                  </Box>
+                </Box>
+              </Box>
+            </Box>
+          </Box>
 
-          <div className={styles.separator}>
-            <div className={styles.separatorLine}></div>
-            <div className={styles.separatorContent}>
-              <span
+          <Box className={styles.separator}>
+            <Box className={styles.separatorLine}></Box>
+            <Box className={styles.separatorContent}>
+              <Text as="span"
                 className={styles.separatorIcon}
                 role="img"
                 aria-label="Sparkle icon"
               >
                 ✨
-              </span>
-              <span className={styles.separatorText}>
+              </Text>
+              <Text as="span" className={styles.separatorText}>
                 Or manually add products below
-              </span>
-            </div>
-            <div className={styles.separatorLine}></div>
-          </div>
+              </Text>
+            </Box>
+            <Box className={styles.separatorLine}></Box>
+          </Box>
 
           {/* Products Section */}
-          <div className={styles.productsSection} ref={productsSectionRef}>
+          <Box className={styles.productsSection} ref={productsSectionRef}>
             {showReviewBanner && (
-              <div className={styles.reviewBanner}>
-                <div className={styles.reviewBannerContent}>
-                  <span
+              <Box className={styles.reviewBanner}>
+                <Box className={styles.reviewBannerContent}>
+                  <Text as="span"
                     className={styles.reviewBannerIcon}
                     role="img"
                     aria-label="Clipboard icon"
                   >
                     📋
-                  </span>
-                  <div className={styles.reviewBannerText}>
-                    <strong>Review Required:</strong> Please review the{' '}
+                  </Text>
+                  <Box className={styles.reviewBannerText}>
+                    <Text as="span" weight="bold">Review Required:</Text> Please review the{' '}
                     {reviewBannerItemsCount} item(s) below and fill in any
                     missing information before submitting.
-                  </div>
-                  <button
+                  </Box>
+                  <Button
                     type="button"
                     className={styles.reviewBannerClose}
                     onClick={() => setShowReviewBanner(false)}
                     aria-label="Close review banner"
                   >
                     ×
-                  </button>
-                </div>
-              </div>
+                  </Button>
+                </Box>
+              </Box>
             )}
-            <div className={styles.productsHeader}>
-              <h3 className={styles.sectionTitle}>Products</h3>
-              <div className={styles.productsHeaderRight}>
+            <Box className={styles.productsHeader}>
+              <Text variant="heading3" className={styles.sectionTitle}>Products</Text>
+              <Box className={styles.productsHeaderRight}>
                 {products.length > 0 && (
-                  <div className={styles.viewToggleWrap}>
-                    <span className={styles.viewToggleLabel}>View:</span>
-                    <div
+                  <Box className={styles.viewToggleWrap}>
+                    <Text as="span" className={styles.viewToggleLabel}>View:</Text>
+                    <Box
                       className={styles.viewToggleButtons}
                       role="group"
                       aria-label="Product view mode"
                     >
-                      <button
+                      <Button
                         type="button"
                         className={`${styles.viewToggleBtn} ${
                           productViewMode === 'list'
@@ -3167,9 +3186,9 @@ export function ProductRegistrationPage() {
                         title="List view"
                         aria-pressed={productViewMode === 'list'}
                       >
-                        <span aria-hidden>☰</span> List
-                      </button>
-                      <button
+                        <Text as="span" aria-hidden>☰</Text> List
+                      </Button>
+                      <Button
                         type="button"
                         className={`${styles.viewToggleBtn} ${
                           productViewMode === 'grid'
@@ -3186,12 +3205,12 @@ export function ProductRegistrationPage() {
                         title="Grid view"
                         aria-pressed={productViewMode === 'grid'}
                       >
-                        <span aria-hidden>⊞</span> Grid
-                      </button>
-                    </div>
-                  </div>
+                        <Text as="span" aria-hidden>⊞</Text> Grid
+                      </Button>
+                    </Box>
+                  </Box>
                 )}
-                <button
+                <Button
                   type="button"
                   className={styles.addProductBtn}
                   onClick={handleAddProduct}
@@ -3203,132 +3222,132 @@ export function ProductRegistrationPage() {
                   }
                 >
                   + Add Product
-                </button>
-              </div>
-            </div>
+                </Button>
+              </Box>
+            </Box>
 
             {!registrationSchemaReady ? (
-              <div
+              <Box
                 className={styles.schemaLoadingState}
                 role="status"
                 aria-live="polite"
               >
                 {schemaLoadError ? (
                   <>
-                    <p className={styles.schemaLoadingTitle}>
+                    <Text className={styles.schemaLoadingTitle}>
                       Could not load product fields
-                    </p>
-                    <p className={styles.schemaLoadingHint}>{schemaLoadError}</p>
+                    </Text>
+                    <Text className={styles.schemaLoadingHint}>{schemaLoadError}</Text>
                   </>
                 ) : (
                   <>
-                    <div className={styles.spinner} aria-hidden />
-                    <p className={styles.schemaLoadingTitle}>
+                    <Spinner size="md" aria-hidden />
+                    <Text className={styles.schemaLoadingTitle}>
                       Loading product fields…
-                    </p>
-                    <p className={styles.schemaLoadingHint}>
+                    </Text>
+                    <Text className={styles.schemaLoadingHint}>
                       Vertical columns come from your shop schema only — no
                       fields are shown until loading finishes.
-                    </p>
+                    </Text>
                   </>
                 )}
-              </div>
+              </Box>
             ) : (
               <>
                 {products.length > 0 && (
-                  <p className={styles.keyboardNavHint}>
-                    <span className={styles.keyboardNavHintLabel}>Keyboard:</span>{' '}
-                    <kbd className={styles.kbdInline}>Enter</kbd> next field ·{' '}
-                    <kbd className={styles.kbdInline}>↑</kbd>
-                    <kbd className={styles.kbdInline}>↓</kbd>{' '}
+                  <Text className={styles.keyboardNavHint}>
+                    <Text as="span" className={styles.keyboardNavHintLabel}>Keyboard:</Text>{' '}
+                    <Text as="kbd" className={styles.kbdInline}>Enter</Text> next field ·{' '}
+                    <Text as="kbd" className={styles.kbdInline}>↑</Text>
+                    <Text as="kbd" className={styles.kbdInline}>↓</Text>{' '}
                     {productViewMode === 'grid'
                       ? 'same column'
                       : 'previous / next'}
                     {' · '}
-                    <kbd className={styles.kbdInline}>Shift</kbd>+
-                    <kbd className={styles.kbdInline}>Enter</kbd> back
-                  </p>
+                    <Text as="kbd" className={styles.kbdInline}>Shift</Text>+
+                    <Text as="kbd" className={styles.kbdInline}>Enter</Text> back
+                  </Text>
                 )}
 
                 {products.length === 0 ? (
-                  <div className={styles.emptyState}>
-                    <p>
+                  <Box className={styles.emptyState}>
+                    <Text>
                       No products added yet. Click &quot;Add Product&quot; to get
                       started.
-                    </p>
-                  </div>
+                    </Text>
+                  </Box>
                 ) : productViewMode === 'grid' ? (
-              <div
+              <Box
                 className={styles.excelTableWrap}
                 {...{ 'data-keyboard-nav': KEYBOARD_NAV_GRID }}
-                onKeyDownCapture={(e) => {
+                onKeyDownCapture={(e: React.KeyboardEvent<HTMLElement>) => {
                   if (shouldSkipNestedFormKeyboardNav(document.activeElement)) {
                     return;
                   }
                   runFormKeyboardNavigation(e, e.currentTarget, 'grid');
                 }}
               >
-                <table
+                <Table
                   key={schemaModeForBilling(billingMode)}
                   className={styles.excelTable}
                 >
-                  <thead>
-                    <tr>
-                      <th className={styles.excelTh}>#</th>
-                      <th className={styles.excelTh}>Barcode</th>
+                  <TableHead>
+                    <TableRow>
+                      <TableHeaderCell className={styles.excelTh}>#</TableHeaderCell>
+                      <TableHeaderCell className={styles.excelTh}>Barcode</TableHeaderCell>
                       <VerticalRegistrationGridCompanyHeader field={companyField} />
-                      <th className={styles.excelTh}>Product *</th>
+                      <TableHeaderCell className={styles.excelTh}>Product *</TableHeaderCell>
                       <VerticalRegistrationGridHeaders fields={verticalRegistrationFields} />
-                      <th className={styles.excelTh}>Count *</th>
-                      <th className={styles.excelTh}>Packaging</th>
-                      <th className={styles.excelTh}>Location *</th>
+                      <TableHeaderCell className={styles.excelTh}>Count *</TableHeaderCell>
+                      <TableHeaderCell className={styles.excelTh}>Packaging</TableHeaderCell>
+                      <TableHeaderCell className={styles.excelTh}>Location *</TableHeaderCell>
                       {sellDirectField && (
-                        <th className={styles.excelTh}>
+                        <TableHeaderCell className={styles.excelTh}>
                           {fieldLabel(sellDirectField)} *
-                        </th>
+                        </TableHeaderCell>
                       )}
                       {billingMode !== 'BASIC' && (
-                        <th className={styles.excelTh}>HSN</th>
+                        <TableHeaderCell className={styles.excelTh}>HSN</TableHeaderCell>
                       )}
                       {isSimplePricing ? (
                         <>
-                          <th className={styles.excelTh}>Rate *</th>
-                          <th className={styles.excelTh}>Sell price</th>
+                          <TableHeaderCell className={styles.excelTh}>Rate *</TableHeaderCell>
+                          <TableHeaderCell className={styles.excelTh}>Sell price</TableHeaderCell>
                         </>
                       ) : (
                         <>
-                          <th className={styles.excelTh}>PTS *</th>
-                          <th className={styles.excelTh}>PTR *</th>
-                          <th className={styles.excelTh}>MRP *</th>
-                          <th className={styles.excelTh}>Sale deal type</th>
-                          <th
+                          <TableHeaderCell className={styles.excelTh}>PTS *</TableHeaderCell>
+                          <TableHeaderCell className={styles.excelTh}>PTR *</TableHeaderCell>
+                          <TableHeaderCell className={styles.excelTh}>MRP *</TableHeaderCell>
+                          <TableHeaderCell className={styles.excelTh}>Sale deal type</TableHeaderCell>
+                          <TableHeaderCell
                             className={styles.excelTh}
                             title='When deal type is Percentage, scheme % is required.'
                           >
                             Sale scheme
-                          </th>
-                          <th className={styles.excelTh}>Sale disc %</th>
-                          <th className={styles.excelTh}>Purchase deal type</th>
-                          <th className={styles.excelTh}>Purchase scheme</th>
-                          <th className={styles.excelTh}>Purchase disc %</th>
-                          <th className={styles.excelTh}>Item type</th>
-                          <th
+                          </TableHeaderCell>
+                          <TableHeaderCell className={styles.excelTh}>Sale disc %</TableHeaderCell>
+                          <TableHeaderCell className={styles.excelTh}>Purchase deal type</TableHeaderCell>
+                          <TableHeaderCell className={styles.excelTh}>Purchase scheme</TableHeaderCell>
+                          <TableHeaderCell className={styles.excelTh}>Purchase disc %</TableHeaderCell>
+                          <TableHeaderCell className={styles.excelTh}>Item type</TableHeaderCell>
+                          <TableHeaderCell
                             className={styles.excelTh}
                             title="Required when item type is Temperature for the item"
                           >
                             ° *
-                          </th>
-                          <th className={styles.excelTh}>Disc appl.</th>
+                          </TableHeaderCell>
+                          <TableHeaderCell className={styles.excelTh}>Disc appl.</TableHeaderCell>
                         </>
                       )}
                       {billingMode === 'REGULAR' && (
                         <>
-                          <th className={styles.excelTh}>CGST %</th>
-                          <th className={styles.excelTh}>SGST %</th>
+                          <TableHeaderCell className={styles.excelTh}>CGST %</TableHeaderCell>
+                          <TableHeaderCell className={styles.excelTh}>SGST %</TableHeaderCell>
                         </>
                       )}
-                      <th className={styles.excelTh}>Actions</th>
-                    </tr>
+                      <TableHeaderCell className={styles.excelTh}>Actions</TableHeaderCell>
+                    </TableRow>
                     <GridBulkFillRow
                       bulk={gridBulkFill}
                       billingMode={billingMode}
@@ -3341,13 +3360,13 @@ export function ProductRegistrationPage() {
                       onVerticalBulkChange={handleVerticalBulkChange}
                       onApply={handleApplyGridBulkFill}
                     />
-                  </thead>
-                  <tbody>
+                  </TableHead>
+                  <TableBody>
                     {products.map((product, idx) => (
-                      <tr key={product.id} className={styles.excelTr}>
-                        <td className={styles.excelTd}>{idx + 1}</td>
-                        <td className={styles.excelTd}>
-                          <input
+                      <TableRow key={product.id} className={styles.excelTr}>
+                        <TableCell className={styles.excelTd}>{idx + 1}</TableCell>
+                        <TableCell className={styles.excelTd}>
+                          <Input
                             type="text"
                             className={styles.excelInput}
                             placeholder="Barcode"
@@ -3361,7 +3380,7 @@ export function ProductRegistrationPage() {
                             }
                             disabled={isLoading}
                           />
-                        </td>
+                        </TableCell>
                         <VerticalRegistrationGridCompanyCell
                           field={companyField}
                           product={product}
@@ -3371,8 +3390,8 @@ export function ProductRegistrationPage() {
                             applyVerticalFieldChange(product.id, field, value)
                           }
                         />
-                        <td className={styles.excelTd}>
-                          <input
+                        <TableCell className={styles.excelTd}>
+                          <Input
                             type="text"
                             className={styles.excelInput}
                             placeholder="Product name"
@@ -3387,7 +3406,7 @@ export function ProductRegistrationPage() {
                             disabled={isLoading}
                             required
                           />
-                        </td>
+                        </TableCell>
                         <VerticalRegistrationGridCells
                           fields={verticalRegistrationFields}
                           product={product}
@@ -3397,8 +3416,8 @@ export function ProductRegistrationPage() {
                             applyVerticalFieldChange(product.id, field, value)
                           }
                         />
-                        <td className={styles.excelTd}>
-                          <input
+                        <TableCell className={styles.excelTd}>
+                          <Input
                             type="text"
                             inputMode="numeric"
                             pattern="[0-9]*"
@@ -3415,8 +3434,8 @@ export function ProductRegistrationPage() {
                             disabled={isLoading}
                             required
                           />
-                        </td>
-                        <td className={styles.excelTd}>
+                        </TableCell>
+                        <TableCell className={styles.excelTd}>
                           <PackagingUnitInput
                             label=""
                             compact
@@ -3452,9 +3471,9 @@ export function ProductRegistrationPage() {
                             }}
                             disabled={isLoading}
                           />
-                        </td>
-                        <td className={styles.excelTd}>
-                          <input
+                        </TableCell>
+                        <TableCell className={styles.excelTd}>
+                          <Input
                             type="text"
                             className={styles.excelInput}
                             placeholder="Location"
@@ -3469,10 +3488,10 @@ export function ProductRegistrationPage() {
                             disabled={isLoading}
                             required
                           />
-                        </td>
+                        </TableCell>
                         {sellDirectField && (
-                          <td className={styles.excelTd}>
-                            <select
+                          <TableCell className={styles.excelTd}>
+                            <Select
                               className={styles.excelInput}
                               value={
                                 getVerticalFieldValue(product, sellDirectField) ||
@@ -3490,13 +3509,13 @@ export function ProductRegistrationPage() {
                             >
                               <option value="no">No</option>
                               <option value="yes">Yes</option>
-                            </select>
-                          </td>
+                            </Select>
+                          </TableCell>
                         )}
                         {billingMode !== 'BASIC' && (
                           <>
-                            <td className={styles.excelTd}>
-                              <input
+                            <TableCell className={styles.excelTd}>
+                              <Input
                                 type="text"
                                 className={styles.excelInput}
                                 placeholder="HSN"
@@ -3510,13 +3529,13 @@ export function ProductRegistrationPage() {
                                 }
                                 disabled={isLoading}
                               />
-                            </td>
+                            </TableCell>
                           </>
                         )}
                         {isSimplePricing ? (
                           <>
-                            <td className={styles.excelTd}>
-                              <input
+                            <TableCell className={styles.excelTd}>
+                              <Input
                                 type="text"
                                 inputMode="decimal"
                                 pattern="[0-9]*\.?[0-9]*"
@@ -3535,9 +3554,9 @@ export function ProductRegistrationPage() {
                                 disabled={isLoading}
                                 required
                               />
-                            </td>
-                            <td className={styles.excelTd}>
-                              <input
+                            </TableCell>
+                            <TableCell className={styles.excelTd}>
+                              <Input
                                 type="text"
                                 inputMode="decimal"
                                 pattern="[0-9]*\.?[0-9]*"
@@ -3558,12 +3577,12 @@ export function ProductRegistrationPage() {
                                 }
                                 disabled={isLoading}
                               />
-                            </td>
+                            </TableCell>
                           </>
                         ) : (
                           <>
-                        <td className={styles.excelTd}>
-                          <input
+                        <TableCell className={styles.excelTd}>
+                          <Input
                             type="text"
                             inputMode="decimal"
                             pattern="[0-9]*\.?[0-9]*"
@@ -3582,9 +3601,9 @@ export function ProductRegistrationPage() {
                             disabled={isLoading}
                             required
                           />
-                        </td>
-                        <td className={styles.excelTd}>
-                          <input
+                        </TableCell>
+                        <TableCell className={styles.excelTd}>
+                          <Input
                             type="text"
                             inputMode="decimal"
                             pattern="[0-9]*\.?[0-9]*"
@@ -3605,9 +3624,9 @@ export function ProductRegistrationPage() {
                             disabled={isLoading}
                             required
                           />
-                        </td>
-                        <td className={styles.excelTd}>
-                          <input
+                        </TableCell>
+                        <TableCell className={styles.excelTd}>
+                          <Input
                             type="text"
                             inputMode="decimal"
                             pattern="[0-9]*\.?[0-9]*"
@@ -3628,12 +3647,12 @@ export function ProductRegistrationPage() {
                             disabled={isLoading}
                             required
                           />
-                        </td>
-                        <td className={styles.excelTd}>
-                          <label className={styles.srOnly} htmlFor={`grid-scheme-type-${product.id}`}>
+                        </TableCell>
+                        <TableCell className={styles.excelTd}>
+                          <Label className={styles.srOnly} htmlFor={`grid-scheme-type-${product.id}`}>
                             Sale scheme deal type
-                          </label>
-                          <select
+                          </Label>
+                          <Select
                             id={`grid-scheme-type-${product.id}`}
                             className={styles.excelSelect}
                             value={product.schemeType ?? 'FIXED_UNITS'}
@@ -3654,17 +3673,17 @@ export function ProductRegistrationPage() {
                           >
                             <option value="FIXED_UNITS">Free units</option>
                             <option value="PERCENTAGE">Percentage</option>
-                          </select>
-                        </td>
-                        <td className={styles.excelTd}>
-                          <label
+                          </Select>
+                        </TableCell>
+                        <TableCell className={styles.excelTd}>
+                          <Label
                             className={styles.srOnly}
                             htmlFor={`grid-sale-scheme-${product.id}`}
                           >
                             Sale scheme (e.g. 10+2 or 10%; required when deal
                             type is Percentage)
-                          </label>
-                          <input
+                          </Label>
+                          <Input
                             id={`grid-sale-scheme-${product.id}`}
                             type="text"
                             className={styles.excelInputNarrow}
@@ -3799,9 +3818,9 @@ export function ProductRegistrationPage() {
                             }}
                             disabled={isLoading}
                           />
-                        </td>
-                        <td className={styles.excelTd}>
-                          <input
+                        </TableCell>
+                        <TableCell className={styles.excelTd}>
+                          <Input
                             type="number"
                             className={styles.excelInputNarrow}
                             placeholder="—"
@@ -3835,15 +3854,15 @@ export function ProductRegistrationPage() {
                             }}
                             disabled={isLoading}
                           />
-                        </td>
-                        <td className={styles.excelTd}>
-                          <label
+                        </TableCell>
+                        <TableCell className={styles.excelTd}>
+                          <Label
                             className={styles.srOnly}
                             htmlFor={`grid-purchase-scheme-type-${product.id}`}
                           >
                             Purchase scheme deal type
-                          </label>
-                          <select
+                          </Label>
+                          <Select
                             id={`grid-purchase-scheme-type-${product.id}`}
                             className={styles.excelSelect}
                             value={product.purchaseSchemeType ?? 'FIXED_UNITS'}
@@ -3888,10 +3907,10 @@ export function ProductRegistrationPage() {
                             <option value="FIXED_UNITS">Deal ratio</option>
                             <option value="FREE_QUANTITY">Free quantity</option>
                             <option value="PERCENTAGE">Percentage</option>
-                          </select>
-                        </td>
-                        <td className={styles.excelTd}>
-                          <input
+                          </Select>
+                        </TableCell>
+                        <TableCell className={styles.excelTd}>
+                          <Input
                             type="text"
                             className={styles.excelInputNarrow}
                             placeholder={
@@ -3967,9 +3986,9 @@ export function ProductRegistrationPage() {
                             }}
                             disabled={isLoading}
                           />
-                        </td>
-                        <td className={styles.excelTd}>
-                          <input
+                        </TableCell>
+                        <TableCell className={styles.excelTd}>
+                          <Input
                             type="number"
                             className={styles.excelInputNarrow}
                             placeholder="—"
@@ -4003,15 +4022,15 @@ export function ProductRegistrationPage() {
                             }}
                             disabled={isLoading}
                           />
-                        </td>
-                        <td className={styles.excelTd}>
-                          <label
+                        </TableCell>
+                        <TableCell className={styles.excelTd}>
+                          <Label
                             className={styles.srOnly}
                             htmlFor={`grid-item-type-${product.id}`}
                           >
                             Item type
-                          </label>
-                          <select
+                          </Label>
+                          <Select
                             id={`grid-item-type-${product.id}`}
                             className={styles.excelSelect}
                             value={product.itemType ?? 'NORMAL'}
@@ -4037,11 +4056,11 @@ export function ProductRegistrationPage() {
                             <option value="NORMAL">Normal</option>
                             <option value="COSTLY">Costly</option>
                             <option value="DEGREE">Temp / °</option>
-                          </select>
-                        </td>
-                        <td className={styles.excelTd}>
+                          </Select>
+                        </TableCell>
+                        <TableCell className={styles.excelTd}>
                           {product.itemType === 'DEGREE' ? (
-                            <input
+                            <Input
                               id={`grid-item-degree-${product.id}`}
                               aria-label="Temperature or degree value"
                               type="number"
@@ -4081,17 +4100,17 @@ export function ProductRegistrationPage() {
                               disabled={isLoading}
                             />
                           ) : (
-                            <span className={styles.excelCellDash}>—</span>
+                            <Text as="span" className={styles.excelCellDash}>—</Text>
                           )}
-                        </td>
-                        <td className={styles.excelTd}>
-                          <label
+                        </TableCell>
+                        <TableCell className={styles.excelTd}>
+                          <Label
                             className={styles.srOnly}
                             htmlFor={`grid-discount-applicable-${product.id}`}
                           >
                             Discount applicable
-                          </label>
-                          <select
+                          </Label>
+                          <Select
                             id={`grid-discount-applicable-${product.id}`}
                             className={styles.excelSelect}
                             value={product.discountApplicable ?? ''}
@@ -4111,14 +4130,14 @@ export function ProductRegistrationPage() {
                             <option value="DISCOUNT">Discount</option>
                             <option value="SCHEME">Scheme</option>
                             <option value="DISCOUNT_AND_SCHEME">Both</option>
-                          </select>
-                        </td>
+                          </Select>
+                        </TableCell>
                           </>
                         )}
                         {billingMode === 'REGULAR' && (
                           <>
-                            <td className={styles.excelTd}>
-                              <input
+                            <TableCell className={styles.excelTd}>
+                              <Input
                                 type="text"
                                 inputMode="decimal"
                                 className={styles.excelInputNarrow}
@@ -4133,9 +4152,9 @@ export function ProductRegistrationPage() {
                                 }
                                 disabled={isLoading}
                               />
-                            </td>
-                            <td className={styles.excelTd}>
-                              <input
+                            </TableCell>
+                            <TableCell className={styles.excelTd}>
+                              <Input
                                 type="text"
                                 inputMode="decimal"
                                 className={styles.excelInputNarrow}
@@ -4150,11 +4169,11 @@ export function ProductRegistrationPage() {
                                 }
                                 disabled={isLoading}
                               />
-                            </td>
+                            </TableCell>
                           </>
                         )}
-                        <td className={styles.excelTd}>
-                          <button
+                        <TableCell className={styles.excelTd}>
+                          <Button
                             type="button"
                             className={styles.excelRemoveBtn}
                             onClick={() => handleRemoveProduct(product.id)}
@@ -4162,13 +4181,13 @@ export function ProductRegistrationPage() {
                             aria-label="Remove product"
                           >
                             ×
-                          </button>
-                        </td>
-                      </tr>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
-                <p className={styles.gridViewFootnote}>
+                  </TableBody>
+                </Table>
+                <Text className={styles.gridViewFootnote}>
                   Use the fill row above to copy the same value into every row
                   (only columns you type in are updated). Packaging is optional
                   in grid view (defaults to 1× on save). Columns marked * match
@@ -4176,10 +4195,10 @@ export function ProductRegistrationPage() {
                   {isSimplePricing
                     ? ' Customer price is set on the Menu; sell price here is optional reference only. Use list view for custom reminders.'
                     : ' Use list view for rate tiers, description, and reminders.'}
-                </p>
-              </div>
+                </Text>
+              </Box>
             ) : (
-              <div className={styles.productsList}>
+              <Box className={styles.productsList}>
                 {products.map((product, index) => (
                   <ProductAccordion
                     key={product.id}
@@ -4210,15 +4229,15 @@ export function ProductRegistrationPage() {
                     localDateTimeToIso={localDateTimeToIso}
                   />
                 ))}
-              </div>
+              </Box>
             )}
               </>
             )}
-          </div>
+          </Box>
 
           {products.length > 0 && (
             <>
-              <div className={styles.paymentBottomSlot}>
+              <Box className={styles.paymentBottomSlot}>
                 <PaymentMethodSplit
                   context="purchase"
                   title="Payment to vendor"
@@ -4237,28 +4256,29 @@ export function ProductRegistrationPage() {
                 {vendorPaymentMethod &&
                 vendorInvoiceTotalNum > 0 &&
                 isCreditMethod(vendorPaymentMethod) ? (
-                  <p
+                  <Text
                     className={styles.vendorPaymentSummaryFoot}
                     aria-live="polite"
                   >
                     ₹{vendorCreditLedgerOutstandingNum.toFixed(2)} will be
-                    tracked in <strong>Credit balances</strong> (settle later
+                    tracked in <Text as="span" weight="bold">Credit balances</Text> (settle later
                     in partial payments).
-                  </p>
+                  </Text>
                 ) : null}
-              </div>
-              <div className={styles.formActions}>
-                <button
+              </Box>
+              <Box className={styles.formActions}>
+                <Button
                   type="button"
                   className={styles.cancelBtn}
                   onClick={handleCancel}
                   disabled={isLoading}
                 >
                   Cancel
-                </button>
-                <button
-                  type="submit"
+                </Button>
+                <Button
+                  type="button"
                   className={styles.submitBtn}
+                  onClick={() => void handleSubmit()}
                   disabled={isLoading || !vendorPaymentMethod}
                   title={
                     !vendorPaymentMethod
@@ -4269,40 +4289,32 @@ export function ProductRegistrationPage() {
                   {isLoading
                     ? `Registering ${products.length} Product(s)...`
                     : `Register ${products.length} Product(s)`}
-                </button>
-              </div>
+                </Button>
+              </Box>
             </>
           )}
-        </form>
-      </div>
+        </Stack>
+          </Stack>
+        </CardBody>
+      </Card>
 
       {/* Vendor Creation Modal */}
-      {showVendorModal && (
-        <div
-          className={styles.modalOverlay}
-          onClick={() => !isCreatingVendor && handleCloseVendorModal()}
-        >
-          <div
-            className={styles.modalContent}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className={styles.modalHeader}>
-              <h3>Create New Vendor</h3>
-              <button
-                type="button"
-                className={styles.modalCloseBtn}
-                onClick={handleCloseVendorModal}
-                disabled={isCreatingVendor}
-              >
-                ×
-              </button>
-            </div>
-            <div className={styles.modalBody}>
-              <div className={styles.formGroup}>
-                <label htmlFor="vendorName" className={styles.label}>
+      <Modal
+        open={showVendorModal}
+        onClose={() => !isCreatingVendor && handleCloseVendorModal()}
+        size="lg"
+        className={styles.modalContent}
+      >
+        <Modal.Header
+          title="Create New Vendor"
+          onClose={isCreatingVendor ? undefined : handleCloseVendorModal}
+        />
+        <Modal.Body>
+              <Box className={styles.formGroup}>
+                <Label htmlFor="vendorName" className={styles.label}>
                   Vendor Name *
-                </label>
-                <input
+                </Label>
+                <Input
                   type="text"
                   id="vendorName"
                   className={styles.input}
@@ -4317,12 +4329,12 @@ export function ProductRegistrationPage() {
                   disabled={isCreatingVendor}
                   required
                 />
-              </div>
-              <div className={styles.formGroup}>
-                <label htmlFor="vendorContactPhone" className={styles.label}>
+              </Box>
+              <Box className={styles.formGroup}>
+                <Label htmlFor="vendorContactPhone" className={styles.label}>
                   Contact Phone *
-                </label>
-                <input
+                </Label>
+                <Input
                   type="tel"
                   id="vendorContactPhone"
                   className={styles.input}
@@ -4337,12 +4349,12 @@ export function ProductRegistrationPage() {
                   disabled={isCreatingVendor}
                   required
                 />
-              </div>
-              <div className={styles.formGroup}>
-                <label htmlFor="vendorContactEmail" className={styles.label}>
+              </Box>
+              <Box className={styles.formGroup}>
+                <Label htmlFor="vendorContactEmail" className={styles.label}>
                   Contact Email
-                </label>
-                <input
+                </Label>
+                <Input
                   type="email"
                   id="vendorContactEmail"
                   className={styles.input}
@@ -4356,18 +4368,18 @@ export function ProductRegistrationPage() {
                   }
                   disabled={isCreatingVendor}
                 />
-              </div>
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Link to registered user</label>
-                <p
+              </Box>
+              <Box className={styles.formGroup}>
+                <Label className={styles.label}>Link to registered user</Label>
+                <Text
                   className={styles.helperText}
                   style={{ marginBottom: 8, fontSize: 13, color: '#666' }}
                 >
                   If this vendor is a registered user, search by their email to
                   link the vendor record to their account.
-                </p>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <button
+                </Text>
+                <Box style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <Button
                     type="button"
                     className={styles.cancelBtn}
                     onClick={handleSearchUserForLink}
@@ -4378,20 +4390,20 @@ export function ProductRegistrationPage() {
                     }
                   >
                     {isSearchingUser ? 'Checking...' : 'Check'}
-                  </button>
+                  </Button>
                   {linkedUser && (
-                    <button
+                    <Button
                       type="button"
                       className={styles.clearBtn}
                       onClick={handleUnlinkUser}
                       disabled={isCreatingVendor}
                     >
                       Unlink
-                    </button>
+                    </Button>
                   )}
-                </div>
+                </Box>
                 {userSearchMessage && (
-                  <p
+                  <Text
                     style={{
                       marginTop: 8,
                       fontSize: 13,
@@ -4399,14 +4411,14 @@ export function ProductRegistrationPage() {
                     }}
                   >
                     {userSearchMessage}
-                  </p>
+                  </Text>
                 )}
-              </div>
-              <div className={styles.formGroup}>
-                <label htmlFor="vendorAddress" className={styles.label}>
+              </Box>
+              <Box className={styles.formGroup}>
+                <Label htmlFor="vendorAddress" className={styles.label}>
                   Address
-                </label>
-                <input
+                </Label>
+                <Input
                   type="text"
                   id="vendorAddress"
                   className={styles.input}
@@ -4420,12 +4432,12 @@ export function ProductRegistrationPage() {
                   }
                   disabled={isCreatingVendor}
                 />
-              </div>
-              <div className={styles.formGroup}>
-                <label htmlFor="vendorGstinUin" className={styles.label}>
+              </Box>
+              <Box className={styles.formGroup}>
+                <Label htmlFor="vendorGstinUin" className={styles.label}>
                   GSTIN / UIN
-                </label>
-                <input
+                </Label>
+                <Input
                   type="text"
                   id="vendorGstinUin"
                   className={styles.input}
@@ -4439,12 +4451,12 @@ export function ProductRegistrationPage() {
                   }
                   disabled={isCreatingVendor}
                 />
-              </div>
-              <div className={styles.formGroup}>
-                <label htmlFor="vendorBusinessType" className={styles.label}>
+              </Box>
+              <Box className={styles.formGroup}>
+                <Label htmlFor="vendorBusinessType" className={styles.label}>
                   Business Type *
-                </label>
-                <select
+                </Label>
+                <Select
                   id="vendorBusinessType"
                   className={styles.input}
                   value={
@@ -4474,14 +4486,14 @@ export function ProductRegistrationPage() {
                   <option value="DISTRIBUTOR">Distributor</option>
                   <option value="C&F">C&F</option>
                   <option value="OTHER">Other</option>
-                </select>
-              </div>
+                </Select>
+              </Box>
               {showCustomBusinessType && (
-                <div className={styles.formGroup}>
-                  <label htmlFor="customBusinessType" className={styles.label}>
+                <Box className={styles.formGroup}>
+                  <Label htmlFor="customBusinessType" className={styles.label}>
                     Custom Business Type *
-                  </label>
-                  <input
+                  </Label>
+                  <Input
                     type="text"
                     id="customBusinessType"
                     className={styles.input}
@@ -4491,51 +4503,42 @@ export function ProductRegistrationPage() {
                     disabled={isCreatingVendor}
                     required
                   />
-                </div>
+                </Box>
               )}
-            </div>
-            <div className={styles.modalFooter}>
-              <button
+        </Modal.Body>
+        <Modal.Footer>
+              <Button
                 type="button"
+                variant="outline"
                 className={styles.cancelBtn}
                 onClick={handleCloseVendorModal}
                 disabled={isCreatingVendor}
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="solid"
                 className={styles.submitBtn}
                 onClick={handleCreateVendor}
                 disabled={isCreatingVendor}
+                loading={isCreatingVendor}
               >
                 {isCreatingVendor ? 'Creating...' : 'Create Vendor'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              </Button>
+        </Modal.Footer>
+      </Modal>
 
       {/* QR Code Upload Modal */}
-      {showQrModal && (
-        <div className={styles.modalOverlay} onClick={handleCloseQrModal}>
-          <div
-            className={styles.modalContent}
-            onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: '500px' }}
-          >
-            <div className={styles.modalHeader}>
-              <h3>Scan QR Code to Upload Invoice</h3>
-              <button
-                type="button"
-                className={styles.modalCloseBtn}
-                onClick={handleCloseQrModal}
-              >
-                ×
-              </button>
-            </div>
-            <div className={styles.modalBody}>
-              <div
+      <Modal
+        open={showQrModal}
+        onClose={handleCloseQrModal}
+        size="sm"
+        className={styles.modalContent}
+      >
+        <Modal.Header title="Scan QR Code to Upload Invoice" />
+        <Modal.Body>
+              <Box
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
@@ -4545,7 +4548,7 @@ export function ProductRegistrationPage() {
                 }}
               >
                 {uploadUrl && (
-                  <div
+                  <Box
                     style={{
                       padding: '20px',
                       backgroundColor: '#fff',
@@ -4556,24 +4559,24 @@ export function ProductRegistrationPage() {
                     }}
                   >
                     <QRCodeSVG value={uploadUrl} size={256} />
-                  </div>
+                  </Box>
                 )}
-                <div style={{ textAlign: 'center' }}>
-                  <p style={{ marginBottom: '12px', fontWeight: 500 }}>
+                <Box style={{ textAlign: 'center' }}>
+                  <Text style={{ marginBottom: '12px', fontWeight: 500 }}>
                     Scan this QR code with your mobile device to upload one or
                     more invoice photos (multi-page bills).
-                  </p>
-                  <p
+                  </Text>
+                  <Text
                     style={{
                       fontSize: '0.9rem',
                       color: 'var(--text-secondary)',
                       marginBottom: '8px',
                     }}
                   >
-                    Status: <strong>{uploadStatus || 'PENDING'}</strong>
-                  </p>
+                    Status: <Text as="span" weight="bold">{uploadStatus || 'PENDING'}</Text>
+                  </Text>
                   {isPolling && (
-                    <div
+                    <Box
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -4582,14 +4585,14 @@ export function ProductRegistrationPage() {
                         marginTop: '12px',
                       }}
                     >
-                      <div className={styles.progressSpinner}></div>
-                      <span style={{ fontSize: '0.9rem' }}>
+                      <Spinner size="sm" />
+                      <Text as="span" style={{ fontSize: '0.9rem' }}>
                         Waiting for upload...
-                      </span>
-                    </div>
+                      </Text>
+                    </Box>
                   )}
                   {uploadStatus === 'UPLOADING' && (
-                    <p
+                    <Text
                       style={{
                         fontSize: '0.85rem',
                         color: 'var(--text-secondary)',
@@ -4597,10 +4600,10 @@ export function ProductRegistrationPage() {
                       }}
                     >
                       Invoice photo(s) are being uploaded...
-                    </p>
+                    </Text>
                   )}
                   {uploadStatus === 'PROCESSING' && (
-                    <p
+                    <Text
                       style={{
                         fontSize: '0.85rem',
                         color: 'var(--text-secondary)',
@@ -4608,24 +4611,23 @@ export function ProductRegistrationPage() {
                       }}
                     >
                       Processing invoice...
-                    </p>
+                    </Text>
                   )}
-                </div>
-              </div>
-            </div>
-            <div className={styles.modalFooter}>
-              <button
+                </Box>
+              </Box>
+        </Modal.Body>
+        <Modal.Footer>
+              <Button
                 type="button"
+                variant="outline"
                 className={styles.cancelBtn}
                 onClick={handleCloseQrModal}
               >
                 Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+              </Button>
+        </Modal.Footer>
+      </Modal>
+    </Stack>
   );
 }
 
@@ -4658,10 +4660,10 @@ function GridBulkFillRow({
   onApply,
 }: GridBulkFillRowProps) {
   return (
-    <tr className={styles.excelBulkRow}>
-      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <span className={styles.excelBulkLabel}>Fill all</span>
-        <button
+    <TableRow className={styles.excelBulkRow}>
+      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <Text as="span" className={styles.excelBulkLabel}>Fill all</Text>
+        <Button
           type="button"
           className={styles.excelBulkApplyBtn}
           onClick={onApply}
@@ -4669,19 +4671,19 @@ function GridBulkFillRow({
           title="Apply filled values to every product row"
         >
           Apply to all
-        </button>
-      </th>
-      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <span
+        </Button>
+      </TableHeaderCell>
+      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <Text as="span"
           className={styles.excelBulkDisabled}
           title="Barcode must be set per row"
         >
           —
-        </span>
-      </th>
+        </Text>
+      </TableHeaderCell>
       {companyField && (
-        <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-          <input
+        <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+          <Input
             type="text"
             className={styles.excelInput}
             placeholder="Company"
@@ -4691,10 +4693,10 @@ function GridBulkFillRow({
             }
             disabled={isLoading}
           />
-        </th>
+        </TableHeaderCell>
       )}
-      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <input
+      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <Input
           type="text"
           className={styles.excelInput}
           placeholder="Product"
@@ -4702,10 +4704,10 @@ function GridBulkFillRow({
           onChange={(e) => onBulkChange('name', e.target.value)}
           disabled={isLoading}
         />
-      </th>
+      </TableHeaderCell>
       {schemaFields.map((field) => (
-        <th key={field.key} className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-          <input
+        <TableHeaderCell key={field.key} className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+          <Input
             type={field.type === 'date' ? 'date' : 'text'}
             className={
               field.type === 'date' ? styles.excelInputDate : styles.excelInput
@@ -4715,10 +4717,10 @@ function GridBulkFillRow({
             onChange={(e) => onVerticalBulkChange(field.key, e.target.value)}
             disabled={isLoading}
           />
-        </th>
+        </TableHeaderCell>
       ))}
-      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <input
+      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <Input
           type="text"
           inputMode="numeric"
           className={styles.excelInputNarrow}
@@ -4727,9 +4729,9 @@ function GridBulkFillRow({
           onChange={(e) => onBulkChange('count', e.target.value)}
           disabled={isLoading}
         />
-      </th>
-      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <input
+      </TableHeaderCell>
+      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <Input
           type="text"
           inputMode="decimal"
           className={styles.excelInputNarrow}
@@ -4738,9 +4740,9 @@ function GridBulkFillRow({
           onChange={(e) => onBulkChange('conversionFactor', e.target.value)}
           disabled={isLoading}
         />
-      </th>
-      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <input
+      </TableHeaderCell>
+      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <Input
           type="text"
           className={styles.excelInput}
           placeholder="Location"
@@ -4748,10 +4750,10 @@ function GridBulkFillRow({
           onChange={(e) => onBulkChange('location', e.target.value)}
           disabled={isLoading}
         />
-      </th>
+      </TableHeaderCell>
       {sellDirectField && (
-        <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-          <select
+        <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+          <Select
             className={styles.excelInput}
             value={bulk.verticalBulk?.[sellDirectField.key] ?? ''}
             onChange={(e) =>
@@ -4762,23 +4764,23 @@ function GridBulkFillRow({
             <option value="">—</option>
             <option value="no">No</option>
             <option value="yes">Yes</option>
-          </select>
-        </th>
+          </Select>
+        </TableHeaderCell>
       )}
       {billingMode !== 'BASIC' && (
-        <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-          <span
+        <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+          <Text as="span"
             className={styles.excelBulkDisabled}
             title="HSN must be set per row"
           >
             —
-          </span>
-        </th>
+          </Text>
+        </TableHeaderCell>
       )}
       {simplePricing ? (
         <>
-          <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-            <input
+          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+            <Input
               type="text"
               inputMode="decimal"
               className={styles.excelInputNarrow}
@@ -4787,9 +4789,9 @@ function GridBulkFillRow({
               onChange={(e) => onBulkChange('costPrice', e.target.value)}
               disabled={isLoading}
             />
-          </th>
-          <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-            <input
+          </TableHeaderCell>
+          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+            <Input
               type="text"
               inputMode="decimal"
               className={styles.excelInputNarrow}
@@ -4798,36 +4800,36 @@ function GridBulkFillRow({
               onChange={(e) => onBulkChange('sellingPrice', e.target.value)}
               disabled={isLoading}
             />
-          </th>
+          </TableHeaderCell>
         </>
       ) : (
         <>
-      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <span
+      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <Text as="span"
           className={styles.excelBulkDisabled}
           title="PTS must be set per row"
         >
           —
-        </span>
-      </th>
-      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <span
+        </Text>
+      </TableHeaderCell>
+      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <Text as="span"
           className={styles.excelBulkDisabled}
           title="PTR must be set per row"
         >
           —
-        </span>
-      </th>
-      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <span
+        </Text>
+      </TableHeaderCell>
+      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <Text as="span"
           className={styles.excelBulkDisabled}
           title="MRP must be set per row"
         >
           —
-        </span>
-      </th>
-      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <select
+        </Text>
+      </TableHeaderCell>
+      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <Select
           className={styles.excelSelect}
           value={bulk.schemeType ?? ''}
           onChange={(e) =>
@@ -4838,10 +4840,10 @@ function GridBulkFillRow({
           <option value="">—</option>
           <option value="FIXED_UNITS">Free units</option>
           <option value="PERCENTAGE">Percentage</option>
-        </select>
-      </th>
-      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <input
+        </Select>
+      </TableHeaderCell>
+      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <Input
           type="text"
           className={styles.excelInputNarrow}
           placeholder="e.g. 10+2"
@@ -4849,9 +4851,9 @@ function GridBulkFillRow({
           onChange={(e) => onBulkChange('saleScheme', e.target.value)}
           disabled={isLoading}
         />
-      </th>
-      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <input
+      </TableHeaderCell>
+      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <Input
           type="number"
           className={styles.excelInputNarrow}
           placeholder="—"
@@ -4864,9 +4866,9 @@ function GridBulkFillRow({
           }
           disabled={isLoading}
         />
-      </th>
-      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <select
+      </TableHeaderCell>
+      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <Select
           className={styles.excelSelect}
           value={bulk.purchaseSchemeType ?? ''}
           onChange={(e) =>
@@ -4880,10 +4882,10 @@ function GridBulkFillRow({
           <option value="">—</option>
           <option value="FIXED_UNITS">Free units</option>
           <option value="PERCENTAGE">Percentage</option>
-        </select>
-      </th>
-      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <input
+        </Select>
+      </TableHeaderCell>
+      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <Input
           type="text"
           className={styles.excelInputNarrow}
           placeholder="e.g. 10+2"
@@ -4891,9 +4893,9 @@ function GridBulkFillRow({
           onChange={(e) => onBulkChange('purchaseScheme', e.target.value)}
           disabled={isLoading}
         />
-      </th>
-      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <input
+      </TableHeaderCell>
+      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <Input
           type="number"
           className={styles.excelInputNarrow}
           placeholder="—"
@@ -4906,9 +4908,9 @@ function GridBulkFillRow({
           }
           disabled={isLoading}
         />
-      </th>
-      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <select
+      </TableHeaderCell>
+      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <Select
           className={styles.excelSelect}
           value={bulk.itemType ?? ''}
           onChange={(e) =>
@@ -4920,10 +4922,10 @@ function GridBulkFillRow({
           <option value="NORMAL">Normal</option>
           <option value="COSTLY">Costly</option>
           <option value="DEGREE">Temp / °</option>
-        </select>
-      </th>
-      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <input
+        </Select>
+      </TableHeaderCell>
+      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <Input
           type="number"
           className={styles.excelInputNarrow}
           placeholder="°"
@@ -4933,9 +4935,9 @@ function GridBulkFillRow({
           onChange={(e) => onBulkChange('itemTypeDegree', e.target.value)}
           disabled={isLoading}
         />
-      </th>
-      <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <select
+      </TableHeaderCell>
+      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <Select
           className={styles.excelSelect}
           value={bulk.discountApplicable ?? ''}
           onChange={(e) =>
@@ -4950,14 +4952,14 @@ function GridBulkFillRow({
           <option value="DISCOUNT">Discount</option>
           <option value="SCHEME">Scheme</option>
           <option value="DISCOUNT_AND_SCHEME">Both</option>
-        </select>
-      </th>
+        </Select>
+      </TableHeaderCell>
         </>
       )}
       {billingMode === 'REGULAR' && (
         <>
-          <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-            <input
+          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+            <Input
               type="text"
               inputMode="decimal"
               className={styles.excelInputNarrow}
@@ -4966,9 +4968,9 @@ function GridBulkFillRow({
               onChange={(e) => onBulkChange('cgst', e.target.value)}
               disabled={isLoading}
             />
-          </th>
-          <th className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-            <input
+          </TableHeaderCell>
+          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+            <Input
               type="text"
               inputMode="decimal"
               className={styles.excelInputNarrow}
@@ -4977,27 +4979,27 @@ function GridBulkFillRow({
               onChange={(e) => onBulkChange('sgst', e.target.value)}
               disabled={isLoading}
             />
-          </th>
+          </TableHeaderCell>
         </>
       )}
-      <th className={`${styles.excelTh} ${styles.excelBulkTh}`} />
-    </tr>
+      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`} />
+    </TableRow>
   );
 }
 
 function FormRowSpacer() {
   return (
-    <div className={styles.formGroup} aria-hidden="true">
-      <span className={styles.label} style={{ visibility: 'hidden' }}>
+    <Box className={styles.formGroup} aria-hidden="true">
+      <Text as="span" className={styles.label} style={{ visibility: 'hidden' }}>
         .
-      </span>
-      <span
+      </Text>
+      <Text as="span"
         className={styles.input}
         style={{ visibility: 'hidden', display: 'block' }}
       >
         .
-      </span>
-    </div>
+      </Text>
+    </Box>
   );
 }
 
@@ -5225,20 +5227,20 @@ function ProductAccordion({
   })();
 
   return (
-    <div className={styles.productAccordion}>
-      <div className={styles.accordionHeader} onClick={onToggle}>
-        <div className={styles.accordionTitle}>
-          <span className={styles.accordionIcon}>
+    <Box className={styles.productAccordion}>
+      <Box className={styles.accordionHeader} onClick={onToggle}>
+        <Box className={styles.accordionTitle}>
+          <Text as="span" className={styles.accordionIcon}>
             {product.isExpanded ? '▼' : '▶'}
-          </span>
-          <span>{productTitle}</span>
+          </Text>
+          <Text as="span">{productTitle}</Text>
           {product.barcode && (
-            <span className={styles.accordionSubtitle}>
+            <Text as="span" className={styles.accordionSubtitle}>
               (Barcode: {product.barcode})
-            </span>
+            </Text>
           )}
-        </div>
-        <button
+        </Box>
+        <Button
           type="button"
           className={styles.removeProductBtn}
           onClick={(e) => {
@@ -5249,17 +5251,17 @@ function ProductAccordion({
           aria-label="Remove product"
         >
           ×
-        </button>
-      </div>
+        </Button>
+      </Box>
 
       {product.isExpanded && (
-        <div className={styles.accordionContent}>
-          <div className={styles.formRow}>
-            <div className={styles.formGroup}>
-              <label htmlFor={`name-${product.id}`} className={styles.label}>
+        <Box className={styles.accordionContent}>
+          <Box className={styles.formRow}>
+            <Box className={styles.formGroup}>
+              <Label htmlFor={`name-${product.id}`} className={styles.label}>
                 Product Name *
-              </label>
-              <input
+              </Label>
+              <Input
                 type="text"
                 id={`name-${product.id}`}
                 className={styles.input}
@@ -5269,12 +5271,12 @@ function ProductAccordion({
                 required
                 disabled={isLoading}
               />
-            </div>
-            <div className={styles.formGroup}>
-              <label htmlFor={`count-${product.id}`} className={styles.label}>
+            </Box>
+            <Box className={styles.formGroup}>
+              <Label htmlFor={`count-${product.id}`} className={styles.label}>
                 Count *
-              </label>
-              <input
+              </Label>
+              <Input
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
@@ -5288,15 +5290,15 @@ function ProductAccordion({
                 required
                 disabled={isLoading}
               />
-            </div>
-          </div>
+            </Box>
+          </Box>
 
-          <div className={styles.formRow}>
-            <div className={styles.formGroup}>
-              <label htmlFor={`barcode-${product.id}`} className={styles.label}>
+          <Box className={styles.formRow}>
+            <Box className={styles.formGroup}>
+              <Label htmlFor={`barcode-${product.id}`} className={styles.label}>
                 Barcode
-              </label>
-              <input
+              </Label>
+              <Input
                 type="text"
                 id={`barcode-${product.id}`}
                 className={styles.input}
@@ -5307,7 +5309,7 @@ function ProductAccordion({
                 }
                 disabled={isLoading}
               />
-            </div>
+            </Box>
             {companyField ? (
               <VerticalSchemaFieldInput
                 field={companyField}
@@ -5323,19 +5325,19 @@ function ProductAccordion({
             ) : (
               packagingInput
             )}
-          </div>
+          </Box>
 
           {companyField ? (
-            <div className={styles.formRow}>
+            <Box className={styles.formRow}>
               {packagingInput}
-              <div className={styles.formGroup}>
-                <label
+              <Box className={styles.formGroup}>
+                <Label
                   htmlFor={`location-${product.id}`}
                   className={styles.label}
                 >
                   Inventory Location *
-                </label>
-                <input
+                </Label>
+                <Input
                   type="text"
                   id={`location-${product.id}`}
                   className={styles.input}
@@ -5347,8 +5349,8 @@ function ProductAccordion({
                   required
                   disabled={isLoading}
                 />
-              </div>
-            </div>
+              </Box>
+            </Box>
           ) : null}
 
           {schemaFields.length > 0 && (
@@ -5366,16 +5368,16 @@ function ProductAccordion({
           )}
 
           {(companyField ? billingMode !== 'BASIC' : true) && (
-            <div className={styles.formRow}>
+            <Box className={styles.formRow}>
               {!companyField ? (
-                <div className={styles.formGroup}>
-                  <label
+                <Box className={styles.formGroup}>
+                  <Label
                     htmlFor={`location-${product.id}`}
                     className={styles.label}
                   >
                     Inventory Location *
-                  </label>
-                  <input
+                  </Label>
+                  <Input
                     type="text"
                     id={`location-${product.id}`}
                     className={styles.input}
@@ -5387,16 +5389,16 @@ function ProductAccordion({
                     required
                     disabled={isLoading}
                   />
-                </div>
+                </Box>
               ) : (
                 <FormRowSpacer />
               )}
               {billingMode !== 'BASIC' ? (
-                <div className={styles.formGroup}>
-                  <label htmlFor={`hsn-${product.id}`} className={styles.label}>
+                <Box className={styles.formGroup}>
+                  <Label htmlFor={`hsn-${product.id}`} className={styles.label}>
                     HSN Code
-                  </label>
-                  <input
+                  </Label>
+                  <Input
                     type="text"
                     id={`hsn-${product.id}`}
                     className={styles.input}
@@ -5405,24 +5407,24 @@ function ProductAccordion({
                     onChange={(e) => onChange(product.id, 'hsn', e.target.value)}
                     disabled={isLoading}
                   />
-                </div>
+                </Box>
               ) : (
                 <FormRowSpacer />
               )}
-            </div>
+            </Box>
           )}
 
           {!simplePricing && (
           <>
-          <div className={styles.formRow}>
-            <div className={styles.formGroup}>
-              <label
+          <Box className={styles.formRow}>
+            <Box className={styles.formGroup}>
+              <Label
                 htmlFor={`schemeType-${product.id}`}
                 className={styles.label}
               >
                 Sale scheme/deal type
-              </label>
-              <select
+              </Label>
+              <Select
                 id={`schemeType-${product.id}`}
                 className={styles.input}
                 value={product.schemeType ?? 'FIXED_UNITS'}
@@ -5439,17 +5441,17 @@ function ProductAccordion({
               >
                 <option value="FIXED_UNITS">Free units</option>
                 <option value="PERCENTAGE">Percentage</option>
-              </select>
-            </div>
+              </Select>
+            </Box>
             {(product.schemeType ?? 'FIXED_UNITS') === 'FIXED_UNITS' ? (
-              <div className={styles.formGroup}>
-                <label
+              <Box className={styles.formGroup}>
+                <Label
                   htmlFor={`scheme-fixed-${product.id}`}
                   className={styles.label}
                 >
                   Pay + free (e.g. 10 + 2)
-                </label>
-                <input
+                </Label>
+                <Input
                   type="text"
                   id={`scheme-fixed-${product.id}`}
                   className={styles.input}
@@ -5468,16 +5470,16 @@ function ProductAccordion({
                   }}
                   disabled={isLoading}
                 />
-              </div>
+              </Box>
             ) : (
-              <div className={styles.formGroup}>
-                <label
+              <Box className={styles.formGroup}>
+                <Label
                   htmlFor={`schemePercentage-${product.id}`}
                   className={styles.label}
                 >
                   Sale Scheme/Deal % *
-                </label>
-                <input
+                </Label>
+                <Input
                   type="number"
                   id={`schemePercentage-${product.id}`}
                   className={styles.input}
@@ -5503,19 +5505,19 @@ function ProductAccordion({
                   }}
                   disabled={isLoading}
                 />
-              </div>
+              </Box>
             )}
-          </div>
+          </Box>
 
-          <div className={styles.formRow}>
-            <div className={styles.formGroup}>
-              <label
+          <Box className={styles.formRow}>
+            <Box className={styles.formGroup}>
+              <Label
                 htmlFor={`saleAdditionalDiscount-${product.id}`}
                 className={styles.label}
               >
                 Sale add. discount (%)
-              </label>
-              <input
+              </Label>
+              <Input
                 type="number"
                 id={`saleAdditionalDiscount-${product.id}`}
                 className={styles.input}
@@ -5542,30 +5544,30 @@ function ProductAccordion({
                 }}
                 disabled={isLoading}
               />
-            </div>
-            <div className={styles.formGroup} aria-hidden="true">
-              <span className={styles.label} style={{ visibility: 'hidden' }}>
+            </Box>
+            <Box className={styles.formGroup} aria-hidden="true">
+              <Text as="span" className={styles.label} style={{ visibility: 'hidden' }}>
                 .
-              </span>
-              <span
+              </Text>
+              <Text as="span"
                 className={styles.input}
                 style={{ visibility: 'hidden', display: 'block' }}
               >
                 .
-              </span>
-            </div>
-          </div>
+              </Text>
+            </Box>
+          </Box>
 
           {/* Purchase (from vendor) - for comparison at sale */}
-          <div className={styles.formRow}>
-            <div className={styles.formGroup}>
-              <label
+          <Box className={styles.formRow}>
+            <Box className={styles.formGroup}>
+              <Label
                 htmlFor={`purchaseSchemeType-${product.id}`}
                 className={styles.label}
               >
                 Purchase scheme/deal type
-              </label>
-              <select
+              </Label>
+              <Select
                 id={`purchaseSchemeType-${product.id}`}
                 className={styles.input}
                 value={product.purchaseSchemeType ?? 'FIXED_UNITS'}
@@ -5607,17 +5609,17 @@ function ProductAccordion({
                 <option value="FIXED_UNITS">Deal ratio</option>
                 <option value="FREE_QUANTITY">Free quantity</option>
                 <option value="PERCENTAGE">Percentage</option>
-              </select>
-            </div>
+              </Select>
+            </Box>
             {purchaseSchemeType === 'PERCENTAGE' ? (
-              <div className={styles.formGroup}>
-                <label
+              <Box className={styles.formGroup}>
+                <Label
                   htmlFor={`purchaseSchemePercentage-${product.id}`}
                   className={styles.label}
                 >
                   Purchase scheme %
-                </label>
-                <input
+                </Label>
+                <Input
                   type="number"
                   id={`purchaseSchemePercentage-${product.id}`}
                   className={styles.input}
@@ -5643,18 +5645,18 @@ function ProductAccordion({
                   }}
                   disabled={isLoading}
                 />
-              </div>
+              </Box>
             ) : (
-              <div className={styles.formGroup}>
-                <label
+              <Box className={styles.formGroup}>
+                <Label
                   htmlFor={`purchase-scheme-fixed-${product.id}`}
                   className={styles.label}
                 >
                   {purchaseSchemeType === 'FREE_QUANTITY'
                     ? 'Free quantity (e.g. 60 on 540 paid)'
                     : 'Purchase scheme/deal'}
-                </label>
-                <input
+                </Label>
+                <Input
                   type="text"
                   id={`purchase-scheme-fixed-${product.id}`}
                   className={styles.input}
@@ -5695,26 +5697,26 @@ function ProductAccordion({
                   disabled={isLoading}
                 />
                 {purchaseSchemePaidFreeHint ? (
-                  <span
+                  <Text as="span"
                     className={styles.label}
                     style={{ fontWeight: 400, marginTop: '0.25rem' }}
                   >
                     {purchaseSchemePaidFreeHint}
-                  </span>
+                  </Text>
                 ) : null}
-              </div>
+              </Box>
             )}
-          </div>
+          </Box>
 
-          <div className={styles.formRow}>
-            <div className={styles.formGroup}>
-              <label
+          <Box className={styles.formRow}>
+            <Box className={styles.formGroup}>
+              <Label
                 htmlFor={`purchaseAdditionalDiscount-${product.id}`}
                 className={styles.label}
               >
                 Purchase add. discount (%)
-              </label>
-              <input
+              </Label>
+              <Input
                 type="number"
                 id={`purchaseAdditionalDiscount-${product.id}`}
                 className={styles.input}
@@ -5745,15 +5747,15 @@ function ProductAccordion({
                 }}
                 disabled={isLoading}
               />
-            </div>
-            <div className={styles.formGroup}>
-              <label
+            </Box>
+            <Box className={styles.formGroup}>
+              <Label
                 htmlFor={`itemType-${product.id}`}
                 className={styles.label}
               >
                 Item Type
-              </label>
-              <select
+              </Label>
+              <Select
                 id={`itemType-${product.id}`}
                 className={styles.input}
                 value={product.itemType ?? 'NORMAL'}
@@ -5770,20 +5772,20 @@ function ProductAccordion({
                 <option value="NORMAL">Normal</option>
                 <option value="COSTLY">Costly</option>
                 <option value="DEGREE">Temperature for the item</option>
-              </select>
-            </div>
-          </div>
+              </Select>
+            </Box>
+          </Box>
 
-          <div className={styles.formRow}>
+          <Box className={styles.formRow}>
             {product.itemType === 'DEGREE' ? (
-              <div className={styles.formGroup}>
-                <label
+              <Box className={styles.formGroup}>
+                <Label
                   htmlFor={`itemTypeDegree-${product.id}`}
                   className={styles.label}
                 >
                   Temperature / Degree *
-                </label>
-                <input
+                </Label>
+                <Input
                   type="number"
                   id={`itemTypeDegree-${product.id}`}
                   className={styles.input}
@@ -5808,28 +5810,28 @@ function ProductAccordion({
                   }}
                   disabled={isLoading}
                 />
-              </div>
+              </Box>
             ) : (
-              <div className={styles.formGroup} aria-hidden="true">
-                <span className={styles.label} style={{ visibility: 'hidden' }}>
+              <Box className={styles.formGroup} aria-hidden="true">
+                <Text as="span" className={styles.label} style={{ visibility: 'hidden' }}>
                   .
-                </span>
-                <span
+                </Text>
+                <Text as="span"
                   className={styles.input}
                   style={{ visibility: 'hidden', display: 'block' }}
                 >
                   .
-                </span>
-              </div>
+                </Text>
+              </Box>
             )}
-            <div className={styles.formGroup}>
-              <label
+            <Box className={styles.formGroup}>
+              <Label
                 htmlFor={`discountApplicable-${product.id}`}
                 className={styles.label}
               >
                 Discount applicable
-              </label>
-              <select
+              </Label>
+              <Select
                 id={`discountApplicable-${product.id}`}
                 className={styles.input}
                 value={product.discountApplicable ?? ''}
@@ -5849,19 +5851,19 @@ function ProductAccordion({
                 <option value="DISCOUNT_AND_SCHEME">
                   Both discount and scheme/deal applicable
                 </option>
-              </select>
-            </div>
-          </div>
+              </Select>
+            </Box>
+          </Box>
           </>
           )}
 
           {simplePricing ? (
-            <div className={styles.formRow}>
-              <div className={styles.formGroup}>
-                <label htmlFor={`costPrice-${product.id}`} className={styles.label}>
+            <Box className={styles.formRow}>
+              <Box className={styles.formGroup}>
+                <Label htmlFor={`costPrice-${product.id}`} className={styles.label}>
                   Rate (cost) *
-                </label>
-                <input
+                </Label>
+                <Input
                   type="text"
                   inputMode="decimal"
                   pattern="[0-9]*\.?[0-9]*"
@@ -5875,15 +5877,15 @@ function ProductAccordion({
                   required
                   disabled={isLoading}
                 />
-              </div>
-              <div className={styles.formGroup}>
-                <label
+              </Box>
+              <Box className={styles.formGroup}>
+                <Label
                   htmlFor={`sellingPrice-${product.id}`}
                   className={styles.label}
                 >
                   Sell price (optional)
-                </label>
-                <input
+                </Label>
+                <Input
                   type="text"
                   inputMode="decimal"
                   pattern="[0-9]*\.?[0-9]*"
@@ -5900,19 +5902,19 @@ function ProductAccordion({
                   }
                   disabled={isLoading}
                 />
-              </div>
-            </div>
+              </Box>
+            </Box>
           ) : (
           <>
-          <div className={styles.formRow}>
-            <div className={styles.formGroup}>
-              <label
+          <Box className={styles.formRow}>
+            <Box className={styles.formGroup}>
+              <Label
                 htmlFor={`priceToRetail-${product.id}`}
                 className={styles.label}
               >
                 Price to Retailer (PTR) *
-              </label>
-              <input
+              </Label>
+              <Input
                 type="text"
                 inputMode="decimal"
                 pattern="[0-9]*\.?[0-9]*"
@@ -5926,15 +5928,15 @@ function ProductAccordion({
                 required
                 disabled={isLoading}
               />
-            </div>
-            <div className={styles.formGroup}>
-              <label
+            </Box>
+            <Box className={styles.formGroup}>
+              <Label
                 htmlFor={`costPrice-${product.id}`}
                 className={styles.label}
               >
                 Price from stockist (PTS) *
-              </label>
-              <input
+              </Label>
+              <Input
                 type="text"
                 inputMode="decimal"
                 pattern="[0-9]*\.?[0-9]*"
@@ -5948,18 +5950,18 @@ function ProductAccordion({
                 required
                 disabled={isLoading}
               />
-            </div>
-          </div>
+            </Box>
+          </Box>
 
-          <div className={styles.formRow}>
-            <div className={styles.formGroup}>
-              <label
+          <Box className={styles.formRow}>
+            <Box className={styles.formGroup}>
+              <Label
                 htmlFor={`maximumRetailPrice-${product.id}`}
                 className={styles.label}
               >
                 MRP *
-              </label>
-              <input
+              </Label>
+              <Input
                 type="text"
                 inputMode="decimal"
                 pattern="[0-9]*\.?[0-9]*"
@@ -5981,19 +5983,19 @@ function ProductAccordion({
                 required
                 disabled={isLoading}
               />
-            </div>
+            </Box>
             <FormRowSpacer />
-          </div>
+          </Box>
           </>
           )}
 
           {billingMode === 'REGULAR' && (
-            <div className={styles.formRow}>
-              <div className={styles.formGroup}>
-                <label htmlFor={`cgst-${product.id}`} className={styles.label}>
+            <Box className={styles.formRow}>
+              <Box className={styles.formGroup}>
+                <Label htmlFor={`cgst-${product.id}`} className={styles.label}>
                   CGST (%)
-                </label>
-                <input
+                </Label>
+                <Input
                   type="text"
                   inputMode="decimal"
                   pattern="[0-9]*\.?[0-9]*"
@@ -6004,12 +6006,12 @@ function ProductAccordion({
                   onChange={(e) => onChange(product.id, 'cgst', e.target.value)}
                   disabled={isLoading}
                 />
-              </div>
-              <div className={styles.formGroup}>
-                <label htmlFor={`sgst-${product.id}`} className={styles.label}>
+              </Box>
+              <Box className={styles.formGroup}>
+                <Label htmlFor={`sgst-${product.id}`} className={styles.label}>
                   SGST (%)
-                </label>
-                <input
+                </Label>
+                <Input
                   type="text"
                   inputMode="decimal"
                   pattern="[0-9]*\.?[0-9]*"
@@ -6020,17 +6022,17 @@ function ProductAccordion({
                   onChange={(e) => onChange(product.id, 'sgst', e.target.value)}
                   disabled={isLoading}
                 />
-              </div>
-            </div>
+              </Box>
+            </Box>
           )}
 
           {/* Rates (optional) - custom pricing tiers */}
           {!simplePricing && (
           <>
-          <div className={styles.ratesSection}>
-            <div className={styles.ratesHeader}>
-              <label className={styles.label}>Rates (optional)</label>
-              <button
+          <Box className={styles.ratesSection}>
+            <Box className={styles.ratesHeader}>
+              <Label className={styles.label}>Rates (optional)</Label>
+              <Button
                 type="button"
                 onClick={() =>
                   onChange(product.id, 'rates', [
@@ -6042,15 +6044,15 @@ function ProductAccordion({
                 disabled={isLoading}
               >
                 + Add rate
-              </button>
-            </div>
-            <span className={styles.unitHint}>
+              </Button>
+            </Box>
+            <Text as="span" className={styles.unitHint}>
               Custom rate tiers (e.g. Rate-A, Rate-B). Default rate selects
               which price to use for sales.
-            </span>
+            </Text>
             {(product.rates ?? []).map((rate, i) => (
-              <div key={i} className={styles.rateRow}>
-                <input
+              <Box key={i} className={styles.rateRow}>
+                <Input
                   type="text"
                   value={rate.name}
                   onChange={(e) => {
@@ -6062,7 +6064,7 @@ function ProductAccordion({
                   placeholder="Rate name"
                   disabled={isLoading}
                 />
-                <input
+                <Input
                   type="number"
                   step="0.01"
                   min="0"
@@ -6079,7 +6081,7 @@ function ProductAccordion({
                   placeholder="Price"
                   disabled={isLoading}
                 />
-                <button
+                <Button
                   type="button"
                   onClick={() => {
                     const next = (product.rates ?? []).filter(
@@ -6092,18 +6094,18 @@ function ProductAccordion({
                   disabled={isLoading}
                 >
                   ×
-                </button>
-              </div>
+                </Button>
+              </Box>
             ))}
-          </div>
-          <div className={styles.formGroup}>
-            <label
+          </Box>
+          <Box className={styles.formGroup}>
+            <Label
               htmlFor={`defaultRate-${product.id}`}
               className={styles.label}
             >
               Default rate (optional)
-            </label>
-            <select
+            </Label>
+            <Select
               id={`defaultRate-${product.id}`}
               value={product.defaultRate ?? ''}
               onChange={(e) =>
@@ -6125,19 +6127,19 @@ function ProductAccordion({
                     {r.name}
                   </option>
                 ))}
-            </select>
-          </div>
+            </Select>
+          </Box>
           </>
           )}
 
-          <div className={styles.formGroup}>
-            <label
+          <Box className={styles.formGroup}>
+            <Label
               htmlFor={`description-${product.id}`}
               className={styles.label}
             >
               Description
-            </label>
-            <textarea
+            </Label>
+            <Textarea
               id={`description-${product.id}`}
               className={styles.textarea}
               placeholder="Enter product description (optional)"
@@ -6148,22 +6150,22 @@ function ProductAccordion({
               disabled={isLoading}
               rows={3}
             />
-          </div>
+          </Box>
 
           {/* Reminders — custom for all verticals; expiry-linked when schema has expiryDate */}
-          <div className={styles.reminderSection}>
-            <h4 className={styles.subsectionTitle}>Reminders</h4>
+          <Box className={styles.reminderSection}>
+            <Text variant="heading4" className={styles.subsectionTitle}>Reminders</Text>
             {showExpiryReminder && (
             <>
-            <div className={styles.formRow}>
-              <div className={styles.formGroup}>
-                <label
+            <Box className={styles.formRow}>
+              <Box className={styles.formGroup}>
+                <Label
                   htmlFor={`reminderAt-${product.id}`}
                   className={styles.label}
                 >
                   Expiry Reminder Date & Time (Optional)
-                </label>
-                <input
+                </Label>
+                <Input
                   type="datetime-local"
                   id={`reminderAt-${product.id}`}
                   className={styles.input}
@@ -6183,12 +6185,12 @@ function ProductAccordion({
                   }}
                   disabled={isLoading}
                 />
-                <p className={styles.helperText}>
+                <Text className={styles.helperText}>
                   Set a reminder date to be notified before this inventory item
                   expires
-                </p>
-              </div>
-            </div>
+                </Text>
+              </Box>
+            </Box>
             </>
             )}
 
@@ -6197,7 +6199,7 @@ function ProductAccordion({
               onChange={onCustomRemindersChange}
               disabled={isLoading}
             />
-          </div>
+          </Box>
 
           {sellDirectField && (
             <VerticalSchemaFieldInput
@@ -6212,8 +6214,8 @@ function ProductAccordion({
               labelClassName={styles.label}
             />
           )}
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

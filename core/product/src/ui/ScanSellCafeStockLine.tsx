@@ -1,6 +1,15 @@
 import { useEffect, useState } from 'react';
 import type { CustomerProductHistoryResponse } from '@inventory-platform/product/types';
 import { inventorySellableRef } from '@inventory-platform/product/types';
+import {
+  Badge,
+  Button,
+  IconButton,
+  Inline,
+  Input,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { CustomerProductHistoryHint } from './CustomerProductHistoryHint';
 import styles from '../pages/scan-sell.module.css';
 
@@ -38,58 +47,62 @@ export function ScanSellCafeStockLine({
   onRemove,
 }: ScanSellCafeStockLineProps) {
   return (
-    <div className={styles.cafeStockCartLine}>
-      <div className={styles.cafeMenuCartInfo}>
-        <div className={styles.cafeMenuCartTop}>
-          <span className={styles.cafeMenuCartName}>{name}</span>
-          <span className={styles.cafeStockCartBadge}>Stock</span>
-        </div>
+    <Inline className={styles.cafeStockCartLine} justify="between" align="start" width="full">
+      <Stack gap="xs" className={styles.cafeMenuCartInfo}>
+        <Inline className={styles.cafeMenuCartTop} justify="between" align="center" width="full">
+          <Text weight="semibold" className={styles.cafeMenuCartName}>
+            {name}
+          </Text>
+          <Badge variant="neutral" className={styles.cafeStockCartBadge}>
+            Stock
+          </Badge>
+        </Inline>
         <CustomerProductHistoryHint
           sellableRef={inventorySellableRef(inventoryId)}
           history={customerProductHistory ?? null}
           loading={customerProductHistoryLoading}
         />
-        <span className={styles.cafeMenuCartMeta}>
+        <Text variant="caption" color="secondary" className={styles.cafeMenuCartMeta}>
           {unitLabel ? `${unitLabel} · ` : ''}
           {money(price)} each · {money(lineTotal)}
-        </span>
-      </div>
-      <div className={styles.cafeMenuCartActions}>
-        <div className={styles.qtyStepper}>
-          <button
-            type="button"
+        </Text>
+      </Stack>
+      <Stack gap="sm" className={styles.cafeMenuCartActions} align="end">
+        <Inline className={styles.qtyStepper} gap="none" align="center">
+          <IconButton
+            label="Decrease quantity"
             className={styles.qtyBtn}
             onClick={() => onChangeQty(-1)}
             disabled={disabled}
-            aria-label="Decrease quantity"
           >
             −
-          </button>
+          </IconButton>
           <StockQtyInput
             value={quantity}
             disabled={disabled}
             onCommit={onSetQuantity}
           />
-          <button
-            type="button"
-            className={styles.qtyBtn}
+          <IconButton
+            label="Increase quantity"
             onClick={() => onChangeQty(1)}
             disabled={disabled}
-            aria-label="Increase quantity"
+            className={styles.qtyBtn}
           >
             +
-          </button>
-        </div>
-        <button
+          </IconButton>
+        </Inline>
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           className={styles.removeBtn}
           onClick={onRemove}
           disabled={disabled}
         >
           Remove
-        </button>
-      </div>
-    </div>
+        </Button>
+      </Stack>
+    </Inline>
   );
 }
 
@@ -122,7 +135,7 @@ function StockQtyInput({
   };
 
   return (
-    <input
+    <Input
       type="number"
       className={styles.qtyInput}
       value={draft}

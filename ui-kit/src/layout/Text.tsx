@@ -1,4 +1,5 @@
-import type { ElementType, ReactNode } from 'react';
+import { forwardRef } from 'react';
+import type { ComponentPropsWithoutRef, ElementType, ReactNode } from 'react';
 import { cn } from '../utils/cn';
 import type { TextColor, TextVariant } from '../utils/types';
 import styles from './Text.module.css';
@@ -14,7 +15,7 @@ const variantElement: Record<TextVariant, ElementType> = {
   heading4: 'h4',
 };
 
-export interface TextProps {
+type TextOwnProps = {
   children?: ReactNode;
   as?: ElementType;
   variant?: TextVariant;
@@ -23,22 +24,30 @@ export interface TextProps {
   align?: 'left' | 'center' | 'right';
   truncate?: boolean;
   className?: string;
-}
+};
 
-export function Text({
-  children,
-  as,
-  variant = 'body',
-  color = 'primary',
-  weight,
-  align,
-  truncate = false,
-  className,
-}: TextProps) {
+export type TextProps = TextOwnProps &
+  Omit<ComponentPropsWithoutRef<'span'>, keyof TextOwnProps>;
+
+export const Text = forwardRef<HTMLElement, TextProps>(function Text(
+  {
+    children,
+    as,
+    variant = 'body',
+    color = 'primary',
+    weight,
+    align,
+    truncate = false,
+    className,
+    ...rest
+  },
+  ref
+) {
   const Component = as ?? variantElement[variant];
 
   return (
     <Component
+      ref={ref}
       className={cn(
         styles.text,
         styles[`variant-${variant}`],
@@ -48,8 +57,9 @@ export function Text({
         truncate && styles.truncate,
         className
       )}
+      {...rest}
     >
       {children}
     </Component>
   );
-}
+});

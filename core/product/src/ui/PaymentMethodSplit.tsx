@@ -1,5 +1,15 @@
 import { useCallback, useEffect, useId, useMemo, useRef } from 'react';
 import type { PaymentMethod, PaymentSplit } from '@inventory-platform/contracts';
+import {
+  Alert,
+  Badge,
+  Box,
+  Button,
+  Inline,
+  Input,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './PaymentMethodSplit.module.css';
 import {
   PAYMENT_METHODS,
@@ -199,23 +209,34 @@ export function PaymentMethodSplit({
   const summaryTenders: readonly Tender[] = meta?.tenders ?? [];
 
   return (
-    <div className={styles.panel} aria-describedby={`${reactId}-summary`}>
-      <div className={styles.head}>
-        <h3 className={styles.title}>
+    <Stack
+      gap="sm"
+      className={styles.panel}
+      aria-describedby={`${reactId}-summary`}
+    >
+      <Stack gap="xs" className={styles.head}>
+        <Text variant="heading4" weight="semibold" className={styles.title}>
           {title ?? 'Payment'}
-          <span className={styles.titleRequired} aria-hidden="true">
+          <Text as="span" className={styles.titleRequired} aria-hidden="true">
             *
-          </span>
-        </h3>
-        {intro != null && intro !== '' ? <p className={styles.intro}>{intro}</p> : null}
-      </div>
+          </Text>
+        </Text>
+        {intro != null && intro !== '' ? (
+          <Text variant="caption" color="secondary" className={styles.intro}>
+            {intro}
+          </Text>
+        ) : null}
+      </Stack>
 
-      <div className={styles.totalRow}>
-        <span>Bill total</span>
-        <span className={styles.totalValue}>{formatRupees(safeTotal)}</span>
-      </div>
+      <Inline justify="between" align="end" className={styles.totalRow}>
+        <Text variant="caption" color="secondary">
+          Bill total
+        </Text>
+        <Text className={styles.totalValue}>{formatRupees(safeTotal)}</Text>
+      </Inline>
 
-      <div
+      <Inline
+        gap="xs"
         className={styles.chipGroup}
         role="radiogroup"
         aria-label="Payment method"
@@ -225,39 +246,41 @@ export function PaymentMethodSplit({
           const mMeta = PAYMENT_METHOD_META[m];
           const active = m === method;
           return (
-            <button
+            <Button
               key={m}
               type="button"
               role="radio"
               aria-checked={active}
+              variant={active ? 'solid' : 'outline'}
+              size="sm"
               className={active ? styles.chipActive : styles.chip}
               onClick={() => handleMethodChange(m)}
               disabled={disabled}
             >
               {mMeta.label}
-            </button>
+            </Button>
           );
         })}
-      </div>
+      </Inline>
 
       {method == null ? (
-        <p className={styles.placeholder}>Pick a payment method to continue.</p>
+        <Text variant="caption" color="secondary" className={styles.placeholder}>
+          Pick a payment method to continue.
+        </Text>
       ) : showSplitInputs ? (
-        <div className={meta?.tenders.length === 2 ? styles.legsTwo : styles.legs}>
+        <Box className={meta?.tenders.length === 2 ? styles.legsTwo : styles.legs}>
           {meta!.tenders.map((tender) => {
             const inputId = `${reactId}-${tender.toLowerCase()}`;
             return (
-              <div key={tender} className={styles.legField}>
-                <label htmlFor={inputId} className={styles.legLabel}>
-                  <span className={`${styles.legBadge} ${TENDER_BADGE_CLASS[tender]}`}>
-                    {tender === 'CASH' ? 'Cash' : tender === 'ONLINE' ? 'Online' : 'Credit'}
-                  </span>
-                </label>
-                <div className={styles.legInputRow}>
-                  <span className={styles.legCurrency} aria-hidden="true">
+              <Stack key={tender} gap="xs" className={styles.legField}>
+                <Badge className={`${styles.legBadge} ${TENDER_BADGE_CLASS[tender]}`}>
+                  {tender === 'CASH' ? 'Cash' : tender === 'ONLINE' ? 'Online' : 'Credit'}
+                </Badge>
+                <Inline align="center" className={styles.legInputRow}>
+                  <Text className={styles.legCurrency} aria-hidden="true">
                     ₹
-                  </span>
-                  <input
+                  </Text>
+                  <Input
                     id={inputId}
                     type="text"
                     inputMode="decimal"
@@ -271,17 +294,19 @@ export function PaymentMethodSplit({
                     onChange={(ev) => handleLegChange(tender, ev.target.value)}
                     placeholder="0.00"
                     disabled={disabled || safeTotal <= 0}
+                    aria-label={tenderLabel(tender, context)}
                   />
-                </div>
-              </div>
+                </Inline>
+              </Stack>
             );
           })}
-        </div>
+        </Box>
       ) : null}
 
       {method != null ? (
-        <div
+        <Stack
           id={`${reactId}-summary`}
+          gap="xs"
           className={`${styles.summary} ${
             isCreditMethod(method) && value.split.creditAmount > 0
               ? styles.summaryCreditHighlight
@@ -290,27 +315,25 @@ export function PaymentMethodSplit({
           aria-live="polite"
         >
           {summaryTenders.map((tender) => (
-            <div key={tender} className={styles.summaryRow}>
-              <span className={styles.summaryLabel}>
+            <Inline key={tender} justify="between" align="end" className={styles.summaryRow}>
+              <Text variant="caption" color="secondary" className={styles.summaryLabel}>
                 {tender === 'CREDIT'
                   ? context === 'sale'
                     ? 'On credit · owes you'
                     : 'On credit · you owe'
                   : tenderLabel(tender, context)}
-              </span>
-              <span className={styles.summaryAmt}>
+              </Text>
+              <Text weight="semibold" className={styles.summaryAmt}>
                 {formatRupees(tenderAmount(value.split, tender))}
-              </span>
-            </div>
+              </Text>
+            </Inline>
           ))}
-        </div>
+        </Stack>
       ) : null}
 
       {showError && validation.message ? (
-        <p className={styles.error} role="alert">
-          {validation.message}
-        </p>
+        <Alert variant="danger">{validation.message}</Alert>
       ) : null}
-    </div>
+    </Stack>
   );
 }

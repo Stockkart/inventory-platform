@@ -1,4 +1,5 @@
 import type { VerticalSchemaFieldDef } from '@inventory-platform/schema/types';
+import { TableCell, TableHeaderCell } from '@inventory-platform/ui-kit';
 import {
   VerticalSchemaFieldInput,
   fieldLabel,
@@ -16,10 +17,10 @@ export function VerticalRegistrationGridCompanyHeader({
     return null;
   }
   return (
-    <th className={styles.excelTh}>
+    <TableHeaderCell className={styles.excelTh}>
       {fieldLabel(field)}
       {field.required ? ' *' : ''}
-    </th>
+    </TableHeaderCell>
   );
 }
 
@@ -31,10 +32,10 @@ export function VerticalRegistrationGridHeaders({
   return (
     <>
       {fields.map((field) => (
-        <th key={field.key} className={styles.excelTh}>
+        <TableHeaderCell key={field.key} className={styles.excelTh}>
           {fieldLabel(field)}
           {field.required ? ' *' : ''}
-        </th>
+        </TableHeaderCell>
       ))}
     </>
   );
@@ -57,7 +58,7 @@ export function VerticalRegistrationGridCompanyCell({
     return null;
   }
   return (
-    <td className={styles.excelTd}>
+    <TableCell className={styles.excelTd}>
       <VerticalSchemaFieldInput
         field={field}
         value={getVerticalFieldValue(product, field)}
@@ -68,7 +69,7 @@ export function VerticalRegistrationGridCompanyCell({
         labelClassName={styles.srOnly}
         compact
       />
-    </td>
+    </TableCell>
   );
 }
 
@@ -90,7 +91,7 @@ export function VerticalRegistrationGridCells({
   return (
     <>
       {fields.map((field) => (
-        <td key={field.key} className={styles.excelTd}>
+        <TableCell key={field.key} className={styles.excelTd}>
           <VerticalSchemaFieldInput
             field={field}
             value={getVerticalFieldValue(product, field)}
@@ -105,7 +106,7 @@ export function VerticalRegistrationGridCells({
             labelClassName={styles.srOnly}
             compact
           />
-        </td>
+        </TableCell>
       ))}
     </>
   );

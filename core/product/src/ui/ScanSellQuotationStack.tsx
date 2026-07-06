@@ -1,4 +1,11 @@
 import type { QuotationSummary } from '@inventory-platform/product/types';
+import {
+  Button,
+  IconButton,
+  Inline,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './ScanSellQuotationStack.module.css';
 
 function formatMoney(n: number): string {
@@ -39,59 +46,74 @@ export function ScanSellQuotationStack({
   }
 
   return (
-    <div className={styles.quotationBar} aria-label="Open quotations">
-      <div className={styles.barRow}>
-        <span className={styles.barLabel}>Open quotations</span>
-        <button
+    <Stack
+      gap="xs"
+      className={styles.quotationBar}
+      aria-label="Open quotations"
+    >
+      <Inline className={styles.barRow} gap="sm" align="center">
+        <Text variant="caption" weight="semibold" color="secondary" className={styles.barLabel}>
+          Open quotations
+        </Text>
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           className={styles.newBtn}
           onClick={onNew}
           disabled={disabled}
         >
           + New
-        </button>
-      </div>
+        </Button>
+      </Inline>
 
-      <div className={styles.chipStrip} role="tablist" aria-label="Quotation tabs">
+      <Inline
+        className={styles.chipStrip}
+        gap="sm"
+      >
         {quotations.map((q) => {
           const isActive = q.purchaseId === activePurchaseId;
           const total = formatMoney(Number(q.grandTotal) || 0);
           const tabLabel = quotationTabLabel(q);
           return (
-            <div
+            <Inline
               key={q.purchaseId}
               className={`${styles.chip} ${isActive ? styles.chipActive : ''}`}
-              role="tab"
-              aria-selected={isActive}
             >
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 className={styles.chipMain}
+                role="tab"
+                aria-selected={isActive}
                 onClick={() => onSelect(q.purchaseId)}
                 disabled={disabled}
               >
-                <span className={styles.chipName}>{tabLabel}</span>
-                <span className={styles.chipMeta}>
-                  {q.itemCount} item{q.itemCount === 1 ? '' : 's'} · {total}
-                </span>
-              </button>
-              <button
-                type="button"
+                <Stack gap="none" align="start">
+                  <Text weight="semibold" className={styles.chipName}>
+                    {tabLabel}
+                  </Text>
+                  <Text variant="caption" color="muted" className={styles.chipMeta}>
+                    {q.itemCount} item{q.itemCount === 1 ? '' : 's'} · {total}
+                  </Text>
+                </Stack>
+              </Button>
+              <IconButton
+                label={`Cancel quotation ${tabLabel}`}
+                title="Cancel quotation"
                 className={styles.cancelBtn}
                 onClick={(e) => {
                   e.stopPropagation();
                   onCancel(q.purchaseId);
                 }}
                 disabled={disabled}
-                aria-label={`Cancel quotation ${tabLabel}`}
-                title="Cancel quotation"
               >
                 ×
-              </button>
-            </div>
+              </IconButton>
+            </Inline>
           );
         })}
-      </div>
-    </div>
+      </Inline>
+    </Stack>
   );
 }

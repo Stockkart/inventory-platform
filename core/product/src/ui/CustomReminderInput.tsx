@@ -1,4 +1,15 @@
 import type { CustomReminderInput } from '@inventory-platform/contracts';
+import {
+  Box,
+  Button,
+  FormField,
+  IconButton,
+  Inline,
+  Input,
+  Stack,
+  Text,
+  Textarea,
+} from '@inventory-platform/ui-kit';
 import styles from './CustomReminderInput.module.css';
 
 interface CustomReminderInputProps {
@@ -53,55 +64,59 @@ export function CustomReminderInputItem({
     }
   };
 
+  const reminderAtId = `custom-reminder-at-${index}`;
+  const endDateId = `custom-reminder-end-${index}`;
+  const notesId = `custom-reminder-notes-${index}`;
+
   return (
-    <div className={styles.reminderItem}>
-      <div className={styles.reminderHeader}>
-        <h4 className={styles.reminderTitle}>Custom Reminder {index + 1}</h4>
-        <button
+    <Box className={styles.reminderItem}>
+      <Inline justify="between" align="center" className={styles.reminderHeader}>
+        <Text variant="heading4" weight="semibold" className={styles.reminderTitle}>
+          Custom Reminder {index + 1}
+        </Text>
+        <IconButton
           type="button"
           className={styles.removeButton}
           onClick={() => onRemove(index)}
           disabled={disabled}
+          label={`Remove custom reminder ${index + 1}`}
         >
           ×
-        </button>
-      </div>
-      <div className={styles.reminderFields}>
-        <div className={styles.formGroup}>
-          <label className={styles.label}>Reminder Date & Time *</label>
-          <input
+        </IconButton>
+      </Inline>
+      <Stack gap="sm" className={styles.reminderFields}>
+        <FormField label="Reminder Date & Time" htmlFor={reminderAtId} required>
+          <Input
+            id={reminderAtId}
             type="datetime-local"
-            className={styles.input}
             value={formatDateForInput(reminder.reminderAt)}
             onChange={(e) => handleDateChange('reminderAt', e.target.value)}
             disabled={disabled}
             required
           />
-        </div>
-        <div className={styles.formGroup}>
-          <label className={styles.label}>End Date & Time *</label>
-          <input
+        </FormField>
+        <FormField label="End Date & Time" htmlFor={endDateId} required>
+          <Input
+            id={endDateId}
             type="datetime-local"
-            className={styles.input}
             value={formatDateForInput(reminder.endDate)}
             onChange={(e) => handleDateChange('endDate', e.target.value)}
             disabled={disabled}
             required
           />
-        </div>
-        <div className={styles.formGroup}>
-          <label className={styles.label}>Notes (Optional)</label>
-          <textarea
-            className={styles.textarea}
+        </FormField>
+        <FormField label="Notes (Optional)" htmlFor={notesId}>
+          <Textarea
+            id={notesId}
             rows={2}
             placeholder="Add notes..."
             value={reminder.notes || ''}
             onChange={(e) => handleChange('notes', e.target.value)}
             disabled={disabled}
           />
-        </div>
-      </div>
-    </div>
+        </FormField>
+      </Stack>
+    </Box>
   );
 }
 
@@ -137,24 +152,28 @@ export function CustomRemindersSection({
   };
 
   return (
-    <div className={styles.section}>
-      <div className={styles.sectionHeader}>
-        <h3 className={styles.sectionTitle}>Custom Reminders</h3>
-        <button
+    <Box className={styles.section}>
+      <Inline justify="between" align="center" className={styles.sectionHeader}>
+        <Text variant="heading3" weight="semibold" className={styles.sectionTitle}>
+          Custom Reminders
+        </Text>
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           className={styles.addButton}
           onClick={addReminder}
           disabled={disabled}
         >
           + Add Reminder
-        </button>
-      </div>
+        </Button>
+      </Inline>
       {reminders.length === 0 ? (
-        <p className={styles.emptyMessage}>
-          No custom reminders added. Click "Add Reminder" to create one.
-        </p>
+        <Text color="secondary" className={styles.emptyMessage}>
+          No custom reminders added. Click &quot;Add Reminder&quot; to create one.
+        </Text>
       ) : (
-        <div className={styles.remindersList}>
+        <Stack gap="sm" className={styles.remindersList}>
           {reminders.map((reminder, index) => (
             <CustomReminderInputItem
               key={index}
@@ -165,8 +184,8 @@ export function CustomRemindersSection({
               disabled={disabled}
             />
           ))}
-        </div>
+        </Stack>
       )}
-    </div>
+    </Box>
   );
 }

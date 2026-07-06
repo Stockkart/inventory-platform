@@ -6,8 +6,36 @@ import {
   useCallback,
   useMemo,
   ChangeEvent,
+  type ReactNode,
 } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router';
+import {
+  Alert,
+  Badge,
+  Box,
+  Button,
+  Card,
+  CardBody,
+  CenteredLoader,
+  Checkbox,
+  EmptyState,
+  FormField,
+  Grid,
+  IconButton,
+  Inline,
+  Input,
+  Modal,
+  PageHeader,
+  Select,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
 import { cartApi } from '../api/cart.api';
 import { sellCatalogApi } from '../api/sell-catalog.api';
@@ -195,7 +223,7 @@ function CartQuantityInput({
   };
 
   return (
-    <input
+    <Input
       type="number"
       className={styles.qtyInput}
       value={draft}
@@ -242,7 +270,7 @@ function CartSellingPriceInput({
   };
 
   return (
-    <input
+    <Input
       id={id}
       type="number"
       className={styles.itemSellingPriceInput}
@@ -298,7 +326,7 @@ function CartAdditionalDiscountInput({
   };
 
   return (
-    <input
+    <Input
       id={id}
       type="number"
       className={styles.itemAdditionalInput}
@@ -440,7 +468,7 @@ function CartSchemeInput({
   };
 
   return (
-    <input
+    <Input
       id={id}
       type="text"
       className={styles.itemAdditionalInput}
@@ -465,6 +493,381 @@ function CartSchemeInput({
         }
       }}
     />
+  );
+}
+
+function SummaryRow({
+  label,
+  value,
+  total,
+}: {
+  label: string;
+  value: string;
+  total?: boolean;
+}) {
+  if (total) {
+    return (
+      <Inline justify="between" width="full" className={styles.summaryRowTotal}>
+        <Text weight="bold">{label}</Text>
+        <Text weight="bold">{value}</Text>
+      </Inline>
+    );
+  }
+  return (
+    <Inline justify="between" width="full" className={styles.summaryRow}>
+      <Text color="secondary">{label}</Text>
+      <Text color="secondary">{value}</Text>
+    </Inline>
+  );
+}
+
+function DetailField({
+  icon,
+  label,
+  children,
+  pricing,
+}: {
+  icon: string;
+  label: string;
+  children: ReactNode;
+  pricing?: boolean;
+}) {
+  return (
+    <Box
+      className={`${styles.detailModalDetailCard} ${
+        pricing ? styles.detailModalPricingCard : ''
+      }`}
+    >
+      <Text className={styles.detailModalDetailIcon}>{icon}</Text>
+      <Stack gap="xs" className={styles.detailModalDetailContent}>
+        <Text variant="caption" color="secondary" className={styles.detailModalDetailLabel}>
+          {label}
+        </Text>
+        <Text className={styles.detailModalDetailValue}>{children}</Text>
+      </Stack>
+    </Box>
+  );
+}
+
+function DetailSectionHeader({ icon, title }: { icon: string; title: string }) {
+  return (
+    <Inline gap="sm" align="center" className={styles.detailModalSectionHeader}>
+      <Text aria-hidden className={styles.detailModalSectionIcon}>
+        {icon}
+      </Text>
+      <Text variant="heading3" className={styles.detailModalSectionTitle}>
+        {title}
+      </Text>
+    </Inline>
+  );
+}
+
+function ProductSearchBlock({
+  searchQuery,
+  setSearchQuery,
+  isSearching,
+  showSearchDropdown,
+  searchResults,
+  onSearch,
+  placeholder,
+  autoFocus,
+  onAddToCart,
+  addDisabled,
+}: {
+  searchQuery: string;
+  setSearchQuery: (value: string) => void;
+  isSearching: boolean;
+  showSearchDropdown: boolean;
+  searchResults: InventoryItem[];
+  onSearch: () => void;
+  placeholder: string;
+  autoFocus?: boolean;
+  onAddToCart: (item: InventoryItem, price?: number) => void;
+  addDisabled: (item: InventoryItem) => boolean;
+}) {
+  return (
+    <Box className={styles.searchRow}>
+      <Inline className={styles.searchForm} gap="sm" align="center" width="full">
+        <Inline className={styles.searchInputWrapper} gap="sm" align="center" width="full">
+          <Text className={styles.searchIcon} aria-hidden>
+            🔍
+          </Text>
+          <Input
+            type="text"
+            className={styles.searchInput}
+            placeholder={placeholder}
+            value={searchQuery}
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+              setSearchQuery(e.currentTarget.value)
+            }
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                onSearch();
+              }
+            }}
+            disabled={isSearching}
+            autoFocus={autoFocus}
+            aria-expanded={showSearchDropdown}
+            aria-haspopup="listbox"
+            aria-controls="search-results-list"
+          />
+          <Button
+            type="button"
+            className={styles.searchSubmitBtn}
+            disabled={isSearching}
+            onClick={onSearch}
+          >
+            {isSearching ? 'Searching…' : 'Search'}
+          </Button>
+        </Inline>
+      </Inline>
+      {showSearchDropdown ? (
+        <Box className={styles.searchDropdown}>
+          {isSearching ? (
+            <Text color="secondary" className={styles.dropdownLoading}>
+              Searching…
+            </Text>
+          ) : searchResults.length === 0 ? (
+            <Text color="secondary" className={styles.dropdownEmpty}>
+              No products found
+            </Text>
+          ) : (
+            <Stack as="ul" gap="none" className={styles.dropdownList}>
+              {searchResults.map((item) => (
+                <SearchDropdownItem
+                  key={item.id}
+                  item={item}
+                  onAddToCart={onAddToCart}
+                  disabled={addDisabled(item)}
+                />
+              ))}
+            </Stack>
+          )}
+        </Box>
+      ) : null}
+    </Box>
+  );
+}
+
+function CustomerSectionBlock({
+  idPrefix,
+  customerSectionOpen,
+  setCustomerSectionOpen,
+  customerName,
+  customerPhone,
+  customerEmail,
+  customerAddress,
+  setCustomerName,
+  setCustomerPhone,
+  setCustomerEmail,
+  setCustomerAddress,
+  handleCustomerFieldBlur,
+  isSearchingCustomer,
+  handleCustomerSearch,
+  handleCustomerSearchByEmail,
+  isRetailer,
+  setIsRetailer,
+  customerGstin,
+  customerDlNo,
+  customerPan,
+  setCustomerGstin,
+  setCustomerDlNo,
+  setCustomerPan,
+}: {
+  idPrefix: string;
+  customerSectionOpen: boolean;
+  setCustomerSectionOpen: (open: boolean | ((o: boolean) => boolean)) => void;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  customerAddress: string;
+  setCustomerName: (v: string) => void;
+  setCustomerPhone: (v: string) => void;
+  setCustomerEmail: (v: string) => void;
+  setCustomerAddress: (v: string) => void;
+  handleCustomerFieldBlur: () => void;
+  isSearchingCustomer: boolean;
+  handleCustomerSearch: () => void;
+  handleCustomerSearchByEmail: () => void;
+  isRetailer: boolean;
+  setIsRetailer: (v: boolean) => void;
+  customerGstin: string;
+  customerDlNo: string;
+  customerPan: string;
+  setCustomerGstin: (v: string) => void;
+  setCustomerDlNo: (v: string) => void;
+  setCustomerPan: (v: string) => void;
+}) {
+  return (
+    <Box className={styles.customerBlock}>
+      <Button
+        type="button"
+        variant="ghost"
+        className={styles.customerToggle}
+        onClick={() => setCustomerSectionOpen((o) => !o)}
+        aria-expanded={customerSectionOpen}
+      >
+        <Inline gap="sm" align="center" width="full">
+          <Text weight="semibold" className={styles.customerToggleLabel}>
+            Customer
+          </Text>
+          {customerName || customerPhone ? (
+            <Text className={styles.customerToggleValue}>
+              {customerName || customerPhone}
+            </Text>
+          ) : (
+            <Text color="secondary" className={styles.customerToggleHint}>
+              Optional
+            </Text>
+          )}
+          <Text className={styles.customerToggleIcon}>
+            {customerSectionOpen ? '▼' : '▶'}
+          </Text>
+        </Inline>
+      </Button>
+      {customerSectionOpen ? (
+        <Stack gap="md" className={styles.customerForm}>
+          <Stack gap="sm" className={styles.customerFieldsVertical}>
+            <FormField label="Phone" id={`${idPrefix}-customerPhone`}>
+              <Inline gap="sm" className={styles.customerInputRow} width="full">
+                <Input
+                  id={`${idPrefix}-customerPhone`}
+                  type="tel"
+                  className={styles.customerInput}
+                  placeholder="Phone"
+                  value={customerPhone}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setCustomerPhone(e.currentTarget.value)
+                  }
+                  onBlur={handleCustomerFieldBlur}
+                  disabled={isSearchingCustomer}
+                />
+                <IconButton
+                  label="Search customer"
+                  title="Search customer"
+                  className={styles.sidebarSearchBtn}
+                  onClick={handleCustomerSearch}
+                  disabled={isSearchingCustomer || !customerPhone.trim()}
+                >
+                  {isSearchingCustomer ? '…' : '⌕'}
+                </IconButton>
+              </Inline>
+            </FormField>
+            <FormField label="Name" id={`${idPrefix}-customerName`}>
+              <Input
+                id={`${idPrefix}-customerName`}
+                type="text"
+                className={styles.customerInput}
+                placeholder="Name"
+                value={customerName}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  setCustomerName(e.currentTarget.value)
+                }
+                onBlur={handleCustomerFieldBlur}
+              />
+            </FormField>
+            <FormField label="Email" id={`${idPrefix}-customerEmail`}>
+              <Inline gap="sm" className={styles.customerInputRow} width="full">
+                <Input
+                  id={`${idPrefix}-customerEmail`}
+                  type="email"
+                  className={styles.customerInput}
+                  placeholder="Email"
+                  value={customerEmail}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setCustomerEmail(e.currentTarget.value)
+                  }
+                  onBlur={handleCustomerFieldBlur}
+                  disabled={isSearchingCustomer}
+                />
+                <IconButton
+                  label="Search customer by email"
+                  title="Search customer by email"
+                  className={styles.sidebarSearchBtn}
+                  onClick={handleCustomerSearchByEmail}
+                  disabled={isSearchingCustomer || !customerEmail.trim()}
+                >
+                  {isSearchingCustomer ? '…' : '⌕'}
+                </IconButton>
+              </Inline>
+            </FormField>
+            <FormField label="Address" id={`${idPrefix}-customerAddress`}>
+              <Input
+                id={`${idPrefix}-customerAddress`}
+                type="text"
+                className={styles.customerInput}
+                placeholder="Address"
+                value={customerAddress}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  setCustomerAddress(e.currentTarget.value)
+                }
+                onBlur={handleCustomerFieldBlur}
+              />
+            </FormField>
+          </Stack>
+          {idPrefix === 'sidebar' ? (
+            <>
+              <Box className={styles.retailerCheckboxContainer}>
+                <Checkbox
+                  label="Is Retailer"
+                  checked={isRetailer}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                    setIsRetailer(e.currentTarget.checked);
+                    if (!e.currentTarget.checked) {
+                      setCustomerGstin('');
+                      setCustomerDlNo('');
+                      setCustomerPan('');
+                    }
+                  }}
+                  className={styles.retailerCheckboxLabel}
+                />
+              </Box>
+              {isRetailer ? (
+                <Stack gap="sm" className={styles.retailerSection}>
+                  <FormField label="GSTIN" id={`${idPrefix}-customerGstin`}>
+                    <Input
+                      id={`${idPrefix}-customerGstin`}
+                      type="text"
+                      className={styles.customerInput}
+                      placeholder="GSTIN"
+                      value={customerGstin}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        setCustomerGstin(e.currentTarget.value)
+                      }
+                    />
+                  </FormField>
+                  <FormField label="DL No" id={`${idPrefix}-customerDlNo`}>
+                    <Input
+                      id={`${idPrefix}-customerDlNo`}
+                      type="text"
+                      className={styles.customerInput}
+                      placeholder="DL No"
+                      value={customerDlNo}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        setCustomerDlNo(e.currentTarget.value)
+                      }
+                    />
+                  </FormField>
+                  <FormField label="PAN" id={`${idPrefix}-customerPan`}>
+                    <Input
+                      id={`${idPrefix}-customerPan`}
+                      type="text"
+                      className={styles.customerInput}
+                      placeholder="PAN"
+                      value={customerPan}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                        setCustomerPan(e.currentTarget.value)
+                      }
+                    />
+                  </FormField>
+                </Stack>
+              ) : null}
+            </>
+          ) : null}
+        </Stack>
+      ) : null}
+    </Box>
   );
 }
 
@@ -543,7 +946,6 @@ export function ScanSellPage() {
   const [pricingLoading, setPricingLoading] = useState<Record<string, boolean>>(
     {}
   );
-  const searchWrapperRef = useRef<HTMLDivElement>(null);
   const { error: notifyError } = useNotify;
 
   useEffect(() => {
@@ -869,11 +1271,9 @@ export function ScanSellPage() {
   // Close search dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (
-        showSearchDropdown &&
-        searchWrapperRef.current &&
-        !searchWrapperRef.current.contains(e.target as Node)
-      ) {
+      if (!showSearchDropdown) return;
+      const wrapper = document.querySelector(`.${styles.searchRow}`);
+      if (wrapper && !wrapper.contains(e.target as Node)) {
         setShowSearchDropdown(false);
       }
     };
@@ -2491,13 +2891,18 @@ export function ScanSellPage() {
 
   const renderCafeOrderLines = () => {
     if (isLoadingCart) {
-      return <div className={styles.cafeOrderEmpty}>Loading order…</div>;
+      return (
+        <Text color="secondary" className={styles.cafeOrderEmpty}>
+          Loading order…
+        </Text>
+      );
     }
     if (menuCartLines.length === 0 && cartItems.length === 0) {
       return (
-        <div className={styles.cafeOrderEmpty}>
-          Tap menu or stock items to start an order
-        </div>
+        <EmptyState
+          title="Tap menu or stock items to start an order"
+          className={styles.cafeOrderEmpty}
+        />
       );
     }
     return (
@@ -2555,42 +2960,49 @@ export function ScanSellPage() {
   };
 
   const renderCafeCheckoutBar = () => (
-    <div className={styles.cafeCheckoutBar}>
-      <div className={styles.cafeCheckoutBarInner}>
-        <div className={styles.cafeCheckoutTotals}>
+    <Box className={styles.cafeCheckoutBar}>
+      <Inline className={styles.cafeCheckoutBarInner} justify="between" align="center" width="full">
+        <Stack gap="xs" className={styles.cafeCheckoutTotals}>
           {isLoadingCart ? (
-            <span className={styles.cafeCheckoutLoading}>Loading…</span>
+            <Text color="secondary" className={styles.cafeCheckoutLoading}>
+              Loading…
+            </Text>
           ) : (
             <>
-              <div className={styles.cafeCheckoutRow}>
-                <span>Subtotal</span>
-                <span>₹{calculateSubtotal().toFixed(2)}</span>
-              </div>
+              <SummaryRow
+                label="Subtotal"
+                value={`₹${calculateSubtotal().toFixed(2)}`}
+              />
               {((cartData?.taxTotal ?? 0) !== 0 ||
                 (cartData?.sgstAmount ?? 0) !== 0 ||
                 (cartData?.cgstAmount ?? 0) !== 0) && (
-                <div className={styles.cafeCheckoutRow}>
-                  <span>Tax</span>
-                  <span>₹{calculateTax().toFixed(2)}</span>
-                </div>
+                <SummaryRow
+                  label="Tax"
+                  value={`₹${calculateTax().toFixed(2)}`}
+                />
               )}
-              <div className={styles.cafeCheckoutTotal}>
-                <span>Total</span>
-                <span>₹{calculateTotal().toFixed(2)}</span>
-              </div>
+              <Inline
+                justify="between"
+                width="full"
+                className={styles.cafeCheckoutTotal}
+              >
+                <Text weight="bold">Total</Text>
+                <Text weight="bold">₹{calculateTotal().toFixed(2)}</Text>
+              </Inline>
             </>
           )}
-        </div>
-        <div className={styles.cafeCheckoutActions}>
-          <button
+        </Stack>
+        <Inline gap="sm" className={styles.cafeCheckoutActions}>
+          <Button
             type="button"
+            variant="outline"
             className={styles.clearBtn}
             onClick={() => void handleClearCart()}
             disabled={isUpdatingCart || isLoadingCart}
           >
             Clear Cart
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             className={styles.checkoutBtn}
             onClick={() => void handleProcessPayment()}
@@ -2606,27 +3018,27 @@ export function ScanSellPage() {
               : isUpdatingCart
               ? 'Updating…'
               : 'Process Payment'}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </Inline>
+      </Inline>
+    </Box>
   );
 
   return (
-    <div className={`${styles.page} ${isCafeSell ? styles.pageCafe : ''}`}>
-      {error && <div className={styles.errorMessage}>{error}</div>}
+    <Stack gap="md" className={`${styles.page} ${isCafeSell ? styles.pageCafe : ''}`}>
+      {error ? <Alert variant="danger">{error}</Alert> : null}
 
-      <div className={styles.header}>
-        <h2 className={styles.title}>{isCafeSell ? 'Sell' : 'Scan and Sell'}</h2>
-        <p className={styles.subtitle}>
-          {isCafeSell
+      <PageHeader
+        title={isCafeSell ? 'Sell' : 'Scan and Sell'}
+        description={
+          isCafeSell
             ? 'Tap menu items or direct stock to build the order'
-            : 'Speed up sales with barcode scanning'}
-        </p>
-      </div>
+            : 'Speed up sales with barcode scanning'
+        }
+      />
 
       {isLoadingCart ? (
-        <div className={styles.loadingState}>Loading…</div>
+        <CenteredLoader label="Loading…" />
       ) : (
         <>
           <ScanSellQuotationStack
@@ -2640,77 +3052,25 @@ export function ScanSellPage() {
 
       {isCafeSell ? (
         <>
-        <div className={styles.cafeSellShell}>
-          <div className={styles.cafeSellWorkspace}>
-            <div className={styles.cafePickerColumn}>
-              <div className={styles.cafePickerSection}>
-                <div className={styles.searchRow} ref={searchWrapperRef}>
-                  <form
-                    className={styles.searchForm}
-                    onSubmit={handleSearchSubmit}
-                  >
-                    <div className={styles.searchInputWrapper}>
-                      <span
-                        className={styles.searchIcon}
-                        role="img"
-                        aria-label="Search"
-                      >
-                        🔍
-                      </span>
-                      <input
-                        type="text"
-                        className={styles.searchInput}
-                        placeholder="Filter menu, or search more products…"
-                        value={searchQuery}
-                        onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                          setSearchQuery(e.currentTarget.value)
-                        }
-                        disabled={isSearching}
-                        aria-expanded={showSearchDropdown}
-                        aria-haspopup="listbox"
-                        aria-controls="search-results-list"
-                      />
-                      <button
-                        type="submit"
-                        className={styles.searchSubmitBtn}
-                        disabled={isSearching}
-                      >
-                        {isSearching ? 'Searching…' : 'Search'}
-                      </button>
-                    </div>
-                  </form>
-                  {showSearchDropdown && (
-                    <div
-                      id="search-results-list"
-                      className={styles.searchDropdown}
-                      role="listbox"
-                    >
-                      {isSearching ? (
-                        <div className={styles.dropdownLoading}>Searching…</div>
-                      ) : searchResults.length === 0 ? (
-                        <div className={styles.dropdownEmpty}>
-                          No products found
-                        </div>
-                      ) : (
-                        <ul className={styles.dropdownList}>
-                          {searchResults.map((item) => (
-                            <SearchDropdownItem
-                              key={item.id}
-                              item={item}
-                              onAddToCart={handleAddToCart}
-                              disabled={
-                                item.currentCount <= 0 ||
-                                (item.sellingPrice ?? item.priceToRetail) ==
-                                  null ||
-                                isUpdatingCart
-                              }
-                            />
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  )}
-                </div>
+        <Box className={styles.cafeSellShell}>
+          <Inline className={styles.cafeSellWorkspace} align="start" width="full">
+            <Box className={styles.cafePickerColumn}>
+              <Stack gap="md" className={styles.cafePickerSection}>
+                <ProductSearchBlock
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                  isSearching={isSearching}
+                  showSearchDropdown={showSearchDropdown}
+                  searchResults={searchResults}
+                  onSearch={() => handleSearchSubmit()}
+                  placeholder="Filter menu, or search more products…"
+                  onAddToCart={handleAddToCart}
+                  addDisabled={(item) =>
+                    item.currentCount <= 0 ||
+                    (item.sellingPrice ?? item.priceToRetail) == null ||
+                    isUpdatingCart
+                  }
+                />
                 <CafeSellCatalogPanel
                   catalog={sellCatalog}
                   loading={isLoadingCatalog}
@@ -2719,270 +3079,120 @@ export function ScanSellPage() {
                   onAddMenuItem={(item) => void handleAddMenuItem(item)}
                   onAddDirectStock={handleAddDirectStock}
                 />
-              </div>
-            </div>
+              </Stack>
+            </Box>
 
-            <aside className={styles.cafeOrderColumn}>
-              <div className={styles.customerBlock}>
-                <button
-                  type="button"
-                  className={styles.customerToggle}
-                  onClick={() => setCustomerSectionOpen((o) => !o)}
-                  aria-expanded={customerSectionOpen}
-                >
-                  <span className={styles.customerToggleLabel}>Customer</span>
-                  {customerName || customerPhone ? (
-                    <span className={styles.customerToggleValue}>
-                      {customerName || customerPhone}
-                    </span>
-                  ) : (
-                    <span className={styles.customerToggleHint}>Optional</span>
-                  )}
-                  <span className={styles.customerToggleIcon}>
-                    {customerSectionOpen ? '▼' : '▶'}
-                  </span>
-                </button>
-                {customerSectionOpen && (
-                  <div className={styles.customerForm}>
-                    <div className={styles.customerFieldsVertical}>
-                      <div className={styles.customerField}>
-                        <label
-                          htmlFor="cafe-customerPhone"
-                          className={styles.customerLabel}
-                        >
-                          Phone
-                        </label>
-                        <div className={styles.customerInputRow}>
-                          <input
-                            id="cafe-customerPhone"
-                            type="tel"
-                            className={styles.customerInput}
-                            placeholder="Phone"
-                            value={customerPhone}
-                            onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                              setCustomerPhone(e.currentTarget.value)
-                            }
-                            onBlur={handleCustomerFieldBlur}
-                            disabled={isSearchingCustomer}
-                          />
-                          <button
-                            type="button"
-                            className={styles.sidebarSearchBtn}
-                            onClick={handleCustomerSearch}
-                            disabled={
-                              isSearchingCustomer || !customerPhone.trim()
-                            }
-                            title="Search customer"
-                          >
-                            {isSearchingCustomer ? '…' : '⌕'}
-                          </button>
-                        </div>
-                      </div>
-                      <div className={styles.customerField}>
-                        <label
-                          htmlFor="cafe-customerName"
-                          className={styles.customerLabel}
-                        >
-                          Name
-                        </label>
-                        <input
-                          id="cafe-customerName"
-                          type="text"
-                          className={styles.customerInput}
-                          placeholder="Name"
-                          value={customerName}
-                          onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                            setCustomerName(e.currentTarget.value)
-                          }
-                          onBlur={handleCustomerFieldBlur}
-                        />
-                      </div>
-                      <div className={styles.customerField}>
-                        <label
-                          htmlFor="cafe-customerEmail"
-                          className={styles.customerLabel}
-                        >
-                          Email
-                        </label>
-                        <div className={styles.customerInputRow}>
-                          <input
-                            id="cafe-customerEmail"
-                            type="email"
-                            className={styles.customerInput}
-                            placeholder="Email"
-                            value={customerEmail}
-                            onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                              setCustomerEmail(e.currentTarget.value)
-                            }
-                            onBlur={handleCustomerFieldBlur}
-                            disabled={isSearchingCustomer}
-                          />
-                          <button
-                            type="button"
-                            className={styles.sidebarSearchBtn}
-                            onClick={handleCustomerSearchByEmail}
-                            disabled={
-                              isSearchingCustomer || !customerEmail.trim()
-                            }
-                            title="Search customer by email"
-                          >
-                            {isSearchingCustomer ? '…' : '⌕'}
-                          </button>
-                        </div>
-                      </div>
-                      <div className={styles.customerField}>
-                        <label
-                          htmlFor="cafe-customerAddress"
-                          className={styles.customerLabel}
-                        >
-                          Address
-                        </label>
-                        <input
-                          id="cafe-customerAddress"
-                          type="text"
-                          className={styles.customerInput}
-                          placeholder="Address"
-                          value={customerAddress}
-                          onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                            setCustomerAddress(e.currentTarget.value)
-                          }
-                          onBlur={handleCustomerFieldBlur}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+            <Box as="aside" className={styles.cafeOrderColumn}>
+              <CustomerSectionBlock
+                idPrefix="cafe"
+                customerSectionOpen={customerSectionOpen}
+                setCustomerSectionOpen={setCustomerSectionOpen}
+                customerName={customerName}
+                customerPhone={customerPhone}
+                customerEmail={customerEmail}
+                customerAddress={customerAddress}
+                setCustomerName={setCustomerName}
+                setCustomerPhone={setCustomerPhone}
+                setCustomerEmail={setCustomerEmail}
+                setCustomerAddress={setCustomerAddress}
+                handleCustomerFieldBlur={handleCustomerFieldBlur}
+                isSearchingCustomer={isSearchingCustomer}
+                handleCustomerSearch={handleCustomerSearch}
+                handleCustomerSearchByEmail={handleCustomerSearchByEmail}
+                isRetailer={isRetailer}
+                setIsRetailer={setIsRetailer}
+                customerGstin={customerGstin}
+                customerDlNo={customerDlNo}
+                customerPan={customerPan}
+                setCustomerGstin={setCustomerGstin}
+                setCustomerDlNo={setCustomerDlNo}
+                setCustomerPan={setCustomerPan}
+              />
 
-              <div className={styles.cafeOrderPanel}>
-                <div className={styles.cafeOrderHeader}>
-                  <h3 className={styles.cafeOrderTitle}>Current order</h3>
-                  <span className={styles.cafeOrderCount}>
-                    {cafeOrderItemCount} item
-                    {cafeOrderItemCount === 1 ? '' : 's'}
-                  </span>
-                </div>
-                <div className={styles.cafeOrderList}>
-                  {renderCafeOrderLines()}
-                </div>
-              </div>
+              <Card className={styles.cafeOrderPanel}>
+                <CardBody>
+                  <Inline className={styles.cafeOrderHeader} justify="between" align="center" width="full">
+                    <Text variant="heading3" className={styles.cafeOrderTitle}>
+                      Current order
+                    </Text>
+                    <Badge variant="neutral" className={styles.cafeOrderCount}>
+                      {cafeOrderItemCount} item
+                      {cafeOrderItemCount === 1 ? '' : 's'}
+                    </Badge>
+                  </Inline>
+                  <Stack gap="sm" className={styles.cafeOrderList}>
+                    {renderCafeOrderLines()}
+                  </Stack>
+                </CardBody>
+              </Card>
 
               {cartData &&
                 (cartData.totalCost != null ||
                   cartData.revenueAfterTax != null ||
                   cartData.totalProfit != null ||
                   cartData.marginPercent != null) && (
-                  <div className={styles.cafeAnalytics}>
-                    <div className={styles.summaryRow}>
-                      <span>Total Cost</span>
-                      <span>₹{(cartData.totalCost ?? 0).toFixed(2)}</span>
-                    </div>
+                  <Stack gap="xs" className={styles.cafeAnalytics}>
+                    <SummaryRow
+                      label="Total Cost"
+                      value={`₹${(cartData.totalCost ?? 0).toFixed(2)}`}
+                    />
                     {cartData.revenueAfterTax != null && (
-                      <div className={styles.summaryRow}>
-                        <span>Revenue (after tax)</span>
-                        <span>₹{cartData.revenueAfterTax.toFixed(2)}</span>
-                      </div>
+                      <SummaryRow
+                        label="Revenue (after tax)"
+                        value={`₹${cartData.revenueAfterTax.toFixed(2)}`}
+                      />
                     )}
                     {cartData.totalProfit != null && (
-                      <div className={styles.summaryRow}>
-                        <span>Profit</span>
-                        <span>₹{cartData.totalProfit.toFixed(2)}</span>
-                      </div>
+                      <SummaryRow
+                        label="Profit"
+                        value={`₹${cartData.totalProfit.toFixed(2)}`}
+                      />
                     )}
                     {cartData.marginPercent != null && (
-                      <div className={styles.summaryRow}>
-                        <span>Margin</span>
-                        <span>{cartData.marginPercent.toFixed(1)}%</span>
-                      </div>
+                      <SummaryRow
+                        label="Margin"
+                        value={`${cartData.marginPercent.toFixed(1)}%`}
+                      />
                     )}
-                  </div>
+                  </Stack>
                 )}
-            </aside>
-          </div>
-        </div>
+            </Box>
+          </Inline>
+        </Box>
         {renderCafeCheckoutBar()}
         </>
       ) : (
-      <div className={styles.mainRow}>
-        <div className={styles.cartArea}>
-          <div className={styles.cartSection}>
-            {/* Search inside cart: API only on Enter or Search button */}
-            <div className={styles.searchRow} ref={searchWrapperRef}>
-              <form className={styles.searchForm} onSubmit={handleSearchSubmit}>
-                <div className={styles.searchInputWrapper}>
-                  <span
-                    className={styles.searchIcon}
-                    role="img"
-                    aria-label="Search"
-                  >
-                    🔍
-                  </span>
-                  <input
-                    type="text"
-                    className={styles.searchInput}
-                    placeholder="Search products..."
-                    value={searchQuery}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                      setSearchQuery(e.currentTarget.value)
-                    }
-                    disabled={isSearching}
-                    autoFocus
-                    aria-expanded={showSearchDropdown}
-                    aria-haspopup="listbox"
-                    aria-controls="search-results-list"
-                  />
-                  <button
-                    type="submit"
-                    className={styles.searchSubmitBtn}
-                    disabled={isSearching}
-                  >
-                    {isSearching ? 'Searching...' : 'Search'}
-                  </button>
-                </div>
-              </form>
-              {showSearchDropdown && (
-                <div
-                  id="search-results-list"
-                  className={styles.searchDropdown}
-                  role="listbox"
-                >
-                  {isSearching ? (
-                    <div className={styles.dropdownLoading}>Searching...</div>
-                  ) : searchResults.length === 0 ? (
-                    <div className={styles.dropdownEmpty}>
-                      No products found
-                    </div>
-                  ) : (
-                    <ul className={styles.dropdownList}>
-                      {searchResults.map((item) => (
-                        <SearchDropdownItem
-                          key={item.id}
-                          item={item}
-                          onAddToCart={handleAddToCart}
-                          disabled={
-                            item.currentCount <= 0 ||
-                            (item.sellingPrice ?? item.priceToRetail) == null ||
-                            isUpdatingCart
-                          }
-                        />
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              )}
-            </div>
+      <Inline className={styles.mainRow} align="start" width="full">
+        <Box className={styles.cartArea}>
+          <Stack gap="md" className={styles.cartSection}>
+            <ProductSearchBlock
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              isSearching={isSearching}
+              showSearchDropdown={showSearchDropdown}
+              searchResults={searchResults}
+              onSearch={() => handleSearchSubmit()}
+              placeholder="Search products..."
+              autoFocus
+              onAddToCart={handleAddToCart}
+              addDisabled={(item) =>
+                item.currentCount <= 0 ||
+                (item.sellingPrice ?? item.priceToRetail) == null ||
+                isUpdatingCart
+              }
+            />
 
-            {/* View toggle: List (default) / Grid */}
-            {cartItems.length > 0 && (
-              <div className={styles.viewToggleWrap}>
-                <span className={styles.viewToggleLabel}>View:</span>
-                <div
+            {cartItems.length > 0 ? (
+              <Inline className={styles.viewToggleWrap} gap="sm" align="center">
+                <Text className={styles.viewToggleLabel}>View:</Text>
+                <Inline
                   className={styles.viewToggleButtons}
-                  role="group"
-                  aria-label="Cart view mode"
+                  gap="none"
                 >
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
                     className={`${styles.viewToggleBtn} ${
                       cartViewMode === 'list' ? styles.viewToggleBtnActive : ''
                     }`}
@@ -2993,10 +3203,12 @@ export function ScanSellPage() {
                     title="List view"
                     aria-pressed={cartViewMode === 'list'}
                   >
-                    <span aria-hidden>☰</span> List
-                  </button>
-                  <button
+                    <Text aria-hidden>☰</Text> List
+                  </Button>
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
                     className={`${styles.viewToggleBtn} ${
                       cartViewMode === 'grid' ? styles.viewToggleBtnActive : ''
                     }`}
@@ -3007,39 +3219,39 @@ export function ScanSellPage() {
                     title="Grid view"
                     aria-pressed={cartViewMode === 'grid'}
                   >
-                    <span aria-hidden>⊞</span> Grid
-                  </button>
-                </div>
-              </div>
-            )}
+                    <Text aria-hidden>⊞</Text> Grid
+                  </Button>
+                </Inline>
+              </Inline>
+            ) : null}
 
-            <div
+            <Box
               className={`${styles.cartItems} ${
                 cartViewMode === 'grid' ? styles.cartItemsExcel : ''
               }`}
             >
               {isLoadingCart ? (
-                <div className={styles.loading}>Loading cart...</div>
+                <CenteredLoader label="Loading cart..." />
               ) : cartItems.length === 0 ? (
-                <div className={styles.emptyCart}>Cart is empty</div>
+                <EmptyState title="Cart is empty" className={styles.emptyCart} />
               ) : cartViewMode === 'grid' ? (
-                <div className={styles.excelTableWrap}>
-                  <table className={styles.excelTable}>
-                    <thead>
-                      <tr>
-                        <th className={styles.excelTh}>#</th>
-                        <th className={styles.excelTh}>Product</th>
-                        <th className={styles.excelTh}>Company</th>
-                        <th className={styles.excelTh}>Qty</th>
-                        <th className={styles.excelTh}>Unit</th>
-                        <th className={styles.excelTh}>Amount</th>
-                        <th className={styles.excelTh}>Price</th>
-                        <th className={styles.excelTh}>Discount</th>
-                        <th className={styles.excelTh}>Scheme</th>
-                        <th className={styles.excelTh}>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                <Box className={styles.excelTableWrap}>
+                  <Table className={styles.excelTable}>
+                    <TableHead>
+                      <TableRow>
+                        <TableHeaderCell className={styles.excelTh}>#</TableHeaderCell>
+                        <TableHeaderCell className={styles.excelTh}>Product</TableHeaderCell>
+                        <TableHeaderCell className={styles.excelTh}>Company</TableHeaderCell>
+                        <TableHeaderCell className={styles.excelTh}>Qty</TableHeaderCell>
+                        <TableHeaderCell className={styles.excelTh}>Unit</TableHeaderCell>
+                        <TableHeaderCell className={styles.excelTh}>Amount</TableHeaderCell>
+                        <TableHeaderCell className={styles.excelTh}>Price</TableHeaderCell>
+                        <TableHeaderCell className={styles.excelTh}>Discount</TableHeaderCell>
+                        <TableHeaderCell className={styles.excelTh}>Scheme</TableHeaderCell>
+                        <TableHeaderCell className={styles.excelTh}>Actions</TableHeaderCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
                       {cartItems.map((cartItem, idx) => {
                         const isPackOnlySale =
                           cartItem.inventoryItem.sellUnitRule === 'PACK_ONLY';
@@ -3083,19 +3295,20 @@ export function ScanSellPage() {
                           pricingLoading[pricingId ?? ''] ||
                           pricingLoading[`inv:${cartItem.inventoryItem.id}`];
                         return (
-                          <tr
+                          <TableRow
                             key={cartItem.inventoryItem.id}
                             className={styles.excelTr}
                           >
-                            <td className={styles.excelTd}>{idx + 1}</td>
-                            <td className={styles.excelTd}>
-                              <button
+                            <TableCell className={styles.excelTd}>{idx + 1}</TableCell>
+                            <TableCell className={styles.excelTd}>
+                              <Button
                                 type="button"
+                                variant="ghost"
                                 className={styles.excelProductBtn}
                                 onClick={() => setDetailModalItem(cartItem)}
                               >
                                 {cartItem.inventoryItem.name || '—'}
-                              </button>
+                              </Button>
                               <CustomerProductHistoryHint
                                 sellableRef={inventorySellableRef(
                                   cartItem.inventoryItem.id
@@ -3103,12 +3316,12 @@ export function ScanSellPage() {
                                 history={customerProductHistory}
                                 loading={customerProductHistoryLoading}
                               />
-                            </td>
-                            <td className={styles.excelTd}>
+                            </TableCell>
+                            <TableCell className={styles.excelTd}>
                               {cartItem.inventoryItem.companyName || '—'}
-                            </td>
-                            <td className={styles.excelTd}>
-                              <div className={styles.excelCellInput}>
+                            </TableCell>
+                            <TableCell className={styles.excelTd}>
+                              <Box className={styles.excelCellInput}>
                                 <CartQuantityInput
                                   value={quantityInputValue}
                                   disabled={isUpdatingCart}
@@ -3123,10 +3336,10 @@ export function ScanSellPage() {
                                     }
                                   }}
                                 />
-                              </div>
-                            </td>
-                            <td className={styles.excelTd}>
-                              <select
+                              </Box>
+                            </TableCell>
+                            <TableCell className={styles.excelTd}>
+                              <Select
                                 className={styles.excelSelect}
                                 value={cartItem.unit}
                                 onChange={(e) =>
@@ -3140,26 +3353,20 @@ export function ScanSellPage() {
                                   cartItem.inventoryItem.sellUnitRule ===
                                     'PACK_ONLY'
                                 }
-                              >
-                                {(cartItem.availableUnits.length > 0
+                                options={(cartItem.availableUnits.length > 0
                                   ? cartItem.availableUnits
                                   : [{ unit: cartItem.unit, baseUnit: false }]
-                                ).map((uo) => (
-                                  <option
-                                    key={`${uo.unit}-${uo.baseUnit}`}
-                                    value={uo.unit}
-                                  >
-                                    {uo.unit}
-                                    {uo.baseUnit ? ' (base)' : ''}
-                                  </option>
-                                ))}
-                              </select>
-                            </td>
-                            <td className={styles.excelTd}>
+                                ).map((uo) => ({
+                                  value: uo.unit,
+                                  label: `${uo.unit}${uo.baseUnit ? ' (base)' : ''}`,
+                                }))}
+                              />
+                            </TableCell>
+                            <TableCell className={styles.excelTd}>
                               {formatPrice(lineTotal)}
-                            </td>
-                            <td className={styles.excelTd}>
-                              <div className={styles.excelPriceCell}>
+                            </TableCell>
+                            <TableCell className={styles.excelTd}>
+                              <Stack gap="xs" className={styles.excelPriceCell}>
                                 <CartSellingPriceInput
                                   value={cartItem.price}
                                   onCommit={(n) =>
@@ -3170,8 +3377,8 @@ export function ScanSellPage() {
                                   }
                                   disabled={isUpdatingCart}
                                 />
-                                {showRateDropdown && (
-                                  <select
+                                {showRateDropdown ? (
+                                  <Select
                                     className={styles.excelRateSelect}
                                     value={
                                       matched ? matched.label : '__custom__'
@@ -3196,34 +3403,30 @@ export function ScanSellPage() {
                                       )
                                     }
                                     disabled={isUpdatingCart || isLoading}
-                                  >
-                                    <option value="__custom__">Custom</option>
-                                    {rateOpts.map((opt) => (
-                                      <option
-                                        key={`${opt.label}-${opt.price}`}
-                                        value={opt.label}
-                                      >
-                                        {opt.label} ({formatPrice(opt.price)})
-                                      </option>
-                                    ))}
-                                  </select>
-                                )}
-                              </div>
-                            </td>
-                            <td className={styles.excelTd}>
-                              <div className={styles.compareCell}>
-                                {!hidePurchaseDetailsInSell && (
-                                  <div className={styles.compareTop}>
+                                    options={[
+                                      { value: '__custom__', label: 'Custom' },
+                                      ...rateOpts.map((opt) => ({
+                                        value: opt.label,
+                                        label: `${opt.label} (${formatPrice(opt.price)})`,
+                                      })),
+                                    ]}
+                                  />
+                                ) : null}
+                              </Stack>
+                            </TableCell>
+                            <TableCell className={styles.excelTd}>
+                              <Stack gap="xs" className={styles.compareCell}>
+                                {!hidePurchaseDetailsInSell ? (
+                                  <Text variant="caption" className={styles.compareTop}>
                                     {(() => {
                                       const v = getPurchaseAdditionalDiscount(
                                         cartItem.inventoryItem
                                       );
                                       return v != null ? `${v}%` : '—';
                                     })()}
-                                  </div>
-                                )}
-
-                                <div className={styles.compareBottom}>
+                                  </Text>
+                                ) : null}
+                                <Box className={styles.compareBottom}>
                                   <CartAdditionalDiscountInput
                                     value={getEffectiveAdditionalDiscount(
                                       cartItem.inventoryItem.id,
@@ -3237,20 +3440,19 @@ export function ScanSellPage() {
                                     }
                                     disabled={isUpdatingCart}
                                   />
-                                </div>
-                              </div>
-                            </td>
-                            <td className={styles.excelTd}>
-                              <div className={styles.compareCell}>
-                                {!hidePurchaseDetailsInSell && (
-                                  <div className={styles.compareTop}>
+                                </Box>
+                              </Stack>
+                            </TableCell>
+                            <TableCell className={styles.excelTd}>
+                              <Stack gap="xs" className={styles.compareCell}>
+                                {!hidePurchaseDetailsInSell ? (
+                                  <Text variant="caption" className={styles.compareTop}>
                                     {formatPurchaseSchemeLabel(
                                       cartItem.inventoryItem
                                     )}
-                                  </div>
-                                )}
-
-                                <div className={styles.compareBottom}>
+                                  </Text>
+                                ) : null}
+                                <Box className={styles.compareBottom}>
                                   <CartSchemeInput
                                     schemeType={cartItem.schemeType ?? null}
                                     payFor={cartItem.schemePayFor ?? null}
@@ -3273,12 +3475,14 @@ export function ScanSellPage() {
                                     }
                                     disabled={isUpdatingCart}
                                   />
-                                </div>
-                              </div>
-                            </td>
-                            <td className={styles.excelTd}>
-                              <button
+                                </Box>
+                              </Stack>
+                            </TableCell>
+                            <TableCell className={styles.excelTd}>
+                              <Button
                                 type="button"
+                                variant="ghost"
+                                size="sm"
                                 className={styles.excelRemoveBtn}
                                 onClick={() =>
                                   handleRemoveItem(cartItem.inventoryItem.id)
@@ -3286,14 +3490,14 @@ export function ScanSellPage() {
                                 disabled={isUpdatingCart}
                               >
                                 Remove
-                              </button>
-                            </td>
-                          </tr>
+                              </Button>
+                            </TableCell>
+                          </TableRow>
                         );
                       })}
-                    </tbody>
-                  </table>
-                </div>
+                    </TableBody>
+                  </Table>
+                </Box>
               ) : (
                 cartItems.map((cartItem) =>
                   (() => {
@@ -3309,32 +3513,34 @@ export function ScanSellPage() {
                       ? cartItem.baseQuantity
                       : cartItem.quantity;
                     return (
-                      <div
+                      <Card
                         key={cartItem.inventoryItem.id}
                         className={styles.cartItem}
                       >
-                        <div className={styles.itemInfo}>
-                          <div className={styles.itemHeader}>
-                            <div className={styles.itemHeaderTop}>
-                              <button
+                        <CardBody>
+                        <Stack gap="md" className={styles.itemInfo}>
+                          <Stack gap="xs" className={styles.itemHeader}>
+                            <Inline className={styles.itemHeaderTop} justify="between" align="center" width="full">
+                              <Button
                                 type="button"
+                                variant="ghost"
                                 className={styles.itemNameButton}
                                 onClick={() => setDetailModalItem(cartItem)}
                                 aria-label="View pricing details"
                               >
                                 {cartItem.inventoryItem.name || 'Unnamed Product'}
-                              </button>
-                              <span className={styles.modeBadge}>
+                              </Button>
+                              <Badge variant="neutral" className={styles.modeBadge}>
                                 {normalizeBillingMode(
                                   cartItem.inventoryItem.billingMode
                                 )}
-                              </span>
-                            </div>
-                            {cartItem.inventoryItem.companyName && (
-                              <span className={styles.itemCompany}>
+                              </Badge>
+                            </Inline>
+                            {cartItem.inventoryItem.companyName ? (
+                              <Text variant="caption" color="secondary" className={styles.itemCompany}>
                                 {cartItem.inventoryItem.companyName}
-                              </span>
-                            )}
+                              </Text>
+                            ) : null}
                             <CustomerProductHistoryHint
                               sellableRef={inventorySellableRef(
                                 cartItem.inventoryItem.id
@@ -3342,14 +3548,14 @@ export function ScanSellPage() {
                               history={customerProductHistory}
                               loading={customerProductHistoryLoading}
                             />
-                            <div className={styles.itemMetaRow}>
-                              <span className={styles.itemUnitMeta}>
+                            <Box className={styles.itemMetaRow}>
+                              <Text variant="caption" color="secondary" className={styles.itemUnitMeta}>
                                 {formatCartPackagingMeta(cartItem)}
-                              </span>
-                            </div>
+                              </Text>
+                            </Box>
                             {cartItem.inventoryItem.maximumRetailPrice >
-                              cartItem.price && (
-                              <span className={styles.itemDiscount}>
+                              cartItem.price ? (
+                              <Text variant="caption" className={styles.itemDiscount}>
                                 {(
                                   ((cartItem.inventoryItem.maximumRetailPrice -
                                     cartItem.price) /
@@ -3357,19 +3563,16 @@ export function ScanSellPage() {
                                   100
                                 ).toFixed(1)}
                                 % off MRP
-                              </span>
-                            )}
-                          </div>
-                          <div className={styles.itemEditRow}>
-                            <div className={styles.itemEditFields}>
-                              <div className={styles.itemFieldGroup}>
-                                <label
-                                  className={styles.itemFieldLabel}
-                                  htmlFor={`price-${cartItem.inventoryItem.id}`}
-                                >
-                                  Price
-                                </label>
-                                <div className={styles.itemPriceBlock}>
+                              </Text>
+                            ) : null}
+                          </Stack>
+                          <Inline className={styles.itemEditRow} align="start" width="full">
+                            <Stack gap="md" className={styles.itemEditFields}>
+                              <FormField
+                                label="Price"
+                                id={`price-${cartItem.inventoryItem.id}`}
+                              >
+                                <Stack gap="xs" className={styles.itemPriceBlock}>
                                   <CartSellingPriceInput
                                     id={`price-${cartItem.inventoryItem.id}`}
                                     value={cartItem.price}
@@ -3381,9 +3584,9 @@ export function ScanSellPage() {
                                     }
                                     disabled={isUpdatingCart}
                                   />
-                                  <span className={styles.itemFieldUnit}>
+                                  <Text variant="caption" color="secondary" className={styles.itemFieldUnit}>
                                     per {cartItem.unit}
-                                  </span>
+                                  </Text>
                                   {(() => {
                                     const pricingId =
                                       cartItem.inventoryItem.pricingId ??
@@ -3428,7 +3631,7 @@ export function ScanSellPage() {
                                       (o) => o.label === displayValue
                                     );
                                     return (
-                                      <select
+                                      <Select
                                         className={styles.itemRateSelect}
                                         value={displayValue}
                                         onChange={(e) => {
@@ -3459,33 +3662,23 @@ export function ScanSellPage() {
                                               ? `Rate: ${selectedOpt.label}, ${formatPrice(selectedOpt.price)}`
                                               : 'Select selling rate'
                                         }
-                                      >
-                                        <option value="__custom__">
-                                          Custom
-                                        </option>
-                                        {rateOpts.map((opt) => (
-                                          <option
-                                            key={`${opt.label}-${opt.price}`}
-                                            value={opt.label}
-                                          >
-                                            {opt.label} · {formatPrice(opt.price)}
-                                          </option>
-                                        ))}
-                                      </select>
+                                        options={[
+                                          { value: '__custom__', label: 'Custom' },
+                                          ...rateOpts.map((opt) => ({
+                                            value: opt.label,
+                                            label: `${opt.label} · ${formatPrice(opt.price)}`,
+                                          })),
+                                        ]}
+                                      />
                                     );
                                   })()}
-                                </div>
-                              </div>
-                              <div className={styles.itemSaleRowInline}>
-                                {/* Discount */}
-                                <div className={styles.itemFieldGroup}>
-                                  <label className={styles.itemFieldLabel}>
-                                    Disc
-                                  </label>
-
-                                  <div className={styles.compareCell}>
-                                    {!hidePurchaseDetailsInSell && (
-                                      <div className={styles.compareTop}>
+                                </Stack>
+                              </FormField>
+                              <Inline className={styles.itemSaleRowInline} gap="md" align="start">
+                                <FormField label="Disc">
+                                  <Stack gap="xs" className={styles.compareCell}>
+                                    {!hidePurchaseDetailsInSell ? (
+                                      <Text variant="caption" className={styles.compareTop}>
                                         {(() => {
                                           const v =
                                             getPurchaseAdditionalDiscount(
@@ -3493,10 +3686,9 @@ export function ScanSellPage() {
                                             );
                                           return v != null ? `${v}%` : '—';
                                         })()}
-                                      </div>
-                                    )}
-
-                                    <div className={styles.compareBottom}>
+                                      </Text>
+                                    ) : null}
+                                    <Box className={styles.compareBottom}>
                                       <CartAdditionalDiscountInput
                                         value={getEffectiveAdditionalDiscount(
                                           cartItem.inventoryItem.id,
@@ -3510,26 +3702,20 @@ export function ScanSellPage() {
                                         }
                                         disabled={isUpdatingCart}
                                       />
-                                    </div>
-                                  </div>
-                                </div>
+                                    </Box>
+                                  </Stack>
+                                </FormField>
 
-                                {/* Scheme */}
-                                <div className={styles.itemFieldGroup}>
-                                  <label className={styles.itemFieldLabel}>
-                                    Scheme
-                                  </label>
-
-                                  <div className={styles.compareCell}>
-                                    {!hidePurchaseDetailsInSell && (
-                                      <div className={styles.compareTop}>
+                                <FormField label="Scheme">
+                                  <Stack gap="xs" className={styles.compareCell}>
+                                    {!hidePurchaseDetailsInSell ? (
+                                      <Text variant="caption" className={styles.compareTop}>
                                         {formatPurchaseSchemeLabel(
                                           cartItem.inventoryItem
                                         )}
-                                      </div>
-                                    )}
-
-                                    <div className={styles.compareBottom}>
+                                      </Text>
+                                    ) : null}
+                                    <Box className={styles.compareBottom}>
                                       <CartSchemeInput
                                         schemeType={cartItem.schemeType ?? null}
                                         payFor={cartItem.schemePayFor ?? null}
@@ -3552,17 +3738,12 @@ export function ScanSellPage() {
                                         }
                                         disabled={isUpdatingCart}
                                       />
-                                    </div>
-                                  </div>
-                                </div>
+                                    </Box>
+                                  </Stack>
+                                </FormField>
 
-                                {/* Unit */}
-                                <div className={styles.itemFieldGroup}>
-                                  <label className={styles.itemFieldLabel}>
-                                    Unit
-                                  </label>
-
-                                  <select
+                                <FormField label="Unit">
+                                  <Select
                                     className={styles.itemUnitSelect}
                                     value={cartItem.unit}
                                     onChange={(e) =>
@@ -3572,8 +3753,7 @@ export function ScanSellPage() {
                                       )
                                     }
                                     disabled={isUpdatingCart}
-                                  >
-                                    {(cartItem.availableUnits.length > 0
+                                    options={(cartItem.availableUnits.length > 0
                                       ? cartItem.availableUnits
                                       : [
                                           {
@@ -3581,23 +3761,19 @@ export function ScanSellPage() {
                                             baseUnit: false,
                                           },
                                         ]
-                                    ).map((unitOption) => (
-                                      <option
-                                        key={`${unitOption.unit}-${unitOption.baseUnit}`}
-                                        value={unitOption.unit}
-                                      >
-                                        {unitOption.unit}
-                                        {unitOption.baseUnit ? ' (base)' : ''}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                              </div>
-                            </div>
-                            <div className={styles.itemActions}>
-                              <div className={styles.itemActionTopRow}>
-                                <div className={styles.qtyStepper}>
-                                  <button
+                                    ).map((unitOption) => ({
+                                      value: unitOption.unit,
+                                      label: `${unitOption.unit}${unitOption.baseUnit ? ' (base)' : ''}`,
+                                    }))}
+                                  />
+                                </FormField>
+                              </Inline>
+                            </Stack>
+                            <Stack gap="sm" className={styles.itemActions} align="end">
+                              <Inline className={styles.itemActionTopRow} gap="sm" align="center">
+                                <Inline className={styles.qtyStepper} gap="none" align="center">
+                                  <IconButton
+                                    label="Decrease quantity"
                                     className={styles.qtyBtn}
                                     onClick={() =>
                                       handleUpdateQuantity(
@@ -3607,10 +3783,9 @@ export function ScanSellPage() {
                                       )
                                     }
                                     disabled={isUpdatingCart}
-                                    aria-label="Decrease quantity"
                                   >
                                     −
-                                  </button>
+                                  </IconButton>
                                   <CartQuantityInput
                                     value={quantityInputValue}
                                     disabled={isUpdatingCart}
@@ -3625,7 +3800,8 @@ export function ScanSellPage() {
                                       }
                                     }}
                                   />
-                                  <button
+                                  <IconButton
+                                    label="Increase quantity"
                                     className={styles.qtyBtn}
                                     onClick={() =>
                                       handleUpdateQuantity(
@@ -3635,13 +3811,14 @@ export function ScanSellPage() {
                                       )
                                     }
                                     disabled={isUpdatingCart}
-                                    aria-label="Increase quantity"
                                   >
                                     +
-                                  </button>
-                                </div>
-                                <button
+                                  </IconButton>
+                                </Inline>
+                                <Button
                                   type="button"
+                                  variant="ghost"
+                                  size="sm"
                                   className={styles.removeBtn}
                                   onClick={() =>
                                     handleRemoveItem(cartItem.inventoryItem.id)
@@ -3649,330 +3826,155 @@ export function ScanSellPage() {
                                   disabled={isUpdatingCart}
                                 >
                                   Remove
-                                </button>
-                              </div>
-                              <div className={styles.itemActionAmount}>
+                                </Button>
+                              </Inline>
+                              <Text weight="semibold" className={styles.itemActionAmount}>
                                 ₹
                                 {(cartItem.price * cartItem.quantity).toFixed(
                                   2
                                 )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                              </Text>
+                            </Stack>
+                          </Inline>
+                        </Stack>
+                        </CardBody>
+                      </Card>
                     );
                   })()
                 )
               )}
-            </div>
-          </div>
-        </div>
+            </Box>
+          </Stack>
+        </Box>
 
-        {/* Totals and actions sidebar */}
-        <aside className={styles.summarySidebar}>
-          <div className={styles.customerBlock}>
-            <button
-              type="button"
-              className={styles.customerToggle}
-              onClick={() => setCustomerSectionOpen((o) => !o)}
-              aria-expanded={customerSectionOpen}
-            >
-              <span className={styles.customerToggleLabel}>Customer</span>
-              {customerName || customerPhone ? (
-                <span className={styles.customerToggleValue}>
-                  {customerName || customerPhone}
-                </span>
-              ) : (
-                <span className={styles.customerToggleHint}>Optional</span>
-              )}
-              <span className={styles.customerToggleIcon}>
-                {customerSectionOpen ? '▼' : '▶'}
-              </span>
-            </button>
-            {customerSectionOpen && (
-              <div className={styles.customerForm}>
-                <div className={styles.customerFieldsVertical}>
-                  <div className={styles.customerField}>
-                    <label
-                      htmlFor="sidebar-customerPhone"
-                      className={styles.customerLabel}
-                    >
-                      Phone
-                    </label>
-                    <div className={styles.customerInputRow}>
-                      <input
-                        id="sidebar-customerPhone"
-                        type="tel"
-                        className={styles.customerInput}
-                        placeholder="Phone"
-                        value={customerPhone}
-                        onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                          setCustomerPhone(e.currentTarget.value)
-                        }
-                        onBlur={handleCustomerFieldBlur}
-                        disabled={isSearchingCustomer}
-                      />
-                      <button
-                        type="button"
-                        className={styles.sidebarSearchBtn}
-                        onClick={handleCustomerSearch}
-                        disabled={isSearchingCustomer || !customerPhone.trim()}
-                        title="Search customer"
-                      >
-                        {isSearchingCustomer ? '…' : '⌕'}
-                      </button>
-                    </div>
-                  </div>
-                  <div className={styles.customerField}>
-                    <label
-                      htmlFor="sidebar-customerName"
-                      className={styles.customerLabel}
-                    >
-                      Name
-                    </label>
-                    <input
-                      id="sidebar-customerName"
-                      type="text"
-                      className={styles.customerInput}
-                      placeholder="Name"
-                      value={customerName}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                        setCustomerName(e.currentTarget.value)
-                      }
-                      onBlur={handleCustomerFieldBlur}
-                    />
-                  </div>
-                  <div className={styles.customerField}>
-                    <label
-                      htmlFor="sidebar-customerEmail"
-                      className={styles.customerLabel}
-                    >
-                      Email
-                    </label>
-                    <div className={styles.customerInputRow}>
-                      <input
-                        id="sidebar-customerEmail"
-                        type="email"
-                        className={styles.customerInput}
-                        placeholder="Email"
-                        value={customerEmail}
-                        onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                          setCustomerEmail(e.currentTarget.value)
-                        }
-                        onBlur={handleCustomerFieldBlur}
-                        disabled={isSearchingCustomer}
-                      />
-                      <button
-                        type="button"
-                        className={styles.sidebarSearchBtn}
-                        onClick={handleCustomerSearchByEmail}
-                        disabled={isSearchingCustomer || !customerEmail.trim()}
-                        title="Search customer by email"
-                      >
-                        {isSearchingCustomer ? '…' : '⌕'}
-                      </button>
-                    </div>
-                  </div>
-                  <div className={styles.customerField}>
-                    <label
-                      htmlFor="sidebar-customerAddress"
-                      className={styles.customerLabel}
-                    >
-                      Address
-                    </label>
-                    <input
-                      id="sidebar-customerAddress"
-                      type="text"
-                      className={styles.customerInput}
-                      placeholder="Address"
-                      value={customerAddress}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                        setCustomerAddress(e.currentTarget.value)
-                      }
-                      onBlur={handleCustomerFieldBlur}
-                    />
-                  </div>
-                </div>
-                <div className={styles.retailerCheckboxContainer}>
-                  <label className={styles.retailerCheckboxLabel}>
-                    <input
-                      type="checkbox"
-                      checked={isRetailer}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                        setIsRetailer(e.currentTarget.checked);
-                        if (!e.currentTarget.checked) {
-                          setCustomerGstin('');
-                          setCustomerDlNo('');
-                          setCustomerPan('');
-                        }
-                      }}
-                      className={styles.retailerCheckbox}
-                    />
-                    <span>Is Retailer</span>
-                  </label>
-                </div>
-                {isRetailer && (
-                  <div className={styles.retailerSection}>
-                    <div className={styles.customerField}>
-                      <label
-                        htmlFor="sidebar-customerGstin"
-                        className={styles.customerLabel}
-                      >
-                        GSTIN
-                      </label>
-                      <input
-                        id="sidebar-customerGstin"
-                        type="text"
-                        className={styles.customerInput}
-                        placeholder="GSTIN"
-                        value={customerGstin}
-                        onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                          setCustomerGstin(e.currentTarget.value)
-                        }
-                      />
-                    </div>
-                    <div className={styles.customerField}>
-                      <label
-                        htmlFor="sidebar-customerDlNo"
-                        className={styles.customerLabel}
-                      >
-                        DL No
-                      </label>
-                      <input
-                        id="sidebar-customerDlNo"
-                        type="text"
-                        className={styles.customerInput}
-                        placeholder="DL No"
-                        value={customerDlNo}
-                        onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                          setCustomerDlNo(e.currentTarget.value)
-                        }
-                      />
-                    </div>
-                    <div className={styles.customerField}>
-                      <label
-                        htmlFor="sidebar-customerPan"
-                        className={styles.customerLabel}
-                      >
-                        PAN
-                      </label>
-                      <input
-                        id="sidebar-customerPan"
-                        type="text"
-                        className={styles.customerInput}
-                        placeholder="PAN"
-                        value={customerPan}
-                        onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                          setCustomerPan(e.currentTarget.value)
-                        }
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+        <Box as="aside" className={styles.summarySidebar}>
+          <CustomerSectionBlock
+            idPrefix="sidebar"
+            customerSectionOpen={customerSectionOpen}
+            setCustomerSectionOpen={setCustomerSectionOpen}
+            customerName={customerName}
+            customerPhone={customerPhone}
+            customerEmail={customerEmail}
+            customerAddress={customerAddress}
+            setCustomerName={setCustomerName}
+            setCustomerPhone={setCustomerPhone}
+            setCustomerEmail={setCustomerEmail}
+            setCustomerAddress={setCustomerAddress}
+            handleCustomerFieldBlur={handleCustomerFieldBlur}
+            isSearchingCustomer={isSearchingCustomer}
+            handleCustomerSearch={handleCustomerSearch}
+            handleCustomerSearchByEmail={handleCustomerSearchByEmail}
+            isRetailer={isRetailer}
+            setIsRetailer={setIsRetailer}
+            customerGstin={customerGstin}
+            customerDlNo={customerDlNo}
+            customerPan={customerPan}
+            setCustomerGstin={setCustomerGstin}
+            setCustomerDlNo={setCustomerDlNo}
+            setCustomerPan={setCustomerPan}
+          />
 
-          <div className={styles.cartSummary}>
+          <Stack gap="xs" className={styles.cartSummary}>
             {isLoadingCart ? (
-              <div className={styles.loading}>Loading...</div>
+              <CenteredLoader label="Loading..." />
             ) : (
               <>
-                <div className={styles.summaryRow}>
-                  <span>Billing Mode</span>
-                  <span>{cartBillingMode}</span>
-                </div>
-                <div className={styles.summaryRow}>
-                  <span>Subtotal</span>
-                  <span>₹{calculateSubtotal().toFixed(2)}</span>
-                </div>
+                <SummaryRow label="Billing Mode" value={cartBillingMode} />
+                <SummaryRow
+                  label="Subtotal"
+                  value={`₹${calculateSubtotal().toFixed(2)}`}
+                />
                 {cartData &&
                   cartData.saleAdditionalDiscountTotal !== undefined &&
                   cartData.saleAdditionalDiscountTotal !== null &&
                   cartData.saleAdditionalDiscountTotal !== 0 && (
-                    <div className={styles.summaryRow}>
-                      <span>
-                        {cartData.saleAdditionalDiscountTotal > 0
+                    <SummaryRow
+                      label={
+                        cartData.saleAdditionalDiscountTotal > 0
                           ? 'Additional Discount'
-                          : 'Additional (markup)'}
-                      </span>
-                      <span>
-                        {cartData.saleAdditionalDiscountTotal > 0
-                          ? `-₹${cartData.saleAdditionalDiscountTotal.toFixed(
-                              2
-                            )}`
+                          : 'Additional (markup)'
+                      }
+                      value={
+                        cartData.saleAdditionalDiscountTotal > 0
+                          ? `-₹${cartData.saleAdditionalDiscountTotal.toFixed(2)}`
                           : `+₹${Math.abs(
                               cartData.saleAdditionalDiscountTotal
-                            ).toFixed(2)}`}
-                      </span>
-                    </div>
+                            ).toFixed(2)}`
+                      }
+                    />
                   )}
                 {cartBillingMode === 'REGULAR' &&
                   ((cartData?.taxTotal ?? 0) !== 0 ||
                     (cartData?.sgstAmount ?? 0) !== 0 ||
                     (cartData?.cgstAmount ?? 0) !== 0) && (
                     <>
-                      <div className={styles.summaryRow}>
-                        <span>SGST ({getSGSTPercentage()}%)</span>
-                        <span>₹{calculateSGST().toFixed(2)}</span>
-                      </div>
-                      <div className={styles.summaryRow}>
-                        <span>CGST ({getCGSTPercentage()}%)</span>
-                        <span>₹{calculateCGST().toFixed(2)}</span>
-                      </div>
+                      <SummaryRow
+                        label={`SGST (${getSGSTPercentage()}%)`}
+                        value={`₹${calculateSGST().toFixed(2)}`}
+                      />
+                      <SummaryRow
+                        label={`CGST (${getCGSTPercentage()}%)`}
+                        value={`₹${calculateCGST().toFixed(2)}`}
+                      />
                     </>
                   )}
                 {((cartData?.taxTotal ?? 0) !== 0 ||
                   (cartData?.sgstAmount ?? 0) !== 0 ||
                   (cartData?.cgstAmount ?? 0) !== 0) && (
-                  <div className={styles.summaryRow}>
-                    <span>Total Tax</span>
-                    <span>₹{calculateTax().toFixed(2)}</span>
-                  </div>
+                  <SummaryRow
+                    label="Total Tax"
+                    value={`₹${calculateTax().toFixed(2)}`}
+                  />
                 )}
-                <div className={styles.summaryRowTotal}>
-                  <span>Total</span>
-                  <span>₹{calculateTotal().toFixed(2)}</span>
-                </div>
+                <SummaryRow
+                  label="Total"
+                  value={`₹${calculateTotal().toFixed(2)}`}
+                  total
+                />
               </>
             )}
-          </div>
+          </Stack>
           {cartData &&
             (cartData.totalCost != null ||
               cartData.revenueAfterTax != null ||
               cartData.totalProfit != null ||
               cartData.marginPercent != null) && (
-              <div className={styles.costMarginDetail}>
-                <div className={styles.summaryRow}>
-                  <span>Total Cost</span>
-                  <span>₹{(cartData.totalCost ?? 0).toFixed(2)}</span>
-                </div>
+              <Stack gap="xs" className={styles.costMarginDetail}>
+                <SummaryRow
+                  label="Total Cost"
+                  value={`₹${(cartData.totalCost ?? 0).toFixed(2)}`}
+                />
                 {cartData.revenueAfterTax != null && (
-                  <div className={styles.summaryRow}>
-                    <span>Revenue (after tax)</span>
-                    <span>₹{cartData.revenueAfterTax.toFixed(2)}</span>
-                  </div>
+                  <SummaryRow
+                    label="Revenue (after tax)"
+                    value={`₹${cartData.revenueAfterTax.toFixed(2)}`}
+                  />
                 )}
                 {cartData.totalProfit != null && (
-                  <div className={styles.summaryRow}>
-                    <span>Profit</span>
-                    <span>₹{cartData.totalProfit.toFixed(2)}</span>
-                  </div>
+                  <SummaryRow
+                    label="Profit"
+                    value={`₹${cartData.totalProfit.toFixed(2)}`}
+                  />
                 )}
                 {cartData.marginPercent != null && (
-                  <div className={styles.summaryRow}>
-                    <span>Margin</span>
-                    <span>{cartData.marginPercent.toFixed(1)}%</span>
-                  </div>
+                  <SummaryRow
+                    label="Margin"
+                    value={`${cartData.marginPercent.toFixed(1)}%`}
+                  />
                 )}
-              </div>
+              </Stack>
             )}
-          <div className={styles.cartActions}>
-            <button className={styles.clearBtn} onClick={handleClearCart}>
+          <Inline gap="sm" className={styles.cartActions}>
+            <Button
+              type="button"
+              variant="outline"
+              className={styles.clearBtn}
+              onClick={handleClearCart}
+            >
               Clear Cart
-            </button>
-            <button
+            </Button>
+            <Button
+              type="button"
               className={styles.checkoutBtn}
               onClick={handleProcessPayment}
               disabled={
@@ -3987,16 +3989,16 @@ export function ScanSellPage() {
                 : isUpdatingCart
                 ? 'Updating...'
                 : 'Process Payment'}
-            </button>
-          </div>
-        </aside>
-      </div>
+            </Button>
+          </Inline>
+        </Box>
+      </Inline>
       )}
         </>
       )}
 
-      {detailModalItem &&
-        (() => {
+      {detailModalItem
+        ? (() => {
           const apiItem = cartData?.items?.find(
             (i: CheckoutItemResponse) =>
               i.inventoryId === detailModalItem.inventoryItem.id
@@ -4020,399 +4022,165 @@ export function ScanSellPage() {
                 }`
               : '—';
           return (
-            <div
-              className={styles.detailModalOverlay}
-              onClick={() => setDetailModalItem(null)}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="cart-detail-modal-title"
+            <Modal
+              open
+              onClose={() => setDetailModalItem(null)}
+              size="lg"
+              className={styles.detailModalContent}
             >
-              <div
-                className={styles.detailModalContent}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className={styles.detailModalHeader}>
-                  <div className={styles.detailModalHeaderContent}>
-                    <span className={styles.detailModalProductIcon} aria-hidden>
-                      📦
-                    </span>
-                    <div>
-                      <h3
-                        id="cart-detail-modal-title"
-                        className={styles.detailModalTitle}
-                      >
-                        {inv.name || 'Product'}
-                      </h3>
-                      {inv.companyName && (
-                        <p className={styles.detailModalSubtitle}>
+              <Box className={styles.detailModalHeader}>
+                <Inline className={styles.detailModalHeaderContent} gap="md" align="center">
+                  <Text aria-hidden className={styles.detailModalProductIcon}>
+                    📦
+                  </Text>
+                  <Stack gap="xs">
+                    <Text variant="heading3" className={styles.detailModalTitle}>
+                      {inv.name || 'Product'}
+                    </Text>
+                    {inv.companyName ? (
+                      <Text color="secondary" className={styles.detailModalSubtitle}>
+                        {inv.companyName}
+                      </Text>
+                    ) : null}
+                  </Stack>
+                </Inline>
+                <IconButton
+                  label="Close"
+                  className={styles.detailModalClose}
+                  onClick={() => setDetailModalItem(null)}
+                >
+                  ×
+                </IconButton>
+              </Box>
+              <Modal.Body>
+                <Stack gap="lg" className={styles.detailModalBody}>
+                  <Stack gap="md" className={styles.detailModalSection}>
+                    <DetailSectionHeader icon="📋" title="Product Information" />
+                    <Grid className={styles.detailModalDetailsGrid}>
+                      {detailModalFullItemLoading ? (
+                        <DetailField icon="⏳" label="Loading full details">
+                          …
+                        </DetailField>
+                      ) : null}
+                      {detailModalFullItemError ? (
+                        <DetailField icon="⚠️" label="Details">
+                          {detailModalFullItemError}
+                        </DetailField>
+                      ) : null}
+                      <DetailField icon="🏷️" label="Product name">
+                        {inv.name || '—'}
+                      </DetailField>
+                      {inv.companyName ? (
+                        <DetailField icon="🏢" label="Company">
                           {inv.companyName}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    className={styles.detailModalClose}
-                    onClick={() => setDetailModalItem(null)}
-                    aria-label="Close"
-                  >
-                    ×
-                  </button>
-                </div>
-                <div className={styles.detailModalBody}>
-                  <div className={styles.detailModalSection}>
-                    <div className={styles.detailModalSectionHeader}>
-                      <span
-                        className={styles.detailModalSectionIcon}
-                        aria-hidden
-                      >
-                        📋
-                      </span>
-                      <h4 className={styles.detailModalSectionTitle}>
-                        Product Information
-                      </h4>
-                    </div>
-                    <div className={styles.detailModalDetailsGrid}>
-                      {detailModalFullItemLoading && (
-                        <div className={styles.detailModalDetailCard}>
-                          <div className={styles.detailModalDetailIcon}>⏳</div>
-                          <div className={styles.detailModalDetailContent}>
-                            <span className={styles.detailModalDetailLabel}>
-                              Loading full details
-                            </span>
-                            <span className={styles.detailModalDetailValue}>
-                              …
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                      {detailModalFullItemError && (
-                        <div className={styles.detailModalDetailCard}>
-                          <div className={styles.detailModalDetailIcon}>⚠️</div>
-                          <div className={styles.detailModalDetailContent}>
-                            <span className={styles.detailModalDetailLabel}>
-                              Details
-                            </span>
-                            <span className={styles.detailModalDetailValue}>
-                              {detailModalFullItemError}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                      <div className={styles.detailModalDetailCard}>
-                        <div className={styles.detailModalDetailIcon}>🏷️</div>
-                        <div className={styles.detailModalDetailContent}>
-                          <span className={styles.detailModalDetailLabel}>
-                            Product name
-                          </span>
-                          <span className={styles.detailModalDetailValue}>
-                            {inv.name || '—'}
-                          </span>
-                        </div>
-                      </div>
-                      {inv.companyName && (
-                        <div className={styles.detailModalDetailCard}>
-                          <div className={styles.detailModalDetailIcon}>🏢</div>
-                          <div className={styles.detailModalDetailContent}>
-                            <span className={styles.detailModalDetailLabel}>
-                              Company
-                            </span>
-                            <span className={styles.detailModalDetailValue}>
-                              {inv.companyName}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                      {inv.barcode && (
-                        <div className={styles.detailModalDetailCard}>
-                          <div className={styles.detailModalDetailIcon}>🏷️</div>
-                          <div className={styles.detailModalDetailContent}>
-                            <span className={styles.detailModalDetailLabel}>
-                              Barcode
-                            </span>
-                            <span className={styles.detailModalDetailValue}>
-                              {inv.barcode}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                      {inv.location && (
-                        <div className={styles.detailModalDetailCard}>
-                          <div className={styles.detailModalDetailIcon}>📍</div>
-                          <div className={styles.detailModalDetailContent}>
-                            <span className={styles.detailModalDetailLabel}>
-                              Location
-                            </span>
-                            <span className={styles.detailModalDetailValue}>
-                              {inv.location}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                      {(inv.hsn || inv.batchNo) && (
-                        <div className={styles.detailModalDetailCard}>
-                          <div className={styles.detailModalDetailIcon}>🧾</div>
-                          <div className={styles.detailModalDetailContent}>
-                            <span className={styles.detailModalDetailLabel}>
-                              HSN / Batch
-                            </span>
-                            <span className={styles.detailModalDetailValue}>
-                              {[inv.hsn, getExtensionFieldString(inv, 'batchNo')]
-                                .filter(Boolean)
-                                .join(' / ')}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                      {hasInventoryExpiryDate(inv) && (
-                        <div className={styles.detailModalDetailCard}>
-                          <div className={styles.detailModalDetailIcon}>📅</div>
-                          <div className={styles.detailModalDetailContent}>
-                            <span className={styles.detailModalDetailLabel}>
-                              Expiry
-                            </span>
-                            <span className={styles.detailModalDetailValue}>
-                              {formatInventoryExpiryDate(inv)}
-                            </span>
-                          </div>
-                        </div>
-                      )}
+                        </DetailField>
+                      ) : null}
+                      {inv.barcode ? (
+                        <DetailField icon="🏷️" label="Barcode">
+                          {inv.barcode}
+                        </DetailField>
+                      ) : null}
+                      {inv.location ? (
+                        <DetailField icon="📍" label="Location">
+                          {inv.location}
+                        </DetailField>
+                      ) : null}
+                      {(inv.hsn || inv.batchNo) ? (
+                        <DetailField icon="🧾" label="HSN / Batch">
+                          {[inv.hsn, getExtensionFieldString(inv, 'batchNo')]
+                            .filter(Boolean)
+                            .join(' / ')}
+                        </DetailField>
+                      ) : null}
+                      {hasInventoryExpiryDate(inv) ? (
+                        <DetailField icon="📅" label="Expiry">
+                          {formatInventoryExpiryDate(inv)}
+                        </DetailField>
+                      ) : null}
                       {(inv.currentCount != null ||
-                        inv.currentBaseCount != null) && (
-                        <div className={styles.detailModalDetailCard}>
-                          <div className={styles.detailModalDetailIcon}>📦</div>
-                          <div className={styles.detailModalDetailContent}>
-                            <span className={styles.detailModalDetailLabel}>
-                              Stock (current)
-                            </span>
-                            <span className={styles.detailModalDetailValue}>
-                              {inv.currentCount ?? inv.currentBaseCount ?? '—'}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                      <div className={styles.detailModalDetailCard}>
-                        <div className={styles.detailModalDetailIcon}>🔢</div>
-                        <div className={styles.detailModalDetailContent}>
-                          <span className={styles.detailModalDetailLabel}>
-                            Quantity
-                          </span>
-                          <span className={styles.detailModalDetailValue}>
-                            {qty}
-                          </span>
-                        </div>
-                      </div>
-                      <div className={styles.detailModalDetailCard}>
-                        <div className={styles.detailModalDetailIcon}>🧾</div>
-                        <div className={styles.detailModalDetailContent}>
-                          <span className={styles.detailModalDetailLabel}>
-                            Billing mode
-                          </span>
-                          <span className={styles.detailModalDetailValue}>
-                            {normalizeBillingMode(inv.billingMode)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className={styles.detailModalSection}>
-                    <div className={styles.detailModalSectionHeader}>
-                      <span
-                        className={styles.detailModalSectionIcon}
-                        aria-hidden
-                      >
-                        💰
-                      </span>
-                      <h4 className={styles.detailModalSectionTitle}>
-                        Pricing
-                      </h4>
-                    </div>
-                    <div className={styles.detailModalPricingGrid}>
-                      <div
-                        className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
-                      >
-                        <div className={styles.detailModalDetailIcon}>💵</div>
-                        <div className={styles.detailModalDetailContent}>
-                          <span className={styles.detailModalDetailLabel}>
-                            Selling Price
-                          </span>
-                          <span
-                            className={`${styles.detailModalDetailValue} ${styles.detailModalPriceValue}`}
-                          >
-                            ₹{price.toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                      <div
-                        className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
-                      >
-                        <div className={styles.detailModalDetailIcon}>🏷️</div>
-                        <div className={styles.detailModalDetailContent}>
-                          <span className={styles.detailModalDetailLabel}>
-                            MRP
-                          </span>
-                          <span
-                            className={`${styles.detailModalDetailValue} ${styles.detailModalMrpValue}`}
-                          >
-                            ₹{mrp.toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                      {mrp > 0 && (
-                        <div
-                          className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
-                        >
-                          <div className={styles.detailModalDetailIcon}>📉</div>
-                          <div className={styles.detailModalDetailContent}>
-                            <span className={styles.detailModalDetailLabel}>
-                              Discount off MRP
-                            </span>
-                            <span className={styles.detailModalDetailValue}>
-                              {(((mrp - price) / mrp) * 100).toFixed(1)}%
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                      {!hidePurchaseDetailsInSell && (
+                        inv.currentBaseCount != null) ? (
+                        <DetailField icon="📦" label="Stock (current)">
+                          {inv.currentCount ?? inv.currentBaseCount ?? '—'}
+                        </DetailField>
+                      ) : null}
+                      <DetailField icon="🔢" label="Quantity">
+                        {qty}
+                      </DetailField>
+                      <DetailField icon="🧾" label="Billing mode">
+                        {normalizeBillingMode(inv.billingMode)}
+                      </DetailField>
+                    </Grid>
+                  </Stack>
+                  <Stack gap="md" className={styles.detailModalSection}>
+                    <DetailSectionHeader icon="💰" title="Pricing" />
+                    <Grid className={styles.detailModalPricingGrid}>
+                      <DetailField icon="💵" label="Selling Price" pricing>
+                        <Text className={styles.detailModalPriceValue}>
+                          ₹{price.toFixed(2)}
+                        </Text>
+                      </DetailField>
+                      <DetailField icon="🏷️" label="MRP" pricing>
+                        <Text className={styles.detailModalMrpValue}>
+                          ₹{mrp.toFixed(2)}
+                        </Text>
+                      </DetailField>
+                      {mrp > 0 ? (
+                        <DetailField icon="📉" label="Discount off MRP" pricing>
+                          {(((mrp - price) / mrp) * 100).toFixed(1)}%
+                        </DetailField>
+                      ) : null}
+                      {!hidePurchaseDetailsInSell ? (
                         <>
-                          <div
-                            className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
-                          >
-                            <div className={styles.detailModalDetailIcon}>
-                              🏷️
-                            </div>
-                            <div className={styles.detailModalDetailContent}>
-                              <span className={styles.detailModalDetailLabel}>
-                                Purchase add. discount
-                              </span>
-                              <span className={styles.detailModalDetailValue}>
-                                {(() => {
-                                  const v = getPurchaseAdditionalDiscount(
-                                    detailModalItem.inventoryItem
-                                  );
-                                  return v != null ? `${v}%` : '—';
-                                })()}
-                              </span>
-                            </div>
-                          </div>
-                          <div
-                            className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
-                          >
-                            <div className={styles.detailModalDetailIcon}>
-                              🎁
-                            </div>
-                            <div className={styles.detailModalDetailContent}>
-                              <span className={styles.detailModalDetailLabel}>
-                                Purchase scheme/deal
-                              </span>
-                              <span className={styles.detailModalDetailValue}>
-                                {formatPurchaseSchemeLabel(
-                                  detailModalItem.inventoryItem
-                                )}
-                              </span>
-                            </div>
-                          </div>
+                          <DetailField icon="🏷️" label="Purchase add. discount" pricing>
+                            {(() => {
+                              const v = getPurchaseAdditionalDiscount(
+                                detailModalItem.inventoryItem
+                              );
+                              return v != null ? `${v}%` : '—';
+                            })()}
+                          </DetailField>
+                          <DetailField icon="🎁" label="Purchase scheme/deal" pricing>
+                            {formatPurchaseSchemeLabel(
+                              detailModalItem.inventoryItem
+                            )}
+                          </DetailField>
                         </>
-                      )}
-                      <div
-                        className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
-                      >
-                        <div className={styles.detailModalDetailIcon}>🏷️</div>
-                        <div className={styles.detailModalDetailContent}>
-                          <span className={styles.detailModalDetailLabel}>
-                            Sale add. discount
-                          </span>
-                          <span className={styles.detailModalDetailValue}>
-                            {addDisc != null ? `${addDisc}%` : '—'}
-                          </span>
-                        </div>
-                      </div>
-                      <div
-                        className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
-                      >
-                        <div className={styles.detailModalDetailIcon}>🎁</div>
-                        <div className={styles.detailModalDetailContent}>
-                          <span className={styles.detailModalDetailLabel}>
-                            Sale scheme/deal
-                          </span>
-                          <span className={styles.detailModalDetailValue}>
-                            {schemeLabel}
-                          </span>
-                        </div>
-                      </div>
+                      ) : null}
+                      <DetailField icon="🏷️" label="Sale add. discount" pricing>
+                        {addDisc != null ? `${addDisc}%` : '—'}
+                      </DetailField>
+                      <DetailField icon="🎁" label="Sale scheme/deal" pricing>
+                        {schemeLabel}
+                      </DetailField>
                       {normalizeBillingMode(
                         detailModalItem.inventoryItem.billingMode
                       ) === 'REGULAR' &&
-                        apiItem?.sgst != null && (
-                          <div
-                            className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
-                          >
-                            <div className={styles.detailModalDetailIcon}>
-                              📊
-                            </div>
-                            <div className={styles.detailModalDetailContent}>
-                              <span className={styles.detailModalDetailLabel}>
-                                SGST
-                              </span>
-                              <span className={styles.detailModalDetailValue}>
-                                {apiItem.sgst}%
-                              </span>
-                            </div>
-                          </div>
-                        )}
+                      apiItem?.sgst != null ? (
+                        <DetailField icon="📊" label="SGST" pricing>
+                          {apiItem.sgst}%
+                        </DetailField>
+                      ) : null}
                       {normalizeBillingMode(
                         detailModalItem.inventoryItem.billingMode
                       ) === 'REGULAR' &&
-                        apiItem?.cgst != null && (
-                          <div
-                            className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
-                          >
-                            <div className={styles.detailModalDetailIcon}>
-                              📊
-                            </div>
-                            <div className={styles.detailModalDetailContent}>
-                              <span className={styles.detailModalDetailLabel}>
-                                CGST
-                              </span>
-                              <span className={styles.detailModalDetailValue}>
-                                {apiItem.cgst}%
-                              </span>
-                            </div>
-                          </div>
-                        )}
-                      {apiItem?.discount != null && (
-                        <div
-                          className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
-                        >
-                          <div className={styles.detailModalDetailIcon}>💰</div>
-                          <div className={styles.detailModalDetailContent}>
-                            <span className={styles.detailModalDetailLabel}>
-                              Discount (amount)
-                            </span>
-                            <span className={styles.detailModalDetailValue}>
-                              ₹{Number(apiItem.discount).toFixed(2)}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                      <div
-                        className={`${styles.detailModalDetailCard} ${styles.detailModalPricingCard}`}
-                      >
-                        <div className={styles.detailModalDetailIcon}>₹</div>
-                        <div className={styles.detailModalDetailContent}>
-                          <span className={styles.detailModalDetailLabel}>
-                            Total amount
-                          </span>
-                          <span
-                            className={`${styles.detailModalDetailValue} ${styles.detailModalTotalValue}`}
-                          >
-                            ₹{(apiItem?.totalAmount ?? price * qty).toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    {detailModalItem.inventoryItem.pricingId && (
-                      <div className={styles.detailModalPricingActions}>
+                      apiItem?.cgst != null ? (
+                        <DetailField icon="📊" label="CGST" pricing>
+                          {apiItem.cgst}%
+                        </DetailField>
+                      ) : null}
+                      {apiItem?.discount != null ? (
+                        <DetailField icon="💰" label="Discount (amount)" pricing>
+                          ₹{Number(apiItem.discount).toFixed(2)}
+                        </DetailField>
+                      ) : null}
+                      <DetailField icon="₹" label="Total amount" pricing>
+                        <Text className={styles.detailModalTotalValue}>
+                          ₹{(apiItem?.totalAmount ?? price * qty).toFixed(2)}
+                        </Text>
+                      </DetailField>
+                    </Grid>
+                    {detailModalItem.inventoryItem.pricingId ? (
+                      <Box className={styles.detailModalPricingActions}>
                         <Link
                           to={`/dashboard/price-edit/${detailModalItem.inventoryItem.pricingId}`}
                           state={{
@@ -4429,21 +4197,21 @@ export function ScanSellPage() {
                           }}
                           className={styles.editPriceLink}
                         >
-                          Edit price
+                          <Text>Edit price</Text>
                         </Link>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
+                      </Box>
+                    ) : null}
+                  </Stack>
+                </Stack>
+              </Modal.Body>
+            </Modal>
           );
-        })()}
-    </div>
+        })()
+        : null}
+    </Stack>
   );
 }
 
-// Search dropdown item with full details (like original product result)
 function SearchDropdownItem({
   item,
   onAddToCart,
@@ -4459,61 +4227,70 @@ function SearchDropdownItem({
   };
 
   return (
-    <li className={styles.dropdownItem} role="option">
-      <div className={styles.dropdownItemInfo}>
-        <span className={styles.dropdownItemName}>
-          {item.name || 'Unnamed Product'}
-        </span>
-        <span className={styles.dropdownModeBadge}>
-          {item.billingMode === 'BASIC' ? 'BASIC' : 'REGULAR'}
-        </span>
-        {item.companyName && (
-          <span className={styles.dropdownItemCompany}>
+    <Box as="li" className={styles.dropdownItem}>
+      <Stack gap="xs" className={styles.dropdownItemInfo}>
+        <Inline gap="sm" align="center">
+          <Text weight="semibold" className={styles.dropdownItemName}>
+            {item.name || 'Unnamed Product'}
+          </Text>
+          <Badge variant="neutral" className={styles.dropdownModeBadge}>
+            {item.billingMode === 'BASIC' ? 'BASIC' : 'REGULAR'}
+          </Badge>
+        </Inline>
+        {item.companyName ? (
+          <Text variant="caption" color="secondary" className={styles.dropdownItemCompany}>
             Company: {item.companyName}
-          </span>
-        )}
-        {item.barcode && (
-          <span className={styles.dropdownItemMeta}>
+          </Text>
+        ) : null}
+        {item.barcode ? (
+          <Text variant="caption" color="secondary" className={styles.dropdownItemMeta}>
             Barcode: {item.barcode}
-          </span>
-        )}
-        <span className={styles.dropdownItemMeta}>
+          </Text>
+        ) : null}
+        <Text variant="caption" color="secondary" className={styles.dropdownItemMeta}>
           Current: {item.currentCount}
-        </span>
-        <span
+        </Text>
+        <Text
+          variant="caption"
+          weight="semibold"
           className={`${styles.dropdownItemMeta} ${styles.dropdownItemMetaBold}`}
         >
           MRP: ₹
           {item.maximumRetailPrice != null
             ? item.maximumRetailPrice.toFixed(2)
             : '—'}
-        </span>
-        <span
+        </Text>
+        <Text
+          variant="caption"
+          weight="semibold"
           className={`${styles.dropdownItemMeta} ${styles.dropdownItemMetaBold}`}
         >
           Selling: ₹
           {(item.sellingPrice ?? item.priceToRetail) != null
             ? (item.sellingPrice ?? item.priceToRetail)!.toFixed(2)
             : '—'}
-        </span>
-        {hasInventoryExpiryDate(item) && (
-          <span
+        </Text>
+        {hasInventoryExpiryDate(item) ? (
+          <Text
+            variant="caption"
+            weight="semibold"
             className={`${styles.dropdownItemMeta} ${styles.dropdownItemMetaBold}`}
           >
             Expires: {formatInventoryExpiryDate(item)}
-          </span>
-        )}
-      </div>
-      <div className={styles.dropdownItemActions}>
-        <button
+          </Text>
+        ) : null}
+      </Stack>
+      <Box className={styles.dropdownItemActions}>
+        <Button
           type="button"
+          size="sm"
           className={styles.dropdownAddBtn}
           onClick={handleAdd}
           disabled={disabled}
         >
           Add
-        </button>
-      </div>
-    </li>
+        </Button>
+      </Box>
+    </Box>
   );
 }
