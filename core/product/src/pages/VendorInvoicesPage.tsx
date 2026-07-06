@@ -2,13 +2,34 @@ import {
   Fragment,
   useCallback,
   useEffect,
-  useMemo,
   useState,
 } from 'react';
 import { inventoryApi } from '../api/inventory.api';
 import type { InventoryItem, VendorPurchaseInvoiceDetail, VendorPurchaseInvoiceSummary } from '@inventory-platform/product/types';
 import styles from './vendor-invoices.module.css';
-import { PaginationBar } from '@inventory-platform/ui-kit';
+import {
+  Alert,
+  Badge,
+  Box,
+  Button,
+  Card,
+  CardBody,
+  CenteredLoader,
+  EmptyState,
+  Grid,
+  Inline,
+  PageHeader,
+  PaginationBar,
+  SearchInput,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { isVendorReturnEnabled } from '@inventory-platform/routing';
 import {
   HistoryListSummary,
@@ -18,6 +39,7 @@ import {
   buildVendorInvoiceSearchQuery,
   paginateLocal,
   matchesRegexField,
+  VendorInvoiceExpandedBody,
 } from '../ui';
 import type { HistoryFilters } from '../ui';
 import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/session';
@@ -43,18 +65,6 @@ function formatMoney(n: number | null | undefined): string {
   }).format(n);
 }
 
-function formatDate(iso: string | null | undefined): string {
-  if (!iso) return '—';
-  try {
-    return new Date(iso).toLocaleString(undefined, {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    });
-  } catch {
-    return iso;
-  }
-}
-
 function formatDateShort(iso: string | null | undefined): string {
   if (!iso) return '—';
   try {
@@ -66,27 +76,6 @@ function formatDateShort(iso: string | null | undefined): string {
   } catch {
     return iso;
   }
-}
-
-function formatCompactDate(iso: string | null | undefined): string {
-  if (!iso) return '—';
-  try {
-    return new Date(iso).toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  } catch {
-    return iso;
-  }
-}
-
-function formatGst(item: InventoryItem | undefined): string {
-  if (!item) return '—';
-  const sgst = item.sgst?.trim();
-  const cgst = item.cgst?.trim();
-  if (!sgst && !cgst) return '—';
-  return `SGST ${sgst || '0'} + CGST ${cgst || '0'}`;
 }
 
 function readInventoryIdentity(item: InventoryItem): string | null {
@@ -108,143 +97,69 @@ function vendorDisplay(row: {
   return 'Unknown vendor';
 }
 
-function InvoiceExpandedBody({
+function DetailLine({ label, value }: { label: string; value: string }) {
+  return (
+    <Inline gap="xs">
+      <Text variant="caption" color="secondary" weight="semibold">
+        {label}:
+      </Text>
+      <Text variant="caption" color="secondary">
+        {value}
+      </Text>
+    </Inline>
+  );
+}
+
+function InvoiceExpansionPanel({
+  inv,
   detail,
+  rowBusy,
+  err,
   inventoryById,
-  inventoryLoading,
-  inventoryWarning,
+  inventoryLoadingByInvoice,
+  inventoryWarningByInvoice,
+  panelId,
 }: {
-  detail: VendorPurchaseInvoiceDetail;
+  inv: VendorPurchaseInvoiceSummary;
+  detail: VendorPurchaseInvoiceDetail | undefined;
+  rowBusy: boolean;
+  err: string | undefined;
   inventoryById: Record<string, InventoryItem>;
-  inventoryLoading: boolean;
-  inventoryWarning?: string;
+  inventoryLoadingByInvoice: Record<string, boolean>;
+  inventoryWarningByInvoice: Record<string, string>;
+  panelId?: string;
 }) {
-  const totals = useMemo(
-    () => [
-      {
-        label: 'Line subtotal',
-        value: formatMoney(detail.lineSubTotal),
-      },
-      { label: 'Tax total', value: formatMoney(detail.taxTotal) },
-      { label: 'Shipping', value: formatMoney(detail.shippingCharge) },
-      { label: 'Other charges', value: formatMoney(detail.otherCharges) },
-      {
-        label: 'Overall discount',
-        value: formatMoney(detail.overallDiscount),
-      },
-      { label: 'Round off', value: formatMoney(detail.roundOff) },
-      { label: 'Invoice total', value: formatMoney(detail.invoiceTotal) },
-    ],
-    [detail]
+  const content = (
+    <>
+      {rowBusy && !detail ? (
+        <CenteredLoader label="Loading details…" size="sm" />
+      ) : null}
+      {err ? <Alert variant="danger">{err}</Alert> : null}
+      {detail ? (
+        <VendorInvoiceExpandedBody
+          detail={detail}
+          inventoryById={inventoryById}
+          inventoryLoading={inventoryLoadingByInvoice[inv.id] === true}
+          inventoryWarning={inventoryWarningByInvoice[inv.id]}
+        />
+      ) : null}
+    </>
   );
 
+  if (panelId) {
+    return (
+      <Card id={panelId} className={styles.panel}>
+        <CardBody>
+          <Stack gap="sm">{content}</Stack>
+        </CardBody>
+      </Card>
+    );
+  }
+
   return (
-    <div className={styles.expandedInner}>
-      <div className={styles.expandedHeader}>
-        <div>
-          <h3 className={styles.expandedTitle}>
-            {detail.invoiceNo}
-            {detail.synthetic ? (
-              <span className={styles.badgeMuted}>Auto invoice no.</span>
-            ) : null}
-          </h3>
-          <p className={styles.expandedVendor}>{vendorDisplay(detail)}</p>
-          {detail.invoiceDate ? (
-            <p className={styles.expandedMeta}>
-              Dated{' '}
-              <time dateTime={detail.invoiceDate}>
-                {formatDate(detail.invoiceDate)}
-              </time>
-            </p>
-          ) : null}
-        </div>
-        {detail.legacyLotId ? (
-          <p className={styles.legacyHint}>
-            Legacy reference:{' '}
-            <code className={styles.mono}>{detail.legacyLotId}</code>
-          </p>
-        ) : null}
-      </div>
-
-      <dl className={styles.amountGrid}>
-        {totals.map(({ label, value }) => (
-          <div key={label} className={styles.amountItem}>
-            <dt>{label}</dt>
-            <dd>{value}</dd>
-          </div>
-        ))}
-        <div className={styles.amountItem}>
-          <dt>Recorded</dt>
-          <dd>{formatDate(detail.createdAt)}</dd>
-        </div>
-      </dl>
-
-      <div className={styles.linesSection}>
-        <h4 className={styles.linesHeading}>Products on this invoice</h4>
-        {inventoryLoading ? (
-          <p className={styles.linesStatus}>Loading inventory details…</p>
-        ) : null}
-        {inventoryWarning ? (
-          <p className={styles.linesWarning}>{inventoryWarning}</p>
-        ) : null}
-        <div className={styles.linesTableWrap}>
-          <table className={styles.linesTable}>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Product</th>
-                <th>Company</th>
-                <th>Barcode</th>
-                <th>Batch</th>
-                <th>Expiry</th>
-                <th>Qty</th>
-                <th>Cost</th>
-                <th>MRP</th>
-                <th>PTR</th>
-                <th>GST</th>
-                <th>Current stock</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(detail.lines ?? []).map((line) => {
-                const inv =
-                  line.inventoryId != null
-                    ? inventoryById[line.inventoryId] ?? undefined
-                    : undefined;
-                return (
-                  <tr key={`${line.lineIndex}-${line.inventoryId ?? ''}`}>
-                    <td className={styles.linesNum}>{line.lineIndex + 1}</td>
-                    <td>{line.name}</td>
-                    <td className={styles.linesMuted}>{inv?.companyName ?? '—'}</td>
-                    <td className={styles.linesMuted}>
-                      {line.barcode ?? inv?.barcode ?? '—'}
-                    </td>
-                    <td className={styles.linesMuted}>{inv?.batchNo ?? '—'}</td>
-                    <td className={styles.linesMuted}>
-                      {formatCompactDate(inv?.expiryDate)}
-                    </td>
-                    <td>{line.count ?? '—'}</td>
-                    <td className={styles.linesMoney}>
-                      {formatMoney(line.costPrice ?? inv?.costPrice)}
-                    </td>
-                    <td className={styles.linesMoney}>
-                      {formatMoney(inv?.maximumRetailPrice)}
-                    </td>
-                    <td className={styles.linesMoney}>
-                      {formatMoney(inv?.priceToRetail)}
-                    </td>
-                    <td className={styles.linesMuted}>{formatGst(inv)}</td>
-                    <td className={styles.linesMoney}>
-                      {inv?.currentCount ?? '—'}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+    <Stack gap="sm" className={recordStyles.breakdownWrap}>
+      {content}
+    </Stack>
   );
 }
 
@@ -490,301 +405,290 @@ export function VendorInvoicesPage({
     }
   };
 
+  const pageDescription = vendorReturnEnabled
+    ? 'Supplier bills linked to stock-in registrations. Search by product, barcode, invoice number, or vendor name. Expand a row to see line items and totals. To return stock to a supplier, use Return to vendor under Products & Sales.'
+    : 'Supplier bills linked to stock-in registrations. Search by product, barcode, invoice number, or vendor name. Expand a row to see line items and totals.';
+
+  const emptyMessage =
+    filtering || listQuery
+      ? 'No invoices match this search. Try a different pattern or clear the filter.'
+      : 'No vendor invoices yet. When you register stock with invoice details, they appear here.';
+
+  const renderEmbeddedCards = () => (
+    <Stack gap="md">
+      <HistoryListSummary
+        page={filtering ? filterPage : page + 1}
+        limit={embeddedPageSize}
+        total={filtering ? filteredTotal : totalItems}
+        filtered={filtering}
+        label="purchases"
+      />
+      <Stack gap="md" className={recordStyles.list}>
+        {invoices.map((inv) => {
+          const isOpen = expandedId === inv.id;
+          const detail = detailsById[inv.id];
+          const rowBusy = fetchingId === inv.id;
+          const err = rowError[inv.id];
+
+          return (
+            <Card key={inv.id} className={recordStyles.recordCard}>
+              <CardBody>
+                <Stack gap="md">
+                  <Inline
+                    className={recordStyles.recordHeader}
+                    justify="between"
+                    align="start"
+                    gap="md"
+                  >
+                    <Inline gap="xs" align="center">
+                      <DetailLine label="Invoice" value={inv.invoiceNo} />
+                      {inv.synthetic ? <Badge variant="info">Auto</Badge> : null}
+                    </Inline>
+                    <Inline
+                      className={recordStyles.recordActions}
+                      gap="sm"
+                      align="center"
+                    >
+                      <DetailLine
+                        label="Date"
+                        value={formatDateShort(inv.invoiceDate)}
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => toggleExpanded(inv)}
+                        aria-expanded={isOpen}
+                      >
+                        {isOpen ? 'Hide details' : 'View details'}
+                      </Button>
+                    </Inline>
+                  </Inline>
+                  <Grid
+                    columns={2}
+                    gap="sm"
+                    className={recordStyles.recordDetails}
+                  >
+                    <DetailLine label="Vendor" value={vendorDisplay(inv)} />
+                    <DetailLine label="Lines" value={String(inv.lineCount)} />
+                    <DetailLine
+                      label="Total"
+                      value={formatMoney(inv.invoiceTotal)}
+                    />
+                  </Grid>
+                  {isOpen ? (
+                    <InvoiceExpansionPanel
+                      inv={inv}
+                      detail={detail}
+                      rowBusy={rowBusy}
+                      err={err}
+                      inventoryById={inventoryById}
+                      inventoryLoadingByInvoice={inventoryLoadingByInvoice}
+                      inventoryWarningByInvoice={inventoryWarningByInvoice}
+                    />
+                  ) : null}
+                </Stack>
+              </CardBody>
+            </Card>
+          );
+        })}
+      </Stack>
+      <PaginationBar
+        page={filtering ? filterPage - 1 : page}
+        totalPages={totalPages}
+        onPageChange={(p) => {
+          if (filtering) setFilterPage(p + 1);
+          else setPage(p);
+        }}
+        aria-label="Invoice pages"
+      />
+    </Stack>
+  );
+
+  const renderStandaloneTable = () => (
+    <Stack gap="md">
+      <Box className={styles.tableScroll}>
+        <Table className={styles.sheet}>
+          <TableHead>
+            <TableRow>
+              <TableHeaderCell>Invoice</TableHeaderCell>
+              <TableHeaderCell>Vendor</TableHeaderCell>
+              <TableHeaderCell>Date</TableHeaderCell>
+              <TableHeaderCell className={styles.numericCol}>Lines</TableHeaderCell>
+              <TableHeaderCell className={styles.numericCol}>Total</TableHeaderCell>
+              <TableHeaderCell className={styles.actionCol}>Actions</TableHeaderCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {invoices.map((inv) => {
+              const isOpen = expandedId === inv.id;
+              const detail = detailsById[inv.id];
+              const rowBusy = fetchingId === inv.id;
+              const err = rowError[inv.id];
+              const triggerId = `invoice-trigger-${inv.id}`;
+              const panelId = `invoice-panel-${inv.id}`;
+
+              return (
+                <Fragment key={inv.id}>
+                  <TableRow
+                    className={
+                      isOpen
+                        ? `${styles.dataRow} ${styles.dataRowOpen}`
+                        : styles.dataRow
+                    }
+                  >
+                    <TableCell className={styles.cellInvoice}>
+                      <Inline gap="xs" align="center">
+                        <Text weight="medium">{inv.invoiceNo}</Text>
+                        {inv.synthetic ? <Badge variant="info">Auto</Badge> : null}
+                      </Inline>
+                    </TableCell>
+                    <TableCell className={styles.cellStrong}>
+                      {vendorDisplay(inv)}
+                    </TableCell>
+                    <TableCell className={styles.cellMuted}>
+                      {formatDateShort(inv.invoiceDate)}
+                    </TableCell>
+                    <TableCell
+                      className={`${styles.numericCol} ${styles.cellMuted}`}
+                    >
+                      {inv.lineCount}
+                    </TableCell>
+                    <TableCell
+                      className={`${styles.numericCol} ${styles.cellMoney}`}
+                    >
+                      {formatMoney(inv.invoiceTotal)}
+                    </TableCell>
+                    <TableCell className={styles.actionCell}>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className={styles.expandControl}
+                        onClick={() => toggleExpanded(inv)}
+                        aria-expanded={isOpen}
+                        aria-controls={panelId}
+                        id={triggerId}
+                      >
+                        {isOpen ? 'Hide' : 'View'}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                  {isOpen ? (
+                    <TableRow className={styles.detailRow}>
+                      <TableCell colSpan={6} className={styles.detailCell}>
+                        <InvoiceExpansionPanel
+                          inv={inv}
+                          detail={detail}
+                          rowBusy={rowBusy}
+                          err={err}
+                          inventoryById={inventoryById}
+                          inventoryLoadingByInvoice={inventoryLoadingByInvoice}
+                          inventoryWarningByInvoice={inventoryWarningByInvoice}
+                          panelId={panelId}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ) : null}
+                </Fragment>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </Box>
+      <PaginationBar
+        page={filtering ? filterPage - 1 : page}
+        totalPages={totalPages}
+        onPageChange={(p) => {
+          if (filtering) setFilterPage(p + 1);
+          else setPage(p);
+        }}
+        aria-label="Invoice pages"
+      />
+    </Stack>
+  );
+
   return (
-    <div className={embedded ? recordStyles.container : styles.page}>
+    <Stack gap="md" className={embedded ? recordStyles.container : styles.page}>
       {!embedded ? (
-        <header className={styles.hero}>
-          <h1 className={styles.heroTitle}>Vendor purchase invoices</h1>
-          <p className={styles.heroSubtitle}>
-            Supplier bills linked to stock-in registrations. Search by product, barcode,
-            invoice number, or vendor name. Expand a row to see line items and
-            totals.
-            {vendorReturnEnabled ? (
-              <>
-                {' '}
-                To return stock to a supplier, use{' '}
-                <strong>Return to vendor</strong> under Products &amp; Sales.
-              </>
-            ) : null}
-          </p>
-        </header>
+        <PageHeader
+          title="Vendor purchase invoices"
+          description={pageDescription}
+        />
       ) : null}
 
-      {error && (
-        <div className={styles.alertError} role="alert">
-          {error}
-        </div>
-      )}
+      {error ? <Alert variant="danger">{error}</Alert> : null}
 
-      <div className={embedded ? undefined : styles.surface}>
-        {!embedded && (
-          <div className={styles.searchBar}>
-            <input
-              type="search"
-              className={styles.searchInput}
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') runSearch();
-              }}
-              placeholder="Product, barcode, invoice no, or vendor"
-              aria-label="Search invoices by product, barcode, invoice number, or vendor name"
-            />
-            <button type="button" className={styles.searchBtn} onClick={runSearch}>
-              Search
-            </button>
-            {listQuery ? (
-              <button
-                type="button"
-                className={styles.searchBtnSecondary}
-                onClick={clearSearch}
-              >
-                Clear
-              </button>
+      <Card className={embedded ? undefined : styles.surface}>
+        <CardBody>
+          <Stack gap="md">
+            {!embedded ? (
+              <Stack gap="sm" className={styles.searchBar}>
+                <Inline gap="sm" className={styles.searchToolbar}>
+                  <SearchInput
+                    value={searchInput}
+                    onChange={setSearchInput}
+                    onSearch={runSearch}
+                    showSearchButton
+                    placeholder="Product, barcode, invoice no, or vendor"
+                    className={styles.searchField}
+                  />
+                  {listQuery ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={clearSearch}
+                    >
+                      Clear
+                    </Button>
+                  ) : null}
+                </Inline>
+                <Text variant="caption" color="secondary" className={styles.searchHint}>
+                  Same pattern is tried against invoice number, vendor name, and each
+                  line&apos;s product name and barcode (case-insensitive). Examples:{' '}
+                  <Text as="span" className={styles.mono}>
+                    paracetamol|dolo
+                  </Text>
+                  ,{' '}
+                  <Text as="span" className={styles.mono}>
+                    INV-712
+                  </Text>
+                  ,{' '}
+                  <Text as="span" className={styles.mono}>
+                    ^HIMP
+                  </Text>
+                  . Invalid patterns return an error from the server.
+                </Text>
+              </Stack>
             ) : null}
-            <p className={styles.searchHint}>
-              Same pattern is tried against invoice number, vendor name, and each line’s
-              product name and barcode (case-insensitive). Examples:{' '}
-              <code>paracetamol|dolo</code>, <code>INV-712</code>, <code>^HIMP</code>.
-              Invalid patterns return an error from the server.
-            </p>
-          </div>
-        )}
-        {loading ? (
-          <div className={embedded ? recordStyles.loading : styles.stateMuted}>
-            Loading…
-          </div>
-        ) : invoices.length === 0 ? (
-          <div className={embedded ? recordStyles.emptyState : styles.stateMuted}>
-            {filtering || listQuery
-              ? 'No invoices match this search. Try a different pattern or clear the filter.'
-              : 'No vendor invoices yet. When you register stock with invoice details, they appear here.'}
-          </div>
-        ) : embedded ? (
-          <>
-            <HistoryListSummary
-              page={filtering ? filterPage : page + 1}
-              limit={embeddedPageSize}
-              total={filtering ? filteredTotal : totalItems}
-              filtered={filtering}
-              label="purchases"
-            />
-            <div className={recordStyles.list}>
-              {invoices.map((inv) => {
-                const isOpen = expandedId === inv.id;
-                const detail = detailsById[inv.id];
-                const rowBusy = fetchingId === inv.id;
-                const err = rowError[inv.id];
 
-                return (
-                  <div key={inv.id} className={recordStyles.recordCard}>
-                    <div className={recordStyles.recordHeader}>
-                      <div>
-                        <strong>Invoice:</strong> {inv.invoiceNo}
-                        {inv.synthetic ? (
-                          <span className={styles.badge}> Auto</span>
-                        ) : null}
-                      </div>
-                      <div className={recordStyles.recordActions}>
-                        <div>
-                          <strong>Date:</strong> {formatDateShort(inv.invoiceDate)}
-                        </div>
-                        <button
-                          type="button"
-                          className={recordStyles.expandBtn}
-                          onClick={() => toggleExpanded(inv)}
-                          aria-expanded={isOpen}
-                        >
-                          {isOpen ? 'Hide details' : 'View details'}
-                        </button>
-                      </div>
-                    </div>
-                    <div className={recordStyles.recordDetails}>
-                      <div>
-                        <strong>Vendor:</strong> {vendorDisplay(inv)}
-                      </div>
-                      <div>
-                        <strong>Lines:</strong> {inv.lineCount}
-                      </div>
-                      <div>
-                        <strong>Total:</strong> {formatMoney(inv.invoiceTotal)}
-                      </div>
-                    </div>
-                    {isOpen ? (
-                      <div className={recordStyles.breakdownWrap}>
-                        {rowBusy && !detail ? (
-                          <div className={styles.panelLoading}>Loading details…</div>
-                        ) : null}
-                        {err ? (
-                          <div className={styles.panelError} role="alert">
-                            {err}
-                          </div>
-                        ) : null}
-                        {detail ? (
-                          <InvoiceExpandedBody
-                            detail={detail}
-                            inventoryById={inventoryById}
-                            inventoryLoading={
-                              inventoryLoadingByInvoice[inv.id] === true
-                            }
-                            inventoryWarning={inventoryWarningByInvoice[inv.id]}
-                          />
-                        ) : null}
-                      </div>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-            <PaginationBar
-              page={filtering ? filterPage - 1 : page}
-              totalPages={totalPages}
-              onPageChange={(p) => {
-                if (filtering) setFilterPage(p + 1);
-                else setPage(p);
-              }}
-              aria-label="Invoice pages"
-            />
-          </>
-        ) : (
-          <>
-            <div className={styles.tableScroll}>
-              <table className={styles.sheet}>
-                <thead>
-                  <tr>
-                    <th scope="col">Invoice</th>
-                    <th scope="col">Vendor</th>
-                    <th scope="col">Date</th>
-                    <th scope="col" className={styles.numericCol}>
-                      Lines
-                    </th>
-                    <th scope="col" className={styles.numericCol}>
-                      Total
-                    </th>
-                    <th scope="col" className={styles.actionCol}>
-                      <span className={styles.srOnly}>Actions</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {invoices.map((inv) => {
-                    const isOpen = expandedId === inv.id;
-                    const detail = detailsById[inv.id];
-                    const rowBusy = fetchingId === inv.id;
-                    const err = rowError[inv.id];
-
-                    return (
-                      <Fragment key={inv.id}>
-                        <tr
-                          className={
-                            isOpen
-                              ? `${styles.dataRow} ${styles.dataRowOpen}`
-                              : styles.dataRow
-                          }
-                        >
-                          <td className={styles.cellInvoice}>
-                            <span className={styles.invoiceNo}>
-                              {inv.invoiceNo}
-                            </span>
-                            {inv.synthetic ? (
-                              <span className={styles.badge}>Auto</span>
-                            ) : null}
-                          </td>
-                          <td className={styles.cellStrong}>
-                            {vendorDisplay(inv)}
-                          </td>
-                          <td className={styles.cellMuted}>
-                            {formatDateShort(inv.invoiceDate)}
-                          </td>
-                          <td className={`${styles.numericCol} ${styles.cellMuted}`}>
-                            {inv.lineCount}
-                          </td>
-                          <td
-                            className={`${styles.numericCol} ${styles.cellMoney}`}
-                          >
-                            {formatMoney(inv.invoiceTotal)}
-                          </td>
-                          <td className={styles.actionCell}>
-                            <button
-                              type="button"
-                              className={styles.expandControl}
-                              onClick={() => toggleExpanded(inv)}
-                              aria-expanded={isOpen}
-                              aria-controls={`invoice-panel-${inv.id}`}
-                              id={`invoice-trigger-${inv.id}`}
-                            >
-                              <span className={styles.expandLabel}>
-                                {isOpen ? 'Hide' : 'View'}
-                              </span>
-                              <svg
-                                className={`${styles.chevron} ${isOpen ? styles.chevronUp : ''}`}
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                aria-hidden
-                              >
-                                <polyline points="6 9 12 15 18 9" />
-                              </svg>
-                            </button>
-                          </td>
-                        </tr>
-                        {isOpen ? (
-                          <tr className={styles.detailRow}>
-                            <td colSpan={6}>
-                              <div
-                                id={`invoice-panel-${inv.id}`}
-                                role="region"
-                                aria-labelledby={`invoice-trigger-${inv.id}`}
-                                className={styles.panel}
-                              >
-                                {rowBusy && !detail ? (
-                                  <div className={styles.panelLoading}>
-                                    Loading details…
-                                  </div>
-                                ) : null}
-                                {err ? (
-                                  <div className={styles.panelError} role="alert">
-                                    {err}
-                                  </div>
-                                ) : null}
-                                {detail ? (
-                                  <InvoiceExpandedBody
-                                    detail={detail}
-                                    inventoryById={inventoryById}
-                                    inventoryLoading={
-                                      inventoryLoadingByInvoice[inv.id] === true
-                                    }
-                                    inventoryWarning={inventoryWarningByInvoice[inv.id]}
-                                  />
-                                ) : null}
-                              </div>
-                            </td>
-                          </tr>
-                        ) : null}
-                      </Fragment>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            <PaginationBar
-              page={filtering ? filterPage - 1 : page}
-              totalPages={totalPages}
-              onPageChange={(p) => {
-                if (filtering) setFilterPage(p + 1);
-                else setPage(p);
-              }}
-              aria-label="Invoice pages"
-            />
-          </>
-        )}
-      </div>
-    </div>
+            {loading ? (
+              <CenteredLoader
+                label={
+                  embedded ? 'Loading purchase history…' : 'Loading invoices…'
+                }
+              />
+            ) : invoices.length === 0 ? (
+              embedded ? (
+                <EmptyState
+                  title={
+                    filtering
+                      ? 'No purchases match these filters.'
+                      : 'No vendor invoices yet.'
+                  }
+                />
+              ) : (
+                <EmptyState title={emptyMessage} />
+              )
+            ) : embedded ? (
+              renderEmbeddedCards()
+            ) : (
+              renderStandaloneTable()
+            )}
+          </Stack>
+        </CardBody>
+      </Card>
+    </Stack>
   );
 }

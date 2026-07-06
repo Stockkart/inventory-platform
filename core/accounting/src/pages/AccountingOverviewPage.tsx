@@ -1,5 +1,24 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router';
+import { useNavigate } from 'react-router';
+import {
+  Badge,
+  Button,
+  Card,
+  CardBody,
+  Grid,
+  Inline,
+  PageHeader,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableEmptyRow,
+  TableHead,
+  TableHeaderCell,
+  TableLoadingRow,
+  TableRow,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { accountingApi } from '../api/accounting.api';
 import { useNotify } from '@inventory-platform/session';
 import type { JournalEntryResponse, TrialBalanceResponse } from '@inventory-platform/accounting/types';
@@ -20,7 +39,16 @@ function pickBalance(tb: TrialBalanceResponse | null, code: string): number {
     : row.creditBalance - row.debitBalance;
 }
 
+function statusVariant(
+  status: JournalEntryResponse['status']
+): 'success' | 'warning' | 'danger' | 'neutral' {
+  if (status === 'POSTED') return 'success';
+  if (status === 'REVERSED') return 'warning';
+  return 'danger';
+}
+
 export function AccountingOverviewPage() {
+  const navigate = useNavigate();
   const { error: notifyError, success: notifySuccess } = useNotify;
   const [tb, setTb] = useState<TrialBalanceResponse | null>(null);
   const [recent, setRecent] = useState<JournalEntryResponse[]>([]);
@@ -72,10 +100,6 @@ export function AccountingOverviewPage() {
     };
   }, [notifyError]);
 
-  // Re-posts every vendor purchase invoice through the current accounting logic.
-  // Use after changing shop-level settings (GST percentages, payment routing, CoA tweaks)
-  // so historical entries reflect the new configuration instead of staying frozen at the
-  // values that were live when each invoice was first posted.
   const handleRebuild = useCallback(async () => {
     const ok = window.confirm(
       'Re-post every vendor purchase invoice using the current shop settings (GST %, payment routing, CoA)?\n\nExisting journal entries for those invoices will be deleted and replaced. This cannot be undone.'
@@ -101,40 +125,64 @@ export function AccountingOverviewPage() {
   const creditors = useMemo(() => pickBalance(tb, CODES.SUNDRY_CREDITORS), [tb]);
   const inventory = useMemo(() => pickBalance(tb, CODES.INVENTORY), [tb]);
 
-  return (
-    <div className={styles.page}>
-      <div className={styles.card}>
-        <div className={styles.header}>
-          <div>
-            <h1 className={styles.title}>Accounting</h1>
-            <p className={styles.subtitle}>
-              Every business event is recorded as a balanced journal entry. Browse the journal,
-              drill into per-account ledgers, and view the trial balance.
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              className={styles.btnSecondary}
-              onClick={handleRebuild}
-              disabled={reposting}
-              title="Re-post every vendor purchase invoice using current shop settings (GST %, payment routing, etc.)"
-            >
-              {reposting ? 'Rebuilding…' : 'Rebuild Books'}
-            </button>
-            <Link
-              to="/dashboard/accounting/journal/new"
-              className={styles.btnPrimary}
-              style={{ textDecoration: 'none' }}
-            >
-              + Manual Entry
-            </Link>
-          </div>
-        </div>
-        <AccountingTabs />
-      </div>
+  const quickActions = [
+    ...JOURNAL_TEMPLATES.filter((t) => t.id !== 'BLANK').map((t) => ({
+      key: t.id,
+      label: t.label,
+      description: t.description,
+      to: `/dashboard/accounting/journal/new?template=${t.id.toLowerCase().replace(/_/g, '-')}`,
+    })),
+    {
+      key: 'opening',
+      label: 'Opening balances',
+      description: 'One-time wizard for starting balances',
+      to: '/dashboard/accounting/opening-balances',
+    },
+    {
+      key: 'pnl',
+      label: 'Profit & Loss',
+      description: 'Revenue and expenses for a period',
+      to: '/dashboard/accounting/reports/profit-and-loss',
+    },
+    {
+      key: 'bs',
+      label: 'Balance sheet',
+      description: 'Assets, liabilities, and equity',
+      to: '/dashboard/accounting/reports/balance-sheet',
+    },
+  ];
 
-      <div className={styles.kpiRow}>
+  return (
+    <Stack gap="md" className={styles.page}>
+      <Stack gap="md">
+        <AccountingTabs />
+        <PageHeader
+          title="Accounting"
+          description="Every business event is recorded as a balanced journal entry. Browse the journal, drill into per-account ledgers, and view the trial balance."
+          actions={
+            <Inline gap="sm">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleRebuild}
+                disabled={reposting}
+                title="Re-post every vendor purchase invoice using current shop settings (GST %, payment routing, etc.)"
+              >
+                {reposting ? 'Rebuilding…' : 'Rebuild Books'}
+              </Button>
+              <Button
+                type="button"
+                variant="solid"
+                onClick={() => navigate('/dashboard/accounting/journal/new')}
+              >
+                + Manual Entry
+              </Button>
+            </Inline>
+          }
+        />
+      </Stack>
+
+      <Grid gap="md" className={styles.kpiRow}>
         <KpiCard label="Cash in Hand" value={cash} loading={loading} />
         <KpiCard label="Bank" value={bank} loading={loading} />
         <KpiCard label="Inventory (Cost)" value={inventory} loading={loading} />
@@ -150,108 +198,113 @@ export function AccountingOverviewPage() {
           tone="warning"
           loading={loading}
         />
-      </div>
+      </Grid>
 
-      <div className={styles.card} style={{ marginTop: '0.75rem' }}>
-        <h2 className={styles.title} style={{ fontSize: '1.05rem', marginBottom: '0.65rem' }}>
-          Quick journal templates
-        </h2>
-        <div className={styles.quickActionGrid}>
-          {JOURNAL_TEMPLATES.filter((t) => t.id !== 'BLANK').map((t) => (
-            <Link
-              key={t.id}
-              to={`/dashboard/accounting/journal/new?template=${t.id.toLowerCase().replace(/_/g, '-')}`}
-              className={styles.quickActionCard}
-            >
-              <strong>{t.label}</strong>
-              <span>{t.description}</span>
-            </Link>
-          ))}
-          <Link to="/dashboard/accounting/opening-balances" className={styles.quickActionCard}>
-            <strong>Opening balances</strong>
-            <span>One-time wizard for starting balances</span>
-          </Link>
-          <Link
-            to="/dashboard/accounting/reports/profit-and-loss"
-            className={styles.quickActionCard}
-          >
-            <strong>Profit & Loss</strong>
-            <span>Revenue and expenses for a period</span>
-          </Link>
-          <Link
-            to="/dashboard/accounting/reports/balance-sheet"
-            className={styles.quickActionCard}
-          >
-            <strong>Balance sheet</strong>
-            <span>Assets, liabilities, and equity</span>
-          </Link>
-        </div>
-      </div>
-
-      <div className={styles.card}>
-        <div className={styles.header}>
-          <h2 className={styles.title} style={{ fontSize: '1.05rem' }}>
-            Recent Journal Entries
-          </h2>
-          <Link to="/dashboard/accounting/journal" className={styles.tabLink}>
-            View all
-          </Link>
-        </div>
-        {loading ? (
-          <p className={styles.empty}>Loading…</p>
-        ) : recent.length === 0 ? (
-          <p className={styles.empty}>
-            No journal entries yet. Register a stock purchase or post a manual entry to get started.
-          </p>
-        ) : (
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Entry #</th>
-                <th>Source</th>
-                <th>Narration</th>
-                <th className={styles.right}>Debit</th>
-                <th className={styles.right}>Credit</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recent.map((e) => (
-                <tr key={e.id}>
-                  <td>{formatDate(e.txnDate)}</td>
-                  <td>
-                    <Link to={`/dashboard/accounting/journal/${e.id}`}>{e.entryNo}</Link>
-                  </td>
-                  <td>
-                    <span className={styles.sourcePill}>{e.sourceType}</span>
-                  </td>
-                  <td className={styles.muted}>{e.narration ?? '—'}</td>
-                  <td className={`${styles.right} ${styles.number}`}>
-                    {formatMoney(e.totalDebit)}
-                  </td>
-                  <td className={`${styles.right} ${styles.number}`}>
-                    {formatMoney(e.totalCredit)}
-                  </td>
-                  <td>{renderStatus(e.status)}</td>
-                </tr>
+      <Card>
+        <CardBody>
+          <Stack gap="sm">
+            <Text variant="title" weight="bold">
+              Quick journal templates
+            </Text>
+            <Grid gap="sm" className={styles.quickActionGrid}>
+              {quickActions.map((action) => (
+                <Button
+                  key={action.key}
+                  type="button"
+                  variant="ghost"
+                  className={styles.quickActionCard}
+                  onClick={() => navigate(action.to)}
+                >
+                  <Text weight="semibold">{action.label}</Text>
+                  <Text variant="caption" color="secondary">
+                    {action.description}
+                  </Text>
+                </Button>
               ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </div>
-  );
-}
+            </Grid>
+          </Stack>
+        </CardBody>
+      </Card>
 
-function renderStatus(status: JournalEntryResponse['status']) {
-  const map: Record<JournalEntryResponse['status'], string> = {
-    POSTED: styles.statusPosted,
-    REVERSED: styles.statusReversed,
-    VOID: styles.statusVoid,
-  };
-  return (
-    <span className={`${styles.statusPill} ${map[status] ?? ''}`}>{status}</span>
+      <Card>
+        <CardBody>
+          <Stack gap="sm">
+            <Inline align="center" className={styles.header}>
+              <Text variant="title" weight="bold">
+                Recent Journal Entries
+              </Text>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className={styles.tabLink}
+                onClick={() => navigate('/dashboard/accounting/journal')}
+              >
+                View all
+              </Button>
+            </Inline>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableHeaderCell>Date</TableHeaderCell>
+                  <TableHeaderCell>Entry #</TableHeaderCell>
+                  <TableHeaderCell>Source</TableHeaderCell>
+                  <TableHeaderCell>Narration</TableHeaderCell>
+                  <TableHeaderCell className={styles.right}>Debit</TableHeaderCell>
+                  <TableHeaderCell className={styles.right}>Credit</TableHeaderCell>
+                  <TableHeaderCell>Status</TableHeaderCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {loading ? (
+                  <TableLoadingRow colSpan={7} label="Loading journal entries…" />
+                ) : recent.length === 0 ? (
+                  <TableEmptyRow
+                    colSpan={7}
+                    message="No journal entries yet. Register a stock purchase or post a manual entry to get started."
+                  />
+                ) : (
+                  recent.map((e) => (
+                    <TableRow key={e.id}>
+                      <TableCell>{formatDate(e.txnDate)}</TableCell>
+                      <TableCell>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            navigate(`/dashboard/accounting/journal/${e.id}`)
+                          }
+                        >
+                          {e.entryNo}
+                        </Button>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={styles.sourcePill}>{e.sourceType}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Text color="secondary" variant="caption">
+                          {e.narration ?? '—'}
+                        </Text>
+                      </TableCell>
+                      <TableCell className={`${styles.right} ${styles.number}`}>
+                        {formatMoney(e.totalDebit)}
+                      </TableCell>
+                      <TableCell className={`${styles.right} ${styles.number}`}>
+                        {formatMoney(e.totalCredit)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={statusVariant(e.status)}>{e.status}</Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </Stack>
+        </CardBody>
+      </Card>
+    </Stack>
   );
 }
 
@@ -267,17 +320,20 @@ function KpiCard({
   tone?: 'positive' | 'warning';
 }) {
   const color =
-    tone === 'positive'
-      ? '#047857'
-      : tone === 'warning'
-        ? '#b45309'
-        : 'var(--text-primary, #0f172a)';
+    tone === 'positive' ? 'success' : tone === 'warning' ? 'danger' : 'primary';
+
   return (
-    <div className={styles.kpiCard}>
-      <p className={styles.kpiLabel}>{label}</p>
-      <p className={styles.kpiValue} style={{ color }}>
-        {loading ? '…' : `₹ ${formatMoney(value)}`}
-      </p>
-    </div>
+    <Card>
+      <CardBody>
+        <Stack gap="xs">
+          <Text variant="caption" color="secondary">
+            {label}
+          </Text>
+          <Text variant="heading2" weight="bold" color={loading ? 'secondary' : color}>
+            {loading ? '…' : `₹ ${formatMoney(value)}`}
+          </Text>
+        </Stack>
+      </CardBody>
+    </Card>
   );
 }

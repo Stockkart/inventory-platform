@@ -1,3 +1,4 @@
+import { Text } from '@inventory-platform/ui-kit';
 import styles from './HistoryRecordList.module.css';
 
 type HistoryListSummaryProps = {
@@ -19,9 +20,9 @@ export function HistoryListSummary({
   const start = (page - 1) * limit + 1;
   const end = Math.min(page * limit, total);
   return (
-    <p className={styles.summary}>
+    <Text variant="caption" color="secondary" className={styles.summary}>
       Showing {start} – {end} of {total} {label}
       {filtered ? ' (filtered)' : ''}
-    </p>
+    </Text>
   );
 }

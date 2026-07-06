@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
+import {
+  Button,
+  Card,
+  CardBody,
+  Inline,
+  PageHeader,
+  Stack,
+} from '@inventory-platform/ui-kit';
 import { accountingApi } from '../api/accounting.api';
 import { useNotify } from '@inventory-platform/session';
 import type { AccountResponse } from '@inventory-platform/accounting/types';
@@ -75,49 +83,56 @@ export function ManualJournalEntryPage() {
   }, [notifyError]);
 
   return (
-    <div className={styles.page}>
-      <div className={styles.card}>
-        <div className={styles.header}>
-          <div>
-            <h1 className={styles.title}>Manual Journal Entry</h1>
-            <p className={styles.subtitle}>
-              <Link to="/dashboard/accounting/journal">← Back to journal</Link> · Posts with source{' '}
-              <code>MANUAL</code>.
-            </p>
-          </div>
-        </div>
+    <Stack gap="md" className={styles.page}>
+      <Stack gap="md">
         <AccountingTabs />
-      </div>
-
-      <div className={styles.card}>
-        <JournalEntryEditor
-          accounts={accounts}
-          accountsLoading={accountsLoading}
-          txnDate={txnDate}
-          onTxnDateChange={setTxnDate}
-          narration={narration}
-          onNarrationChange={setNarration}
-          lines={lines}
-          onLinesChange={setLines}
-          initialTemplateId={templateId}
-          submitLabel="Post Entry"
-          submitting={submitting}
-          onValidationError={notifyError}
-          onCancel={() => navigate('/dashboard/accounting/journal')}
-          onSubmit={async (body) => {
-            setSubmitting(true);
-            try {
-              const posted = await accountingApi.createManualJournal(body);
-              notifySuccess(`Posted ${posted.entryNo}`);
-              navigate(`/dashboard/accounting/journal/${posted.id}`);
-            } catch (e) {
-              notifyError(e instanceof Error ? e.message : 'Failed to post entry');
-            } finally {
-              setSubmitting(false);
-            }
-          }}
+        <PageHeader
+          title="Manual Journal Entry"
+          description="Posts with source MANUAL."
         />
-      </div>
-    </div>
+        <Inline gap="sm" align="center">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/dashboard/accounting/journal')}
+          >
+            ← Back to journal
+          </Button>
+        </Inline>
+      </Stack>
+
+      <Card>
+        <CardBody>
+          <JournalEntryEditor
+            accounts={accounts}
+            accountsLoading={accountsLoading}
+            txnDate={txnDate}
+            onTxnDateChange={setTxnDate}
+            narration={narration}
+            onNarrationChange={setNarration}
+            lines={lines}
+            onLinesChange={setLines}
+            initialTemplateId={templateId}
+            submitLabel="Post Entry"
+            submitting={submitting}
+            onValidationError={notifyError}
+            onCancel={() => navigate('/dashboard/accounting/journal')}
+            onSubmit={async (body) => {
+              setSubmitting(true);
+              try {
+                const posted = await accountingApi.createManualJournal(body);
+                notifySuccess(`Posted ${posted.entryNo}`);
+                navigate(`/dashboard/accounting/journal/${posted.id}`);
+              } catch (e) {
+                notifyError(e instanceof Error ? e.message : 'Failed to post entry');
+              } finally {
+                setSubmitting(false);
+              }
+            }}
+          />
+        </CardBody>
+      </Card>
+    </Stack>
   );
 }

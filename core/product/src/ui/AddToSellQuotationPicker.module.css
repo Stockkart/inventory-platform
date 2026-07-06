@@ -1,121 +1,24 @@
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1100;
-  padding: 1rem;
-}
-
-.dialog {
-  width: 100%;
-  max-width: 420px;
-  background: var(--bg-card, #fff);
-  border: 1px solid var(--border-color, #e2e8f0);
-  border-radius: 14px;
-  padding: 1.25rem 1.35rem 1rem;
-  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.18);
-}
-
-.title {
-  margin: 0 0 0.35rem;
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: var(--text-primary, #0f172a);
-}
-
-.subtitle {
-  margin: 0 0 1rem;
-  font-size: 0.88rem;
-  line-height: 1.45;
-  color: var(--text-secondary, #64748b);
-}
-
 .newBtn {
-  width: 100%;
-  margin-bottom: 0.75rem;
-  padding: 0.55rem 0.75rem;
-  border: 1px dashed #93c5fd;
-  border-radius: 10px;
-  background: #f8fafc;
-  color: #1d4ed8;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.newBtn:hover:not(:disabled) {
-  background: #eff6ff;
-}
-
-.newBtn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
+  border-style: dashed;
 }
 
 .list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
   max-height: min(50vh, 320px);
   overflow-y: auto;
-  margin-bottom: 0.85rem;
 }
 
 .option {
-  display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.15rem;
-  width: 100%;
+  height: auto;
   padding: 0.65rem 0.75rem;
-  border: 1px solid var(--border-color, #e2e8f0);
-  border-radius: 10px;
-  background: var(--bg-primary, #fff);
   text-align: left;
-  cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-
-.option:hover:not(:disabled) {
-  border-color: #2563eb;
-  background: #f8fafc;
-}
-
-.option:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .optionName {
   font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-primary, #0f172a);
 }
 
 .optionMeta {
   font-size: 0.75rem;
-  color: var(--text-muted, #64748b);
-}
-
-.actions {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.cancelBtn {
-  padding: 0.45rem 0.85rem;
-  border: 1px solid var(--border-color, #cbd5e1);
-  border-radius: 8px;
-  background: transparent;
-  font-size: 0.85rem;
-  color: var(--text-secondary, #64748b);
-  cursor: pointer;
-}
-
-.cancelBtn:hover:not(:disabled) {
-  background: var(--hover-bg, #f1f5f9);
 }

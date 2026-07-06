@@ -1,10 +1,19 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import type { HistoryFilters, HistoryTab } from './historyFilters';
 import {
   showCustomerFilter,
   showVendorFilter,
   validateHistoryFilters,
 } from './historyFilters';
+import {
+  Alert,
+  Box,
+  Button,
+  FormField,
+  Inline,
+  Input,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './HistoryFiltersBar.module.css';
 
 type HistoryFiltersBarProps = {
@@ -40,8 +49,7 @@ export function HistoryFiltersBar({
     onChange({ ...filters, ...patch });
   };
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
+  const handleApply = () => {
     const err = validateHistoryFilters(filters, activeTab);
     if (err) {
       setRegexError(err);
@@ -57,92 +65,70 @@ export function HistoryFiltersBar({
   };
 
   return (
-    <form className={styles.bar} onSubmit={handleSubmit} aria-label="History filters">
-      <div className={styles.row}>
-        <div className={styles.field}>
-          <label htmlFor="history-date-from" className={styles.label}>
-            From
-          </label>
-          <input
+    <Box className={styles.bar} aria-label="History filters">
+      <Inline className={styles.row} gap="sm" align="end">
+        <FormField label="From" id="history-date-from" className={styles.field}>
+          <Input
             id="history-date-from"
             type="date"
-            className={styles.input}
             value={filters.dateFrom}
             onChange={(e) => set({ dateFrom: e.target.value })}
           />
-        </div>
-        <div className={styles.field}>
-          <label htmlFor="history-date-to" className={styles.label}>
-            To
-          </label>
-          <input
+        </FormField>
+        <FormField label="To" id="history-date-to" className={styles.field}>
+          <Input
             id="history-date-to"
             type="date"
-            className={styles.input}
             value={filters.dateTo}
             onChange={(e) => set({ dateTo: e.target.value })}
           />
-        </div>
-        <div className={styles.field}>
-          <label htmlFor="history-invoice" className={styles.label}>
-            Invoice no.
-          </label>
-          <input
+        </FormField>
+        <FormField label="Invoice no." id="history-invoice" className={styles.field}>
+          <Input
             id="history-invoice"
             type="text"
-            className={styles.input}
             value={filters.invoiceNo}
             onChange={(e) => set({ invoiceNo: e.target.value })}
             placeholder="e.g. INV-001"
           />
-        </div>
+        </FormField>
         {showCustomer ? (
-          <div className={styles.field}>
-            <label htmlFor="history-customer" className={styles.label}>
-              Customer
-            </label>
-            <input
+          <FormField label="Customer" id="history-customer" className={styles.field}>
+            <Input
               id="history-customer"
               type="text"
-              className={styles.input}
               value={filters.customer}
               onChange={(e) => set({ customer: e.target.value })}
               placeholder="Name or phone"
             />
-          </div>
+          </FormField>
         ) : null}
         {showVendor ? (
-          <div className={styles.field}>
-            <label htmlFor="history-vendor" className={styles.label}>
-              Vendor
-            </label>
-            <input
+          <FormField label="Vendor" id="history-vendor" className={styles.field}>
+            <Input
               id="history-vendor"
               type="text"
-              className={styles.input}
               value={filters.vendor}
               onChange={(e) => set({ vendor: e.target.value })}
               placeholder="Vendor name"
             />
-          </div>
+          </FormField>
         ) : null}
-        <div className={styles.actions}>
-          <button type="submit" className={styles.applyBtn}>
+        <Inline className={styles.actions} gap="sm">
+          <Button type="button" variant="solid" size="sm" onClick={handleApply}>
             Apply
-          </button>
+          </Button>
           {hasAppliedFilters ? (
-            <button type="button" className={styles.clearBtn} onClick={handleClear}>
+            <Button type="button" variant="outline" size="sm" onClick={handleClear}>
               Clear
-            </button>
+            </Button>
           ) : null}
-        </div>
-      </div>
-      {regexError ? (
-        <p className={styles.error} role="alert">
-          {regexError}
-        </p>
-      ) : null}
-      <p className={styles.hint}>{TAB_HINTS[activeTab]}</p>
-    </form>
+        </Inline>
+      </Inline>
+      {regexError ? <Alert variant="danger">{regexError}</Alert> : null}
+      <Text variant="caption" color="secondary" className={styles.hint}>
+        {TAB_HINTS[activeTab]}
+      </Text>
+    </Box>
   );
 }

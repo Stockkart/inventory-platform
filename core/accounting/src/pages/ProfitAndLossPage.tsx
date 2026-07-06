@@ -1,5 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router';
+import { useNavigate } from 'react-router';
+import {
+  Button,
+  Card,
+  CardBody,
+  Grid,
+  Inline,
+  Input,
+  PageHeader,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableLoadingRow,
+  TableRow,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { accountingApi } from '../api/accounting.api';
 import { useNotify } from '@inventory-platform/session';
 import type { ProfitAndLossResponse } from '@inventory-platform/accounting/types';
@@ -14,6 +32,7 @@ function monthStart(d = new Date()): string {
 }
 
 export function ProfitAndLossPage() {
+  const navigate = useNavigate();
   const { error: notifyError } = useNotify;
   const [from, setFrom] = useState(monthStart());
   const [to, setTo] = useState(todayLocalDate());
@@ -40,67 +59,109 @@ export function ProfitAndLossPage() {
     };
   }, [from, to, notifyError]);
 
-  const netTone = useMemo(() => {
-    if (!data) return undefined;
-    return data.netProfit >= 0 ? 'positive' : 'warning';
+  const netProfitColor = useMemo(() => {
+    if (!data) return 'primary' as const;
+    return data.netProfit >= 0 ? ('success' as const) : ('danger' as const);
   }, [data]);
 
   return (
-    <div className={styles.page}>
-      <div className={styles.card}>
-        <div className={styles.header}>
-          <div>
-            <h1 className={styles.title}>Profit & Loss</h1>
-            <p className={styles.subtitle}>
-              Revenue and expense accounts for the selected period (turnover, not closing balances).
-            </p>
-          </div>
-        </div>
+    <Stack gap="md" className={styles.page}>
+      <Stack gap="md">
         <AccountingTabs />
-        <div className={styles.toolbar}>
-          <label className={styles.muted}>From</label>
-          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-          <label className={styles.muted}>To</label>
-          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-        </div>
-      </div>
+        <PageHeader
+          title="Profit & Loss"
+          description="Revenue and expense accounts for the selected period (turnover, not closing balances)."
+        />
+        <Inline gap="sm" className={styles.toolbar}>
+          <Text variant="label" color="secondary">
+            From
+          </Text>
+          <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+          <Text variant="label" color="secondary">
+            To
+          </Text>
+          <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+        </Inline>
+      </Stack>
 
       {loading ? (
-        <p className={styles.empty}>Loading…</p>
+        <Card>
+          <CardBody>
+            <Table>
+              <TableBody>
+                <TableLoadingRow colSpan={3} label="Loading P&L…" />
+              </TableBody>
+            </Table>
+          </CardBody>
+        </Card>
       ) : !data ? (
-        <p className={styles.empty}>No data.</p>
+        <Card>
+          <CardBody>
+            <Text color="secondary" align="center">
+              No data.
+            </Text>
+          </CardBody>
+        </Card>
       ) : (
-        <>
-          <div className={styles.kpiRow}>
-            <div className={styles.kpiCard}>
-              <p className={styles.kpiLabel}>Total revenue</p>
-              <p className={styles.kpiValue}>₹ {formatMoney(data.totalRevenue)}</p>
-            </div>
-            <div className={styles.kpiCard}>
-              <p className={styles.kpiLabel}>Total expenses</p>
-              <p className={styles.kpiValue}>₹ {formatMoney(data.totalExpense)}</p>
-            </div>
-            <div className={styles.kpiCard}>
-              <p className={styles.kpiLabel}>Net profit</p>
-              <p
-                className={styles.kpiValue}
-                style={{ color: netTone === 'positive' ? '#047857' : '#b45309' }}
-              >
-                ₹ {formatMoney(data.netProfit)}
-              </p>
-            </div>
-          </div>
+        <Stack gap="md">
+          <Grid gap="md" className={styles.kpiRow}>
+            <Card>
+              <CardBody>
+                <Stack gap="xs">
+                  <Text variant="caption" color="secondary">
+                    Total revenue
+                  </Text>
+                  <Text variant="heading2" weight="bold">
+                    ₹ {formatMoney(data.totalRevenue)}
+                  </Text>
+                </Stack>
+              </CardBody>
+            </Card>
+            <Card>
+              <CardBody>
+                <Stack gap="xs">
+                  <Text variant="caption" color="secondary">
+                    Total expenses
+                  </Text>
+                  <Text variant="heading2" weight="bold">
+                    ₹ {formatMoney(data.totalExpense)}
+                  </Text>
+                </Stack>
+              </CardBody>
+            </Card>
+            <Card>
+              <CardBody>
+                <Stack gap="xs">
+                  <Text variant="caption" color="secondary">
+                    Net profit
+                  </Text>
+                  <Text variant="heading2" weight="bold" color={netProfitColor}>
+                    ₹ {formatMoney(data.netProfit)}
+                  </Text>
+                </Stack>
+              </CardBody>
+            </Card>
+          </Grid>
 
           <ReportSection title="Revenue" rows={data.revenueLines} emptyLabel="No revenue in period" />
           <ReportSection title="Expenses" rows={data.expenseLines} emptyLabel="No expenses in period" />
 
-          <p className={styles.muted} style={{ marginTop: '0.75rem' }}>
-            Period {formatDate(data.from)} – {formatDate(data.to)} ·{' '}
-            <Link to="/dashboard/accounting/trial-balance">Trial balance</Link>
-          </p>
-        </>
+          <Inline gap="xs" align="center">
+            <Text variant="caption" color="secondary">
+              Period {formatDate(data.from)} – {formatDate(data.to)} ·
+            </Text>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/dashboard/accounting/trial-balance')}
+            >
+              Trial balance
+            </Button>
+          </Inline>
+        </Stack>
       )}
-    </div>
+    </Stack>
   );
 }
 
@@ -115,36 +176,46 @@ function ReportSection({
 }) {
   const total = rows.reduce((s, r) => s + r.amount, 0);
   return (
-    <div className={styles.card} style={{ marginTop: '0.75rem' }}>
-      <h2 className={styles.title} style={{ fontSize: '1.05rem' }}>
-        {title}
-      </h2>
-      {rows.length === 0 ? (
-        <p className={styles.empty}>{emptyLabel}</p>
-      ) : (
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Code</th>
-              <th>Account</th>
-              <th className={styles.right}>Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.accountId}>
-                <td>{r.accountCode}</td>
-                <td>{r.accountName}</td>
-                <td className={`${styles.right} ${styles.number}`}>{formatMoney(r.amount)}</td>
-              </tr>
-            ))}
-            <tr className={styles.subTotalRow}>
-              <td colSpan={2}>Subtotal</td>
-              <td className={`${styles.right} ${styles.number}`}>{formatMoney(total)}</td>
-            </tr>
-          </tbody>
-        </table>
-      )}
-    </div>
+    <Card>
+      <CardBody>
+        <Stack gap="sm">
+          <Text variant="title" weight="bold">
+            {title}
+          </Text>
+          {rows.length === 0 ? (
+            <Text color="secondary" align="center">
+              {emptyLabel}
+            </Text>
+          ) : (
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableHeaderCell>Code</TableHeaderCell>
+                  <TableHeaderCell>Account</TableHeaderCell>
+                  <TableHeaderCell className={styles.right}>Amount</TableHeaderCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {rows.map((r) => (
+                  <TableRow key={r.accountId}>
+                    <TableCell>{r.accountCode}</TableCell>
+                    <TableCell>{r.accountName}</TableCell>
+                    <TableCell className={`${styles.right} ${styles.number}`}>
+                      {formatMoney(r.amount)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                <TableRow className={styles.subTotalRow}>
+                  <TableCell colSpan={2}>Subtotal</TableCell>
+                  <TableCell className={`${styles.right} ${styles.number}`}>
+                    {formatMoney(total)}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          )}
+        </Stack>
+      </CardBody>
+    </Card>
   );
 }

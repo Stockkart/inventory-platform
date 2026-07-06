@@ -266,13 +266,16 @@ export function ImportPage() {
         }
       />
     ) : (
-      <span
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
         className={styles.cellValue}
         onClick={() => setEditingCell({ rowIdx, field })}
         title="Click to edit"
       >
         {display}
-      </span>
+      </Button>
     );
   };
 

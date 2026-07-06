@@ -1,5 +1,24 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router';
+import { useNavigate } from 'react-router';
+import {
+  Alert,
+  Button,
+  Card,
+  CardBody,
+  Inline,
+  Input,
+  PageHeader,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableEmptyRow,
+  TableHead,
+  TableHeaderCell,
+  TableLoadingRow,
+  TableRow,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { accountingApi } from '../api/accounting.api';
 import { useNotify } from '@inventory-platform/session';
 import type { AccountType, TrialBalanceResponse, TrialBalanceRow } from '@inventory-platform/accounting/types';
@@ -78,92 +97,102 @@ export function TrialBalancePage() {
     !!data && Math.abs(data.totalDebit - data.totalCredit) < 0.005;
 
   return (
-    <div className={styles.page}>
-      <div className={styles.card}>
-        <div className={styles.header}>
-          <div>
-            <h1 className={styles.title}>Trial Balance</h1>
-            <p className={styles.subtitle}>
-              Closing balances as of a date. Total Debit must equal Total Credit — if they
-              don&apos;t, no entry can be unbalanced.
-            </p>
-          </div>
-        </div>
+    <Stack gap="md" className={styles.page}>
+      <Stack gap="md">
         <AccountingTabs />
-        <div className={styles.toolbar}>
-          <label className={styles.muted}>As of</label>
-          <input
+        <PageHeader
+          title="Trial Balance"
+          description="Closing balances as of a date. Total Debit must equal Total Credit — if they don't, no entry can be unbalanced."
+        />
+        <Inline gap="sm" className={styles.toolbar}>
+          <Text variant="label" color="secondary">
+            As of
+          </Text>
+          <Input
             type="date"
             value={asOf}
             onChange={(e) => setAsOf(e.target.value)}
           />
-          <span className={styles.muted}>{data ? `· ${formatDate(data.asOf)}` : ''}</span>
-        </div>
-      </div>
+          {data ? (
+            <Text variant="caption" color="secondary">
+              · {formatDate(data.asOf)}
+            </Text>
+          ) : null}
+        </Inline>
+      </Stack>
 
-      <div className={styles.card}>
-        {loading ? (
-          <p className={styles.empty}>Loading…</p>
-        ) : !data || data.rows.length === 0 ? (
-          <p className={styles.empty}>
-            No postings yet. Once you register vendor invoices or post journals, the trial
-            balance will populate.
-          </p>
-        ) : (
-          <>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Code</th>
-                  <th>Account</th>
-                  <th className={styles.right}>Debit Turnover</th>
-                  <th className={styles.right}>Credit Turnover</th>
-                  <th className={styles.right}>Debit Balance</th>
-                  <th className={styles.right}>Credit Balance</th>
-                </tr>
-              </thead>
-              <tbody>
-                {GROUP_ORDER.map((type) => {
-                  const rows = grouped[type];
-                  if (rows.length === 0) return null;
-                  const sub = groupSubtotal(rows);
-                  return (
-                    <RowsForType
-                      key={type}
-                      type={type}
-                      rows={rows}
-                      subDr={sub.dr}
-                      subCr={sub.cr}
-                    />
-                  );
-                })}
-                <tr className={styles.grandTotalRow}>
-                  <td colSpan={4} className={styles.right}>
-                    Grand Totals
-                  </td>
-                  <td className={`${styles.right} ${styles.number}`}>
-                    {formatMoney(data.totalDebit)}
-                  </td>
-                  <td className={`${styles.right} ${styles.number}`}>
-                    {formatMoney(data.totalCredit)}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <p
-              className={
-                isBalanced ? styles.balanceBalanced : styles.balanceUnbalanced
-              }
-              style={{ marginTop: '0.85rem', fontWeight: 700 }}
-            >
-              {isBalanced
-                ? '✓ Books balance — total debits = total credits'
-                : '⚠ Trial balance does not match — investigate immediately'}
-            </p>
-          </>
-        )}
-      </div>
-    </div>
+      <Card>
+        <CardBody>
+          {loading ? (
+            <Table>
+              <TableBody>
+                <TableLoadingRow colSpan={6} label="Loading trial balance…" />
+              </TableBody>
+            </Table>
+          ) : !data || data.rows.length === 0 ? (
+            <Table>
+              <TableBody>
+                <TableEmptyRow
+                  colSpan={6}
+                  message="No postings yet. Once you register vendor invoices or post journals, the trial balance will populate."
+                />
+              </TableBody>
+            </Table>
+          ) : (
+            <Stack gap="sm">
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableHeaderCell>Code</TableHeaderCell>
+                    <TableHeaderCell>Account</TableHeaderCell>
+                    <TableHeaderCell className={styles.right}>Debit Turnover</TableHeaderCell>
+                    <TableHeaderCell className={styles.right}>Credit Turnover</TableHeaderCell>
+                    <TableHeaderCell className={styles.right}>Debit Balance</TableHeaderCell>
+                    <TableHeaderCell className={styles.right}>Credit Balance</TableHeaderCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {GROUP_ORDER.map((type) => {
+                    const rows = grouped[type];
+                    if (rows.length === 0) return null;
+                    const sub = groupSubtotal(rows);
+                    return (
+                      <RowsForType
+                        key={type}
+                        type={type}
+                        rows={rows}
+                        subDr={sub.dr}
+                        subCr={sub.cr}
+                      />
+                    );
+                  })}
+                  <TableRow className={styles.grandTotalRow}>
+                    <TableCell colSpan={4} className={styles.right}>
+                      Grand Totals
+                    </TableCell>
+                    <TableCell className={`${styles.right} ${styles.number}`}>
+                      {formatMoney(data.totalDebit)}
+                    </TableCell>
+                    <TableCell className={`${styles.right} ${styles.number}`}>
+                      {formatMoney(data.totalCredit)}
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+              <Alert
+                variant={isBalanced ? 'success' : 'warning'}
+                role="status"
+                className={isBalanced ? styles.balanceBalanced : styles.balanceUnbalanced}
+              >
+                {isBalanced
+                  ? '✓ Books balance — total debits = total credits'
+                  : '⚠ Trial balance does not match — investigate immediately'}
+              </Alert>
+            </Stack>
+          )}
+        </CardBody>
+      </Card>
+    </Stack>
   );
 }
 
@@ -178,42 +207,53 @@ function RowsForType({
   subDr: number;
   subCr: number;
 }) {
+  const navigate = useNavigate();
+
   return (
     <>
-      <tr>
-        <td colSpan={6} className={styles.groupHeading}>
+      <TableRow>
+        <TableCell colSpan={6} className={styles.groupHeading}>
           {GROUP_LABEL[type]}
-        </td>
-      </tr>
+        </TableCell>
+      </TableRow>
       {rows.map((r) => (
-        <tr key={r.accountId}>
-          <td className={styles.muted}>{r.accountCode}</td>
-          <td>
-            <Link to={`/dashboard/accounting/ledger/${r.accountId}`}>
+        <TableRow key={r.accountId}>
+          <TableCell>
+            <Text variant="caption" color="secondary">
+              {r.accountCode}
+            </Text>
+          </TableCell>
+          <TableCell>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(`/dashboard/accounting/ledger/${r.accountId}`)}
+            >
               {r.accountName}
-            </Link>
-          </td>
-          <td className={`${styles.right} ${styles.number}`}>
+            </Button>
+          </TableCell>
+          <TableCell className={`${styles.right} ${styles.number}`}>
             {formatMoney(r.debitTurnover)}
-          </td>
-          <td className={`${styles.right} ${styles.number}`}>
+          </TableCell>
+          <TableCell className={`${styles.right} ${styles.number}`}>
             {formatMoney(r.creditTurnover)}
-          </td>
-          <td className={`${styles.right} ${styles.number}`}>
+          </TableCell>
+          <TableCell className={`${styles.right} ${styles.number}`}>
             {r.debitBalance ? formatMoney(r.debitBalance) : ''}
-          </td>
-          <td className={`${styles.right} ${styles.number}`}>
+          </TableCell>
+          <TableCell className={`${styles.right} ${styles.number}`}>
             {r.creditBalance ? formatMoney(r.creditBalance) : ''}
-          </td>
-        </tr>
+          </TableCell>
+        </TableRow>
       ))}
-      <tr className={styles.subTotalRow}>
-        <td colSpan={4} className={styles.right}>
+      <TableRow className={styles.subTotalRow}>
+        <TableCell colSpan={4} className={styles.right}>
           {GROUP_LABEL[type]} subtotal
-        </td>
-        <td className={`${styles.right} ${styles.number}`}>{formatMoney(subDr)}</td>
-        <td className={`${styles.right} ${styles.number}`}>{formatMoney(subCr)}</td>
-      </tr>
+        </TableCell>
+        <TableCell className={`${styles.right} ${styles.number}`}>{formatMoney(subDr)}</TableCell>
+        <TableCell className={`${styles.right} ${styles.number}`}>{formatMoney(subCr)}</TableCell>
+      </TableRow>
     </>
   );
 }

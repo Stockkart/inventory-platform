@@ -1,5 +1,26 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
+import {
+  Badge,
+  Button,
+  Card,
+  CardBody,
+  Grid,
+  Inline,
+  Input,
+  PageHeader,
+  PaginationBar,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableEmptyRow,
+  TableHead,
+  TableHeaderCell,
+  TableLoadingRow,
+  TableRow,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { accountingApi } from '../api/accounting.api';
 import { useNotify } from '@inventory-platform/session';
 import type { PartyStatementResponse } from '@inventory-platform/accounting/types';
@@ -62,42 +83,50 @@ export function PartyStatementPage({ partyType }: PartyStatementPageProps) {
 
   if (!partyRefId) {
     return (
-      <div className={styles.page}>
-        <div className={styles.card}>
-          <p className={styles.empty}>
-            No party selected.{' '}
-            <Link to={titles.backHref}>Go back to {titles.back.toLowerCase()}</Link>.
-          </p>
-        </div>
-      </div>
+      <Stack gap="md" className={styles.page}>
+        <Card>
+          <CardBody>
+            <Inline gap="xs" align="center">
+              <Text color="secondary">No party selected.</Text>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate(titles.backHref)}
+              >
+                Go back to {titles.back.toLowerCase()}
+              </Button>
+            </Inline>
+          </CardBody>
+        </Card>
+      </Stack>
     );
   }
 
   return (
-    <div className={styles.page}>
-      <div className={styles.card}>
-        <div className={styles.header}>
-          <div>
-            <h1 className={styles.title}>
-              {data?.partyDisplayName || `${titles.kind} ${partyRefId}`}
-            </h1>
-            <p className={styles.subtitle}>
-              {titles.kind} statement · subsidiary view of{' '}
-              {partyType === 'VENDOR' ? 'Sundry Creditors' : 'Sundry Debtors'} for this
-              party.
-            </p>
-          </div>
-          <button
-            className={styles.btnGhost}
-            onClick={() => navigate(titles.backHref)}
-          >
-            ← {titles.back}
-          </button>
-        </div>
+    <Stack gap="md" className={styles.page}>
+      <Stack gap="md">
         <AccountingTabs />
-        <div className={styles.toolbar}>
-          <label className={styles.muted}>From</label>
-          <input
+        <PageHeader
+          title={data?.partyDisplayName || `${titles.kind} ${partyRefId}`}
+          description={`${titles.kind} statement · subsidiary view of ${
+            partyType === 'VENDOR' ? 'Sundry Creditors' : 'Sundry Debtors'
+          } for this party.`}
+          actions={
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => navigate(titles.backHref)}
+            >
+              ← {titles.back}
+            </Button>
+          }
+        />
+        <Inline gap="sm" className={styles.toolbar}>
+          <Text variant="label" color="secondary">
+            From
+          </Text>
+          <Input
             type="date"
             value={from}
             onChange={(e) => {
@@ -105,8 +134,10 @@ export function PartyStatementPage({ partyType }: PartyStatementPageProps) {
               setFrom(e.target.value);
             }}
           />
-          <label className={styles.muted}>To</label>
-          <input
+          <Text variant="label" color="secondary">
+            To
+          </Text>
+          <Input
             type="date"
             value={to}
             onChange={(e) => {
@@ -114,8 +145,10 @@ export function PartyStatementPage({ partyType }: PartyStatementPageProps) {
               setTo(e.target.value);
             }}
           />
-          <button
-            className={styles.btnGhost}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
             onClick={() => {
               setFrom('');
               setTo('');
@@ -124,114 +157,129 @@ export function PartyStatementPage({ partyType }: PartyStatementPageProps) {
             disabled={!from && !to}
           >
             Clear
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Inline>
+      </Stack>
 
-      <div className={styles.kpiRow}>
-        <div className={styles.kpiCard}>
-          <p className={styles.kpiLabel}>Opening balance</p>
-          <p className={styles.kpiValue}>{formatMoney(data?.openingBalance ?? 0)}</p>
-          <p className={styles.kpiHint}>
-            {partyType === 'VENDOR' ? 'Payable to vendor' : 'Receivable from customer'}{' '}
-            before {from || 'first entry'}
-          </p>
-        </div>
-        <div className={styles.kpiCard}>
-          <p className={styles.kpiLabel}>Closing balance</p>
-          <p className={styles.kpiValue}>{formatMoney(data?.closingBalance ?? 0)}</p>
-          <p className={styles.kpiHint}>
-            After last shown entry · {data?.totalItems ?? 0} txn
-            {(data?.totalItems ?? 0) === 1 ? '' : 's'}
-          </p>
-        </div>
-      </div>
+      <Grid columns={2} gap="md" className={styles.kpiRow}>
+        <Card>
+          <CardBody>
+            <Stack gap="xs">
+              <Text variant="caption" color="secondary">
+                Opening balance
+              </Text>
+              <Text variant="heading2" weight="bold">
+                {formatMoney(data?.openingBalance ?? 0)}
+              </Text>
+              <Text variant="caption" color="secondary">
+                {partyType === 'VENDOR' ? 'Payable to vendor' : 'Receivable from customer'}{' '}
+                before {from || 'first entry'}
+              </Text>
+            </Stack>
+          </CardBody>
+        </Card>
+        <Card>
+          <CardBody>
+            <Stack gap="xs">
+              <Text variant="caption" color="secondary">
+                Closing balance
+              </Text>
+              <Text variant="heading2" weight="bold">
+                {formatMoney(data?.closingBalance ?? 0)}
+              </Text>
+              <Text variant="caption" color="secondary">
+                After last shown entry · {data?.totalItems ?? 0} txn
+                {(data?.totalItems ?? 0) === 1 ? '' : 's'}
+              </Text>
+            </Stack>
+          </CardBody>
+        </Card>
+      </Grid>
 
-      <div className={styles.card}>
-        {loading ? (
-          <p className={styles.empty}>Loading…</p>
-        ) : (data?.entries.length ?? 0) === 0 ? (
-          <p className={styles.empty}>No postings in this range.</p>
-        ) : (
-          <>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Entry #</th>
-                  <th>Account</th>
-                  <th>Source</th>
-                  <th>Narration</th>
-                  <th className={styles.right}>Debit</th>
-                  <th className={styles.right}>Credit</th>
-                  <th className={styles.right}>Balance</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(data?.entries ?? []).map((e) => (
-                  <tr key={e.id}>
-                    <td>{formatDate(e.txnDate)}</td>
-                    <td>
-                      <Link to={`/dashboard/accounting/journal/${e.journalEntryId}`}>
+      <Card>
+        <CardBody>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableHeaderCell>Date</TableHeaderCell>
+                <TableHeaderCell>Entry #</TableHeaderCell>
+                <TableHeaderCell>Account</TableHeaderCell>
+                <TableHeaderCell>Source</TableHeaderCell>
+                <TableHeaderCell>Narration</TableHeaderCell>
+                <TableHeaderCell className={styles.right}>Debit</TableHeaderCell>
+                <TableHeaderCell className={styles.right}>Credit</TableHeaderCell>
+                <TableHeaderCell className={styles.right}>Balance</TableHeaderCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {loading ? (
+                <TableLoadingRow colSpan={8} label="Loading statement…" />
+              ) : (data?.entries.length ?? 0) === 0 ? (
+                <TableEmptyRow colSpan={8} message="No postings in this range." />
+              ) : (
+                (data?.entries ?? []).map((e) => (
+                  <TableRow key={e.id}>
+                    <TableCell>{formatDate(e.txnDate)}</TableCell>
+                    <TableCell>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          navigate(`/dashboard/accounting/journal/${e.journalEntryId}`)
+                        }
+                      >
                         {e.journalEntryNo}
-                      </Link>
-                    </td>
-                    <td>
-                      <Link to={`/dashboard/accounting/ledger/${e.accountId}`}>
+                      </Button>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          navigate(`/dashboard/accounting/ledger/${e.accountId}`)
+                        }
+                      >
                         {e.accountCode} · {e.accountName}
-                      </Link>
-                    </td>
-                    <td>
-                      <span className={styles.sourcePill}>{e.sourceType}</span>
-                    </td>
-                    <td className={styles.muted}>{e.narration ?? '—'}</td>
-                    <td className={`${styles.right} ${styles.number}`}>
+                      </Button>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={styles.sourcePill}>{e.sourceType}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Text color="secondary" variant="caption">
+                        {e.narration ?? '—'}
+                      </Text>
+                    </TableCell>
+                    <TableCell className={`${styles.right} ${styles.number}`}>
                       {e.debit ? formatMoney(e.debit) : ''}
-                    </td>
-                    <td className={`${styles.right} ${styles.number}`}>
+                    </TableCell>
+                    <TableCell className={`${styles.right} ${styles.number}`}>
                       {e.credit ? formatMoney(e.credit) : ''}
-                    </td>
-                    <td className={`${styles.right} ${styles.number}`}>
+                    </TableCell>
+                    <TableCell className={`${styles.right} ${styles.number}`}>
                       {formatMoney(e.balanceAfter)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <div
-              className={styles.toolbar}
-              style={{
-                justifyContent: 'space-between',
-                marginTop: '0.6rem',
-              }}
-            >
-              <span className={styles.muted}>
-                Page {data ? data.page + 1 : 1} of {data?.totalPages || 1} ·{' '}
-                {data?.totalItems ?? 0} postings
-              </span>
-              <div>
-                <button
-                  className={styles.btnSecondary}
-                  disabled={!data || data.page <= 0}
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-                >
-                  ← Prev
-                </button>{' '}
-                <button
-                  className={styles.btnSecondary}
-                  disabled={
-                    !data || data.page + 1 >= (data?.totalPages ?? 0)
-                  }
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Next →
-                </button>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+
+          {(data?.entries.length ?? 0) > 0 || loading ? (
+            <PaginationBar
+              page={data?.page ?? page}
+              totalPages={Math.max(data?.totalPages ?? 1, 1)}
+              totalItems={data?.totalItems ?? 0}
+              disabled={loading}
+              onPageChange={setPage}
+              aria-label="Party statement pages"
+            />
+          ) : null}
+        </CardBody>
+      </Card>
+    </Stack>
   );
 }
 

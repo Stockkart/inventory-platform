@@ -1,5 +1,14 @@
 import { useMemo, useState } from 'react';
 import type { AccountResponse, CreateJournalLineRequest } from '@inventory-platform/accounting/types';
+import {
+  Box,
+  Button,
+  IconButton,
+  Inline,
+  Input,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { AccountPicker } from './AccountPicker';
 import { PartyLineFields } from './PartyLineFields';
 import {
@@ -124,65 +133,81 @@ export function JournalEntryEditor({
   }
 
   return (
-    <>
+    <Stack gap="md">
       {showTemplates ? (
-        <div className={styles.templateBar} role="group" aria-label="Journal templates">
-          {JOURNAL_TEMPLATES.filter((t) => t.id !== 'BLANK').map((t) => (
-            <button
-              key={t.id}
+        <Inline gap="sm" className={styles.templateBar}>
+            {JOURNAL_TEMPLATES.filter((t) => t.id !== 'BLANK').map((t) => (
+              <Button
+                key={t.id}
+                type="button"
+                size="sm"
+                variant="ghost"
+                className={
+                  activeTemplate === t.id ? styles.templateChipActive : styles.templateChip
+                }
+                onClick={() => applyTemplate(t.id)}
+                disabled={disabled || accountsLoading}
+                title={t.description}
+              >
+                {t.label}
+              </Button>
+            ))}
+            <Button
               type="button"
+              size="sm"
+              variant="ghost"
               className={
-                activeTemplate === t.id ? styles.templateChipActive : styles.templateChip
+                activeTemplate === 'BLANK' ? styles.templateChipActive : styles.templateChip
               }
-              onClick={() => applyTemplate(t.id)}
+              onClick={() => applyTemplate('BLANK')}
               disabled={disabled || accountsLoading}
-              title={t.description}
             >
-              {t.label}
-            </button>
-          ))}
-          <button
-            type="button"
-            className={
-              activeTemplate === 'BLANK' ? styles.templateChipActive : styles.templateChip
-            }
-            onClick={() => applyTemplate('BLANK')}
-            disabled={disabled || accountsLoading}
-          >
-            Blank
-          </button>
-        </div>
+              Blank
+            </Button>
+        </Inline>
       ) : null}
 
-      <div className={styles.toolbar} style={{ marginBottom: '0.75rem' }}>
-        <label className={styles.muted}>Date</label>
-        <input
+      <Inline gap="sm" className={styles.toolbar}>
+        <Text variant="label" color="secondary">
+          Date
+        </Text>
+        <Input
           type="date"
           value={txnDate}
           onChange={(e) => onTxnDateChange(e.target.value)}
           disabled={disabled}
         />
-        <label className={styles.muted}>Narration</label>
-        <input
+        <Text variant="label" color="secondary">
+          Narration
+        </Text>
+        <Input
           type="text"
           value={narration}
           onChange={(e) => onNarrationChange(e.target.value)}
           placeholder="What is this entry about?"
-          style={{ flex: 1, minWidth: '14rem' }}
+          className={styles.narrationInput}
           disabled={disabled}
         />
-      </div>
+      </Inline>
 
-      <div className={styles.headerLineGrid}>
-        <span>Account</span>
-        <span className={styles.right}>Debit</span>
-        <span className={styles.right}>Credit</span>
-        <span>Memo</span>
-        <span />
-      </div>
+      <Box className={styles.headerLineGrid}>
+        <Text variant="label" color="secondary">
+          Account
+        </Text>
+        <Text variant="label" color="secondary" align="right">
+          Debit
+        </Text>
+        <Text variant="label" color="secondary" align="right">
+          Credit
+        </Text>
+        <Text variant="label" color="secondary">
+          Memo
+        </Text>
+        <Box />
+      </Box>
       {lines.map((line, idx) => (
-        <div key={idx} className={styles.lineGrid}>
-          <div className={styles.lineAccountCell}>
+        <Box key={idx} className={styles.lineGrid}>
+          <Box className={styles.lineAccountCell}>
             <AccountPicker
               accounts={accounts}
               value={line.accountCode}
@@ -206,8 +231,8 @@ export function JournalEntryEditor({
                 disabled={disabled}
               />
             ) : null}
-          </div>
-          <input
+          </Box>
+          <Input
             className={styles.right}
             type="number"
             inputMode="decimal"
@@ -223,7 +248,7 @@ export function JournalEntryEditor({
             placeholder="0.00"
             disabled={disabled}
           />
-          <input
+          <Input
             className={styles.right}
             type="number"
             inputMode="decimal"
@@ -239,56 +264,57 @@ export function JournalEntryEditor({
             placeholder="0.00"
             disabled={disabled}
           />
-          <input
+          <Input
             type="text"
             value={line.memo}
             onChange={(e) => patchLine(idx, { memo: e.target.value })}
             placeholder="Optional"
             disabled={disabled}
           />
-          <button
+          <IconButton
             type="button"
             className={styles.removeBtn}
-            title="Remove line"
-            aria-label="Remove line"
+            label="Remove line"
             onClick={() => removeLine(idx)}
             disabled={lines.length <= 2 || disabled}
           >
             ×
-          </button>
-        </div>
+          </IconButton>
+        </Box>
       ))}
-      <button type="button" className={styles.btnGhost} onClick={addLine} disabled={disabled}>
+      <Button type="button" variant="ghost" onClick={addLine} disabled={disabled}>
         + Add line
-      </button>
+      </Button>
 
-      <div
+      <Inline
+        gap="md"
         className={`${styles.balanceFooter} ${
           balanced ? styles.balanceBalanced : styles.balanceUnbalanced
         }`}
       >
-        <span>Total Debit: ₹ {formatMoney(totalDebit)}</span>
-        <span>Total Credit: ₹ {formatMoney(totalCredit)}</span>
-        <span>
+        <Text weight="semibold">Total Debit: ₹ {formatMoney(totalDebit)}</Text>
+        <Text weight="semibold">Total Credit: ₹ {formatMoney(totalCredit)}</Text>
+        <Text weight="semibold">
           Difference: ₹ {formatMoney(Math.abs(totalDebit - totalCredit))}{' '}
           {balanced ? '✓ Balanced' : '· Must be 0 to save'}
-        </span>
-      </div>
-      <div style={{ marginTop: '0.85rem', display: 'flex', gap: '0.6rem' }}>
-        <button
+        </Text>
+      </Inline>
+      <Inline gap="sm">
+        <Button
           type="button"
-          className={styles.btnPrimary}
+          variant="solid"
           onClick={handleSubmit}
           disabled={submitting || !balanced || disabled}
+          loading={submitting}
         >
           {submitting ? 'Posting…' : submitLabel}
-        </button>
+        </Button>
         {onCancel ? (
-          <button type="button" className={styles.btnGhost} onClick={onCancel} disabled={submitting}>
+          <Button type="button" variant="ghost" onClick={onCancel} disabled={submitting}>
             Cancel
-          </button>
+          </Button>
         ) : null}
-      </div>
-    </>
+      </Inline>
+    </Stack>
   );
 }

@@ -1,9 +1,35 @@
-import { Link, useNavigate, useParams } from 'react-router';
+import type { ReactNode } from 'react';
+import { useNavigate, useParams } from 'react-router';
+import {
+  Badge,
+  Button,
+  Card,
+  CardBody,
+  Inline,
+  PageHeader,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableLoadingRow,
+  TableRow,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import { useJournalQuery, useReverseJournalMutation } from '../queries/hooks';
 import { AccountingTabs } from '../ui/AccountingTabs';
 import { formatDateTime, formatDate, formatMoney } from '../model/format';
 import styles from '../ui/accounting.module.css';
+
+function statusVariant(
+  status: 'POSTED' | 'REVERSED' | 'VOID'
+): 'success' | 'warning' | 'danger' | 'neutral' {
+  if (status === 'POSTED') return 'success';
+  if (status === 'REVERSED') return 'warning';
+  return 'danger';
+}
 
 export function JournalEntryDetailPage() {
   const params = useParams();
@@ -31,148 +57,180 @@ export function JournalEntryDetailPage() {
   }
 
   return (
-    <div className={styles.page}>
-      <div className={styles.card}>
-        <div className={styles.header}>
-          <div>
-            <h1 className={styles.title}>Journal Entry</h1>
-            <p className={styles.subtitle}>
-              <Link to="/dashboard/accounting/journal">← Back to journal</Link>
-            </p>
-          </div>
-          {entry && entry.status === 'POSTED' && (
-            <button
-              className={styles.btnSecondary}
-              onClick={reverse}
-              disabled={reverseMutation.isPending}
-            >
-              {reverseMutation.isPending ? 'Reversing…' : 'Reverse entry'}
-            </button>
-          )}
-        </div>
+    <Stack gap="md" className={styles.page}>
+      <Stack gap="md">
         <AccountingTabs />
-      </div>
+        <PageHeader
+          title="Journal Entry"
+          actions={
+            entry && entry.status === 'POSTED' ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={reverse}
+                disabled={reverseMutation.isPending}
+              >
+                {reverseMutation.isPending ? 'Reversing…' : 'Reverse entry'}
+              </Button>
+            ) : undefined
+          }
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate('/dashboard/accounting/journal')}
+        >
+          ← Back to journal
+        </Button>
+      </Stack>
 
-      <div className={styles.card}>
-        {isLoading || !entry ? (
-          <p className={styles.empty}>{isLoading ? 'Loading…' : 'Entry not found'}</p>
-        ) : (
-          <>
-            <table className={styles.table} style={{ marginBottom: '1rem' }}>
-              <tbody>
-                <Row label="Entry #" value={entry.entryNo} />
-                <Row label="Transaction Date" value={formatDate(entry.txnDate)} />
-                <Row label="Posted At" value={formatDateTime(entry.postedAt)} />
-                <Row
-                  label="Source"
-                  value={
-                    <>
-                      <span className={styles.sourcePill}>{entry.sourceType}</span>{' '}
-                      {entry.sourceId && (
-                        <code className={styles.muted}>{entry.sourceId}</code>
-                      )}
-                    </>
-                  }
+      <Card>
+        <CardBody>
+          {isLoading || !entry ? (
+            <Table>
+              <TableBody>
+                <TableLoadingRow
+                  colSpan={2}
+                  label={isLoading ? 'Loading…' : 'Entry not found'}
                 />
-                <Row
-                  label="Status"
-                  value={
-                    <span
-                      className={`${styles.statusPill} ${
-                        entry.status === 'POSTED'
-                          ? styles.statusPosted
-                          : entry.status === 'REVERSED'
-                            ? styles.statusReversed
-                            : styles.statusVoid
-                      }`}
-                    >
-                      {entry.status}
-                    </span>
-                  }
-                />
-                {entry.reversesEntryId && (
-                  <Row
-                    label="Reverses"
+              </TableBody>
+            </Table>
+          ) : (
+            <Stack gap="md">
+              <Table>
+                <TableBody>
+                  <MetaRow label="Entry #" value={entry.entryNo} />
+                  <MetaRow label="Transaction Date" value={formatDate(entry.txnDate)} />
+                  <MetaRow label="Posted At" value={formatDateTime(entry.postedAt)} />
+                  <MetaRow
+                    label="Source"
                     value={
-                      <Link to={`/dashboard/accounting/journal/${entry.reversesEntryId}`}>
-                        {entry.reversesEntryId}
-                      </Link>
+                      <Inline gap="xs" align="center">
+                        <Badge className={styles.sourcePill}>{entry.sourceType}</Badge>
+                        {entry.sourceId ? (
+                          <Text variant="caption" color="secondary">
+                            {entry.sourceId}
+                          </Text>
+                        ) : null}
+                      </Inline>
                     }
                   />
-                )}
-                {entry.reversedByEntryId && (
-                  <Row
-                    label="Reversed By"
-                    value={
-                      <Link to={`/dashboard/accounting/journal/${entry.reversedByEntryId}`}>
-                        {entry.reversedByEntryId}
-                      </Link>
-                    }
+                  <MetaRow
+                    label="Status"
+                    value={<Badge variant={statusVariant(entry.status)}>{entry.status}</Badge>}
                   />
-                )}
-                <Row label="Narration" value={entry.narration ?? '—'} />
-              </tbody>
-            </table>
+                  {entry.reversesEntryId ? (
+                    <MetaRow
+                      label="Reverses"
+                      value={
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            navigate(`/dashboard/accounting/journal/${entry.reversesEntryId}`)
+                          }
+                        >
+                          {entry.reversesEntryId}
+                        </Button>
+                      }
+                    />
+                  ) : null}
+                  {entry.reversedByEntryId ? (
+                    <MetaRow
+                      label="Reversed By"
+                      value={
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            navigate(`/dashboard/accounting/journal/${entry.reversedByEntryId}`)
+                          }
+                        >
+                          {entry.reversedByEntryId}
+                        </Button>
+                      }
+                    />
+                  ) : null}
+                  <MetaRow label="Narration" value={entry.narration ?? '—'} />
+                </TableBody>
+              </Table>
 
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Account</th>
-                  <th>Party</th>
-                  <th>Memo</th>
-                  <th className={styles.right}>Debit</th>
-                  <th className={styles.right}>Credit</th>
-                </tr>
-              </thead>
-              <tbody>
-                {entry.lines.map((l) => (
-                  <tr key={l.lineIndex}>
-                    <td>
-                      <Link to={`/dashboard/accounting/ledger/${l.accountId}`}>
-                        {l.accountCode} · {l.accountName}
-                      </Link>
-                    </td>
-                    <td className={styles.muted}>
-                      {l.partyType
-                        ? `${l.partyType}${
-                            l.partyDisplayName ? ` · ${l.partyDisplayName}` : ''
-                          }`
-                        : '—'}
-                    </td>
-                    <td className={styles.muted}>{l.memo ?? '—'}</td>
-                    <td className={`${styles.right} ${styles.number}`}>
-                      {l.debit ? formatMoney(l.debit) : ''}
-                    </td>
-                    <td className={`${styles.right} ${styles.number}`}>
-                      {l.credit ? formatMoney(l.credit) : ''}
-                    </td>
-                  </tr>
-                ))}
-                <tr className={styles.grandTotalRow}>
-                  <td colSpan={3} className={styles.right}>
-                    Totals
-                  </td>
-                  <td className={`${styles.right} ${styles.number}`}>
-                    {formatMoney(entry.totalDebit)}
-                  </td>
-                  <td className={`${styles.right} ${styles.number}`}>
-                    {formatMoney(entry.totalCredit)}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </>
-        )}
-      </div>
-    </div>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableHeaderCell>Account</TableHeaderCell>
+                    <TableHeaderCell>Party</TableHeaderCell>
+                    <TableHeaderCell>Memo</TableHeaderCell>
+                    <TableHeaderCell className={styles.right}>Debit</TableHeaderCell>
+                    <TableHeaderCell className={styles.right}>Credit</TableHeaderCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {entry.lines.map((l) => (
+                    <TableRow key={l.lineIndex}>
+                      <TableCell>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            navigate(`/dashboard/accounting/ledger/${l.accountId}`)
+                          }
+                        >
+                          {l.accountCode} · {l.accountName}
+                        </Button>
+                      </TableCell>
+                      <TableCell>
+                        <Text color="secondary" variant="caption">
+                          {l.partyType
+                            ? `${l.partyType}${
+                                l.partyDisplayName ? ` · ${l.partyDisplayName}` : ''
+                              }`
+                            : '—'}
+                        </Text>
+                      </TableCell>
+                      <TableCell>
+                        <Text color="secondary" variant="caption">
+                          {l.memo ?? '—'}
+                        </Text>
+                      </TableCell>
+                      <TableCell className={`${styles.right} ${styles.number}`}>
+                        {l.debit ? formatMoney(l.debit) : ''}
+                      </TableCell>
+                      <TableCell className={`${styles.right} ${styles.number}`}>
+                        {l.credit ? formatMoney(l.credit) : ''}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow className={styles.grandTotalRow}>
+                    <TableCell colSpan={3} className={styles.right}>
+                      Totals
+                    </TableCell>
+                    <TableCell className={`${styles.right} ${styles.number}`}>
+                      {formatMoney(entry.totalDebit)}
+                    </TableCell>
+                    <TableCell className={`${styles.right} ${styles.number}`}>
+                      {formatMoney(entry.totalCredit)}
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </Stack>
+          )}
+        </CardBody>
+      </Card>
+    </Stack>
   );
 }
 
-function Row({ label, value }: { label: string; value: React.ReactNode }) {
+function MetaRow({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <tr>
-      <th style={{ width: '12rem' }}>{label}</th>
-      <td>{value}</td>
-    </tr>
+    <TableRow>
+      <TableHeaderCell className={styles.metaLabel}>{label}</TableHeaderCell>
+      <TableCell>{value}</TableCell>
+    </TableRow>
   );
 }

@@ -1,5 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
+import {
+  Button,
+  Card,
+  CardBody,
+  Inline,
+  PageHeader,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { accountingApi } from '../api/accounting.api';
 import { useNotify } from '@inventory-platform/session';
 import type { AccountResponse, JournalEntryResponse } from '@inventory-platform/accounting/types';
@@ -49,62 +58,72 @@ export function OpeningBalanceWizardPage() {
   const locked = Boolean(existing);
 
   return (
-    <div className={styles.page}>
-      <div className={styles.card}>
-        <div className={styles.header}>
-          <div>
-            <h1 className={styles.title}>Opening Balances</h1>
-            <p className={styles.subtitle}>
-              One-time entry to bring forward balances when you start using accounting. Debits must
-              equal credits.
-            </p>
-          </div>
-        </div>
+    <Stack gap="md" className={styles.page}>
+      <Stack gap="md">
         <AccountingTabs />
-      </div>
+        <PageHeader
+          title="Opening Balances"
+          description="One-time entry to bring forward balances when you start using accounting. Debits must equal credits."
+        />
+      </Stack>
 
       {existing ? (
-        <div className={styles.card}>
-          <p className={styles.muted}>
-            Opening balances were already posted on {formatDate(existing.txnDate)} as{' '}
-            <Link to={`/dashboard/accounting/journal/${existing.id}`}>{existing.entryNo}</Link>.
-          </p>
-          <p className={styles.muted} style={{ marginTop: '0.5rem' }}>
-            To change opening balances you must reverse that entry and post a new one (contact support
-            if you need help).
-          </p>
-        </div>
+        <Card>
+          <CardBody>
+            <Stack gap="sm">
+              <Text color="secondary">
+                Opening balances were already posted on {formatDate(existing.txnDate)} as
+              </Text>
+              <Inline gap="xs" align="center">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate(`/dashboard/accounting/journal/${existing.id}`)}
+                >
+                  {existing.entryNo}
+                </Button>
+              </Inline>
+              <Text color="secondary">
+                To change opening balances you must reverse that entry and post a new one (contact
+                support if you need help).
+              </Text>
+            </Stack>
+          </CardBody>
+        </Card>
       ) : null}
 
-      <div className={styles.card}>
-        <JournalEntryEditor
-          accounts={accounts}
-          accountsLoading={accountsLoading}
-          txnDate={txnDate}
-          onTxnDateChange={setTxnDate}
-          narration={narration}
-          onNarrationChange={setNarration}
-          lines={lines}
-          onLinesChange={setLines}
-          showTemplates={false}
-          submitLabel="Post Opening Balances"
-          submitting={submitting}
-          disabled={locked}
-          onValidationError={notifyError}
-          onSubmit={async (body) => {
-            setSubmitting(true);
-            try {
-              const posted = await accountingApi.postOpeningBalance(body);
-              notifySuccess(`Opening balances posted as ${posted.entryNo}`);
-              navigate(`/dashboard/accounting/journal/${posted.id}`);
-            } catch (e) {
-              notifyError(e instanceof Error ? e.message : 'Failed to post opening balances');
-            } finally {
-              setSubmitting(false);
-            }
-          }}
-        />
-      </div>
-    </div>
+      <Card>
+        <CardBody>
+          <JournalEntryEditor
+            accounts={accounts}
+            accountsLoading={accountsLoading}
+            txnDate={txnDate}
+            onTxnDateChange={setTxnDate}
+            narration={narration}
+            onNarrationChange={setNarration}
+            lines={lines}
+            onLinesChange={setLines}
+            showTemplates={false}
+            submitLabel="Post Opening Balances"
+            submitting={submitting}
+            disabled={locked}
+            onValidationError={notifyError}
+            onSubmit={async (body) => {
+              setSubmitting(true);
+              try {
+                const posted = await accountingApi.postOpeningBalance(body);
+                notifySuccess(`Opening balances posted as ${posted.entryNo}`);
+                navigate(`/dashboard/accounting/journal/${posted.id}`);
+              } catch (e) {
+                notifyError(e instanceof Error ? e.message : 'Failed to post opening balances');
+              } finally {
+                setSubmitting(false);
+              }
+            }}
+          />
+        </CardBody>
+      </Card>
+    </Stack>
   );
 }

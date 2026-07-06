@@ -26,86 +26,36 @@
 }
 
 .surface {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
   border-radius: 14px;
-  box-shadow:
-    0 1px 2px rgb(15 23 42 / 0.04),
-    0 4px 12px rgb(15 23 42 / 0.06);
   overflow: hidden;
 }
 
 .searchBar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 1rem 1rem 0.75rem;
+  padding-bottom: 0.25rem;
   border-bottom: 1px solid var(--border-color);
-  background: var(--hover-bg);
 }
 
-.searchInput {
+.searchToolbar {
+  flex-wrap: wrap;
+}
+
+.searchField {
   flex: 1;
   min-width: 200px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 0.55rem 0.65rem;
-  font-size: 0.9375rem;
-  background: var(--bg-primary);
-}
-
-.searchBtn {
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 0.55rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  background: var(--bg-primary);
-}
-
-.searchBtn:hover {
-  background: var(--hover-bg);
-}
-
-.searchBtnSecondary {
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 0.55rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  background: var(--bg-primary);
-  color: var(--text-secondary);
-}
-
-.searchBtnSecondary:hover {
-  background: var(--hover-bg);
 }
 
 .searchHint {
-  width: 100%;
-  margin: 0;
-  font-size: 0.75rem;
-  color: var(--text-secondary);
   line-height: 1.45;
 }
 
-.alertError {
-  padding: 0.875rem 1rem;
-  border-radius: 10px;
-  background: rgb(239 68 68 / 0.1);
-  color: #b91c1c;
-  margin-bottom: 1rem;
-  font-size: 0.9375rem;
+.mono {
+  font-family: ui-monospace, monospace;
+  font-size: 0.875em;
 }
 
-.stateMuted {
-  padding: 2.75rem 1.5rem;
-  text-align: center;
-  color: var(--text-secondary);
-  font-size: 0.95rem;
+.detailCell {
+  padding: 0 !important;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .tableScroll {

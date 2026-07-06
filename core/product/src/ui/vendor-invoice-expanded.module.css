@@ -1,0 +1,71 @@
+.expandedInner {
+  padding-top: 0.35rem;
+}
+
+.expandedHeader {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.legacyHint {
+  align-self: flex-end;
+}
+
+.mono {
+  font-family: ui-monospace, monospace;
+  font-size: 0.8125rem;
+  word-break: break-all;
+}
+
+.amountGrid {
+  margin-bottom: 0.25rem;
+}
+
+.amountItem {
+  margin: 0;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+  background: var(--bg-primary);
+}
+
+.linesSection {
+  margin-top: 0.25rem;
+}
+
+.linesHeading {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.linesTableWrap {
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.linesTable {
+  min-width: 1050px;
+}
+
+.linesNum {
+  width: 2.25rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.linesMuted {
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+}
+
+.linesMoney {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .amountGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}

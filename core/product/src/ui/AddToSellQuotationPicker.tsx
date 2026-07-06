@@ -1,4 +1,10 @@
 import type { QuotationSummary } from '@inventory-platform/product/types';
+import {
+  Button,
+  Modal,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './AddToSellQuotationPicker.module.css';
 
 function formatMoney(n: number): string {
@@ -29,67 +35,64 @@ export function AddToSellQuotationPicker({
   onNewQuotation,
   onCancel,
 }: AddToSellQuotationPickerProps) {
-  if (!open) {
-    return null;
-  }
-
   return (
-    <div
-      className={styles.overlay}
-      onClick={onCancel}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="quotation-picker-title"
-    >
-      <div className={styles.dialog} onClick={(e) => e.stopPropagation()}>
-        <h3 id="quotation-picker-title" className={styles.title}>
-          Add to quotation
-        </h3>
-        <p className={styles.subtitle}>
-          Choose which open sale should include{' '}
-          <strong>{productLabel}</strong>
-        </p>
+    <Modal open={open} onClose={onCancel} size="sm">
+      <Modal.Header title="Add to quotation" onClose={onCancel} />
+      <Modal.Body>
+        <Stack gap="md">
+          <Text color="secondary">
+            Choose which open sale should include{' '}
+            <Text weight="semibold">{productLabel}</Text>
+          </Text>
 
-        <button
-          type="button"
-          className={styles.newBtn}
-          onClick={onNewQuotation}
-          disabled={isSubmitting}
-        >
-          + New quotation
-        </button>
-
-        <div className={styles.list} role="listbox" aria-label="Open quotations">
-          {quotations.map((q) => (
-            <button
-              key={q.purchaseId}
-              type="button"
-              className={styles.option}
-              onClick={() => onSelect(q.purchaseId)}
-              disabled={isSubmitting}
-              role="option"
-            >
-              <span className={styles.optionName}>{q.customerName}</span>
-              <span className={styles.optionMeta}>
-                {q.itemCount} item{q.itemCount === 1 ? '' : 's'} ·{' '}
-                {formatMoney(Number(q.grandTotal) || 0)}
-                {q.customerPhone ? ` · ${q.customerPhone}` : ''}
-              </span>
-            </button>
-          ))}
-        </div>
-
-        <div className={styles.actions}>
-          <button
+          <Button
             type="button"
-            className={styles.cancelBtn}
-            onClick={onCancel}
+            variant="outline"
+            fullWidth
+            className={styles.newBtn}
+            onClick={onNewQuotation}
             disabled={isSubmitting}
           >
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
+            + New quotation
+          </Button>
+
+          <Stack
+            gap="sm"
+            className={styles.list}
+            aria-label="Open quotations"
+          >
+            {quotations.map((q) => (
+              <Button
+                key={q.purchaseId}
+                type="button"
+                variant="outline"
+                className={styles.option}
+                onClick={() => onSelect(q.purchaseId)}
+                disabled={isSubmitting}
+              >
+                <Text weight="semibold" className={styles.optionName}>
+                  {q.customerName}
+                </Text>
+                <Text variant="caption" color="muted" className={styles.optionMeta}>
+                  {q.itemCount} item{q.itemCount === 1 ? '' : 's'} ·{' '}
+                  {formatMoney(Number(q.grandTotal) || 0)}
+                  {q.customerPhone ? ` · ${q.customerPhone}` : ''}
+                </Text>
+              </Button>
+            ))}
+          </Stack>
+        </Stack>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={onCancel}
+          disabled={isSubmitting}
+        >
+          Cancel
+        </Button>
+      </Modal.Footer>
+    </Modal>
   );
 }

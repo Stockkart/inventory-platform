@@ -1,4 +1,21 @@
 import { useEffect, useState } from 'react';
+import {
+  Card,
+  CardBody,
+  Grid,
+  Inline,
+  Input,
+  PageHeader,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableLoadingRow,
+  TableRow,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { accountingApi } from '../api/accounting.api';
 import { useNotify } from '@inventory-platform/session';
 import type { BalanceSheetResponse, FinancialReportLineDto } from '@inventory-platform/accounting/types';
@@ -33,60 +50,92 @@ export function BalanceSheetPage() {
   }, [asOf, notifyError]);
 
   return (
-    <div className={styles.page}>
-      <div className={styles.card}>
-        <div className={styles.header}>
-          <div>
-            <h1 className={styles.title}>Balance Sheet</h1>
-            <p className={styles.subtitle}>
-              Assets, liabilities, and equity as of the selected date (from trial balance).
-            </p>
-          </div>
-        </div>
+    <Stack gap="md" className={styles.page}>
+      <Stack gap="md">
         <AccountingTabs />
-        <div className={styles.toolbar}>
-          <label className={styles.muted}>As of</label>
-          <input type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} />
-        </div>
-      </div>
+        <PageHeader
+          title="Balance Sheet"
+          description="Assets, liabilities, and equity as of the selected date (from trial balance)."
+        />
+        <Inline gap="sm" className={styles.toolbar}>
+          <Text variant="label" color="secondary">
+            As of
+          </Text>
+          <Input type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} />
+        </Inline>
+      </Stack>
 
       {loading ? (
-        <p className={styles.empty}>Loading…</p>
+        <Card>
+          <CardBody>
+            <Table>
+              <TableBody>
+                <TableLoadingRow colSpan={3} label="Loading balance sheet…" />
+              </TableBody>
+            </Table>
+          </CardBody>
+        </Card>
       ) : !data ? (
-        <p className={styles.empty}>No data.</p>
+        <Card>
+          <CardBody>
+            <Text color="secondary" align="center">
+              No data.
+            </Text>
+          </CardBody>
+        </Card>
       ) : (
-        <>
-          <div className={styles.kpiRow}>
-            <div className={styles.kpiCard}>
-              <p className={styles.kpiLabel}>Total assets</p>
-              <p className={styles.kpiValue}>₹ {formatMoney(data.totalAssets)}</p>
-            </div>
-            <div className={styles.kpiCard}>
-              <p className={styles.kpiLabel}>Liabilities + equity</p>
-              <p className={styles.kpiValue}>
-                ₹ {formatMoney(data.totalLiabilitiesAndEquity)}
-              </p>
-            </div>
+        <Stack gap="md">
+          <Grid gap="md" className={styles.kpiRow}>
+            <Card>
+              <CardBody>
+                <Stack gap="xs">
+                  <Text variant="caption" color="secondary">
+                    Total assets
+                  </Text>
+                  <Text variant="heading2" weight="bold">
+                    ₹ {formatMoney(data.totalAssets)}
+                  </Text>
+                </Stack>
+              </CardBody>
+            </Card>
+            <Card>
+              <CardBody>
+                <Stack gap="xs">
+                  <Text variant="caption" color="secondary">
+                    Liabilities + equity
+                  </Text>
+                  <Text variant="heading2" weight="bold">
+                    ₹ {formatMoney(data.totalLiabilitiesAndEquity)}
+                  </Text>
+                </Stack>
+              </CardBody>
+            </Card>
             {Math.abs(data.imbalance) > 0.01 ? (
-              <div className={styles.kpiCard}>
-                <p className={styles.kpiLabel}>Imbalance</p>
-                <p className={styles.kpiValue} style={{ color: '#b91c1c' }}>
-                  ₹ {formatMoney(data.imbalance)}
-                </p>
-              </div>
+              <Card>
+                <CardBody>
+                  <Stack gap="xs">
+                    <Text variant="caption" color="secondary">
+                      Imbalance
+                    </Text>
+                    <Text variant="heading2" weight="bold" color="danger">
+                      ₹ {formatMoney(data.imbalance)}
+                    </Text>
+                  </Stack>
+                </CardBody>
+              </Card>
             ) : null}
-          </div>
+          </Grid>
 
           <BsSection title="Assets" rows={data.assets} total={data.totalAssets} />
           <BsSection title="Liabilities" rows={data.liabilities} total={data.totalLiabilities} />
           <BsSection title="Equity" rows={data.equity} total={data.totalEquity} />
 
-          <p className={styles.muted} style={{ marginTop: '0.75rem' }}>
+          <Text variant="caption" color="secondary">
             As of {formatDate(data.asOf)}
-          </p>
-        </>
+          </Text>
+        </Stack>
       )}
-    </div>
+    </Stack>
   );
 }
 
@@ -100,36 +149,46 @@ function BsSection({
   total: number;
 }) {
   return (
-    <div className={styles.card} style={{ marginTop: '0.75rem' }}>
-      <h2 className={styles.title} style={{ fontSize: '1.05rem' }}>
-        {title}
-      </h2>
-      {rows.length === 0 ? (
-        <p className={styles.empty}>No balances</p>
-      ) : (
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Code</th>
-              <th>Account</th>
-              <th className={styles.right}>Balance</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.accountId}>
-                <td>{r.accountCode}</td>
-                <td>{r.accountName}</td>
-                <td className={`${styles.right} ${styles.number}`}>{formatMoney(r.amount)}</td>
-              </tr>
-            ))}
-            <tr className={styles.subTotalRow}>
-              <td colSpan={2}>Total {title.toLowerCase()}</td>
-              <td className={`${styles.right} ${styles.number}`}>{formatMoney(total)}</td>
-            </tr>
-          </tbody>
-        </table>
-      )}
-    </div>
+    <Card>
+      <CardBody>
+        <Stack gap="sm">
+          <Text variant="title" weight="bold">
+            {title}
+          </Text>
+          {rows.length === 0 ? (
+            <Text color="secondary" align="center">
+              No balances
+            </Text>
+          ) : (
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableHeaderCell>Code</TableHeaderCell>
+                  <TableHeaderCell>Account</TableHeaderCell>
+                  <TableHeaderCell className={styles.right}>Balance</TableHeaderCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {rows.map((r) => (
+                  <TableRow key={r.accountId}>
+                    <TableCell>{r.accountCode}</TableCell>
+                    <TableCell>{r.accountName}</TableCell>
+                    <TableCell className={`${styles.right} ${styles.number}`}>
+                      {formatMoney(r.amount)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                <TableRow className={styles.subTotalRow}>
+                  <TableCell colSpan={2}>Total {title.toLowerCase()}</TableCell>
+                  <TableCell className={`${styles.right} ${styles.number}`}>
+                    {formatMoney(total)}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          )}
+        </Stack>
+      </CardBody>
+    </Card>
   );
 }

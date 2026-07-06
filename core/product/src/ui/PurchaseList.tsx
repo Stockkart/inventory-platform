@@ -1,7 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { purchasesApi } from '@inventory-platform/product/api';
 import type { Purchase } from '@inventory-platform/product/types';
-import { PaginationBar } from '@inventory-platform/ui-kit';
+import {
+  Alert,
+  CenteredLoader,
+  EmptyState,
+  PaginationBar,
+  Stack,
+} from '@inventory-platform/ui-kit';
 import { SaleHistoryCard } from './SaleHistoryCard';
 import { HistoryListSummary } from './HistoryListSummary';
 import recordStyles from './HistoryRecordList.module.css';
@@ -106,22 +112,22 @@ export function PurchaseList({ filters }: PurchaseListProps) {
 
   if (isLoading && purchases.length === 0) {
     return (
-      <div className={recordStyles.container}>
-        <div className={recordStyles.loading}>Loading sale history…</div>
-      </div>
+      <Stack className={recordStyles.container}>
+        <CenteredLoader label="Loading sale history…" />
+      </Stack>
     );
   }
 
   if (error) {
     return (
-      <div className={recordStyles.container}>
-        <div className={recordStyles.emptyState}>{error}</div>
-      </div>
+      <Stack className={recordStyles.container}>
+        <Alert variant="danger">{error}</Alert>
+      </Stack>
     );
   }
 
   return (
-    <div className={recordStyles.container}>
+    <Stack gap="md" className={recordStyles.container}>
       <HistoryListSummary
         page={page}
         limit={limit}
@@ -131,15 +137,15 @@ export function PurchaseList({ filters }: PurchaseListProps) {
       />
 
       {purchases.length === 0 && !isLoading ? (
-        <div className={recordStyles.emptyState}>
-          {filtering ? 'No sales match these filters.' : 'No sales found.'}
-        </div>
+        <EmptyState
+          title={filtering ? 'No sales match these filters.' : 'No sales found.'}
+        />
       ) : (
-        <div className={recordStyles.list}>
+        <Stack gap="md" className={recordStyles.list}>
           {purchases.map((purchase) => (
             <SaleHistoryCard key={purchase.purchaseId} purchase={purchase} />
           ))}
-        </div>
+        </Stack>
       )}
 
       <PaginationBar
@@ -150,6 +156,6 @@ export function PurchaseList({ filters }: PurchaseListProps) {
         onPageChange={(p) => handlePageChange(p + 1)}
         aria-label="Sale history pages"
       />
-    </div>
+    </Stack>
   );
 }

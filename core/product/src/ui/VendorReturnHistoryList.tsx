@@ -3,7 +3,24 @@ import { inventoryApi } from '../api/inventory.api';
 import type { VendorPurchaseReturnSummary } from '@inventory-platform/product/types';
 import { useNotify } from '@inventory-platform/session';
 import recordStyles from './HistoryRecordList.module.css';
-import { PaginationBar } from '@inventory-platform/ui-kit';
+import {
+  Box,
+  Card,
+  CardBody,
+  CenteredLoader,
+  EmptyState,
+  Grid,
+  Inline,
+  PaginationBar,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { HistoryListSummary } from './HistoryListSummary';
 import type { HistoryFilters } from './historyFilters';
 import {
@@ -55,6 +72,19 @@ function formatDate(dateString: string): string {
   } catch {
     return dateString;
   }
+}
+
+function DetailLine({ label, value }: { label: string; value: string }) {
+  return (
+    <Inline gap="xs">
+      <Text variant="caption" color="secondary" weight="semibold">
+        {label}:
+      </Text>
+      <Text variant="caption" color="secondary">
+        {value}
+      </Text>
+    </Inline>
+  );
 }
 
 export interface VendorReturnHistoryListProps {
@@ -137,14 +167,14 @@ export function VendorReturnHistoryList({
 
   if (isLoading && returns.length === 0) {
     return (
-      <div className={recordStyles.container}>
-        <div className={recordStyles.loading}>Loading supplier return history…</div>
-      </div>
+      <Stack className={recordStyles.container}>
+        <CenteredLoader label="Loading supplier return history…" />
+      </Stack>
     );
   }
 
   return (
-    <div className={recordStyles.container}>
+    <Stack gap="md" className={recordStyles.container}>
       <HistoryListSummary
         page={page}
         limit={limit}
@@ -154,97 +184,114 @@ export function VendorReturnHistoryList({
       />
 
       {returns.length === 0 ? (
-        <div className={recordStyles.emptyState}>
-          {filtering
-            ? 'No supplier returns match these filters.'
-            : 'No supplier returns yet.'}
-        </div>
+        <EmptyState
+          title={
+            filtering
+              ? 'No supplier returns match these filters.'
+              : 'No supplier returns yet.'
+          }
+        />
       ) : (
         <>
-          <div className={recordStyles.list}>
+          <Stack gap="md" className={recordStyles.list}>
             {returns.map((r) => (
-              <div key={r.returnId} className={recordStyles.recordCard}>
-                <div className={recordStyles.recordHeader}>
-                  <div>
-                    <strong>Credit note:</strong>{' '}
-                    {r.supplierCreditNoteNo ?? r.returnId}
-                  </div>
-                  <div>
-                    <strong>Date:</strong> {formatDate(r.createdAt)}
-                  </div>
-                </div>
-                <div className={recordStyles.recordDetails}>
-                  <div>
-                    <strong>Purchase invoice:</strong>{' '}
-                    {r.invoiceNo ?? '—'}
-                  </div>
-                  <div>
-                    <strong>Vendor:</strong> {r.vendorName ?? '—'}
-                  </div>
-                  <div>
-                    <strong>Lines returned:</strong> {r.totalLinesReturned}
-                  </div>
-                  <div>
-                    <strong>Note value:</strong>{' '}
-                    {formatCurrency(r.returnAmount)}
-                  </div>
-                  {r.reason ? (
-                    <div>
-                      <strong>Reason:</strong> {r.reason}
-                    </div>
-                  ) : null}
-                </div>
-                {(r.lines?.length ?? 0) > 0 ? (
-                  <div className={recordStyles.breakdownWrap}>
-                    <div className={recordStyles.breakdownTitle}>Line breakdown</div>
-                    <div className={recordStyles.breakdownScroll}>
-                      <table className={recordStyles.breakdownTable}>
-                        <thead>
-                          <tr>
-                            <th scope="col">Product</th>
-                            <th scope="col">Barcode</th>
-                            <th scope="col">Qty returned</th>
-                            <th scope="col">Taxable</th>
-                            <th scope="col">CGST</th>
-                            <th scope="col">SGST/UTGST</th>
-                            <th scope="col">Line total</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {r.lines!.map((line, idx) => (
-                            <tr
-                              key={`${line.inventoryId ?? 'unknown'}-${idx}`}
-                            >
-                              <td>
-                                {line.productName?.trim()
-                                  ? line.productName
-                                  : line.inventoryId ?? '—'}
-                              </td>
-                              <td>{line.barcode ?? '—'}</td>
-                              <td>
-                                {formatReturnedDisplayQty(
-                                  line.displayQuantityReturned
-                                )}
-                              </td>
-                              <td>{moneyOrDash(line.taxableValue)}</td>
-                              <td>{moneyOrDash(line.centralGstAmount)}</td>
-                              <td>{moneyOrDash(line.stateGstAmount)}</td>
-                              <td>{moneyOrDash(line.lineNoteValue)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                ) : (
-                  <p className={recordStyles.breakdownLegacyNote}>
-                    No saved line breakdown for this debit note (often older
-                    returns).
-                  </p>
-                )}
-              </div>
+              <Card key={r.returnId} className={recordStyles.recordCard}>
+                <CardBody>
+                  <Stack gap="md">
+                    <Inline
+                      className={recordStyles.recordHeader}
+                      justify="between"
+                      align="start"
+                      gap="md"
+                    >
+                      <DetailLine
+                        label="Credit note"
+                        value={r.supplierCreditNoteNo ?? r.returnId}
+                      />
+                      <DetailLine label="Date" value={formatDate(r.createdAt)} />
+                    </Inline>
+                    <Grid columns={2} gap="sm" className={recordStyles.recordDetails}>
+                      <DetailLine
+                        label="Purchase invoice"
+                        value={r.invoiceNo ?? '—'}
+                      />
+                      <DetailLine label="Vendor" value={r.vendorName ?? '—'} />
+                      <DetailLine
+                        label="Lines returned"
+                        value={String(r.totalLinesReturned)}
+                      />
+                      <DetailLine
+                        label="Note value"
+                        value={formatCurrency(r.returnAmount)}
+                      />
+                      {r.reason ? (
+                        <DetailLine label="Reason" value={r.reason} />
+                      ) : null}
+                    </Grid>
+                    {(r.lines?.length ?? 0) > 0 ? (
+                      <Stack gap="sm" className={recordStyles.breakdownWrap}>
+                        <Text
+                          variant="caption"
+                          color="secondary"
+                          weight="semibold"
+                          className={recordStyles.breakdownTitle}
+                        >
+                          Line breakdown
+                        </Text>
+                        <Box className={recordStyles.breakdownScroll}>
+                          <Table className={recordStyles.breakdownTable}>
+                            <TableHead>
+                              <TableRow>
+                                <TableHeaderCell>Product</TableHeaderCell>
+                                <TableHeaderCell>Barcode</TableHeaderCell>
+                                <TableHeaderCell>Qty returned</TableHeaderCell>
+                                <TableHeaderCell>Taxable</TableHeaderCell>
+                                <TableHeaderCell>CGST</TableHeaderCell>
+                                <TableHeaderCell>SGST/UTGST</TableHeaderCell>
+                                <TableHeaderCell>Line total</TableHeaderCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {r.lines!.map((line, idx) => (
+                                <TableRow
+                                  key={`${line.inventoryId ?? 'unknown'}-${idx}`}
+                                >
+                                  <TableCell>
+                                    {line.productName?.trim()
+                                      ? line.productName
+                                      : line.inventoryId ?? '—'}
+                                  </TableCell>
+                                  <TableCell>{line.barcode ?? '—'}</TableCell>
+                                  <TableCell>
+                                    {formatReturnedDisplayQty(
+                                      line.displayQuantityReturned
+                                    )}
+                                  </TableCell>
+                                  <TableCell>{moneyOrDash(line.taxableValue)}</TableCell>
+                                  <TableCell>{moneyOrDash(line.centralGstAmount)}</TableCell>
+                                  <TableCell>{moneyOrDash(line.stateGstAmount)}</TableCell>
+                                  <TableCell>{moneyOrDash(line.lineNoteValue)}</TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </Box>
+                      </Stack>
+                    ) : (
+                      <Text
+                        variant="caption"
+                        color="secondary"
+                        className={recordStyles.breakdownLegacyNote}
+                      >
+                        No saved line breakdown for this debit note (often older
+                        returns).
+                      </Text>
+                    )}
+                  </Stack>
+                </CardBody>
+              </Card>
             ))}
-          </div>
+          </Stack>
 
           <PaginationBar
             page={page - 1}
@@ -256,6 +303,6 @@ export function VendorReturnHistoryList({
           />
         </>
       )}
-    </div>
+    </Stack>
   );
 }

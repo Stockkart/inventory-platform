@@ -3,7 +3,24 @@ import { refundsApi } from '@inventory-platform/product/api';
 import type { Refund } from '@inventory-platform/product/types';
 import { useNotify } from '@inventory-platform/session';
 import recordStyles from './HistoryRecordList.module.css';
-import { PaginationBar } from '@inventory-platform/ui-kit';
+import {
+  Box,
+  Card,
+  CardBody,
+  CenteredLoader,
+  EmptyState,
+  Grid,
+  Inline,
+  PaginationBar,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { HistoryListSummary } from './HistoryListSummary';
 import type { HistoryFilters } from './historyFilters';
 import {
@@ -42,6 +59,19 @@ function formatDate(dateString: string): string {
   } catch {
     return dateString;
   }
+}
+
+function DetailLine({ label, value }: { label: string; value: string }) {
+  return (
+    <Inline gap="xs">
+      <Text variant="caption" color="secondary" weight="semibold">
+        {label}:
+      </Text>
+      <Text variant="caption" color="secondary">
+        {value}
+      </Text>
+    </Inline>
+  );
 }
 
 export interface RefundHistoryListProps {
@@ -132,24 +162,26 @@ export function RefundHistoryList({
 
   if (isLoading && refunds.length === 0) {
     return (
-      <div className={recordStyles.container}>
-        <div className={recordStyles.loading}>Loading return history…</div>
-      </div>
+      <Stack className={recordStyles.container}>
+        <CenteredLoader label="Loading return history…" />
+      </Stack>
     );
   }
 
   if (refunds.length === 0) {
     return (
-      <div className={recordStyles.container}>
-        <div className={recordStyles.emptyState}>
-          {filtering ? 'No returns match these filters.' : 'No returns found.'}
-        </div>
-      </div>
+      <Stack className={recordStyles.container}>
+        <EmptyState
+          title={
+            filtering ? 'No returns match these filters.' : 'No returns found.'
+          }
+        />
+      </Stack>
     );
   }
 
   return (
-    <div className={recordStyles.container}>
+    <Stack gap="md" className={recordStyles.container}>
       <HistoryListSummary
         page={page}
         limit={limit}
@@ -157,80 +189,91 @@ export function RefundHistoryList({
         filtered={filtering}
         label="returns"
       />
-      <div className={recordStyles.list}>
+      <Stack gap="md" className={recordStyles.list}>
         {refunds.map((refund) => (
-          <div key={refund.refundId} className={recordStyles.recordCard}>
-            <div className={recordStyles.recordHeader}>
-              <div>
-                <strong>Credit note:</strong>{' '}
-                {refund.creditNoteNo ?? refund.refundId}
-              </div>
-              <div>
-                <strong>Date:</strong> {formatDate(refund.createdAt)}
-              </div>
-            </div>
-            <div className={recordStyles.recordDetails}>
-              <div>
-                <strong>Invoice No:</strong> {refund.invoiceNo}
-              </div>
-              <div>
-                <strong>Customer:</strong> {refund.customerName}
-              </div>
-              <div>
-                <strong>Phone:</strong> {refund.customerPhone}
-              </div>
-              <div>
-                <strong>Items Returned:</strong> {refund.totalItemsRefunded}
-              </div>
-              <div>
-                <strong>Return Amount:</strong>{' '}
-                {formatCurrency(refund.refundAmount)}
-              </div>
-              {refund.reason ? (
-                <div>
-                  <strong>Reason:</strong> {refund.reason}
-                </div>
-              ) : null}
-            </div>
-            {refund.refundedItems && refund.refundedItems.length > 0 ? (
-              <div className={recordStyles.breakdownWrap}>
-                <div className={recordStyles.breakdownTitle}>Returned items</div>
-                <div className={recordStyles.breakdownScroll}>
-                  <table className={recordStyles.breakdownTable}>
-                    <thead>
-                      <tr>
-                        <th scope="col">Product</th>
-                        <th scope="col">Qty</th>
-                        <th scope="col">Unit price</th>
-                        <th scope="col">Line refund</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {refund.refundedItems.map((row, idx) => (
-                        <tr key={`${row.inventoryId}-${idx}`}>
-                          <td>
-                            {row.name?.trim()
-                              ? row.name
-                              : row.inventoryId ?? '—'}
-                          </td>
-                          <td>{row.quantity}</td>
-                          <td>{moneyOrDash(row.priceToRetail)}</td>
-                          <td>{moneyOrDash(row.itemRefundAmount)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ) : (
-              <p className={recordStyles.breakdownLegacyNote}>
-                No line-by-line breakdown saved for this return (often older
-                records).
-              </p>
-            )}
-          </div>
+          <Card key={refund.refundId} className={recordStyles.recordCard}>
+            <CardBody>
+              <Stack gap="md">
+                <Inline
+                  className={recordStyles.recordHeader}
+                  justify="between"
+                  align="start"
+                  gap="md"
+                >
+                  <DetailLine
+                    label="Credit note"
+                    value={refund.creditNoteNo ?? refund.refundId}
+                  />
+                  <DetailLine label="Date" value={formatDate(refund.createdAt)} />
+                </Inline>
+                <Grid columns={2} gap="sm" className={recordStyles.recordDetails}>
+                  <DetailLine label="Invoice No" value={refund.invoiceNo} />
+                  <DetailLine label="Customer" value={refund.customerName} />
+                  <DetailLine label="Phone" value={refund.customerPhone} />
+                  <DetailLine
+                    label="Items Returned"
+                    value={String(refund.totalItemsRefunded)}
+                  />
+                  <DetailLine
+                    label="Return Amount"
+                    value={formatCurrency(refund.refundAmount)}
+                  />
+                  {refund.reason ? (
+                    <DetailLine label="Reason" value={refund.reason} />
+                  ) : null}
+                </Grid>
+                {refund.refundedItems && refund.refundedItems.length > 0 ? (
+                  <Stack gap="sm" className={recordStyles.breakdownWrap}>
+                    <Text
+                      variant="caption"
+                      color="secondary"
+                      weight="semibold"
+                      className={recordStyles.breakdownTitle}
+                    >
+                      Returned items
+                    </Text>
+                    <Box className={recordStyles.breakdownScroll}>
+                      <Table className={recordStyles.breakdownTable}>
+                        <TableHead>
+                          <TableRow>
+                            <TableHeaderCell>Product</TableHeaderCell>
+                            <TableHeaderCell>Qty</TableHeaderCell>
+                            <TableHeaderCell>Unit price</TableHeaderCell>
+                            <TableHeaderCell>Line refund</TableHeaderCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {refund.refundedItems.map((row, idx) => (
+                            <TableRow key={`${row.inventoryId}-${idx}`}>
+                              <TableCell>
+                                {row.name?.trim()
+                                  ? row.name
+                                  : row.inventoryId ?? '—'}
+                              </TableCell>
+                              <TableCell>{row.quantity}</TableCell>
+                              <TableCell>{moneyOrDash(row.priceToRetail)}</TableCell>
+                              <TableCell>{moneyOrDash(row.itemRefundAmount)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </Box>
+                  </Stack>
+                ) : (
+                  <Text
+                    variant="caption"
+                    color="secondary"
+                    className={recordStyles.breakdownLegacyNote}
+                  >
+                    No line-by-line breakdown saved for this return (often older
+                    records).
+                  </Text>
+                )}
+              </Stack>
+            </CardBody>
+          </Card>
         ))}
-      </div>
+      </Stack>
 
       <PaginationBar
         page={page - 1}
@@ -240,6 +283,6 @@ export function RefundHistoryList({
         onPageChange={(p) => handlePageChange(p + 1)}
         aria-label="Customer return pages"
       />
-    </div>
+    </Stack>
   );
 }

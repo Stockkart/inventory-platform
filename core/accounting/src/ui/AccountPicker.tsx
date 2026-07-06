@@ -1,5 +1,12 @@
 import { useMemo, useState } from 'react';
 import type { AccountResponse } from '@inventory-platform/accounting/types';
+import {
+  SearchInput,
+  Select,
+  type SelectOptionDef,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './accounting.module.css';
 
 type Props = {
@@ -29,38 +36,41 @@ export function AccountPicker({ accounts, value, onChange, disabled, id }: Props
     );
   }, [active, query]);
 
+  const options = useMemo<SelectOptionDef[]>(
+    () => [
+      { value: '', label: '— Select account —' },
+      ...filtered.map((a) => ({
+        value: a.code,
+        label: `${a.code} · ${a.name}`,
+      })),
+    ],
+    [filtered]
+  );
+
   const selected = active.find((a) => a.code === value);
 
   return (
-    <div className={styles.accountPicker}>
-      <input
-        type="search"
-        className={styles.accountPickerSearch}
-        placeholder="Filter accounts…"
+    <Stack gap="xs" className={styles.accountPicker}>
+      <SearchInput
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
+        onChange={setQuery}
+        placeholder="Filter accounts…"
+        className={styles.accountPickerSearch}
         disabled={disabled}
-        aria-label="Filter accounts"
       />
-      <select
+      <Select
         id={id}
         value={value}
+        options={options}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
         className={styles.accountPickerSelect}
-      >
-        <option value="">— Select account —</option>
-        {filtered.map((a) => (
-          <option key={a.id} value={a.code}>
-            {a.code} · {a.name}
-          </option>
-        ))}
-      </select>
+      />
       {selected ? (
-        <span className={styles.accountPickerHint}>
+        <Text variant="caption" color="secondary" className={styles.accountPickerHint}>
           {selected.type} · {selected.normalBalance}
-        </span>
+        </Text>
       ) : null}
-    </div>
+    </Stack>
   );
 }

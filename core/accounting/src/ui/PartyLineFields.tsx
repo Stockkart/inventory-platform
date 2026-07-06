@@ -1,7 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { customersApi } from '@inventory-platform/user/customers';
 import { vendorsApi } from '@inventory-platform/user/vendors';
 import type { AccountingPartyType } from '@inventory-platform/accounting/types';
+import {
+  SearchInput,
+  Select,
+  type SelectOptionDef,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { isCreditorsAccount, isDebtorsAccount } from '../model/accountingConstants';
 import styles from './accounting.module.css';
 
@@ -75,20 +82,36 @@ export function PartyLineFields({
     };
   }, [kind, query]);
 
+  const selectOptions = useMemo<SelectOptionDef[]>(() => {
+    const placeholder = loading
+      ? 'Loading…'
+      : kind === 'CUSTOMER'
+        ? '— Customer —'
+        : '— Vendor —';
+    const base: SelectOptionDef[] = [{ value: '', label: placeholder }];
+    if (partyRefId && partyDisplayName && !options.some((o) => o.id === partyRefId)) {
+      base.push({ value: partyRefId, label: partyDisplayName });
+    }
+    return [
+      ...base,
+      ...options.map((o) => ({ value: o.id, label: o.label })),
+    ];
+  }, [kind, loading, options, partyDisplayName, partyRefId]);
+
   if (!kind) return null;
 
   return (
-    <div className={styles.partyFields}>
-      <input
-        type="search"
-        className={styles.partySearch}
-        placeholder={kind === 'CUSTOMER' ? 'Search customer…' : 'Search vendor…'}
+    <Stack gap="xs" className={styles.partyFields}>
+      <SearchInput
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
+        onChange={setQuery}
+        placeholder={kind === 'CUSTOMER' ? 'Search customer…' : 'Search vendor…'}
+        className={styles.partySearch}
         disabled={disabled}
       />
-      <select
+      <Select
         value={partyRefId ?? ''}
+        options={selectOptions}
         onChange={(e) => {
           const id = e.target.value;
           const opt = options.find((o) => o.id === id);
@@ -99,24 +122,12 @@ export function PartyLineFields({
           });
         }}
         disabled={disabled || loading}
-      >
-        <option value="">
-          {loading ? 'Loading…' : kind === 'CUSTOMER' ? '— Customer —' : '— Vendor —'}
-        </option>
-        {partyRefId &&
-        partyDisplayName &&
-        !options.some((o) => o.id === partyRefId) ? (
-          <option value={partyRefId}>{partyDisplayName}</option>
-        ) : null}
-        {options.map((o) => (
-          <option key={o.id} value={o.id}>
-            {o.label}
-          </option>
-        ))}
-      </select>
+      />
       {partyType && partyType !== kind ? (
-        <span className={styles.accountPickerHint}>Party type will update for this account.</span>
+        <Text variant="caption" color="secondary" className={styles.accountPickerHint}>
+          Party type will update for this account.
+        </Text>
       ) : null}
-    </div>
+    </Stack>
   );
 }
