@@ -1,9 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link as RouterLink, useNavigate } from 'react-router';
 import { plansApi } from '../api';
 import { FormKeyboardNavScope } from '@inventory-platform/routing';
 import { PlanGrid, Header, Footer } from '../ui';
 import { useAuthStore } from '@inventory-platform/session';
+import {
+  Alert,
+  Box,
+  CenteredLoader,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './plans.module.css';
 
 export function meta() {
@@ -48,39 +55,39 @@ export default function PlansPage() {
   };
 
   return (
-    <div className={styles.page}>
+    <Box className={styles.page}>
       <Header />
-      <main className={styles.main}>
+      <Box as="main" className={styles.main}>
         <FormKeyboardNavScope className={styles.container}>
-          <header className={styles.header}>
-            <Link to="/" className={styles.backLink}>
+          <Stack gap="sm" as="header" className={styles.header}>
+            <RouterLink to="/" className={styles.backLink}>
               ← Back to home
-            </Link>
-            <h1 className={styles.title}>All Plans & Pricing</h1>
-            <p className={styles.subtitle}>
+            </RouterLink>
+            <Text as="h1" variant="heading1" className={styles.title}>
+              All Plans & Pricing
+            </Text>
+            <Text className={styles.subtitle}>
               Choose the plan that fits your business needs
-            </p>
-          </header>
+            </Text>
+          </Stack>
 
-          {loading && <p className={styles.loading}>Loading plans...</p>}
+          {loading ? (
+            <CenteredLoader label="Loading plans..." />
+          ) : null}
 
-          {error && (
-            <p className={styles.error} style={{ color: 'var(--error)' }}>
-              {error}
-            </p>
-          )}
+          {error ? <Alert variant="danger">{error}</Alert> : null}
 
-          {!loading && !error && plans.length > 0 && (
+          {!loading && !error && plans.length > 0 ? (
             <PlanGrid
               plans={plans}
               onSelectPlan={handleSelectPlan}
               ctaLabel={isAuthenticated ? 'Select Plan' : 'Get Started'}
               showTrialBadge
             />
-          )}
+          ) : null}
         </FormKeyboardNavScope>
-      </main>
+      </Box>
       <Footer />
-    </div>
+    </Box>
   );
 }

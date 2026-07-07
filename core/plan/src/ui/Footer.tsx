@@ -1,67 +1,77 @@
+import { Box, Link, Stack, Text, type BoxProps } from '@inventory-platform/ui-kit';
 import styles from './Footer.module.css';
+
+const brandLogoProps = {
+  as: 'img',
+  src: '/assets/logo/STOCKKART-3x.png',
+  alt: 'StockKart',
+  className: styles.brandLogo,
+} as unknown as BoxProps;
 
 export function Footer() {
   return (
-    <footer className={styles.footer}>
-      <div className={styles.container}>
-        <div className={styles.footerContent}>
-          <div className={styles.brandColumn}>
-            <div className={styles.brand}>
-              <img
-                src="/assets/logo/STOCKKART-3x.png"
-                alt="StockKart"
-                className={styles.brandLogo}
-              />
-            </div>
-            <p className={styles.brandDescription}>
+    <Box as="footer" className={styles.footer}>
+      <Box className={styles.container}>
+        <Box className={styles.footerContent}>
+          <Stack gap="sm" className={styles.brandColumn}>
+            <Box className={styles.brand}>
+              <Box {...brandLogoProps} />
+            </Box>
+            <Text className={styles.brandDescription}>
               Complete inventory management solution for modern businesses.
-            </p>
-          </div>
+            </Text>
+          </Stack>
 
-          <div className={styles.column}>
-            <h3 className={styles.columnTitle}>Product</h3>
-            <a href="#features" className={styles.link}>
+          <Stack gap="sm" className={styles.column}>
+            <Text as="h3" variant="heading3" className={styles.columnTitle}>
+              Product
+            </Text>
+            <Link href="#features" className={styles.link}>
               Features
-            </a>
-            <a href="#pricing" className={styles.link}>
+            </Link>
+            <Link href="#pricing" className={styles.link}>
               Pricing
-            </a>
-            <a href="#demo" className={styles.link}>
+            </Link>
+            <Link href="#demo" className={styles.link}>
               Demo
-            </a>
-          </div>
+            </Link>
+          </Stack>
 
-          <div className={styles.column}>
-            <h3 className={styles.columnTitle}>Company</h3>
-            <a href="#about" className={styles.link}>
+          <Stack gap="sm" className={styles.column}>
+            <Text as="h3" variant="heading3" className={styles.columnTitle}>
+              Company
+            </Text>
+            <Link href="#about" className={styles.link}>
               About
-            </a>
-            <a href="#blog" className={styles.link}>
+            </Link>
+            <Link href="#blog" className={styles.link}>
               Blog
-            </a>
-            <a href="#contact" className={styles.link}>
+            </Link>
+            <Link href="#contact" className={styles.link}>
               Contact
-            </a>
-          </div>
+            </Link>
+          </Stack>
 
-          <div className={styles.column}>
-            <h3 className={styles.columnTitle}>Legal</h3>
-            <a href="#privacy" className={styles.link}>
+          <Stack gap="sm" className={styles.column}>
+            <Text as="h3" variant="heading3" className={styles.columnTitle}>
+              Legal
+            </Text>
+            <Link href="#privacy" className={styles.link}>
               Privacy
-            </a>
-            <a href="#terms" className={styles.link}>
+            </Link>
+            <Link href="#terms" className={styles.link}>
               Terms
-            </a>
-            <a href="#security" className={styles.link}>
+            </Link>
+            <Link href="#security" className={styles.link}>
               Security
-            </a>
-          </div>
-        </div>
+            </Link>
+          </Stack>
+        </Box>
 
-        <div className={styles.copyright}>
+        <Text className={styles.copyright}>
           © 2025 StockKart. All rights reserved.
-        </div>
-      </div>
-    </footer>
+        </Text>
+      </Box>
+    </Box>
   );
 }

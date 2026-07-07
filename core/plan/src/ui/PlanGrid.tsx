@@ -1,4 +1,5 @@
 import type { PlanResponse } from '@inventory-platform/plan/types';
+import { Badge, Box, Button, Stack, Text } from '@inventory-platform/ui-kit';
 import styles from './PlanGrid.module.css';
 
 const EXTRA_USER_PLAN = 'Extra User Plan';
@@ -79,7 +80,7 @@ export function PlanGrid({
   });
 
   return (
-    <div className={styles.grid}>
+    <Box className={styles.grid}>
       {sortedPlans.map((plan, idx) => {
         const features = buildPlanFeatures(plan);
         const highlight =
@@ -90,55 +91,66 @@ export function PlanGrid({
         const isCurrent = currentPlanId != null && plan.id === currentPlanId;
 
         return (
-          <article
+          <Box
+            as="article"
             key={plan.id}
             className={`${styles.card} ${
               highlight ? styles.cardHighlight : ''
             } ${isCurrent ? styles.cardCurrent : ''}`}
           >
-            {highlight && <div className={styles.badge}>Most Popular</div>}
-            {isCurrent && <div className={styles.currentBadge}>Current</div>}
+            {highlight ? (
+              <Badge className={styles.badge}>Most Popular</Badge>
+            ) : null}
+            {isCurrent ? (
+              <Badge className={styles.currentBadge}>Current</Badge>
+            ) : null}
 
-            <div className={styles.cardHeader}>
-              {showTrialBadge && !EXTRA_PLANS.includes(plan.planName) && (
-                <div className={styles.trialBadge}>Free 30-day trial</div>
-              )}
-              <h3 className={styles.planName}>{plan.planName}</h3>
-              {!EXTRA_PLANS.includes(plan.planName) && (
-                <p className={styles.planDescription}>
+            <Stack gap="sm" className={styles.cardHeader}>
+              {showTrialBadge && !EXTRA_PLANS.includes(plan.planName) ? (
+                <Badge className={styles.trialBadge}>Free 30-day trial</Badge>
+              ) : null}
+              <Text as="h3" variant="heading3" className={styles.planName}>
+                {plan.planName}
+              </Text>
+              {!EXTRA_PLANS.includes(plan.planName) ? (
+                <Text className={styles.planDescription}>
                   {plan.bestFor || 'For your business'}
-                </p>
-              )}
+                </Text>
+              ) : null}
 
-              <div className={styles.priceRow}>
-                <span className={styles.price}>
+              <Box className={styles.priceRow}>
+                <Text as="span" className={styles.price}>
                   ₹{(plan.arcPrice ?? plan.price)?.toLocaleString('en-IN') ?? 0}
-                </span>
-                <span className={styles.priceSuffix}>
+                </Text>
+                <Text as="span" className={styles.priceSuffix}>
                   {plan.planName === EXTRA_USER_PLAN ? '/user/year' : '/year'}
-                </span>
-              </div>
+                </Text>
+              </Box>
               {!EXTRA_PLANS.includes(plan.planName) &&
                 plan.price != null &&
                 plan.price > 0 && (
-                  <p className={styles.oneTimePrice}>
+                  <Text className={styles.oneTimePrice}>
                     One-time ₹{plan.price?.toLocaleString('en-IN')} if taking
                     support
-                  </p>
+                  </Text>
                 )}
-            </div>
+            </Stack>
 
-            <ul className={styles.featuresList}>
+            <Box as="ul" className={styles.featuresList}>
               {features.map((feature) => (
-                <li key={feature} className={styles.featureItem}>
-                  <span className={styles.checkIcon}>✓</span>
-                  <span>{feature}</span>
-                </li>
+                <Box as="li" key={feature} className={styles.featureItem}>
+                  <Text as="span" className={styles.checkIcon}>
+                    ✓
+                  </Text>
+                  <Text as="span">{feature}</Text>
+                </Box>
               ))}
-            </ul>
+            </Box>
 
-            {onSelectPlan && (
-              <button
+            {onSelectPlan ? (
+              <Button
+                type="button"
+                variant={highlight ? 'solid' : 'outline'}
                 className={`${styles.ctaButton} ${
                   highlight ? styles.ctaPrimary : styles.ctaGhost
                 }`}
@@ -146,11 +158,11 @@ export function PlanGrid({
                 disabled={isCurrent}
               >
                 {isCurrent ? 'Current Plan' : ctaLabel}
-              </button>
-            )}
-          </article>
+              </Button>
+            ) : null}
+          </Box>
         );
       })}
-    </div>
+    </Box>
   );
 }

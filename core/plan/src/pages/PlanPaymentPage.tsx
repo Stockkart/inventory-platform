@@ -1,5 +1,16 @@
 import { useMemo, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router';
+import { Link as RouterLink, useNavigate, useSearchParams } from 'react-router';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardBody,
+  CenteredLoader,
+  PageHeader,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { getPaymentCheckout } from '../payment/index.js';
 import { useAuthStore, usePlanStatusStore } from '@inventory-platform/session';
 import {
@@ -85,112 +96,134 @@ export function PlanPaymentPage() {
 
   if (transactionsLoading && transactions.length === 0) {
     return (
-      <div className={styles.page}>
-        <div className={styles.loading}>Loading...</div>
-      </div>
+      <Box className={styles.page}>
+        <CenteredLoader label="Loading..." />
+      </Box>
     );
   }
 
   return (
-    <div className={styles.page}>
-      <div className={styles.header}>
-        <h2 className={styles.title}>Payment</h2>
-        <p className={styles.subtitle}>
-          Review your plan and pay with Razorpay (UPI, card, net banking, and more)
-        </p>
-      </div>
+    <Stack gap="md" className={styles.page}>
+      <PageHeader
+        title="Payment"
+        description="Review your plan and pay with Razorpay (UPI, card, net banking, and more)"
+      />
 
-      <div className={styles.container}>
-        {selectedPlan && (
-          <section className={styles.section}>
-            <h3 className={styles.sectionTitle}>Selected Plan</h3>
-            <div className={styles.planSummary}>
-              <div className={styles.planSummaryContent}>
-                <h4>{selectedPlan.planName}</h4>
-                <p className={styles.planPrice}>
-                  ₹{selectedPlan.arcPrice?.toLocaleString('en-IN')} /{' '}
-                  {selectedPlan.planName === 'Extra User Plan'
-                    ? 'user/year'
-                    : 'year'}
-                </p>
-                {selectedPlan.planName !== 'Extra User Plan' &&
-                  selectedPlan.price != null &&
-                  selectedPlan.price > 0 && (
-                    <p className={styles.oneTimePrice}>
-                      One-time ₹{selectedPlan.price?.toLocaleString('en-IN')} if
-                      taking support
-                    </p>
-                  )}
-                {selectedPlan.bestFor && (
-                  <p className={styles.planBestFor}>{selectedPlan.bestFor}</p>
-                )}
-              </div>
+      <Box className={styles.container}>
+        <Stack gap="md">
+          {selectedPlan ? (
+            <Box as="section" className={styles.section}>
+              <Text as="h3" variant="heading3" className={styles.sectionTitle}>
+                Selected Plan
+              </Text>
+              <Card className={styles.planSummary}>
+                <CardBody>
+                  <Box className={styles.planSummaryContent}>
+                    <Text as="h4" variant="heading4">
+                      {selectedPlan.planName}
+                    </Text>
+                    <Text className={styles.planPrice}>
+                      ₹{selectedPlan.arcPrice?.toLocaleString('en-IN')} /{' '}
+                      {selectedPlan.planName === 'Extra User Plan'
+                        ? 'user/year'
+                        : 'year'}
+                    </Text>
+                    {selectedPlan.planName !== 'Extra User Plan' &&
+                      selectedPlan.price != null &&
+                      selectedPlan.price > 0 && (
+                        <Text className={styles.oneTimePrice}>
+                          One-time ₹
+                          {selectedPlan.price?.toLocaleString('en-IN')} if taking
+                          support
+                        </Text>
+                      )}
+                    {selectedPlan.bestFor ? (
+                      <Text className={styles.planBestFor}>
+                        {selectedPlan.bestFor}
+                      </Text>
+                    ) : null}
+                  </Box>
 
-              <div className={styles.paymentSection}>
-                <button
-                  type="button"
-                  className={styles.processBtn}
-                  onClick={() => void handlePay()}
-                  disabled={paying}
+                  <Box className={styles.paymentSection}>
+                    <Button
+                      type="button"
+                      variant="solid"
+                      className={styles.processBtn}
+                      onClick={() => void handlePay()}
+                      disabled={paying}
+                      loading={paying}
+                    >
+                      {paying
+                        ? 'Opening Razorpay…'
+                        : `Pay ₹${selectedPlan.arcPrice?.toLocaleString('en-IN')}${
+                            selectedPlan.planName === 'Extra User Plan'
+                              ? ' per user/year'
+                              : '/year'
+                          }`}
+                    </Button>
+                    <Text className={styles.razorpayNote}>
+                      Secured by Razorpay. Choose your payment method in the
+                      checkout window.
+                    </Text>
+                  </Box>
+                </CardBody>
+              </Card>
+            </Box>
+          ) : null}
+
+          {!selectedPlan ? (
+            <Box as="section" className={styles.section}>
+              <Stack gap="sm" className={styles.noPlanSelected}>
+                <Text>
+                  Select a plan from the Plan page to proceed with payment.
+                </Text>
+                <RouterLink
+                  to="/dashboard/plan-status"
+                  className={styles.linkToPlans}
                 >
-                  {paying
-                    ? 'Opening Razorpay…'
-                    : `Pay ₹${selectedPlan.arcPrice?.toLocaleString('en-IN')}${
-                        selectedPlan.planName === 'Extra User Plan'
-                          ? ' per user/year'
-                          : '/year'
-                      }`}
-                </button>
-                <p className={styles.razorpayNote}>
-                  Secured by Razorpay. Choose your payment method in the checkout
-                  window.
-                </p>
-              </div>
-            </div>
-          </section>
-        )}
+                  Go to Plan
+                </RouterLink>
+              </Stack>
+            </Box>
+          ) : null}
 
-        {!selectedPlan && (
-          <section className={styles.section}>
-            <div className={styles.noPlanSelected}>
-              <p>Select a plan from the Plan page to proceed with payment.</p>
-              <Link to="/dashboard/plan-status" className={styles.linkToPlans}>
-                Go to Plan
-              </Link>
-            </div>
-          </section>
-        )}
+          <Box as="section" className={styles.section}>
+            <Text as="h3" variant="heading3" className={styles.sectionTitle}>
+              Transaction History
+            </Text>
+            {transactions.length === 0 ? (
+              <Text className={styles.emptyHistory}>
+                No plan payments yet. Your transaction history will appear here.
+              </Text>
+            ) : (
+              <Stack gap="sm" className={styles.transactionList}>
+                {transactions.map((tx) => (
+                  <Box key={tx.id} className={styles.transactionItem}>
+                    <Box className={styles.transactionMain}>
+                      <Text as="span" className={styles.transactionPlan}>
+                        {tx.planName}
+                      </Text>
+                      <Text as="span" className={styles.transactionAmount}>
+                        ₹{tx.amount?.toLocaleString('en-IN')}
+                      </Text>
+                    </Box>
+                    <Box className={styles.transactionMeta}>
+                      <Text as="span">{tx.paymentMethod}</Text>
+                      <Text as="span">{formatDate(tx.createdAt)}</Text>
+                    </Box>
+                  </Box>
+                ))}
+              </Stack>
+            )}
+          </Box>
 
-        <section className={styles.section}>
-          <h3 className={styles.sectionTitle}>Transaction History</h3>
-          {transactions.length === 0 ? (
-            <div className={styles.emptyHistory}>
-              No plan payments yet. Your transaction history will appear here.
-            </div>
-          ) : (
-            <div className={styles.transactionList}>
-              {transactions.map((tx) => (
-                <div key={tx.id} className={styles.transactionItem}>
-                  <div className={styles.transactionMain}>
-                    <span className={styles.transactionPlan}>
-                      {tx.planName}
-                    </span>
-                    <span className={styles.transactionAmount}>
-                      ₹{tx.amount?.toLocaleString('en-IN')}
-                    </span>
-                  </div>
-                  <div className={styles.transactionMeta}>
-                    <span>{tx.paymentMethod}</span>
-                    <span>{formatDate(tx.createdAt)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {error && <div className={styles.errorInline}>{error}</div>}
-      </div>
-    </div>
+          {error ? (
+            <Alert variant="danger" className={styles.errorInline}>
+              {error}
+            </Alert>
+          ) : null}
+        </Stack>
+      </Box>
+    </Stack>
   );
 }

@@ -1,4 +1,5 @@
 import { FormKeyboardNavScope } from '@inventory-platform/routing';
+import { Box } from '@inventory-platform/ui-kit';
 import {
   Header,
   Hero,
@@ -23,9 +24,9 @@ export function meta() {
 
 export default function LandingPage() {
   return (
-    <div className={styles.page}>
+    <Box className={styles.page}>
       <Header />
-      <main>
+      <Box as="main">
         <FormKeyboardNavScope>
           <Hero />
           <Stats />
@@ -33,8 +34,8 @@ export default function LandingPage() {
           <Pricing />
           <CTA />
         </FormKeyboardNavScope>
-      </main>
+      </Box>
       <Footer />
-    </div>
+    </Box>
   );
 }

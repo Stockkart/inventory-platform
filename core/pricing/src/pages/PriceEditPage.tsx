@@ -1,9 +1,25 @@
-import { useState, FormEvent, useEffect } from 'react';
-import { useParams, useLocation, Link } from 'react-router';
+import { useState, useEffect, useMemo } from 'react';
+import { useParams, useLocation, useNavigate } from 'react-router';
 import { pricingApi } from '../api/pricing.api';
 import { useNotify } from '@inventory-platform/session';
 import type { PricingRate } from '@inventory-platform/pricing/types';
-import styles from '././price-edit.module.css';
+import {
+  Alert,
+  Button,
+  Card,
+  CardBody,
+  CenteredLoader,
+  FormField,
+  IconButton,
+  Inline,
+  Input,
+  PageHeader,
+  Select,
+  Stack,
+  Text,
+  type SelectOptionDef,
+} from '@inventory-platform/ui-kit';
+import styles from './price-edit.module.css';
 
 export function meta() {
   return [
@@ -22,6 +38,13 @@ function normalizeDefaultRate(value: string): string {
   return PASCAL_TO_CAMEL[value] ?? value;
 }
 
+const SYSTEM_DEFAULT_RATE_OPTIONS: readonly SelectOptionDef[] = [
+  { value: '', label: '— None —' },
+  { value: 'maximumRetailPrice', label: 'maximumRetailPrice (MRP)' },
+  { value: 'priceToRetail', label: 'priceToRetail (PTR)' },
+  { value: 'costPrice', label: 'costPrice' },
+];
+
 interface LocationState {
   priceToRetail?: number | null;
   maximumRetailPrice?: number | null;
@@ -33,6 +56,7 @@ interface LocationState {
 export function PriceEditPage() {
   const { pricingId } = useParams<{ pricingId: string }>();
   const location = useLocation();
+  const navigate = useNavigate();
   const state = location.state as LocationState | null;
   const { success: notifySuccess, error: notifyError } = useNotify;
 
@@ -45,7 +69,6 @@ export function PriceEditPage() {
   const [error, setError] = useState<string | null>(null);
   const [loadedFromApi, setLoadedFromApi] = useState(false);
 
-  // Fetch current pricing on mount to get full rates (avoid accidentally removing rates)
   useEffect(() => {
     if (!pricingId) {
       setLoading(false);
@@ -69,7 +92,6 @@ export function PriceEditPage() {
       })
       .catch(() => {
         if (cancelled) return;
-        // Fallback to location state if fetch fails (e.g. GET not implemented)
         if (state?.priceToRetail != null) {
           setPriceToRetail(String(state.priceToRetail));
         }
@@ -86,6 +108,13 @@ export function PriceEditPage() {
       cancelled = true;
     };
   }, [pricingId]);
+
+  const defaultRateOptions = useMemo((): SelectOptionDef[] => {
+    const custom = rates
+      .filter((r) => r.name.trim())
+      .map((r) => ({ value: r.name, label: r.name }));
+    return [...SYSTEM_DEFAULT_RATE_OPTIONS, ...custom];
+  }, [rates]);
 
   const addRate = () => {
     setRates((prev) => [...prev, { name: '', price: 0 }]);
@@ -107,8 +136,7 @@ export function PriceEditPage() {
     setRates((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     if (!pricingId) return;
 
     const ptr = priceToRetail.trim() ? parseFloat(priceToRetail) : undefined;
@@ -159,7 +187,6 @@ export function PriceEditPage() {
     } = {};
     if (ptr !== undefined) payload.priceToRetail = ptr;
     if (mrp !== undefined) payload.maximumRetailPrice = mrp;
-    // Always send full rates array when changing rates—backend replaces entirely; omitted rates are removed
     if (hasRates || loadedFromApi) {
       payload.rates = rates
         .filter((r) => r.name.trim())
@@ -184,155 +211,166 @@ export function PriceEditPage() {
 
   if (!pricingId) {
     return (
-      <div className={styles.page}>
-        <h2 className={styles.title}>Edit Price</h2>
-        <p className={styles.error}>No pricing ID provided.</p>
-        <Link to="/dashboard/pricing" className={styles.backLink}>
+      <Stack gap="md" className={styles.page}>
+        <PageHeader title="Edit Price" />
+        <Alert variant="danger">No pricing ID provided.</Alert>
+        <Button
+          type="button"
+          variant="ghost"
+          className={styles.backLink}
+          onClick={() => navigate('/dashboard/pricing')}
+        >
           ← Back to Pricing
-        </Link>
-      </div>
+        </Button>
+      </Stack>
     );
   }
 
   if (loading) {
     return (
-      <div className={styles.page}>
-        <h2 className={styles.title}>Edit Price</h2>
-        <p className={styles.subtitle}>Loading pricing…</p>
-      </div>
+      <Stack gap="md" className={styles.page}>
+        <PageHeader title="Edit Price" />
+        <Card>
+          <CardBody>
+            <CenteredLoader label="Loading pricing…" />
+          </CardBody>
+        </Card>
+      </Stack>
     );
   }
 
   return (
-    <div className={styles.page}>
-      <h2 className={styles.title}>Edit Price</h2>
-      {state?.productName && (
-        <p className={styles.subtitle}>Product: {state.productName}</p>
-      )}
-      <p className={styles.pricingIdLabel}>
-        Pricing ID: <code className={styles.pricingId}>{pricingId}</code>
-      </p>
+    <Stack gap="md" className={styles.page}>
+      <PageHeader
+        title="Edit Price"
+        description={
+          state?.productName ? `Product: ${state.productName}` : undefined
+        }
+      />
 
-      <form onSubmit={handleSubmit} className={styles.form}>
-        {error && <p className={styles.formError}>{error}</p>}
-        <div className={styles.formGroup}>
-          <label htmlFor="priceToRetail" className={styles.label}>
-            Price to Retailer (PTR)
-          </label>
-          <input
-            id="priceToRetail"
-            type="number"
-            step="0.01"
-            min="0"
-            value={priceToRetail}
-            onChange={(e) => setPriceToRetail(e.target.value)}
-            className={styles.input}
-            placeholder="e.g. 29.99"
-          />
-        </div>
-        <div className={styles.formGroup}>
-          <label htmlFor="maximumRetailPrice" className={styles.label}>
-            Maximum Retail Price (MRP)
-          </label>
-          <input
-            id="maximumRetailPrice"
-            type="number"
-            step="0.01"
-            min="0"
-            value={maximumRetailPrice}
-            onChange={(e) => setMaximumRetailPrice(e.target.value)}
-            className={styles.input}
-            placeholder="e.g. 40.00"
-          />
-        </div>
+      <Text color="secondary" variant="caption" className={styles.pricingIdLabel}>
+        Pricing ID:{' '}
+        <Text as="span" className={styles.pricingId}>
+          {pricingId}
+        </Text>
+      </Text>
 
-        <div className={styles.ratesSection}>
-          <div className={styles.ratesHeader}>
-            <label className={styles.label}>Rates</label>
-            <button
-              type="button"
-              onClick={addRate}
-              className={styles.addRateBtn}
-            >
-              + Add rate
-            </button>
-          </div>
-          <p className={styles.ratesHint}>
-            Sending rates replaces the entire list. Include all rates you want to keep; any omitted will be removed.
-          </p>
-          {rates.map((rate, i) => (
-            <div key={i} className={styles.rateRow}>
-              <input
-                type="text"
-                value={rate.name}
-                onChange={(e) => updateRate(i, 'name', e.target.value)}
-                className={styles.rateNameInput}
-                placeholder="Rate name"
-              />
-              <input
+      <Card>
+        <CardBody>
+          <Stack gap="md" className={styles.form}>
+            {error ? <Alert variant="danger">{error}</Alert> : null}
+
+            <FormField label="Price to Retailer (PTR)" htmlFor="priceToRetail">
+              <Input
+                id="priceToRetail"
                 type="number"
                 step="0.01"
                 min="0"
-                value={rate.price || ''}
-                onChange={(e) => updateRate(i, 'price', e.target.value)}
-                className={styles.ratePriceInput}
-                placeholder="Price"
+                value={priceToRetail}
+                onChange={(e) => setPriceToRetail(e.target.value)}
+                placeholder="e.g. 29.99"
               />
-              <button
-                type="button"
-                onClick={() => removeRate(i)}
-                className={styles.removeRateBtn}
-                aria-label="Remove rate"
-              >
-                ×
-              </button>
-            </div>
-          ))}
-        </div>
+            </FormField>
 
-        <div className={styles.formGroup}>
-          <label htmlFor="defaultRate" className={styles.label}>
-            Default rate
-          </label>
-          <select
-            id="defaultRate"
-            value={defaultRate}
-            onChange={(e) => setDefaultRate(e.target.value)}
-            className={styles.input}
-          >
-            <option value="">— None —</option>
-            <option value="maximumRetailPrice">maximumRetailPrice (MRP)</option>
-            <option value="priceToRetail">priceToRetail (PTR)</option>
-            <option value="costPrice">costPrice</option>
-            {rates
-              .filter((r) => r.name.trim())
-              .map((r) => (
-                <option key={r.name} value={r.name}>
-                  {r.name}
-                </option>
+            <FormField label="Maximum Retail Price (MRP)" htmlFor="maximumRetailPrice">
+              <Input
+                id="maximumRetailPrice"
+                type="number"
+                step="0.01"
+                min="0"
+                value={maximumRetailPrice}
+                onChange={(e) => setMaximumRetailPrice(e.target.value)}
+                placeholder="e.g. 40.00"
+              />
+            </FormField>
+
+            <Stack gap="sm" className={styles.ratesSection}>
+              <Inline justify="between" align="center" className={styles.ratesHeader}>
+                <Text variant="label" weight="medium">
+                  Rates
+                </Text>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className={styles.addRateBtn}
+                  onClick={addRate}
+                >
+                  + Add rate
+                </Button>
+              </Inline>
+              <Text variant="caption" color="secondary" className={styles.ratesHint}>
+                Sending rates replaces the entire list. Include all rates you want to keep; any omitted will be removed.
+              </Text>
+              {rates.map((rate, i) => (
+                <Inline key={i} gap="sm" align="center" className={styles.rateRow}>
+                  <Input
+                    type="text"
+                    value={rate.name}
+                    onChange={(e) => updateRate(i, 'name', e.target.value)}
+                    className={styles.rateNameInput}
+                    placeholder="Rate name"
+                  />
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={rate.price || ''}
+                    onChange={(e) => updateRate(i, 'price', e.target.value)}
+                    className={styles.ratePriceInput}
+                    placeholder="Price"
+                  />
+                  <IconButton
+                    type="button"
+                    className={styles.removeRateBtn}
+                    onClick={() => removeRate(i)}
+                    label="Remove rate"
+                  >
+                    ×
+                  </IconButton>
+                </Inline>
               ))}
-          </select>
-          <span className={styles.hint}>
-            System rates (PTR, MRP) or one of the custom rate names above.
-          </span>
-        </div>
+            </Stack>
 
-        <p className={styles.hint}>
-          At least one field is required. When changing rates, always send the full list.
-        </p>
-        <div className={styles.formActions}>
-          <button
-            type="submit"
-            className={styles.submitBtn}
-            disabled={saving}
-          >
-            {saving ? 'Saving...' : 'Save'}
-          </button>
-          <Link to="/dashboard/pricing" className={styles.backLink}>
-            Cancel
-          </Link>
-        </div>
-      </form>
-    </div>
+            <FormField
+              label="Default rate"
+              htmlFor="defaultRate"
+              hint="System rates (PTR, MRP) or one of the custom rate names above."
+            >
+              <Select
+                id="defaultRate"
+                value={defaultRate}
+                onChange={(e) => setDefaultRate(e.target.value)}
+                options={defaultRateOptions}
+              />
+            </FormField>
+
+            <Text variant="caption" color="secondary" className={styles.hint}>
+              At least one field is required. When changing rates, always send the full list.
+            </Text>
+
+            <Inline gap="md" className={styles.formActions}>
+              <Button
+                type="button"
+                variant="solid"
+                className={styles.submitBtn}
+                disabled={saving}
+                onClick={() => void handleSubmit()}
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className={styles.backLink}
+                onClick={() => navigate('/dashboard/pricing')}
+              >
+                Cancel
+              </Button>
+            </Inline>
+          </Stack>
+        </CardBody>
+      </Card>
+    </Stack>
   );
 }

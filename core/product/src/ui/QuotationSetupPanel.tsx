@@ -1,4 +1,17 @@
-import type { ChangeEvent } from 'react';
+import type { FormEvent } from 'react';
+import {
+  Box,
+  Button,
+  Card,
+  CardBody,
+  Checkbox,
+  FormField,
+  Grid,
+  Inline,
+  Input,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './QuotationSetupPanel.module.css';
 
 export interface QuotationSetupPanelProps {
@@ -54,7 +67,7 @@ export function QuotationSetupPanel({
 }: QuotationSetupPanelProps) {
   const canSubmit = !isSubmitting;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (canSubmit) {
       onSubmit();
@@ -62,192 +75,173 @@ export function QuotationSetupPanel({
   };
 
   return (
-    <div className={styles.setupWrap}>
-      <div className={styles.setupCard}>
-        <div className={styles.setupHeader}>
-          <h3 className={styles.setupTitle}>New quotation</h3>
-          <p className={styles.setupSubtitle}>
-            Add customer details if you have them, or start selling and fill them in later.
-          </p>
-        </div>
+    <Box className={styles.setupWrap}>
+      <Card className={styles.setupCard}>
+        <CardBody>
+          <Stack gap="md">
+            <Stack gap="xs" className={styles.setupHeader}>
+              <Text variant="heading3" weight="bold" className={styles.setupTitle}>
+                New quotation
+              </Text>
+              <Text color="secondary" className={styles.setupSubtitle}>
+                Add customer details if you have them, or start selling and fill them in later.
+              </Text>
+            </Stack>
 
-        <form className={styles.setupForm} onSubmit={handleSubmit}>
-          <div className={styles.fieldGrid}>
-            <div className={styles.field}>
-              <label htmlFor="setup-customerPhone" className={styles.label}>
-                Phone
-              </label>
-              <div className={styles.inputRow}>
-                <input
-                  id="setup-customerPhone"
-                  type="tel"
-                  className={styles.input}
-                  placeholder="e.g. 9876543210"
-                  value={customerPhone}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    onPhoneChange(e.currentTarget.value)
-                  }
-                  disabled={isSearchingCustomer || isSubmitting}
-                  autoFocus
-                />
-                <button
-                  type="button"
-                  className={styles.searchBtn}
-                  onClick={onSearchByPhone}
-                  disabled={isSearchingCustomer || !customerPhone.trim() || isSubmitting}
-                  title="Look up customer by phone"
+            <Box as="form" className={styles.setupForm} onSubmit={handleSubmit}>
+              <Grid columns={2} gap="sm" className={styles.fieldGrid}>
+                <FormField label="Phone" id="setup-customerPhone" className={styles.field}>
+                  <Inline className={styles.inputRow} gap="sm">
+                    <Input
+                      id="setup-customerPhone"
+                      type="tel"
+                      className={styles.input}
+                      placeholder="e.g. 9876543210"
+                      value={customerPhone}
+                      onChange={(e) => onPhoneChange(e.target.value)}
+                      disabled={isSearchingCustomer || isSubmitting}
+                      autoFocus
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className={styles.searchBtn}
+                      onClick={onSearchByPhone}
+                      disabled={
+                        isSearchingCustomer || !customerPhone.trim() || isSubmitting
+                      }
+                      title="Look up customer by phone"
+                    >
+                      {isSearchingCustomer ? '…' : 'Find'}
+                    </Button>
+                  </Inline>
+                </FormField>
+
+                <FormField label="Name" id="setup-customerName" className={styles.field}>
+                  <Input
+                    id="setup-customerName"
+                    type="text"
+                    className={styles.input}
+                    placeholder="Customer name"
+                    value={customerName}
+                    onChange={(e) => onNameChange(e.target.value)}
+                    disabled={isSubmitting}
+                  />
+                </FormField>
+
+                <FormField label="Email" id="setup-customerEmail" className={styles.field}>
+                  <Inline className={styles.inputRow} gap="sm">
+                    <Input
+                      id="setup-customerEmail"
+                      type="email"
+                      className={styles.input}
+                      placeholder="Email (optional)"
+                      value={customerEmail}
+                      onChange={(e) => onEmailChange(e.target.value)}
+                      disabled={isSearchingCustomer || isSubmitting}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className={styles.searchBtn}
+                      onClick={onSearchByEmail}
+                      disabled={
+                        isSearchingCustomer || !customerEmail.trim() || isSubmitting
+                      }
+                      title="Look up customer by email"
+                    >
+                      {isSearchingCustomer ? '…' : 'Find'}
+                    </Button>
+                  </Inline>
+                </FormField>
+
+                <FormField
+                  label="Address"
+                  id="setup-customerAddress"
+                  className={`${styles.field} ${styles.fieldFull}`}
                 >
-                  {isSearchingCustomer ? '…' : 'Find'}
-                </button>
-              </div>
-            </div>
+                  <Input
+                    id="setup-customerAddress"
+                    type="text"
+                    className={styles.input}
+                    placeholder="Address (optional)"
+                    value={customerAddress}
+                    onChange={(e) => onAddressChange(e.target.value)}
+                    disabled={isSubmitting}
+                  />
+                </FormField>
+              </Grid>
 
-            <div className={styles.field}>
-              <label htmlFor="setup-customerName" className={styles.label}>
-                Name
-              </label>
-              <input
-                id="setup-customerName"
-                type="text"
-                className={styles.input}
-                placeholder="Customer name"
-                value={customerName}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  onNameChange(e.currentTarget.value)
-                }
+              <Checkbox
+                label="This customer is a retailer (GSTIN / DL / PAN)"
+                checked={isRetailer}
+                onChange={(e) => onRetailerChange(e.target.checked)}
                 disabled={isSubmitting}
+                className={styles.retailerCheck}
               />
-            </div>
 
-            <div className={styles.field}>
-              <label htmlFor="setup-customerEmail" className={styles.label}>
-                Email
-              </label>
-              <div className={styles.inputRow}>
-                <input
-                  id="setup-customerEmail"
-                  type="email"
-                  className={styles.input}
-                  placeholder="Email (optional)"
-                  value={customerEmail}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    onEmailChange(e.currentTarget.value)
-                  }
-                  disabled={isSearchingCustomer || isSubmitting}
-                />
-                <button
-                  type="button"
-                  className={styles.searchBtn}
-                  onClick={onSearchByEmail}
-                  disabled={isSearchingCustomer || !customerEmail.trim() || isSubmitting}
-                  title="Look up customer by email"
+              {isRetailer ? (
+                <Grid columns={3} gap="sm" className={styles.retailerGrid}>
+                  <FormField label="GSTIN" id="setup-customerGstin" className={styles.field}>
+                    <Input
+                      id="setup-customerGstin"
+                      type="text"
+                      className={styles.input}
+                      value={customerGstin}
+                      onChange={(e) => onGstinChange(e.target.value)}
+                      disabled={isSubmitting}
+                    />
+                  </FormField>
+                  <FormField label="DL No" id="setup-customerDlNo" className={styles.field}>
+                    <Input
+                      id="setup-customerDlNo"
+                      type="text"
+                      className={styles.input}
+                      value={customerDlNo}
+                      onChange={(e) => onDlNoChange(e.target.value)}
+                      disabled={isSubmitting}
+                    />
+                  </FormField>
+                  <FormField label="PAN" id="setup-customerPan" className={styles.field}>
+                    <Input
+                      id="setup-customerPan"
+                      type="text"
+                      className={styles.input}
+                      value={customerPan}
+                      onChange={(e) => onPanChange(e.target.value)}
+                      disabled={isSubmitting}
+                    />
+                  </FormField>
+                </Grid>
+              ) : null}
+
+              <Inline className={styles.actions} gap="sm" justify="end">
+                {showCancel && onCancel ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={styles.cancelBtn}
+                    onClick={onCancel}
+                    disabled={isSubmitting}
+                  >
+                    Cancel
+                  </Button>
+                ) : null}
+                <Button
+                  type="submit"
+                  variant="solid"
+                  className={styles.submitBtn}
+                  disabled={!canSubmit}
                 >
-                  {isSearchingCustomer ? '…' : 'Find'}
-                </button>
-              </div>
-            </div>
-
-            <div className={`${styles.field} ${styles.fieldFull}`}>
-              <label htmlFor="setup-customerAddress" className={styles.label}>
-                Address
-              </label>
-              <input
-                id="setup-customerAddress"
-                type="text"
-                className={styles.input}
-                placeholder="Address (optional)"
-                value={customerAddress}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  onAddressChange(e.currentTarget.value)
-                }
-                disabled={isSubmitting}
-              />
-            </div>
-          </div>
-
-          <label className={styles.retailerCheck}>
-            <input
-              type="checkbox"
-              checked={isRetailer}
-              onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                onRetailerChange(e.currentTarget.checked)
-              }
-              disabled={isSubmitting}
-            />
-            <span>This customer is a retailer (GSTIN / DL / PAN)</span>
-          </label>
-
-          {isRetailer && (
-            <div className={styles.retailerGrid}>
-              <div className={styles.field}>
-                <label htmlFor="setup-customerGstin" className={styles.label}>
-                  GSTIN
-                </label>
-                <input
-                  id="setup-customerGstin"
-                  type="text"
-                  className={styles.input}
-                  value={customerGstin}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    onGstinChange(e.currentTarget.value)
-                  }
-                  disabled={isSubmitting}
-                />
-              </div>
-              <div className={styles.field}>
-                <label htmlFor="setup-customerDlNo" className={styles.label}>
-                  DL No
-                </label>
-                <input
-                  id="setup-customerDlNo"
-                  type="text"
-                  className={styles.input}
-                  value={customerDlNo}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    onDlNoChange(e.currentTarget.value)
-                  }
-                  disabled={isSubmitting}
-                />
-              </div>
-              <div className={styles.field}>
-                <label htmlFor="setup-customerPan" className={styles.label}>
-                  PAN
-                </label>
-                <input
-                  id="setup-customerPan"
-                  type="text"
-                  className={styles.input}
-                  value={customerPan}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    onPanChange(e.currentTarget.value)
-                  }
-                  disabled={isSubmitting}
-                />
-              </div>
-            </div>
-          )}
-
-          <div className={styles.actions}>
-            {showCancel && onCancel && (
-              <button
-                type="button"
-                className={styles.cancelBtn}
-                onClick={onCancel}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </button>
-            )}
-            <button
-              type="submit"
-              className={styles.submitBtn}
-              disabled={!canSubmit}
-            >
-              {isSubmitting ? 'Creating…' : 'Create quotation & start selling'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+                  {isSubmitting ? 'Creating…' : 'Create quotation & start selling'}
+                </Button>
+              </Inline>
+            </Box>
+          </Stack>
+        </CardBody>
+      </Card>
+    </Box>
   );
 }

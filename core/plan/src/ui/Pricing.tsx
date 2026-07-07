@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link as RouterLink, useNavigate } from 'react-router';
 import { plansApi } from '@inventory-platform/plan/api';
+import { Alert, Box, CenteredLoader, Stack, Text } from '@inventory-platform/ui-kit';
 import { PlanCarousel } from './PlanCarousel';
 import styles from './Pricing.module.css';
 
@@ -30,39 +31,35 @@ export function Pricing() {
 
   if (loading) {
     return (
-      <section id="pricing" className={styles.pricing}>
-        <div className={styles.container}>
-          <div className={styles.header}>
-            <p className={styles.subtitle}>Loading plans...</p>
-          </div>
-        </div>
-      </section>
+      <Box as="section" id="pricing" className={styles.pricing}>
+        <Box className={styles.container}>
+          <CenteredLoader label="Loading plans..." />
+        </Box>
+      </Box>
     );
   }
 
   if (error) {
     return (
-      <section id="pricing" className={styles.pricing}>
-        <div className={styles.container}>
-          <div className={styles.header}>
-            <p className={styles.subtitle} style={{ color: 'var(--error, #dc2626)' }}>
-              {error}
-            </p>
-          </div>
-        </div>
-      </section>
+      <Box as="section" id="pricing" className={styles.pricing}>
+        <Box className={styles.container}>
+          <Alert variant="danger">{error}</Alert>
+        </Box>
+      </Box>
     );
   }
 
   return (
-    <section id="pricing" className={styles.pricing}>
-      <div className={styles.container}>
-        <header className={styles.header}>
-          <h2 className={styles.title}>Simple, Transparent Pricing</h2>
-          <p className={styles.subtitle}>
+    <Box as="section" id="pricing" className={styles.pricing}>
+      <Box className={styles.container}>
+        <Stack gap="sm" as="header" className={styles.header}>
+          <Text as="h2" variant="heading2" className={styles.title}>
+            Simple, Transparent Pricing
+          </Text>
+          <Text className={styles.subtitle}>
             Choose the plan that fits your business needs
-          </p>
-        </header>
+          </Text>
+        </Stack>
 
         <PlanCarousel
           plans={plans}
@@ -70,12 +67,12 @@ export function Pricing() {
           ctaLabel="Get Started"
           showTrialBadge
         />
-        <div className={styles.showAllWrapper}>
-          <Link to="/plans" className={styles.showAllButton}>
+        <Box className={styles.showAllWrapper}>
+          <RouterLink to="/plans" className={styles.showAllButton}>
             Show all pricing
-          </Link>
-        </div>
-      </div>
-    </section>
+          </RouterLink>
+        </Box>
+      </Box>
+    </Box>
   );
 }

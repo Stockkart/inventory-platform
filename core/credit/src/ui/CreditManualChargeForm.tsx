@@ -1,11 +1,26 @@
 import { useState } from 'react';
 import type { CreateCreditEntryDto, CreditPartyType } from '@inventory-platform/credit/types';
+import {
+  Box,
+  Button,
+  FormField,
+  FormRow,
+  Input,
+  Select,
+  type SelectOptionDef,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './credit.module.css';
 
 type Props = {
   submitting: boolean;
   onSubmit: (body: CreateCreditEntryDto) => Promise<void>;
 };
+
+const PARTY_TYPE_OPTIONS: SelectOptionDef[] = [
+  { value: 'CUSTOMER', label: 'Customer' },
+  { value: 'VENDOR', label: 'Vendor' },
+];
 
 /**
  * Full party fields for the first manual charge when no credit accounts exist yet.
@@ -41,112 +56,111 @@ export function CreditManualChargeForm({ submitting, onSubmit }: Props) {
   }
 
   return (
-    <div className={styles.manualChargeCard}>
-      <h3 className={styles.manualChargeTitle}>Create your first credit balance</h3>
-      <p className={styles.manualChargeIntro}>
+    <Box className={styles.manualChargeCard}>
+      <Text variant="heading3" className={styles.manualChargeTitle}>
+        Create your first credit balance
+      </Text>
+      <Text className={styles.manualChargeIntro}>
         No parties in the ledger yet. Add a charge to open a customer or vendor account. After
         that, pick the party in the sidebar — you won&apos;t need to enter ids again.
-      </p>
-      <form className={styles.manualChargeForm} onSubmit={handleSubmit}>
-        <div className={styles.manualRow}>
-          <div className={styles.compactField}>
-            <label className={styles.compactLabel} htmlFor="manual-party-kind">
-              Party type
-            </label>
-            <select
-              id="manual-party-kind"
-              className={styles.compactInput}
-              value={partyType}
-              onChange={(e) => setPartyType(e.target.value as CreditPartyType)}
-              disabled={submitting}
-            >
-              <option value="CUSTOMER">Customer</option>
-              <option value="VENDOR">Vendor</option>
-            </select>
-          </div>
-          <div className={styles.compactField}>
-            <label className={styles.compactLabel} htmlFor="manual-party-id">
-              Party id
-            </label>
-            <input
-              id="manual-party-id"
-              type="text"
-              className={styles.compactInput}
-              placeholder="Mongo / internal id used elsewhere"
-              value={partyId}
-              onChange={(e) => setPartyId(e.target.value)}
-              disabled={submitting}
-              required
-            />
-          </div>
-        </div>
-        <div className={styles.manualRow}>
-          <div className={styles.compactField}>
-            <label className={styles.compactLabel} htmlFor="manual-party-name">
-              Display name
-            </label>
-            <input
+      </Text>
+      <Box as="form" className={styles.manualChargeForm} onSubmit={handleSubmit}>
+        <Box className={styles.manualRow}>
+          <FormRow>
+            <FormField label="Party type" id="manual-party-kind" className={styles.compactField}>
+              <Select
+                id="manual-party-kind"
+                className={styles.compactInput}
+                options={PARTY_TYPE_OPTIONS}
+                value={partyType}
+                onChange={(e) => setPartyType(e.target.value as CreditPartyType)}
+                disabled={submitting}
+              />
+            </FormField>
+            <FormField label="Party id" id="manual-party-id" required className={styles.compactField}>
+              <Input
+                id="manual-party-id"
+                type="text"
+                className={styles.compactInput}
+                placeholder="Mongo / internal id used elsewhere"
+                value={partyId}
+                onChange={(e) => setPartyId(e.target.value)}
+                disabled={submitting}
+                required
+              />
+            </FormField>
+          </FormRow>
+        </Box>
+        <Box className={styles.manualRow}>
+          <FormRow>
+            <FormField
+              label="Display name"
               id="manual-party-name"
-              type="text"
-              className={styles.compactInput}
-              placeholder="Name shown in the ledger"
-              value={partyDisplayName}
-              onChange={(e) => setPartyDisplayName(e.target.value)}
-              disabled={submitting}
               required
-            />
-          </div>
-          <div className={styles.compactField}>
-            <label className={styles.compactLabel} htmlFor="manual-party-phone">
-              Phone <span className={styles.optionalMark}>(optional)</span>
-            </label>
-            <input
+              className={styles.compactField}
+            >
+              <Input
+                id="manual-party-name"
+                type="text"
+                className={styles.compactInput}
+                placeholder="Name shown in the ledger"
+                value={partyDisplayName}
+                onChange={(e) => setPartyDisplayName(e.target.value)}
+                disabled={submitting}
+                required
+              />
+            </FormField>
+            <FormField
+              label="Phone (optional)"
               id="manual-party-phone"
-              type="text"
-              className={styles.compactInput}
-              inputMode="tel"
-              placeholder="Contact"
-              value={partyPhone}
-              onChange={(e) => setPartyPhone(e.target.value)}
-              disabled={submitting}
-            />
-          </div>
-        </div>
-        <div className={styles.manualRow}>
-          <div className={styles.compactField}>
-            <label className={styles.compactLabel} htmlFor="manual-amt">
-              Amount (₹)
-            </label>
-            <input
-              id="manual-amt"
-              type="text"
-              inputMode="decimal"
-              className={styles.amountInput}
-              placeholder="0.00"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              disabled={submitting}
-              required
-            />
-          </div>
-          <div className={styles.compactField}>
-            <label className={styles.compactLabel} htmlFor="manual-note">
-              Note <span className={styles.optionalMark}>(optional)</span>
-            </label>
-            <input
-              id="manual-note"
-              type="text"
-              className={styles.compactInput}
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              disabled={submitting}
-            />
-          </div>
-        </div>
-        <details className={styles.advancedDetails}>
-          <summary className={styles.advancedSummary}>Reference (optional)</summary>
-          <div className={styles.advancedFields}>
-            <input
+              className={styles.compactField}
+            >
+              <Input
+                id="manual-party-phone"
+                type="text"
+                className={styles.compactInput}
+                inputMode="tel"
+                placeholder="Contact"
+                value={partyPhone}
+                onChange={(e) => setPartyPhone(e.target.value)}
+                disabled={submitting}
+              />
+            </FormField>
+          </FormRow>
+        </Box>
+        <Box className={styles.manualRow}>
+          <FormRow>
+            <FormField label="Amount (₹)" id="manual-amt" required className={styles.compactField}>
+              <Input
+                id="manual-amt"
+                type="text"
+                inputMode="decimal"
+                className={styles.amountInput}
+                placeholder="0.00"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                disabled={submitting}
+                required
+              />
+            </FormField>
+            <FormField label="Note (optional)" id="manual-note" className={styles.compactField}>
+              <Input
+                id="manual-note"
+                type="text"
+                className={styles.compactInput}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                disabled={submitting}
+              />
+            </FormField>
+          </FormRow>
+        </Box>
+        <Box as="details" className={styles.advancedDetails}>
+          <Box as="summary" className={styles.advancedSummary}>
+            Reference (optional)
+          </Box>
+          <Box className={styles.advancedFields}>
+            <Input
               aria-label="Reference type"
               type="text"
               className={styles.compactInput}
@@ -155,7 +169,7 @@ export function CreditManualChargeForm({ submitting, onSubmit }: Props) {
               placeholder="Reference type"
               disabled={submitting}
             />
-            <input
+            <Input
               aria-label="Reference id"
               type="text"
               className={styles.compactInput}
@@ -164,12 +178,12 @@ export function CreditManualChargeForm({ submitting, onSubmit }: Props) {
               placeholder="Reference id"
               disabled={submitting}
             />
-          </div>
-        </details>
-        <button type="submit" className={styles.primarySubmit} disabled={submitting}>
+          </Box>
+        </Box>
+        <Button type="submit" variant="solid" className={styles.primarySubmit} disabled={submitting}>
           {submitting ? 'Saving…' : 'Add charge & open ledger'}
-        </button>
-      </form>
-    </div>
+        </Button>
+      </Box>
+    </Box>
   );
 }

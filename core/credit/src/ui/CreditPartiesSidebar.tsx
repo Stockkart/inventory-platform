@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { CreditAccountResponse } from '@inventory-platform/credit/types';
+import { Box, Button, Input, Text } from '@inventory-platform/ui-kit';
 import { CreditAccountList } from './CreditAccountList';
 import { accountSort, presentCreditBalance } from '../model/credit-utils';
 import styles from './credit.module.css';
@@ -44,21 +45,21 @@ export function CreditPartiesSidebar({
   }
 
   return (
-    <div className={styles.partiesSidebar}>
-      <h2 className={styles.partiesSidebarTitle}>Outstanding</h2>
-      <p className={styles.sidebarHint}>
+    <Box className={styles.partiesSidebar}>
+      <Text variant="title" className={styles.partiesSidebarTitle}>
+        Outstanding
+      </Text>
+      <Text className={styles.sidebarHint}>
         <strong>Customer</strong> rows are money <em>to collect</em>.{' '}
         <strong>Vendor</strong> rows are money <em>you must pay</em>. Search finds anyone to view
         past ledger entries, including fully settled parties.
-      </p>
+      </Text>
 
-      <div className={styles.partySearchWrap}>
-        <label htmlFor="credit-party-search" className={styles.srOnly}>
-          Search any party
-        </label>
-        <input
+      <Box className={styles.partySearchWrap}>
+        <Input
           id="credit-party-search"
           type="search"
+          aria-label="Search any party"
           className={styles.partySearchInput}
           placeholder="Search any party…"
           value={query}
@@ -67,35 +68,40 @@ export function CreditPartiesSidebar({
         />
         {q ? (
           searchMatches.length > 0 ? (
-            <ul className={styles.searchResults} role="listbox">
-              {              searchMatches.map((a) => {
+            <Box as="ul" className={styles.searchResults} role="listbox">
+              {searchMatches.map((a) => {
                 const pr = presentCreditBalance(a);
                 return (
-                  <li key={a.id}>
-                    <button
+                  <Box as="li" key={a.id}>
+                    <Button
                       type="button"
+                      variant="ghost"
                       className={styles.searchResultBtn}
                       role="option"
                       aria-selected={selectedId === a.id}
                       onClick={() => pickParty(a.id)}
                     >
-                      <span className={styles.searchResultName}>{a.partyDisplayName}</span>
-                      <span className={styles.searchResultMeta}>
+                      <Box as="span" className={styles.searchResultName}>
+                        {a.partyDisplayName}
+                      </Box>
+                      <Box as="span" className={styles.searchResultMeta}>
                         {a.partyType === 'CUSTOMER' ? 'Customer' : 'Vendor'} ·{' '}
                         {pr.tone === 'settled' ? 'Settled' : `${pr.headline} ${pr.amountLine}`}
-                      </span>
-                    </button>
-                  </li>
+                      </Box>
+                    </Button>
+                  </Box>
                 );
               })}
-            </ul>
+            </Box>
           ) : (
-            <p className={styles.searchEmpty}>No party matches.</p>
+            <Text className={styles.searchEmpty}>No party matches.</Text>
           )
         ) : null}
-      </div>
+      </Box>
 
-      <h3 className={styles.sidebarSubheading}>Still open</h3>
+      <Text variant="heading3" className={styles.sidebarSubheading}>
+        Still open
+      </Text>
       <CreditAccountList
         accounts={pendingAccounts}
         selectedId={selectedId}
@@ -105,11 +111,13 @@ export function CreditPartiesSidebar({
 
       {favourAccounts.length > 0 ? (
         <>
-          <h3 className={styles.sidebarSubheading}>In your favour</h3>
-          <p className={styles.sidebarHint}>
+          <Text variant="heading3" className={styles.sidebarSubheading}>
+            In your favour
+          </Text>
+          <Text className={styles.sidebarHint}>
             Often from a <strong>return on credit</strong> when you had little or no payable left
             — the supplier owes you (vendor credit) or the customer paid ahead.
-          </p>
+          </Text>
           <CreditAccountList
             accounts={favourAccounts}
             selectedId={selectedId}
@@ -118,6 +126,6 @@ export function CreditPartiesSidebar({
           />
         </>
       ) : null}
-    </div>
+    </Box>
   );
 }

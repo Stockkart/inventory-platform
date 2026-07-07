@@ -1,5 +1,17 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router';
+import {
+  Alert,
+  Badge,
+  Box,
+  Card,
+  CardBody,
+  CenteredLoader,
+  Grid,
+  PageHeader,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { PlanGrid } from '../ui/PlanGrid';
 import type { PlanResponse } from '@inventory-platform/plan/types';
 import { usePlansQuery, useShopPlanStatusQuery } from '../queries/hooks';
@@ -24,21 +36,21 @@ export function PlanStatusPage() {
 
   if (statusLoading) {
     return (
-      <div className={styles.page}>
-        <div className={styles.loading}>Loading plan status...</div>
-      </div>
+      <Box className={styles.page}>
+        <CenteredLoader label="Loading plan status..." />
+      </Box>
     );
   }
 
   if (statusError && !status) {
     return (
-      <div className={styles.page}>
-        <div className={styles.error}>
+      <Box className={styles.page}>
+        <Alert variant="danger">
           {statusErr instanceof Error
             ? statusErr.message
             : 'Failed to load plan status'}
-        </div>
-      </div>
+        </Alert>
+      </Box>
     );
   }
 
@@ -53,124 +65,147 @@ export function PlanStatusPage() {
     : -1;
 
   return (
-    <div className={styles.page}>
-      <div className={styles.header}>
-        <h2 className={styles.title}>Plan</h2>
-        <p className={styles.subtitle}>
-          View your subscription, usage, and upgrade options
-        </p>
-      </div>
+    <Stack gap="md" className={styles.page}>
+      <PageHeader
+        title="Plan"
+        description="View your subscription, usage, and upgrade options"
+      />
 
-      <div className={styles.container}>
-        <section className={styles.section}>
-          <h3 className={styles.sectionTitle}>Current Plan</h3>
-          <div className={styles.planCard}>
-            {status.trial ? (
-              <>
-                <div className={styles.trialBadge}>Trial</div>
-                <p className={styles.planName}>Base (Trial) — 30 days</p>
-                <p className={styles.planExpiry}>
-                  Expires: {formatDate(status.planExpiryDate)}
-                </p>
-                {status.trialExpired && (
-                  <div className={styles.trialExpired}>
-                    Your trial has ended. Choose a plan below to continue.
-                  </div>
+      <Box className={styles.container}>
+        <Stack gap="md">
+          <Box as="section" className={styles.section}>
+            <Text as="h3" variant="heading3" className={styles.sectionTitle}>
+              Current Plan
+            </Text>
+            <Card className={styles.planCard}>
+              <CardBody>
+                {status.trial ? (
+                  <Stack gap="sm">
+                    <Badge className={styles.trialBadge}>Trial</Badge>
+                    <Text className={styles.planName}>
+                      Base (Trial) — 30 days
+                    </Text>
+                    <Text className={styles.planExpiry}>
+                      Expires: {formatDate(status.planExpiryDate)}
+                    </Text>
+                    {status.trialExpired ? (
+                      <Alert variant="warning" className={styles.trialExpired}>
+                        Your trial has ended. Choose a plan below to continue.
+                      </Alert>
+                    ) : null}
+                  </Stack>
+                ) : (
+                  <Stack gap="sm">
+                    <Text className={styles.planName}>
+                      {status.plan?.planName ?? '—'}
+                    </Text>
+                    <Text className={styles.planExpiry}>
+                      {status.planExpired ? 'Expired' : 'Renews'}:{' '}
+                      {formatDate(status.planExpiryDate)}
+                    </Text>
+                    {status.planExpired ? (
+                      <Alert variant="warning" className={styles.trialExpired}>
+                        Your subscription has ended. Choose a plan below to
+                        continue.
+                      </Alert>
+                    ) : null}
+                    <Text className={styles.planPosition}>
+                      Plan {currentPlanIndex + 1} of {plans.length}
+                    </Text>
+                  </Stack>
                 )}
-              </>
-            ) : (
-              <>
-                <p className={styles.planName}>{status.plan?.planName ?? '—'}</p>
-                <p className={styles.planExpiry}>
-                  {status.planExpired ? 'Expired' : 'Renews'}:{' '}
-                  {formatDate(status.planExpiryDate)}
-                </p>
-                {status.planExpired && (
-                  <div className={styles.trialExpired}>
-                    Your subscription has ended. Choose a plan below to continue.
-                  </div>
-                )}
-                <p className={styles.planPosition}>
-                  Plan {currentPlanIndex + 1} of {plans.length}
-                </p>
-              </>
-            )}
-          </div>
-        </section>
+              </CardBody>
+            </Card>
+          </Box>
 
-        <section className={styles.section}>
-          <h3 className={styles.sectionTitle}>This Month&apos;s Usage</h3>
-          <div className={styles.usageGrid}>
-            <div className={styles.usageItem}>
-              <span className={styles.usageLabel}>Billing Amount</span>
-              <span
-                className={
-                  status.billingLimitReached ? styles.usageLimitReached : undefined
-                }
-              >
-                ₹
-                {status.currentUsage?.billingAmountUsed?.toLocaleString(
-                  'en-IN'
-                ) ?? 0}
-              </span>
-            </div>
-            <div className={styles.usageItem}>
-              <span className={styles.usageLabel}>Bills</span>
-              <span
-                className={
-                  status.billCountLimitReached ? styles.usageLimitReached : undefined
-                }
-              >
-                {status.currentUsage?.billCountUsed ?? 0}
-              </span>
-            </div>
-            <div className={styles.usageItem}>
-              <span className={styles.usageLabel}>SMS</span>
-              <span
-                className={
-                  status.smsLimitReached ? styles.usageLimitReached : undefined
-                }
-              >
-                {status.currentUsage?.smsUsed ?? 0}
-              </span>
-            </div>
-            <div className={styles.usageItem}>
-              <span className={styles.usageLabel}>WhatsApp</span>
-              <span
-                className={
-                  status.whatsappLimitReached ? styles.usageLimitReached : undefined
-                }
-              >
-                {status.currentUsage?.whatsappUsed ?? 0}
-              </span>
-            </div>
-          </div>
-        </section>
+          <Box as="section" className={styles.section}>
+            <Text as="h3" variant="heading3" className={styles.sectionTitle}>
+              This Month&apos;s Usage
+            </Text>
+            <Grid className={styles.usageGrid}>
+              <Box className={styles.usageItem}>
+                <Text as="span" className={styles.usageLabel}>
+                  Billing Amount
+                </Text>
+                <Text
+                  as="span"
+                  className={
+                    status.billingLimitReached ? styles.usageLimitReached : undefined
+                  }
+                >
+                  ₹
+                  {status.currentUsage?.billingAmountUsed?.toLocaleString(
+                    'en-IN'
+                  ) ?? 0}
+                </Text>
+              </Box>
+              <Box className={styles.usageItem}>
+                <Text as="span" className={styles.usageLabel}>
+                  Bills
+                </Text>
+                <Text
+                  as="span"
+                  className={
+                    status.billCountLimitReached ? styles.usageLimitReached : undefined
+                  }
+                >
+                  {status.currentUsage?.billCountUsed ?? 0}
+                </Text>
+              </Box>
+              <Box className={styles.usageItem}>
+                <Text as="span" className={styles.usageLabel}>
+                  SMS
+                </Text>
+                <Text
+                  as="span"
+                  className={
+                    status.smsLimitReached ? styles.usageLimitReached : undefined
+                  }
+                >
+                  {status.currentUsage?.smsUsed ?? 0}
+                </Text>
+              </Box>
+              <Box className={styles.usageItem}>
+                <Text as="span" className={styles.usageLabel}>
+                  WhatsApp
+                </Text>
+                <Text
+                  as="span"
+                  className={
+                    status.whatsappLimitReached ? styles.usageLimitReached : undefined
+                  }
+                >
+                  {status.currentUsage?.whatsappUsed ?? 0}
+                </Text>
+              </Box>
+            </Grid>
+          </Box>
 
-        <section className={styles.section}>
-          <h3 className={styles.sectionTitle}>
-            {status.planExpired ? 'Choose a Plan' : 'Available Plans'}
-          </h3>
-          <p className={styles.sectionSubtitle}>
-            Select a plan to proceed to payment
-          </p>
-          <PlanGrid
-            plans={plans}
-            currentPlanId={status.trial ? null : status.planId}
-            onSelectPlan={handleSelectPlan}
-            ctaLabel={status.planExpired ? 'Select Plan' : 'Upgrade'}
-            showTrialBadge
-          />
-        </section>
+          <Box as="section" className={styles.section}>
+            <Text as="h3" variant="heading3" className={styles.sectionTitle}>
+              {status.planExpired ? 'Choose a Plan' : 'Available Plans'}
+            </Text>
+            <Text className={styles.sectionSubtitle}>
+              Select a plan to proceed to payment
+            </Text>
+            <PlanGrid
+              plans={plans}
+              currentPlanId={status.trial ? null : status.planId}
+              onSelectPlan={handleSelectPlan}
+              ctaLabel={status.planExpired ? 'Select Plan' : 'Upgrade'}
+              showTrialBadge
+            />
+          </Box>
 
-        {statusError && (
-          <div className={styles.errorInline}>
-            {statusErr instanceof Error
-              ? statusErr.message
-              : 'Failed to load plan status'}
-          </div>
-        )}
-      </div>
-    </div>
+          {statusError ? (
+            <Alert variant="danger" className={styles.errorInline}>
+              {statusErr instanceof Error
+                ? statusErr.message
+                : 'Failed to load plan status'}
+            </Alert>
+          ) : null}
+        </Stack>
+      </Box>
+    </Stack>
   );
 }

@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { PlanResponse } from '@inventory-platform/plan/types';
+import { Badge, Box, Button, IconButton, Stack, Text } from '@inventory-platform/ui-kit';
 import { buildPlanFeatures } from './PlanGrid';
 import styles from './PlanCarousel.module.css';
 
@@ -28,7 +29,7 @@ export function PlanCarousel({
   const [step, setStep] = useState(324);
   const [isPaused, setIsPaused] = useState(false);
 
-  const wrapperRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const el = wrapperRef.current;
@@ -107,7 +108,7 @@ export function PlanCarousel({
     if (activeIndex < visible) {
       setTimeout(() => setActiveIndex(sortedPlans.length + visible - 1), 0);
     }
-  }, [activeIndex, sortedPlans.length]);
+  }, [activeIndex, sortedPlans.length, visible]);
 
   const goNext = useCallback(() => {
     setIsPaused(true);
@@ -122,19 +123,24 @@ export function PlanCarousel({
   if (!sortedPlans.length) return null;
 
   return (
-    <div className={styles.carouselWrapper}>
-      <div className={styles.carouselContainer}>
-        <button type="button" className={styles.navButton} onClick={goPrev}>
+    <Box className={styles.carouselWrapper}>
+      <Box className={styles.carouselContainer}>
+        <IconButton
+          type="button"
+          label="Previous plan"
+          className={styles.navButton}
+          onClick={goPrev}
+        >
           ‹
-        </button>
+        </IconButton>
 
-        <div
+        <Box
           ref={wrapperRef}
           className={styles.trackWrapper}
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
         >
-          <div
+          <Box
             className={styles.track}
             style={{
               transform: `translateX(-${
@@ -160,7 +166,7 @@ export function PlanCarousel({
                 plan.planName === 'Silver' || plan.planName === 'Gold';
 
               return (
-                <div
+                <Box
                   key={`${plan.id}-${idx}`}
                   className={`${styles.slide}
                   ${isCenter ? styles.slideCenter : ''}
@@ -168,87 +174,103 @@ export function PlanCarousel({
                   ${isRight ? styles.slideRight : ''}
                   `}
                 >
-                  <article
+                  <Box
+                    as="article"
                     className={`${styles.card}
                     ${isCenter ? styles.cardCenter : ''}
                     ${highlight ? styles.cardHighlight : ''}
                     `}
                   >
-                    {highlight && isCenter && (
-                      <div className={styles.badge}>Most Popular</div>
-                    )}
+                    {highlight && isCenter ? (
+                      <Badge className={styles.badge}>Most Popular</Badge>
+                    ) : null}
 
-                    <div className={styles.cardInner}>
+                    <Stack gap="sm" className={styles.cardInner}>
                       {showTrialBadge &&
                         !EXTRA_PLANS.includes(plan.planName) && (
-                          <div className={styles.trialBadge}>
+                          <Badge className={styles.trialBadge}>
                             Free 30-day trial
-                          </div>
+                          </Badge>
                         )}
 
-                      <h3 className={styles.planName}>{plan.planName}</h3>
+                      <Text as="h3" variant="heading3" className={styles.planName}>
+                        {plan.planName}
+                      </Text>
 
-                      {!EXTRA_PLANS.includes(plan.planName) && plan.bestFor && (
-                        <p className={styles.planDescription}>{plan.bestFor}</p>
-                      )}
+                      {!EXTRA_PLANS.includes(plan.planName) && plan.bestFor ? (
+                        <Text className={styles.planDescription}>
+                          {plan.bestFor}
+                        </Text>
+                      ) : null}
 
-                      <div className={styles.priceRow}>
-                        <span className={styles.price}>
+                      <Box className={styles.priceRow}>
+                        <Text as="span" className={styles.price}>
                           ₹
                           {(plan.arcPrice ?? plan.price)?.toLocaleString(
                             'en-IN'
                           ) ?? 0}
-                        </span>
+                        </Text>
 
-                        <span className={styles.priceSuffix}>
+                        <Text as="span" className={styles.priceSuffix}>
                           {EXTRA_PLANS.includes(plan.planName)
                             ? '/year'
                             : '/year'}
-                        </span>
-                      </div>
+                        </Text>
+                      </Box>
 
                       {!EXTRA_PLANS.includes(plan.planName) &&
                         plan.price &&
                         plan.price > 0 && (
-                          <p className={styles.oneTimePrice}>
+                          <Text className={styles.oneTimePrice}>
                             One-time ₹{plan.price.toLocaleString('en-IN')}
-                          </p>
+                          </Text>
                         )}
 
-                      <ul className={styles.featuresList}>
+                      <Box as="ul" className={styles.featuresList}>
                         {features.map((f) => (
-                          <li key={f} className={styles.featureItem}>
-                            <span className={styles.checkIcon}>✓</span>
-                            <span>{f}</span>
-                          </li>
+                          <Box as="li" key={f} className={styles.featureItem}>
+                            <Text as="span" className={styles.checkIcon}>
+                              ✓
+                            </Text>
+                            <Text as="span">{f}</Text>
+                          </Box>
                         ))}
-                      </ul>
+                      </Box>
 
-                      {onSelectPlan && isCenter && (
-                        <button
+                      {onSelectPlan && isCenter ? (
+                        <Button
+                          type="button"
+                          variant="solid"
                           className={styles.ctaButton}
                           onClick={() => onSelectPlan(plan)}
                         >
                           {ctaLabel}
-                        </button>
-                      )}
-                    </div>
-                  </article>
-                </div>
+                        </Button>
+                      ) : null}
+                    </Stack>
+                  </Box>
+                </Box>
               );
             })}
-          </div>
-        </div>
+          </Box>
+        </Box>
 
-        <button type="button" className={styles.navButton} onClick={goNext}>
+        <IconButton
+          type="button"
+          label="Next plan"
+          className={styles.navButton}
+          onClick={goNext}
+        >
           ›
-        </button>
-      </div>
+        </IconButton>
+      </Box>
 
-      <div className={styles.dots}>
+      <Box className={styles.dots}>
         {Array.from({ length: total - 2 }, (_, i) => i + 1).map((_, i) => (
-          <button
+          <IconButton
             key={i}
+            type="button"
+            label={`Go to slide ${i + 1}`}
             className={`${styles.dot} ${
               i === activeIndex ? styles.dotActive : ''
             }`}
@@ -256,9 +278,11 @@ export function PlanCarousel({
               setIsPaused(true);
               setActiveIndex(i + 1);
             }}
-          />
+          >
+            {'\u00A0'}
+          </IconButton>
         ))}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

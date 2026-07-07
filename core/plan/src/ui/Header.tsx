@@ -1,55 +1,55 @@
-import { Link } from 'react-router';
-import { ThemeToggle } from '@inventory-platform/ui-kit';
+import { Link as RouterLink } from 'react-router';
+import { Box, Link, ThemeToggle, type BoxProps } from '@inventory-platform/ui-kit';
 import { useAuthStore } from '@inventory-platform/session';
 import styles from './Header.module.css';
+
+const logoImgProps = {
+  as: 'img',
+  src: '/assets/logo/STOCKKART-3x.png',
+  alt: 'StockKart',
+  className: styles.logoImg,
+} as unknown as BoxProps;
 
 export function Header() {
   const { isAuthenticated } = useAuthStore();
 
   return (
-    <header className={styles.header}>
-      <div className={styles.container}>
-        {/* Left: logo */}
-        <Link to="/" className={styles.logo}>
-          <img
-            src="/assets/logo/STOCKKART-3x.png"
-            alt="StockKart"
-            className={styles.logoImg}
-          />
-        </Link>
+    <Box as="header" className={styles.header}>
+      <Box className={styles.container}>
+        <RouterLink to="/" className={styles.logo}>
+          <Box {...logoImgProps} />
+        </RouterLink>
 
-        {/* Center: nav links */}
-        <nav className={styles.nav}>
-          <a href="#features" className={styles.navLink}>
+        <Box as="nav" className={styles.nav}>
+          <Link href="#features" className={styles.navLink}>
             Features
-          </a>
-          <a href="#pricing" className={styles.navLink}>
+          </Link>
+          <Link href="#pricing" className={styles.navLink}>
             Pricing
-          </a>
-          <a href="#about" className={styles.navLink}>
+          </Link>
+          <Link href="#about" className={styles.navLink}>
             About
-          </a>
-        </nav>
+          </Link>
+        </Box>
 
-        {/* Right: toggle + buttons */}
-        <div className={styles.actions}>
+        <Box className={styles.actions}>
           <ThemeToggle />
           {isAuthenticated ? (
-            <Link to="/dashboard" className={styles.getStartedBtn}>
+            <RouterLink to="/dashboard" className={styles.getStartedBtn}>
               Dashboard
-            </Link>
+            </RouterLink>
           ) : (
             <>
-              <Link to="/login" className={styles.signInBtn}>
+              <RouterLink to="/login" className={styles.signInBtn}>
                 Sign In
-              </Link>
-              <Link to="/signup" className={styles.getStartedBtn}>
+              </RouterLink>
+              <RouterLink to="/signup" className={styles.getStartedBtn}>
                 Get Started
-              </Link>
+              </RouterLink>
             </>
           )}
-        </div>
-      </div>
-    </header>
+        </Box>
+      </Box>
+    </Box>
   );
 }

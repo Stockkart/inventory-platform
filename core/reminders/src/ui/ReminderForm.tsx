@@ -2,6 +2,17 @@ import { useState } from 'react';
 import type { CreateReminderDto, UpdateReminderDto, Reminder } from '@inventory-platform/reminders/types';
 import styles from './ReminderForm.module.css';
 import { useNotify } from '@inventory-platform/session';
+import {
+  Alert,
+  Button,
+  FormField,
+  Inline,
+  Input,
+  Select,
+  Stack,
+  Textarea,
+  type SelectOptionDef,
+} from '@inventory-platform/ui-kit';
 
 interface ReminderFormProps {
   reminder?: Reminder;
@@ -10,6 +21,11 @@ interface ReminderFormProps {
   onCancel?: () => void;
   isLoading?: boolean;
 }
+
+const STATUS_OPTIONS: readonly SelectOptionDef[] = [
+  { value: 'PENDING', label: 'Pending' },
+  { value: 'COMPLETED', label: 'Completed' },
+];
 
 export function ReminderForm({
   reminder,
@@ -34,12 +50,7 @@ export function ReminderForm({
   const [error, setError] = useState<string | null>(null);
   const { error: notifyError } = useNotify;
 
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    const { name, value } = e.target;
+  const setField = (name: keyof typeof formData, value: string) => {
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -47,8 +58,7 @@ export function ReminderForm({
     if (error) setError(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setError(null);
 
     if (!formData.reminderAt) {
@@ -87,99 +97,93 @@ export function ReminderForm({
     }
   };
 
-  return (
-    <form className={styles.form} onSubmit={handleSubmit}>
-      {error && <div className={styles.errorMessage}>{error}</div>}
+  const reminderAtId = 'reminderAt';
+  const endDateId = 'endDate';
+  const notesId = 'notes';
+  const statusId = 'status';
 
-      <div className={styles.formGroup}>
-        <label htmlFor="reminderAt" className={styles.label}>
-          Reminder Date & Time *
-        </label>
-        <input
-          id="reminderAt"
+  return (
+    <Stack gap="md" className={styles.form}>
+      {error ? (
+        <Alert variant="danger" className={styles.errorMessage}>
+          {error}
+        </Alert>
+      ) : null}
+
+      <FormField label="Reminder Date & Time" htmlFor={reminderAtId} required>
+        <Input
+          id={reminderAtId}
           name="reminderAt"
           type="datetime-local"
-          className={styles.input}
           value={formData.reminderAt}
-          onChange={handleChange}
+          onChange={(e) => setField('reminderAt', e.target.value)}
           disabled={isLoading}
           required
         />
-      </div>
+      </FormField>
 
-      <div className={styles.formGroup}>
-        <label htmlFor="endDate" className={styles.label}>
-          End Date & Time (Optional)
-        </label>
-        <input
-          id="endDate"
+      <FormField label="End Date & Time (Optional)" htmlFor={endDateId}>
+        <Input
+          id={endDateId}
           name="endDate"
           type="datetime-local"
-          className={styles.input}
           value={formData.endDate}
-          onChange={handleChange}
+          onChange={(e) => setField('endDate', e.target.value)}
           disabled={isLoading}
         />
-      </div>
+      </FormField>
 
-      <div className={styles.formGroup}>
-        <label htmlFor="notes" className={styles.label}>
-          Notes (Optional)
-        </label>
-        <textarea
-          id="notes"
+      <FormField label="Notes (Optional)" htmlFor={notesId}>
+        <Textarea
+          id={notesId}
           name="notes"
-          className={styles.textarea}
           rows={3}
           placeholder="Add any notes about this reminder..."
           value={formData.notes}
-          onChange={handleChange}
+          onChange={(e) => setField('notes', e.target.value)}
           disabled={isLoading}
         />
-      </div>
+      </FormField>
 
-      {isEditMode && (
-        <div className={styles.formGroup}>
-          <label htmlFor="status" className={styles.label}>
-            Status
-          </label>
-          <select
-            id="status"
+      {isEditMode ? (
+        <FormField label="Status" htmlFor={statusId}>
+          <Select
+            id={statusId}
             name="status"
-            className={styles.select}
+            options={STATUS_OPTIONS}
             value={formData.status}
-            onChange={handleChange}
+            onChange={(e) => setField('status', e.target.value)}
             disabled={isLoading}
-          >
-            <option value="PENDING">Pending</option>
-            <option value="COMPLETED">Completed</option>
-          </select>
-        </div>
-      )}
+          />
+        </FormField>
+      ) : null}
 
-      <div className={styles.formActions}>
-        {onCancel && (
-          <button
+      <Inline gap="sm" className={styles.formActions}>
+        {onCancel ? (
+          <Button
             type="button"
+            variant="outline"
             className={styles.cancelButton}
             onClick={onCancel}
             disabled={isLoading}
           >
             Cancel
-          </button>
-        )}
-        <button
-          type="submit"
+          </Button>
+        ) : null}
+        <Button
+          type="button"
+          variant="solid"
           className={styles.submitButton}
+          onClick={() => void handleSubmit()}
           disabled={isLoading || !formData.reminderAt}
         >
           {isLoading
             ? 'Saving...'
             : isEditMode
-            ? 'Update Reminder'
-            : 'Create Reminder'}
-        </button>
-      </div>
-    </form>
+              ? 'Update Reminder'
+              : 'Create Reminder'}
+        </Button>
+      </Inline>
+    </Stack>
   );
 }

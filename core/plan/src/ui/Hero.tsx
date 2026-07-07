@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Play } from 'lucide-react';
+import { ChevronRight, Play } from 'lucide-react';
 import { resourcesApi } from '@inventory-platform/shell/api';
 import type { TutorialResourceResponse } from '@inventory-platform/shell/types';
 import { YouTubeHelpModal } from '@inventory-platform/shell';
+import { Box, Button, Inline, Stack, Text } from '@inventory-platform/ui-kit';
 import styles from './Hero.module.css';
 
-// Use public assets - these will be served from /assets/logo/ in the public folder
 const backgrounds = [
   '/assets/logo/inventory-pic.png',
   '/assets/logo/inventory-pic2.png',
@@ -53,11 +53,10 @@ export function Hero() {
   };
 
   return (
-    <section className={styles.hero}>
-      {/* Background slider */}
-      <div className={styles.backgroundWrapper}>
+    <Box as="section" className={styles.hero}>
+      <Box className={styles.backgroundWrapper}>
         {backgrounds.map((src, index) => (
-          <div
+          <Box
             key={index}
             className={`${styles.bgImage} ${
               index === currentIndex ? styles.bgImageActive : ''
@@ -65,53 +64,45 @@ export function Hero() {
             style={{ backgroundImage: `url(${src})` }}
           />
         ))}
-        <div className={styles.overlay} />
-      </div>
+        <Box className={styles.overlay} />
+      </Box>
 
-      {/* Content */}
-      <div className={styles.container}>
-        <h1 className={styles.title}>
-          <span className={styles.titleBlue}>Powerful Inventory</span>{' '}
-          <span className={styles.titleTeal}>Management</span>
-        </h1>
-        <p className={styles.description}>
-          Everything you need to manage your inventory efficiently and scale{' '}
-          <br />
-          your business operations
-        </p>
-        <div className={styles.ctaButtons}>
-          <button
+      <Box className={styles.container}>
+        <Text as="h1" variant="heading1" className={styles.title}>
+          <Text as="span" className={styles.titleBlue}>
+            Powerful Inventory
+          </Text>{' '}
+          <Text as="span" className={styles.titleTeal}>
+            Management
+          </Text>
+        </Text>
+        <Stack gap="none" className={styles.description}>
+          <Text>
+            Everything you need to manage your inventory efficiently and scale
+          </Text>
+          <Text>your business operations</Text>
+        </Stack>
+        <Inline gap="md" className={styles.ctaButtons}>
+          <Button
+            variant="solid"
             className={styles.primaryBtn}
             onClick={() => navigate('/plans')}
+            rightIcon={<ChevronRight size={20} />}
           >
             Start Free Trial
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 20 20"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M7.5 15L12.5 10L7.5 5"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="outline"
             className={styles.secondaryBtn}
             onClick={() => void handleWatchDemo()}
             disabled={demoLoading}
+            leftIcon={<Play size={18} />}
           >
-            <Play size={18} style={{ marginRight: '8px', paddingTop: '3px' }} />
             {demoLoading ? 'Loading…' : 'Watch Demo'}
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Inline>
+      </Box>
 
       <YouTubeHelpModal
         video={demoVideo}
@@ -119,6 +110,6 @@ export function Hero() {
         onClose={() => setDemoOpen(false)}
         title={demoVideo?.title ?? 'StockKart demo'}
       />
-    </section>
+    </Box>
   );
 }

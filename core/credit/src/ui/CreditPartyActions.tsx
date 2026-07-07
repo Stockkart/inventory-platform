@@ -1,6 +1,16 @@
 import { useEffect, useState } from 'react';
 import type { CreateCreditEntryDto, CreditAccountResponse, CreditSettlementPaymentMethod } from '@inventory-platform/credit/types';
 import {
+  Box,
+  Button,
+  FormField,
+  Inline,
+  Input,
+  Select,
+  type SelectOptionDef,
+  Text,
+} from '@inventory-platform/ui-kit';
+import {
   creditActionCopy,
   presentCreditBalance,
   todayLocalDate,
@@ -22,6 +32,14 @@ const CONTEXT_TONE: Record<CreditBalanceTone, string> = {
   advance_vendor: styles.contextBalAdvOut,
   settled: styles.contextBalSettled,
 };
+
+const PAYMENT_METHOD_OPTIONS: SelectOptionDef[] = [
+  { value: 'CASH', label: 'Cash' },
+  { value: 'UPI', label: 'UPI' },
+  { value: 'BANK', label: 'Bank transfer' },
+  { value: 'CARD', label: 'Card' },
+  { value: 'ADJUSTMENT', label: 'Adjustment / write-off' },
+];
 
 export function CreditPartyActions({
   account,
@@ -98,10 +116,11 @@ export function CreditPartyActions({
       : 'Money you need to pay suppliers';
 
   return (
-    <div className={styles.partyActions}>
-      <div className={styles.partyContext} aria-live="polite">
-        <div className={styles.partyContextTop}>
-          <span
+    <Box className={styles.partyActions}>
+      <Box className={styles.partyContext} aria-live="polite">
+        <Box className={styles.partyContextTop}>
+          <Box
+            as="span"
             className={`${styles.partyContextBadge} ${
               account.partyType === 'VENDOR'
                 ? styles.partyContextBadgeVendor
@@ -109,26 +128,40 @@ export function CreditPartyActions({
             }`}
           >
             {partyKindLabel}
-          </span>
-          <p className={styles.partyContextSub}>{sub}</p>
-        </div>
-        <div className={styles.partyContextMain}>
-          <span className={styles.partyContextName}>{account.partyDisplayName}</span>
+          </Box>
+          <Text className={styles.partyContextSub}>{sub}</Text>
+        </Box>
+        <Box className={styles.partyContextMain}>
+          <Box as="span" className={styles.partyContextName}>
+            {account.partyDisplayName}
+          </Box>
           {account.partyPhone ? (
-            <span className={styles.partyContextPhone}>{account.partyPhone}</span>
+            <Box as="span" className={styles.partyContextPhone}>
+              {account.partyPhone}
+            </Box>
           ) : null}
-        </div>
-        <div className={`${styles.partyContextBalBlock} ${CONTEXT_TONE[bal.tone]}`}>
-          <span className={styles.partyContextBalLabel}>{bal.headline}</span>
+        </Box>
+        <Box className={`${styles.partyContextBalBlock} ${CONTEXT_TONE[bal.tone]}`}>
+          <Box as="span" className={styles.partyContextBalLabel}>
+            {bal.headline}
+          </Box>
           {bal.tone !== 'settled' ? (
-            <span className={styles.partyContextBalAmt}>{bal.amountLine}</span>
+            <Box as="span" className={styles.partyContextBalAmt}>
+              {bal.amountLine}
+            </Box>
           ) : null}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
-      <div className={styles.actionTabs} role="tablist" aria-label="Entry type">
-        <button
+      <Inline
+        className={styles.actionTabs}
+        role="tablist"
+        aria-label="Entry type"
+        gap="none"
+      >
+        <Button
           type="button"
+          variant="ghost"
           role="tab"
           aria-selected={mode === 'charge'}
           className={mode === 'charge' ? styles.actionTabActive : styles.actionTab}
@@ -136,9 +169,10 @@ export function CreditPartyActions({
           disabled={submitting}
         >
           {copy.tabIncrease}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="ghost"
           role="tab"
           aria-selected={mode === 'settlement'}
           className={mode === 'settlement' ? styles.actionTabActive : styles.actionTab}
@@ -146,17 +180,16 @@ export function CreditPartyActions({
           disabled={submitting}
         >
           {copy.tabReduce}
-        </button>
-      </div>
+        </Button>
+      </Inline>
 
-      <p className={styles.modeHint}>{mode === 'charge' ? copy.hintIncrease : copy.hintReduce}</p>
+      <Text className={styles.modeHint}>
+        {mode === 'charge' ? copy.hintIncrease : copy.hintReduce}
+      </Text>
 
-      <form className={styles.compactForm} onSubmit={handleSubmit}>
-        <div className={styles.compactField}>
-          <label className={styles.compactLabel} htmlFor="credit-party-amount">
-            Amount (₹)
-          </label>
-          <input
+      <Box as="form" className={styles.compactForm} onSubmit={handleSubmit}>
+        <FormField label="Amount (₹)" id="credit-party-amount" required className={styles.compactField}>
+          <Input
             id="credit-party-amount"
             type="text"
             inputMode="decimal"
@@ -168,13 +201,10 @@ export function CreditPartyActions({
             disabled={submitting}
             required
           />
-        </div>
+        </FormField>
 
-        <div className={styles.compactField}>
-          <label className={styles.compactLabel} htmlFor="credit-party-txn-date">
-            Date
-          </label>
-          <input
+        <FormField label="Date" id="credit-party-txn-date" required className={styles.compactField}>
+          <Input
             id="credit-party-txn-date"
             type="date"
             className={styles.compactInput}
@@ -183,36 +213,34 @@ export function CreditPartyActions({
             disabled={submitting}
             required
           />
-        </div>
+        </FormField>
 
         {mode === 'settlement' ? (
           <>
-            <div className={styles.compactField}>
-              <label className={styles.compactLabel} htmlFor="credit-party-method">
-                Payment method
-              </label>
-              <select
+            <FormField
+              label="Payment method"
+              id="credit-party-method"
+              required
+              className={styles.compactField}
+            >
+              <Select
                 id="credit-party-method"
                 className={styles.compactInput}
+                options={PAYMENT_METHOD_OPTIONS}
                 value={paymentMethod}
                 onChange={(e) =>
                   setPaymentMethod(e.target.value as CreditSettlementPaymentMethod)
                 }
                 disabled={submitting}
                 required
-              >
-                <option value="CASH">Cash</option>
-                <option value="UPI">UPI</option>
-                <option value="BANK">Bank transfer</option>
-                <option value="CARD">Card</option>
-                <option value="ADJUSTMENT">Adjustment / write-off</option>
-              </select>
-            </div>
-            <div className={styles.compactField}>
-              <label className={styles.compactLabel} htmlFor="credit-party-bank-ref">
-                Reference <span className={styles.optionalMark}>(optional)</span>
-              </label>
-              <input
+              />
+            </FormField>
+            <FormField
+              label="Reference (optional)"
+              id="credit-party-bank-ref"
+              className={styles.compactField}
+            >
+              <Input
                 id="credit-party-bank-ref"
                 type="text"
                 className={styles.compactInput}
@@ -221,15 +249,12 @@ export function CreditPartyActions({
                 placeholder="UTR, cheque no., etc."
                 disabled={submitting}
               />
-            </div>
+            </FormField>
           </>
         ) : null}
 
-        <div className={styles.compactField}>
-          <label className={styles.compactLabel} htmlFor="credit-party-note">
-            Note <span className={styles.optionalMark}>(optional)</span>
-          </label>
-          <input
+        <FormField label="Note (optional)" id="credit-party-note" className={styles.compactField}>
+          <Input
             id="credit-party-note"
             type="text"
             className={styles.compactInput}
@@ -238,12 +263,14 @@ export function CreditPartyActions({
             placeholder="e.g. Invoice ref, UPI ref…"
             disabled={submitting}
           />
-        </div>
+        </FormField>
 
-        <details className={styles.advancedDetails}>
-          <summary className={styles.advancedSummary}>Reference (optional)</summary>
-          <div className={styles.advancedFields}>
-            <input
+        <Box as="details" className={styles.advancedDetails}>
+          <Box as="summary" className={styles.advancedSummary}>
+            Reference (optional)
+          </Box>
+          <Box className={styles.advancedFields}>
+            <Input
               aria-label="Reference type"
               type="text"
               className={styles.compactInput}
@@ -252,7 +279,7 @@ export function CreditPartyActions({
               placeholder="Reference type"
               disabled={submitting}
             />
-            <input
+            <Input
               aria-label="Reference id"
               type="text"
               className={styles.compactInput}
@@ -261,17 +288,17 @@ export function CreditPartyActions({
               placeholder="Reference id"
               disabled={submitting}
             />
-          </div>
-        </details>
+          </Box>
+        </Box>
 
-        <button type="submit" className={styles.primarySubmit} disabled={submitting}>
+        <Button type="submit" variant="solid" className={styles.primarySubmit} disabled={submitting}>
           {submitting
             ? 'Saving…'
             : mode === 'charge'
               ? copy.submitIncrease
               : copy.submitReduce}
-        </button>
-      </form>
-    </div>
+        </Button>
+      </Box>
+    </Box>
   );
 }

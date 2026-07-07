@@ -1,4 +1,5 @@
 import type { CreditAccountResponse } from '@inventory-platform/credit/types';
+import { Box, Button, Text } from '@inventory-platform/ui-kit';
 import type { CreditBalanceTone } from '../model/credit-utils';
 import { presentCreditBalance } from '../model/credit-utils';
 import styles from './credit.module.css';
@@ -29,37 +30,44 @@ export function CreditAccountList({
   emptyMessage = 'No credit accounts yet. Add a charge or settlement first.',
 }: Props) {
   if (!accounts.length) {
-    return <p className={styles.empty}>{emptyMessage}</p>;
+    return <Text className={styles.empty}>{emptyMessage}</Text>;
   }
 
   return (
-    <ul className={styles.accountList}>
+    <Box as="ul" className={styles.accountList}>
       {accounts.map((a) => {
         const active = a.id === selectedId;
         const pr = presentCreditBalance(a);
         return (
-          <li key={a.id}>
-            <button
+          <Box as="li" key={a.id}>
+            <Button
               type="button"
+              variant="ghost"
               className={`${styles.accountBtn} ${active ? styles.accountBtnActive : ''}`}
               onClick={() => onSelect(a.id)}
             >
-              <span className={styles.accountName}>{a.partyDisplayName}</span>
-              <span className={styles.accountRole}>
+              <Box as="span" className={styles.accountName}>
+                {a.partyDisplayName}
+              </Box>
+              <Box as="span" className={styles.accountRole}>
                 {a.partyType === 'CUSTOMER'
                   ? 'Customer — you collect from them'
                   : 'Vendor — you pay them'}
-              </span>
-              <span className={`${styles.accountBal} ${toneClass(pr.tone)}`}>
-                <span className={styles.accountBalHeadline}>{pr.headline}</span>
+              </Box>
+              <Box as="span" className={`${styles.accountBal} ${toneClass(pr.tone)}`}>
+                <Box as="span" className={styles.accountBalHeadline}>
+                  {pr.headline}
+                </Box>
                 {pr.tone !== 'settled' ? (
-                  <span className={styles.accountBalAmt}>{pr.amountLine}</span>
+                  <Box as="span" className={styles.accountBalAmt}>
+                    {pr.amountLine}
+                  </Box>
                 ) : null}
-              </span>
-            </button>
-          </li>
+              </Box>
+            </Button>
+          </Box>
         );
       })}
-    </ul>
+    </Box>
   );
 }
