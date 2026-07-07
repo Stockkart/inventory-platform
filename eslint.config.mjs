@@ -47,6 +47,8 @@ export default [
     ignores: [
       '**/dist',
       '**/build',
+      '**/storybook-static',
+      '**/coverage',
       '**/.react-router',
       '**/vite.config.*.timestamp*',
     ],
