@@ -26,6 +26,10 @@ const config: StorybookConfig = {
         ...config.esbuild,
         jsx: 'automatic',
       },
+      resolve: {
+        ...config.resolve,
+        dedupe: ['react', 'react-dom', '@storybook/react'],
+      },
       plugins: existingReact ? [] : [react({ jsxRuntime: 'automatic' })],
     });
   },

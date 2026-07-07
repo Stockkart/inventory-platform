@@ -1,5 +1,44 @@
 import nx from '@nx/eslint-plugin';
 
+const bannedNativeHtmlTags = [
+  'div',
+  'span',
+  'p',
+  'button',
+  'input',
+  'select',
+  'textarea',
+  'table',
+  'form',
+  'label',
+  'a',
+  'ul',
+  'ol',
+  'li',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+];
+
+const uiKitNativeHtmlBanGlobs = [
+  'core/*/src/pages/**/*.{ts,tsx,js,jsx}',
+  'core/*/src/ui/**/*.{ts,tsx,js,jsx}',
+  'core/user/src/journey/**/*.{ts,tsx,js,jsx}',
+  'platform/shell/src/**/*.{ts,tsx,js,jsx}',
+  'platform/schema/src/lib/**/*.{ts,tsx,js,jsx}',
+  'platform/routing/src/lib/**/*.{ts,tsx,js,jsx}',
+  'plugins/*/src/pages/**/*.{ts,tsx,js,jsx}',
+  'plugins/*/src/ui/**/*.{ts,tsx,js,jsx}',
+];
+
+const bannedNativeHtmlSyntaxRules = bannedNativeHtmlTags.map((tag) => ({
+  selector: `JSXOpeningElement[name.name="${tag}"]`,
+  message: `Use @inventory-platform/ui-kit primitives instead of native <${tag}>.`,
+}));
+
 export default [
   ...nx.configs['flat/base'],
   ...nx.configs['flat/typescript'],
@@ -58,6 +97,7 @@ export default [
                 'type:platform',
                 'type:core',
                 'type:plugin',
+                'type:ui-kit',
               ],
             },
             {
@@ -105,6 +145,12 @@ export default [
           ],
         },
       ],
+    },
+  },
+  {
+    files: uiKitNativeHtmlBanGlobs,
+    rules: {
+      'no-restricted-syntax': ['error', ...bannedNativeHtmlSyntaxRules],
     },
   },
 ];
