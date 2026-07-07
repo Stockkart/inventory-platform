@@ -25,6 +25,7 @@ export {
   profileRoutes,
   joinRequestsRoutes,
   whatsAppMarketingRoutes,
+  userDashboardRoutes,
 } from './routes';
 export {
   userContactNav,

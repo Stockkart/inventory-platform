@@ -39,8 +39,7 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Test and build
-        run: pnpm exec nx run-many -t test build --all
-
-      - name: Typecheck
-        run: pnpm exec nx run-many -t typecheck --all
+      # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
+      # - run: pnpm exec nx-cloud record -- echo Hello World
+      - run: pnpm exec nx run-many -t lint test build
+      - run: pnpm exec nx run-many -t typecheck

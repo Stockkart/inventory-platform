@@ -3,17 +3,17 @@ import {
   composeDashboardRouteEntries,
   type RoutePackageRegistration,
 } from '@inventory-platform/routing';
-import { accountingRoutes } from '../../../core/accounting/src/routes';
-import { analyticsRoutes } from '../../../core/analytics/src/routes';
-import { creditRoutes } from '../../../core/credit/src/routes';
-import { planDashboardRoutes } from '../../../core/plan/src/routes';
-import { pricingDashboardRoutes } from '../../../core/pricing/src/routes';
-import { productDashboardRoutes } from '../../../core/product/src/routes';
-import { remindersDashboardRoutes } from '../../../core/reminders/src/routes';
-import { taxationRoutes } from '../../../core/taxation/src/routes';
-import { userDashboardRoutes } from '../../../core/user/src/routes';
-import { cafeRoutes } from '../../cafe/src/routes';
-import { shellOverviewRoutes } from '../../../platform/shell/src/routes';
+import { accountingRoutes } from '@inventory-platform/accounting';
+import { analyticsRoutes } from '@inventory-platform/analytics';
+import { creditRoutes } from '@inventory-platform/credit';
+import { planDashboardRoutes } from '@inventory-platform/plan';
+import { pricingDashboardRoutes } from '@inventory-platform/pricing';
+import { productDashboardRoutes } from '@inventory-platform/product';
+import { remindersDashboardRoutes } from '@inventory-platform/reminders';
+import { taxationRoutes } from '@inventory-platform/taxation';
+import { userDashboardRoutes } from '@inventory-platform/user';
+import { cafeRoutes } from '@inventory-platform/plugin-cafe/route-modules';
+import { shellOverviewRoutes } from '@inventory-platform/shell';
 
 const CORE = '../../../core';
 const PLATFORM = '../../../platform';

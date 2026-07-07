@@ -29,6 +29,8 @@ export {
   historyRoutes,
   refundRoutes,
   vendorReturnRoutes,
+  productDashboardRoutes,
+  mobileUploadRoutes,
 } from './routes';
 export { productNav, productReturnsNav, productHistoryNav } from './nav';
 

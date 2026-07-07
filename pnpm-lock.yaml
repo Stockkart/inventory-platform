@@ -418,6 +418,9 @@ importers:
 
   core/product:
     dependencies:
+      '@inventory-platform/access':
+        specifier: workspace:*
+        version: link:../../platform/access
       '@inventory-platform/api-client':
         specifier: workspace:*
         version: link:../../platform/api-client
@@ -529,6 +532,9 @@ importers:
 
   core/user:
     dependencies:
+      '@inventory-platform/access':
+        specifier: workspace:*
+        version: link:../../platform/access
       '@inventory-platform/api-client':
         specifier: workspace:*
         version: link:../../platform/api-client
@@ -742,6 +748,9 @@ importers:
       '@inventory-platform/routing':
         specifier: workspace:*
         version: link:../../platform/routing
+      '@inventory-platform/shell':
+        specifier: workspace:*
+        version: link:../../platform/shell
       '@inventory-platform/taxation':
         specifier: workspace:*
         version: link:../../core/taxation

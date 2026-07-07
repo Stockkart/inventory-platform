@@ -3,7 +3,7 @@ import {
   composeDashboardRouteEntries,
   type RoutePackageRegistration,
 } from '@inventory-platform/routing';
-import { mobileUploadRoutes } from '../../../core/product/src/routes';
+import { mobileUploadRoutes } from '@inventory-platform/product';
 
 const CORE = '../../../core';
 const USER_JOURNEY = `${CORE}/user/src/journey`;

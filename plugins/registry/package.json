@@ -36,6 +36,7 @@
     "@inventory-platform/taxation": "workspace:*",
     "@inventory-platform/user": "workspace:*",
     "@inventory-platform/plugin-cafe": "workspace:*",
+    "@inventory-platform/shell": "workspace:*",
     "@react-router/dev": "^7.2.0",
     "zustand": "^5.0.8"
   }

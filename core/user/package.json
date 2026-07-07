@@ -99,6 +99,7 @@
     ]
   },
   "dependencies": {
+    "@inventory-platform/access": "workspace:*",
     "@inventory-platform/api-client": "workspace:*",
     "@inventory-platform/query": "workspace:*",
     "@inventory-platform/routing": "workspace:*",

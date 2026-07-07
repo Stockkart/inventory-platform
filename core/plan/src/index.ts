@@ -6,6 +6,7 @@ export {
   planStatusRoutes,
   planPaymentRoutes,
   paymentBillingRoutes,
+  planDashboardRoutes,
 } from './routes';
 export { planNav } from './nav';
 
