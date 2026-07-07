@@ -604,6 +604,9 @@ importers:
       '@inventory-platform/session':
         specifier: workspace:*
         version: link:../session
+      '@inventory-platform/ui-kit':
+        specifier: workspace:*
+        version: link:../../ui-kit
       react:
         specifier: ^19.0.0
         version: 19.2.0
