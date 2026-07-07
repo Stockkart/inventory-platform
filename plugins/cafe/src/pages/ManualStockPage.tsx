@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import {
   cartApi,
@@ -8,13 +8,36 @@ import {
 import type { InventoryItem } from '@inventory-platform/product/types';
 import { inventorySellableRef } from '@inventory-platform/product/types';
 import { InventoryAlertDetails } from '@inventory-platform/product';
-import { PaginationBar } from '@inventory-platform/ui-kit';
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  CardBody,
+  CenteredLoader,
+  EmptyState,
+  FormField,
+  Grid,
+  Inline,
+  Input,
+  Modal,
+  PageHeader,
+  PaginationBar,
+  SearchInput,
+  Stack,
+  Text,
+  Textarea,
+} from '@inventory-platform/ui-kit';
 import {
   getExtensionFieldString,
   isSellDirectInventory,
 } from '@inventory-platform/schema';
-import { useNotify, useVerticalSchemaStore, useAuthStore, useShopAccessStore } from '@inventory-platform/session';
-import searchStyles from '@inventory-platform/product/pages/product-search.module.css';
+import {
+  useNotify,
+  useVerticalSchemaStore,
+  useAuthStore,
+  useShopAccessStore,
+} from '@inventory-platform/session';
 import styles from './manual-stock.module.css';
 
 export function meta() {
@@ -82,7 +105,8 @@ function StockCorrectionModal({
   const [error, setError] = useState<string | null>(null);
 
   const parsedQty = Number(newQty);
-  const isValidQty = newQty.trim() !== '' && Number.isFinite(parsedQty) && parsedQty >= 0;
+  const isValidQty =
+    newQty.trim() !== '' && Number.isFinite(parsedQty) && parsedQty >= 0;
   const hasChange = isValidQty && parsedQty !== current;
 
   const deltaClass = useMemo(() => {
@@ -93,8 +117,7 @@ function StockCorrectionModal({
     return '';
   }, [current, isValidQty, parsedQty]);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     if (!inventoryId) {
       setError('Missing inventory id');
       return;
@@ -119,7 +142,10 @@ function StockCorrectionModal({
       if (!line?.lineId) {
         throw new Error('Correction created but line id missing');
       }
-      await inventoryApi.approveInventoryCorrectionLine(correction.id, line.lineId);
+      await inventoryApi.approveInventoryCorrectionLine(
+        correction.id,
+        line.lineId
+      );
 
       const updated = await inventoryApi.getById(inventoryId);
       notifySuccess(`Stock updated for "${item.name || 'ingredient'}"`);
@@ -136,101 +162,67 @@ function StockCorrectionModal({
   };
 
   return (
-    <div
-      className={styles.modalOverlay}
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="stock-correction-title"
-    >
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <div>
-            <h3 id="stock-correction-title" className={styles.modalTitle}>
-              Correct stock
-            </h3>
-            <p className={styles.modalSubtitle}>
-              {item.name || 'Ingredient'}
-            </p>
-          </div>
-          <button
-            type="button"
-            className={styles.modalClose}
-            onClick={onClose}
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </div>
+    <Modal open onClose={onClose} size="md" className={styles.modal}>
+      <Modal.Header title="Correct stock" onClose={onClose} />
+      <Modal.Body>
+        <Stack gap="md" className={styles.modalBody}>
+          <Text color="secondary" className={styles.modalSubtitle}>
+            {item.name || 'Ingredient'}
+          </Text>
 
-        <form onSubmit={(e) => void handleSubmit(e)}>
-          <div className={styles.modalBody}>
-            <div className={styles.fieldGroup}>
-              <span className={styles.fieldLabel}>Current stock</span>
-              <div className={styles.currentStock}>
-                {current} {unit}
-              </div>
-            </div>
+          <FormField label="Current stock">
+            <Text className={styles.currentStock}>
+              {current} {unit}
+            </Text>
+          </FormField>
 
-            <div className={styles.fieldGroup}>
-              <label className={styles.fieldLabel} htmlFor="correction-qty">
-                New quantity ({unit})
-              </label>
-              <input
-                id="correction-qty"
-                type="number"
-                min={0}
-                step="any"
-                className={styles.qtyInput}
-                value={newQty}
-                onChange={(e) => setNewQty(e.target.value)}
-                disabled={isSubmitting}
-                autoFocus
-              />
-              {isValidQty && (
-                <span className={`${styles.deltaHint} ${deltaClass}`}>
-                  Change: {formatDelta(current, parsedQty)} {unit}
-                </span>
-              )}
-            </div>
-
-            <div className={styles.fieldGroup}>
-              <label className={styles.fieldLabel} htmlFor="correction-note">
-                Note (optional)
-              </label>
-              <textarea
-                id="correction-note"
-                className={styles.noteInput}
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="e.g. Spillage, recount, waste…"
-                disabled={isSubmitting}
-              />
-            </div>
-
-            {error && <div className={styles.modalError}>{error}</div>}
-          </div>
-
-          <div className={styles.modalFooter}>
-            <button
-              type="button"
-              className={styles.modalCancelBtn}
-              onClick={onClose}
+          <FormField label={`New quantity (${unit})`} id="correction-qty">
+            <Input
+              id="correction-qty"
+              type="number"
+              min={0}
+              step="any"
+              className={styles.qtyInput}
+              value={newQty}
+              onChange={(e) => setNewQty(e.target.value)}
               disabled={isSubmitting}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className={styles.modalSubmitBtn}
-              disabled={isSubmitting || !hasChange}
-            >
-              {isSubmitting ? 'Saving…' : 'Apply correction'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+              autoFocus
+            />
+            {isValidQty ? (
+              <Text className={`${styles.deltaHint} ${deltaClass}`}>
+                Change: {formatDelta(current, parsedQty)} {unit}
+              </Text>
+            ) : null}
+          </FormField>
+
+          <FormField label="Note (optional)" id="correction-note">
+            <Textarea
+              id="correction-note"
+              className={styles.noteInput}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="e.g. Spillage, recount, waste…"
+              disabled={isSubmitting}
+            />
+          </FormField>
+
+          {error ? <Alert variant="danger">{error}</Alert> : null}
+        </Stack>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+          Cancel
+        </Button>
+        <Button
+          variant="solid"
+          onClick={() => void handleSubmit()}
+          disabled={isSubmitting || !hasChange}
+          loading={isSubmitting}
+        >
+          {isSubmitting ? 'Saving…' : 'Apply correction'}
+        </Button>
+      </Modal.Footer>
+    </Modal>
   );
 }
 
@@ -297,13 +289,7 @@ export function ManualStockPage() {
     }
   };
 
-  const handleSearch = async (
-    e?: FormEvent<HTMLFormElement>,
-    pageNum?: number,
-    pageSize?: number
-  ) => {
-    e?.preventDefault();
-
+  const handleSearch = async (pageNum?: number, pageSize?: number) => {
     const currentPage = pageNum !== undefined ? pageNum : 0;
     const currentPageSize = pageSize !== undefined ? pageSize : searchPageSize;
 
@@ -419,215 +405,212 @@ export function ManualStockPage() {
   };
 
   return (
-    <div className={searchStyles.page}>
-      <div className={searchStyles.header}>
-        <h2 className={searchStyles.title}>Ingredient Search</h2>
-        <p className={searchStyles.subtitle}>
-          Search ingredients by name or barcode. Register new stock via{' '}
-          <Link to="/dashboard/product-registration">Ingredient Registration</Link>
-          . Adjust counts with{' '}
-          <strong>Correct stock</strong> or review{' '}
-          <Link to="/dashboard/stock-corrections">correction history</Link>.
-        </p>
-      </div>
-      <div className={searchStyles.searchContainer}>
-        <form className={searchStyles.searchBar} onSubmit={handleSearch}>
-          <span className={searchStyles.searchIcon} role="img" aria-label="Search">
-            🔍
-          </span>
-          <input
-            type="text"
-            className={searchStyles.searchInput}
-            placeholder="Name or barcode"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            disabled={isLoading}
-          />
-          <button
-            type="submit"
-            className={searchStyles.searchBtn}
+    <Stack gap="md">
+      <PageHeader
+        title="Ingredient Search"
+        description="Search ingredients by name or barcode."
+      />
+
+      <Text color="secondary">
+        Register new stock via{' '}
+        <Link to="/dashboard/product-registration">Ingredient Registration</Link>
+        . Adjust counts with <Text as="span" weight="semibold">Correct stock</Text>{' '}
+        or review{' '}
+        <Link to="/dashboard/stock-corrections">correction history</Link>.
+      </Text>
+
+      <Inline gap="sm" className={styles.searchToolbar}>
+        <SearchInput
+          value={searchQuery}
+          onChange={setSearchQuery}
+          onSearch={() => void handleSearch()}
+          showSearchButton
+          placeholder="Name or barcode"
+          disabled={isLoading}
+          searchLabel={isLoading ? 'Searching…' : 'Search'}
+        />
+        {hasActiveSearch ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleClearSearch}
             disabled={isLoading}
           >
-            {isLoading ? 'Searching...' : 'Search'}
-          </button>
-          {hasActiveSearch && (
-            <button
-              type="button"
-              className={searchStyles.clearBtn}
-              onClick={handleClearSearch}
-              disabled={isLoading}
-            >
-              Clear
-            </button>
-          )}
-        </form>
-      </div>
-      {error && <div className={searchStyles.errorMessage}>{error}</div>}
-      <div className={searchStyles.results}>
-        <div className={searchStyles.resultsHeader}>
-          <span className={searchStyles.resultsCount}>
-            {isLoading
-              ? 'Loading...'
-              : `Showing ${inventory.length} ${
-                  inventory.length === 1 ? 'result' : 'results'
-                }`}
-          </span>
-        </div>
-        {isLoading && inventory.length === 0 ? (
-          <div className={searchStyles.loading}>Loading ingredients...</div>
-        ) : inventory.length === 0 ? (
-          <div className={searchStyles.emptyState}>
-            <p>No ingredients found.</p>
-            {hasActiveSearch && (
-              <button onClick={handleClearSearch} className={searchStyles.clearBtn}>
-                Clear search to see all items
-              </button>
+            Clear
+          </Button>
+        ) : null}
+      </Inline>
+
+      {error ? <Alert variant="danger">{error}</Alert> : null}
+
+      <Card>
+        <CardBody>
+          <Stack gap="md">
+            <Text variant="caption" color="secondary">
+              {isLoading
+                ? 'Loading…'
+                : `Showing ${inventory.length} ${
+                    inventory.length === 1 ? 'result' : 'results'
+                  }`}
+            </Text>
+
+            {isLoading && inventory.length === 0 ? (
+              <CenteredLoader label="Loading ingredients…" />
+            ) : inventory.length === 0 ? (
+              <EmptyState
+                title="No ingredients found"
+                action={
+                  hasActiveSearch ? (
+                    <Button variant="outline" onClick={handleClearSearch}>
+                      Clear search to see all items
+                    </Button>
+                  ) : undefined
+                }
+              />
+            ) : (
+              <>
+                <Grid className={styles.productsGrid}>
+                  {inventory.map((item) => {
+                    const ingredientType = getExtensionFieldString(
+                      item,
+                      'ingredientType'
+                    );
+                    const stock = stockQty(item);
+                    const unit = stockUnit(item);
+                    const low = isLowStock(item);
+                    const itemId = resolveInventoryDocumentId(item);
+                    const sellDirect = isSellDirectInventory(item);
+                    const price = sellPrice(item);
+                    return (
+                      <Card key={item.id || item.lotId} className={styles.productCard}>
+                        <CardBody>
+                          <Stack gap="sm">
+                            <Inline gap="sm" align="center">
+                              <Text variant="heading3" className={styles.productName}>
+                                {item.name || 'Unnamed ingredient'}
+                              </Text>
+                              {ingredientType ? (
+                                <Badge variant="neutral">{ingredientType}</Badge>
+                              ) : null}
+                              {sellDirect ? (
+                                <Badge variant="info" className={styles.sellDirectBadge}>
+                                  Sell direct
+                                </Badge>
+                              ) : null}
+                            </Inline>
+
+                            {item.barcode ? (
+                              <Text variant="caption" color="secondary">
+                                Barcode: {item.barcode}
+                              </Text>
+                            ) : null}
+                            {item.location ? (
+                              <Text variant="caption" color="secondary">
+                                Location: {item.location}
+                              </Text>
+                            ) : null}
+
+                            <Stack gap="xs">
+                              <Text
+                                variant="caption"
+                                color={low ? 'danger' : 'secondary'}
+                              >
+                                Stock: {stock} {unit}
+                                {low ? ' (low)' : ''}
+                              </Text>
+                              {(item.thresholdCount ?? 0) > 0 ? (
+                                <Text variant="caption" color="secondary">
+                                  Threshold: {item.thresholdCount}
+                                </Text>
+                              ) : null}
+                              <Text variant="caption" color="secondary">
+                                Received: {item.receivedCount ?? 0} | Used:{' '}
+                                {item.soldCount ?? 0}
+                              </Text>
+                              {item.costPrice != null ? (
+                                <Text variant="caption" color="secondary">
+                                  Cost: ₹{item.costPrice.toFixed(2)} / {unit}
+                                </Text>
+                              ) : null}
+                              {sellDirect && price > 0 ? (
+                                <Text variant="caption" color="secondary">
+                                  Sell: ₹{price.toFixed(2)}
+                                </Text>
+                              ) : null}
+                            </Stack>
+
+                            {item.description ? (
+                              <Text variant="caption" color="secondary">
+                                {item.description}
+                              </Text>
+                            ) : null}
+
+                            <Inline gap="sm" className={styles.actionButtons}>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className={styles.viewDetailsBtn}
+                                onClick={() => void openIngredientDetails(item)}
+                                disabled={isLoading || detailLoadingId === itemId}
+                              >
+                                {detailLoadingId === itemId
+                                  ? 'Loading…'
+                                  : 'View Details'}
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className={styles.correctStockBtn}
+                                onClick={() => setCorrectionItem(item)}
+                                disabled={!itemId}
+                              >
+                                Correct stock
+                              </Button>
+                              {sellDirect ? (
+                                <Button
+                                  type="button"
+                                  variant="solid"
+                                  size="sm"
+                                  className={styles.addToCartBtn}
+                                  onClick={() => void handleAddToCart(item)}
+                                  disabled={
+                                    !itemId ||
+                                    addingToCartId === itemId ||
+                                    stock <= 0 ||
+                                    price <= 0
+                                  }
+                                >
+                                  {addingToCartId === itemId
+                                    ? 'Adding…'
+                                    : 'Add to cart'}
+                                </Button>
+                              ) : null}
+                            </Inline>
+                          </Stack>
+                        </CardBody>
+                      </Card>
+                    );
+                  })}
+                </Grid>
+                <PaginationBar
+                  page={searchPage}
+                  totalPages={Math.max(searchTotalPages, 1)}
+                  totalItems={searchTotalItems}
+                  disabled={isLoading}
+                  onPageChange={(p) => void handleSearch(p)}
+                  pageSize={searchPageSize}
+                  pageSizeOptions={[10, 20, 50]}
+                  onPageSizeChange={(n) => void handleSearch(0, n)}
+                  aria-label="Ingredient search results pages"
+                />
+              </>
             )}
-          </div>
-        ) : (
-          <>
-            <div className={searchStyles.productsGrid}>
-              {inventory.map((item) => {
-                const ingredientType = getExtensionFieldString(
-                  item,
-                  'ingredientType'
-                );
-                const stock = stockQty(item);
-                const unit = stockUnit(item);
-                const low = isLowStock(item);
-                const itemId = resolveInventoryDocumentId(item);
-                const sellDirect = isSellDirectInventory(item);
-                const price = sellPrice(item);
-                return (
-                  <div
-                    key={item.id || item.lotId}
-                    className={searchStyles.productCard}
-                  >
-                    <div className={searchStyles.productInfo}>
-                      <h3 className={searchStyles.productName}>
-                        {item.name || 'Unnamed ingredient'}
-                      </h3>
-                      {ingredientType && (
-                        <span className={searchStyles.modeBadge}>
-                          {ingredientType}
-                        </span>
-                      )}
-                      {sellDirect && (
-                        <span className={styles.sellDirectBadge}>
-                          Sell direct
-                        </span>
-                      )}
-                      {item.barcode && (
-                        <p className={searchStyles.productBarcode}>
-                          Barcode: {item.barcode}
-                        </p>
-                      )}
-                      {item.location && (
-                        <p className={searchStyles.productLocation}>
-                          Location: {item.location}
-                        </p>
-                      )}
-                      <div className={searchStyles.productDetails}>
-                        <div className={searchStyles.stockInfo}>
-                          <span
-                            className={searchStyles.productStock}
-                            style={
-                              low
-                                ? { color: 'var(--error-color, #dc2626)' }
-                                : undefined
-                            }
-                          >
-                            Stock: {stock} {unit}
-                            {low ? ' (low)' : ''}
-                          </span>
-                          {(item.thresholdCount ?? 0) > 0 && (
-                            <span className={searchStyles.productStock}>
-                              Threshold: {item.thresholdCount}
-                            </span>
-                          )}
-                          <span className={searchStyles.productStock}>
-                            Received: {item.receivedCount ?? 0} | Used:{' '}
-                            {item.soldCount ?? 0}
-                          </span>
-                        </div>
-                        {item.costPrice != null && (
-                          <div className={searchStyles.priceInfo}>
-                            <span className={searchStyles.productPrice}>
-                              Cost: ₹{item.costPrice.toFixed(2)} / {unit}
-                            </span>
-                          </div>
-                        )}
-                        {sellDirect && price > 0 && (
-                          <div className={searchStyles.priceInfo}>
-                            <span className={searchStyles.productPrice}>
-                              Sell: ₹{price.toFixed(2)}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      {item.description && (
-                        <p className={searchStyles.productDescription}>
-                          {item.description}
-                        </p>
-                      )}
-                      <div className={searchStyles.actionButtons}>
-                        <button
-                          type="button"
-                          className={searchStyles.viewDetailsBtn}
-                          onClick={() => void openIngredientDetails(item)}
-                          disabled={
-                            isLoading || detailLoadingId === itemId
-                          }
-                        >
-                          {detailLoadingId === itemId
-                            ? 'Loading…'
-                            : 'View Details'}
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.correctStockBtn}
-                          onClick={() => setCorrectionItem(item)}
-                          disabled={!itemId}
-                        >
-                          Correct stock
-                        </button>
-                        {sellDirect && (
-                          <button
-                            type="button"
-                            className={styles.addToCartBtn}
-                            onClick={() => void handleAddToCart(item)}
-                            disabled={
-                              !itemId ||
-                              addingToCartId === itemId ||
-                              stock <= 0 ||
-                              price <= 0
-                            }
-                          >
-                            {addingToCartId === itemId
-                              ? 'Adding…'
-                              : 'Add to cart'}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <PaginationBar
-              page={searchPage}
-              totalPages={Math.max(searchTotalPages, 1)}
-              totalItems={searchTotalItems}
-              disabled={isLoading}
-              onPageChange={(p) => void handleSearch(undefined, p)}
-              pageSize={searchPageSize}
-              pageSizeOptions={[10, 20, 50]}
-              onPageSizeChange={(n) => void handleSearch(undefined, 0, n)}
-              aria-label="Ingredient search results pages"
-            />
-          </>
-        )}
-      </div>
+          </Stack>
+        </CardBody>
+      </Card>
 
       <InventoryAlertDetails
         open={selectedItem !== null}
@@ -641,13 +624,13 @@ export function ManualStockPage() {
         }}
       />
 
-      {correctionItem && (
+      {correctionItem ? (
         <StockCorrectionModal
           item={correctionItem}
           onClose={() => setCorrectionItem(null)}
           onSuccess={refreshItemInList}
         />
-      )}
-    </div>
+      ) : null}
+    </Stack>
   );
 }

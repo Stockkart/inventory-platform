@@ -11,6 +11,20 @@ import {
   fieldLabel,
   getShopOnboardingFields,
 } from '@inventory-platform/schema';
+import {
+  Alert,
+  Avatar,
+  Box,
+  Button,
+  CenteredLoader,
+  FormField,
+  FormRow,
+  IconButton,
+  Inline,
+  Select,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './onboarding.module.css';
 
 const STEPS: OnboardingStep[] = [
@@ -18,7 +32,6 @@ const STEPS: OnboardingStep[] = [
   'vertical',
   'shopType',
   'tagline',
-  // 'businessId',
   'contactPhone',
   'contactEmail',
   'location',
@@ -29,7 +42,6 @@ const STEP_LABELS: Record<OnboardingStep, string> = {
   name: 'Shop Name',
   vertical: 'Business vertical',
   shopType: 'Shop Type',
-  // businessId: 'Business ID',
   contactPhone: 'Mobile number',
   contactEmail: 'Contact Email',
   location: 'Location Details',
@@ -68,7 +80,6 @@ export default function OnboardingPage() {
     name: '',
     verticalId: 'medical',
     shopType: '' as ShopType | '',
-    // businessId: 'Pharmacy',
     location: {
       primaryAddress: '',
       secondaryAddress: '',
@@ -115,38 +126,21 @@ export default function OnboardingPage() {
     });
   }, [formData.verticalId, fetchVerticalSchema]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    const step = STEPS[currentStep];
+  const clearError = () => {
+    if (error) setError(null);
+  };
 
-    if (step === 'name') {
-      setFormData({ ...formData, name: value });
-    } else if (step === 'vertical' || name === 'verticalId') {
-      setFormData({ ...formData, verticalId: value });
-      // } else if (step === 'businessId') {
-      //   // Business ID is fixed, don't allow changes
-      //   return;
-    } else if (step === 'contactPhone') {
-      setFormData({ ...formData, contactPhone: value });
-    } else if (step === 'contactEmail') {
-      setFormData({ ...formData, contactEmail: value });
-    } else if (step === 'location') {
-      const locationField = name.replace('location.', '');
-      setFormData({
-        ...formData,
-        location: { ...formData.location, [locationField]: value },
-      });
-    } else if (step === 'businessDetails') {
-      setFormData({ ...formData, [name]: value });
-    } else if (step === 'tagline') {
-      setFormData({ ...formData, tagline: value });
-    } else if (step === 'shopType' || name === 'shopType') {
-      setFormData({ ...formData, shopType: value as ShopType });
-    }
+  const updateLocationField = (field: string, value: string) => {
+    setFormData({
+      ...formData,
+      location: { ...formData.location, [field]: value },
+    });
+    clearError();
+  };
 
-    if (error) {
-      setError(null);
-    }
+  const updateBusinessField = (field: string, value: string) => {
+    setFormData({ ...formData, [field]: value });
+    clearError();
   };
 
   const getCurrentValue = (fieldName?: string): string => {
@@ -154,7 +148,6 @@ export default function OnboardingPage() {
     if (step === 'name') return formData.name;
     if (step === 'vertical') return formData.verticalId;
     if (step === 'shopType') return formData.shopType;
-    // if (step === 'businessId') return formData.businessId;
     if (step === 'contactPhone') return formData.contactPhone;
     if (step === 'contactEmail') return formData.contactEmail;
     if (step === 'tagline') return formData.tagline;
@@ -203,31 +196,23 @@ export default function OnboardingPage() {
         notifyError('Please enter country');
         return;
       }
-      // } else if (step === 'businessId') {
-      //   // Business ID is fixed, skip validation and move to next step
-      //   setCurrentStep(currentStep + 1);
-      //   setError(null);
-      //   return;
     } else if (step === 'businessDetails') {
-      // Business details are all optional, skip validation and move to next step or submit
       if (currentStep === STEPS.length - 1) {
-        handleSubmit();
+        void handleSubmit();
       } else {
         setCurrentStep(currentStep + 1);
         setError(null);
       }
       return;
     } else if (step === 'tagline') {
-      // Tagline is optional
       if (currentStep === STEPS.length - 1) {
-        handleSubmit();
+        void handleSubmit();
       } else {
         setCurrentStep(currentStep + 1);
         setError(null);
       }
       return;
     } else {
-      // Validate other steps
       const value = getCurrentValue().trim();
       if (!value) {
         notifyError(`Please enter ${STEP_LABELS[step].toLowerCase()}`);
@@ -235,9 +220,8 @@ export default function OnboardingPage() {
       }
     }
 
-    // If it's the last step, submit the form
     if (currentStep === STEPS.length - 1) {
-      handleSubmit();
+      void handleSubmit();
     } else {
       setCurrentStep(currentStep + 1);
       setError(null);
@@ -296,12 +280,8 @@ export default function OnboardingPage() {
         tagline: formData.tagline || undefined,
       });
 
-      // Check if registration was successful - response should have shopId
       if (response && response.shopId) {
-        // Update user's shopId in the store by fetching current user
         await fetchCurrentUser();
-
-        // Redirect to dashboard immediately after success
         navigate('/dashboard');
       } else {
         throw new Error('Shop registration failed - invalid response');
@@ -325,416 +305,357 @@ export default function OnboardingPage() {
     }
   };
 
-  // Show loading state if checking auth
+  const verticalOptions = (
+    verticals.length > 0
+      ? verticals
+      : [{ verticalId: 'medical', version: '1.0.0', status: 'ACTIVE' as const }]
+  ).map((v) => ({ value: v.verticalId, label: v.verticalId }));
+
+  const userDisplayName = user?.name || user?.email || 'User';
+
   if (!isAuthenticated && !user) {
-    return (
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100vh',
-        }}
-      >
-        <div>Loading...</div>
-      </div>
-    );
+    return <CenteredLoader label="Loading..." minHeight="100vh" />;
   }
 
-  // Redirect if user already has shop (unless adding another shop)
   if (user?.shopId && !addShop) {
     return null;
   }
 
+  const renderStepContent = () => {
+    const step = STEPS[currentStep];
+
+    if (step === 'location') {
+      return (
+        <>
+          <FormField
+            label="Primary Address *"
+            id="primaryAddress"
+            placeholder="Shop No. 12, Main Market Road"
+            value={getCurrentValue('primaryAddress')}
+            onChange={(v) => updateLocationField('primaryAddress', v)}
+            disabled={isLoading}
+          />
+          <FormField
+            label="Secondary Address"
+            id="secondaryAddress"
+            placeholder="Near Community Hospital"
+            value={getCurrentValue('secondaryAddress')}
+            onChange={(v) => updateLocationField('secondaryAddress', v)}
+            disabled={isLoading}
+          />
+          <FormRow>
+            <FormField
+              label="City *"
+              id="city"
+              placeholder="Mumbai"
+              value={getCurrentValue('city')}
+              onChange={(v) => updateLocationField('city', v)}
+              disabled={isLoading}
+            />
+            <FormField
+              label="State *"
+              id="state"
+              placeholder="Maharashtra"
+              value={getCurrentValue('state')}
+              onChange={(v) => updateLocationField('state', v)}
+              disabled={isLoading}
+            />
+          </FormRow>
+          <FormRow>
+            <FormField
+              label="PIN Code *"
+              id="pin"
+              placeholder="400001"
+              value={getCurrentValue('pin')}
+              onChange={(v) => updateLocationField('pin', v)}
+              disabled={isLoading}
+            />
+            <FormField
+              label="Country *"
+              id="country"
+              placeholder="IND"
+              value={getCurrentValue('country')}
+              onChange={(v) => updateLocationField('country', v)}
+              disabled={isLoading}
+            />
+          </FormRow>
+        </>
+      );
+    }
+
+    if (step === 'vertical') {
+      return (
+        <FormField label="Business vertical *" id="verticalId" required>
+          <Select
+            id="verticalId"
+            className={styles.input}
+            options={verticalOptions}
+            value={formData.verticalId}
+            onChange={(e) => {
+              setFormData({ ...formData, verticalId: e.target.value });
+              clearError();
+            }}
+            disabled={isLoading}
+            required
+          />
+        </FormField>
+      );
+    }
+
+    if (step === 'businessDetails') {
+      return (
+        <>
+          <Text
+            color="secondary"
+            className={styles.subtitle}
+            style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}
+          >
+            {verticalSchemaFields.some((f) => f.required)
+              ? 'Fill required vertical fields below. Tax details are optional.'
+              : 'Tax and compliance details are optional. You can skip or fill them later.'}
+          </Text>
+          {verticalSchemaFields.length > 0 ? (
+            <FormRow>
+              {verticalSchemaFields.map((field) => (
+                <VerticalSchemaFieldInput
+                  key={field.key}
+                  field={field}
+                  value={getCurrentValue(field.key)}
+                  onChange={(value: string) =>
+                    setFormData({ ...formData, [field.key]: value })
+                  }
+                  disabled={isLoading}
+                  idPrefix="onboard-shop"
+                  inputClassName={styles.input}
+                  labelClassName={styles.label}
+                />
+              ))}
+            </FormRow>
+          ) : null}
+          <FormRow>
+            <FormField
+              label="GSTIN No"
+              id="gstinNo"
+              placeholder="Enter the GSTIN No"
+              value={getCurrentValue('gstinNo')}
+              onChange={(v) => updateBusinessField('gstinNo', v)}
+              disabled={isLoading}
+            />
+            <FormField
+              label="PAN No"
+              id="panNo"
+              placeholder="Enter the PAN No"
+              value={getCurrentValue('panNo')}
+              onChange={(v) => updateBusinessField('panNo', v)}
+              disabled={isLoading}
+            />
+          </FormRow>
+          <FormRow>
+            <FormField
+              label="SGST (%)"
+              id="sgst"
+              placeholder="Enter the SGST (%)"
+              value={getCurrentValue('sgst')}
+              onChange={(v) => updateBusinessField('sgst', v)}
+              disabled={isLoading}
+            />
+            <FormField
+              label="CGST (%)"
+              id="cgst"
+              placeholder="Enter the CGST (%)"
+              value={getCurrentValue('cgst')}
+              onChange={(v) => updateBusinessField('cgst', v)}
+              disabled={isLoading}
+            />
+          </FormRow>
+        </>
+      );
+    }
+
+    if (step === 'shopType') {
+      return (
+        <FormField label="Shop Type *" id="shopType" required>
+          <Box
+            className={styles.radioGroup}
+            role="radiogroup"
+            aria-label="Shop type"
+          >
+            {SHOP_TYPES.map(({ value, label }) => (
+              <Button
+                variant="ghost"
+                key={value}
+                className={`${styles.radioOption} ${formData.shopType === value ? styles.radioOptionSelected : ''}`}
+                onClick={() => {
+                  setFormData({ ...formData, shopType: value });
+                  clearError();
+                }}
+                disabled={isLoading}
+                role="radio"
+                aria-checked={formData.shopType === value}
+              >
+                <Text as="span" className={styles.radioLabel}>
+                  {label}
+                </Text>
+              </Button>
+            ))}
+          </Box>
+        </FormField>
+      );
+    }
+
+    if (step === 'tagline') {
+      return (
+        <>
+          <Text
+            color="secondary"
+            className={styles.subtitle}
+            style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}
+          >
+            Add a tagline for your shop. This field is optional.
+          </Text>
+          <FormField
+            label="Tagline"
+            id="tagline"
+            placeholder="Enter shop tagline (e.g., Your Trusted Pharmacy)"
+            value={getCurrentValue('tagline')}
+            onChange={(v) => {
+              setFormData({ ...formData, tagline: v });
+              clearError();
+            }}
+            disabled={isLoading}
+          />
+        </>
+      );
+    }
+
+    const inputType =
+      step === 'contactEmail' ? 'email' : step === 'contactPhone' ? 'tel' : 'text';
+
+    const placeholder =
+      step === 'name'
+        ? 'Enter shop name'
+        : step === 'contactPhone'
+          ? '+91 1234 567890'
+          : 'Enter contact email';
+
+    return (
+      <FormField
+        label={`${STEP_LABELS[step]} *`}
+        id="currentInput"
+        type={inputType}
+        placeholder={placeholder}
+        value={getCurrentValue()}
+        onChange={(v) => {
+          if (step === 'name') {
+            setFormData({ ...formData, name: v });
+          } else if (step === 'contactPhone') {
+            setFormData({ ...formData, contactPhone: v });
+          } else if (step === 'contactEmail') {
+            setFormData({ ...formData, contactEmail: v });
+          }
+          clearError();
+        }}
+        disabled={isLoading}
+      />
+    );
+  };
+
   return (
-    <div className={styles.onboardingContainer}>
-      <div className={styles.sidebar}>
-        <div className={styles.userInfo}>
-          <div className={styles.userAvatar}>
-            {user?.name?.[0]?.toUpperCase() ||
-              user?.email?.[0]?.toUpperCase() ||
-              'U'}
-          </div>
-          <div className={styles.userName}>
-            {user?.name || user?.email || 'User'}
-          </div>
-        </div>
-        <div className={styles.sidebarContent}>
-          <h2 className={styles.sidebarTitle}>Onboarding: Shop Registration</h2>
-          <div className={styles.steps}>
+    <Box className={styles.onboardingContainer}>
+      <Stack className={styles.sidebar} gap="md">
+        <Stack className={styles.userInfo} gap="sm" align="center">
+          <Avatar name={userDisplayName} className={styles.userAvatar} />
+          <Text className={styles.userName}>{userDisplayName}</Text>
+        </Stack>
+        <Stack className={styles.sidebarContent} gap="md">
+          <Text variant="heading2" className={styles.sidebarTitle}>
+            Onboarding: Shop Registration
+          </Text>
+          <Stack className={styles.steps} gap="xs">
             {STEPS.map((step, index) => (
-              <div
+              <Inline
                 key={step}
                 className={`${styles.step} ${
                   index === currentStep ? styles.stepActive : ''
                 } ${index < currentStep ? styles.stepCompleted : ''}`}
+                gap="sm"
               >
-                <span className={styles.stepNumber}>
+                <Text as="span" className={styles.stepNumber}>
                   {index < currentStep ? '✓' : index + 1}
-                </span>
-                <span className={styles.stepLabel}>{STEP_LABELS[step]}</span>
-              </div>
+                </Text>
+                <Text as="span" className={styles.stepLabel}>
+                  {STEP_LABELS[step]}
+                </Text>
+              </Inline>
             ))}
-          </div>
-        </div>
-        <div className={styles.sidebarFooter}>
-          <button onClick={handleLogout} className={styles.logoutBtn}>
+          </Stack>
+        </Stack>
+        <Inline className={styles.sidebarFooter} gap="sm">
+          <Button
+            variant="ghost"
+            onClick={() => void handleLogout()}
+            className={styles.logoutBtn}
+          >
             Logout
-          </button>
-          <button className={styles.helpBtn}>?</button>
-        </div>
-      </div>
+          </Button>
+          <IconButton label="Help" className={styles.helpBtn}>
+            ?
+          </IconButton>
+        </Inline>
+      </Stack>
 
-      <div className={styles.content}>
-        <div className={styles.contentHeader}>
-          <button onClick={handleBack} className={styles.backBtn}>
+      <Stack className={styles.content} gap="md">
+        <Inline className={styles.contentHeader} justify="between" width="full">
+          <Button
+            variant="ghost"
+            onClick={handleBack}
+            className={styles.backBtn}
+          >
             ← Back
-          </button>
-          <div className={styles.logo}>
-            <span className={styles.logoText}>StockKart</span>
-          </div>
-        </div>
+          </Button>
+          <Box className={styles.logo}>
+            <Text as="span" className={styles.logoText}>
+              StockKart
+            </Text>
+          </Box>
+        </Inline>
 
-        <div className={styles.formWrapper}>
-          <h1 className={styles.title}>Verify your Contact Details</h1>
-          <p className={styles.subtitle}>
+        <Stack className={styles.formWrapper} gap="md">
+          <Text variant="heading1" className={styles.title}>
+            Verify your Contact Details
+          </Text>
+          <Text color="secondary" className={styles.subtitle}>
             We require this to verify your identity. Your details will remain
             safe.
-          </p>
+          </Text>
 
-          {error && <div className={styles.errorMessage}>{error}</div>}
+          {error ? (
+            <Alert variant="danger" className={styles.errorMessage}>
+              {error}
+            </Alert>
+          ) : null}
 
-          <div className={styles.form}>
-            {STEPS[currentStep] === 'location' ? (
-              <>
-                <div className={styles.formGroup}>
-                  <label htmlFor="primaryAddress" className={styles.label}>
-                    Primary Address *
-                  </label>
-                  <input
-                    type="text"
-                    id="primaryAddress"
-                    name="location.primaryAddress"
-                    className={styles.input}
-                    placeholder="Shop No. 12, Main Market Road"
-                    value={getCurrentValue('primaryAddress')}
-                    onChange={handleChange}
-                    disabled={isLoading}
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label htmlFor="secondaryAddress" className={styles.label}>
-                    Secondary Address
-                  </label>
-                  <input
-                    type="text"
-                    id="secondaryAddress"
-                    name="location.secondaryAddress"
-                    className={styles.input}
-                    placeholder="Near Community Hospital"
-                    value={getCurrentValue('secondaryAddress')}
-                    onChange={handleChange}
-                    disabled={isLoading}
-                  />
-                </div>
-                <div className={styles.formRow}>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="city" className={styles.label}>
-                      City *
-                    </label>
-                    <input
-                      type="text"
-                      id="city"
-                      name="location.city"
-                      className={styles.input}
-                      placeholder="Mumbai"
-                      value={getCurrentValue('city')}
-                      onChange={handleChange}
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="state" className={styles.label}>
-                      State *
-                    </label>
-                    <input
-                      type="text"
-                      id="state"
-                      name="location.state"
-                      className={styles.input}
-                      placeholder="Maharashtra"
-                      value={getCurrentValue('state')}
-                      onChange={handleChange}
-                      disabled={isLoading}
-                    />
-                  </div>
-                </div>
-                <div className={styles.formRow}>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="pin" className={styles.label}>
-                      PIN Code *
-                    </label>
-                    <input
-                      type="text"
-                      id="pin"
-                      name="location.pin"
-                      className={styles.input}
-                      placeholder="400001"
-                      value={getCurrentValue('pin')}
-                      onChange={handleChange}
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="country" className={styles.label}>
-                      Country *
-                    </label>
-                    <input
-                      type="text"
-                      id="country"
-                      name="location.country"
-                      className={styles.input}
-                      placeholder="IND"
-                      value={getCurrentValue('country')}
-                      onChange={handleChange}
-                      disabled={isLoading}
-                    />
-                  </div>
-                </div>
-              </>
-            ) : STEPS[currentStep] === 'vertical' ? (
-              <div className={styles.formGroup}>
-                <label htmlFor="verticalId" className={styles.label}>
-                  Business vertical *
-                </label>
-                <select
-                  id="verticalId"
-                  name="verticalId"
-                  className={styles.input}
-                  value={formData.verticalId}
-                  onChange={(e) =>
-                    setFormData({ ...formData, verticalId: e.target.value })
-                  }
-                  disabled={isLoading}
-                  required
-                >
-                  {(verticals.length > 0
-                    ? verticals
-                    : [{ verticalId: 'medical', version: '1.0.0', status: 'ACTIVE' }]
-                  ).map((v) => (
-                    <option key={v.verticalId} value={v.verticalId}>
-                      {v.verticalId}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : STEPS[currentStep] === 'businessDetails' ? (
-              <>
-                <p
-                  className={styles.subtitle}
-                  style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}
-                >
-                  {verticalSchemaFields.some((f) => f.required)
-                    ? 'Fill required vertical fields below. Tax details are optional.'
-                    : 'Tax and compliance details are optional. You can skip or fill them later.'}
-                </p>
-                {verticalSchemaFields.length > 0 && (
-                  <div className={styles.formRow}>
-                    {verticalSchemaFields.map((field) => (
-                      <VerticalSchemaFieldInput
-                        key={field.key}
-                        field={field}
-                        value={getCurrentValue(field.key)}
-                        onChange={(value: string) =>
-                          setFormData({ ...formData, [field.key]: value })
-                        }
-                        disabled={isLoading}
-                        idPrefix="onboard-shop"
-                        inputClassName={styles.input}
-                        labelClassName={styles.label}
-                      />
-                    ))}
-                  </div>
-                )}
-                <div className={styles.formRow}>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="gstinNo" className={styles.label}>
-                      GSTIN No
-                    </label>
-                    <input
-                      type="text"
-                      id="gstinNo"
-                      name="gstinNo"
-                      className={styles.input}
-                      placeholder="Enter the GSTIN No"
-                      value={getCurrentValue('gstinNo')}
-                      onChange={handleChange}
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="panNo" className={styles.label}>
-                      PAN No
-                    </label>
-                    <input
-                      type="text"
-                      id="panNo"
-                      name="panNo"
-                      className={styles.input}
-                      placeholder="Enter the PAN No"
-                      value={getCurrentValue('panNo')}
-                      onChange={handleChange}
-                      disabled={isLoading}
-                    />
-                  </div>
-                </div>
-                <div className={styles.formRow}>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="sgst" className={styles.label}>
-                      SGST (%)
-                    </label>
-                    <input
-                      type="text"
-                      id="sgst"
-                      name="sgst"
-                      className={styles.input}
-                      placeholder="Enter the SGST (%)"
-                      value={getCurrentValue('sgst')}
-                      onChange={handleChange}
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label htmlFor="cgst" className={styles.label}>
-                      CGST (%)
-                    </label>
-                    <input
-                      type="text"
-                      id="cgst"
-                      name="cgst"
-                      className={styles.input}
-                      placeholder="Enter the CGST (%)"
-                      value={getCurrentValue('cgst')}
-                      onChange={handleChange}
-                      disabled={isLoading}
-                    />
-                  </div>
-                </div>
-              </>
-            ) : STEPS[currentStep] === 'shopType' ? (
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Shop Type *</label>
-                <div
-                  className={styles.radioGroup}
-                  role="radiogroup"
-                  aria-label="Shop type"
-                >
-                  {SHOP_TYPES.map(({ value, label }) => (
-                    <label
-                      key={value}
-                      className={`${styles.radioOption} ${getCurrentValue() === value ? styles.radioOptionSelected : ''}`}
-                    >
-                      <input
-                        type="radio"
-                        name="shopType"
-                        value={value}
-                        checked={getCurrentValue() === value}
-                        onChange={handleChange}
-                        disabled={isLoading}
-                        className={styles.radioInput}
-                      />
-                      <span className={styles.radioLabel}>{label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ) : STEPS[currentStep] === 'tagline' ? (
-              <>
-                <p
-                  className={styles.subtitle}
-                  style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}
-                >
-                  Add a tagline for your shop. This field is optional.
-                </p>
-                <div className={styles.formGroup}>
-                  <label htmlFor="tagline" className={styles.label}>
-                    Tagline
-                  </label>
-                  <input
-                    type="text"
-                    id="tagline"
-                    name="tagline"
-                    className={styles.input}
-                    placeholder="Enter shop tagline (e.g., Your Trusted Pharmacy)"
-                    value={getCurrentValue('tagline')}
-                    onChange={handleChange}
-                    disabled={isLoading}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleContinue();
-                      }
-                    }}
-                    autoFocus
-                  />
-                </div>
-              </>
-            ) : (
-              <div className={styles.formGroup}>
-                <label htmlFor="currentInput" className={styles.label}>
-                  {STEP_LABELS[STEPS[currentStep]]} *
-                </label>
-                <input
-                  type={
-                    STEPS[currentStep] === 'contactEmail'
-                      ? 'email'
-                      : STEPS[currentStep] === 'contactPhone'
-                      ? 'tel'
-                      : 'text'
-                  }
-                  id="currentInput"
-                  className={styles.input}
-                  placeholder={
-                    STEPS[currentStep] === 'name'
-                      ? 'Enter shop name'
-                      : // : STEPS[currentStep] === 'businessId'
-                      // ? 'Enter business ID'
-                      STEPS[currentStep] === 'contactPhone'
-                      ? '+91 1234 567890'
-                      : 'Enter contact email'
-                  }
-                  value={getCurrentValue()}
-                  onChange={handleChange}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleContinue();
-                    }
-                  }}
-                  autoFocus
-                  // disabled={isLoading || STEPS[currentStep] === 'businessId'}
-                  // readOnly={STEPS[currentStep] === 'businessId'}
-                />
-              </div>
-            )}
+          <Stack className={styles.form} gap="md">
+            {renderStepContent()}
 
-            <div className={styles.formActions}>
-              <button
-                type="button"
+            <Box className={styles.formActions}>
+              <Button
+                variant="solid"
                 onClick={handleContinue}
                 className={styles.continueButton}
                 disabled={isLoading}
+                loading={isLoading}
               >
                 {isLoading
                   ? 'Registering...'
                   : currentStep === STEPS.length - 1
-                  ? 'Complete'
-                  : 'Continue'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+                    ? 'Complete'
+                    : 'Continue'}
+              </Button>
+            </Box>
+          </Stack>
+        </Stack>
+      </Stack>
+    </Box>
   );
 }

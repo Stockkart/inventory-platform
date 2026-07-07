@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router';
 import { authApi } from '@inventory-platform/session/api';
+import {
+  Alert,
+  Button,
+  FormField,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './LoginForm.module.css';
 
 export function ResetPasswordForm() {
@@ -20,8 +27,7 @@ export function ResetPasswordForm() {
     }
   }, [token]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setError(null);
 
     if (!token) {
@@ -63,119 +69,119 @@ export function ResetPasswordForm() {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    if (name === 'newPassword') setNewPassword(value);
-    else setConfirmPassword(value);
-    if (error) setError(null);
-  };
-
   if (!token) {
     return (
-      <div className={styles.formContainer}>
-        <div className={styles.header}>
-          <h1 className={styles.title}>Invalid Reset Link</h1>
-          <p className={styles.subtitle}>
+      <Stack className={styles.formContainer} gap="md">
+        <Stack className={styles.header} gap="xs">
+          <Text variant="heading1" className={styles.title}>
+            Invalid Reset Link
+          </Text>
+          <Text color="secondary" className={styles.subtitle}>
             This password reset link is invalid or has expired. Please request a
             new one.
-          </p>
-        </div>
-        {error && <div className={styles.errorMessage}>{error}</div>}
-        <div className={styles.footer}>
-          <p className={styles.footerText}>
+          </Text>
+        </Stack>
+        {error ? (
+          <Alert variant="danger" className={styles.errorMessage}>
+            {error}
+          </Alert>
+        ) : null}
+        <Stack className={styles.footer} gap="xs">
+          <Text color="secondary" className={styles.footerText}>
             <Link to="/forgot-password" className={styles.link}>
               Request a new reset link
             </Link>
-          </p>
-        </div>
-      </div>
+          </Text>
+        </Stack>
+      </Stack>
     );
   }
 
   if (success) {
     return (
-      <div className={styles.formContainer}>
-        <div className={styles.header}>
-          <h1 className={styles.title}>Password Reset</h1>
-          <p className={styles.subtitle}>
+      <Stack className={styles.formContainer} gap="md">
+        <Stack className={styles.header} gap="xs">
+          <Text variant="heading1" className={styles.title}>
+            Password Reset
+          </Text>
+          <Text color="secondary" className={styles.subtitle}>
             Your password has been reset successfully. Redirecting you to sign
             in...
-          </p>
-        </div>
-        <div className={styles.footer}>
-          <p className={styles.footerText}>
+          </Text>
+        </Stack>
+        <Stack className={styles.footer} gap="xs">
+          <Text color="secondary" className={styles.footerText}>
             <Link to="/login" className={styles.link}>
               Sign in now
             </Link>
-          </p>
-        </div>
-      </div>
+          </Text>
+        </Stack>
+      </Stack>
     );
   }
 
   return (
-    <div className={styles.formContainer}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Reset Password</h1>
-        <p className={styles.subtitle}>
+    <Stack className={styles.formContainer} gap="md">
+      <Stack className={styles.header} gap="xs">
+        <Text variant="heading1" className={styles.title}>
+          Reset Password
+        </Text>
+        <Text color="secondary" className={styles.subtitle}>
           Enter your new password below
-        </p>
-      </div>
+        </Text>
+      </Stack>
 
-      {error && <div className={styles.errorMessage}>{error}</div>}
+      {error ? (
+        <Alert variant="danger" className={styles.errorMessage}>
+          {error}
+        </Alert>
+      ) : null}
 
-      <form className={styles.form} onSubmit={handleSubmit}>
-        <div className={styles.formGroup}>
-          <label htmlFor="newPassword" className={styles.label}>
-            New Password
-          </label>
-          <input
-            type="password"
-            id="newPassword"
-            name="newPassword"
-            className={styles.input}
-            placeholder="Enter new password (min 8 characters)"
-            value={newPassword}
-            onChange={handleChange}
-            disabled={isLoading}
-            minLength={8}
-            autoFocus
-          />
-        </div>
-
-        <div className={styles.formGroup}>
-          <label htmlFor="confirmPassword" className={styles.label}>
-            Confirm Password
-          </label>
-          <input
-            type="password"
-            id="confirmPassword"
-            name="confirmPassword"
-            className={styles.input}
-            placeholder="Confirm your new password"
-            value={confirmPassword}
-            onChange={handleChange}
-            disabled={isLoading}
-            minLength={8}
-          />
-        </div>
-
-        <button
-          type="submit"
-          className={styles.submitButton}
+      <Stack className={styles.form} gap="md">
+        <FormField
+          label="New Password"
+          id="newPassword"
+          type="password"
+          placeholder="Enter new password (min 8 characters)"
+          value={newPassword}
+          onChange={(v) => {
+            setNewPassword(v);
+            if (error) setError(null);
+          }}
           disabled={isLoading}
+        />
+
+        <FormField
+          label="Confirm Password"
+          id="confirmPassword"
+          type="password"
+          placeholder="Confirm your new password"
+          value={confirmPassword}
+          onChange={(v) => {
+            setConfirmPassword(v);
+            if (error) setError(null);
+          }}
+          disabled={isLoading}
+        />
+
+        <Button
+          variant="solid"
+          className={styles.submitButton}
+          onClick={() => void handleSubmit()}
+          disabled={isLoading}
+          loading={isLoading}
         >
           {isLoading ? 'Resetting...' : 'Reset Password'}
-        </button>
-      </form>
+        </Button>
+      </Stack>
 
-      <div className={styles.footer}>
-        <p className={styles.footerText}>
+      <Stack className={styles.footer} gap="xs">
+        <Text color="secondary" className={styles.footerText}>
           <Link to="/login" className={styles.link}>
             Back to sign in
           </Link>
-        </p>
-      </div>
-    </div>
+        </Text>
+      </Stack>
+    </Stack>
   );
 }

@@ -8,6 +8,7 @@ import {
 } from '@inventory-platform/session';
 import { apiClient } from '@inventory-platform/api-client';
 import { isPlanExpiryAllowedPath } from '@inventory-platform/contracts';
+import { CenteredLoader } from '@inventory-platform/ui-kit';
 import { canAccessDashboardPath } from '../lib/accessNav';
 
 export type DashboardRouteGuardState = {
@@ -155,16 +156,7 @@ export function useDashboardRouteGuard(): DashboardRouteGuardState {
     return {
       isReady: false,
       blockingContent: (
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '100vh',
-          }}
-        >
-          <div>Loading...</div>
-        </div>
+        <CenteredLoader fill minHeight="100vh" label="Loading…" />
       ),
     };
   }

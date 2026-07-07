@@ -2,13 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuthStore } from '@inventory-platform/session';
 import type { ShopMembership } from '@inventory-platform/session/types';
+import { Box, Button, Text } from '@inventory-platform/ui-kit';
 import styles from './ShopSwitcher.module.css';
 
 export function ShopSwitcher() {
   const navigate = useNavigate();
   const { user, shop, switchActiveShop, isLoading } = useAuthStore();
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLElement>(null);
 
   const shops = user?.shops ?? [];
   const hasShops = shops.length >= 1 || !!user?.shopId;
@@ -40,42 +41,57 @@ export function ShopSwitcher() {
   };
 
   return (
-    <div ref={ref} className={styles.wrapper}>
-      <button
+    <Box ref={ref} className={styles.wrapper}>
+      <Button
         type="button"
+        variant="ghost"
         className={styles.trigger}
         onClick={() => setOpen((o) => !o)}
         disabled={isLoading}
         title={shop?.name ?? 'Switch shop'}
       >
-        <span className={styles.triggerIcon}>🏪</span>
-        <span className={styles.triggerLabel}>
+        <Text as="span" className={styles.triggerIcon} aria-hidden>
+          🏪
+        </Text>
+        <Text as="span" className={styles.triggerLabel}>
           {shop?.name ?? 'Select shop'}
-        </span>
-        <span className={`${styles.chevron} ${open ? styles.chevronOpen : ''}`}>
+        </Text>
+        <Text
+          as="span"
+          className={`${styles.chevron} ${open ? styles.chevronOpen : ''}`}
+          aria-hidden
+        >
           ▾
-        </span>
-      </button>
+        </Text>
+      </Button>
 
       {open && (
-        <div className={styles.dropdown}>
-          <div className={styles.dropdownHeader}>Your shops</div>
+        <Box className={styles.dropdown}>
+          <Text as="span" className={styles.dropdownHeader}>
+            Your shops
+          </Text>
           {shops.map((s) => (
-            <button
+            <Button
               key={s.shopId}
               type="button"
+              variant="ghost"
               className={`${styles.shopItem} ${
                 s.shopId === activeShopId ? styles.active : ''
               }`}
               onClick={() => handleSelect(s)}
               disabled={isLoading}
             >
-              <span className={styles.shopName}>{s.shopName}</span>
-              <span className={styles.shopRole}>{s.role}</span>
-            </button>
+              <Text as="span" className={styles.shopName}>
+                {s.shopName}
+              </Text>
+              <Text as="span" className={styles.shopRole}>
+                {s.role}
+              </Text>
+            </Button>
           ))}
-          <button
+          <Button
             type="button"
+            variant="ghost"
             className={styles.addShop}
             onClick={() => {
               setOpen(false);
@@ -83,9 +99,9 @@ export function ShopSwitcher() {
             }}
           >
             + Add another shop
-          </button>
-        </div>
+          </Button>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { authApi } from '@inventory-platform/session/api';
+import {
+  Alert,
+  Button,
+  FormField,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './LoginForm.module.css';
 
 export function ForgotPasswordForm() {
@@ -9,8 +16,7 @@ export function ForgotPasswordForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setError(null);
     setSuccess(null);
 
@@ -34,77 +40,66 @@ export function ForgotPasswordForm() {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEmail(e.target.value);
-    if (error || success) {
-      setError(null);
-      setSuccess(null);
-    }
-  };
-
   return (
-    <div className={styles.formContainer}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Forgot Password</h1>
-        <p className={styles.subtitle}>
+    <Stack className={styles.formContainer} gap="md">
+      <Stack className={styles.header} gap="xs">
+        <Text variant="heading1" className={styles.title}>
+          Forgot Password
+        </Text>
+        <Text color="secondary" className={styles.subtitle}>
           Enter your email and we&apos;ll send you a link to reset your
           password
-        </p>
-      </div>
+        </Text>
+      </Stack>
 
-      {error && <div className={styles.errorMessage}>{error}</div>}
-      {success && (
-        <div
-          className={styles.successMessage}
-          style={{
-            backgroundColor: 'rgba(34, 197, 94, 0.1)',
-            border: '1px solid rgba(34, 197, 94, 0.3)',
-            color: '#16a34a',
-            padding: '0.75rem 1rem',
-            borderRadius: '8px',
-            marginBottom: '1rem',
-            fontSize: '0.9rem',
-          }}
-        >
+      {error ? (
+        <Alert variant="danger" className={styles.errorMessage}>
+          {error}
+        </Alert>
+      ) : null}
+
+      {success ? (
+        <Alert variant="success" className={styles.successMessage}>
           {success}
-        </div>
-      )}
+        </Alert>
+      ) : null}
 
-      <form className={styles.form} onSubmit={handleSubmit}>
-        <div className={styles.formGroup}>
-          <label htmlFor="email" className={styles.label}>
-            Email
-          </label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            className={styles.input}
-            placeholder="Enter your email"
-            value={email}
-            onChange={handleChange}
-            disabled={isLoading}
-            autoFocus
-          />
-        </div>
-
-        <button
-          type="submit"
-          className={styles.submitButton}
+      <Stack className={styles.form} gap="md">
+        <FormField
+          label="Email"
+          id="email"
+          type="email"
+          placeholder="Enter your email"
+          value={email}
+          onChange={(v) => {
+            setEmail(v);
+            if (error || success) {
+              setError(null);
+              setSuccess(null);
+            }
+          }}
           disabled={isLoading}
+        />
+
+        <Button
+          variant="solid"
+          className={styles.submitButton}
+          onClick={() => void handleSubmit()}
+          disabled={isLoading}
+          loading={isLoading}
         >
           {isLoading ? 'Sending...' : 'Send Reset Link'}
-        </button>
-      </form>
+        </Button>
+      </Stack>
 
-      <div className={styles.footer}>
-        <p className={styles.footerText}>
+      <Stack className={styles.footer} gap="xs">
+        <Text color="secondary" className={styles.footerText}>
           Remember your password?{' '}
           <Link to="/login" className={styles.link}>
             Sign in
           </Link>
-        </p>
-      </div>
-    </div>
+        </Text>
+      </Stack>
+    </Stack>
   );
 }

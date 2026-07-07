@@ -4,12 +4,30 @@ import {
   useMemo,
   useRef,
   useState,
-  type FormEvent,
 } from 'react';
 import { cartApi, shopMenuApi } from '@inventory-platform/product/api';
 import type { MenuItem, MenuSection, ShopMenu } from '@inventory-platform/plugin-cafe/types';
 import { menuSellableRef } from '@inventory-platform/product/types';
 import { useNotify, useVerticalSchemaStore } from '@inventory-platform/session';
+import {
+  Alert,
+  Badge,
+  Box,
+  Button,
+  Card,
+  CardBody,
+  CenteredLoader,
+  EmptyState,
+  FormField,
+  IconButton,
+  Inline,
+  Input,
+  PageHeader,
+  SearchInput,
+  Stack,
+  Switch,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './menu.module.css';
 
 export function meta() {
@@ -177,10 +195,6 @@ export function MenuAdminPage() {
     setSearchQuery('');
   };
 
-  const handleSearchSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-  };
-
   const canAddItemToSell = (item: MenuItem): boolean => {
     if (isDirty) return false;
     if (!item.name.trim()) return false;
@@ -334,280 +348,310 @@ export function MenuAdminPage() {
 
   if (isLoading) {
     return (
-      <div className={styles.page}>
-        <div className={styles.loading}>Loading menu…</div>
-      </div>
+      <Stack gap="md" className={styles.page}>
+        <CenteredLoader label="Loading menu…" />
+      </Stack>
     );
   }
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <div className={styles.headerText}>
-          <h2 className={styles.title}>Menu</h2>
-          <p className={styles.subtitle}>
-            Organize sellable items into sections. Prices set here appear on
-            Sell.
-          </p>
-          <div className={styles.statsRow}>
-            <span className={styles.statPill}>
-              📂 {sections.length}{' '}
-              {sections.length === 1 ? 'section' : 'sections'}
-            </span>
-            <span className={styles.statPill}>
-              🍽️ {totalItems} {totalItems === 1 ? 'item' : 'items'}
-            </span>
-            <span className={styles.statPill}>
-              ✓ {availableItems} available
-            </span>
-          </div>
-        </div>
-        <div className={styles.headerActions}>
-          {isDirty && (
-            <span className={styles.unsavedBadge}>Unsaved changes</span>
-          )}
-          <button
-            type="button"
-            className={styles.btn}
-            onClick={() => setSections((prev) => [...prev, emptySection()])}
-          >
-            + Add section
-          </button>
-          <button
-            type="button"
-            className={`${styles.btn} ${styles.btnPrimary}`}
-            disabled={isSaving || !isDirty}
-            onClick={() => void handleSave()}
-          >
-            {isSaving ? 'Saving…' : 'Save menu'}
-          </button>
-        </div>
-      </header>
-
-      {error && <div className={styles.errorMessage}>{error}</div>}
-      {savedMessage && (
-        <div className={styles.successMessage}>{savedMessage}</div>
-      )}
-
-      <div className={styles.searchContainer}>
-        <form className={styles.searchBar} onSubmit={handleSearchSubmit}>
-          <span className={styles.searchIcon} role="img" aria-label="Search">
-            🔍
-          </span>
-          <input
-            type="search"
-            className={styles.searchInput}
-            placeholder="Search menu items or sections…"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            aria-label="Search menu items"
-          />
-          {hasActiveSearch && (
-            <button
+    <Stack gap="md" className={styles.page}>
+      <PageHeader
+        title="Menu"
+        description="Organize sellable items into sections. Prices set here appear on Sell."
+        actions={
+          <Inline gap="sm" className={styles.headerActions}>
+            {isDirty ? (
+              <Badge variant="warning" className={styles.unsavedBadge}>
+                Unsaved changes
+              </Badge>
+            ) : null}
+            <Button
               type="button"
+              variant="outline"
+              className={styles.btn}
+              onClick={() => setSections((prev) => [...prev, emptySection()])}
+            >
+              + Add section
+            </Button>
+            <Button
+              type="button"
+              variant="solid"
+              className={styles.btnPrimary}
+              disabled={isSaving || !isDirty}
+              onClick={() => void handleSave()}
+              loading={isSaving}
+            >
+              {isSaving ? 'Saving…' : 'Save menu'}
+            </Button>
+          </Inline>
+        }
+      />
+
+      <Inline gap="sm" className={styles.statsRow}>
+        <Badge variant="neutral" className={styles.statPill}>
+          📂 {sections.length}{' '}
+          {sections.length === 1 ? 'section' : 'sections'}
+        </Badge>
+        <Badge variant="neutral" className={styles.statPill}>
+          🍽️ {totalItems} {totalItems === 1 ? 'item' : 'items'}
+        </Badge>
+        <Badge variant="neutral" className={styles.statPill}>
+          ✓ {availableItems} available
+        </Badge>
+      </Inline>
+
+      {error ? <Alert variant="danger">{error}</Alert> : null}
+      {savedMessage ? (
+        <Alert variant="success">{savedMessage}</Alert>
+      ) : null}
+
+      <Stack gap="sm" className={styles.searchContainer}>
+        <Inline gap="sm" className={styles.searchBar}>
+          <SearchInput
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Search menu items or sections…"
+            className={styles.searchInput}
+          />
+          {hasActiveSearch ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
               className={styles.clearSearchBtn}
               onClick={handleClearSearch}
             >
               Clear
-            </button>
-          )}
-        </form>
-        {hasActiveSearch && (
-          <p className={styles.searchMeta}>
+            </Button>
+          ) : null}
+        </Inline>
+        {hasActiveSearch ? (
+          <Text variant="caption" color="secondary" className={styles.searchMeta}>
             {searchResultCount}{' '}
             {searchResultCount === 1 ? 'match' : 'matches'} for &ldquo;
             {searchQuery.trim()}&rdquo;
-          </p>
-        )}
-      </div>
+          </Text>
+        ) : null}
+      </Stack>
 
       {sections.length === 0 ? (
-        <div className={styles.emptyState}>
-          <div className={styles.emptyIcon} aria-hidden>
-            📋
-          </div>
-          <p className={styles.emptyTitle}>No menu sections yet</p>
-          <p className={styles.emptyHint}>
-            Create a section for mains, beverages, or combos.
-          </p>
-          <button
-            type="button"
-            className={`${styles.btn} ${styles.btnPrimary}`}
-            onClick={() => setSections([emptySection()])}
-          >
-            Create first section
-          </button>
-        </div>
+        <EmptyState
+          title="No menu sections yet"
+          description="Create a section for mains, beverages, or combos."
+          action={
+            <Button
+              type="button"
+              variant="solid"
+              onClick={() => setSections([emptySection()])}
+            >
+              Create first section
+            </Button>
+          }
+          className={styles.emptyState}
+        />
       ) : hasActiveSearch && displaySections.length === 0 ? (
-        <div className={styles.emptyState}>
-          <div className={styles.emptyIcon} aria-hidden>
-            🔍
-          </div>
-          <p className={styles.emptyTitle}>No menu items found</p>
-          <p className={styles.emptyHint}>
-            Try a different name or section, or clear the search.
-          </p>
-          <button
-            type="button"
-            className={`${styles.btn} ${styles.btnPrimary}`}
-            onClick={handleClearSearch}
-          >
-            Clear search
-          </button>
-        </div>
+        <EmptyState
+          title="No menu items found"
+          description="Try a different name or section, or clear the search."
+          action={
+            <Button
+              type="button"
+              variant="solid"
+              onClick={handleClearSearch}
+            >
+              Clear search
+            </Button>
+          }
+          className={styles.emptyState}
+        />
       ) : (
-        <div className={styles.sectionsList}>
+        <Stack gap="md" className={styles.sectionsList}>
           {displaySections.map((section) => {
             const isCollapsed =
               !hasActiveSearch && collapsedSections.has(section.id);
             const namedItems = section.items.filter((i) => i.name.trim());
             return (
-              <section key={section.id} className={styles.sectionCard}>
-                <div className={styles.sectionToolbar}>
-                  <button
-                    type="button"
-                    className={styles.collapseBtn}
-                    onClick={() => toggleSectionCollapsed(section.id)}
-                    aria-expanded={!isCollapsed}
-                    aria-label={isCollapsed ? 'Expand section' : 'Collapse section'}
+              <Card key={section.id} className={styles.sectionCard}>
+                <CardBody>
+                  <Inline
+                    className={styles.sectionToolbar}
+                    gap="sm"
+                    align="center"
+                    width="full"
                   >
-                    {isCollapsed ? '▶' : '▼'}
-                  </button>
-                  <span className={styles.sectionIcon} aria-hidden>
-                    📁
-                  </span>
-                  <input
-                    className={styles.sectionTitleInput}
-                    value={section.title}
-                    onChange={(e) =>
-                      updateSection(section.id, { title: e.target.value })
-                    }
-                    placeholder="Section title (e.g. Main course)"
-                  />
-                  <span className={styles.itemCountBadge}>
-                    {namedItems.length || section.items.length}
-                  </span>
-                  <button
-                    type="button"
-                    className={styles.removeSectionBtn}
-                    onClick={() => removeSection(section.id)}
-                  >
-                    Delete section
-                  </button>
-                </div>
-
-                {!isCollapsed && (
-                  <div className={styles.sectionBody}>
-                    <div className={styles.itemsGrid}>
-                      {section.items.map((item) => {
-                        const isAvailable = item.available !== false;
-                        return (
-                          <div
-                            key={item.id}
-                            className={`${styles.itemCard} ${
-                              !isAvailable ? styles.itemCardUnavailable : ''
-                            }`}
-                          >
-                            <div className={styles.itemCardHeader}>
-                              <input
-                                className={styles.itemNameInput}
-                                value={item.name}
-                                onChange={(e) =>
-                                  updateItem(section.id, item.id, {
-                                    name: e.target.value,
-                                  })
-                                }
-                                placeholder="Item name"
-                              />
-                              <button
-                                type="button"
-                                className={styles.removeItemBtn}
-                                onClick={() => removeItem(section.id, item.id)}
-                                aria-label="Remove item"
-                                title="Remove item"
-                              >
-                                ×
-                              </button>
-                            </div>
-
-                            <div className={styles.fieldGroup}>
-                              <span className={styles.fieldLabel}>Price</span>
-                              <div className={styles.priceInputWrap}>
-                                <span className={styles.pricePrefix}>₹</span>
-                                <input
-                                  className={styles.priceInput}
-                                  type="number"
-                                  min={0}
-                                  step="0.01"
-                                  value={item.sellingPrice || ''}
-                                  onChange={(e) =>
-                                    updateItem(section.id, item.id, {
-                                      sellingPrice: Number(e.target.value),
-                                    })
-                                  }
-                                  placeholder="0"
-                                />
-                              </div>
-                            </div>
-
-                            <div className={styles.availabilityRow}>
-                              <span className={styles.availabilityLabel}>
-                                {isAvailable ? 'Available to sell' : 'Hidden from sell'}
-                              </span>
-                              <button
-                                type="button"
-                                className={`${styles.toggle} ${
-                                  isAvailable ? styles.toggleOn : ''
-                                }`}
-                                onClick={() =>
-                                  updateItem(section.id, item.id, {
-                                    available: !isAvailable,
-                                  })
-                                }
-                                aria-pressed={isAvailable}
-                                aria-label={
-                                  isAvailable
-                                    ? 'Mark unavailable'
-                                    : 'Mark available'
-                                }
-                              >
-                                <span className={styles.toggleKnob} />
-                              </button>
-                            </div>
-
-                            <button
-                              type="button"
-                              className={styles.addToSellBtn}
-                              onClick={() => void handleAddToSell(item)}
-                              disabled={
-                                !canAddItemToSell(item) ||
-                                addingToSell === item.id
-                              }
-                              title={addToSellDisabledReason(item) ?? undefined}
-                            >
-                              {addingToSell === item.id
-                                ? 'Adding…'
-                                : addToSellDisabledReason(item) ?? 'Add to Sell'}
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    <button
-                      type="button"
-                      className={styles.addItemBtn}
-                      onClick={() => addItem(section.id)}
+                    <IconButton
+                      label={
+                        isCollapsed ? 'Expand section' : 'Collapse section'
+                      }
+                      className={styles.collapseBtn}
+                      onClick={() => toggleSectionCollapsed(section.id)}
                     >
-                      + Add item to {section.title.trim() || 'section'}
-                    </button>
-                  </div>
-                )}
-              </section>
+                      {isCollapsed ? '▶' : '▼'}
+                    </IconButton>
+                    <Text aria-hidden className={styles.sectionIcon}>
+                      📁
+                    </Text>
+                    <Input
+                      className={styles.sectionTitleInput}
+                      value={section.title}
+                      onChange={(e) =>
+                        updateSection(section.id, { title: e.target.value })
+                      }
+                      placeholder="Section title (e.g. Main course)"
+                    />
+                    <Badge variant="neutral" className={styles.itemCountBadge}>
+                      {namedItems.length || section.items.length}
+                    </Badge>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className={styles.removeSectionBtn}
+                      onClick={() => removeSection(section.id)}
+                    >
+                      Delete section
+                    </Button>
+                  </Inline>
+
+                  {!isCollapsed ? (
+                    <Stack gap="md" className={styles.sectionBody}>
+                      <Box className={styles.itemsGrid}>
+                        {section.items.map((item) => {
+                          const isAvailable = item.available !== false;
+                          return (
+                            <Card
+                              key={item.id}
+                              className={`${styles.itemCard} ${
+                                !isAvailable ? styles.itemCardUnavailable : ''
+                              }`}
+                            >
+                              <CardBody>
+                                <Stack gap="sm">
+                                  <Inline
+                                    className={styles.itemCardHeader}
+                                    gap="sm"
+                                    align="center"
+                                    width="full"
+                                  >
+                                    <Input
+                                      className={styles.itemNameInput}
+                                      value={item.name}
+                                      onChange={(e) =>
+                                        updateItem(section.id, item.id, {
+                                          name: e.target.value,
+                                        })
+                                      }
+                                      placeholder="Item name"
+                                    />
+                                    <IconButton
+                                      label="Remove item"
+                                      title="Remove item"
+                                      className={styles.removeItemBtn}
+                                      onClick={() =>
+                                        removeItem(section.id, item.id)
+                                      }
+                                    >
+                                      ×
+                                    </IconButton>
+                                  </Inline>
+
+                                  <FormField label="Price">
+                                    <Inline
+                                      gap="none"
+                                      align="center"
+                                      className={styles.priceInputWrap}
+                                    >
+                                      <Text className={styles.pricePrefix}>₹</Text>
+                                      <Input
+                                        className={styles.priceInput}
+                                        type="number"
+                                        min={0}
+                                        step="0.01"
+                                        value={item.sellingPrice || ''}
+                                        onChange={(e) =>
+                                          updateItem(section.id, item.id, {
+                                            sellingPrice: Number(e.target.value),
+                                          })
+                                        }
+                                        placeholder="0"
+                                      />
+                                    </Inline>
+                                  </FormField>
+
+                                  <Inline
+                                    className={styles.availabilityRow}
+                                    justify="between"
+                                    align="center"
+                                    width="full"
+                                  >
+                                    <Text
+                                      variant="caption"
+                                      className={styles.availabilityLabel}
+                                    >
+                                      {isAvailable
+                                        ? 'Available to sell'
+                                        : 'Hidden from sell'}
+                                    </Text>
+                                    <Switch
+                                      label={
+                                        isAvailable
+                                          ? 'Mark unavailable'
+                                          : 'Mark available'
+                                      }
+                                      checked={isAvailable}
+                                      onChange={() =>
+                                        updateItem(section.id, item.id, {
+                                          available: !isAvailable,
+                                        })
+                                      }
+                                      aria-pressed={isAvailable}
+                                      className={styles.toggle}
+                                    />
+                                  </Inline>
+
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className={styles.addToSellBtn}
+                                    onClick={() => void handleAddToSell(item)}
+                                    disabled={
+                                      !canAddItemToSell(item) ||
+                                      addingToSell === item.id
+                                    }
+                                    title={
+                                      addToSellDisabledReason(item) ?? undefined
+                                    }
+                                  >
+                                    {addingToSell === item.id
+                                      ? 'Adding…'
+                                      : addToSellDisabledReason(item) ??
+                                        'Add to Sell'}
+                                  </Button>
+                                </Stack>
+                              </CardBody>
+                            </Card>
+                          );
+                        })}
+                      </Box>
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className={styles.addItemBtn}
+                        onClick={() => addItem(section.id)}
+                      >
+                        + Add item to {section.title.trim() || 'section'}
+                      </Button>
+                    </Stack>
+                  ) : null}
+                </CardBody>
+              </Card>
             );
           })}
-        </div>
+        </Stack>
       )}
-    </div>
+    </Stack>
   );
 }

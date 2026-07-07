@@ -2,6 +2,17 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
 import { useAuthStore } from '@inventory-platform/session';
+import {
+  Alert,
+  Box,
+  Button,
+  Checkbox,
+  Divider,
+  FormField,
+  Link as UiLink,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './SignupForm.module.css';
 
 export function SignupForm() {
@@ -28,8 +39,7 @@ export function SignupForm() {
     };
   }, [clearError]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setLocalError(null);
     clearError();
 
@@ -53,7 +63,7 @@ export function SignupForm() {
         name: formData.name,
         email: formData.email,
         password: formData.password,
-        role: 'CASHIER', // Default role
+        role: 'CASHIER',
       });
       navigate('/shop-selection');
     } catch (err) {
@@ -73,7 +83,7 @@ export function SignupForm() {
         await signup({
           idToken: credentialResponse.credential,
           signupType: 'google',
-          role: 'CASHIER', // Default role
+          role: 'CASHIER',
         });
         navigate('/shop-selection');
       } else {
@@ -92,14 +102,7 @@ export function SignupForm() {
     setLocalError('Google signup failed. Please try again.');
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const target = e.target as HTMLInputElement | HTMLSelectElement;
-    setFormData({
-      ...formData,
-      [target.name]: target.value,
-    });
+  const clearErrors = () => {
     if (localError || error) {
       setLocalError(null);
       clearError();
@@ -109,115 +112,110 @@ export function SignupForm() {
   const displayError = localError || error;
 
   return (
-    <div className={styles.formContainer}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Create Account</h1>
-        <p className={styles.subtitle}>Get started with StockKart today</p>
-      </div>
+    <Stack className={styles.formContainer} gap="md">
+      <Stack className={styles.header} gap="xs">
+        <Text variant="heading1" className={styles.title}>
+          Create Account
+        </Text>
+        <Text color="secondary" className={styles.subtitle}>
+          Get started with StockKart today
+        </Text>
+      </Stack>
 
-      {displayError && (
-        <div className={styles.errorMessage}>{displayError}</div>
-      )}
+      {displayError ? (
+        <Alert variant="danger" className={styles.errorMessage}>
+          {displayError}
+        </Alert>
+      ) : null}
 
-      <form className={styles.form} onSubmit={handleSubmit}>
-        <div className={styles.formGroup}>
-          <label htmlFor="name" className={styles.label}>
-            Full Name
-          </label>
-          <input
-            type="text"
-            id="name"
-            name="name"
-            className={styles.input}
-            placeholder="Enter your full name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-            disabled={isLoading}
-          />
-        </div>
-
-        <div className={styles.formGroup}>
-          <label htmlFor="email" className={styles.label}>
-            Email
-          </label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            className={styles.input}
-            placeholder="Enter your email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            disabled={isLoading}
-          />
-        </div>
-
-        <div className={styles.formGroup}>
-          <label htmlFor="password" className={styles.label}>
-            Password
-          </label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            className={styles.input}
-            placeholder="Create a password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            disabled={isLoading}
-          />
-        </div>
-
-        <div className={styles.formGroup}>
-          <label htmlFor="confirmPassword" className={styles.label}>
-            Confirm Password
-          </label>
-          <input
-            type="password"
-            id="confirmPassword"
-            name="confirmPassword"
-            className={styles.input}
-            placeholder="Confirm your password"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            required
-            disabled={isLoading}
-          />
-        </div>
-
-        <div className={styles.checkboxGroup}>
-          <label className={styles.checkboxLabel}>
-            <input type="checkbox" className={styles.checkbox} required />
-            <span>
-              I agree to the{' '}
-              <a href="#terms" className={styles.termsLink}>
-                Terms of Service
-              </a>{' '}
-              and{' '}
-              <a href="#privacy" className={styles.termsLink}>
-                Privacy Policy
-              </a>
-            </span>
-          </label>
-        </div>
-
-        <button
-          type="submit"
-          className={styles.submitButton}
+      <Stack className={styles.form} gap="md">
+        <FormField
+          label="Full Name"
+          id="name"
+          placeholder="Enter your full name"
+          value={formData.name}
+          onChange={(v) => {
+            setFormData({ ...formData, name: v });
+            clearErrors();
+          }}
+          required
           disabled={isLoading}
+        />
+
+        <FormField
+          label="Email"
+          id="email"
+          type="email"
+          placeholder="Enter your email"
+          value={formData.email}
+          onChange={(v) => {
+            setFormData({ ...formData, email: v });
+            clearErrors();
+          }}
+          required
+          disabled={isLoading}
+        />
+
+        <FormField
+          label="Password"
+          id="password"
+          type="password"
+          placeholder="Create a password"
+          value={formData.password}
+          onChange={(v) => {
+            setFormData({ ...formData, password: v });
+            clearErrors();
+          }}
+          required
+          disabled={isLoading}
+        />
+
+        <FormField
+          label="Confirm Password"
+          id="confirmPassword"
+          type="password"
+          placeholder="Confirm your password"
+          value={formData.confirmPassword}
+          onChange={(v) => {
+            setFormData({ ...formData, confirmPassword: v });
+            clearErrors();
+          }}
+          required
+          disabled={isLoading}
+        />
+
+        <Box className={styles.checkboxGroup}>
+          <Checkbox
+            required
+            label={
+              <>
+                I agree to the{' '}
+                <UiLink href="#terms" className={styles.termsLink}>
+                  Terms of Service
+                </UiLink>{' '}
+                and{' '}
+                <UiLink href="#privacy" className={styles.termsLink}>
+                  Privacy Policy
+                </UiLink>
+              </>
+            }
+          />
+        </Box>
+
+        <Button
+          variant="solid"
+          className={styles.submitButton}
+          onClick={() => void handleSubmit()}
+          disabled={isLoading}
+          loading={isLoading}
         >
           {isLoading ? 'Creating Account...' : 'Create Account'}
-        </button>
-      </form>
+        </Button>
+      </Stack>
 
-      <div className={styles.divider}>
-        <span className={styles.dividerText}>or</span>
-      </div>
+      <Divider label="or" className={styles.divider} />
 
-      <div className={styles.socialButtons}>
+      <Box className={styles.socialButtons}>
         <GoogleLogin
           onSuccess={handleGoogleSuccess}
           onError={handleGoogleError}
@@ -229,16 +227,16 @@ export function SignupForm() {
           shape="pill"
           ux_mode="popup"
         />
-      </div>
+      </Box>
 
-      <div className={styles.footer}>
-        <p className={styles.footerText}>
+      <Stack className={styles.footer} gap="xs">
+        <Text color="secondary" className={styles.footerText}>
           Already have an account?{' '}
           <Link to="/login" className={styles.link}>
             Sign in
           </Link>
-        </p>
-      </div>
-    </div>
+        </Text>
+      </Stack>
+    </Stack>
   );
 }

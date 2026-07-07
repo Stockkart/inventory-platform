@@ -1,4 +1,5 @@
 import { FormKeyboardNavScope } from '@inventory-platform/routing';
+import { Box } from '@inventory-platform/ui-kit';
 import { JourneyHeader } from '../../ui/JourneyHeader';
 import { ForgotPasswordForm } from '../forms/ForgotPasswordForm';
 import styles from './login.module.css';
@@ -15,13 +16,13 @@ export function meta() {
 
 export default function ForgotPasswordPage() {
   return (
-    <div className={styles.page}>
+    <Box className={styles.page}>
       <JourneyHeader />
-      <main className={styles.main}>
+      <Box as="main" className={styles.main}>
         <FormKeyboardNavScope className={styles.container}>
           <ForgotPasswordForm />
         </FormKeyboardNavScope>
-      </main>
-    </div>
+      </Box>
+    </Box>
   );
 }

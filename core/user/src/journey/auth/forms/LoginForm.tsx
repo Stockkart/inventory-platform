@@ -2,6 +2,17 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router';
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
 import { useAuthStore } from '@inventory-platform/session';
+import {
+  Alert,
+  Box,
+  Button,
+  Checkbox,
+  Divider,
+  FormField,
+  Inline,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './LoginForm.module.css';
 
 export function LoginForm() {
@@ -17,7 +28,6 @@ export function LoginForm() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      // Redirect to the original location if available, otherwise go to dashboard
       const from = (location.state as { from?: string })?.from || '/dashboard';
       navigate(from, { replace: true });
     }
@@ -47,7 +57,6 @@ export function LoginForm() {
         email: formData.email,
         password: formData.password,
       });
-      // Redirect to the original location if available, otherwise go to dashboard
       const from = (location.state as { from?: string })?.from || '/dashboard';
       navigate(from, { replace: true });
     } catch (err) {
@@ -68,7 +77,6 @@ export function LoginForm() {
           idToken: credentialResponse.credential,
           loginType: 'google',
         });
-        // Redirect to the original location if available, otherwise go to dashboard
         const from =
           (location.state as { from?: string })?.from || '/dashboard';
         navigate(from, { replace: true });
@@ -88,11 +96,7 @@ export function LoginForm() {
     setLocalError('Google login failed. Please try again.');
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+  const clearErrors = () => {
     if (localError || error) {
       setLocalError(null);
       clearError();
@@ -102,82 +106,73 @@ export function LoginForm() {
   const displayError = localError || error;
 
   return (
-    <div className={styles.formContainer}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Welcome Back</h1>
-        <p className={styles.subtitle}>Sign in to your StockKart account</p>
-      </div>
+    <Stack className={styles.formContainer} gap="md">
+      <Stack className={styles.header} gap="xs">
+        <Text variant="heading1" className={styles.title}>
+          Welcome Back
+        </Text>
+        <Text color="secondary" className={styles.subtitle}>
+          Sign in to your StockKart account
+        </Text>
+      </Stack>
 
-      {displayError && (
-        <div className={styles.errorMessage}>{displayError}</div>
-      )}
+      {displayError ? (
+        <Alert variant="danger" className={styles.errorMessage}>
+          {displayError}
+        </Alert>
+      ) : null}
 
-      <div className={styles.form}>
-        <div className={styles.formGroup}>
-          <label htmlFor="email" className={styles.label}>
-            Email
-          </label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            className={styles.input}
-            placeholder="Enter your email"
-            value={formData.email}
-            onChange={handleChange}
-            disabled={isLoading}
-          />
-        </div>
+      <Stack className={styles.form} gap="md">
+        <FormField
+          label="Email"
+          id="email"
+          type="email"
+          placeholder="Enter your email"
+          value={formData.email}
+          onChange={(v) => {
+            setFormData({ ...formData, email: v });
+            clearErrors();
+          }}
+          disabled={isLoading}
+        />
 
-        <div className={styles.formGroup}>
-          <label htmlFor="password" className={styles.label}>
-            Password
-          </label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            className={styles.input}
-            placeholder="Enter your password"
-            value={formData.password}
-            onChange={handleChange}
-            disabled={isLoading}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleSubmit();
-              }
-            }}
-          />
-        </div>
+        <FormField
+          label="Password"
+          id="password"
+          type="password"
+          placeholder="Enter your password"
+          value={formData.password}
+          onChange={(v) => {
+            setFormData({ ...formData, password: v });
+            clearErrors();
+          }}
+          disabled={isLoading}
+        />
 
-        <div className={styles.options}>
-          <label className={styles.checkboxLabel}>
-            <input type="checkbox" className={styles.checkbox} />
-            <span>Remember me</span>
-          </label>
+        <Inline className={styles.options} justify="between" width="full">
+          <Checkbox label="Remember me" />
           <Link to="/forgot-password" className={styles.forgotLink}>
             Forgot password?
           </Link>
-        </div>
+        </Inline>
 
-        <button
-          type="button"
+        <Button
+          variant="solid"
           className={styles.submitButton}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            handleSubmit();
+            void handleSubmit();
           }}
           disabled={isLoading}
+          loading={isLoading}
         >
           {isLoading ? 'Signing In...' : 'Sign In'}
-        </button>
+        </Button>
 
-        <div className={styles.divider}>
-          <span className={styles.dividerText}>or</span>
-        </div>
+        <Divider label="or" className={styles.divider} />
 
-        <div className={styles.socialButtons}>
+        <Box className={styles.socialButtons}>
           <GoogleLogin
             onSuccess={handleGoogleSuccess}
             onError={handleGoogleError}
@@ -189,17 +184,17 @@ export function LoginForm() {
             shape="pill"
             ux_mode="popup"
           />
-        </div>
-      </div>
+        </Box>
+      </Stack>
 
-      <div className={styles.footer}>
-        <p className={styles.footerText}>
+      <Stack className={styles.footer} gap="xs">
+        <Text color="secondary" className={styles.footerText}>
           Don&apos;t have an account?{' '}
           <Link to="/signup" className={styles.link}>
             Sign up
           </Link>
-        </p>
-      </div>
-    </div>
+        </Text>
+      </Stack>
+    </Stack>
   );
 }

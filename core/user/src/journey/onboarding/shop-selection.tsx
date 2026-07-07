@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuthStore } from '@inventory-platform/session';
+import {
+  Box,
+  Button,
+  Card,
+  CardBody,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './shop-selection.module.css';
 
 export function meta() {
@@ -20,19 +28,16 @@ export default function ShopSelectionPage() {
     'onboard' | 'request' | 'view' | null
   >(null);
 
-  // Periodically check if user has been added to a shop
   useEffect(() => {
     if (!isAuthenticated || !user) {
       return;
     }
 
-    // If user already has a shop, redirect to dashboard
     if (user.shopId) {
       navigate('/dashboard');
       return;
     }
 
-    // Set up interval to check for shop updates every 5 seconds
     const intervalId = setInterval(async () => {
       try {
         await fetchCurrentUser();
@@ -41,24 +46,21 @@ export default function ShopSelectionPage() {
           navigate('/dashboard');
         }
       } catch (error) {
-        // Silently fail - don't show errors for background checks
         console.error('Failed to check user status:', error);
       }
-    }, 5000); // Check every 5 seconds
+    }, 5000);
 
     return () => {
       clearInterval(intervalId);
     };
   }, [isAuthenticated, user, navigate, fetchCurrentUser]);
 
-  // Redirect if not authenticated
   if (!isAuthenticated || !user) {
-    return null; // Will redirect via layout
+    return null;
   }
 
-  // Redirect if user already has shop
   if (user.shopId) {
-    return null; // Will redirect via layout
+    return null;
   }
 
   const handleOptionSelect = (option: 'onboard' | 'request' | 'view') => {
@@ -84,72 +86,97 @@ export default function ShopSelectionPage() {
     }
   };
 
+  const options: {
+    key: 'onboard' | 'request' | 'view';
+    icon: string;
+    title: string;
+    description: string;
+  }[] = [
+    {
+      key: 'onboard',
+      icon: '🏪',
+      title: 'Onboard a New Shop',
+      description:
+        "Create and register your own shop. You'll be the owner and can invite others to join.",
+    },
+    {
+      key: 'request',
+      icon: '👥',
+      title: 'Request to Join a Shop',
+      description:
+        'Request to join an existing shop. The shop owner will review and approve your request.',
+    },
+    {
+      key: 'view',
+      icon: '📬',
+      title: 'My requests & invitations',
+      description:
+        "View invitations you've received to join shops and the status of join requests you've sent.",
+    },
+  ];
+
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Get Started</h1>
-        <p className={styles.subtitle}>
-          Choose how you'd like to get started with StockKart
-        </p>
-      </div>
+    <Stack className={styles.container} gap="lg">
+      <Stack className={styles.header} gap="xs">
+        <Text variant="heading1" className={styles.title}>
+          Get Started
+        </Text>
+        <Text color="secondary" className={styles.subtitle}>
+          Choose how you&apos;d like to get started with StockKart
+        </Text>
+      </Stack>
 
-      <div className={styles.options}>
-        <div
-          className={`${styles.optionCard} ${
-            selectedOption === 'onboard' ? styles.selected : ''
-          }`}
-          onClick={() => handleOptionSelect('onboard')}
-        >
-          <div className={styles.iconWrapper}>🏪</div>
-          <h2 className={styles.optionTitle}>Onboard a New Shop</h2>
-          <p className={styles.optionDescription}>
-            Create and register your own shop. You'll be the owner and can
-            invite others to join.
-          </p>
-        </div>
+      <Box className={styles.options}>
+        {options.map(({ key, icon, title, description }) => (
+          <Card
+            key={key}
+            className={`${styles.optionCard} ${
+              selectedOption === key ? styles.selected : ''
+            }`}
+            onClick={() => handleOptionSelect(key)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleOptionSelect(key);
+              }
+            }}
+          >
+            <CardBody>
+              <Box className={styles.iconWrapper}>{icon}</Box>
+              <Text variant="heading2" className={styles.optionTitle}>
+                {title}
+              </Text>
+              <Text color="secondary" className={styles.optionDescription}>
+                {description}
+              </Text>
+            </CardBody>
+          </Card>
+        ))}
+      </Box>
 
-        <div
-          className={`${styles.optionCard} ${
-            selectedOption === 'request' ? styles.selected : ''
-          }`}
-          onClick={() => handleOptionSelect('request')}
-        >
-          <div className={styles.iconWrapper}>👥</div>
-          <h2 className={styles.optionTitle}>Request to Join a Shop</h2>
-          <p className={styles.optionDescription}>
-            Request to join an existing shop. The shop owner will review and
-            approve your request.
-          </p>
-        </div>
-
-        <div
-          className={`${styles.optionCard} ${
-            selectedOption === 'view' ? styles.selected : ''
-          }`}
-          onClick={() => handleOptionSelect('view')}
-        >
-          <div className={styles.iconWrapper}>📬</div>
-          <h2 className={styles.optionTitle}>My requests & invitations</h2>
-          <p className={styles.optionDescription}>
-            View invitations you've received to join shops and the status of
-            join requests you've sent.
-          </p>
-        </div>
-      </div>
-
-      {selectedOption && (
-        <div className={styles.actions}>
-          <button className={styles.continueButton} onClick={handleContinue}>
+      {selectedOption ? (
+        <Box className={styles.actions}>
+          <Button
+            variant="solid"
+            className={styles.continueButton}
+            onClick={handleContinue}
+          >
             Continue
-          </button>
-        </div>
-      )}
+          </Button>
+        </Box>
+      ) : null}
 
-      <div className={styles.footer}>
-        <button type="button" className={styles.logoutButton} onClick={handleLogout}>
+      <Box className={styles.footer}>
+        <Button
+          variant="ghost"
+          className={styles.logoutButton}
+          onClick={() => void handleLogout()}
+        >
           Logout
-        </button>
-      </div>
-    </div>
+        </Button>
+      </Box>
+    </Stack>
   );
 }

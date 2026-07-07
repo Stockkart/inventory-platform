@@ -2,6 +2,15 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router';
 import { uploadApi } from '@inventory-platform/product/api';
 import type { UploadStatus } from '@inventory-platform/product/types';
+import {
+  Box,
+  Button,
+  Input,
+  Label,
+  Spinner,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './mobile-upload.module.css';
 
 const MAX_INVOICE_IMAGES = 20;
@@ -237,14 +246,14 @@ export default function MobileUploadPage() {
 
   if (isValidating) {
     return (
-      <div className={styles.page}>
-        <div className={styles.container}>
-          <div className={styles.loading}>
-            <div className={styles.spinner}></div>
-            <p>Validating upload token...</p>
-          </div>
-        </div>
-      </div>
+      <Box className={styles.page}>
+        <Box className={styles.container}>
+          <Stack className={styles.loading} gap="sm" align="center">
+            <Spinner size="lg" />
+            <Text>Validating upload token...</Text>
+          </Stack>
+        </Box>
+      </Box>
     );
   }
 
@@ -263,56 +272,64 @@ export default function MobileUploadPage() {
     };
 
     return (
-      <div className={styles.page}>
-        <div className={styles.container}>
-          <div className={styles.errorContainer}>
-            <div className={styles.errorIcon}>❌</div>
-            <h1>Upload Unavailable</h1>
-            <p className={styles.errorMessage}>
+      <Box className={styles.page}>
+        <Box className={styles.container}>
+          <Box className={styles.errorContainer}>
+            <Text as="span" className={styles.errorIcon} role="img" aria-label="Error">
+              ❌
+            </Text>
+            <Text as="h1" variant="heading1">
+              Upload Unavailable
+            </Text>
+            <Text className={styles.errorMessage}>
               {error || getStatusMessage()}
-            </p>
+            </Text>
             {tokenStatus && (
-              <p className={styles.statusInfo}>
-                Status: <strong>{tokenStatus}</strong>
-              </p>
+              <Text className={styles.statusInfo}>
+                Status: <Text as="strong">{tokenStatus}</Text>
+              </Text>
             )}
-            <p className={styles.helpText}>
+            <Text className={styles.helpText}>
               Please scan the QR code again to get a new upload link.
-            </p>
-          </div>
-        </div>
-      </div>
+            </Text>
+          </Box>
+        </Box>
+      </Box>
     );
   }
 
   return (
-    <div className={styles.page}>
-      <div className={styles.container}>
-        <div className={styles.header}>
-          <h1>📄 Upload Invoice</h1>
-          <p className={styles.subtitle}>
+    <Box className={styles.page}>
+      <Box className={styles.container}>
+        <Box className={styles.header}>
+          <Text as="h1" variant="heading1">
+            📄 Upload Invoice
+          </Text>
+          <Text className={styles.subtitle}>
             Add one or more photos (multi-page invoice)
-          </p>
-        </div>
+          </Text>
+        </Box>
 
         {uploadSuccess && (
-          <div className={styles.successMessage}>
-            <div className={styles.successIcon}>✅</div>
-            <p>Uploaded successfully! Processing on desktop...</p>
-            <p className={styles.successSubtext}>
+          <Box className={styles.successMessage}>
+            <Text as="span" className={styles.successIcon} role="img" aria-label="Success">
+              ✅
+            </Text>
+            <Text>Uploaded successfully! Processing on desktop...</Text>
+            <Text className={styles.successSubtext}>
               You can close this page. The desktop app will receive all parsed
               items.
-            </p>
-          </div>
+            </Text>
+          </Box>
         )}
 
         {error && !uploadSuccess && (
-          <div className={styles.errorMessage}>{error}</div>
+          <Text className={styles.errorMessage}>{error}</Text>
         )}
 
         {!uploadSuccess && (
-          <div className={styles.uploadSection}>
-            <input
+          <Box className={styles.uploadSection}>
+            <Input
               ref={fileInputRef}
               type="file"
               accept="image/*"
@@ -324,73 +341,89 @@ export default function MobileUploadPage() {
             />
 
             {selectedFiles.length > 0 ? (
-              <div className={styles.filePreview}>
-                <p className={styles.fileListTitle}>
+              <Box className={styles.filePreview}>
+                <Text className={styles.fileListTitle}>
                   {selectedFiles.length} image
                   {selectedFiles.length === 1 ? '' : 's'} ready
-                </p>
-                <ul className={styles.fileList}>
+                </Text>
+                <Box as="ul" className={styles.fileList}>
                   {selectedFiles.map((file, index) => (
-                    <li
+                    <Box
+                      as="li"
                       key={`${file.name}-${index}`}
                       className={styles.fileListItem}
                     >
-                      <span className={styles.fileName}>{file.name}</span>
-                      <span className={styles.fileSize}>
+                      <Text as="span" className={styles.fileName}>
+                        {file.name}
+                      </Text>
+                      <Text as="span" className={styles.fileSize}>
                         ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                      </span>
+                      </Text>
                       {!isUploading && (
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
                           className={styles.fileRemoveBtn}
                           onClick={() => handleRemoveFile(index)}
                           aria-label={`Remove ${file.name}`}
                         >
                           ×
-                        </button>
+                        </Button>
                       )}
-                    </li>
+                    </Box>
                   ))}
-                </ul>
+                </Box>
                 {selectedFiles[0]?.type.startsWith('image/') && (
-                  <div className={styles.imagePreview}>
-                    <img
-                      src={URL.createObjectURL(selectedFiles[0])}
-                      alt="Preview of first page"
+                  <Box className={styles.imagePreview}>
+                    <Box
+                      role="img"
+                      aria-label="Preview of first page"
                       className={styles.previewImage}
+                      style={{
+                        backgroundImage: `url("${URL.createObjectURL(selectedFiles[0])}")`,
+                        backgroundSize: '100% auto',
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'top center',
+                        minHeight: '12rem',
+                      }}
                     />
-                  </div>
+                  </Box>
                 )}
-                <div className={styles.uploadActions}>
-                  <button
+                <Box className={styles.uploadActions}>
+                  <Button
                     type="button"
+                    variant="solid"
                     className={styles.uploadBtn}
                     onClick={handleUpload}
                     disabled={isUploading}
+                    loading={isUploading}
                   >
                     {isUploading ? (
-                      <>
-                        <span className={styles.spinnerSmall}></span>
-                        {uploadProgress || 'Uploading...'}
-                      </>
+                      uploadProgress || 'Uploading...'
                     ) : (
                       <>
-                        <span>📤</span>
+                        <Text as="span" role="img" aria-label="Upload">
+                          📤
+                        </Text>{' '}
                         Upload{' '}
-                        {selectedFiles.length > 1 ? `${selectedFiles.length} pages` : 'invoice'}
+                        {selectedFiles.length > 1
+                          ? `${selectedFiles.length} pages`
+                          : 'invoice'}
                       </>
                     )}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant="outline"
                     className={styles.changeFileBtn}
                     onClick={() => openFilePicker(false)}
                     disabled={isUploading}
                   >
                     Add more
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant="outline"
                     className={styles.changeFileBtn}
                     onClick={() => {
                       setSelectedFiles([]);
@@ -402,30 +435,37 @@ export default function MobileUploadPage() {
                     disabled={isUploading}
                   >
                     Clear all
-                  </button>
-                </div>
-              </div>
+                  </Button>
+                </Box>
+              </Box>
             ) : (
-              <div className={styles.uploadOptions}>
-                <label htmlFor="invoice-upload" className={styles.uploadLabel}>
-                  <div className={styles.uploadIcon}>📁</div>
-                  <span>Choose from gallery</span>
-                  <span className={styles.uploadHint}>Select multiple pages</span>
-                </label>
-                <button
+              <Box className={styles.uploadOptions}>
+                <Label htmlFor="invoice-upload" className={styles.uploadLabel}>
+                  <Text as="span" className={styles.uploadIcon} role="img" aria-label="Folder">
+                    📁
+                  </Text>
+                  <Text as="span">Choose from gallery</Text>
+                  <Text as="span" className={styles.uploadHint}>
+                    Select multiple pages
+                  </Text>
+                </Label>
+                <Button
                   type="button"
+                  variant="outline"
                   className={styles.cameraBtn}
                   onClick={() => openFilePicker(true)}
                   disabled={isUploading}
                 >
-                  <span className={styles.cameraIcon}>📷</span>
-                  <span>Take photo</span>
-                </button>
-              </div>
+                  <Text as="span" className={styles.cameraIcon} role="img" aria-label="Camera">
+                    📷
+                  </Text>
+                  <Text as="span">Take photo</Text>
+                </Button>
+              </Box>
             )}
-          </div>
+          </Box>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

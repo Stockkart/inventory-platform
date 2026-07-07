@@ -3,10 +3,24 @@ import { useNavigate } from 'react-router';
 import { useAuthStore } from '@inventory-platform/session';
 import { shopsApi } from '@inventory-platform/user/shops';
 import type { UserRole, OwnerShopSummary } from '@inventory-platform/user/types';
+import {
+  Alert,
+  Box,
+  Button,
+  FormField,
+  Inline,
+  Input,
+  Select,
+  Stack,
+  Text,
+  Textarea,
+} from '@inventory-platform/ui-kit';
 import styles from './request-join-shop.module.css';
 import { useNotify } from '@inventory-platform/session';
 
 const AVAILABLE_ROLES: UserRole[] = ['ADMIN', 'MANAGER', 'CASHIER'];
+
+const ROLE_OPTIONS = AVAILABLE_ROLES.map((r) => ({ value: r, label: r }));
 
 export function meta() {
   return [
@@ -29,19 +43,16 @@ export default function RequestJoinShopPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const { success: notifySuccess, error: notifyError } = useNotify;
 
-  // Periodically check if user has been added to a shop
   useEffect(() => {
     if (!isAuthenticated || !user) {
       return;
     }
 
-    // If user already has a shop, redirect to dashboard
     if (user.shopId) {
       navigate('/dashboard');
       return;
     }
 
-    // Set up interval to check for shop updates every 5 seconds
     const intervalId = setInterval(async () => {
       try {
         await fetchCurrentUser();
@@ -49,25 +60,22 @@ export default function RequestJoinShopPage() {
         if (updatedUser?.shopId) {
           navigate('/dashboard');
         }
-      } catch (error) {
-        // Silently fail - don't show errors for background checks
-        console.error('Failed to check user status:', error);
+      } catch (err) {
+        console.error('Failed to check user status:', err);
       }
-    }, 5000); // Check every 5 seconds
+    }, 5000);
 
     return () => {
       clearInterval(intervalId);
     };
   }, [isAuthenticated, user, navigate, fetchCurrentUser]);
 
-  // Redirect if not authenticated
   if (!isAuthenticated || !user) {
-    return null; // Will redirect via layout
+    return null;
   }
 
-  // Redirect if user already has shop
   if (user.shopId) {
-    return null; // Will redirect via layout
+    return null;
   }
 
   const handleFindShops = async () => {
@@ -94,8 +102,7 @@ export default function RequestJoinShopPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setError(null);
     setSuccess(null);
 
@@ -128,29 +135,28 @@ export default function RequestJoinShopPage() {
         `Request sent successfully! You requested to join "${response.shopName}". The shop owner will review your request.`
       );
 
-      // Clear form
       setOwnerEmail('');
       setOwnerShops([]);
       setSelectedShopId('');
       setMessage('');
 
-      // Refresh user data in case they get added immediately
       await fetchCurrentUser();
 
-      // Check if user now has a shop, otherwise stay on page
       const updatedUser = useAuthStore.getState().user;
       if (updatedUser?.shopId) {
-        // User was added immediately, redirect to dashboard
         setTimeout(() => {
           navigate('/dashboard');
         }, 2000);
       }
-      // Otherwise, user stays on page to see success message
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const apiErr = err as {
+        response?: { data?: { message?: string; data?: { message?: string } } };
+        message?: string;
+      };
       const errorMessage =
-        err?.response?.data?.message ||
-        err?.response?.data?.data?.message ||
-        err?.message ||
+        apiErr?.response?.data?.message ||
+        apiErr?.response?.data?.data?.message ||
+        apiErr?.message ||
         'Failed to send request. Please try again.';
       setError(errorMessage);
       notifyError(errorMessage);
@@ -172,29 +178,49 @@ export default function RequestJoinShopPage() {
     }
   };
 
+  const shopOptions = [
+    { value: '', label: 'Choose a shop...' },
+    ...ownerShops.map((s) => ({ value: s.shopId, label: s.shopName })),
+  ];
+
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <button className={styles.backButton} onClick={handleBack}>
+    <Stack className={styles.container} gap="lg">
+      <Stack className={styles.header} gap="xs">
+        <Button
+          variant="ghost"
+          className={styles.backButton}
+          onClick={handleBack}
+        >
           ← Back
-        </button>
-        <h1 className={styles.title}>Request to Join a Shop</h1>
-        <p className={styles.subtitle}>
-          Enter the shop owner's email address to send a join request
-        </p>
-      </div>
+        </Button>
+        <Text variant="heading1" className={styles.title}>
+          Request to Join a Shop
+        </Text>
+        <Text color="secondary" className={styles.subtitle}>
+          Enter the shop owner&apos;s email address to send a join request
+        </Text>
+      </Stack>
 
-      {error && <div className={styles.errorMessage}>{error}</div>}
+      {error ? (
+        <Alert variant="danger" className={styles.errorMessage}>
+          {error}
+        </Alert>
+      ) : null}
 
-      {success && <div className={styles.successMessage}>{success}</div>}
+      {success ? (
+        <Alert variant="success" className={styles.successMessage}>
+          {success}
+        </Alert>
+      ) : null}
 
-      <form className={styles.form} onSubmit={handleSubmit}>
-        <div className={styles.formGroup}>
-          <label htmlFor="ownerEmail" className={styles.label}>
-            Shop Owner Email *
-          </label>
-          <div className={styles.emailRow}>
-            <input
+      <Stack className={styles.form} gap="md">
+        <FormField
+          label="Shop Owner Email *"
+          id="ownerEmail"
+          hint="Enter the email address of the shop owner and click Find shops."
+        >
+          <Inline className={styles.emailRow} gap="sm">
+            <Input
               id="ownerEmail"
               type="email"
               className={styles.input}
@@ -209,28 +235,28 @@ export default function RequestJoinShopPage() {
               disabled={isLoading}
               required
             />
-            <button
-              type="button"
+            <Button
+              variant="outline"
               className={styles.findShopsButton}
-              onClick={handleFindShops}
+              onClick={() => void handleFindShops()}
               disabled={isLoading || isFindingShops || !ownerEmail.trim()}
+              loading={isFindingShops}
             >
               {isFindingShops ? 'Finding...' : 'Find shops'}
-            </button>
-          </div>
-          <p className={styles.helpText}>
-            Enter the email address of the shop owner and click Find shops.
-          </p>
-        </div>
+            </Button>
+          </Inline>
+        </FormField>
 
-        {ownerShops.length > 0 && (
-          <div className={styles.formGroup}>
-            <label htmlFor="shopSelect" className={styles.label}>
-              Select Shop *
-            </label>
-            <select
+        {ownerShops.length > 0 ? (
+          <FormField
+            label="Select Shop *"
+            id="shopSelect"
+            hint="Select the shop you want to join."
+          >
+            <Select
               id="shopSelect"
               className={styles.select}
+              options={shopOptions}
               value={selectedShopId}
               onChange={(e) => {
                 setSelectedShopId(e.target.value);
@@ -238,27 +264,19 @@ export default function RequestJoinShopPage() {
               }}
               disabled={isLoading}
               required
-            >
-              <option value="">Choose a shop...</option>
-              {ownerShops.map((s) => (
-                <option key={s.shopId} value={s.shopId}>
-                  {s.shopName}
-                </option>
-              ))}
-            </select>
-            <p className={styles.helpText}>
-              Select the shop you want to join.
-            </p>
-          </div>
-        )}
+            />
+          </FormField>
+        ) : null}
 
-        <div className={styles.formGroup}>
-          <label htmlFor="role" className={styles.label}>
-            Requested Role *
-          </label>
-          <select
+        <FormField
+          label="Requested Role *"
+          id="role"
+          hint="Select the role you would like to have in the shop."
+        >
+          <Select
             id="role"
             className={styles.select}
+            options={ROLE_OPTIONS}
             value={role}
             onChange={(e) => {
               setRole(e.target.value as UserRole);
@@ -266,23 +284,11 @@ export default function RequestJoinShopPage() {
             }}
             disabled={isLoading}
             required
-          >
-            {AVAILABLE_ROLES.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-          <p className={styles.helpText}>
-            Select the role you would like to have in the shop.
-          </p>
-        </div>
+          />
+        </FormField>
 
-        <div className={styles.formGroup}>
-          <label htmlFor="message" className={styles.label}>
-            Message (Optional)
-          </label>
-          <textarea
+        <FormField label="Message (Optional)" id="message">
+          <Textarea
             id="message"
             className={styles.textarea}
             placeholder="Add a message to the shop owner (optional)"
@@ -294,37 +300,43 @@ export default function RequestJoinShopPage() {
             disabled={isLoading}
             rows={4}
           />
-        </div>
+        </FormField>
 
-        <div className={styles.actions}>
-          <button
-            type="button"
+        <Inline className={styles.actions} gap="sm">
+          <Button
+            variant="ghost"
             className={styles.cancelButton}
             onClick={handleBack}
             disabled={isLoading}
           >
             Cancel
-          </button>
-          <button
-            type="submit"
+          </Button>
+          <Button
+            variant="solid"
             className={styles.submitButton}
+            onClick={() => void handleSubmit()}
             disabled={
               isLoading ||
               !ownerEmail.trim() ||
               !selectedShopId ||
               ownerShops.length === 0
             }
+            loading={isLoading}
           >
             {isLoading ? 'Sending Request...' : 'Send Request'}
-          </button>
-        </div>
-      </form>
+          </Button>
+        </Inline>
+      </Stack>
 
-      <div className={styles.footer}>
-        <button className={styles.logoutButton} onClick={handleLogout}>
+      <Box className={styles.footer}>
+        <Button
+          variant="ghost"
+          className={styles.logoutButton}
+          onClick={() => void handleLogout()}
+        >
           Logout
-        </button>
-      </div>
-    </div>
+        </Button>
+      </Box>
+    </Stack>
   );
 }

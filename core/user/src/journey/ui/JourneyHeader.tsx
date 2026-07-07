@@ -1,5 +1,10 @@
 import { Link } from 'react-router';
-import { ThemeToggle } from '@inventory-platform/ui-kit';
+import {
+  Box,
+  Inline,
+  Link as UiLink,
+  ThemeToggle,
+} from '@inventory-platform/ui-kit';
 import { useAuthStore } from '@inventory-platform/session';
 import styles from './JourneyHeader.module.css';
 
@@ -7,8 +12,8 @@ export function JourneyHeader() {
   const { isAuthenticated } = useAuthStore();
 
   return (
-    <header className={styles.header}>
-      <div className={styles.container}>
+    <Box as="header" className={styles.header}>
+      <Inline className={styles.container} justify="between" width="full">
         <Link to="/" className={styles.logo}>
           <img
             src="/assets/logo/STOCKKART-3x.png"
@@ -17,19 +22,19 @@ export function JourneyHeader() {
           />
         </Link>
 
-        <nav className={styles.nav}>
-          <a href="/#features" className={styles.navLink}>
+        <Box as="nav" className={styles.nav}>
+          <UiLink href="/#features" className={styles.navLink}>
             Features
-          </a>
-          <a href="/#pricing" className={styles.navLink}>
+          </UiLink>
+          <UiLink href="/#pricing" className={styles.navLink}>
             Pricing
-          </a>
-          <a href="/#about" className={styles.navLink}>
+          </UiLink>
+          <UiLink href="/#about" className={styles.navLink}>
             About
-          </a>
-        </nav>
+          </UiLink>
+        </Box>
 
-        <div className={styles.actions}>
+        <Inline className={styles.actions} gap="sm">
           <ThemeToggle />
           {isAuthenticated ? (
             <Link to="/dashboard" className={styles.getStartedBtn}>
@@ -45,8 +50,8 @@ export function JourneyHeader() {
               </Link>
             </>
           )}
-        </div>
-      </div>
-    </header>
+        </Inline>
+      </Inline>
+    </Box>
   );
 }

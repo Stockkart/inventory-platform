@@ -1,4 +1,5 @@
 import { FormKeyboardNavScope } from '@inventory-platform/routing';
+import { Box } from '@inventory-platform/ui-kit';
 import { JourneyHeader } from '../../ui/JourneyHeader';
 import { SignupForm } from '../forms/SignupForm';
 import styles from './signup.module.css';
@@ -12,13 +13,13 @@ export function meta() {
 
 export default function SignupPage() {
   return (
-    <div className={styles.page}>
+    <Box className={styles.page}>
       <JourneyHeader />
-      <main className={styles.main}>
+      <Box as="main" className={styles.main}>
         <FormKeyboardNavScope className={styles.container}>
           <SignupForm />
         </FormKeyboardNavScope>
-      </main>
-    </div>
+      </Box>
+    </Box>
   );
 }

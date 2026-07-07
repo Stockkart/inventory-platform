@@ -2,6 +2,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuthStore } from '@inventory-platform/session';
 import { InvitationList } from '@inventory-platform/user';
+import {
+  Box,
+  Button,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from './my-requests-invitations.module.css';
 
 export function meta() {
@@ -29,30 +35,32 @@ export default function MyRequestsInvitationsPage() {
   };
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <button
-          type="button"
+    <Stack className={styles.container} gap="lg">
+      <Stack className={styles.header} gap="xs">
+        <Button
+          variant="ghost"
           className={styles.backButton}
           onClick={() => navigate('/shop-selection')}
         >
           ← Back
-        </button>
-        <h1 className={styles.title}>My requests & invitations</h1>
-        <p className={styles.subtitle}>
+        </Button>
+        <Text variant="heading1" className={styles.title}>
+          My requests & invitations
+        </Text>
+        <Text color="secondary" className={styles.subtitle}>
           View invitations to join shops and accept them here. After accepting,
-          you’ll be taken to the dashboard.
-        </p>
-      </div>
+          you&apos;ll be taken to the dashboard.
+        </Text>
+      </Stack>
 
-      <div className={styles.content}>
+      <Box className={styles.content}>
         <InvitationList
           key={refreshKey}
           showMyInvitations={true}
           showAcceptButton={true}
           onInvitationChange={handleInvitationChange}
         />
-      </div>
-    </div>
+      </Box>
+    </Stack>
   );
 }

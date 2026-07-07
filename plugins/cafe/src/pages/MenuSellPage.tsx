@@ -1,6 +1,5 @@
 import {
   ChangeEvent,
-  FormEvent,
   useCallback,
   useEffect,
   useMemo,
@@ -19,6 +18,23 @@ import {
   CustomerProductHistoryHint,
   useCustomerProductHistory,
 } from '@inventory-platform/product';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardBody,
+  CenteredLoader,
+  Checkbox,
+  EmptyState,
+  FormField,
+  IconButton,
+  Inline,
+  Input,
+  PageHeader,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import styles from '@inventory-platform/product/pages/scan-sell.module.css';
 
 export function meta() {
@@ -53,6 +69,31 @@ function catalogToSearchHits(catalog: SellCatalog | null): SellSearchHit[] {
     .map((item) => ({ kind: 'menu' as const, item }));
 }
 
+function SummaryRow({
+  label,
+  value,
+  total,
+}: {
+  label: string;
+  value: string;
+  total?: boolean;
+}) {
+  if (total) {
+    return (
+      <Inline justify="between" width="full" className={styles.summaryRowTotal}>
+        <Text weight="bold">{label}</Text>
+        <Text weight="bold">{value}</Text>
+      </Inline>
+    );
+  }
+  return (
+    <Inline justify="between" width="full" className={styles.summaryRow}>
+      <Text color="secondary">{label}</Text>
+      <Text color="secondary">{value}</Text>
+    </Inline>
+  );
+}
+
 function CartQuantityInput({
   value,
   onCommit,
@@ -82,7 +123,7 @@ function CartQuantityInput({
   };
 
   return (
-    <input
+    <Input
       type="number"
       className={styles.qtyInput}
       value={draft}
@@ -111,21 +152,27 @@ function MenuSearchDropdownItem({
   disabled: boolean;
 }) {
   return (
-    <li className={styles.dropdownItem} role="option">
-      <div className={styles.dropdownItemInfo}>
-        <span className={styles.dropdownItemName}>
+    <Box as="li" className={styles.dropdownItem} role="option">
+      <Stack gap="xs" className={styles.dropdownItemInfo}>
+        <Text weight="semibold" className={styles.dropdownItemName}>
           {item.name || 'Unnamed item'}
-        </span>
-        <span className={styles.dropdownItemMeta}>{item.sectionTitle}</span>
-        <span
-          className={`${styles.dropdownItemMeta} ${styles.dropdownItemMetaBold}`}
+        </Text>
+        <Text variant="caption" color="secondary" className={styles.dropdownItemMeta}>
+          {item.sectionTitle}
+        </Text>
+        <Text
+          variant="caption"
+          color="secondary"
+          weight="semibold"
+          className={styles.dropdownItemMetaBold}
         >
           Price: {money(item.sellingPrice)}
-        </span>
-      </div>
-      <div className={styles.dropdownItemActions}>
-        <button
+        </Text>
+      </Stack>
+      <Box className={styles.dropdownItemActions}>
+        <Button
           type="button"
+          size="sm"
           className={styles.dropdownAddBtn}
           onClick={(e) => {
             e.preventDefault();
@@ -134,9 +181,9 @@ function MenuSearchDropdownItem({
           disabled={disabled || item.available === false}
         >
           Add
-        </button>
-      </div>
-    </li>
+        </Button>
+      </Box>
+    </Box>
   );
 }
 
@@ -369,8 +416,7 @@ export function MenuSellPage() {
     await applyCartDelta(deltas);
   };
 
-  const handleSearchSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSearchSubmit = () => {
     const q = searchQuery.trim();
     if (!q) {
       setSearchCatalog(null);
@@ -595,9 +641,9 @@ export function MenuSellPage() {
 
   if (isLoading) {
     return (
-      <div className={styles.page}>
-        <div className={styles.loading}>Loading cart…</div>
-      </div>
+      <Stack gap="md" className={styles.page}>
+        <CenteredLoader label="Loading cart…" />
+      </Stack>
     );
   }
 
@@ -609,30 +655,34 @@ export function MenuSellPage() {
     );
 
   return (
-    <div className={styles.page}>
-      {error && <div className={styles.errorMessage}>{error}</div>}
+    <Stack gap="md" className={styles.page}>
+      {error ? <Alert variant="danger">{error}</Alert> : null}
 
-      <div className={styles.header}>
-        <h2 className={styles.title}>Sell</h2>
-        <p className={styles.subtitle}>
-          Search and add menu items to the cart
-        </p>
-      </div>
+      <PageHeader
+        title="Sell"
+        description="Search and add menu items to the cart"
+      />
 
-      <div className={styles.mainRow}>
-        <div className={styles.cartArea}>
-          <div className={styles.cartSection}>
-            <div className={styles.searchRow} ref={searchWrapperRef}>
-              <form className={styles.searchForm} onSubmit={handleSearchSubmit}>
-                <div className={styles.searchInputWrapper}>
-                  <span
-                    className={styles.searchIcon}
-                    role="img"
-                    aria-label="Search"
-                  >
+      <Inline className={styles.mainRow} align="start" width="full">
+        <Box className={styles.cartArea}>
+          <Stack gap="md" className={styles.cartSection}>
+            <Box className={styles.searchRow} ref={searchWrapperRef}>
+              <Inline
+                className={styles.searchForm}
+                gap="sm"
+                align="center"
+                width="full"
+              >
+                <Inline
+                  className={styles.searchInputWrapper}
+                  gap="sm"
+                  align="center"
+                  width="full"
+                >
+                  <Text className={styles.searchIcon} aria-hidden>
                     🔍
-                  </span>
-                  <input
+                  </Text>
+                  <Input
                     type="text"
                     className={styles.searchInput}
                     placeholder="Search menu items..."
@@ -640,35 +690,44 @@ export function MenuSellPage() {
                     onChange={(e: ChangeEvent<HTMLInputElement>) =>
                       setSearchQuery(e.currentTarget.value)
                     }
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleSearchSubmit();
+                      }
+                    }}
                     disabled={isSyncing || isSearching}
                     autoFocus
                     aria-expanded={showSearchDropdown}
                     aria-haspopup="listbox"
                     aria-controls="menu-search-results-list"
                   />
-                  <button
-                    type="submit"
+                  <Button
+                    type="button"
                     className={styles.searchSubmitBtn}
                     disabled={isSyncing || isSearching}
+                    onClick={handleSearchSubmit}
                   >
                     {isSearching ? 'Searching…' : 'Search'}
-                  </button>
-                </div>
-              </form>
-              {showSearchDropdown && (
-                <div
+                  </Button>
+                </Inline>
+              </Inline>
+              {showSearchDropdown ? (
+                <Box
                   id="menu-search-results-list"
                   className={styles.searchDropdown}
                   role="listbox"
                 >
                   {isSearching ? (
-                    <div className={styles.dropdownLoading}>Searching…</div>
+                    <Text color="secondary" className={styles.dropdownLoading}>
+                      Searching…
+                    </Text>
                   ) : searchResults.length === 0 ? (
-                    <div className={styles.dropdownEmpty}>
+                    <Text color="secondary" className={styles.dropdownEmpty}>
                       No menu items found
-                    </div>
+                    </Text>
                   ) : (
-                    <ul className={styles.dropdownList}>
+                    <Stack as="ul" gap="none" className={styles.dropdownList}>
                       {searchResults.map((hit) => (
                         <MenuSearchDropdownItem
                           key={`menu-${hit.item.id}`}
@@ -677,123 +736,129 @@ export function MenuSellPage() {
                           disabled={isSyncing}
                         />
                       ))}
-                    </ul>
+                    </Stack>
                   )}
-                </div>
-              )}
-            </div>
+                </Box>
+              ) : null}
+            </Box>
 
-            <div className={styles.cartItems}>
+            <Box className={styles.cartItems}>
               {isSyncing && cartItems.length === 0 ? (
-                <div className={styles.loading}>Updating cart…</div>
+                <CenteredLoader label="Updating cart…" />
               ) : cartItems.length === 0 ? (
-                <div className={styles.emptyCart}>Cart is empty</div>
+                <EmptyState title="Cart is empty" className={styles.emptyCart} />
               ) : (
                 cartItems.map((line) => {
                   const ref = lineSellableRef(line) ?? line.name ?? '';
                   const lineTotal =
                     line.totalAmount ?? line.priceToRetail * line.quantity;
                   return (
-                    <div key={ref} className={styles.cartItem}>
-                      <div className={styles.itemInfo}>
-                        <div className={styles.itemHeader}>
-                          <div className={styles.itemHeaderTop}>
-                            <span className={styles.itemNameButton}>
+                    <Box key={ref} className={styles.cartItem}>
+                      <Stack gap="xs" className={styles.itemInfo}>
+                        <Stack gap="xs" className={styles.itemHeader}>
+                          <Box className={styles.itemHeaderTop}>
+                            <Text weight="semibold" className={styles.itemNameButton}>
                               {line.name || 'Menu item'}
-                            </span>
-                          </div>
-                          {ref && (
+                            </Text>
+                          </Box>
+                          {ref ? (
                             <CustomerProductHistoryHint
                               sellableRef={ref}
                               history={customerProductHistory}
                               loading={customerProductHistoryLoading}
                             />
-                          )}
-                          <div className={styles.itemMetaRow}>
-                            <span className={styles.itemUnitMeta}>
+                          ) : null}
+                          <Inline className={styles.itemMetaRow}>
+                            <Text variant="caption" color="secondary" className={styles.itemUnitMeta}>
                               {money(line.priceToRetail)} each ·{' '}
                               {money(lineTotal)} total
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className={styles.itemActions}>
-                        <div className={styles.itemActionTopRow}>
-                          <div className={styles.qtyStepper}>
-                            <button
-                              type="button"
+                            </Text>
+                          </Inline>
+                        </Stack>
+                      </Stack>
+                      <Stack gap="sm" className={styles.itemActions}>
+                        <Inline
+                          className={styles.itemActionTopRow}
+                          gap="sm"
+                          align="center"
+                          width="full"
+                        >
+                          <Inline className={styles.qtyStepper} gap="none" align="center">
+                            <IconButton
+                              label="Decrease quantity"
                               className={styles.qtyBtn}
                               onClick={() => void changeQty(ref, -1)}
                               disabled={isSyncing}
-                              aria-label="Decrease quantity"
                             >
                               −
-                            </button>
+                            </IconButton>
                             <CartQuantityInput
                               value={line.quantity}
                               disabled={isSyncing}
                               onCommit={(newQty) => setQuantity(ref, newQty)}
                             />
-                            <button
-                              type="button"
+                            <IconButton
+                              label="Increase quantity"
                               className={styles.qtyBtn}
                               onClick={() => void changeQty(ref, 1)}
                               disabled={isSyncing}
-                              aria-label="Increase quantity"
                             >
                               +
-                            </button>
-                          </div>
-                          <button
+                            </IconButton>
+                          </Inline>
+                          <Button
                             type="button"
+                            variant="ghost"
+                            size="sm"
                             className={styles.removeBtn}
                             onClick={() => void removeLine(ref)}
                             disabled={isSyncing}
                           >
                             Remove
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+                          </Button>
+                        </Inline>
+                      </Stack>
+                    </Box>
                   );
                 })
               )}
-            </div>
-          </div>
-        </div>
+            </Box>
+          </Stack>
+        </Box>
 
-        <aside className={styles.summarySidebar}>
-          <div className={styles.customerBlock}>
-            <button
+        <Box as="aside" className={styles.summarySidebar}>
+          <Box className={styles.customerBlock}>
+            <Button
               type="button"
+              variant="ghost"
               className={styles.customerToggle}
               onClick={() => setCustomerSectionOpen((o) => !o)}
               aria-expanded={customerSectionOpen}
             >
-              <span className={styles.customerToggleLabel}>Customer</span>
-              {customerName || customerPhone ? (
-                <span className={styles.customerToggleValue}>
-                  {customerName || customerPhone}
-                </span>
-              ) : (
-                <span className={styles.customerToggleHint}>Optional</span>
-              )}
-              <span className={styles.customerToggleIcon}>
-                {customerSectionOpen ? '▼' : '▶'}
-              </span>
-            </button>
-            {customerSectionOpen && (
-              <div className={styles.customerForm}>
-                <div className={styles.customerFieldsVertical}>
-                  <div className={styles.customerField}>
-                    <label
-                      htmlFor="menu-sell-customerPhone"
-                      className={styles.customerLabel}
-                    >
-                      Phone
-                    </label>
-                    <div className={styles.customerInputRow}>
-                      <input
+              <Inline gap="sm" align="center" width="full">
+                <Text weight="semibold" className={styles.customerToggleLabel}>
+                  Customer
+                </Text>
+                {customerName || customerPhone ? (
+                  <Text className={styles.customerToggleValue}>
+                    {customerName || customerPhone}
+                  </Text>
+                ) : (
+                  <Text color="secondary" className={styles.customerToggleHint}>
+                    Optional
+                  </Text>
+                )}
+                <Text className={styles.customerToggleIcon}>
+                  {customerSectionOpen ? '▼' : '▶'}
+                </Text>
+              </Inline>
+            </Button>
+            {customerSectionOpen ? (
+              <Stack gap="md" className={styles.customerForm}>
+                <Stack gap="sm" className={styles.customerFieldsVertical}>
+                  <FormField label="Phone" id="menu-sell-customerPhone">
+                    <Inline gap="sm" className={styles.customerInputRow} width="full">
+                      <Input
                         id="menu-sell-customerPhone"
                         type="tel"
                         className={styles.customerInput}
@@ -804,25 +869,19 @@ export function MenuSellPage() {
                         }
                         disabled={isSearchingCustomer}
                       />
-                      <button
-                        type="button"
+                      <IconButton
+                        label="Search customer"
+                        title="Search customer"
                         className={styles.sidebarSearchBtn}
                         onClick={() => void handleCustomerSearch()}
                         disabled={isSearchingCustomer || !customerPhone.trim()}
-                        title="Search customer"
                       >
                         {isSearchingCustomer ? '…' : '⌕'}
-                      </button>
-                    </div>
-                  </div>
-                  <div className={styles.customerField}>
-                    <label
-                      htmlFor="menu-sell-customerName"
-                      className={styles.customerLabel}
-                    >
-                      Name
-                    </label>
-                    <input
+                      </IconButton>
+                    </Inline>
+                  </FormField>
+                  <FormField label="Name" id="menu-sell-customerName">
+                    <Input
                       id="menu-sell-customerName"
                       type="text"
                       className={styles.customerInput}
@@ -832,16 +891,10 @@ export function MenuSellPage() {
                         setCustomerName(e.currentTarget.value)
                       }
                     />
-                  </div>
-                  <div className={styles.customerField}>
-                    <label
-                      htmlFor="menu-sell-customerEmail"
-                      className={styles.customerLabel}
-                    >
-                      Email
-                    </label>
-                    <div className={styles.customerInputRow}>
-                      <input
+                  </FormField>
+                  <FormField label="Email" id="menu-sell-customerEmail">
+                    <Inline gap="sm" className={styles.customerInputRow} width="full">
+                      <Input
                         id="menu-sell-customerEmail"
                         type="email"
                         className={styles.customerInput}
@@ -852,25 +905,19 @@ export function MenuSellPage() {
                         }
                         disabled={isSearchingCustomer}
                       />
-                      <button
-                        type="button"
+                      <IconButton
+                        label="Search customer by email"
+                        title="Search customer by email"
                         className={styles.sidebarSearchBtn}
                         onClick={() => void handleCustomerSearchByEmail()}
                         disabled={isSearchingCustomer || !customerEmail.trim()}
-                        title="Search customer by email"
                       >
                         {isSearchingCustomer ? '…' : '⌕'}
-                      </button>
-                    </div>
-                  </div>
-                  <div className={styles.customerField}>
-                    <label
-                      htmlFor="menu-sell-customerAddress"
-                      className={styles.customerLabel}
-                    >
-                      Address
-                    </label>
-                    <input
+                      </IconButton>
+                    </Inline>
+                  </FormField>
+                  <FormField label="Address" id="menu-sell-customerAddress">
+                    <Input
                       id="menu-sell-customerAddress"
                       type="text"
                       className={styles.customerInput}
@@ -880,36 +927,27 @@ export function MenuSellPage() {
                         setCustomerAddress(e.currentTarget.value)
                       }
                     />
-                  </div>
-                </div>
-                <div className={styles.retailerCheckboxContainer}>
-                  <label className={styles.retailerCheckboxLabel}>
-                    <input
-                      type="checkbox"
-                      checked={isRetailer}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                        setIsRetailer(e.currentTarget.checked);
-                        if (!e.currentTarget.checked) {
-                          setCustomerGstin('');
-                          setCustomerDlNo('');
-                          setCustomerPan('');
-                        }
-                      }}
-                      className={styles.retailerCheckbox}
-                    />
-                    <span>Is Retailer</span>
-                  </label>
-                </div>
-                {isRetailer && (
-                  <div className={styles.retailerSection}>
-                    <div className={styles.customerField}>
-                      <label
-                        htmlFor="menu-sell-customerGstin"
-                        className={styles.customerLabel}
-                      >
-                        GSTIN
-                      </label>
-                      <input
+                  </FormField>
+                </Stack>
+                <Box className={styles.retailerCheckboxContainer}>
+                  <Checkbox
+                    label="Is Retailer"
+                    checked={isRetailer}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                      setIsRetailer(e.currentTarget.checked);
+                      if (!e.currentTarget.checked) {
+                        setCustomerGstin('');
+                        setCustomerDlNo('');
+                        setCustomerPan('');
+                      }
+                    }}
+                    className={styles.retailerCheckboxLabel}
+                  />
+                </Box>
+                {isRetailer ? (
+                  <Stack gap="sm" className={styles.retailerSection}>
+                    <FormField label="GSTIN" id="menu-sell-customerGstin">
+                      <Input
                         id="menu-sell-customerGstin"
                         type="text"
                         className={styles.customerInput}
@@ -919,15 +957,9 @@ export function MenuSellPage() {
                           setCustomerGstin(e.currentTarget.value)
                         }
                       />
-                    </div>
-                    <div className={styles.customerField}>
-                      <label
-                        htmlFor="menu-sell-customerDlNo"
-                        className={styles.customerLabel}
-                      >
-                        DL No
-                      </label>
-                      <input
+                    </FormField>
+                    <FormField label="DL No" id="menu-sell-customerDlNo">
+                      <Input
                         id="menu-sell-customerDlNo"
                         type="text"
                         className={styles.customerInput}
@@ -937,15 +969,9 @@ export function MenuSellPage() {
                           setCustomerDlNo(e.currentTarget.value)
                         }
                       />
-                    </div>
-                    <div className={styles.customerField}>
-                      <label
-                        htmlFor="menu-sell-customerPan"
-                        className={styles.customerLabel}
-                      >
-                        PAN
-                      </label>
-                      <input
+                    </FormField>
+                    <FormField label="PAN" id="menu-sell-customerPan">
+                      <Input
                         id="menu-sell-customerPan"
                         type="text"
                         className={styles.customerInput}
@@ -955,94 +981,110 @@ export function MenuSellPage() {
                           setCustomerPan(e.currentTarget.value)
                         }
                       />
-                    </div>
-                  </div>
-                )}
-                <div className={styles.customerLinkSection}>
-                  <span className={styles.customerLinkLabel}>
+                    </FormField>
+                  </Stack>
+                ) : null}
+                <Stack gap="sm" className={styles.customerLinkSection}>
+                  <Text weight="semibold" className={styles.customerLinkLabel}>
                     Link to StockKart user
-                  </span>
+                  </Text>
                   {linkedUser ? (
-                    <div className={styles.customerLinkStatus}>
-                      <span>
+                    <Inline
+                      className={styles.customerLinkStatus}
+                      gap="sm"
+                      align="center"
+                      width="full"
+                    >
+                      <Text>
                         Linked: {linkedUser.name} ({linkedUser.email})
-                      </span>
-                      <button
+                      </Text>
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="sm"
                         className={styles.customerUnlinkBtn}
                         onClick={handleUnlinkUser}
                       >
                         Unlink
-                      </button>
-                    </div>
+                      </Button>
+                    </Inline>
                   ) : (
-                    <div className={styles.customerLinkSearch}>
-                      <p className={styles.customerLinkHint}>
+                    <Stack gap="sm" className={styles.customerLinkSearch}>
+                      <Text color="secondary" className={styles.customerLinkHint}>
                         Enter email above and search to link a customer to their
                         StockKart account.
-                      </p>
-                      <button
+                      </Text>
+                      <Button
                         type="button"
+                        variant="outline"
+                        size="sm"
                         className={styles.customerLinkSearchBtn}
                         onClick={() => void handleSearchUserForLink()}
                         disabled={isSearchingUser || !customerEmail?.trim()}
                       >
                         {isSearchingUser ? '…' : 'Search by email'}
-                      </button>
-                      {userSearchMessage && (
-                        <span className={styles.customerLinkMessage}>
+                      </Button>
+                      {userSearchMessage ? (
+                        <Text
+                          variant="caption"
+                          color="secondary"
+                          className={styles.customerLinkMessage}
+                        >
                           {userSearchMessage}
-                        </span>
-                      )}
-                    </div>
+                        </Text>
+                      ) : null}
+                    </Stack>
                   )}
-                </div>
-              </div>
-            )}
-          </div>
+                </Stack>
+              </Stack>
+            ) : null}
+          </Box>
 
-          <div className={styles.cartSummary}>
-            <div className={styles.summaryRow}>
-              <span>Subtotal</span>
-              <span>{money(cartData?.subTotal ?? 0)}</span>
-            </div>
-            {(cartData?.taxTotal ?? 0) > 0 && (
-              <div className={styles.summaryRow}>
-                <span>Tax</span>
-                <span>{money(cartData?.taxTotal ?? 0)}</span>
-              </div>
-            )}
-            <div className={styles.summaryRowTotal}>
-              <span>Total</span>
-              <span>{money(grandTotal)}</span>
-            </div>
-          </div>
-          <div className={styles.cartActions}>
-            <button
+          <Card className={styles.cartSummary}>
+            <CardBody>
+              <Stack gap="xs">
+                <SummaryRow
+                  label="Subtotal"
+                  value={money(cartData?.subTotal ?? 0)}
+                />
+                {(cartData?.taxTotal ?? 0) > 0 ? (
+                  <SummaryRow
+                    label="Tax"
+                    value={money(cartData?.taxTotal ?? 0)}
+                  />
+                ) : null}
+                <SummaryRow label="Total" value={money(grandTotal)} total />
+              </Stack>
+            </CardBody>
+          </Card>
+
+          <Inline gap="sm" className={styles.cartActions}>
+            <Button
               type="button"
+              variant="outline"
               className={styles.clearBtn}
               onClick={() => void handleClearCart()}
               disabled={isSyncing || cartItems.length === 0}
             >
               Clear Cart
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="solid"
               className={styles.checkoutBtn}
               onClick={() => void handleProcessPayment()}
-              disabled={
-                isProcessing || isSyncing || cartItems.length === 0
-              }
+              disabled={isProcessing || isSyncing || cartItems.length === 0}
+              loading={isProcessing || isSyncing}
             >
               {isProcessing
                 ? 'Processing...'
                 : isSyncing
-                ? 'Updating...'
-                : 'Process Payment'}
-            </button>
-          </div>
-        </aside>
-      </div>
-    </div>
+                  ? 'Updating...'
+                  : 'Process Payment'}
+            </Button>
+          </Inline>
+        </Box>
+      </Inline>
+    </Stack>
   );
 }
