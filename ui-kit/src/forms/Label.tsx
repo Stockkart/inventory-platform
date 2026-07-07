@@ -40,6 +40,8 @@ export interface RadioGroupProps {
   onChange: (value: string) => void;
   options: Array<{ value: string; label: ReactNode }>;
   className?: string;
+  disabled?: boolean;
+  'aria-labelledby'?: string;
 }
 
 export function RadioGroup({
@@ -48,9 +50,15 @@ export function RadioGroup({
   onChange,
   options,
   className,
+  disabled,
+  'aria-labelledby': ariaLabelledby,
 }: RadioGroupProps) {
   return (
-    <div className={cn(styles.radioGroup, className)} role="radiogroup">
+    <div
+      className={cn(styles.radioGroup, className)}
+      role="radiogroup"
+      aria-labelledby={ariaLabelledby}
+    >
       {options.map((option) => (
         <label key={option.value} className={styles.radioOption}>
           <input
@@ -59,6 +67,7 @@ export function RadioGroup({
             value={option.value}
             checked={value === option.value}
             onChange={() => onChange(option.value)}
+            disabled={disabled}
           />
           <span>{option.label}</span>
         </label>

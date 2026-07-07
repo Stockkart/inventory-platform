@@ -1,5 +1,14 @@
+import type { ReactNode } from 'react';
 import type { VerticalSchemaFieldDef } from '@inventory-platform/schema/types';
-import { formStyles } from '@inventory-platform/ui-kit/form-styles';
+import {
+  FormField,
+  Input,
+  Label,
+  RadioGroup,
+  Select,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { fieldLabel } from './verticalSchemaUtils';
 
 const FIELD_PLACEHOLDERS: Record<string, string> = {
@@ -39,6 +48,46 @@ function enumOptionLabel(value: string): string {
   return value;
 }
 
+function FieldShell({
+  compact,
+  label,
+  id,
+  required,
+  labelClassName,
+  hint,
+  children,
+}: {
+  compact?: boolean;
+  label: string;
+  id: string;
+  required: boolean;
+  labelClassName?: string;
+  hint?: string;
+  children: ReactNode;
+}) {
+  if (compact) {
+    return (
+      <Stack gap="xs">
+        <Label htmlFor={id} required={required} className={labelClassName}>
+          {label}
+        </Label>
+        {children}
+        {hint ? (
+          <Text variant="caption" color="muted">
+            {hint}
+          </Text>
+        ) : null}
+      </Stack>
+    );
+  }
+
+  return (
+    <FormField label={label} id={id} required={required} hint={hint}>
+      {children}
+    </FormField>
+  );
+}
+
 export function VerticalSchemaFieldInput({
   field,
   value,
@@ -55,93 +104,77 @@ export function VerticalSchemaFieldInput({
   const required = Boolean(field.required);
   const inputPlaceholder =
     placeholder ?? FIELD_PLACEHOLDERS[field.key] ?? label;
-  const inputCls = inputClassName ?? formStyles.input;
-  const labelCls = labelClassName ?? formStyles.label;
 
   if (field.key === 'sellDirect') {
-    const selected =
-      value === 'yes' || value === 'true' ? 'yes' : 'no';
+    const selected = value === 'yes' || value === 'true' ? 'yes' : 'no';
     return (
-      <div className={compact ? undefined : formStyles.formGroup}>
-        <span className={labelCls} id={`${id}-label`}>
-          {label}
-          {required ? ' *' : ''}
-        </span>
-        <div
-          className={formStyles.radioGroup}
-          role="radiogroup"
-          aria-labelledby={`${id}-label`}
-        >
-          <label className={formStyles.radioOption}>
-            <input
-              type="radio"
-              name={id}
-              value="no"
-              checked={selected === 'no'}
-              onChange={() => onChange('no')}
-              disabled={disabled}
-              required={required}
-            />
-            No
-          </label>
-          <label className={formStyles.radioOption}>
-            <input
-              type="radio"
-              name={id}
-              value="yes"
-              checked={selected === 'yes'}
-              onChange={() => onChange('yes')}
-              disabled={disabled}
-            />
-            Yes
-          </label>
-        </div>
-        <span className={formStyles.fieldHint}>
-          Yes = show on sell screen and reduce stock when sold
-        </span>
-      </div>
+      <FieldShell
+        compact={compact}
+        label={label}
+        id={id}
+        required={required}
+        labelClassName={labelClassName}
+        hint="Yes = show on sell screen and reduce stock when sold"
+      >
+        <RadioGroup
+          name={id}
+          value={selected}
+          onChange={onChange}
+          disabled={disabled}
+          options={[
+            { value: 'no', label: 'No' },
+            { value: 'yes', label: 'Yes' },
+          ]}
+        />
+      </FieldShell>
     );
   }
 
   if (field.type === 'enum' && field.values?.length) {
+    const options = [
+      ...(field.key !== 'sellDirect'
+        ? [{ value: '', label: 'Select…' }]
+        : []),
+      ...field.values.map((v) => ({
+        value: v,
+        label: enumOptionLabel(v),
+      })),
+    ];
+
     return (
-      <div className={compact ? undefined : formStyles.formGroup}>
-        <label htmlFor={id} className={labelCls}>
-          {label}
-          {required ? ' *' : ''}
-        </label>
-        <select
+      <FieldShell
+        compact={compact}
+        label={label}
+        id={id}
+        required={required}
+        labelClassName={labelClassName}
+      >
+        <Select
           id={id}
-          className={inputCls}
+          className={inputClassName}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
           required={required}
-        >
-          {field.key !== 'sellDirect' ? (
-            <option value="">Select…</option>
-          ) : null}
-          {field.values.map((v) => (
-            <option key={v} value={v}>
-              {enumOptionLabel(v)}
-            </option>
-          ))}
-        </select>
-      </div>
+          options={options}
+        />
+      </FieldShell>
     );
   }
 
   if (field.type === 'date') {
     return (
-      <div className={compact ? undefined : formStyles.formGroup}>
-        <label htmlFor={id} className={labelCls}>
-          {label}
-          {required ? ' *' : ''}
-        </label>
-        <input
+      <FieldShell
+        compact={compact}
+        label={label}
+        id={id}
+        required={required}
+        labelClassName={labelClassName}
+      >
+        <Input
           id={id}
           type="date"
-          className={inputCls}
+          className={inputClassName}
           value={dateInputValue(value)}
           onChange={(e) => {
             const v = e.target.value;
@@ -150,29 +183,31 @@ export function VerticalSchemaFieldInput({
           disabled={disabled}
           required={required}
         />
-      </div>
+      </FieldShell>
     );
   }
 
   const inputMode = field.type === 'number' ? 'numeric' : undefined;
 
   return (
-    <div className={compact ? undefined : formStyles.formGroup}>
-      <label htmlFor={id} className={labelCls}>
-        {label}
-        {required ? ' *' : ''}
-      </label>
-      <input
+    <FieldShell
+      compact={compact}
+      label={label}
+      id={id}
+      required={required}
+      labelClassName={labelClassName}
+    >
+      <Input
         id={id}
         type="text"
         inputMode={inputMode}
-        className={inputCls}
+        className={inputClassName}
         placeholder={inputPlaceholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
         required={required}
       />
-    </div>
+    </FieldShell>
   );
 }

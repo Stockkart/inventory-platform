@@ -14,7 +14,8 @@
     "types": ["node"],
     "paths": {
       "@inventory-platform/access": ["../../platform/access/src/index.ts"],
-      "@inventory-platform/session": ["../session/src/index.ts"]
+      "@inventory-platform/session": ["../session/src/index.ts"],
+      "@inventory-platform/ui-kit": ["../../ui-kit/src/index.ts"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
@@ -28,6 +29,9 @@
     },
     {
       "path": "../session/tsconfig.lib.json"
+    },
+    {
+      "path": "../../ui-kit/tsconfig.lib.json"
     }
   ]
 }

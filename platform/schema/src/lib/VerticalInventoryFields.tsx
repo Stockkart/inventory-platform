@@ -1,5 +1,5 @@
 import type { VerticalSchemaFieldDef } from '@inventory-platform/schema/types';
-import { formStyles } from '@inventory-platform/ui-kit/form-styles';
+import { FormRow, Stack } from '@inventory-platform/ui-kit';
 import { VerticalSchemaFieldInput } from './VerticalSchemaFieldInput';
 import {
   getVerticalFieldValue,
@@ -32,9 +32,11 @@ export function VerticalInventoryFields({
     return null;
   }
 
+  const idBase = idPrefix ?? `vi-${String(product.id ?? 'p')}`;
+
   if (layout === 'stack') {
     return (
-      <>
+      <Stack gap="md">
         {fields.map((field) => (
           <VerticalSchemaFieldInput
             key={field.key}
@@ -42,12 +44,12 @@ export function VerticalInventoryFields({
             value={getVerticalFieldValue(product, field)}
             onChange={(value) => onFieldChange(field, value)}
             disabled={disabled}
-            idPrefix={idPrefix ?? `vi-${String(product.id ?? 'p')}`}
+            idPrefix={idBase}
             inputClassName={inputClassName}
             labelClassName={labelClassName}
           />
         ))}
-      </>
+      </Stack>
     );
   }
 
@@ -57,9 +59,9 @@ export function VerticalInventoryFields({
   }
 
   return (
-    <>
+    <Stack gap="md">
       {rows.map((pair, rowIdx) => (
-        <div key={`vr-${rowIdx}`} className={formStyles.formRow}>
+        <FormRow key={`vr-${rowIdx}`}>
           {pair.map((field) => (
             <VerticalSchemaFieldInput
               key={field.key}
@@ -67,13 +69,13 @@ export function VerticalInventoryFields({
               value={getVerticalFieldValue(product, field)}
               onChange={(value) => onFieldChange(field, value)}
               disabled={disabled}
-              idPrefix={idPrefix ?? `vi-${String(product.id ?? 'p')}`}
+              idPrefix={idBase}
               inputClassName={inputClassName}
               labelClassName={labelClassName}
             />
           ))}
-        </div>
+        </FormRow>
       ))}
-    </>
+    </Stack>
   );
 }

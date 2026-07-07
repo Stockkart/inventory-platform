@@ -1,4 +1,5 @@
 import { useRef, type KeyboardEvent, type ReactNode } from 'react';
+import { Box } from '@inventory-platform/ui-kit';
 import {
   runFormKeyboardNavigation,
   shouldSkipNestedFormKeyboardNav,
@@ -21,14 +22,14 @@ export function FormKeyboardNavScope({
   mode = 'list',
   id,
 }: FormKeyboardNavScopeProps) {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLElement>(null);
 
   return (
-    <div
+    <Box
       ref={ref}
       id={id}
       className={className}
-      onKeyDownCapture={(e: KeyboardEvent<HTMLDivElement>) => {
+      onKeyDownCapture={(e: KeyboardEvent<HTMLElement>) => {
         const el = ref.current;
         if (!el) return;
         if (shouldSkipNestedFormKeyboardNav(document.activeElement)) return;
@@ -36,6 +37,6 @@ export function FormKeyboardNavScope({
       }}
     >
       {children}
-    </div>
+    </Box>
   );
 }

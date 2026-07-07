@@ -23,7 +23,8 @@
   },
   "dependencies": {
     "@inventory-platform/access": "workspace:*",
-    "@inventory-platform/session": "workspace:*"
+    "@inventory-platform/session": "workspace:*",
+    "@inventory-platform/ui-kit": "workspace:*"
   },
   "peerDependencies": {
     "react": "^19.0.0",
