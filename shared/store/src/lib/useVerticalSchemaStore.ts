@@ -24,6 +24,10 @@ const shopSchemaInFlight = new Map<
   string,
   Promise<ShopSchemaResponse | null>
 >();
+const verticalSchemaInFlight = new Map<
+  string,
+  Promise<VerticalSchemaResponse | null>
+>();
 
 function resolveActiveShopId(): string | null {
   return apiClient.getShopId();
@@ -128,41 +132,52 @@ export const useVerticalSchemaStore = create<VerticalSchemaState>((set, get) => 
     if (cached) {
       return cached;
     }
-    if (get().loadingKeys.has(key)) {
-      return null;
+
+    const inFlight = verticalSchemaInFlight.get(key);
+    if (inFlight) {
+      return inFlight;
     }
-    set((state) => ({
-      loadingKeys: new Set(state.loadingKeys).add(key),
-      errors: { ...state.errors, [key]: '' },
-    }));
-    try {
-      const schema = await verticalsApi.getSchema(verticalId, mode, version);
-      set((state) => {
-        const loadingKeys = new Set(state.loadingKeys);
-        loadingKeys.delete(key);
-        return {
-          verticalSchemaByKey: { ...state.verticalSchemaByKey, [key]: schema },
-          loadingKeys,
-        };
-      });
-      return schema;
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to load vertical schema';
-      set((state) => {
-        const loadingKeys = new Set(state.loadingKeys);
-        loadingKeys.delete(key);
-        return {
-          loadingKeys,
-          errors: { ...state.errors, [key]: message },
-        };
-      });
-      return null;
-    }
+
+    const request = (async (): Promise<VerticalSchemaResponse | null> => {
+      set((state) => ({
+        loadingKeys: new Set(state.loadingKeys).add(key),
+        errors: { ...state.errors, [key]: '' },
+      }));
+      try {
+        const schema = await verticalsApi.getSchema(verticalId, mode, version);
+        set((state) => {
+          const loadingKeys = new Set(state.loadingKeys);
+          loadingKeys.delete(key);
+          return {
+            verticalSchemaByKey: { ...state.verticalSchemaByKey, [key]: schema },
+            loadingKeys,
+          };
+        });
+        return schema;
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : 'Failed to load vertical schema';
+        set((state) => {
+          const loadingKeys = new Set(state.loadingKeys);
+          loadingKeys.delete(key);
+          return {
+            loadingKeys,
+            errors: { ...state.errors, [key]: message },
+          };
+        });
+        return null;
+      } finally {
+        verticalSchemaInFlight.delete(key);
+      }
+    })();
+
+    verticalSchemaInFlight.set(key, request);
+    return request;
   },
 
   clear: () => {
     shopSchemaInFlight.clear();
+    verticalSchemaInFlight.clear();
     set({
       shopSchemaByKey: {},
       verticalSchemaByKey: {},
