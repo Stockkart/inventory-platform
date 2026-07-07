@@ -39,6 +39,20 @@ const bannedNativeHtmlSyntaxRules = bannedNativeHtmlTags.map((tag) => ({
   message: `Use @inventory-platform/ui-kit primitives instead of native <${tag}>.`,
 }));
 
+/** Patterns relative to each package eslint.config.mjs (nx run <project>:lint). */
+export const domainUiKitHtmlBan = {
+  files: [
+    'src/pages/**/*.{ts,tsx,js,jsx}',
+    'src/ui/**/*.{ts,tsx,js,jsx}',
+    'src/journey/**/*.{ts,tsx,js,jsx}',
+    'src/lib/**/*.{ts,tsx,js,jsx}',
+    'src/guards/**/*.{ts,tsx,js,jsx}',
+  ],
+  rules: {
+    'no-restricted-syntax': ['error', ...bannedNativeHtmlSyntaxRules],
+  },
+};
+
 export default [
   ...nx.configs['flat/base'],
   ...nx.configs['flat/typescript'],
