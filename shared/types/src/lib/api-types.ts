@@ -105,6 +105,7 @@ export interface User {
   shopId: string | null;
   email?: string;
   name?: string;
+  phone?: string;
   active?: boolean;
   createdAt?: string;
   /** All shops the user can access (multi-shop support) */
@@ -126,6 +127,7 @@ export interface SignupDto {
   idToken?: string; // For Google/Facebook signup
   signupType?: 'google' | 'facebook'; // Required if idToken is provided
   name?: string; // Required if idToken is not provided
+  phone?: string; // Required if idToken is not provided
   email?: string; // Required if idToken is not provided
   password?: string; // Required if idToken is not provided
   shopId?: string;

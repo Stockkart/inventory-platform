@@ -235,7 +235,7 @@ function computeVendorInvoiceTotalFromFields(
 
 export function meta() {
   return [
-    { title: 'Product Registration - StockKart' },
+    { title: 'Product Entry - StockKart' },
     {
       name: 'description',
       content: 'Register and manage your product inventory',
@@ -2580,7 +2580,7 @@ export default function ProductRegistrationPage() {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <h2 className={styles.title}>Product Registration</h2>
+        <h2 className={styles.title}>Product Entry</h2>
         <p className={styles.subtitle}>
           Register multiple products at once with shared vendor and stock-in
           (invoice) information
@@ -3295,7 +3295,7 @@ export default function ProductRegistrationPage() {
                       <VerticalRegistrationGridCompanyHeader field={companyField} />
                       <th className={styles.excelTh}>Product *</th>
                       <VerticalRegistrationGridHeaders fields={verticalRegistrationFields} />
-                      <th className={styles.excelTh}>Count *</th>
+                      <th className={styles.excelTh}>Qty *</th>
                       <th className={styles.excelTh}>Packaging</th>
                       <th className={styles.excelTh}>Location *</th>
                       {sellDirectField && (
@@ -4738,7 +4738,7 @@ function GridBulkFillRow({
           type="text"
           inputMode="numeric"
           className={styles.excelInputNarrow}
-          placeholder="Count"
+          placeholder="Qty"
           value={bulk.count ?? ''}
           onChange={(e) => onBulkChange('count', e.target.value)}
           disabled={isLoading}
@@ -5288,7 +5288,7 @@ function ProductAccordion({
             </div>
             <div className={styles.formGroup}>
               <label htmlFor={`count-${product.id}`} className={styles.label}>
-                Count *
+                Qty *
               </label>
               <input
                 type="text"
@@ -5349,13 +5349,13 @@ function ProductAccordion({
                   htmlFor={`location-${product.id}`}
                   className={styles.label}
                 >
-                  Inventory Location *
+                  Location  *
                 </label>
                 <input
                   type="text"
                   id={`location-${product.id}`}
                   className={styles.input}
-                  placeholder="Enter inventory location"
+                  placeholder="Enter location"
                   value={product.location}
                   onChange={(e) =>
                     onChange(product.id, 'location', e.target.value)
@@ -5389,13 +5389,13 @@ function ProductAccordion({
                     htmlFor={`location-${product.id}`}
                     className={styles.label}
                   >
-                    Inventory Location *
+                    Location  *
                   </label>
                   <input
                     type="text"
                     id={`location-${product.id}`}
                     className={styles.input}
-                    placeholder="Enter inventory location"
+                    placeholder="Enter location"
                     value={product.location}
                     onChange={(e) =>
                       onChange(product.id, 'location', e.target.value)

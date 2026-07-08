@@ -29,7 +29,7 @@ export const DASHBOARD_MENU_GROUPS: DashboardMenuGroup[] = [
     items: [
       {
         path: '/dashboard/product-registration',
-        label: 'Product Registration',
+        label: 'Product Entry',
         icon: '📦',
       },
       {
