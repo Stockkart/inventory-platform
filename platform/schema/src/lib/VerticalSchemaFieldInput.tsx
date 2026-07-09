@@ -126,7 +126,6 @@ export function VerticalSchemaFieldInput({
             { value: 'yes', label: 'Yes' },
           ]}
         />
-        <div></div>
       </FieldShell>
     );
   }
