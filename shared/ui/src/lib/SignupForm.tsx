@@ -10,7 +10,6 @@ export function SignupForm() {
     useAuthStore();
   const [formData, setFormData] = useState({
     name: '',
-    phone: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -29,17 +28,6 @@ export function SignupForm() {
     };
   }, [clearError]);
 
-  const normalizePhone = (phone: string): string | null => {
-    const digitsOnly = phone.replace(/\D/g, '');
-    if (digitsOnly.length === 10) {
-      return digitsOnly;
-    }
-    if (digitsOnly.length === 12 && digitsOnly.startsWith('91')) {
-      return digitsOnly.slice(2);
-    }
-    return null;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLocalError(null);
@@ -47,7 +35,6 @@ export function SignupForm() {
 
     if (
       !formData.name ||
-      !formData.phone ||
       !formData.email ||
       !formData.password ||
       !formData.confirmPassword
@@ -61,16 +48,9 @@ export function SignupForm() {
       return;
     }
 
-    const normalizedPhone = normalizePhone(formData.phone);
-    if (!normalizedPhone) {
-      setLocalError('Enter a valid Indian phone number (10 digits or +91 format)');
-      return;
-    }
-
     try {
       await signup({
         name: formData.name,
-        phone: normalizedPhone,
         email: formData.email,
         password: formData.password,
         role: 'CASHIER', // Default role
@@ -151,23 +131,6 @@ export function SignupForm() {
             className={styles.input}
             placeholder="Enter your full name"
             value={formData.name}
-            onChange={handleChange}
-            required
-            disabled={isLoading}
-          />
-        </div>
-
-        <div className={styles.formGroup}>
-          <label htmlFor="phone" className={styles.label}>
-            Phone Number
-          </label>
-          <input
-            type="tel"
-            id="phone"
-            name="phone"
-            className={styles.input}
-            placeholder="Enter your 10-digit phone number"
-            value={formData.phone}
             onChange={handleChange}
             required
             disabled={isLoading}
