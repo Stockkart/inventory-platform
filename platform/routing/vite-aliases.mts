@@ -147,6 +147,7 @@ export function generateInventoryWorkspaceAliases({
     '@inventory-platform/product': core('product', 'src/index.ts'),
     '@inventory-platform/plugin-registry/routes': plugins('registry/src/routes/index.ts'),
     '@inventory-platform/plugin-registry': plugins('registry/src/index.ts'),
+    '@inventory-platform/plugin-cafe/route-modules': plugins('cafe/src/routes.ts'),
     '@inventory-platform/plugin-cafe': plugins('cafe/src/index.ts'),
     '@inventory-platform/query': platform('query/src/index.ts'),
     '@inventory-platform/session': platform('session/src/index.ts'),
