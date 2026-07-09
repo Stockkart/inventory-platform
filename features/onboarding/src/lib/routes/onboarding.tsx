@@ -80,7 +80,7 @@ export default function OnboardingPage() {
       country: 'IND',
     },
     contactEmail: user?.email || '',
-    contactPhone: user?.phone || '',
+    contactPhone: '',
     gstinNo: '',
     fssai: '',
     dlNo: '',
@@ -101,10 +101,7 @@ export default function OnboardingPage() {
     if (user?.email && !formData.contactEmail) {
       setFormData((prev) => ({ ...prev, contactEmail: user.email || '' }));
     }
-    if (user?.phone && !formData.contactPhone) {
-      setFormData((prev) => ({ ...prev, contactPhone: user.phone || '' }));
-    }
-  }, [isAuthenticated, user, navigate, formData.contactEmail, formData.contactPhone, addShop]);
+  }, [isAuthenticated, user, navigate, formData.contactEmail, addShop]);
 
   useEffect(() => {
     void verticalsApi.listActive().then(setVerticals).catch(() => setVerticals([]));
@@ -115,7 +112,7 @@ export default function OnboardingPage() {
       setVerticalSchemaFields([]);
       return;
     }
-    void fetchVerticalSchema(formData.verticalId, 'onboarding').then((schema) => {
+    void fetchVerticalSchema(formData.verticalId, 'regular').then((schema) => {
       setVerticalSchemaFields(getShopOnboardingFields(schema?.entities));
     });
   }, [formData.verticalId, fetchVerticalSchema]);
