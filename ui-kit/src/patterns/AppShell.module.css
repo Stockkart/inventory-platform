@@ -66,19 +66,77 @@
 }
 
 .navLink {
+  display: flex;
+  align-items: center;
   text-decoration: none;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  font-weight: 400;
+  color: var(--sk-color-text-secondary, var(--text-secondary));
+  border-radius: 6px;
   transition: background 0.15s ease, color 0.15s ease;
 }
 
 .navLink:hover {
-  background: var(--sk-color-bg-elevated, var(--bg-card));
+  background: color-mix(in srgb, var(--sk-color-text-primary, #111) 4%, transparent);
   color: var(--sk-color-text-primary, var(--text-primary));
 }
 
 .navLinkActive {
-  background: var(--sk-color-accent-soft, rgba(79, 70, 229, 0.12));
-  color: var(--sk-color-accent, #4f46e5);
+  background: var(--sk-color-brand-soft, rgba(59, 130, 246, 0.1));
+  color: var(--sk-color-brand, var(--sk-color-accent, #3b82f6));
   font-weight: 500;
+}
+
+/* Accordion section — calm, slightly stronger than links */
+.navGroup {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 0.5rem;
+  padding: 0.45rem 0.45rem 0.45rem 0.5rem;
+  margin: 0.5rem 0.15rem 0.1rem;
+  color: var(--sk-color-text-primary, var(--text-primary));
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+  border-radius: 6px;
+  justify-content: flex-start;
+  background: transparent;
+  box-shadow: none;
+}
+
+.navGroup:hover {
+  color: var(--sk-color-text-primary, var(--text-primary));
+  background: color-mix(in srgb, var(--sk-color-text-primary, #111) 3.5%, transparent);
+}
+
+.navGroupIcon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  opacity: 0.72;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+}
+
+.navGroupIcon svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.75;
+}
+
+.navSubList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.15rem 0.2rem 0.55rem;
+  margin: 0 0.15rem 0.1rem 0.55rem;
+  padding-left: 1.35rem;
 }
 
 .mobileMenuFloating {

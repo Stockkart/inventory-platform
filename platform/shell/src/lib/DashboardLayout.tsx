@@ -26,7 +26,10 @@ import {
   Label,
   Link as UiLink,
   Modal,
+  navGroupClassName,
+  navGroupIconClassName,
   navItemClassName,
+  navSubListClassName,
   PopoverPanel,
   Stack,
   Text,
@@ -84,9 +87,7 @@ function isTypingInField(target: EventTarget | null): boolean {
 const navLinkLayoutStyle = {
   display: 'flex',
   alignItems: 'center',
-  borderRadius: 8,
-  fontSize: '0.875rem',
-  lineHeight: 1.25,
+  borderRadius: 6,
   boxSizing: 'border-box' as const,
 };
 
@@ -553,39 +554,34 @@ export function DashboardLayout({
                   const isExpanded =
                     expandedGroups.has(group.id) || isPathInGroup(group.id, currentPath);
                   return (
-                    <Box key={group.id} style={{ marginBottom: '0.125rem' }}>
+                    <Box key={group.id} style={{ marginBottom: '0.1rem' }}>
                       <Button
                         type="button"
                         variant="ghost"
+                        size="sm"
                         onClick={() => toggleGroup(group.id)}
                         aria-expanded={isExpanded}
                         fullWidth
+                        className={navGroupClassName()}
                         style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                          width: 'calc(100% - 0.5rem)',
-                          padding: '0.45rem 0.75rem',
-                          margin: '0 0.25rem',
-                          color: 'var(--text-secondary)',
-                          fontSize: '0.6875rem',
+                          width: 'calc(100% - 0.3rem)',
+                          color: 'var(--sk-color-text-primary, var(--text-primary))',
+                          background: 'transparent',
+                          fontSize: '0.8125rem',
                           fontWeight: 600,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.06em',
+                          letterSpacing: '-0.01em',
+                          textTransform: 'none',
+                          padding: '0.45rem 0.45rem 0.45rem 0.5rem',
+                          lineHeight: 1.35,
                           borderRadius: 6,
-                          justifyContent: 'flex-start',
                         }}
                       >
-                        <Box
-                          display="flex"
-                          align="center"
-                          justify="center"
-                          style={{ width: 18, height: 18, flexShrink: 0, opacity: 0.9 }}
-                        >
+                        <Box as="span" className={navGroupIconClassName}>
                           <NavIcon name={group.icon} size="sm" />
                         </Box>
                         <Text
                           as="span"
+                          variant="caption"
                           style={{
                             flex: 1,
                             minWidth: 0,
@@ -593,32 +589,29 @@ export function DashboardLayout({
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
+                            fontSize: 'inherit',
+                            fontWeight: 'inherit',
+                            letterSpacing: 'inherit',
+                            textTransform: 'none',
+                            color: 'inherit',
+                            lineHeight: 'inherit',
                           }}
                         >
                           {group.label}
                         </Text>
-                        <Text
-                          as="span"
+                        <ChevronDown
+                          size={13}
+                          strokeWidth={1.75}
                           style={{
-                            fontSize: '0.75rem',
-                            lineHeight: 1,
-                            opacity: 0.55,
                             flexShrink: 0,
+                            opacity: 0.35,
                             transform: isExpanded ? 'rotate(180deg)' : undefined,
                             transition: 'transform 0.2s ease',
                           }}
-                        >
-                          ▾
-                        </Text>
+                        />
                       </Button>
                       {isExpanded && (
-                        <Box
-                          style={{
-                            padding: '0.125rem 0 0.25rem 0.5rem',
-                            margin: '0 0.5rem 0.25rem 1.25rem',
-                            borderLeft: '2px solid var(--border-color)',
-                          }}
-                        >
+                        <Box className={navSubListClassName}>
                           {group.items.map((item) => (
                             <Link
                               key={item.path}
@@ -626,20 +619,39 @@ export function DashboardLayout({
                               className={navItemClassName(currentPath === item.path)}
                               style={{
                                 ...navLinkLayoutStyle,
-                                gap: '0.625rem',
-                                padding: '0.5rem 0.625rem',
-                                margin: '0.125rem 0',
+                                gap: '0.55rem',
+                                padding: '0.4rem 0.55rem',
+                                margin: 0,
+                                borderRadius: 6,
                               }}
                             >
                               <Box
                                 display="flex"
                                 align="center"
                                 justify="center"
-                                style={{ width: 18, height: 18, flexShrink: 0, color: 'inherit' }}
+                                style={{
+                                  width: 15,
+                                  height: 15,
+                                  flexShrink: 0,
+                                  color: 'inherit',
+                                  opacity: currentPath === item.path ? 1 : 0.55,
+                                }}
                               >
                                 <NavIcon name={item.icon} size="sm" />
                               </Box>
-                              <Text as="span" style={{ whiteSpace: 'nowrap' }}>
+                              <Text
+                                as="span"
+                                variant="caption"
+                                style={{
+                                  whiteSpace: 'nowrap',
+                                  fontSize: '0.8125rem',
+                                  fontWeight: currentPath === item.path ? 500 : 400,
+                                  color: 'inherit',
+                                  lineHeight: 1.4,
+                                  textTransform: 'none',
+                                  letterSpacing: 'normal',
+                                }}
+                              >
                                 {item.label}
                               </Text>
                             </Link>
@@ -703,20 +715,30 @@ export function DashboardLayout({
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.5rem',
-                  padding: sidebarOpen ? '0.55rem 0.75rem' : '0.5rem',
+                  padding: sidebarOpen ? '0.45rem 0.65rem' : '0.45rem',
                   justifyContent: sidebarOpen ? 'flex-start' : 'center',
                   color: 'var(--text-secondary)',
-                  fontSize: '0.875rem',
+                  fontSize: '0.8125rem',
                   borderRadius: 8,
                 }}
               >
-                <Headphones size={18} style={{ flexShrink: 0 }} />
+                <Headphones size={16} style={{ flexShrink: 0 }} />
                 {sidebarOpen && (
                   <>
-                    <Text as="span" style={{ flex: 1, textAlign: 'left' }}>
+                    <Text
+                      as="span"
+                      variant="caption"
+                      style={{
+                        flex: 1,
+                        textAlign: 'left',
+                        fontSize: '0.8125rem',
+                        fontWeight: 500,
+                        color: 'inherit',
+                      }}
+                    >
                       Support
                     </Text>
-                    {supportOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    {supportOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                   </>
                 )}
               </Button>

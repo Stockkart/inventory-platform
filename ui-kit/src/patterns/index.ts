@@ -17,6 +17,9 @@ export { CartQtyStepper, type CartQtyStepperProps } from './CartQtyStepper';
 export {
   AppShell,
   navItemClassName,
+  navGroupClassName,
+  navGroupIconClassName,
+  navSubListClassName,
   PopoverPanel,
   NotificationDot,
   type AppShellProps,

@@ -73,6 +73,14 @@ export function navItemClassName(active?: boolean, className?: string) {
   return cn(styles.navLink, active && styles.navLinkActive, className);
 }
 
+/** Collapsible sidebar section header (group label). */
+export function navGroupClassName(className?: string) {
+  return cn(styles.navGroup, className);
+}
+
+export const navGroupIconClassName = styles.navGroupIcon;
+export const navSubListClassName = styles.navSubList;
+
 export function PopoverPanel({
   children,
   className,
