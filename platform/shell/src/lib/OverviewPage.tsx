@@ -175,14 +175,7 @@ export function OverviewPage() {
   }, [notifyError]);
 
   if (loading) {
-    return (
-      <CenteredLoader
-        label="Loading dashboard…"
-        size="lg"
-        fill
-        style={{ minHeight: 'calc(100dvh - var(--header-height, 60px) - 2rem)' }}
-      />
-    );
+    return <CenteredLoader label="Loading dashboard…" size="lg" fill />;
   }
 
   if (error) {

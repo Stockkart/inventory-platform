@@ -50,9 +50,9 @@ export function AppShell({
             {sidebar}
           </Box>
         </Box>
-        <Box display="flex" flexDirection="column" width="full" style={{ minWidth: 0 }}>
+        <Box display="flex" flexDirection="column" width="full" className={styles.mainColumn}>
           {header ? <Box className={styles.shellHeader}>{header}</Box> : null}
-          <Box padding="md" style={{ flex: 1, minWidth: 0 }}>
+          <Box className={styles.mainContent} padding="md">
             {children}
           </Box>
         </Box>

@@ -130,7 +130,7 @@ export function useDashboardRouteGuard(): DashboardRouteGuardState {
   ) {
     return {
       isReady: false,
-      blockingContent: <CenteredLoader fill minHeight="100vh" label="Loading…" />,
+      blockingContent: <CenteredLoader fill minHeight="100dvh" label="Loading…" />,
     };
   }
 

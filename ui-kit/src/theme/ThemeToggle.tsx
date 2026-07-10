@@ -1,21 +1,30 @@
+import { Moon, Sun } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 import { Button } from '../forms/Button';
+import { Icon } from '../icons';
 import type { ButtonProps } from '../forms/Button';
 
-export type ThemeToggleProps = Omit<ButtonProps, 'children' | 'onClick'>;
+export type ThemeToggleProps = Omit<ButtonProps, 'children' | 'onClick' | 'leftIcon' | 'rightIcon'>;
 
-export function ThemeToggle(props: ThemeToggleProps) {
+export function ThemeToggle({
+  variant = 'ghost',
+  size = 'sm',
+  'aria-label': ariaLabel,
+  ...props
+}: ThemeToggleProps) {
   const { theme, toggleTheme } = useTheme();
+  const isDark = theme === 'dark';
+
   return (
     <Button
       type="button"
-      variant="ghost"
-      size="sm"
-      aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+      variant={variant}
+      size={size}
+      aria-label={ariaLabel ?? (isDark ? 'Switch to light mode' : 'Switch to dark mode')}
       onClick={toggleTheme}
       {...props}
     >
-      {theme === 'dark' ? 'Light' : 'Dark'}
+      <Icon icon={isDark ? Sun : Moon} size={size === 'lg' ? 'md' : 'sm'} />
     </Button>
   );
 }

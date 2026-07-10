@@ -28,15 +28,19 @@
 }
 
 .variant-heading1 {
+  font-family: var(--sk-font-display);
   font-size: 1.875rem;
   font-weight: 700;
   line-height: 1.2;
+  letter-spacing: -0.02em;
 }
 
 .variant-heading2 {
+  font-family: var(--sk-font-display);
   font-size: 1.5rem;
   font-weight: 600;
   line-height: 1.25;
+  letter-spacing: -0.015em;
 }
 
 .variant-heading3 {

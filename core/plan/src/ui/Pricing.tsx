@@ -3,19 +3,13 @@ import { useNavigate } from 'react-router';
 import { plansApi } from '@inventory-platform/plan/api';
 import {
   Alert,
-  Box,
   Button,
   CenteredLoader,
   Inline,
-  Stack,
-  Text,
+  MarketingSection,
+  SectionHeading,
 } from '@inventory-platform/ui-kit';
 import { PlanCarousel } from './PlanCarousel';
-
-const sectionStyle = {
-  background: 'var(--bg-primary)',
-  color: 'var(--text-primary)',
-} as const;
 
 export function Pricing() {
   const navigate = useNavigate();
@@ -37,53 +31,41 @@ export function Pricing() {
     fetchPlans();
   }, []);
 
-  const handleGetStarted = () => {
-    navigate('/signup');
-  };
-
   if (loading) {
     return (
-      <Box as="section" id="pricing" padding="xl" width="full" style={sectionStyle}>
+      <MarketingSection id="pricing" tone="canvas" density="snug">
         <CenteredLoader label="Loading plans..." />
-      </Box>
+      </MarketingSection>
     );
   }
 
   if (error) {
     return (
-      <Box as="section" id="pricing" padding="xl" width="full" style={sectionStyle}>
-        <Box maxWidth="lg" mx="auto">
-          <Alert variant="danger">{error}</Alert>
-        </Box>
-      </Box>
+      <MarketingSection id="pricing" tone="canvas" maxWidth="lg" density="snug">
+        <Alert variant="danger">{error}</Alert>
+      </MarketingSection>
     );
   }
 
   return (
-    <Box as="section" id="pricing" padding="xl" width="full" style={sectionStyle}>
-      <Stack gap="xl" maxWidth="lg" mx="auto">
-        <Stack gap="sm" align="center">
-          <Text as="h2" variant="heading2" align="center">
-            Simple, Transparent Pricing
-          </Text>
-          <Text color="secondary" align="center">
-            Choose the plan that fits your business needs
-          </Text>
-        </Stack>
+    <MarketingSection id="pricing" tone="canvas" maxWidth="xl" density="snug">
+      <SectionHeading
+        title="Simple, Transparent Pricing"
+        lead="Choose the plan that fits your business needs."
+      />
 
-        <PlanCarousel
-          plans={plans}
-          onSelectPlan={() => handleGetStarted()}
-          ctaLabel="Get Started"
-          showTrialBadge
-        />
+      <PlanCarousel
+        plans={plans}
+        onSelectPlan={() => navigate('/signup')}
+        ctaLabel="Get Started"
+        showTrialBadge
+      />
 
-        <Inline justify="center">
-          <Button variant="outline" size="lg" onClick={() => navigate('/plans')}>
-            Show all pricing
-          </Button>
-        </Inline>
-      </Stack>
-    </Box>
+      <Inline justify="center">
+        <Button variant="brandOutline" size="lg" onClick={() => navigate('/plans')}>
+          Show all pricing
+        </Button>
+      </Inline>
+    </MarketingSection>
   );
 }

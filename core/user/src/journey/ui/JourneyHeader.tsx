@@ -59,16 +59,22 @@ export function JourneyHeader() {
 
         {!compact ? (
           <Box as="nav" display="flex" gap="lg" align="center" justify="center">
-            <UiLink href="/#features">Features</UiLink>
-            <UiLink href="/#pricing">Pricing</UiLink>
-            <UiLink href="/#about">About</UiLink>
+            <UiLink href="/#features" tone="nav">
+              Features
+            </UiLink>
+            <UiLink href="/#pricing" tone="nav">
+              Pricing
+            </UiLink>
+            <UiLink href="/#about" tone="nav">
+              About
+            </UiLink>
           </Box>
         ) : null}
 
         <Inline gap="sm" align="center">
           <ThemeToggle />
           {isAuthenticated ? (
-            <Button variant="solid" size="sm" onClick={() => navigate('/dashboard')}>
+            <Button variant="brand" size="sm" onClick={() => navigate('/dashboard')}>
               Dashboard
             </Button>
           ) : (
@@ -78,7 +84,7 @@ export function JourneyHeader() {
                   Sign In
                 </Button>
               ) : null}
-              <Button variant="solid" size="sm" onClick={() => navigate('/signup')}>
+              <Button variant="brand" size="sm" onClick={() => navigate('/signup')}>
                 Get Started
               </Button>
             </>

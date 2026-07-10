@@ -48,6 +48,16 @@ export {
   type PlanCarousel3DProps,
   type CarouselSlideContext,
 } from './PlanCarousel3D';
+export { FeatureCard, type FeatureCardProps } from './FeatureCard';
+export { FeatureGrid, type FeatureGridProps } from './FeatureGrid';
+export { StatBlock, StatsRow, type StatBlockProps, type StatsRowProps } from './StatBlock';
+export { MarketingSection, type MarketingSectionProps } from './MarketingSection';
+export { SectionHeading, type SectionHeadingProps } from './SectionHeading';
+export { MarketingHero, type MarketingHeroProps } from './MarketingHero';
+export { MarketingCtaBand, type MarketingCtaBandProps } from './MarketingCtaBand';
+export { MarketingFooter, type MarketingFooterProps } from './MarketingFooter';
+export { PlanCard, type PlanCardProps } from './PlanCard';
+export { PlanCardGrid, type PlanCardGridProps } from './PlanCardGrid';
 export {
   DenseTable,
   DenseTableSurface,

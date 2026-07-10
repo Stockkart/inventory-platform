@@ -134,8 +134,16 @@
 }
 
 .size-lg {
-  padding: 0.65rem 1.25rem;
-  font-size: 1rem;
+  padding: 0.85rem 1.6rem;
+  font-size: 1.05rem;
+}
+
+.variant-brand.size-lg,
+.variant-onBrand.size-lg,
+.variant-inverseOutline.size-lg {
+  padding: 0.9rem 1.75rem;
+  font-size: 1.05rem;
+  letter-spacing: 0.01em;
 }
 
 .variant-solid {
@@ -157,6 +165,19 @@
   background: var(--sk-color-hover);
 }
 
+.variant-brandOutline {
+  color: var(--sk-color-brand);
+  background: transparent;
+  border-color: rgba(59, 130, 246, 0.45);
+  border-radius: var(--sk-radius-full);
+}
+
+.variant-brandOutline:hover:not(:disabled) {
+  background: var(--sk-color-brand-soft);
+  border-color: var(--sk-color-brand);
+  color: var(--sk-color-brand-hover);
+}
+
 .variant-ghost {
   color: var(--sk-color-text-secondary);
   background: transparent;
@@ -174,6 +195,43 @@
 
 .variant-danger:hover:not(:disabled) {
   filter: brightness(0.92);
+}
+
+.variant-brand {
+  color: #fff;
+  background: var(--sk-gradient-brand);
+  border-color: transparent;
+  border-radius: var(--sk-radius-full);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.28);
+}
+
+.variant-brand:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.variant-onBrand {
+  color: #0f172a;
+  background: #ffffff;
+  border-color: transparent;
+  border-radius: var(--sk-radius-full);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+}
+
+.variant-onBrand:hover:not(:disabled) {
+  background: #f8fafc;
+}
+
+.variant-inverseOutline {
+  color: #ffffff;
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.4);
+  border-radius: var(--sk-radius-full);
+  backdrop-filter: blur(4px);
+}
+
+.variant-inverseOutline:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.65);
 }
 
 .fullWidth {
@@ -212,11 +270,40 @@
   color: var(--sk-color-accent);
   text-decoration: none;
   font-weight: 500;
+  transition: color 0.15s ease;
 }
 
 .link:hover {
   color: var(--sk-color-accent-hover);
   text-decoration: underline;
+}
+
+.linkBrand {
+  color: var(--sk-color-brand);
+}
+
+.linkBrand:hover {
+  color: var(--sk-color-brand-hover);
+}
+
+.linkMuted {
+  color: var(--sk-color-text-secondary);
+  font-weight: 400;
+}
+
+.linkMuted:hover {
+  color: var(--sk-color-brand);
+  text-decoration: none;
+}
+
+.linkNav {
+  color: var(--sk-color-text-secondary);
+  font-weight: 500;
+}
+
+.linkNav:hover {
+  color: var(--sk-color-brand);
+  text-decoration: none;
 }
 
 .checkboxLabel,

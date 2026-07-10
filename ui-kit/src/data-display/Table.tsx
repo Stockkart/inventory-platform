@@ -47,7 +47,7 @@ export function TableLoadingRow({
   colSpan,
   label = 'Loading…',
   className,
-  minHeight,
+  minHeight = '4rem',
   ...rest
 }: TableStatusRowProps & { label?: string; minHeight?: string }) {
   return (

@@ -4,12 +4,19 @@ import type { UiSize } from '../utils/types';
 import { Spinner } from './Spinner';
 import styles from './feedback.module.css';
 
+/** Fills the viewport below the sticky app header so the spinner sits mid-screen. */
+const PAGE_LOADER_MIN_HEIGHT =
+  'calc(100dvh - var(--header-height, 64px) - var(--sk-space-xl, 2rem))';
+
 export interface CenteredLoaderProps {
   label?: string;
   size?: UiSize;
-  /** Minimum block height so the loader sits in the visual center of its parent. */
+  /**
+   * Minimum block height. Defaults to remaining viewport under the header
+   * for page-level loaders (`size` md/lg). `size="sm"` defaults to `4rem`.
+   */
   minHeight?: string;
-  /** Stretch to fill a parent with a defined height. */
+  /** Stretch inside a flex parent that already has a defined height. */
   fill?: boolean;
   className?: string;
   style?: CSSProperties;
@@ -18,16 +25,18 @@ export interface CenteredLoaderProps {
 export function CenteredLoader({
   label = 'Loading…',
   size = 'md',
-  minHeight = '14rem',
+  minHeight,
   fill = false,
   className,
   style,
 }: CenteredLoaderProps) {
+  const resolvedMinHeight = minHeight ?? (size === 'sm' ? '4rem' : PAGE_LOADER_MIN_HEIGHT);
+
   return (
     <div
       className={cn(styles.centeredLoader, fill && styles.centeredLoaderFill, className)}
       style={{
-        ...(minHeight && !fill ? { minHeight } : undefined),
+        minHeight: resolvedMinHeight,
         ...style,
       }}
       role="status"

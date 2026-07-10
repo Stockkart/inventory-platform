@@ -15,9 +15,17 @@
   --sk-color-text-inverse: #ffffff;
   --sk-color-border-default: #e2e8f0;
   --sk-color-border-strong: #cbd5e1;
-  --sk-color-accent: #4f46e5;
-  --sk-color-accent-hover: #4338ca;
-  --sk-color-accent-soft: rgba(79, 70, 229, 0.1);
+  /* Brand blue — matches StockKart logo / marketing CTAs */
+  --sk-color-brand: #3b82f6;
+  --sk-color-brand-hover: #2563eb;
+  --sk-color-brand-cyan: #06b6d4;
+  --sk-color-brand-soft: rgba(59, 130, 246, 0.12);
+  --sk-gradient-brand: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+  --sk-gradient-brand-horizontal: linear-gradient(90deg, #2563eb 0%, #06b6d4 100%);
+
+  --sk-color-accent: var(--sk-color-brand);
+  --sk-color-accent-hover: var(--sk-color-brand-hover);
+  --sk-color-accent-soft: var(--sk-color-brand-soft);
   --sk-color-success: #059669;
   --sk-color-success-soft: rgba(5, 150, 105, 0.12);
   --sk-color-warning: #d97706;
@@ -26,7 +34,7 @@
   --sk-color-danger-soft: rgba(220, 38, 38, 0.12);
   --sk-color-info: #0284c7;
   --sk-color-info-soft: rgba(2, 132, 199, 0.12);
-  --sk-color-focus-ring: rgba(79, 70, 229, 0.35);
+  --sk-color-focus-ring: rgba(59, 130, 246, 0.35);
   --sk-color-hover: rgba(15, 23, 42, 0.04);
 
   --sk-space-none: 0;
@@ -48,14 +56,21 @@
   --sk-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
   --sk-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
   --sk-shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.12);
+  --sk-shadow-marketing: 0 20px 50px rgba(15, 23, 42, 0.14);
 
   --sk-z-dropdown: 1000;
   --sk-z-sticky: 1100;
   --sk-z-modal: 9000;
   --sk-z-toast: 9500;
 
-  --sk-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --sk-font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui,
+    sans-serif;
+  --sk-font-display: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui,
+    sans-serif;
   --sk-font-mono: ui-monospace, 'Cascadia Code', 'SF Mono', monospace;
+
+  --sk-space-marketing-y: 5rem;
+  --sk-space-marketing-y-sm: 3.5rem;
 
   --sk-text-page-title: 1.5rem;
   --sk-text-section: 0.75rem;
@@ -80,7 +95,7 @@
   --btn-primary: var(--sk-color-accent);
   --btn-text: #ffffff;
   --shadow: rgba(15, 23, 42, 0.08);
-  --header-height: 60px;
+  --header-height: 64px;
   --header-blur: rgba(255, 255, 255, 0.92);
 }
 
@@ -96,11 +111,18 @@
   --sk-color-text-inverse: #0f172a;
   --sk-color-border-default: #1e293b;
   --sk-color-border-strong: #334155;
-  --sk-color-accent: #6366f1;
-  --sk-color-accent-hover: #818cf8;
-  --sk-color-accent-soft: rgba(99, 102, 241, 0.15);
+  --sk-color-brand: #60a5fa;
+  --sk-color-brand-hover: #93c5fd;
+  --sk-color-brand-cyan: #22d3ee;
+  --sk-color-brand-soft: rgba(96, 165, 250, 0.18);
+  --sk-gradient-brand: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+  --sk-gradient-brand-horizontal: linear-gradient(90deg, #2563eb 0%, #06b6d4 100%);
+
+  --sk-color-accent: var(--sk-color-brand);
+  --sk-color-accent-hover: var(--sk-color-brand-hover);
+  --sk-color-accent-soft: var(--sk-color-brand-soft);
   --sk-color-hover: rgba(248, 250, 252, 0.06);
-  --sk-color-focus-ring: rgba(129, 140, 248, 0.4);
+  --sk-color-focus-ring: rgba(96, 165, 250, 0.4);
 
   --bg-primary: var(--sk-color-bg-canvas);
   --bg-secondary: var(--sk-color-bg-sidebar);
@@ -113,12 +135,12 @@
   --text-tertiary: var(--sk-color-text-muted);
   --border-color: var(--sk-color-border-default);
   --border-hover: var(--sk-color-border-strong);
-  --link: #a5b4fc;
-  --link-hover: var(--sk-color-accent-hover);
+  --link: var(--sk-color-brand);
+  --link-hover: var(--sk-color-brand-hover);
   --bg-header: var(--sk-color-bg-canvas);
   --btn-primary: var(--sk-color-accent);
   --btn-text: #ffffff;
   --shadow: rgba(0, 0, 0, 0.35);
-  --header-height: 60px;
+  --header-height: 64px;
   --header-blur: rgba(15, 23, 42, 0.92);
 }

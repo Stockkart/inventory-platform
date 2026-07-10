@@ -1186,7 +1186,7 @@ export function DashboardLayout({
         <Modal.Header title="Edit tagline & location" onClose={closeEditModal} />
         <Modal.Body>
           {editLoading ? (
-            <CenteredLoader />
+            <CenteredLoader minHeight="8rem" />
           ) : (
             <Stack gap="md">
               {editError ? <Alert variant="danger">{editError}</Alert> : null}

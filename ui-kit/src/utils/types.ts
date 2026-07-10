@@ -1,6 +1,16 @@
 export type UiSize = 'sm' | 'md' | 'lg';
 
-export type ButtonVariant = 'solid' | 'outline' | 'ghost' | 'danger';
+export type ButtonVariant =
+  | 'solid'
+  | 'outline'
+  | 'ghost'
+  | 'danger'
+  | 'brand'
+  | 'brandOutline'
+  | 'onBrand'
+  | 'inverseOutline';
+
+export type LinkTone = 'accent' | 'brand' | 'muted' | 'nav';
 
 export type TextVariant =
   | 'body'

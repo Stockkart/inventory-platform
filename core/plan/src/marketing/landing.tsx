@@ -20,7 +20,6 @@ export default function LandingPage() {
         minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
-        paddingTop: 73,
       }}
     >
       <Header />
