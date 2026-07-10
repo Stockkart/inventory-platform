@@ -10,7 +10,9 @@ import {
   Button,
   Card,
   CardBody,
+  CardHeader,
   CenteredLoader,
+  Divider,
   EmptyState,
   FormField,
   IconButton,
@@ -77,6 +79,8 @@ function menuItemMatchesSearch(item: MenuItem, sectionTitle: string, query: stri
     item.name.toLowerCase().includes(normalized) || sectionTitle.toLowerCase().includes(normalized)
   );
 }
+
+const unavailableCardStyle = { opacity: 0.72 };
 
 export function MenuAdminPage() {
   const { success: notifySuccess, error: notifyError } = useNotify;
@@ -316,28 +320,23 @@ export function MenuAdminPage() {
 
   if (isLoading) {
     return (
-      <Stack gap="md" className={styles.page}>
+      <Stack gap="md" width="full" maxWidth="xl" mx="auto" padding="md">
         <CenteredLoader label="Loading menu…" />
       </Stack>
     );
   }
 
   return (
-    <Stack gap="md" className={styles.page}>
+    <Stack gap="md" width="full" maxWidth="xl" mx="auto" padding="md">
       <PageHeader
         title="Menu"
         description="Organize sellable items into sections. Prices set here appear on Sell."
         actions={
-          <Inline gap="sm" className={styles.headerActions}>
-            {isDirty ? (
-              <Badge variant="warning" className={styles.unsavedBadge}>
-                Unsaved changes
-              </Badge>
-            ) : null}
+          <Inline gap="sm" flexWrap>
+            {isDirty ? <Badge variant="warning">Unsaved changes</Badge> : null}
             <Button
               type="button"
               variant="outline"
-              className={styles.btn}
               onClick={() => setSections((prev) => [...prev, emptySection()])}
             >
               + Add section
@@ -345,7 +344,6 @@ export function MenuAdminPage() {
             <Button
               type="button"
               variant="solid"
-              className={styles.btnPrimary}
               disabled={isSaving || !isDirty}
               onClick={() => void handleSave()}
               loading={isSaving}
@@ -356,48 +354,43 @@ export function MenuAdminPage() {
         }
       />
 
-      <Inline gap="sm" className={styles.statsRow}>
-        <Badge variant="neutral" className={styles.statPill}>
+      <Inline gap="sm" flexWrap>
+        <Badge variant="neutral">
           📂 {sections.length} {sections.length === 1 ? 'section' : 'sections'}
         </Badge>
-        <Badge variant="neutral" className={styles.statPill}>
+        <Badge variant="neutral">
           🍽️ {totalItems} {totalItems === 1 ? 'item' : 'items'}
         </Badge>
-        <Badge variant="neutral" className={styles.statPill}>
-          ✓ {availableItems} available
-        </Badge>
+        <Badge variant="neutral">✓ {availableItems} available</Badge>
       </Inline>
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
       {savedMessage ? <Alert variant="success">{savedMessage}</Alert> : null}
 
-      <Stack gap="sm" className={styles.searchContainer}>
-        <Inline gap="sm" className={styles.searchBar}>
-          <SearchInput
-            value={searchQuery}
-            onChange={setSearchQuery}
-            placeholder="Search menu items or sections…"
-            className={styles.searchInput}
-          />
-          {hasActiveSearch ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className={styles.clearSearchBtn}
-              onClick={handleClearSearch}
-            >
-              Clear
-            </Button>
-          ) : null}
-        </Inline>
-        {hasActiveSearch ? (
-          <Text variant="caption" color="secondary" className={styles.searchMeta}>
-            {searchResultCount} {searchResultCount === 1 ? 'match' : 'matches'} for &ldquo;
-            {searchQuery.trim()}&rdquo;
-          </Text>
-        ) : null}
-      </Stack>
+      <Card>
+        <CardBody>
+          <Stack gap="sm">
+            <Inline gap="sm" width="full" flexWrap>
+              <SearchInput
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Search menu items or sections…"
+              />
+              {hasActiveSearch ? (
+                <Button type="button" variant="outline" size="sm" onClick={handleClearSearch}>
+                  Clear
+                </Button>
+              ) : null}
+            </Inline>
+            {hasActiveSearch ? (
+              <Text variant="caption" color="secondary">
+                {searchResultCount} {searchResultCount === 1 ? 'match' : 'matches'} for &ldquo;
+                {searchQuery.trim()}&rdquo;
+              </Text>
+            ) : null}
+          </Stack>
+        </CardBody>
+      </Card>
 
       {sections.length === 0 ? (
         <EmptyState
@@ -408,7 +401,6 @@ export function MenuAdminPage() {
               Create first section
             </Button>
           }
-          className={styles.emptyState}
         />
       ) : hasActiveSearch && displaySections.length === 0 ? (
         <EmptyState
@@ -419,69 +411,56 @@ export function MenuAdminPage() {
               Clear search
             </Button>
           }
-          className={styles.emptyState}
         />
       ) : (
-        <Stack gap="md" className={styles.sectionsList}>
+        <Stack gap="md">
           {displaySections.map((section) => {
             const isCollapsed = !hasActiveSearch && collapsedSections.has(section.id);
             const namedItems = section.items.filter((i) => i.name.trim());
             return (
-              <Card key={section.id} className={styles.sectionCard}>
-                <CardBody>
-                  <Inline className={styles.sectionToolbar} gap="sm" align="center" width="full">
+              <Card key={section.id}>
+                <CardHeader>
+                  <Inline gap="sm" align="center" width="full" flexWrap>
                     <IconButton
+                      size="sm"
                       label={isCollapsed ? 'Expand section' : 'Collapse section'}
-                      className={styles.collapseBtn}
                       onClick={() => toggleSectionCollapsed(section.id)}
                     >
                       {isCollapsed ? '▶' : '▼'}
                     </IconButton>
-                    <Text aria-hidden className={styles.sectionIcon}>
-                      📁
-                    </Text>
+                    <Text aria-hidden>📁</Text>
                     <Input
-                      className={styles.sectionTitleInput}
                       value={section.title}
                       onChange={(e) => updateSection(section.id, { title: e.target.value })}
                       placeholder="Section title (e.g. Main course)"
                     />
-                    <Badge variant="neutral" className={styles.itemCountBadge}>
-                      {namedItems.length || section.items.length}
-                    </Badge>
+                    <Badge variant="neutral">{namedItems.length || section.items.length}</Badge>
                     <Button
                       type="button"
-                      variant="ghost"
+                      variant="danger"
                       size="sm"
-                      className={styles.removeSectionBtn}
                       onClick={() => removeSection(section.id)}
                     >
                       Delete section
                     </Button>
                   </Inline>
+                </CardHeader>
 
-                  {!isCollapsed ? (
-                    <Stack gap="md" className={styles.sectionBody}>
+                {!isCollapsed ? (
+                  <CardBody>
+                    <Stack gap="md">
                       <Box className={styles.itemsGrid}>
                         {section.items.map((item) => {
                           const isAvailable = item.available !== false;
                           return (
                             <Card
                               key={item.id}
-                              className={`${styles.itemCard} ${
-                                !isAvailable ? styles.itemCardUnavailable : ''
-                              }`}
+                              style={!isAvailable ? unavailableCardStyle : undefined}
                             >
                               <CardBody>
                                 <Stack gap="sm">
-                                  <Inline
-                                    className={styles.itemCardHeader}
-                                    gap="sm"
-                                    align="center"
-                                    width="full"
-                                  >
+                                  <Inline gap="sm" align="start" width="full">
                                     <Input
-                                      className={styles.itemNameInput}
                                       value={item.name}
                                       onChange={(e) =>
                                         updateItem(section.id, item.id, {
@@ -491,9 +470,9 @@ export function MenuAdminPage() {
                                       placeholder="Item name"
                                     />
                                     <IconButton
+                                      size="sm"
                                       label="Remove item"
                                       title="Remove item"
-                                      className={styles.removeItemBtn}
                                       onClick={() => removeItem(section.id, item.id)}
                                     >
                                       ×
@@ -501,14 +480,9 @@ export function MenuAdminPage() {
                                   </Inline>
 
                                   <FormField label="Price">
-                                    <Inline
-                                      gap="none"
-                                      align="center"
-                                      className={styles.priceInputWrap}
-                                    >
-                                      <Text className={styles.pricePrefix}>₹</Text>
+                                    <Inline gap="sm" align="center" width="full">
+                                      <Text color="secondary">₹</Text>
                                       <Input
-                                        className={styles.priceInput}
                                         type="number"
                                         min={0}
                                         step="0.01"
@@ -523,13 +497,10 @@ export function MenuAdminPage() {
                                     </Inline>
                                   </FormField>
 
-                                  <Inline
-                                    className={styles.availabilityRow}
-                                    justify="between"
-                                    align="center"
-                                    width="full"
-                                  >
-                                    <Text variant="caption" className={styles.availabilityLabel}>
+                                  <Divider />
+
+                                  <Inline justify="between" align="center" width="full">
+                                    <Text variant="caption" color="secondary">
                                       {isAvailable ? 'Available to sell' : 'Hidden from sell'}
                                     </Text>
                                     <Switch
@@ -541,15 +512,14 @@ export function MenuAdminPage() {
                                         })
                                       }
                                       aria-pressed={isAvailable}
-                                      className={styles.toggle}
                                     />
                                   </Inline>
 
                                   <Button
                                     type="button"
-                                    variant="outline"
+                                    variant="solid"
                                     size="sm"
-                                    className={styles.addToSellBtn}
+                                    fullWidth
                                     onClick={() => void handleAddToSell(item)}
                                     disabled={!canAddItemToSell(item) || addingToSell === item.id}
                                     title={addToSellDisabledReason(item) ?? undefined}
@@ -567,15 +537,15 @@ export function MenuAdminPage() {
 
                       <Button
                         type="button"
-                        variant="ghost"
-                        className={styles.addItemBtn}
+                        variant="outline"
+                        size="sm"
                         onClick={() => addItem(section.id)}
                       >
                         + Add item to {section.title.trim() || 'section'}
                       </Button>
                     </Stack>
-                  ) : null}
-                </CardBody>
+                  </CardBody>
+                ) : null}
               </Card>
             );
           })}

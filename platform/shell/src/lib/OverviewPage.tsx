@@ -29,7 +29,6 @@ import { useResolvedSellPath } from '@inventory-platform/routing';
 import { useAuthStore, useNotify, useShopCapabilitiesStore } from '@inventory-platform/session';
 import type { DashboardData } from '@inventory-platform/shell/types';
 import { dashboardApi } from '../api/dashboard.api';
-import styles from './overview.module.css';
 
 export function meta() {
   return [
@@ -63,8 +62,20 @@ function MetricCard({ icon, label, value, subtext, change }: MetricCardProps) {
   return (
     <Card>
       <CardBody>
-        <Inline align="start" gap="md" className={styles.metricRow}>
-          <Box className={styles.metricIcon}>
+        <Inline align="start" gap="md">
+          <Box
+            display="flex"
+            align="center"
+            justify="center"
+            rounded="md"
+            style={{
+              width: 44,
+              height: 44,
+              flexShrink: 0,
+              background: 'var(--sk-color-accent-soft)',
+              color: 'var(--sk-color-accent)',
+            }}
+          >
             <Icon icon={icon} size="md" />
           </Box>
           <Stack gap="xs">
@@ -75,7 +86,7 @@ function MetricCard({ icon, label, value, subtext, change }: MetricCardProps) {
               {label}
             </Text>
             {change !== undefined && change !== 0 ? (
-              <Text variant="caption" className={change > 0 ? styles.changeUp : styles.changeDown}>
+              <Text variant="caption" color={change > 0 ? 'success' : 'danger'} weight="semibold">
                 {change > 0 ? '↑' : '↓'} {Math.abs(change).toFixed(1)}%
               </Text>
             ) : null}
@@ -98,7 +109,7 @@ interface InsightItemProps {
 
 function InsightItem({ label, value }: InsightItemProps) {
   return (
-    <Box className={styles.insightItem}>
+    <Box padding="md" border rounded="md" bg="surface">
       <Text color="secondary" variant="caption">
         {label}
       </Text>
@@ -117,7 +128,7 @@ interface RevenueItemProps {
 
 function RevenueItem({ icon, label, value }: RevenueItemProps) {
   return (
-    <Stack gap="sm" className={styles.revenueItem}>
+    <Stack gap="sm" padding="md" border rounded="md" bg="surface">
       <Inline gap="sm" align="center">
         <Icon icon={icon} size="sm" />
         <Text color="secondary" variant="caption">
@@ -164,7 +175,14 @@ export function OverviewPage() {
   }, [notifyError]);
 
   if (loading) {
-    return <CenteredLoader label="Loading dashboard…" size="lg" fill className={styles.centered} />;
+    return (
+      <CenteredLoader
+        label="Loading dashboard…"
+        size="lg"
+        fill
+        style={{ minHeight: 'calc(100dvh - var(--header-height, 60px) - 2rem)' }}
+      />
+    );
   }
 
   if (error) {
@@ -191,7 +209,11 @@ export function OverviewPage() {
         Today&apos;s snapshot across products, sales, and inventory.
       </Text>
 
-      <Grid columns={4} gap="md" className={styles.statsGrid}>
+      <Box
+        display="grid"
+        gap="md"
+        style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}
+      >
         <MetricCard
           icon={Package}
           label="Total Products"
@@ -214,9 +236,13 @@ export function OverviewPage() {
           label="Low Stock Items"
           value={formatNumber(keyMetrics.lowStockItemsCount)}
         />
-      </Grid>
+      </Box>
 
-      <Grid columns={2} gap="md" className={styles.contentGrid}>
+      <Box
+        display="grid"
+        gap="md"
+        style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}
+      >
         <Card>
           <CardHeader>
             <Text variant="heading4" weight="semibold">
@@ -224,7 +250,7 @@ export function OverviewPage() {
             </Text>
           </CardHeader>
           <CardBody>
-            <Grid columns={2} gap="md" className={styles.quickActions}>
+            <Grid columns={2} gap="md">
               <Button
                 variant="outline"
                 fullWidth
@@ -268,7 +294,7 @@ export function OverviewPage() {
             </Text>
           </CardHeader>
           <CardBody>
-            <Grid columns={2} gap="md" className={styles.insightsGrid}>
+            <Grid columns={2} gap="md">
               <InsightItem
                 label="Unique Products"
                 value={formatNumber(productInsights.totalUniqueProducts)}
@@ -288,7 +314,7 @@ export function OverviewPage() {
             </Grid>
           </CardBody>
         </Card>
-      </Grid>
+      </Box>
 
       <Card>
         <CardHeader>
@@ -297,7 +323,7 @@ export function OverviewPage() {
           </Text>
         </CardHeader>
         <CardBody>
-          <Grid columns={2} gap="md" className={styles.revenueGrid}>
+          <Grid columns={2} gap="md">
             <RevenueItem
               icon={Calendar}
               label="Today"

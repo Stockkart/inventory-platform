@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuthStore } from '@inventory-platform/session';
 import type { ShopMembership } from '@inventory-platform/session/types';
-import { Badge, Box, Button, Inline, Stack, Text } from '@inventory-platform/ui-kit';
-import styles from './UserMenuShopSection.module.css';
+import { Badge, Button, Inline, Stack, Text } from '@inventory-platform/ui-kit';
 
 export interface UserMenuShopSectionProps {
   onClose?: () => void;
@@ -47,70 +46,96 @@ export function UserMenuShopSection({ onClose }: UserMenuShopSectionProps) {
   };
 
   return (
-    <Box className={styles.section}>
-      <Box className={styles.currentBlock}>
-        <Text as="span" className={styles.sectionLabel}>
+    <Stack
+      gap="md"
+      padding="md"
+      style={{
+        borderBottom: '1px solid var(--sk-color-border-default)',
+        background: 'var(--sk-color-bg-canvas)',
+      }}
+    >
+      <Stack gap="xs">
+        <Text variant="caption" color="secondary" weight="bold">
           Current shop
         </Text>
-        <Inline className={styles.currentShop} align="center">
-          <Text as="span" className={styles.shopIcon} aria-hidden>
+        <Inline align="center" gap="sm" style={{ minWidth: 0 }}>
+          <Text as="span" aria-hidden>
             🏪
           </Text>
-          <Text as="span" className={styles.currentShopName}>
+          <Text weight="semibold" truncate style={{ flex: 1, minWidth: 0 }}>
             {activeShopName}
           </Text>
-          <Badge variant="success" className={styles.activeTag}>
-            Active
-          </Badge>
+          <Badge variant="success">Active</Badge>
         </Inline>
-      </Box>
+      </Stack>
 
-      {otherShops.length > 0 && (
-        <Box className={styles.switchBlock}>
-          <Text as="span" className={styles.sectionLabel}>
+      {otherShops.length > 0 ? (
+        <Stack gap="xs">
+          <Text variant="caption" color="secondary" weight="bold">
             Switch shop
           </Text>
-          <Stack className={styles.shopList} gap="none">
+          <Stack
+            gap="xs"
+            style={{
+              maxHeight: 160,
+              overflowY: 'auto',
+              overscrollBehavior: 'contain',
+            }}
+          >
             {otherShops.map((membership) => {
               const isSwitching = switchingId === membership.shopId;
               return (
                 <Button
                   key={membership.shopId}
                   type="button"
-                  variant="ghost"
-                  className={styles.shopOption}
+                  variant="outline"
+                  fullWidth
                   onClick={() => void handleSwitch(membership)}
                   disabled={isLoading || isSwitching}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr auto',
+                    gridTemplateRows: 'auto auto',
+                    gap: '0.1rem 0.5rem',
+                    padding: '0.55rem 0.65rem',
+                    textAlign: 'left',
+                    height: 'auto',
+                  }}
                 >
-                  <Text as="span" className={styles.shopOptionName}>
+                  <Text as="span" weight="semibold" variant="caption">
                     {membership.shopName}
                   </Text>
-                  <Text as="span" className={styles.shopOptionRole}>
+                  <Text
+                    as="span"
+                    variant="caption"
+                    color="secondary"
+                    style={{ gridColumn: 2, gridRow: '1 / span 2', alignSelf: 'center' }}
+                  >
                     {membership.role}
                   </Text>
-                  <Text as="span" className={styles.switchHint}>
+                  <Text
+                    as="span"
+                    variant="caption"
+                    weight="medium"
+                    style={{ color: 'var(--sk-color-accent)' }}
+                  >
                     {isSwitching ? 'Switching…' : 'Use this shop'}
                   </Text>
                 </Button>
               );
             })}
           </Stack>
-        </Box>
-      )}
+        </Stack>
+      ) : null}
 
-      <Inline className={styles.actions} gap="none">
-        <Button type="button" variant="ghost" className={styles.actionBtn} onClick={goToShops}>
+      <Inline gap="sm">
+        <Button type="button" variant="outline" fullWidth size="sm" onClick={goToShops}>
           Manage shops
         </Button>
-        <Button
-          type="button"
-          variant="solid"
-          className={styles.actionBtnPrimary}
-          onClick={goToAddShop}
-        >
+        <Button type="button" variant="solid" fullWidth size="sm" onClick={goToAddShop}>
           + Add shop
         </Button>
       </Inline>
-    </Box>
+    </Stack>
   );
 }

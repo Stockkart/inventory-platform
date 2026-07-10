@@ -6,7 +6,6 @@ import {
   Button,
   Card,
   CardBody,
-  Divider,
   Icon,
   IconButton,
   Inline,
@@ -15,7 +14,6 @@ import {
 } from '@inventory-platform/ui-kit';
 import { Printer } from 'lucide-react';
 import { PrintInvoiceModal } from './PrintInvoiceModal';
-import styles from './PurchaseCard.module.css';
 import { useNotify } from '@inventory-platform/session';
 import { formatPaymentMethod, formatPaymentSplit } from './paymentMethod';
 
@@ -25,11 +23,11 @@ interface PurchaseCardProps {
 
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <Inline className={styles.detailRow} justify="between" align="start" gap="md">
-      <Text className={styles.label} variant="caption" weight="semibold">
+    <Inline justify="between" align="start" gap="md">
+      <Text variant="caption" weight="semibold" color="secondary" style={{ minWidth: '120px' }}>
         {label}
       </Text>
-      <Box className={styles.value}>{children}</Box>
+      <Box style={{ flex: 1 }}>{children}</Box>
     </Inline>
   );
 }
@@ -37,18 +35,20 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
 function PriceRow({
   label,
   value,
-  valueClassName,
-  rowClassName,
+  valueStyle,
+  rowStyle,
 }: {
   label: string;
   value: string;
-  valueClassName?: string;
-  rowClassName?: string;
+  valueStyle?: React.CSSProperties;
+  rowStyle?: React.CSSProperties;
 }) {
   return (
-    <Inline className={rowClassName ?? styles.priceRow} justify="between" align="center" gap="md">
-      <Text className={styles.priceLabel}>{label}</Text>
-      <Text className={valueClassName ?? styles.priceValue}>{value}</Text>
+    <Inline justify="between" align="center" gap="md" style={rowStyle}>
+      <Text color="secondary">{label}</Text>
+      <Text weight="medium" style={valueStyle}>
+        {value}
+      </Text>
     </Inline>
   );
 }
@@ -86,26 +86,25 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
   });
 
   return (
-    <Card className={styles.card}>
+    <Card>
       <CardBody>
         <Stack gap="md">
-          <Box className={styles.header}>
-            <Inline className={styles.topRow} justify="between" align="start" gap="md">
-              <Stack gap="xs" className={styles.invoiceInfo}>
-                <Text variant="heading3" weight="semibold" className={styles.invoiceNo}>
+          <Box margin="none" style={{ marginBottom: '1rem' }}>
+            <Inline justify="between" align="start" gap="md" flexWrap>
+              <Stack gap="xs" style={{ flex: 1 }}>
+                <Text variant="heading3" weight="semibold">
                   {purchase.invoiceNo}
                 </Text>
-                <Text variant="caption" color="muted" className={styles.invoiceId}>
+                <Text variant="caption" color="muted">
                   ID: {purchase.invoiceId}
                 </Text>
-                <Text variant="caption" color="muted" className={styles.invoiceId}>
+                <Text variant="caption" color="muted">
                   Billing Mode: {purchase.billingMode === 'BASIC' ? 'BASIC' : 'REGULAR'}
                 </Text>
               </Stack>
-              <Inline className={styles.headerActions} gap="sm" align="center">
+              <Inline gap="sm" align="center">
                 {purchase.status === 'COMPLETED' ? (
                   <IconButton
-                    className={styles.printBtn}
                     onClick={() => setShowPrintModal(true)}
                     label="Print Invoice"
                     title="Print Invoice"
@@ -113,57 +112,71 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
                     <Icon icon={Printer} size="sm" />
                   </IconButton>
                 ) : null}
-                <Badge variant={statusVariant} className={styles.status}>
-                  {purchase.status}
-                </Badge>
+                <Badge variant={statusVariant}>{purchase.status}</Badge>
               </Inline>
             </Inline>
           </Box>
 
           {purchase.items && purchase.items.length > 0 ? (
-            <Box className={styles.itemsSection}>
+            <Box
+              style={{
+                marginBottom: '1.5rem',
+                paddingBottom: '1rem',
+                borderBottom: '1px solid var(--border-color)',
+              }}
+            >
               <Button
                 type="button"
                 variant="ghost"
-                className={styles.expandButton}
+                fullWidth
                 onClick={() => setIsItemsExpanded(!isItemsExpanded)}
                 aria-expanded={isItemsExpanded}
                 aria-label={isItemsExpanded ? 'Collapse items' : 'Expand items'}
               >
-                <Text variant="heading4" weight="semibold" className={styles.itemsTitle}>
-                  Items
-                </Text>
-                <Text className={styles.expandIcon}>{isItemsExpanded ? '▼' : '▲'}</Text>
+                <Inline justify="between" align="center" width="full">
+                  <Text variant="heading4" weight="semibold">
+                    Items
+                  </Text>
+                  <Text color="secondary">{isItemsExpanded ? '▼' : '▲'}</Text>
+                </Inline>
               </Button>
               {isItemsExpanded ? (
-                <Stack gap="sm" className={styles.itemsList}>
+                <Stack gap="sm" padding="none" style={{ marginTop: '0.5rem' }}>
                   {purchase.items.map((item, index) => (
-                    <Box key={index} className={styles.itemRow}>
-                      <Stack gap="xs" className={styles.itemInfo}>
-                        <Text weight="medium" className={styles.itemName}>
-                          {item.name}
-                        </Text>
-                        <Text variant="caption" color="secondary" className={styles.itemQuantity}>
+                    <Inline
+                      key={index}
+                      justify="between"
+                      align="start"
+                      gap="md"
+                      padding="sm"
+                      bg="surface"
+                      border
+                      rounded="md"
+                      width="full"
+                    >
+                      <Stack gap="xs" style={{ flex: 1 }}>
+                        <Text weight="medium">{item.name}</Text>
+                        <Text variant="caption" color="secondary">
                           Qty: {item.quantity}
                         </Text>
-                        <Text variant="caption" color="secondary" className={styles.itemQuantity}>
+                        <Text variant="caption" color="secondary">
                           Mode: {item.billingMode === 'BASIC' ? 'BASIC' : 'REGULAR'}
                         </Text>
                       </Stack>
-                      <Stack gap="xs" className={styles.itemPricing}>
-                        <Text className={styles.itemPrice}>
+                      <Stack gap="xs" align="end">
+                        <Text weight="medium">
                           ₹{item.priceToRetail.toFixed(2)} × {item.quantity} = ₹
                           {(item.priceToRetail * item.quantity).toFixed(2)}
                         </Text>
                         {item.discount > 0 ? (
-                          <Text variant="caption" color="secondary" className={styles.itemDiscount}>
+                          <Text variant="caption" color="success">
                             Discount: ₹{item.discount.toFixed(2)}
                           </Text>
                         ) : null}
                         {item.costTotal != null ||
                         item.profit != null ||
                         item.marginPercent != null ? (
-                          <Text variant="caption" color="secondary" className={styles.itemMargin}>
+                          <Text variant="caption" color="muted">
                             {item.costTotal != null ? (
                               <>Cost: ₹{item.costTotal.toFixed(2)}</>
                             ) : null}
@@ -174,25 +187,34 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
                           </Text>
                         ) : null}
                       </Stack>
-                    </Box>
+                    </Inline>
                   ))}
                 </Stack>
               ) : null}
             </Box>
           ) : null}
 
-          <Stack gap="md" className={styles.details}>
-            <Box className={styles.priceBreakdown}>
+          <Stack gap="md">
+            <Stack
+              gap="sm"
+              padding="md"
+              bg="surface"
+              border
+              rounded="md"
+              style={{ marginBottom: '0.5rem' }}
+            >
               <Button
                 type="button"
                 variant="ghost"
-                className={styles.expandButton}
+                fullWidth
                 onClick={() => setIsPriceExpanded(!isPriceExpanded)}
                 aria-expanded={isPriceExpanded}
                 aria-label={isPriceExpanded ? 'Collapse price details' : 'Expand price details'}
               >
-                <Text className={styles.priceLabel}>Price Details</Text>
-                <Text className={styles.expandIcon}>{isPriceExpanded ? '▼' : '▲'}</Text>
+                <Inline justify="between" align="center" width="full">
+                  <Text color="secondary">Price Details</Text>
+                  <Text color="secondary">{isPriceExpanded ? '▼' : '▲'}</Text>
+                </Inline>
               </Button>
               {isPriceExpanded ? (
                 <Stack gap="xs">
@@ -201,7 +223,7 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
                     <PriceRow
                       label="Discount:"
                       value={`-₹${purchase.discountTotal.toFixed(2)}`}
-                      valueClassName={`${styles.priceValue} ${styles.discountValue}`}
+                      valueStyle={{ color: '#16a34a' }}
                     />
                   ) : null}
                   {purchase.taxTotal > 0 ? (
@@ -210,8 +232,12 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
                   <PriceRow
                     label="Grand Total:"
                     value={`₹${purchase.grandTotal.toFixed(2)}`}
-                    valueClassName={styles.grandTotalValue}
-                    rowClassName={`${styles.priceRow} ${styles.grandTotalRow}`}
+                    valueStyle={{ fontSize: '1.1rem', fontWeight: 700 }}
+                    rowStyle={{
+                      marginTop: '0.5rem',
+                      paddingTop: '0.75rem',
+                      borderTop: '2px solid var(--border-color)',
+                    }}
                   />
                   {purchase.totalCost != null ||
                   purchase.revenueBeforeTax != null ||
@@ -219,7 +245,13 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
                   purchase.totalProfit != null ||
                   purchase.marginPercent != null ? (
                     <>
-                      <Divider className={styles.marginDivider} />
+                      <Box
+                        style={{
+                          marginTop: '0.5rem',
+                          paddingTop: '0.5rem',
+                          borderTop: '1px solid var(--border-color)',
+                        }}
+                      />
                       {purchase.totalCost != null ? (
                         <PriceRow label="Total Cost:" value={`₹${purchase.totalCost.toFixed(2)}`} />
                       ) : null}
@@ -249,12 +281,12 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
                 <PriceRow
                   label="Grand Total:"
                   value={`₹${purchase.grandTotal.toFixed(2)}`}
-                  valueClassName={styles.grandTotalValue}
+                  valueStyle={{ fontSize: '1.1rem', fontWeight: 700 }}
                 />
               ) : null}
-            </Box>
+            </Stack>
 
-            <Divider className={styles.divider} />
+            <Box style={{ height: '1px', background: 'var(--border-color)', margin: '0.5rem 0' }} />
 
             <DetailRow label="Payment Method:">
               <Stack gap="xs">

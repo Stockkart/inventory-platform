@@ -38,8 +38,6 @@ import {
   Textarea,
   type SelectOptionDef,
 } from '@inventory-platform/ui-kit';
-import styles from './InventoryAlertDetails.module.css';
-
 const SCHEME_TYPE_OPTIONS: readonly SelectOptionDef[] = [
   { value: 'FIXED_UNITS', label: 'Free units' },
   { value: 'PERCENTAGE', label: 'Percentage' },
@@ -60,11 +58,9 @@ const DISCOUNT_OPTIONS: readonly SelectOptionDef[] = [
 
 function SectionHeader({ icon, title }: { icon: string; title: string }) {
   return (
-    <Inline className={styles.sectionHeader} gap="sm" align="center">
-      <Text className={styles.sectionIcon}>{icon}</Text>
-      <Text variant="heading4" className={styles.sectionTitle}>
-        {title}
-      </Text>
+    <Inline gap="sm" align="center" style={{ marginBottom: '1rem' }}>
+      <Text>{icon}</Text>
+      <Text variant="heading4">{title}</Text>
     </Inline>
   );
 }
@@ -72,36 +68,35 @@ function SectionHeader({ icon, title }: { icon: string; title: string }) {
 function DetailField({
   icon,
   label,
-  className,
   fullWidth,
   children,
 }: {
   icon?: string;
   label: string;
-  className?: string;
   fullWidth?: boolean;
   children: ReactNode;
 }) {
-  const cardClass = fullWidth ? styles.detailCardFull : styles.detailCard;
   return (
-    <Box className={className ? `${cardClass} ${className}` : cardClass}>
-      {icon ? <Text className={styles.detailIcon}>{icon}</Text> : null}
-      <Stack gap="xs" className={styles.detailContent}>
-        <Text variant="caption" color="secondary" className={styles.detailLabel}>
+    <Inline gap="sm" align="start" style={fullWidth ? { gridColumn: '1 / -1' } : undefined}>
+      {icon ? <Text style={{ flexShrink: 0 }}>{icon}</Text> : null}
+      <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
+        <Text variant="caption" color="secondary">
           {label}
         </Text>
         {children}
       </Stack>
-    </Box>
+    </Inline>
   );
 }
 
-function DetailValue({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <Text className={className ? `${styles.detailValue} ${className}` : styles.detailValue}>
-      {children}
-    </Text>
-  );
+function DetailValue({
+  children,
+  weight,
+}: {
+  children: ReactNode;
+  weight?: 'medium' | 'semibold' | 'bold';
+}) {
+  return <Text weight={weight}>{children}</Text>;
 }
 
 function formatSaleSchemeDisplay(item: InventoryItem): string {
@@ -589,45 +584,47 @@ export function InventoryAlertDetails({
   if (!open || !item) return null;
 
   return (
-    <Modal open onClose={onClose} size="lg" className={styles.modal}>
-      <Box className={styles.modalHeader}>
-        <Inline className={styles.headerContent} gap="md" align="center">
-          <Text className={styles.productIcon}>📦</Text>
+    <Modal open onClose={onClose} size="lg">
+      <Inline
+        justify="between"
+        align="center"
+        gap="md"
+        padding="lg"
+        style={{ borderBottom: '1px solid var(--border-color)' }}
+      >
+        <Inline gap="md" align="center" style={{ flex: 1, minWidth: 0 }}>
+          <Text style={{ fontSize: '2rem', lineHeight: 1 }}>📦</Text>
           <Stack gap="xs">
             <Text variant="heading3">{item?.name ?? item?.barcode ?? 'Item Details'}</Text>
-            {item?.companyName ? (
-              <Text className={styles.headerSubtitle}>{item.companyName}</Text>
-            ) : null}
+            {item?.companyName ? <Text color="secondary">{item.companyName}</Text> : null}
           </Stack>
         </Inline>
-        <Inline className={styles.headerActions} gap="sm" align="center">
+        <Inline gap="sm" align="center">
           {allowEditMode && !isEditing ? (
             <Button
               type="button"
               variant="outline"
-              className={styles.editBtn}
               onClick={handleEditClick}
               aria-label="Edit product"
             >
               Edit
             </Button>
           ) : null}
-          <Button type="button" className={styles.closeBtn} onClick={onClose} aria-label="Close">
+          <Button type="button" variant="ghost" onClick={onClose} aria-label="Close">
             ✕
           </Button>
         </Inline>
-      </Box>
+      </Inline>
 
       <Modal.Body>
-        <Box className={styles.modalBody}>
-          <Box className={styles.section}>
+        <Box padding="lg" overflow="auto" style={{ maxHeight: '70vh' }}>
+          <Box style={{ marginBottom: '1.5rem' }}>
             <SectionHeader icon="📋" title="Product Information" />
-            <Grid className={styles.detailsGrid}>
+            <Grid columns={2} gap="sm">
               <DetailField icon="🏷️" label="Product Name">
                 {showEditor('name') ? (
                   <Input
                     type="text"
-                    className={styles.editInput}
                     value={String(editForm.name ?? '')}
                     onChange={(e) => updateEditField('name', e.target.value)}
                     placeholder="Product name"
@@ -643,7 +640,6 @@ export function InventoryAlertDetails({
                 {showEditor('companyName') ? (
                   <Input
                     type="text"
-                    className={styles.editInput}
                     value={String(editForm.companyName ?? '')}
                     onChange={(e) => updateEditField('companyName', e.target.value)}
                     placeholder="Company"
@@ -656,7 +652,6 @@ export function InventoryAlertDetails({
                 {showEditor('barcode') ? (
                   <Input
                     type="text"
-                    className={styles.editInput}
                     value={String(editForm.barcode ?? '')}
                     onChange={(e) => updateEditField('barcode', e.target.value)}
                     placeholder="Barcode"
@@ -674,7 +669,6 @@ export function InventoryAlertDetails({
                 {isEditing ? (
                   <Input
                     type="text"
-                    className={styles.editInput}
                     value={String(editForm.location ?? '')}
                     onChange={(e) => updateEditField('location', e.target.value)}
                     placeholder="Location"
@@ -687,7 +681,6 @@ export function InventoryAlertDetails({
                 {isEditing ? (
                   <Input
                     type="text"
-                    className={styles.editInput}
                     value={String(editForm.hsn ?? '')}
                     onChange={(e) => updateEditField('hsn', e.target.value)}
                     placeholder="HSN"
@@ -705,7 +698,6 @@ export function InventoryAlertDetails({
                 {isEditing ? (
                   <Input
                     type="text"
-                    className={styles.editInput}
                     value={String(editForm.batchNo ?? '')}
                     onChange={(e) => updateEditField('batchNo', e.target.value)}
                     placeholder="Batch No"
@@ -730,7 +722,6 @@ export function InventoryAlertDetails({
               <DetailField icon="📝" label="Description" fullWidth>
                 {isEditing ? (
                   <Textarea
-                    className={styles.editInput}
                     rows={2}
                     value={String(editForm.description ?? '')}
                     onChange={(e) => updateEditField('description', e.target.value)}
@@ -743,14 +734,18 @@ export function InventoryAlertDetails({
             </Grid>
           </Box>
 
-          <Box className={styles.section}>
+          <Box style={{ marginBottom: '1.5rem' }}>
             <SectionHeader icon="📦" title="Stock & packaging" />
-            <Grid className={styles.detailsGrid}>
+            <Grid columns={2} gap="sm">
               <DetailField icon="🔢" label="Current stock">
                 <DetailValue>
                   {item.currentCount}
                   {isEditing ? (
-                    <Text className={styles.fieldHint}>
+                    <Text
+                      variant="caption"
+                      color="secondary"
+                      style={{ display: 'block', marginTop: '0.35rem' }}
+                    >
                       Quantity changes via sales and purchases only
                     </Text>
                   ) : null}
@@ -764,14 +759,13 @@ export function InventoryAlertDetails({
               </DetailField>
               <DetailField icon="📐" label="Packaging">
                 {isEditing ? (
-                  <Inline className={styles.packagingEditWrap} gap="sm" align="center">
-                    <Text className={styles.packagingPrefix} aria-hidden>
+                  <Inline gap="sm" align="center">
+                    <Text aria-hidden style={{ flexShrink: 0 }}>
                       1 ×
                     </Text>
                     <Input
                       type="text"
                       inputMode="decimal"
-                      className={styles.editInput}
                       value={String(editForm.conversionFactor ?? '')}
                       onChange={(e) =>
                         updateEditField('conversionFactor', stripLeadingZeros(e.target.value))
@@ -787,7 +781,6 @@ export function InventoryAlertDetails({
                 {isEditing ? (
                   <Input
                     type="date"
-                    className={styles.editInput}
                     value={String(editForm.expiryDate ?? '')}
                     onChange={(e) => updateEditField('expiryDate', e.target.value)}
                   />
@@ -799,7 +792,6 @@ export function InventoryAlertDetails({
                 {isEditing ? (
                   <Input
                     type="date"
-                    className={styles.editInput}
                     value={String(editForm.purchaseDate ?? '')}
                     onChange={(e) => updateEditField('purchaseDate', e.target.value)}
                   />
@@ -815,7 +807,6 @@ export function InventoryAlertDetails({
                 {isEditing ? (
                   <Input
                     type="number"
-                    className={styles.editInput}
                     min={0}
                     value={editForm.thresholdCount ?? ''}
                     onChange={(e) =>
@@ -833,13 +824,12 @@ export function InventoryAlertDetails({
             </Grid>
           </Box>
 
-          <Box className={styles.section}>
+          <Box style={{ marginBottom: '1.5rem' }}>
             <SectionHeader icon="🎁" title="Schemes & attributes" />
-            <Grid className={styles.detailsGrid}>
+            <Grid columns={2} gap="sm">
               <DetailField label="Sale deal type">
                 {isEditing ? (
                   <Select
-                    className={styles.editSelect}
                     options={SCHEME_TYPE_OPTIONS}
                     value={String(editForm.schemeType ?? 'FIXED_UNITS')}
                     onChange={(e) => updateEditField('schemeType', e.target.value)}
@@ -856,7 +846,6 @@ export function InventoryAlertDetails({
                 {isEditing ? (
                   <Input
                     type="text"
-                    className={styles.editInput}
                     value={String(editForm.saleScheme ?? '')}
                     onChange={(e) => updateEditField('saleScheme', e.target.value)}
                     placeholder="e.g. 10+2 or 15%"
@@ -868,7 +857,6 @@ export function InventoryAlertDetails({
               <DetailField label="Purchase deal type">
                 {isEditing ? (
                   <Select
-                    className={styles.editSelect}
                     options={SCHEME_TYPE_OPTIONS}
                     value={String(editForm.purchaseSchemeType ?? 'FIXED_UNITS')}
                     onChange={(e) => updateEditField('purchaseSchemeType', e.target.value)}
@@ -885,7 +873,6 @@ export function InventoryAlertDetails({
                 {isEditing ? (
                   <Input
                     type="text"
-                    className={styles.editInput}
                     value={String(editForm.purchaseScheme ?? '')}
                     onChange={(e) => updateEditField('purchaseScheme', e.target.value)}
                     placeholder="e.g. 10+2 or 15%"
@@ -899,7 +886,6 @@ export function InventoryAlertDetails({
                   <Input
                     type="text"
                     inputMode="decimal"
-                    className={styles.editInput}
                     value={editForm.purchaseAdditionalDiscount ?? ''}
                     onChange={(e) => {
                       const v = stripLeadingZeros(e.target.value);
@@ -918,7 +904,6 @@ export function InventoryAlertDetails({
               <DetailField label="Item type">
                 {isEditing ? (
                   <Select
-                    className={styles.editSelect}
                     options={ITEM_TYPE_OPTIONS}
                     value={String(editForm.itemType ?? 'NORMAL')}
                     onChange={(e) => updateEditField('itemType', e.target.value)}
@@ -936,7 +921,6 @@ export function InventoryAlertDetails({
                   {isEditing ? (
                     <Input
                       type="number"
-                      className={styles.editInput}
                       min={1}
                       step={1}
                       value={String(editForm.itemTypeDegree ?? '')}
@@ -951,7 +935,6 @@ export function InventoryAlertDetails({
               <DetailField label="Discount applicable">
                 {isEditing ? (
                   <Select
-                    className={styles.editSelect}
                     options={DISCOUNT_OPTIONS}
                     value={String(editForm.discountApplicable ?? '')}
                     onChange={(e) => updateEditField('discountApplicable', e.target.value)}
@@ -963,15 +946,14 @@ export function InventoryAlertDetails({
             </Grid>
           </Box>
 
-          <Box className={styles.section}>
+          <Box style={{ marginBottom: '1.5rem' }}>
             <SectionHeader icon="💰" title="Pricing" />
-            <Grid className={styles.pricingGrid}>
-              <DetailField icon="💵" label="Selling Price (PTR)" className={styles.pricingCard}>
+            <Grid columns={2} gap="sm">
+              <DetailField icon="💵" label="Selling Price (PTR)">
                 {isEditing ? (
                   <Input
                     type="text"
                     inputMode="decimal"
-                    className={styles.editInput}
                     value={editForm.priceToRetail ?? ''}
                     onChange={(e) =>
                       updateEditField('priceToRetail', stripLeadingZeros(e.target.value))
@@ -979,7 +961,7 @@ export function InventoryAlertDetails({
                     placeholder="0.00"
                   />
                 ) : (
-                  <DetailValue className={styles.priceValue}>
+                  <DetailValue weight="semibold">
                     ₹
                     {(item?.sellingPrice ?? item?.priceToRetail) != null
                       ? (item?.sellingPrice ?? item?.priceToRetail)!.toFixed(2)
@@ -987,12 +969,11 @@ export function InventoryAlertDetails({
                   </DetailValue>
                 )}
               </DetailField>
-              <DetailField icon="🏷️" label="MRP" className={styles.pricingCard}>
+              <DetailField icon="🏷️" label="MRP">
                 {isEditing ? (
                   <Input
                     type="text"
                     inputMode="decimal"
-                    className={styles.editInput}
                     value={editForm.maximumRetailPrice ?? ''}
                     onChange={(e) =>
                       updateEditField('maximumRetailPrice', stripLeadingZeros(e.target.value))
@@ -1000,17 +981,16 @@ export function InventoryAlertDetails({
                     placeholder="0.00"
                   />
                 ) : (
-                  <DetailValue className={styles.mrpValue}>
+                  <DetailValue weight="semibold">
                     ₹{item?.maximumRetailPrice?.toFixed(2) ?? '—'}
                   </DetailValue>
                 )}
               </DetailField>
-              <DetailField icon="₹" label="Price to stockist (PTS)" className={styles.pricingCard}>
+              <DetailField icon="₹" label="Price to stockist (PTS)">
                 {isEditing ? (
                   <Input
                     type="text"
                     inputMode="decimal"
-                    className={styles.editInput}
                     value={editForm.costPrice ?? ''}
                     onChange={(e) =>
                       updateEditField('costPrice', stripLeadingZeros(e.target.value))
@@ -1018,18 +998,15 @@ export function InventoryAlertDetails({
                     placeholder="0.00"
                   />
                 ) : (
-                  <DetailValue className={styles.costValue}>
-                    ₹{item?.costPrice?.toFixed(2) ?? '—'}
-                  </DetailValue>
+                  <DetailValue weight="semibold">₹{item?.costPrice?.toFixed(2) ?? '—'}</DetailValue>
                 )}
               </DetailField>
               {item?.billingMode !== 'BASIC' ? (
-                <DetailField icon="📊" label="SGST (%)" className={styles.pricingCard}>
+                <DetailField icon="📊" label="SGST (%)">
                   {isEditing ? (
                     <Input
                       type="text"
                       inputMode="decimal"
-                      className={styles.editInput}
                       value={String(editForm.sgst ?? '')}
                       onChange={(e) => updateEditField('sgst', stripLeadingZeros(e.target.value))}
                       placeholder="e.g. 2.5"
@@ -1040,12 +1017,11 @@ export function InventoryAlertDetails({
                 </DetailField>
               ) : null}
               {item?.billingMode !== 'BASIC' ? (
-                <DetailField icon="📊" label="CGST (%)" className={styles.pricingCard}>
+                <DetailField icon="📊" label="CGST (%)">
                   {isEditing ? (
                     <Input
                       type="text"
                       inputMode="decimal"
-                      className={styles.editInput}
                       value={String(editForm.cgst ?? '')}
                       onChange={(e) => updateEditField('cgst', stripLeadingZeros(e.target.value))}
                       placeholder="e.g. 2.5"
@@ -1055,12 +1031,11 @@ export function InventoryAlertDetails({
                   )}
                 </DetailField>
               ) : null}
-              <DetailField icon="🎯" label="Sale add. discount (%)" className={styles.pricingCard}>
+              <DetailField icon="🎯" label="Sale add. discount (%)">
                 {isEditing ? (
                   <Input
                     type="text"
                     inputMode="decimal"
-                    className={styles.editInput}
                     value={editForm.saleAdditionalDiscount ?? ''}
                     onChange={(e) => {
                       const v = stripLeadingZeros(e.target.value);
@@ -1076,7 +1051,7 @@ export function InventoryAlertDetails({
               </DetailField>
             </Grid>
             {item?.pricingId ? (
-              <Box className={styles.pricingActions}>
+              <Box style={{ marginTop: '1rem' }}>
                 <RouterLink
                   to={`/dashboard/price-edit/${item.pricingId}`}
                   state={{
@@ -1086,23 +1061,24 @@ export function InventoryAlertDetails({
                     rates: item.rates ?? undefined,
                     defaultRate: item.defaultRate ?? undefined,
                   }}
-                  className={styles.editPriceLink}
                 >
-                  Edit price
+                  <Text style={{ color: 'var(--link-color, #2563eb)', fontWeight: 600 }}>
+                    Edit price
+                  </Text>
                 </RouterLink>
               </Box>
             ) : null}
           </Box>
 
           {item?.vendorId ? (
-            <Box className={styles.section}>
+            <Box style={{ marginBottom: '1.5rem' }}>
               <SectionHeader icon="👤" title="Vendor Information" />
               {loadingVendor ? (
                 <CenteredLoader label="Loading vendor details..." />
               ) : vendorError ? (
                 <Alert variant="danger">{vendorError}</Alert>
               ) : vendor ? (
-                <Grid className={styles.detailsGrid}>
+                <Grid columns={2} gap="sm">
                   <DetailField icon="👤" label="Vendor Name">
                     <DetailValue>{vendor.name}</DetailValue>
                   </DetailField>
@@ -1114,18 +1090,14 @@ export function InventoryAlertDetails({
                   {vendor.contactEmail ? (
                     <DetailField icon="📧" label="Email">
                       <DetailValue>
-                        <Link href={`mailto:${vendor.contactEmail}`} className={styles.link}>
-                          {vendor.contactEmail}
-                        </Link>
+                        <Link href={`mailto:${vendor.contactEmail}`}>{vendor.contactEmail}</Link>
                       </DetailValue>
                     </DetailField>
                   ) : null}
                   {vendor.contactPhone ? (
                     <DetailField icon="📞" label="Phone">
                       <DetailValue>
-                        <Link href={`tel:${vendor.contactPhone}`} className={styles.link}>
-                          {vendor.contactPhone}
-                        </Link>
+                        <Link href={`tel:${vendor.contactPhone}`}>{vendor.contactPhone}</Link>
                       </DetailValue>
                     </DetailField>
                   ) : null}
@@ -1150,22 +1122,10 @@ export function InventoryAlertDetails({
 
       {allowEditMode && isEditing ? (
         <Modal.Footer>
-          <Button
-            type="button"
-            variant="outline"
-            className={styles.secondaryBtn}
-            onClick={handleCancelEdit}
-            disabled={isSaving}
-          >
+          <Button type="button" variant="outline" onClick={handleCancelEdit} disabled={isSaving}>
             Cancel
           </Button>
-          <Button
-            type="button"
-            variant="solid"
-            className={styles.primaryBtn}
-            onClick={handleSave}
-            loading={isSaving}
-          >
+          <Button type="button" variant="solid" onClick={handleSave} loading={isSaving}>
             {isSaving ? 'Saving...' : 'Save changes'}
           </Button>
         </Modal.Footer>

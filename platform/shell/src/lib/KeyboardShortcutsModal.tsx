@@ -3,6 +3,8 @@ import {
   Alert,
   Box,
   Button,
+  Divider,
+  Inline,
   Label,
   Modal,
   Select,
@@ -13,6 +15,7 @@ import {
   TableHeaderCell,
   TableRow,
   Text,
+  VisuallyHidden,
 } from '@inventory-platform/ui-kit';
 import { DASHBOARD_HOTKEY, getShortcutHelpRows } from './dashboardHotkeys';
 import type { DashboardNavRow } from '@inventory-platform/routing';
@@ -24,7 +27,6 @@ import {
   removeFavoritePageShortcut,
 } from './favoritePageShortcuts';
 import { KEYBOARD_NAV_SKIP } from './formKeyboardNav';
-import styles from './KeyboardShortcutsModal.module.css';
 
 type KeyboardShortcutsModalProps = {
   open: boolean;
@@ -39,11 +41,11 @@ function ShortcutKeys({ alternatives }: { alternatives: string[][] }) {
   return (
     <>
       {alternatives.map((segments, altIdx) => (
-        <Text key={altIdx} as="span" className={styles.keyCombo}>
+        <Text key={altIdx} as="span" style={{ whiteSpace: 'nowrap' }}>
           {segments.map((seg, segIdx) => (
-            <Text key={`${seg}-${segIdx}`} as="span" className={styles.kbdGroup}>
+            <Text key={`${seg}-${segIdx}`} as="span">
               {segIdx > 0 ? (
-                <Text as="span" className={styles.kbdJoin}>
+                <Text as="span" color="secondary">
                   {' '}
                   +{' '}
                 </Text>
@@ -52,7 +54,7 @@ function ShortcutKeys({ alternatives }: { alternatives: string[][] }) {
             </Text>
           ))}
           {altIdx < alternatives.length - 1 ? (
-            <Text as="span" className={styles.altSep}>
+            <Text as="span" color="secondary">
               {' '}
               or{' '}
             </Text>
@@ -152,11 +154,15 @@ export function KeyboardShortcutsModal({
   };
 
   return (
-    <Modal open={open} onClose={onClose} size="lg" className={styles.modalPanel}>
+    <Modal open={open} onClose={onClose} size="lg">
       <Box {...{ 'data-keyboard-nav': KEYBOARD_NAV_SKIP }}>
         <Modal.Header title="Keyboard shortcuts" onClose={onClose} />
         <Modal.Body>
-          <Text className={styles.intro}>
+          <Text
+            color="secondary"
+            variant="caption"
+            style={{ marginBottom: '1rem', lineHeight: 1.45 }}
+          >
             Most shortcuts work when focus is not in a field. While{' '}
             <Text as="strong">quick navigation</Text> is open (<Text as="kbd">{modLabel}</Text> +{' '}
             <Text as="kbd">{DASHBOARD_HOTKEY.quickNavToggleModKey.toUpperCase()}</Text> or{' '}
@@ -164,7 +170,7 @@ export function KeyboardShortcutsModal({
             <Text as="kbd">Enter</Text>, and <Text as="kbd">Alt</Text> + <Text as="kbd">1</Text>–
             <Text as="kbd">9</Text> there. Close any dialog with <Text as="kbd">Esc</Text> or ×.
           </Text>
-          <Table className={styles.table}>
+          <Table>
             <TableHead>
               <TableRow>
                 <TableHeaderCell>Action</TableHeaderCell>
@@ -174,8 +180,10 @@ export function KeyboardShortcutsModal({
             <TableBody>
               {helpRows.map((row) => (
                 <TableRow key={row.action}>
-                  <TableCell className={styles.action}>{row.action}</TableCell>
-                  <TableCell className={styles.keys}>
+                  <TableCell>
+                    <Text weight="medium">{row.action}</Text>
+                  </TableCell>
+                  <TableCell>
                     <ShortcutKeys alternatives={row.alternatives} />
                   </TableCell>
                 </TableRow>
@@ -183,12 +191,16 @@ export function KeyboardShortcutsModal({
             </TableBody>
           </Table>
 
-          <Box className={styles.divider} />
+          <Divider />
 
-          <Text variant="heading3" className={styles.sectionTitle}>
+          <Text variant="heading3" weight="semibold">
             My page shortcuts
           </Text>
-          <Text className={styles.sectionIntro}>
+          <Text
+            color="secondary"
+            variant="caption"
+            style={{ marginTop: '0.35rem', marginBottom: '0.85rem', lineHeight: 1.45 }}
+          >
             Jump straight to a screen you use often. Pick a page below, click{' '}
             <Text as="strong">Assign shortcut</Text>, then press one of: a{' '}
             <Text as="strong">function key</Text> alone (<Text as="kbd">F1</Text>–
@@ -198,16 +210,16 @@ export function KeyboardShortcutsModal({
             <Text as="kbd">Shift</Text> + <Text as="kbd">S</Text>. Saved on this device only.
           </Text>
 
-          <Box className={styles.favoriteToolbar}>
-            <Label htmlFor="favorite-page-select" className={styles.srOnly}>
-              Page to assign
+          <Inline gap="sm" align="center" style={{ flexWrap: 'wrap', marginBottom: '0.65rem' }}>
+            <Label htmlFor="favorite-page-select">
+              <VisuallyHidden>Page to assign</VisuallyHidden>
             </Label>
             <Select
               id="favorite-page-select"
-              className={styles.pageSelect}
               value={selectedPath}
               disabled={sortedNav.length === 0 || Boolean(recordingPath)}
               onChange={(e) => setSelectedPath(e.target.value)}
+              style={{ flex: 1, minWidth: '11rem' }}
             >
               {sortedNav.map((r) => (
                 <option key={r.path} value={r.path}>
@@ -224,40 +236,45 @@ export function KeyboardShortcutsModal({
                 Cancel
               </Button>
             )}
-          </Box>
+          </Inline>
 
           {recordingPath ? (
-            <Alert variant="info" role="status" className={styles.recordingHint}>
-              Press your shortcut — e.g. <Text as="kbd">F7</Text>, <Text as="kbd">{modLabel}</Text>{' '}
-              + <Text as="kbd">R</Text>, or <Text as="kbd">Alt</Text> + <Text as="kbd">2</Text>.{' '}
-              <Text as="span" className={styles.recordingMuted}>
-                Esc cancels recording.
-              </Text>
-            </Alert>
+            <Box style={{ marginBottom: '0.5rem' }}>
+              <Alert variant="info" role="status">
+                Press your shortcut — e.g. <Text as="kbd">F7</Text>,{' '}
+                <Text as="kbd">{modLabel}</Text> + <Text as="kbd">R</Text>, or{' '}
+                <Text as="kbd">Alt</Text> + <Text as="kbd">2</Text>.{' '}
+                <Text color="secondary" variant="caption">
+                  Esc cancels recording.
+                </Text>
+              </Alert>
+            </Box>
           ) : null}
           {formError ? (
-            <Alert variant="danger" className={styles.formError}>
-              {formError}
-            </Alert>
+            <Box style={{ marginBottom: '0.65rem' }}>
+              <Alert variant="danger">{formError}</Alert>
+            </Box>
           ) : null}
 
           {favorites.length > 0 ? (
-            <Table className={`${styles.table} ${styles.favoritesTable}`}>
+            <Table style={{ marginTop: '0.35rem' }}>
               <TableHead>
                 <TableRow>
                   <TableHeaderCell>Page</TableHeaderCell>
                   <TableHeaderCell>Shortcut</TableHeaderCell>
-                  <TableHeaderCell className={styles.colActions} />
+                  <TableHeaderCell style={{ width: '4.5rem', textAlign: 'right' }} />
                 </TableRow>
               </TableHead>
               <TableBody>
                 {favorites.map((f) => (
                   <TableRow key={f.id}>
-                    <TableCell className={styles.action}>{f.label}</TableCell>
-                    <TableCell className={styles.keys}>
+                    <TableCell>
+                      <Text weight="medium">{f.label}</Text>
+                    </TableCell>
+                    <TableCell>
                       <ShortcutKeys alternatives={formatFavoriteShortcutDisplay(f, modLabel)} />
                     </TableCell>
-                    <TableCell className={styles.colActions}>
+                    <TableCell style={{ textAlign: 'right', verticalAlign: 'middle' }}>
                       <Button
                         type="button"
                         size="sm"
@@ -275,13 +292,13 @@ export function KeyboardShortcutsModal({
             </Table>
           ) : (
             !recordingPath && (
-              <Text className={styles.emptyFavorites}>
+              <Text color="secondary" variant="caption" style={{ marginTop: '0.35rem' }}>
                 No custom shortcuts yet. Assign one using the controls above.
               </Text>
             )
           )}
 
-          <Text className={styles.note}>
+          <Text color="secondary" variant="caption" style={{ marginTop: '1rem', lineHeight: 1.45 }}>
             Quick navigation: <Text as="kbd">↑</Text> <Text as="kbd">↓</Text> highlight a page,{' '}
             <Text as="kbd">Enter</Text> opens it. Hold <Text as="kbd">Alt</Text> and press{' '}
             <Text as="kbd">1</Text>–<Text as="kbd">9</Text> to jump straight to the matching row

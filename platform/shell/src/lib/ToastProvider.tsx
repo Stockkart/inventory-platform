@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { Stack } from '@inventory-platform/ui-kit';
 import { useToastStore } from '@inventory-platform/session';
 import { Toast } from './Toast';
-import styles from './ToastProvider.module.css';
 
 export function ToastProvider() {
   const { toasts, remove } = useToastStore();
@@ -24,7 +23,15 @@ export function ToastProvider() {
   }
 
   return (
-    <Stack gap="sm" className={styles.container}>
+    <Stack
+      gap="sm"
+      style={{
+        position: 'fixed',
+        top: 18,
+        right: 18,
+        zIndex: 99999,
+      }}
+    >
       {toasts.map((toast) => (
         <Toast key={toast.id} toast={toast} onClose={() => remove(toast.id)} />
       ))}

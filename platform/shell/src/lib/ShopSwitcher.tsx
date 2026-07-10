@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router';
 import { useAuthStore } from '@inventory-platform/session';
 import type { ShopMembership } from '@inventory-platform/session/types';
 import { Box, Button, Text } from '@inventory-platform/ui-kit';
-import styles from './ShopSwitcher.module.css';
 
 export function ShopSwitcher() {
   const navigate = useNavigate();
@@ -41,33 +40,65 @@ export function ShopSwitcher() {
   };
 
   return (
-    <Box ref={ref} className={styles.wrapper}>
+    <Box ref={ref} position="relative">
       <Button
         type="button"
-        variant="ghost"
-        className={styles.trigger}
+        variant="outline"
+        size="sm"
         onClick={() => setOpen((o) => !o)}
         disabled={isLoading}
         title={shop?.name ?? 'Switch shop'}
+        style={{ maxWidth: 180, display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
       >
-        <Text as="span" className={styles.triggerIcon} aria-hidden>
-          🏪
+        <Text as="span" aria-hidden>
+          🏪{' '}
         </Text>
-        <Text as="span" className={styles.triggerLabel}>
+        <Text as="span" truncate>
           {shop?.name ?? 'Select shop'}
         </Text>
         <Text
           as="span"
-          className={`${styles.chevron} ${open ? styles.chevronOpen : ''}`}
           aria-hidden
+          style={{
+            fontSize: '0.7rem',
+            opacity: 0.7,
+            transform: open ? 'rotate(180deg)' : undefined,
+            transition: 'transform 0.2s',
+          }}
         >
           ▾
         </Text>
       </Button>
 
-      {open && (
-        <Box className={styles.dropdown}>
-          <Text as="span" className={styles.dropdownHeader}>
+      {open ? (
+        <Box
+          position="absolute"
+          bg="elevated"
+          border
+          rounded="md"
+          overflow="hidden"
+          style={{
+            right: 0,
+            top: 'calc(100% + 8px)',
+            minWidth: 220,
+            maxWidth: 280,
+            zIndex: 1000,
+            boxShadow: 'var(--sk-shadow-lg)',
+          }}
+        >
+          <Text
+            as="span"
+            variant="caption"
+            color="secondary"
+            weight="semibold"
+            style={{
+              display: 'block',
+              padding: '0.5rem 1rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              borderBottom: '1px solid var(--sk-color-border-default)',
+            }}
+          >
             Your shops
           </Text>
           {shops.map((s) => (
@@ -75,14 +106,27 @@ export function ShopSwitcher() {
               key={s.shopId}
               type="button"
               variant="ghost"
-              className={`${styles.shopItem} ${s.shopId === activeShopId ? styles.active : ''}`}
+              fullWidth
               onClick={() => handleSelect(s)}
               disabled={isLoading}
+              style={{
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                gap: '0.15rem',
+                padding: '0.75rem 1rem',
+                borderRadius: 0,
+                ...(s.shopId === activeShopId
+                  ? {
+                      background: 'var(--sk-color-accent-soft)',
+                      color: 'var(--sk-color-accent)',
+                    }
+                  : undefined),
+              }}
             >
-              <Text as="span" className={styles.shopName}>
+              <Text as="span" weight="medium">
                 {s.shopName}
               </Text>
-              <Text as="span" className={styles.shopRole}>
+              <Text as="span" variant="caption" color="secondary">
                 {s.role}
               </Text>
             </Button>
@@ -90,16 +134,23 @@ export function ShopSwitcher() {
           <Button
             type="button"
             variant="ghost"
-            className={styles.addShop}
+            fullWidth
             onClick={() => {
               setOpen(false);
               navigate('/onboarding', { state: { addShop: true } });
+            }}
+            style={{
+              padding: '0.75rem 1rem',
+              borderRadius: 0,
+              borderTop: '1px solid var(--sk-color-border-default)',
+              color: 'var(--sk-color-accent)',
+              justifyContent: 'flex-start',
             }}
           >
             + Add another shop
           </Button>
         </Box>
-      )}
+      ) : null}
     </Box>
   );
 }

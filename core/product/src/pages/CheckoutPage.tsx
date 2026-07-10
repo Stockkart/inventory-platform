@@ -14,6 +14,7 @@ import {
   EmptyState,
   Grid,
   Inline,
+  Modal,
   PageHeader,
   Stack,
   Table,
@@ -35,7 +36,6 @@ import {
   validatePaymentSplit,
 } from '../ui';
 import { useResolvedSellPath } from '@inventory-platform/routing';
-import styles from './checkout.module.css';
 import { useAuthStore, useNotify, useShopCapabilitiesStore } from '@inventory-platform/session';
 
 export function meta() {
@@ -341,35 +341,43 @@ export function CheckoutPage() {
   // Show success overlay
   if (showSuccess) {
     return (
-      <Box className={styles.successOverlay} display="flex" align="center" justify="center">
-        <Card className={styles.successContainer}>
-          <CardBody>
-            <Stack gap="md" align="center">
-              <Box
-                className={styles.checkmarkContainer}
-                display="flex"
+      <Modal open onClose={() => setShowSuccess(false)} size="sm">
+        <Modal.Body>
+          <Stack gap="md" align="center" padding="lg">
+            <Box
+              display="flex"
+              align="center"
+              justify="center"
+              style={{
+                width: '100px',
+                height: '100px',
+                borderRadius: '50%',
+                background: '#10b981',
+              }}
+            >
+              <Text weight="bold" style={{ color: '#fff', fontSize: '3rem', lineHeight: 1 }}>
+                ✓
+              </Text>
+            </Box>
+            <Text variant="title" weight="bold" align="center">
+              Order Successful!
+            </Text>
+            {showTokenOnReceipt && checkoutData?.tokenNo != null ? (
+              <Text
+                variant="heading3"
+                weight="bold"
                 align="center"
-                justify="center"
+                style={{ color: 'var(--link-hover)' }}
               >
-                <Text className={styles.checkmark} weight="bold">
-                  ✓
-                </Text>
-              </Box>
-              <Text variant="title" weight="bold" align="center" className={styles.successTitle}>
-                Order Successful!
+                Token #{checkoutData.tokenNo}
               </Text>
-              {showTokenOnReceipt && checkoutData?.tokenNo != null && (
-                <Text variant="heading3" weight="bold" align="center" className={styles.tokenNo}>
-                  Token #{checkoutData.tokenNo}
-                </Text>
-              )}
-              <Text color="secondary" align="center" className={styles.successMessage}>
-                Your payment has been processed successfully.
-              </Text>
-            </Stack>
-          </CardBody>
-        </Card>
-      </Box>
+            ) : null}
+            <Text color="secondary" align="center">
+              Your payment has been processed successfully.
+            </Text>
+          </Stack>
+        </Modal.Body>
+      </Modal>
     );
   }
 

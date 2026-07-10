@@ -7,12 +7,10 @@ import {
   Button,
   CenteredLoader,
   EmptyState,
-  Grid,
   Inline,
   Stack,
   Text,
 } from '@inventory-platform/ui-kit';
-import styles from './CafeSellCatalogPanel.module.css';
 
 function money(n: number): string {
   return `₹${n.toFixed(2)}`;
@@ -36,6 +34,30 @@ function stockPrice(item: InventoryItem): number {
 function stockAvailable(item: InventoryItem): number {
   return item.currentBaseCount ?? item.currentCount ?? 0;
 }
+
+const panelShellStyle: React.CSSProperties = {
+  flex: 1,
+  minHeight: 0,
+  overflow: 'hidden',
+  boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+};
+
+const catalogGridStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(158px, 1fr))',
+  gap: '0.7rem',
+};
+
+const tileBaseStyle: React.CSSProperties = {
+  minHeight: '92px',
+  textAlign: 'left',
+  borderLeft: '3px solid #3b82f6',
+};
+
+const tileStockStyle: React.CSSProperties = {
+  ...tileBaseStyle,
+  borderLeftColor: '#22c55e',
+};
 
 export function CafeSellCatalogPanel({
   catalog,
@@ -113,7 +135,7 @@ export function CafeSellCatalogPanel({
 
   if (loading) {
     return (
-      <Box className={styles.panel}>
+      <Box padding="lg" border rounded="lg" bg="elevated" style={panelShellStyle}>
         <CenteredLoader label="Loading menu…" />
       </Box>
     );
@@ -121,7 +143,7 @@ export function CafeSellCatalogPanel({
 
   if (!hasMenu && !hasDirectStock) {
     return (
-      <Box className={styles.panel}>
+      <Box padding="lg" border rounded="lg" bg="elevated" style={panelShellStyle}>
         <EmptyState
           title={
             normalizedFilter
@@ -134,82 +156,116 @@ export function CafeSellCatalogPanel({
   }
 
   return (
-    <Stack gap="md" className={styles.panel}>
+    <Stack gap="none" border rounded="lg" bg="elevated" style={panelShellStyle}>
       {tabs.length > 1 ? (
-        <Inline className={styles.tabBar} gap="none">
-          {tabs.map((tab) => (
-            <Button
-              key={tab.id}
-              type="button"
-              variant="ghost"
-              size="sm"
-              role="tab"
-              aria-selected={resolvedTab === tab.id}
-              className={`${styles.tab} ${resolvedTab === tab.id ? styles.tabActive : ''}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {tab.label}
-            </Button>
-          ))}
+        <Inline
+          gap="xs"
+          padding="sm"
+          bg="surface"
+          style={{
+            flexShrink: 0,
+            overflowX: 'auto',
+            borderBottom: '1px solid var(--border-color)',
+          }}
+        >
+          {tabs.map((tab) => {
+            const isActive = resolvedTab === tab.id;
+            return (
+              <Button
+                key={tab.id}
+                type="button"
+                variant={isActive ? 'solid' : 'ghost'}
+                size="sm"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => setActiveTab(tab.id)}
+                style={
+                  isActive ? { borderRadius: '999px' } : { borderRadius: '999px', flexShrink: 0 }
+                }
+              >
+                {tab.label}
+              </Button>
+            );
+          })}
         </Inline>
       ) : null}
 
-      <Box className={styles.scrollArea}>
+      <Box
+        padding="md"
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: 'auto',
+          overscrollBehavior: 'contain',
+        }}
+      >
         {menuSectionsToRender.map((section) => (
-          <Box as="section" key={section.id} className={styles.section}>
-            <Inline className={styles.sectionHead} justify="between" align="center">
-              <Text variant="heading3" className={styles.sectionTitle}>
+          <Box key={section.id} style={{ marginBottom: '1.4rem' }}>
+            <Inline justify="between" align="center" gap="sm" style={{ marginBottom: '0.7rem' }}>
+              <Text
+                variant="caption"
+                weight="bold"
+                color="secondary"
+                style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}
+              >
                 {section.title || 'Menu'}
               </Text>
-              <Badge variant="neutral" className={styles.sectionCount}>
-                {section.items.length}
-              </Badge>
+              <Badge variant="neutral">{section.items.length}</Badge>
             </Inline>
-            <Grid className={styles.grid}>
+            <Box style={catalogGridStyle}>
               {section.items.map((item) => (
                 <Button
                   key={item.id}
                   type="button"
                   variant="outline"
-                  className={styles.tile}
                   disabled={disabled}
                   onClick={() => onAddMenuItem(item)}
+                  style={tileBaseStyle}
                 >
                   <Stack gap="xs" width="full">
-                    <Text weight="semibold" className={styles.tileName}>
+                    <Text weight="semibold" truncate>
                       {item.name}
                     </Text>
-                    <Inline
-                      className={styles.tileFooter}
-                      justify="between"
-                      align="center"
-                      width="full"
-                    >
-                      <Text weight="semibold" className={styles.tilePrice}>
-                        {money(item.sellingPrice)}
-                      </Text>
-                      <Text aria-hidden className={styles.tileAdd}>
+                    <Inline justify="between" align="center" width="full">
+                      <Text weight="semibold">{money(item.sellingPrice)}</Text>
+                      <Text
+                        aria-hidden
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '22px',
+                          height: '22px',
+                          borderRadius: '50%',
+                          background: 'rgba(59, 130, 246, 0.12)',
+                          color: 'var(--primary-color, #2563eb)',
+                          fontWeight: 700,
+                        }}
+                      >
                         +
                       </Text>
                     </Inline>
                   </Stack>
                 </Button>
               ))}
-            </Grid>
+            </Box>
           </Box>
         ))}
 
         {showStock && hasDirectStock ? (
-          <Box as="section" className={styles.section}>
-            <Inline className={styles.sectionHead} justify="between" align="center">
-              <Text variant="heading3" className={styles.sectionTitle}>
+          <Box>
+            <Inline justify="between" align="center" gap="sm" style={{ marginBottom: '0.7rem' }}>
+              <Text
+                variant="caption"
+                weight="bold"
+                color="secondary"
+                style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}
+              >
                 Direct stock
               </Text>
-              <Badge variant="neutral" className={styles.sectionCount}>
-                {filteredDirectStock.length}
-              </Badge>
+              <Badge variant="neutral">{filteredDirectStock.length}</Badge>
             </Inline>
-            <Grid className={styles.grid}>
+            <Box style={catalogGridStyle}>
               {filteredDirectStock.map((item) => {
                 const available = stockAvailable(item);
                 const outOfStock = available <= 0;
@@ -218,27 +274,33 @@ export function CafeSellCatalogPanel({
                     key={item.id}
                     type="button"
                     variant="outline"
-                    className={`${styles.tile} ${styles.tileStock}`}
                     disabled={disabled || outOfStock}
                     onClick={() => onAddDirectStock(item)}
+                    style={tileStockStyle}
                   >
                     <Stack gap="xs" width="full">
-                      <Text weight="semibold" className={styles.tileName}>
+                      <Text weight="semibold" truncate>
                         {item.name}
                       </Text>
-                      <Text variant="caption" color="secondary" className={styles.tileMeta}>
+                      <Text variant="caption" color="secondary">
                         {outOfStock ? 'Out of stock' : `${available} in stock`}
                       </Text>
-                      <Inline
-                        className={styles.tileFooter}
-                        justify="between"
-                        align="center"
-                        width="full"
-                      >
-                        <Text weight="semibold" className={styles.tilePrice}>
-                          {money(stockPrice(item))}
-                        </Text>
-                        <Text aria-hidden className={styles.tileAdd}>
+                      <Inline justify="between" align="center" width="full">
+                        <Text weight="semibold">{money(stockPrice(item))}</Text>
+                        <Text
+                          aria-hidden
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '22px',
+                            height: '22px',
+                            borderRadius: '50%',
+                            background: 'rgba(34, 197, 94, 0.14)',
+                            color: '#16a34a',
+                            fontWeight: 700,
+                          }}
+                        >
                           +
                         </Text>
                       </Inline>
@@ -246,7 +308,7 @@ export function CafeSellCatalogPanel({
                   </Button>
                 );
               })}
-            </Grid>
+            </Box>
           </Box>
         ) : null}
       </Box>

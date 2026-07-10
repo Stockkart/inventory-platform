@@ -31,7 +31,6 @@ import {
   useAuthStore,
   useShopAccessStore,
 } from '@inventory-platform/session';
-import styles from './manual-stock.module.css';
 
 export function meta() {
   return [
@@ -101,12 +100,12 @@ function StockCorrectionModal({
   const isValidQty = newQty.trim() !== '' && Number.isFinite(parsedQty) && parsedQty >= 0;
   const hasChange = isValidQty && parsedQty !== current;
 
-  const deltaClass = useMemo(() => {
-    if (!isValidQty) return '';
+  const deltaColor = useMemo(() => {
+    if (!isValidQty) return undefined;
     const delta = parsedQty - current;
-    if (delta > 0) return styles.deltaPositive;
-    if (delta < 0) return styles.deltaNegative;
-    return '';
+    if (delta > 0) return 'success' as const;
+    if (delta < 0) return 'danger' as const;
+    return 'secondary' as const;
   }, [current, isValidQty, parsedQty]);
 
   const handleSubmit = async () => {
@@ -150,18 +149,14 @@ function StockCorrectionModal({
   };
 
   return (
-    <Modal open onClose={onClose} size="md" className={styles.modal}>
+    <Modal open onClose={onClose} size="md">
       <Modal.Header title="Correct stock" onClose={onClose} />
       <Modal.Body>
-        <Stack gap="md" className={styles.modalBody}>
-          <Text color="secondary" className={styles.modalSubtitle}>
-            {item.name || 'Ingredient'}
-          </Text>
+        <Stack gap="md">
+          <Text color="secondary">{item.name || 'Ingredient'}</Text>
 
           <FormField label="Current stock">
-            <Text className={styles.currentStock}>
-              {current} {unit}
-            </Text>
+            <Input readOnly readOnlyStyle value={`${current} ${unit}`} />
           </FormField>
 
           <FormField label={`New quantity (${unit})`} id="correction-qty">
@@ -170,14 +165,13 @@ function StockCorrectionModal({
               type="number"
               min={0}
               step="any"
-              className={styles.qtyInput}
               value={newQty}
               onChange={(e) => setNewQty(e.target.value)}
               disabled={isSubmitting}
               autoFocus
             />
             {isValidQty ? (
-              <Text className={`${styles.deltaHint} ${deltaClass}`}>
+              <Text variant="caption" color={deltaColor} weight="semibold">
                 Change: {formatDelta(current, parsedQty)} {unit}
               </Text>
             ) : null}
@@ -186,7 +180,6 @@ function StockCorrectionModal({
           <FormField label="Note (optional)" id="correction-note">
             <Textarea
               id="correction-note"
-              className={styles.noteInput}
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="e.g. Spillage, recount, waste…"
@@ -392,7 +385,7 @@ export function ManualStockPage() {
         or review <Link to="/dashboard/stock-corrections">correction history</Link>.
       </Text>
 
-      <Inline gap="sm" className={styles.searchToolbar}>
+      <Inline gap="sm" width="full" flexWrap>
         <SearchInput
           value={searchQuery}
           onChange={setSearchQuery}
@@ -441,7 +434,7 @@ export function ManualStockPage() {
               />
             ) : (
               <>
-                <Grid className={styles.productsGrid}>
+                <Grid columns={3} gap="md" width="full">
                   {inventory.map((item) => {
                     const ingredientType = getExtensionFieldString(item, 'ingredientType');
                     const stock = stockQty(item);
@@ -451,21 +444,15 @@ export function ManualStockPage() {
                     const sellDirect = isSellDirectInventory(item);
                     const price = sellPrice(item);
                     return (
-                      <Card key={item.id || item.lotId} className={styles.productCard}>
+                      <Card key={item.id || item.lotId}>
                         <CardBody>
                           <Stack gap="sm">
-                            <Inline gap="sm" align="center">
-                              <Text variant="heading3" className={styles.productName}>
-                                {item.name || 'Unnamed ingredient'}
-                              </Text>
+                            <Inline gap="sm" align="center" flexWrap>
+                              <Text variant="heading3">{item.name || 'Unnamed ingredient'}</Text>
                               {ingredientType ? (
                                 <Badge variant="neutral">{ingredientType}</Badge>
                               ) : null}
-                              {sellDirect ? (
-                                <Badge variant="info" className={styles.sellDirectBadge}>
-                                  Sell direct
-                                </Badge>
-                              ) : null}
+                              {sellDirect ? <Badge variant="success">Sell direct</Badge> : null}
                             </Inline>
 
                             {item.barcode ? (
@@ -510,12 +497,11 @@ export function ManualStockPage() {
                               </Text>
                             ) : null}
 
-                            <Inline gap="sm" className={styles.actionButtons}>
+                            <Inline gap="sm" flexWrap>
                               <Button
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                className={styles.viewDetailsBtn}
                                 onClick={() => void openIngredientDetails(item)}
                                 disabled={isLoading || detailLoadingId === itemId}
                               >
@@ -525,7 +511,6 @@ export function ManualStockPage() {
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                className={styles.correctStockBtn}
                                 onClick={() => setCorrectionItem(item)}
                                 disabled={!itemId}
                               >
@@ -536,7 +521,6 @@ export function ManualStockPage() {
                                   type="button"
                                   variant="solid"
                                   size="sm"
-                                  className={styles.addToCartBtn}
                                   onClick={() => void handleAddToCart(item)}
                                   disabled={
                                     !itemId || addingToCartId === itemId || stock <= 0 || price <= 0

@@ -6,6 +6,7 @@ import {
   Button,
   Card,
   CardBody,
+  Drawer,
   EmptyState,
   IconButton,
   Inline,
@@ -17,7 +18,6 @@ import {
 import { resourcesApi } from '../api/resources.api';
 import type { TutorialResourceResponse } from '@inventory-platform/shell/types';
 import { YouTubeHelpModal } from './YouTubeHelpModal';
-import styles from './ContextualHelpPanel.module.css';
 
 type ContextualHelpPanelProps = {
   open: boolean;
@@ -67,99 +67,92 @@ export function ContextualHelpPanel({
     }
   }, [open]);
 
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !selectedVideo) onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose, selectedVideo]);
-
   if (!open) return null;
 
   return (
     <>
-      <Box className={styles.backdrop} role="presentation" onClick={onClose} />
-      <Box
-        as="aside"
-        className={styles.panel}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="contextual-help-title"
-      >
-        <Inline className={styles.header} align="start" justify="between">
-          <Stack gap="xs">
-            <Text className={styles.kicker}>Help for this page</Text>
-            <Text id="contextual-help-title" variant="title" className={styles.title}>
-              {pageLabel}
-            </Text>
-          </Stack>
-          <IconButton label="Close help" className={styles.closeBtn} onClick={onClose}>
-            <X size={20} />
-          </IconButton>
-        </Inline>
-
-        <Text className={styles.hint}>
-          Tutorial videos matched to <Text as="code">{currentPath}</Text>
-        </Text>
-
-        {loading ? (
-          <Inline className={styles.status} gap="sm">
-            <Spinner size="sm" aria-hidden />
-            <Text>Loading videos…</Text>
+      <Drawer open={open} onClose={selectedVideo ? undefined : onClose}>
+        <Stack gap="none" height="full" overflow="auto" padding="lg">
+          <Inline align="start" justify="between" gap="md">
+            <Stack gap="xs">
+              <Text variant="caption" color="muted" weight="semibold">
+                Help for this page
+              </Text>
+              <Text id="contextual-help-title" variant="title">
+                {pageLabel}
+              </Text>
+            </Stack>
+            <IconButton label="Close help" onClick={onClose}>
+              <X size={20} />
+            </IconButton>
           </Inline>
-        ) : null}
 
-        {error ? (
-          <Alert variant="danger" className={styles.error}>
-            {error}
-          </Alert>
-        ) : null}
+          <Text color="secondary" variant="caption" style={{ marginTop: '0.75rem' }}>
+            Tutorial videos matched to <Text as="code">{currentPath}</Text>
+          </Text>
 
-        {!loading && !error && videos.length === 0 ? (
-          <EmptyState
-            className={styles.empty}
-            title="No videos yet"
-            description="No videos are mapped to this page yet. Try the StockKart overview from the home page demo, or check back after your admin adds tutorials."
-          />
-        ) : null}
+          {loading ? (
+            <Inline gap="sm" align="center" style={{ marginTop: '1rem' }}>
+              <Spinner size="sm" aria-hidden />
+              <Text color="secondary">Loading videos…</Text>
+            </Inline>
+          ) : null}
 
-        <Stack gap="sm" className={styles.list}>
-          {videos.map((video) => (
-            <Card key={video.id} className={styles.card}>
-              <CardBody className={styles.cardBody}>
-                <Text variant="heading3" className={styles.cardTitle}>
-                  {video.title}
-                </Text>
-                {video.description ? (
-                  <Text className={styles.cardDesc}>{video.description}</Text>
-                ) : null}
-              </CardBody>
-              <Inline className={styles.cardActions} gap="xs">
-                <Button
-                  type="button"
-                  size="sm"
-                  className={styles.playBtn}
-                  leftIcon={<Play size={16} aria-hidden />}
-                  onClick={() => setSelectedVideo(video)}
-                >
-                  Watch
-                </Button>
-                <Link
-                  className={styles.linkBtn}
-                  href={video.youtubeUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`Open ${video.title} on YouTube`}
-                >
-                  <ExternalLink size={16} aria-hidden />
-                </Link>
-              </Inline>
-            </Card>
-          ))}
+          {error ? (
+            <Box padding="none" style={{ marginTop: '1rem' }}>
+              <Alert variant="danger">{error}</Alert>
+            </Box>
+          ) : null}
+
+          {!loading && !error && videos.length === 0 ? (
+            <Stack gap="none" style={{ marginTop: '1rem' }}>
+              <EmptyState
+                title="No videos yet"
+                description="No videos are mapped to this page yet. Try the StockKart overview from the home page demo, or check back after your admin adds tutorials."
+              />
+            </Stack>
+          ) : null}
+
+          <Stack gap="sm" style={{ marginTop: '1rem', paddingBottom: '1.5rem' }}>
+            {videos.map((video) => (
+              <Card key={video.id}>
+                <CardBody>
+                  <Inline align="start" justify="between" gap="md">
+                    <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
+                      <Text variant="heading3" weight="semibold">
+                        {video.title}
+                      </Text>
+                      {video.description ? (
+                        <Text color="secondary" variant="caption">
+                          {video.description}
+                        </Text>
+                      ) : null}
+                    </Stack>
+                    <Inline gap="xs" align="center">
+                      <Button
+                        type="button"
+                        size="sm"
+                        leftIcon={<Play size={16} aria-hidden />}
+                        onClick={() => setSelectedVideo(video)}
+                      >
+                        Watch
+                      </Button>
+                      <Link
+                        href={video.youtubeUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`Open ${video.title} on YouTube`}
+                      >
+                        <ExternalLink size={16} aria-hidden />
+                      </Link>
+                    </Inline>
+                  </Inline>
+                </CardBody>
+              </Card>
+            ))}
+          </Stack>
         </Stack>
-      </Box>
+      </Drawer>
 
       <YouTubeHelpModal
         video={selectedVideo}

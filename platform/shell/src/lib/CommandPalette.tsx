@@ -6,7 +6,6 @@ import { Box, Input, Modal, Text } from '@inventory-platform/ui-kit';
 import type { DashboardNavRow } from '@inventory-platform/routing';
 import { DASHBOARD_HOTKEY, getQuickNavFooterHints } from './dashboardHotkeys';
 import { KEYBOARD_NAV_SKIP } from './formKeyboardNav';
-import styles from './CommandPalette.module.css';
 import { NavIcon } from './NavIcon';
 
 type CommandPaletteProps = {
@@ -19,6 +18,35 @@ type CommandPaletteProps = {
 function normalize(s: string) {
   return s.trim().toLowerCase();
 }
+
+const searchRowStyle = {
+  borderBottom: '1px solid var(--sk-color-border-default)',
+  background: 'var(--sk-color-bg-canvas)',
+} as const;
+
+const inputStyle = {
+  flex: 1,
+  minWidth: 0,
+  border: 'none',
+  background: 'transparent',
+  boxShadow: 'none',
+  paddingLeft: 0,
+  paddingRight: 0,
+} as const;
+
+const escHintStyle = {
+  flexShrink: 0,
+  padding: '0.2rem 0.45rem',
+  border: '1px solid var(--sk-color-border-default)',
+  borderRadius: 4,
+  background: 'var(--sk-color-bg-surface)',
+} as const;
+
+const footerStyle = {
+  borderTop: '1px solid var(--sk-color-border-default)',
+  background: 'var(--sk-color-bg-muted, var(--sk-color-bg-canvas))',
+  fontSize: '0.75rem',
+} as const;
 
 export function CommandPalette({ open, onClose, navRows, modLabel }: CommandPaletteProps) {
   const navigate = useNavigate();
@@ -164,20 +192,27 @@ export function CommandPalette({ open, onClose, navRows, modLabel }: CommandPale
   itemRefs.current = [];
 
   return (
-    <Modal open={open} onClose={onClose} size="md" className={styles.paletteModal}>
+    <Modal open={open} onClose={onClose} size="md">
       <Box
         {...{ 'data-keyboard-nav': KEYBOARD_NAV_SKIP }}
         onKeyDownCapture={onPaletteKeyDownCapture}
-        className={styles.palette}
+        display="flex"
+        flexDirection="column"
+        overflow="hidden"
+        style={{ maxHeight: 'min(70vh, 560px)' }}
       >
-        <Box className={styles.searchRow}>
-          <Search className={styles.searchIcon} size={20} aria-hidden />
+        <Box display="flex" align="center" gap="sm" padding="md" style={searchRowStyle}>
+          <Search
+            size={20}
+            aria-hidden
+            style={{ flexShrink: 0, color: 'var(--sk-color-text-secondary)', opacity: 0.85 }}
+          />
           <Input
             id="command-palette-input"
             type="search"
             inputMode="search"
             enterKeyHint="go"
-            className={styles.input}
+            style={inputStyle}
             placeholder="Search pages…"
             value={query}
             onChange={(e) => {
@@ -189,13 +224,19 @@ export function CommandPalette({ open, onClose, navRows, modLabel }: CommandPale
             autoCorrect="off"
             spellCheck={false}
           />
-          <Text as="span" className={styles.hint}>
+          <Text as="span" variant="caption" weight="semibold" style={escHintStyle}>
             Esc
           </Text>
         </Box>
-        <Box className={styles.list} role="listbox">
+        <Box
+          role="listbox"
+          overflow="auto"
+          style={{ maxHeight: 'min(52vh, 360px)', padding: '0.35rem 0' }}
+        >
           {filtered.length === 0 ? (
-            <Text className={styles.empty}>No pages match your search.</Text>
+            <Text color="secondary" align="center" style={{ padding: '1.5rem 1rem' }}>
+              No pages match your search.
+            </Text>
           ) : (
             filtered.map((row, idx) => (
               <Box
@@ -206,41 +247,80 @@ export function CommandPalette({ open, onClose, navRows, modLabel }: CommandPale
                 ref={(el) => {
                   itemRefs.current[idx] = el;
                 }}
-                className={`${styles.item} ${idx === active ? styles.itemActive : ''}`}
+                display="flex"
+                align="center"
+                gap="sm"
+                width="full"
                 onMouseEnter={() => {
                   setActive(idx);
                   activeRef.current = idx;
                 }}
                 onClick={() => go(row.path)}
+                style={{
+                  padding: '0.6rem 1rem',
+                  border: 'none',
+                  background: idx === active ? 'var(--sk-color-hover)' : 'transparent',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  font: 'inherit',
+                  color: 'var(--sk-color-text-primary)',
+                }}
               >
-                <Text as="span" className={styles.itemIndex} aria-hidden>
+                <Text
+                  as="span"
+                  variant="caption"
+                  weight="semibold"
+                  color={idx === active ? 'primary' : 'secondary'}
+                  aria-hidden
+                  style={{ flexShrink: 0, width: '1.5rem', textAlign: 'center' }}
+                >
                   {idx < 9 ? String(idx + 1) : ''}
                 </Text>
-                <Text as="span" className={styles.itemIcon} aria-hidden>
+                <Text
+                  as="span"
+                  aria-hidden
+                  style={{ flexShrink: 0, fontSize: '1.1rem', lineHeight: 1 }}
+                >
                   <NavIcon name={row.icon} size="sm" />
                 </Text>
-                <Box className={styles.itemBody}>
-                  <Text className={styles.itemLabel}>{row.label}</Text>
-                  <Text className={styles.itemMeta}>{row.groupLabel}</Text>
+                <Box style={{ flex: 1, minWidth: 0 }}>
+                  <Text weight="medium">{row.label}</Text>
+                  <Text color="secondary" variant="caption" style={{ marginTop: '0.15rem' }}>
+                    {row.groupLabel}
+                  </Text>
                 </Box>
               </Box>
             ))
           )}
         </Box>
-        <Box className={styles.footer}>
+        <Box display="flex" flexWrap gap="sm" padding="sm" style={footerStyle}>
           {footerHints.map((hint) => (
-            <Text key={hint.description} as="span" className={styles.footerHint}>
+            <Text
+              key={hint.description}
+              as="span"
+              color="secondary"
+              style={{
+                display: 'inline-flex',
+                flexWrap: 'wrap',
+                alignItems: 'baseline',
+                gap: '0.15rem',
+              }}
+            >
               {hint.keys.map((k, i) => (
                 <Text key={`${hint.description}-${k}-${i}`} as="span">
                   {i > 0 ? (
-                    <Text as="span" className={styles.footerPlus}>
+                    <Text
+                      as="span"
+                      color="muted"
+                      style={{ margin: '0 0.1rem', fontSize: '0.65rem', fontWeight: 600 }}
+                    >
                       +
                     </Text>
                   ) : null}
                   <Text as="kbd">{k}</Text>
                 </Text>
               ))}{' '}
-              <Text as="span" className={styles.footerDesc}>
+              <Text as="span" color="secondary" style={{ marginLeft: '0.25rem' }}>
                 {hint.description}
               </Text>
             </Text>

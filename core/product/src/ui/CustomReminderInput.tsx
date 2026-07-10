@@ -10,7 +10,6 @@ import {
   Text,
   Textarea,
 } from '@inventory-platform/ui-kit';
-import styles from './CustomReminderInput.module.css';
 
 interface CustomReminderInputProps {
   reminder: CustomReminderInput;
@@ -34,14 +33,12 @@ export function CustomReminderInputItem({
     });
   };
 
-  // Convert ISO (UTC) → datetime-local (local time)
   const isoToLocalDateTime = (iso: string) => {
     const date = new Date(iso);
     const tzOffset = date.getTimezoneOffset() * 60000;
     return new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
   };
 
-  // Convert datetime-local → ISO (UTC)
   const localDateTimeToIso = (local: string) => {
     return new Date(local).toISOString();
   };
@@ -69,14 +66,21 @@ export function CustomReminderInputItem({
   const notesId = `custom-reminder-notes-${index}`;
 
   return (
-    <Box className={styles.reminderItem}>
-      <Inline justify="between" align="center" className={styles.reminderHeader}>
-        <Text variant="heading4" weight="semibold" className={styles.reminderTitle}>
+    <Box padding="md" border rounded="md" bg="surface">
+      <Inline
+        justify="between"
+        align="center"
+        style={{
+          marginBottom: '1rem',
+          paddingBottom: '0.75rem',
+          borderBottom: '1px solid var(--border-color)',
+        }}
+      >
+        <Text variant="heading4" weight="semibold">
           Custom Reminder {index + 1}
         </Text>
         <IconButton
           type="button"
-          className={styles.removeButton}
           onClick={() => onRemove(index)}
           disabled={disabled}
           label={`Remove custom reminder ${index + 1}`}
@@ -84,7 +88,7 @@ export function CustomReminderInputItem({
           ×
         </IconButton>
       </Inline>
-      <Stack gap="sm" className={styles.reminderFields}>
+      <Stack gap="sm">
         <FormField label="Reminder Date & Time" htmlFor={reminderAtId} required>
           <Input
             id={reminderAtId}
@@ -152,28 +156,30 @@ export function CustomRemindersSection({
   };
 
   return (
-    <Box className={styles.section}>
-      <Inline justify="between" align="center" className={styles.sectionHeader}>
-        <Text variant="heading3" weight="semibold" className={styles.sectionTitle}>
+    <Box
+      margin="none"
+      padding="lg"
+      border
+      rounded="md"
+      bg="elevated"
+      style={{ marginTop: '1.5rem' }}
+    >
+      <Inline justify="between" align="center" style={{ marginBottom: '1rem' }}>
+        <Text variant="heading3" weight="semibold">
           Custom Reminders
         </Text>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className={styles.addButton}
-          onClick={addReminder}
-          disabled={disabled}
-        >
+        <Button type="button" variant="outline" size="sm" onClick={addReminder} disabled={disabled}>
           + Add Reminder
         </Button>
       </Inline>
       {reminders.length === 0 ? (
-        <Text color="secondary" className={styles.emptyMessage}>
-          No custom reminders added. Click &quot;Add Reminder&quot; to create one.
+        <Text color="secondary" align="center">
+          <Box padding="md">
+            No custom reminders added. Click &quot;Add Reminder&quot; to create one.
+          </Box>
         </Text>
       ) : (
-        <Stack gap="sm" className={styles.remindersList}>
+        <Stack gap="sm">
           {reminders.map((reminder, index) => (
             <CustomReminderInputItem
               key={index}

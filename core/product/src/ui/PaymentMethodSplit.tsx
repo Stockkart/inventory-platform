@@ -1,7 +1,16 @@
 import { useCallback, useEffect, useId, useMemo, useRef } from 'react';
 import type { PaymentMethod, PaymentSplit } from '@inventory-platform/contracts';
-import { Alert, Badge, Box, Button, Inline, Input, Stack, Text } from '@inventory-platform/ui-kit';
-import styles from './PaymentMethodSplit.module.css';
+import {
+  Alert,
+  Badge,
+  Box,
+  Button,
+  Grid,
+  Inline,
+  Input,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import {
   PAYMENT_METHODS,
   PAYMENT_METHOD_META,
@@ -47,10 +56,10 @@ export interface PaymentMethodSplitProps {
   hideError?: boolean;
 }
 
-const TENDER_BADGE_CLASS: Record<Tender, string> = {
-  CASH: styles.legBadgeCash,
-  ONLINE: styles.legBadgeOnline,
-  CREDIT: styles.legBadgeCredit,
+const TENDER_BADGE_STYLE: Record<Tender, React.CSSProperties> = {
+  CASH: { background: 'color-mix(in srgb, #10b981 10%, transparent)', color: '#047857' },
+  ONLINE: { background: 'color-mix(in srgb, #3b82f6 10%, transparent)', color: '#1d4ed8' },
+  CREDIT: { background: 'color-mix(in srgb, #d97706 12%, transparent)', color: '#b45309' },
 };
 
 function tenderLabel(tender: Tender, context: PaymentSplitContext): string {
@@ -97,8 +106,6 @@ export function PaymentMethodSplit({
     [method, value.split, safeTotal],
   );
 
-  // When the total changes (e.g. invoice rows are added), re-fit the split
-  // proportionally so the user's pick stays consistent with the new total.
   const lastTotalRef = useRef<number>(safeTotal);
   useEffect(() => {
     if (lastTotalRef.current === safeTotal) return;
@@ -191,37 +198,47 @@ export function PaymentMethodSplit({
   const showError = !validation.ok && !hideError && method != null && safeTotal > 0;
   const showSplitInputs = method != null && !isSingleTender(method);
   const summaryTenders: readonly Tender[] = meta?.tenders ?? [];
+  const creditHighlight = method != null && isCreditMethod(method) && value.split.creditAmount > 0;
 
   return (
-    <Stack gap="sm" className={styles.panel} aria-describedby={`${reactId}-summary`}>
-      <Stack gap="xs" className={styles.head}>
-        <Text variant="heading4" weight="semibold" className={styles.title}>
-          {title ?? 'Payment'}
-          <Text as="span" className={styles.titleRequired} aria-hidden="true">
+    <Stack
+      gap="sm"
+      padding="md"
+      border
+      rounded="lg"
+      bg="elevated"
+      aria-describedby={`${reactId}-summary`}
+    >
+      <Stack gap="xs">
+        <Inline gap="xs" align="center">
+          <Text variant="heading4" weight="semibold">
+            {title ?? 'Payment'}
+          </Text>
+          <Text aria-hidden style={{ color: '#dc2626', fontWeight: 600 }}>
             *
           </Text>
-        </Text>
+        </Inline>
         {intro != null && intro !== '' ? (
-          <Text variant="caption" color="secondary" className={styles.intro}>
+          <Text variant="caption" color="secondary">
             {intro}
           </Text>
         ) : null}
       </Stack>
 
-      <Inline justify="between" align="end" className={styles.totalRow}>
-        <Text variant="caption" color="secondary">
+      <Inline justify="between" align="end">
+        <Text
+          variant="caption"
+          color="secondary"
+          style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}
+        >
           Bill total
         </Text>
-        <Text className={styles.totalValue}>{formatRupees(safeTotal)}</Text>
+        <Text weight="semibold" style={{ fontVariantNumeric: 'tabular-nums' }}>
+          {formatRupees(safeTotal)}
+        </Text>
       </Inline>
 
-      <Inline
-        gap="xs"
-        className={styles.chipGroup}
-        role="radiogroup"
-        aria-label="Payment method"
-        aria-required="true"
-      >
+      <Inline gap="xs" flexWrap role="radiogroup" aria-label="Payment method" aria-required="true">
         {PAYMENT_METHODS.map((m) => {
           const mMeta = PAYMENT_METHOD_META[m];
           const active = m === method;
@@ -233,7 +250,6 @@ export function PaymentMethodSplit({
               aria-checked={active}
               variant={active ? 'solid' : 'outline'}
               size="sm"
-              className={active ? styles.chipActive : styles.chip}
               onClick={() => handleMethodChange(m)}
               disabled={disabled}
             >
@@ -244,20 +260,49 @@ export function PaymentMethodSplit({
       </Inline>
 
       {method == null ? (
-        <Text variant="caption" color="secondary" className={styles.placeholder}>
-          Pick a payment method to continue.
-        </Text>
+        <Box
+          padding="sm"
+          border
+          rounded="md"
+          style={{ borderStyle: 'dashed', background: 'transparent' }}
+        >
+          <Text variant="caption" color="secondary">
+            Pick a payment method to continue.
+          </Text>
+        </Box>
       ) : showSplitInputs ? (
-        <Box className={meta?.tenders.length === 2 ? styles.legsTwo : styles.legs}>
+        <Grid columns={meta?.tenders.length === 2 ? 2 : 1} gap="sm">
           {meta!.tenders.map((tender) => {
             const inputId = `${reactId}-${tender.toLowerCase()}`;
             return (
-              <Stack key={tender} gap="xs" className={styles.legField}>
-                <Badge className={`${styles.legBadge} ${TENDER_BADGE_CLASS[tender]}`}>
-                  {tender === 'CASH' ? 'Cash' : tender === 'ONLINE' ? 'Online' : 'Credit'}
+              <Stack key={tender} gap="xs">
+                <Badge variant="neutral">
+                  <Text
+                    as="span"
+                    style={{
+                      fontSize: '0.7rem',
+                      fontWeight: 600,
+                      letterSpacing: '0.04em',
+                      textTransform: 'uppercase',
+                      ...TENDER_BADGE_STYLE[tender],
+                    }}
+                  >
+                    {tender === 'CASH' ? 'Cash' : tender === 'ONLINE' ? 'Online' : 'Credit'}
+                  </Text>
                 </Badge>
-                <Inline align="center" className={styles.legInputRow}>
-                  <Text className={styles.legCurrency} aria-hidden="true">
+                <Box position="relative" width="full">
+                  <Text
+                    aria-hidden
+                    style={{
+                      position: 'absolute',
+                      left: '0.75rem',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      fontWeight: 500,
+                      color: 'var(--text-secondary)',
+                      pointerEvents: 'none',
+                    }}
+                  >
                     ₹
                   </Text>
                   <Input
@@ -265,7 +310,7 @@ export function PaymentMethodSplit({
                     type="text"
                     inputMode="decimal"
                     autoComplete="off"
-                    className={styles.legInput}
+                    style={{ paddingLeft: '1.55rem', fontVariantNumeric: 'tabular-nums' }}
                     value={
                       tenderAmount(value.split, tender) === 0
                         ? ''
@@ -276,34 +321,47 @@ export function PaymentMethodSplit({
                     disabled={disabled || safeTotal <= 0}
                     aria-label={tenderLabel(tender, context)}
                   />
-                </Inline>
+                </Box>
               </Stack>
             );
           })}
-        </Box>
+        </Grid>
       ) : null}
 
       {method != null ? (
         <Stack
           id={`${reactId}-summary`}
           gap="xs"
-          className={`${styles.summary} ${
-            isCreditMethod(method) && value.split.creditAmount > 0
-              ? styles.summaryCreditHighlight
-              : ''
-          }`}
+          padding="sm"
+          border
+          rounded="md"
+          bg="muted"
           aria-live="polite"
+          style={
+            creditHighlight
+              ? {
+                  borderColor: 'color-mix(in srgb, #d97706 35%, var(--border-color, #e2e8f0))',
+                  background: 'color-mix(in srgb, #f59e0b 6%, var(--card-bg, #fff))',
+                }
+              : undefined
+          }
         >
           {summaryTenders.map((tender) => (
-            <Inline key={tender} justify="between" align="end" className={styles.summaryRow}>
-              <Text variant="caption" color="secondary" className={styles.summaryLabel}>
+            <Inline key={tender} justify="between" align="end">
+              <Text variant="caption" color="secondary">
                 {tender === 'CREDIT'
                   ? context === 'sale'
                     ? 'On credit · owes you'
                     : 'On credit · you owe'
                   : tenderLabel(tender, context)}
               </Text>
-              <Text weight="semibold" className={styles.summaryAmt}>
+              <Text
+                weight="semibold"
+                style={{
+                  fontVariantNumeric: 'tabular-nums',
+                  ...(creditHighlight && tender === 'CREDIT' ? { color: '#b45309' } : undefined),
+                }}
+              >
                 {formatRupees(tenderAmount(value.split, tender))}
               </Text>
             </Inline>
