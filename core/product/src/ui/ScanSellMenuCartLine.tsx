@@ -6,7 +6,8 @@ import type {
 import { lineSellableRef } from '@inventory-platform/product/types';
 import { Badge, Button, IconButton, Inline, Input, Stack, Text } from '@inventory-platform/ui-kit';
 import { CustomerProductHistoryHint } from './CustomerProductHistoryHint';
-import styles from '../pages/scan-sell.module.css';
+import lineStyles from './scan-sell-cart-line.module.css';
+import qtyStyles from './scan-sell-qty.module.css';
 
 function money(n: number): string {
   return `₹${n.toFixed(2)}`;
@@ -35,13 +36,18 @@ export function ScanSellMenuCartLine({
   const lineTotal = line.totalAmount ?? line.priceToRetail * line.quantity;
 
   return (
-    <Inline className={styles.cafeMenuCartLine} justify="between" align="start" width="full">
-      <Stack gap="xs" className={styles.cafeMenuCartInfo}>
-        <Inline className={styles.cafeMenuCartTop} justify="between" align="center" width="full">
-          <Text weight="semibold" className={styles.cafeMenuCartName}>
+    <Inline
+      className={`${lineStyles.line} ${lineStyles.lineMenu}`}
+      justify="between"
+      align="start"
+      width="full"
+    >
+      <Stack gap="xs" className={lineStyles.info}>
+        <Inline className={lineStyles.top} justify="between" align="center" width="full">
+          <Text weight="semibold" truncate className={lineStyles.name}>
             {line.name || 'Menu item'}
           </Text>
-          <Badge variant="info" className={styles.cafeMenuCartBadge}>
+          <Badge variant="info" className={lineStyles.badgeMenu}>
             Menu
           </Badge>
         </Inline>
@@ -52,15 +58,15 @@ export function ScanSellMenuCartLine({
             loading={customerProductHistoryLoading}
           />
         ) : null}
-        <Text variant="caption" color="secondary" className={styles.cafeMenuCartMeta}>
+        <Text variant="caption" color="secondary" className={lineStyles.meta}>
           {money(line.priceToRetail)} each · {money(lineTotal)}
         </Text>
       </Stack>
-      <Stack gap="sm" className={styles.cafeMenuCartActions} align="end">
-        <Inline className={styles.qtyStepper} gap="none" align="center">
+      <Stack gap="sm" className={lineStyles.actions} align="end">
+        <Inline className={qtyStyles.qtyStepper} gap="none" align="center">
           <IconButton
             label="Decrease quantity"
-            className={styles.qtyBtn}
+            className={qtyStyles.qtyBtn}
             onClick={() => onChangeQty(ref, -1)}
             disabled={disabled}
           >
@@ -73,7 +79,7 @@ export function ScanSellMenuCartLine({
           />
           <IconButton
             label="Increase quantity"
-            className={styles.qtyBtn}
+            className={qtyStyles.qtyBtn}
             onClick={() => onChangeQty(ref, 1)}
             disabled={disabled}
           >
@@ -84,7 +90,7 @@ export function ScanSellMenuCartLine({
           type="button"
           variant="ghost"
           size="sm"
-          className={styles.removeBtn}
+          className={qtyStyles.removeBtn}
           onClick={() => onRemove(ref)}
           disabled={disabled}
         >
@@ -126,7 +132,7 @@ function MenuQtyInput({
   return (
     <Input
       type="number"
-      className={styles.qtyInput}
+      className={qtyStyles.qtyInput}
       value={draft}
       min={1}
       disabled={disabled}

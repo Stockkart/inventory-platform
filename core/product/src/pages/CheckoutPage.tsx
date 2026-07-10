@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { cartApi } from '../api/cart.api';
 import type { CartResponse, UpdateCartStatusDto } from '@inventory-platform/product/types';
 import type { PaymentMethod, PaymentSplit } from '@inventory-platform/contracts';
@@ -92,6 +92,8 @@ function SummaryRow({ label, value, total }: { label: string; value: string; tot
 
 export function CheckoutPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { error: notifyError } = useNotify;
   const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
   const fetchCapabilities = useShopCapabilitiesStore((s) => s.fetchCapabilities);
@@ -100,6 +102,11 @@ export function CheckoutPage() {
   );
   const sellPath = useResolvedSellPath(shopCapabilities ?? null);
   const showTokenOnReceipt = shopCapabilities?.features?.tokenOnReceipt === true;
+
+  const purchaseIdFromNav =
+    (location.state as { purchaseId?: string } | null)?.purchaseId ??
+    searchParams.get('purchaseId') ??
+    undefined;
 
   useEffect(() => {
     void fetchCapabilities();
@@ -120,49 +127,34 @@ export function CheckoutPage() {
     setError(null);
 
     try {
-      const cart = await cartApi.get();
+      // Prefer the quotation that Process Payment just marked PENDING.
+      // Legacy GET /cart without purchaseId can return a different CREATED cart
+      // when multiple quotations exist, which bounced users back to Scan & Sell.
+      const cart = await cartApi.get(purchaseIdFromNav);
 
-      // Debug: Log cart data to verify retailer fields
       if (import.meta.env.DEV) {
-        console.log('Cart data:', cart);
-        console.log('Retailer fields:', {
-          customerGstin: cart.customerGstin,
-          customerDlNo: cart.customerDlNo,
-          customerPan: cart.customerPan,
-        });
+        console.log('Cart data:', cart, { purchaseIdFromNav });
       }
 
-      // If status is CREATED, redirect to sell page
-      if (cart.status === 'CREATED') {
-        navigate(sellPath);
-        return;
-      }
-
-      // If status is PENDING, stay on checkout page
-      if (cart.status === 'PENDING') {
+      if (cart.status === 'PENDING' || cart.status === 'COMPLETED') {
         setCheckoutData(cart);
         return;
       }
 
-      // For any other status, redirect to sell page
+      // CREATED (or unexpected) — not ready for checkout
       navigate(sellPath);
     } catch (err) {
-      // 404 or other error - cart API doesn't return COMPLETED carts
-      // If we already have checkout data (likely COMPLETED), stay on checkout page
-      // Otherwise, redirect to scan-sell
-      console.log('Cart API returned 404 (no active cart):', err);
+      console.log('Cart API returned error (no matching cart):', err);
       if (checkoutData && checkoutData.status === 'COMPLETED') {
-        // Already showing completed order, stay on checkout page
         setIsLoading(false);
         return;
       }
-      // No checkout data, redirect to scan-sell
       console.error('Error loading cart:', err);
       navigate(sellPath);
     } finally {
       setIsLoading(false);
     }
-  }, [navigate, checkoutData, sellPath]);
+  }, [navigate, checkoutData, sellPath, purchaseIdFromNav]);
 
   // Load cart data on mount
   useEffect(() => {

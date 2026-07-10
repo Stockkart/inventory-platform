@@ -26,6 +26,7 @@ import {
   Text,
 } from '@inventory-platform/ui-kit';
 import styles from '@inventory-platform/product/pages/scan-sell.module.css';
+import qtyStyles from '@inventory-platform/product/ui/scan-sell-qty.module.css';
 
 export function meta() {
   return [{ title: 'Sell - StockKart' }, { name: 'description', content: 'Sell menu items' }];
@@ -104,7 +105,7 @@ function CartQuantityInput({
   return (
     <Input
       type="number"
-      className={styles.qtyInput}
+      className={qtyStyles.qtyInput}
       value={draft}
       min={1}
       disabled={disabled}
@@ -151,6 +152,7 @@ function MenuSearchDropdownItem({
       <Box className={styles.dropdownItemActions}>
         <Button
           type="button"
+          variant="solid"
           size="sm"
           className={styles.dropdownAddBtn}
           onClick={(e) => {
@@ -217,7 +219,14 @@ export function MenuSellPage() {
       const cart = await cartApi.get().catch(() => null);
       setSearchCatalog(null);
       if (cart && cart.status === 'PENDING') {
-        navigate('/dashboard/checkout');
+        const purchaseId = cart.purchaseId;
+        if (purchaseId) {
+          navigate(`/dashboard/checkout?purchaseId=${encodeURIComponent(purchaseId)}`, {
+            state: { purchaseId },
+          });
+        } else {
+          navigate('/dashboard/checkout');
+        }
         return;
       }
       if (cart && cart.status !== 'COMPLETED') {
@@ -564,7 +573,9 @@ export function MenuSellPage() {
         status: 'PENDING',
         paymentMethod: 'CASH',
       });
-      navigate('/dashboard/checkout');
+      navigate(`/dashboard/checkout?purchaseId=${encodeURIComponent(purchaseId)}`, {
+        state: { purchaseId },
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to process payment';
       setError(message);
@@ -616,9 +627,7 @@ export function MenuSellPage() {
             <Box className={styles.searchRow} ref={searchWrapperRef}>
               <Inline className={styles.searchForm} gap="sm" align="center" width="full">
                 <Inline className={styles.searchInputWrapper} gap="sm" align="center" width="full">
-                  <Text className={styles.searchIcon} aria-hidden>
-                    🔍
-                  </Text>
+                  <Text aria-hidden>🔍</Text>
                   <Input
                     type="text"
                     className={styles.searchInput}
@@ -641,6 +650,7 @@ export function MenuSellPage() {
                   />
                   <Button
                     type="button"
+                    variant="solid"
                     className={styles.searchSubmitBtn}
                     disabled={isSyncing || isSearching}
                     onClick={handleSearchSubmit}
@@ -718,10 +728,10 @@ export function MenuSellPage() {
                           align="center"
                           width="full"
                         >
-                          <Inline className={styles.qtyStepper} gap="none" align="center">
+                          <Inline className={qtyStyles.qtyStepper} gap="none" align="center">
                             <IconButton
                               label="Decrease quantity"
-                              className={styles.qtyBtn}
+                              className={qtyStyles.qtyBtn}
                               onClick={() => void changeQty(ref, -1)}
                               disabled={isSyncing}
                             >
@@ -734,7 +744,7 @@ export function MenuSellPage() {
                             />
                             <IconButton
                               label="Increase quantity"
-                              className={styles.qtyBtn}
+                              className={qtyStyles.qtyBtn}
                               onClick={() => void changeQty(ref, 1)}
                               disabled={isSyncing}
                             >
@@ -745,7 +755,7 @@ export function MenuSellPage() {
                             type="button"
                             variant="ghost"
                             size="sm"
-                            className={styles.removeBtn}
+                            className={qtyStyles.removeBtn}
                             onClick={() => void removeLine(ref)}
                             disabled={isSyncing}
                           >
@@ -771,9 +781,7 @@ export function MenuSellPage() {
               aria-expanded={customerSectionOpen}
             >
               <Inline gap="sm" align="center" width="full">
-                <Text weight="semibold" className={styles.customerToggleLabel}>
-                  Customer
-                </Text>
+                <Text weight="semibold">Customer</Text>
                 {customerName || customerPhone ? (
                   <Text className={styles.customerToggleValue}>
                     {customerName || customerPhone}
@@ -918,9 +926,7 @@ export function MenuSellPage() {
                   </Stack>
                 ) : null}
                 <Stack gap="sm" className={styles.customerLinkSection}>
-                  <Text weight="semibold" className={styles.customerLinkLabel}>
-                    Link to StockKart user
-                  </Text>
+                  <Text weight="semibold">Link to StockKart user</Text>
                   {linkedUser ? (
                     <Inline
                       className={styles.customerLinkStatus}
@@ -931,37 +937,26 @@ export function MenuSellPage() {
                       <Text>
                         Linked: {linkedUser.name} ({linkedUser.email})
                       </Text>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className={styles.customerUnlinkBtn}
-                        onClick={handleUnlinkUser}
-                      >
+                      <Button type="button" variant="ghost" size="sm" onClick={handleUnlinkUser}>
                         Unlink
                       </Button>
                     </Inline>
                   ) : (
                     <Stack gap="sm" className={styles.customerLinkSearch}>
-                      <Text color="secondary" className={styles.customerLinkHint}>
+                      <Text color="secondary">
                         Enter email above and search to link a customer to their StockKart account.
                       </Text>
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        className={styles.customerLinkSearchBtn}
                         onClick={() => void handleSearchUserForLink()}
                         disabled={isSearchingUser || !customerEmail?.trim()}
                       >
                         {isSearchingUser ? '…' : 'Search by email'}
                       </Button>
                       {userSearchMessage ? (
-                        <Text
-                          variant="caption"
-                          color="secondary"
-                          className={styles.customerLinkMessage}
-                        >
+                        <Text variant="caption" color="secondary">
                           {userSearchMessage}
                         </Text>
                       ) : null}

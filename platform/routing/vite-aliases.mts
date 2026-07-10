@@ -132,6 +132,10 @@ export function generateInventoryWorkspaceAliases({
       'product',
       'src/pages/scan-sell.module.css',
     ),
+    '@inventory-platform/product/ui/scan-sell-qty.module.css': core(
+      'product',
+      'src/ui/scan-sell-qty.module.css',
+    ),
     '@inventory-platform/product': core('product', 'src/index.ts'),
     '@inventory-platform/plugin-registry/routes': plugins('registry/src/routes/index.ts'),
     '@inventory-platform/plugin-registry': plugins('registry/src/index.ts'),

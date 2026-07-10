@@ -18,9 +18,11 @@ import {
   Box,
   Button,
   CenteredLoader,
-  Divider,
+  cn,
   FormField,
+  Grid,
   IconButton,
+  Inline,
   Input,
   Label,
   Link as UiLink,
@@ -78,6 +80,14 @@ function isTypingInField(target: EventTarget | null): boolean {
   return Boolean(target.closest('[contenteditable="true"]'));
 }
 
+const navLinkStyle = {
+  borderRadius: 8,
+  fontSize: '0.875rem',
+  lineHeight: 1.25,
+  boxSizing: 'border-box' as const,
+  color: 'var(--text-secondary)',
+};
+
 export function DashboardLayout({
   children,
   verticalPlugin = null,
@@ -112,7 +122,6 @@ export function DashboardLayout({
     return () => window.removeEventListener('focus', onFocus);
   }, [user?.shopId, fetchAccess]);
 
-  //const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(() =>
     typeof window !== 'undefined' && window.innerWidth <= 768 ? false : true,
   );
@@ -190,7 +199,6 @@ export function DashboardLayout({
     });
   }, [navRowsForPalette]);
 
-  // Reminder notifications (ALL logic lives in hook)
   const { notifications, unreadCount, markAsRead } = useNotifications(user?.shopId ?? undefined);
 
   useEffect(() => {
@@ -199,7 +207,6 @@ export function DashboardLayout({
     }
   }, [shop]);
 
-  // Close user menu on outside click
   useEffect(() => {
     const handleOutside = (event: MouseEvent) => {
       if (!userMenuRef.current?.contains(event.target as Node)) {
@@ -406,7 +413,6 @@ export function DashboardLayout({
     if (!chatMessage.trim()) return;
     setChatMessages((prev) => [...prev, { text: chatMessage.trim(), from: 'user' }]);
     setChatMessage('');
-    // Placeholder: simulate support reply (will integrate with backend later)
     setTimeout(() => {
       setChatMessages((prev) => [
         ...prev,
@@ -418,8 +424,13 @@ export function DashboardLayout({
     }, 500);
   };
 
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+
   return (
-    <Box className={`${styles.dashboard} ${sidebarOpen ? '' : styles.dashboardCollapsed}`}>
+    <Box
+      className={cn(styles.shell, !sidebarOpen && styles.shellCollapsed)}
+      style={{ backgroundColor: 'var(--bg-primary)', transition: 'background-color 0.3s ease' }}
+    >
       <CommandPalette
         open={commandPaletteOpen}
         onClose={() => setCommandPaletteOpen(false)}
@@ -443,33 +454,77 @@ export function DashboardLayout({
         pageLabel={currentPageLabel}
       />
       <ToastProvider />
-      {!sidebarOpen && window.innerWidth <= 768 && (
+      {!sidebarOpen && isMobile && (
         <IconButton
           label="Open menu"
           className={styles.mobileMenuFloating}
           onClick={() => setSidebarOpen(true)}
+          style={{
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 32,
+            height: 32,
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-color)',
+            borderRadius: 6,
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            color: 'var(--text-primary)',
+          }}
         >
           <Menu size={18} />
         </IconButton>
       )}
-      {sidebarOpen && (
+      {sidebarOpen && isMobile && (
         <Box
-          className={styles.sidebarBackdrop}
+          className={styles.sidebarBackdropVisible}
           onClick={() => setSidebarOpen(false)}
           aria-hidden="true"
         />
       )}
-      <Box className={styles.dashboardBody}>
-        {/* Sidebar */}
-        <Box className={styles.sidebarColumn}>
+      <Box className={styles.shellBody}>
+        <Box
+          className={styles.sidebarColumn}
+          style={{
+            backgroundColor: 'var(--bg-secondary)',
+            borderRight: '1px solid var(--border-color)',
+            minHeight: '100%',
+            alignSelf: 'stretch',
+          }}
+        >
           <Box
             as="aside"
-            className={`${styles.sidebar} ${
-              sidebarOpen ? styles.sidebarOpen : styles.sidebarClosed
-            }`}
+            className={cn(styles.sidebar, sidebarOpen ? styles.sidebarOpen : styles.sidebarClosed)}
+            display="flex"
+            flexDirection="column"
+            style={{ backgroundColor: 'var(--bg-secondary)' }}
           >
-            <Box className={styles.sidebarHeader}>
-              <Link to="/dashboard" className={styles.logo}>
+            <Inline
+              justify={sidebarOpen ? 'between' : 'center'}
+              align="center"
+              gap="xs"
+              width="full"
+              style={{
+                boxSizing: 'border-box',
+                height: 'var(--header-height, 60px)',
+                minHeight: 'var(--header-height, 60px)',
+                padding: sidebarOpen ? '0 1rem' : '0.5rem',
+                borderBottom: '1px solid var(--border-color)',
+                flexShrink: 0,
+                flexDirection: sidebarOpen ? 'row' : 'column',
+              }}
+            >
+              <Link
+                to="/dashboard"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  flex: sidebarOpen ? 1 : undefined,
+                  minWidth: 0,
+                  textDecoration: 'none',
+                  cursor: 'pointer',
+                  order: sidebarOpen ? undefined : 1,
+                }}
+              >
                 <img
                   src={
                     sidebarOpen
@@ -477,63 +532,140 @@ export function DashboardLayout({
                       : '/assets/logo/stockkart_icon.png'
                   }
                   alt="StockKart"
-                  className={styles.logoImg}
+                  style={{
+                    height: 32,
+                    width: 'auto',
+                    maxWidth: sidebarOpen ? 140 : 36,
+                    objectFit: 'contain',
+                    flexShrink: 0,
+                  }}
                 />
               </Link>
 
               <IconButton
                 label="Toggle sidebar"
-                className={styles.toggleBtn}
                 onClick={() => setSidebarOpen((s) => !s)}
+                style={{
+                  order: sidebarOpen ? undefined : 2,
+                  width: 32,
+                  height: 32,
+                  minWidth: 32,
+                  flexShrink: 0,
+                }}
               >
                 <Menu size={18} />
               </IconButton>
-            </Box>
+            </Inline>
 
-            <Box as="nav" className={styles.nav}>
+            <Box
+              as="nav"
+              style={{
+                flex: 1,
+                padding: '0.5rem 0',
+                overflowY: 'auto',
+                overflowX: 'hidden',
+              }}
+            >
               {sidebarOpen ? (
                 filteredMenuGroups.map((group) => {
                   const isExpanded =
                     expandedGroups.has(group.id) || isPathInGroup(group.id, currentPath);
                   return (
-                    <Box key={group.id} className={styles.navGroup}>
-                      <Box
-                        as="button"
-                        className={styles.navGroupHeader}
+                    <Box key={group.id} style={{ marginBottom: '0.125rem' }}>
+                      <Button
+                        type="button"
+                        variant="ghost"
                         onClick={() => toggleGroup(group.id)}
                         aria-expanded={isExpanded}
+                        fullWidth
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          width: 'calc(100% - 0.5rem)',
+                          padding: '0.45rem 0.75rem',
+                          margin: '0 0.25rem',
+                          color: 'var(--text-secondary)',
+                          fontSize: '0.6875rem',
+                          fontWeight: 600,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.06em',
+                          borderRadius: 6,
+                          justifyContent: 'flex-start',
+                        }}
                       >
-                        <Box as="span" className={styles.navGroupIcon}>
+                        <Box
+                          display="flex"
+                          align="center"
+                          justify="center"
+                          style={{ width: 18, height: 18, flexShrink: 0, opacity: 0.9 }}
+                        >
                           <NavIcon name={group.icon} size="sm" />
                         </Box>
-                        <Box as="span" className={styles.navGroupLabel}>
-                          {group.label}
-                        </Box>
-                        <Box
+                        <Text
                           as="span"
-                          className={`${styles.navGroupChevron} ${
-                            isExpanded ? styles.navGroupChevronOpen : ''
-                          }`}
+                          style={{
+                            flex: 1,
+                            minWidth: 0,
+                            textAlign: 'left',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
+                          {group.label}
+                        </Text>
+                        <Text
+                          as="span"
+                          style={{
+                            fontSize: '0.75rem',
+                            lineHeight: 1,
+                            opacity: 0.55,
+                            flexShrink: 0,
+                            transform: isExpanded ? 'rotate(180deg)' : undefined,
+                            transition: 'transform 0.2s ease',
+                          }}
                         >
                           ▾
-                        </Box>
-                      </Box>
+                        </Text>
+                      </Button>
                       {isExpanded && (
-                        <Box className={styles.navGroupItems}>
+                        <Box
+                          style={{
+                            padding: '0.125rem 0 0.25rem 0.5rem',
+                            margin: '0 0.5rem 0.25rem 1.25rem',
+                            borderLeft: '2px solid var(--border-color)',
+                          }}
+                        >
                           {group.items.map((item) => (
                             <Link
                               key={item.path}
                               to={item.path}
-                              className={`${styles.navItem} ${
-                                currentPath === item.path ? styles.active : ''
-                              }`}
+                              className={cn(
+                                styles.navLink,
+                                currentPath === item.path && styles.navLinkActive,
+                              )}
+                              style={{
+                                ...navLinkStyle,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.625rem',
+                                padding: '0.5rem 0.625rem',
+                                margin: '0.125rem 0',
+                              }}
                             >
-                              <Box as="span" className={styles.navIcon}>
+                              <Box
+                                className={styles.navIcon}
+                                display="flex"
+                                align="center"
+                                justify="center"
+                                style={{ width: 18, height: 18, flexShrink: 0, color: 'inherit' }}
+                              >
                                 <NavIcon name={item.icon} size="sm" />
                               </Box>
-                              <Box as="span" className={styles.navLabel}>
+                              <Text as="span" style={{ whiteSpace: 'nowrap' }}>
                                 {item.label}
-                              </Box>
+                              </Text>
                             </Link>
                           ))}
                         </Box>
@@ -542,30 +674,51 @@ export function DashboardLayout({
                   );
                 })
               ) : (
-                <Box className={styles.navCollapsed}>
+                <Stack gap="xs" padding="sm">
                   {allMenuItems.map((item) => (
                     <Link
                       key={item.path}
                       to={item.path}
-                      className={`${styles.navItem} ${styles.navItemCollapsed} ${
-                        currentPath === item.path ? styles.active : ''
-                      }`}
                       title={item.label}
+                      className={cn(
+                        styles.navLink,
+                        currentPath === item.path && styles.navLinkActive,
+                      )}
+                      style={{
+                        ...navLinkStyle,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '0.6rem',
+                      }}
                     >
-                      <Box as="span" className={styles.navIcon}>
+                      <Box
+                        className={styles.navIcon}
+                        display="flex"
+                        align="center"
+                        justify="center"
+                        style={{ width: 18, height: 18, flexShrink: 0, color: 'inherit' }}
+                      >
                         <NavIcon name={item.icon} size="sm" />
                       </Box>
                     </Link>
                   ))}
-                </Box>
+                </Stack>
               )}
             </Box>
 
-            {/* Support section at bottom */}
-            <Box className={styles.sidebarSupport}>
-              <Box
-                as="button"
-                className={styles.supportToggle}
+            <Box
+              style={{
+                flexShrink: 0,
+                marginTop: 'auto',
+                borderTop: '1px solid var(--border-color)',
+                padding: '0.5rem',
+              }}
+            >
+              <Button
+                type="button"
+                variant="ghost"
+                fullWidth
                 onClick={() => {
                   if (!sidebarOpen) {
                     setSidebarOpen(true);
@@ -576,129 +729,229 @@ export function DashboardLayout({
                 }}
                 aria-expanded={supportOpen}
                 title="Support"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: sidebarOpen ? '0.55rem 0.75rem' : '0.5rem',
+                  justifyContent: sidebarOpen ? 'flex-start' : 'center',
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.875rem',
+                  borderRadius: 8,
+                }}
               >
-                <Headphones size={18} className={styles.supportIcon} />
+                <Headphones size={18} style={{ flexShrink: 0 }} />
                 {sidebarOpen && (
-                  <Box as="span" className={styles.supportLabel}>
-                    Support
-                  </Box>
+                  <>
+                    <Text as="span" style={{ flex: 1, textAlign: 'left' }}>
+                      Support
+                    </Text>
+                    {supportOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </>
                 )}
-                {sidebarOpen && (supportOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />)}
-              </Box>
+              </Button>
 
-              {supportOpen && (
+              {supportOpen && sidebarOpen && (
                 <Box
-                  className={styles.supportPanel}
+                  padding="sm"
+                  rounded="md"
+                  border
+                  style={{
+                    marginTop: '0.5rem',
+                    background: 'var(--bg-primary)',
+                    maxHeight: 320,
+                    overflowY: 'auto',
+                  }}
                   {...{ 'data-keyboard-nav': KEYBOARD_NAV_SKIP }}
                 >
-                  {/* Phone */}
-                  <Box className={styles.supportSection}>
-                    <Phone size={14} className={styles.supportSectionIcon} />
-                    <Text as="span" className={styles.supportSectionTitle}>
-                      Call us
-                    </Text>
-                    <UiLink href="tel:+919828606899" className={styles.supportLink}>
-                      +91-9828606899
-                    </UiLink>
-                    <UiLink href="tel:+918800107393" className={styles.supportLink}>
-                      +91-8800107393
-                    </UiLink>
-                  </Box>
-
-                  {/* Email */}
-                  <Box className={styles.supportSection}>
-                    <Mail size={14} className={styles.supportSectionIcon} />
-                    <Text as="span" className={styles.supportSectionTitle}>
-                      Email
-                    </Text>
-                    <UiLink
-                      href="mailto:stockkartofficial@gmail.com"
-                      className={styles.supportLink}
-                    >
-                      stockkartofficial@gmail.com
-                    </UiLink>
-                  </Box>
-
-                  {/* Online chat placeholder */}
-                  <Box className={styles.supportSection}>
-                    <MessageCircle size={14} className={styles.supportSectionIcon} />
-                    <Text as="span" className={styles.supportSectionTitle}>
-                      Instant online support
-                    </Text>
-                    <Box className={styles.chatPlaceholder}>
-                      <Box className={styles.chatMessages}>
-                        {chatMessages.length === 0 && (
-                          <Text as="span" className={styles.chatEmpty}>
-                            Start a conversation. We&apos;ll integrate with backend soon.
-                          </Text>
-                        )}
-                        {chatMessages.map((m, i) => (
-                          <Box
-                            key={i}
-                            className={
-                              m.from === 'user' ? styles.chatBubbleUser : styles.chatBubbleSupport
-                            }
-                          >
-                            {m.text}
-                          </Box>
-                        ))}
-                      </Box>
-                      <Box className={styles.chatInputRow}>
-                        <Input
-                          type="text"
-                          placeholder="Type your message..."
-                          value={chatMessage}
-                          onChange={(e) => setChatMessage(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
-                          className={styles.chatInput}
-                        />
-                        <Button
-                          type="button"
-                          variant="solid"
-                          onClick={handleChatSend}
-                          className={styles.chatSendBtn}
-                          aria-label="Send message"
+                  <Stack gap="md">
+                    <Stack gap="xs">
+                      <Inline gap="xs" align="center">
+                        <Phone size={14} style={{ opacity: 0.8 }} />
+                        <Text
+                          variant="caption"
+                          weight="semibold"
+                          color="secondary"
+                          style={{
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.04em',
+                            fontSize: '0.7rem',
+                          }}
                         >
-                          Send
-                        </Button>
-                      </Box>
-                    </Box>
-                  </Box>
+                          Call us
+                        </Text>
+                      </Inline>
+                      <UiLink href="tel:+919828606899">+91-9828606899</UiLink>
+                      <UiLink href="tel:+918800107393">+91-8800107393</UiLink>
+                    </Stack>
+
+                    <Stack gap="xs">
+                      <Inline gap="xs" align="center">
+                        <Mail size={14} style={{ opacity: 0.8 }} />
+                        <Text
+                          variant="caption"
+                          weight="semibold"
+                          color="secondary"
+                          style={{
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.04em',
+                            fontSize: '0.7rem',
+                          }}
+                        >
+                          Email
+                        </Text>
+                      </Inline>
+                      <UiLink href="mailto:stockkartofficial@gmail.com">
+                        stockkartofficial@gmail.com
+                      </UiLink>
+                    </Stack>
+
+                    <Stack gap="xs">
+                      <Inline gap="xs" align="center">
+                        <MessageCircle size={14} style={{ opacity: 0.8 }} />
+                        <Text
+                          variant="caption"
+                          weight="semibold"
+                          color="secondary"
+                          style={{
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.04em',
+                            fontSize: '0.7rem',
+                          }}
+                        >
+                          Instant online support
+                        </Text>
+                      </Inline>
+                      <Stack gap="sm" style={{ marginTop: '0.5rem' }}>
+                        <Box
+                          padding="sm"
+                          rounded="sm"
+                          style={{
+                            minHeight: 60,
+                            maxHeight: 120,
+                            overflowY: 'auto',
+                            background: 'var(--bg-secondary)',
+                          }}
+                        >
+                          {chatMessages.length === 0 ? (
+                            <Text variant="caption" color="secondary">
+                              Start a conversation. We&apos;ll integrate with backend soon.
+                            </Text>
+                          ) : (
+                            chatMessages.map((m, i) => (
+                              <Box
+                                key={i}
+                                style={{
+                                  fontSize: '0.8rem',
+                                  padding: '0.35rem 0.5rem',
+                                  borderRadius: 6,
+                                  marginBottom: '0.35rem',
+                                  background:
+                                    m.from === 'user'
+                                      ? 'rgba(59, 130, 246, 0.2)'
+                                      : 'var(--bg-card)',
+                                  color:
+                                    m.from === 'user'
+                                      ? 'var(--text-primary)'
+                                      : 'var(--text-secondary)',
+                                  marginLeft: m.from === 'user' ? '1rem' : undefined,
+                                  marginRight: m.from === 'support' ? '1rem' : undefined,
+                                }}
+                              >
+                                {m.text}
+                              </Box>
+                            ))
+                          )}
+                        </Box>
+                        <Inline gap="sm" width="full">
+                          <Input
+                            type="text"
+                            placeholder="Type your message..."
+                            value={chatMessage}
+                            onChange={(e) => setChatMessage(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
+                            style={{ flex: 1, fontSize: '0.85rem' }}
+                          />
+                          <Button
+                            type="button"
+                            variant="solid"
+                            size="sm"
+                            onClick={handleChatSend}
+                            aria-label="Send message"
+                          >
+                            Send
+                          </Button>
+                        </Inline>
+                      </Stack>
+                    </Stack>
+                  </Stack>
                 </Box>
               )}
             </Box>
           </Box>
         </Box>
 
-        {/* Main */}
-        <Box className={styles.mainContent}>
-          <Box as="header" className={styles.header}>
-            <Box className={styles.headerContent}>
-              <Text as="span" role="heading" aria-level={1} className={styles.pageTitle}>
+        <Box display="flex" flexDirection="column" style={{ minWidth: 0 }}>
+          <Box
+            as="header"
+            className={styles.shellHeader}
+            style={{
+              backgroundColor: 'var(--bg-header)',
+              borderBottom: '1px solid var(--border-color)',
+              boxSizing: 'border-box',
+              height: 'var(--header-height, 60px)',
+              minHeight: 'var(--header-height, 60px)',
+              padding: isMobile ? '0.5rem 0.75rem' : '0 1rem',
+              transition: 'background-color 0.3s ease, border-color 0.3s ease',
+            }}
+          >
+            <Inline justify="between" align="center" gap="md" height="full" width="full">
+              <Text
+                as="span"
+                role="heading"
+                aria-level={1}
+                variant="title"
+                weight="semibold"
+                style={{ margin: 0, letterSpacing: '-0.01em' }}
+              >
                 {currentPageLabel}
               </Text>
 
-              <Box className={styles.headerActions}>
-                <Box className={styles.headerToolbar}>
+              <Inline align="center" gap="none" style={{ flexShrink: 0 }}>
+                <Inline gap="xs" align="center">
                   <IconButton
                     label="Help for this page"
                     size="sm"
-                    className={styles.headerToolBtn}
                     onClick={() => {
                       setShowNotificationMenu(false);
                       setContextualHelpOpen(true);
                     }}
                     title="Help for this page"
+                    style={{
+                      width: '2.25rem',
+                      height: '2.25rem',
+                      borderRadius: 'var(--sk-radius-full, 9999px)',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--bg-primary)',
+                      color: 'var(--text-secondary)',
+                    }}
                   >
                     <Info size={18} aria-hidden />
                   </IconButton>
 
-                  <Box className={styles.notificationWrapper}>
+                  <Box position="relative">
                     <IconButton
                       label="Notifications"
                       size="sm"
-                      className={styles.headerToolBtn}
                       onClick={() => setShowNotificationMenu((o) => !o)}
+                      style={{
+                        width: '2.25rem',
+                        height: '2.25rem',
+                        borderRadius: 'var(--sk-radius-full, 9999px)',
+                        border: '1px solid var(--border-color)',
+                        background: 'var(--bg-primary)',
+                        color: 'var(--text-secondary)',
+                      }}
                     >
                       <Bell size={18} aria-hidden />
                       {unreadCount > 0 && (
@@ -709,23 +962,73 @@ export function DashboardLayout({
                     </IconButton>
 
                     {showNotificationMenu && (
-                      <Box className={styles.notificationMenu}>
+                      <Box
+                        className={styles.popover}
+                        style={{
+                          top: '110%',
+                          right: 0,
+                          marginTop: '0.5rem',
+                          backgroundColor: 'var(--bg-secondary)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '0.75rem',
+                          boxShadow: '0 18px 45px rgba(0, 0, 0, 0.35)',
+                          minWidth: 260,
+                          maxWidth: 320,
+                          maxHeight: 320,
+                          overflowY: 'auto',
+                          padding: '0.5rem 0',
+                        }}
+                      >
                         {notifications.length === 0 ? (
-                          <Box className={styles.notificationEmpty}>No notifications</Box>
+                          <Text
+                            variant="caption"
+                            color="secondary"
+                            align="center"
+                            style={{ display: 'block', padding: '0.75rem 1rem' }}
+                          >
+                            No notifications
+                          </Text>
                         ) : (
                           notifications.map((n) => (
                             <Button
                               key={n.id}
                               type="button"
                               variant="ghost"
-                              className={styles.notificationItem}
+                              fullWidth
                               onClick={() => handleNotificationClick(n.id)}
+                              style={{
+                                textAlign: 'left',
+                                padding: '0.6rem 1rem',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '0.15rem',
+                                alignItems: 'stretch',
+                              }}
                             >
-                              <Box className={styles.notificationTitle}>
-                                <Text as="span">{n.title}</Text>
-                                {!n.read && <Box as="span" className={styles.notificationDot} />}
-                              </Box>
-                              <Box className={styles.notificationMessage}>{n.message}</Box>
+                              <Inline justify="between" align="center" width="full">
+                                <Text variant="caption" weight="semibold">
+                                  {n.title}
+                                </Text>
+                                {!n.read && (
+                                  <Box
+                                    style={{
+                                      width: 8,
+                                      height: 8,
+                                      borderRadius: 999,
+                                      backgroundColor: '#22c55e',
+                                      flexShrink: 0,
+                                      marginLeft: '0.5rem',
+                                    }}
+                                  />
+                                )}
+                              </Inline>
+                              <Text
+                                variant="caption"
+                                color="secondary"
+                                style={{ whiteSpace: 'pre-line' }}
+                              >
+                                {n.message}
+                              </Text>
                             </Button>
                           ))
                         )}
@@ -736,48 +1039,112 @@ export function DashboardLayout({
                   <IconButton
                     label="Keyboard shortcuts"
                     size="sm"
-                    className={styles.headerToolBtn}
                     onClick={() => setShortcutsHelpOpen(true)}
                     title={`Keyboard shortcuts (${DASHBOARD_HOTKEY.shortcutsHelp})`}
+                    style={{
+                      width: '2.25rem',
+                      height: '2.25rem',
+                      borderRadius: 'var(--sk-radius-full, 9999px)',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--bg-primary)',
+                      color: 'var(--text-secondary)',
+                    }}
                   >
                     <Keyboard size={18} aria-hidden />
                   </IconButton>
-                </Box>
+                </Inline>
 
-                <Divider orientation="vertical" className={styles.headerDivider} aria-hidden />
+                <Box
+                  aria-hidden
+                  style={{
+                    width: 1,
+                    height: '1.625rem',
+                    margin: '0 0.75rem',
+                    background: 'var(--border-color)',
+                    flexShrink: 0,
+                  }}
+                />
 
-                <Box className={styles.headerAccount}>
-                  <ThemeToggle size="sm" variant="outline" className={styles.headerThemeBtn} />
+                <Inline gap="sm" align="center" style={{ minWidth: 0 }}>
+                  <ThemeToggle
+                    size="sm"
+                    variant="outline"
+                    style={{
+                      height: '2.25rem',
+                      minWidth: '2.25rem',
+                      padding: '0 0.75rem',
+                      borderRadius: 'var(--sk-radius-full, 9999px)',
+                      fontSize: '0.8125rem',
+                      whiteSpace: 'nowrap',
+                    }}
+                  />
 
-                  <Box ref={userMenuRef} className={styles.userMenuAnchor}>
+                  <Box ref={userMenuRef} position="relative" style={{ minWidth: 0 }}>
                     <Button
                       type="button"
                       variant="ghost"
-                      className={styles.userBtn}
                       onClick={() => setUserMenuOpen((o) => !o)}
                       disabled={isLoading}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        height: '2.25rem',
+                        background: 'var(--bg-primary)',
+                        border: '1px solid var(--border-color)',
+                        color: 'var(--text-primary)',
+                        padding: '0 0.75rem 0 0.25rem',
+                        borderRadius: 'var(--sk-radius-full, 9999px)',
+                        fontSize: '0.8125rem',
+                        maxWidth: '12rem',
+                        minWidth: 0,
+                      }}
                     >
                       <Avatar name={user?.name || user?.email || 'User'} size="sm" />
                       <Text
                         as="span"
                         variant="caption"
                         weight="medium"
-                        className={styles.userBtnLabel}
+                        truncate
+                        style={{
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
                       >
                         {user?.name || user?.email || 'User'}
                       </Text>
                     </Button>
 
                     {userMenuOpen && (
-                      <Box className={styles.userMenu}>
-                        <Box className={styles.userMenuHeader}>
-                          <Box className={styles.userIdentity}>
+                      <Box
+                        className={styles.popover}
+                        style={{
+                          right: 0,
+                          top: 'calc(100% + 8px)',
+                          backgroundColor: 'var(--bg-secondary)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: 12,
+                          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.4)',
+                          minWidth: 280,
+                          maxWidth: 320,
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <Box padding="md" style={{ borderBottom: '1px solid var(--border-color)' }}>
+                          <Inline gap="md" align="center">
                             <Avatar name={user?.name || user?.email || 'User'} size="md" />
-                            <Box className={styles.userMeta}>
-                              <Box className={styles.userMenuName}>{user?.name || 'User'}</Box>
-                              <Box className={styles.userMenuEmail}>{user?.email}</Box>
-                            </Box>
-                          </Box>
+                            <Stack gap="none">
+                              <Text weight="semibold">{user?.name || 'User'}</Text>
+                              <Text
+                                variant="caption"
+                                color="secondary"
+                                style={{ wordBreak: 'break-all' }}
+                              >
+                                {user?.email}
+                              </Text>
+                            </Stack>
+                          </Inline>
                         </Box>
 
                         <UserMenuShopSection onClose={() => setUserMenuOpen(false)} />
@@ -785,37 +1152,57 @@ export function DashboardLayout({
                         <Button
                           type="button"
                           variant="ghost"
-                          className={styles.profileMenuBtn}
+                          fullWidth
+                          leftIcon={<User size={16} aria-hidden />}
                           onClick={() => {
                             setUserMenuOpen(false);
                             navigate('/dashboard/profile');
                           }}
+                          style={{
+                            justifyContent: 'flex-start',
+                            padding: '0.75rem 1rem',
+                            fontSize: '0.85rem',
+                            borderTop: '1px solid var(--border-color)',
+                            borderRadius: 0,
+                          }}
                         >
-                          <User size={16} aria-hidden />
                           View profile
                         </Button>
 
                         <Button
                           type="button"
                           variant="ghost"
+                          fullWidth
+                          leftIcon={<LogOut size={16} aria-hidden />}
                           onClick={handleLogout}
-                          className={styles.logoutBtn}
+                          style={{
+                            justifyContent: 'flex-start',
+                            padding: '0.75rem 1rem',
+                            fontSize: '0.85rem',
+                            color: '#ef4444',
+                            borderRadius: 0,
+                          }}
                         >
-                          <LogOut size={16} aria-hidden />
                           Logout
                         </Button>
                       </Box>
                     )}
                   </Box>
-                </Box>
-              </Box>
-            </Box>
+                </Inline>
+              </Inline>
+            </Inline>
           </Box>
 
           <Box
             as="main"
             ref={mainContentRef}
-            className={styles.content}
+            padding="md"
+            style={{
+              flex: 1,
+              minWidth: 0,
+              backgroundColor: 'var(--sk-color-bg-surface, var(--bg-tertiary))',
+              transition: 'background-color 0.3s ease',
+            }}
             onKeyDownCapture={(e) => {
               const mainEl = mainContentRef.current;
               if (!mainEl) return;
@@ -832,33 +1219,27 @@ export function DashboardLayout({
         </Box>
       </Box>
 
-      <Modal open={editModalOpen} onClose={closeEditModal} className={styles.modal}>
+      <Modal open={editModalOpen} onClose={closeEditModal}>
         <Modal.Header title="Edit tagline & location" onClose={closeEditModal} />
         <Modal.Body>
           {editLoading ? (
-            <CenteredLoader className={styles.modalLoading} />
+            <CenteredLoader />
           ) : (
             <Stack gap="md">
-              {editError ? (
-                <Alert variant="danger" className={styles.editError}>
-                  {editError}
-                </Alert>
-              ) : null}
-              <Stack className={styles.modalForm} gap="md">
+              {editError ? <Alert variant="danger">{editError}</Alert> : null}
+              <Stack gap="md">
                 <FormField label="Tagline (optional)" id="edit-tagline">
                   <Input
                     id="edit-tagline"
                     type="text"
-                    className={styles.modalInput}
                     value={editTagline}
                     onChange={(e) => setEditTagline(e.target.value)}
                     placeholder="e.g. Your Trusted Pharmacy"
                   />
                 </FormField>
-                <Label className={styles.modalLabel}>Location</Label>
+                <Label>Location</Label>
                 <Input
                   type="text"
-                  className={styles.modalInput}
                   placeholder="Primary address *"
                   value={editLocation.primaryAddress}
                   onChange={(e) =>
@@ -870,7 +1251,6 @@ export function DashboardLayout({
                 />
                 <Input
                   type="text"
-                  className={styles.modalInput}
                   placeholder="Secondary address"
                   value={editLocation.secondaryAddress ?? ''}
                   onChange={(e) =>
@@ -880,10 +1260,9 @@ export function DashboardLayout({
                     }))
                   }
                 />
-                <Box className={styles.modalRow}>
+                <Grid columns={2} gap="md">
                   <Input
                     type="text"
-                    className={styles.modalInput}
                     placeholder="City *"
                     value={editLocation.city}
                     onChange={(e) =>
@@ -895,7 +1274,6 @@ export function DashboardLayout({
                   />
                   <Input
                     type="text"
-                    className={styles.modalInput}
                     placeholder="State *"
                     value={editLocation.state}
                     onChange={(e) =>
@@ -905,11 +1283,10 @@ export function DashboardLayout({
                       }))
                     }
                   />
-                </Box>
-                <Box className={styles.modalRow}>
+                </Grid>
+                <Grid columns={2} gap="md">
                   <Input
                     type="text"
-                    className={styles.modalInput}
                     placeholder="PIN *"
                     value={editLocation.pin}
                     onChange={(e) =>
@@ -921,7 +1298,6 @@ export function DashboardLayout({
                   />
                   <Input
                     type="text"
-                    className={styles.modalInput}
                     placeholder="Country *"
                     value={editLocation.country}
                     onChange={(e) =>
@@ -931,25 +1307,19 @@ export function DashboardLayout({
                       }))
                     }
                   />
-                </Box>
+                </Grid>
               </Stack>
             </Stack>
           )}
         </Modal.Body>
         {!editLoading && (
           <Modal.Footer>
-            <Button
-              type="button"
-              variant="outline"
-              className={styles.modalCancelBtn}
-              onClick={closeEditModal}
-            >
+            <Button type="button" variant="outline" onClick={closeEditModal}>
               Cancel
             </Button>
             <Button
               type="button"
               variant="solid"
-              className={styles.modalSaveBtn}
               onClick={handleSaveEdit}
               disabled={editSaving}
               loading={editSaving}

@@ -60,6 +60,7 @@ import {
   menuItemIdFromSellableRef,
 } from '@inventory-platform/product/types';
 import styles from './scan-sell.module.css';
+import qtyStyles from '../ui/scan-sell-qty.module.css';
 import { CafeSellCatalogPanel } from '../ui/CafeSellCatalogPanel';
 import { ScanSellMenuCartLine } from '../ui/ScanSellMenuCartLine';
 import { ScanSellCafeStockLine } from '../ui/ScanSellCafeStockLine';
@@ -224,7 +225,7 @@ function CartQuantityInput({
   return (
     <Input
       type="number"
-      className={styles.qtyInput}
+      className={qtyStyles.qtyInput}
       value={draft}
       min={1}
       disabled={disabled}
@@ -567,9 +568,7 @@ function ProductSearchBlock({
     <Box className={styles.searchRow}>
       <Inline className={styles.searchForm} gap="sm" align="center" width="full">
         <Inline className={styles.searchInputWrapper} gap="sm" align="center" width="full">
-          <Text className={styles.searchIcon} aria-hidden>
-            🔍
-          </Text>
+          <Text aria-hidden>🔍</Text>
           <Input
             type="text"
             className={styles.searchInput}
@@ -590,6 +589,7 @@ function ProductSearchBlock({
           />
           <Button
             type="button"
+            variant="solid"
             className={styles.searchSubmitBtn}
             disabled={isSearching}
             onClick={onSearch}
@@ -685,9 +685,7 @@ function CustomerSectionBlock({
         aria-expanded={customerSectionOpen}
       >
         <Inline gap="sm" align="center" width="full">
-          <Text weight="semibold" className={styles.customerToggleLabel}>
-            Customer
-          </Text>
+          <Text weight="semibold">Customer</Text>
           {customerName || customerPhone ? (
             <Text className={styles.customerToggleValue}>{customerName || customerPhone}</Text>
           ) : (
@@ -1423,7 +1421,9 @@ export function ScanSellPage() {
       const cart = await cartApi.get(purchaseId);
       if (cart.status === 'PENDING') {
         scanSellCustomerPrefillRef.current = null;
-        navigate('/dashboard/checkout');
+        navigate(`/dashboard/checkout?purchaseId=${encodeURIComponent(purchaseId)}`, {
+          state: { purchaseId },
+        });
         return;
       }
       if (cart.status !== 'CREATED') {
@@ -2648,8 +2648,10 @@ export function ScanSellPage() {
 
       await cartApi.updateStatus(statusPayload);
 
-      // Navigate to checkout page (it will load data via GET cart API)
-      navigate('/dashboard/checkout');
+      // Pass purchaseId so checkout loads THIS quotation (not legacy active cart)
+      navigate(`/dashboard/checkout?purchaseId=${encodeURIComponent(finalPurchaseId)}`, {
+        state: { purchaseId: finalPurchaseId },
+      });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to process payment';
       setError(errorMessage);
@@ -2756,9 +2758,7 @@ export function ScanSellPage() {
       <Inline className={styles.cafeCheckoutBarInner} justify="between" align="center" width="full">
         <Stack gap="xs" className={styles.cafeCheckoutTotals}>
           {isLoadingCart ? (
-            <Text color="secondary" className={styles.cafeCheckoutLoading}>
-              Loading…
-            </Text>
+            <Text color="secondary">Loading…</Text>
           ) : (
             <>
               <SummaryRow label="Subtotal" value={`₹${calculateSubtotal().toFixed(2)}`} />
@@ -2786,6 +2786,7 @@ export function ScanSellPage() {
           </Button>
           <Button
             type="button"
+            variant="solid"
             className={styles.checkoutBtn}
             onClick={() => void handleProcessPayment()}
             disabled={
@@ -2895,9 +2896,7 @@ export function ScanSellPage() {
                           align="center"
                           width="full"
                         >
-                          <Text variant="heading3" className={styles.cafeOrderTitle}>
-                            Current order
-                          </Text>
+                          <Text variant="heading3">Current order</Text>
                           <Badge variant="neutral" className={styles.cafeOrderCount}>
                             {cafeOrderItemCount} item
                             {cafeOrderItemCount === 1 ? '' : 's'}
@@ -2967,7 +2966,7 @@ export function ScanSellPage() {
 
                   {cartItems.length > 0 ? (
                     <Inline className={styles.viewToggleWrap} gap="sm" align="center">
-                      <Text className={styles.viewToggleLabel}>View:</Text>
+                      <Text color="secondary">View:</Text>
                       <Inline className={styles.viewToggleButtons} gap="none">
                         <Button
                           type="button"
@@ -3533,13 +3532,13 @@ export function ScanSellPage() {
                                         align="center"
                                       >
                                         <Inline
-                                          className={styles.qtyStepper}
+                                          className={qtyStyles.qtyStepper}
                                           gap="none"
                                           align="center"
                                         >
                                           <IconButton
                                             label="Decrease quantity"
-                                            className={styles.qtyBtn}
+                                            className={qtyStyles.qtyBtn}
                                             onClick={() =>
                                               handleUpdateQuantity(
                                                 cartItem.inventoryItem.id,
@@ -3567,7 +3566,7 @@ export function ScanSellPage() {
                                           />
                                           <IconButton
                                             label="Increase quantity"
-                                            className={styles.qtyBtn}
+                                            className={qtyStyles.qtyBtn}
                                             onClick={() =>
                                               handleUpdateQuantity(
                                                 cartItem.inventoryItem.id,
@@ -3584,7 +3583,7 @@ export function ScanSellPage() {
                                           type="button"
                                           variant="ghost"
                                           size="sm"
-                                          className={styles.removeBtn}
+                                          className={qtyStyles.removeBtn}
                                           onClick={() =>
                                             handleRemoveItem(cartItem.inventoryItem.id)
                                           }
@@ -3722,6 +3721,7 @@ export function ScanSellPage() {
                   </Button>
                   <Button
                     type="button"
+                    variant="solid"
                     className={styles.checkoutBtn}
                     onClick={handleProcessPayment}
                     disabled={
@@ -3777,14 +3777,8 @@ export function ScanSellPage() {
                       📦
                     </Text>
                     <Stack gap="xs">
-                      <Text variant="heading3" className={styles.detailModalTitle}>
-                        {inv.name || 'Product'}
-                      </Text>
-                      {inv.companyName ? (
-                        <Text color="secondary" className={styles.detailModalSubtitle}>
-                          {inv.companyName}
-                        </Text>
-                      ) : null}
+                      <Text variant="heading3">{inv.name || 'Product'}</Text>
+                      {inv.companyName ? <Text color="secondary">{inv.companyName}</Text> : null}
                     </Stack>
                   </Inline>
                   <IconButton
@@ -4007,6 +4001,7 @@ function SearchDropdownItem({
       <Box className={styles.dropdownItemActions}>
         <Button
           type="button"
+          variant="solid"
           size="sm"
           className={styles.dropdownAddBtn}
           onClick={handleAdd}
