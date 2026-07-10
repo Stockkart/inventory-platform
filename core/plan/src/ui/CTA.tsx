@@ -6,17 +6,18 @@ import styles from './CTA.module.css';
 export function CTA() {
   const navigate = useNavigate();
   return (
-    <Box as="section" className={styles.cta}>
-      <Stack gap="md" className={styles.container}>
-        <Text as="h2" variant="heading2" className={styles.title}>
+    <Box as="section" className={styles.cta} padding="xl" width="full">
+      <Stack gap="md" align="center" mx="auto" style={{ maxWidth: 800 }}>
+        <Text as="h2" variant="heading2" color="inverse" align="center">
           Ready to Transform Your Inventory Management?
         </Text>
-        <Text className={styles.subtitle}>
+        <Text color="inverse" align="center" style={{ opacity: 0.95 }}>
           Join thousands of businesses that trust StockKart to streamline their operations.
         </Text>
         <Button
           variant="solid"
-          className={styles.button}
+          size="lg"
+          className={styles.ctaButton}
           onClick={() => navigate('/plans')}
           rightIcon={<ChevronRight size={20} />}
         >

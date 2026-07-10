@@ -1,0 +1,196 @@
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.formGroupBare {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.factorInputWrap {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  overflow: visible;
+}
+
+.factorPrefix {
+  padding: 0.75rem 0.15rem 0.75rem 1rem;
+  font-size: 1rem;
+  color: var(--text-secondary);
+  user-select: none;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.factorLeadGroup {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.factorQtyInput {
+  width: 2.75rem;
+  flex-shrink: 0;
+  padding: 0.75rem 0.35rem 0.75rem 0.15rem;
+  border: none;
+  font-size: 1rem;
+  color: var(--text-primary);
+  background: transparent;
+  text-align: left;
+}
+
+.factorQtyInput:focus {
+  outline: none;
+}
+
+.factorInputWrapCompact {
+  font-size: 0.875rem;
+}
+
+.factorInputWrapCompact .factorPrefix,
+.factorInputWrapCompact .factorTimes {
+  font-size: 0.875rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.factorInputWrapCompact .factorInput,
+.factorInputWrapCompact .factorQtyInput,
+.factorInputWrapCompact .factorUnitReadonly {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.factorInputWrapCompact .factorPrefix {
+  padding-left: 0.65rem;
+  padding-right: 0.1rem;
+}
+
+.factorInputWrapCompact .factorQtyInput {
+  width: 2.25rem;
+  padding-left: 0.1rem;
+  padding-right: 0.25rem;
+}
+
+.factorInput {
+  flex: 1;
+  min-width: 0;
+  padding: 0.75rem 1rem;
+  border: none;
+  font-size: 1rem;
+  color: var(--text-primary);
+  background: transparent;
+}
+
+.factorInput::placeholder {
+  color: var(--text-tertiary);
+}
+
+.factorInput:focus {
+  outline: none;
+}
+
+.factorInputWrap:focus-within {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.factorUnitWrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
+}
+
+.factorUnitToggle {
+  flex-shrink: 0;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  padding: 0 0.65rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.factorUnitToggle:hover:not(:disabled) {
+  color: var(--text-primary);
+  background: var(--hover-bg);
+}
+
+.factorUnitToggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.unitDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 1100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.unitDropdownItem {
+  padding: 0.6rem 0.85rem;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.unitDropdownItem:last-child {
+  border-bottom: none;
+}
+
+.unitDropdownItem:hover,
+.unitDropdownItemActive {
+  background: var(--hover-bg);
+}
+
+.unitDropdownEmpty {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.85rem;
+  color: var(--text-tertiary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  z-index: 1100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.sharedSection .formGroup {
+  margin-bottom: 0;
+}
+
+.accordionContent .formGroup {
+  margin-bottom: 0;
+}
+
+.vendorPaymentPanel .formGroup {
+  margin-bottom: 0;
+}

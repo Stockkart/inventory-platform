@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { PlanResponse } from '@inventory-platform/plan/types';
-import { Badge, Box, Button, IconButton, Stack, Text } from '@inventory-platform/ui-kit';
+import { Badge, Box, Button, IconButton, Inline, Stack, Text } from '@inventory-platform/ui-kit';
 import { buildPlanFeatures } from './PlanGrid';
 import styles from './PlanCarousel.module.css';
 
@@ -119,8 +119,15 @@ export function PlanCarousel({
   if (!sortedPlans.length) return null;
 
   return (
-    <Box className={styles.carouselWrapper}>
-      <Box className={styles.carouselContainer}>
+    <Box className={styles.carouselWrapper} padding="sm">
+      <Inline
+        className={styles.carouselContainer}
+        align="center"
+        justify="center"
+        gap="sm"
+        width="full"
+        position="relative"
+      >
         <IconButton
           type="button"
           label="Previous plan"
@@ -136,8 +143,9 @@ export function PlanCarousel({
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
         >
-          <Box
+          <Inline
             className={styles.track}
+            align="stretch"
             style={{
               transform: `translateX(-${(activeIndex - Math.floor(visible / 2)) * step}px)`,
             }}
@@ -166,6 +174,8 @@ export function PlanCarousel({
                   ${isLeft ? styles.slideLeft : ''}
                   ${isRight ? styles.slideRight : ''}
                   `}
+                  display="flex"
+                  justify="center"
                 >
                   <Box
                     as="article"
@@ -173,55 +183,61 @@ export function PlanCarousel({
                     ${isCenter ? styles.cardCenter : ''}
                     ${highlight ? styles.cardHighlight : ''}
                     `}
+                    bg="elevated"
+                    border
+                    rounded="lg"
+                    width="full"
+                    display="flex"
+                    flexDirection="column"
                   >
                     {highlight && isCenter ? (
                       <Badge className={styles.badge}>Most Popular</Badge>
                     ) : null}
 
-                    <Stack gap="sm" className={styles.cardInner}>
+                    <Stack gap="sm" padding="md" className={styles.cardInner}>
                       {showTrialBadge && !EXTRA_PLANS.includes(plan.planName) && (
                         <Badge className={styles.trialBadge}>Free 30-day trial</Badge>
                       )}
 
-                      <Text as="h3" variant="heading3" className={styles.planName}>
+                      <Text as="h3" variant="heading3" weight="semibold">
                         {plan.planName}
                       </Text>
 
                       {!EXTRA_PLANS.includes(plan.planName) && plan.bestFor ? (
-                        <Text className={styles.planDescription}>{plan.bestFor}</Text>
+                        <Text color="secondary">{plan.bestFor}</Text>
                       ) : null}
 
-                      <Box className={styles.priceRow}>
-                        <Text as="span" className={styles.price}>
+                      <Inline align="end" gap="xs">
+                        <Text variant="heading1" weight="bold">
                           ₹{(plan.arcPrice ?? plan.price)?.toLocaleString('en-IN') ?? 0}
                         </Text>
-
-                        <Text as="span" className={styles.priceSuffix}>
-                          {EXTRA_PLANS.includes(plan.planName) ? '/year' : '/year'}
-                        </Text>
-                      </Box>
+                        <Text color="secondary">/year</Text>
+                      </Inline>
 
                       {!EXTRA_PLANS.includes(plan.planName) && plan.price && plan.price > 0 && (
-                        <Text className={styles.oneTimePrice}>
+                        <Text variant="caption" color="secondary">
                           One-time ₹{plan.price.toLocaleString('en-IN')}
                         </Text>
                       )}
 
-                      <Box as="ul" className={styles.featuresList}>
+                      <Stack as="ul" gap="xs" className={styles.featuresList}>
                         {features.map((f) => (
-                          <Box as="li" key={f} className={styles.featureItem}>
+                          <Inline as="li" key={f} gap="xs" align="start">
                             <Text as="span" className={styles.checkIcon}>
                               ✓
                             </Text>
-                            <Text as="span">{f}</Text>
-                          </Box>
+                            <Text as="span" variant="caption" color="secondary">
+                              {f}
+                            </Text>
+                          </Inline>
                         ))}
-                      </Box>
+                      </Stack>
 
                       {onSelectPlan && isCenter ? (
                         <Button
                           type="button"
                           variant="solid"
+                          fullWidth
                           className={styles.ctaButton}
                           onClick={() => onSelectPlan(plan)}
                         >
@@ -233,15 +249,15 @@ export function PlanCarousel({
                 </Box>
               );
             })}
-          </Box>
+          </Inline>
         </Box>
 
         <IconButton type="button" label="Next plan" className={styles.navButton} onClick={goNext}>
           ›
         </IconButton>
-      </Box>
+      </Inline>
 
-      <Box className={styles.dots}>
+      <Inline className={styles.dots} justify="center" gap="sm" margin="md">
         {Array.from({ length: total - 2 }, (_, i) => i + 1).map((_, i) => (
           <IconButton
             key={i}
@@ -256,7 +272,7 @@ export function PlanCarousel({
             {'\u00A0'}
           </IconButton>
         ))}
-      </Box>
+      </Inline>
     </Box>
   );
 }

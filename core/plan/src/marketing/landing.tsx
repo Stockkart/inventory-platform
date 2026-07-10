@@ -1,7 +1,6 @@
 import { FormKeyboardNavScope } from '@inventory-platform/routing';
 import { Box } from '@inventory-platform/ui-kit';
 import { Header, Hero, Stats, Features, Pricing, CTA, Footer } from '../ui';
-import styles from './landing.module.css';
 
 export function meta() {
   return [
@@ -16,9 +15,16 @@ export function meta() {
 
 export default function LandingPage() {
   return (
-    <Box className={styles.page}>
+    <Box
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        paddingTop: 73,
+      }}
+    >
       <Header />
-      <Box as="main">
+      <Box as="main" style={{ flex: 1 }}>
         <FormKeyboardNavScope>
           <Hero />
           <Stats />

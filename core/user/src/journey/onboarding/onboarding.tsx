@@ -544,8 +544,15 @@ export default function OnboardingPage() {
   };
 
   return (
-    <Box className={styles.onboardingLayout}>
-      <Stack className={styles.sidebar} gap="md" bg="muted" padding="lg" border>
+    <Box display="flex" className={styles.onboardingLayout} style={{ minHeight: '100vh' }}>
+      <Stack
+        className={styles.sidebar}
+        gap="md"
+        bg="muted"
+        padding="lg"
+        border
+        style={{ width: 280, flexShrink: 0 }}
+      >
         <Stack gap="sm" align="center">
           <Avatar name={userDisplayName} />
           <Text weight="medium">{userDisplayName}</Text>

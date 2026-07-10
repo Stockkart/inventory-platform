@@ -1,7 +1,21 @@
 import { Link, useNavigate } from 'react-router';
-import { Box, Button, Inline, Link as UiLink, ThemeToggle } from '@inventory-platform/ui-kit';
+import {
+  Box,
+  Button,
+  Inline,
+  Link as UiLink,
+  ThemeToggle,
+  type BoxProps,
+} from '@inventory-platform/ui-kit';
 import { useAuthStore } from '@inventory-platform/session';
 import styles from './JourneyHeader.module.css';
+
+const logoImgProps = {
+  as: 'img',
+  src: '/assets/logo/STOCKKART-3x.png',
+  alt: 'StockKart',
+  style: { height: 44, width: 'auto', maxWidth: 180, objectFit: 'contain' as const },
+} as unknown as BoxProps;
 
 export function JourneyHeader() {
   const navigate = useNavigate();
@@ -11,7 +25,7 @@ export function JourneyHeader() {
     <Box as="header" className={styles.header} bg="elevated" padding="sm" width="full">
       <Inline maxWidth="xl" mx="auto" justify="between" width="full" padding="sm" gap="md">
         <Link to="/">
-          <img src="/assets/logo/STOCKKART-3x.png" alt="StockKart" className={styles.logoImg} />
+          <Box {...logoImgProps} />
         </Link>
 
         <Box as="nav" display="flex" gap="lg" align="center" justify="center">

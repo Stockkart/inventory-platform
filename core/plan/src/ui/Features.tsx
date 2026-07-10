@@ -1,5 +1,5 @@
 import type { Feature } from '@inventory-platform/shell/types';
-import { Box, Grid, Stack, Text } from '@inventory-platform/ui-kit';
+import { Box, Stack, Text } from '@inventory-platform/ui-kit';
 import styles from './Features.module.css';
 
 export function Features() {
@@ -67,51 +67,36 @@ export function Features() {
     },
   ];
 
+  const renderFeature = (feature: Feature, index: number) => (
+    <Box key={index} className={styles.featureCard}>
+      <Stack gap="md">
+        <Text as="span" className={styles.icon}>
+          {feature.icon}
+        </Text>
+        <Text as="h3" variant="heading3" weight="semibold">
+          {feature.title}
+        </Text>
+        <Text color="secondary">{feature.description}</Text>
+      </Stack>
+    </Box>
+  );
+
   return (
-    <Box as="section" id="features" className={styles.features}>
-      <Box className={styles.container}>
-        <Stack gap="sm" className={styles.header}>
-          <Text as="h2" variant="heading2" className={styles.title}>
+    <Box as="section" id="features" padding="xl" bg="canvas" width="full">
+      <Stack gap="xl" maxWidth="xl" mx="auto">
+        <Stack gap="sm" align="center">
+          <Text as="h2" variant="heading2" align="center">
             Powerful Features
           </Text>
-          <Text className={styles.subtitle}>
+          <Text color="secondary" align="center" style={{ maxWidth: 600, lineHeight: 1.6 }}>
             Everything you need to manage your inventory efficiently and scale your business
             operations.
           </Text>
         </Stack>
 
-        <Grid className={styles.mainFeaturesGrid}>
-          {mainFeatures.map((feature, index) => (
-            <Box key={index} className={styles.featureCard}>
-              <Box className={styles.iconContainer}>
-                <Text as="span" className={styles.icon}>
-                  {feature.icon}
-                </Text>
-              </Box>
-              <Text as="h3" variant="heading3" className={styles.featureTitle}>
-                {feature.title}
-              </Text>
-              <Text className={styles.featureDescription}>{feature.description}</Text>
-            </Box>
-          ))}
-        </Grid>
-
-        <Grid className={styles.additionalFeaturesGrid}>
-          {additionalFeatures.map((feature, index) => (
-            <Box key={index} className={styles.featureCard}>
-              <Box className={styles.iconContainer}>
-                <Text as="span" className={styles.icon}>
-                  {feature.icon}
-                </Text>
-              </Box>
-              <Text as="h3" variant="heading3" className={styles.featureTitle}>
-                {feature.title}
-              </Text>
-              <Text className={styles.featureDescription}>{feature.description}</Text>
-            </Box>
-          ))}
-        </Grid>
-      </Box>
+        <Box className={styles.featureGrid}>{mainFeatures.map(renderFeature)}</Box>
+        <Box className={styles.featureGrid}>{additionalFeatures.map(renderFeature)}</Box>
+      </Stack>
     </Box>
   );
 }

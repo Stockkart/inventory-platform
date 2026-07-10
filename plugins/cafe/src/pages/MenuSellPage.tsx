@@ -27,6 +27,7 @@ import {
 } from '@inventory-platform/ui-kit';
 import styles from '@inventory-platform/product/pages/scan-sell.module.css';
 import qtyStyles from '@inventory-platform/product/ui/scan-sell-qty.module.css';
+import customerStyles from '@inventory-platform/product/ui/scan-sell-customer.module.css';
 
 export function meta() {
   return [{ title: 'Sell - StockKart' }, { name: 'description', content: 'Sell menu items' }];
@@ -132,8 +133,15 @@ function MenuSearchDropdownItem({
   disabled: boolean;
 }) {
   return (
-    <Box as="li" className={styles.dropdownItem} role="option">
-      <Stack gap="xs" className={styles.dropdownItemInfo}>
+    <Inline
+      as="li"
+      justify="between"
+      align="start"
+      gap="md"
+      className={styles.dropdownItem}
+      role="option"
+    >
+      <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
         <Text weight="semibold" className={styles.dropdownItemName}>
           {item.name || 'Unnamed item'}
         </Text>
@@ -149,22 +157,19 @@ function MenuSearchDropdownItem({
           Price: {money(item.sellingPrice)}
         </Text>
       </Stack>
-      <Box className={styles.dropdownItemActions}>
-        <Button
-          type="button"
-          variant="solid"
-          size="sm"
-          className={styles.dropdownAddBtn}
-          onClick={(e) => {
-            e.preventDefault();
-            onAdd(item);
-          }}
-          disabled={disabled || item.available === false}
-        >
-          Add
-        </Button>
-      </Box>
-    </Box>
+      <Button
+        type="button"
+        variant="solid"
+        size="sm"
+        onClick={(e) => {
+          e.preventDefault();
+          onAdd(item);
+        }}
+        disabled={disabled || item.available === false}
+      >
+        Add
+      </Button>
+    </Inline>
   );
 }
 
@@ -602,7 +607,7 @@ export function MenuSellPage() {
 
   if (isLoading) {
     return (
-      <Stack gap="md" className={styles.page}>
+      <Stack gap="md" maxWidth="xl" mx="auto" className={styles.pageShell}>
         <CenteredLoader label="Loading cart…" />
       </Stack>
     );
@@ -616,59 +621,68 @@ export function MenuSellPage() {
     );
 
   return (
-    <Stack gap="md" className={styles.page}>
+    <Stack gap="md" maxWidth="xl" mx="auto" className={styles.pageShell}>
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
       <PageHeader title="Sell" description="Search and add menu items to the cart" />
 
-      <Inline className={styles.mainRow} align="start" width="full">
-        <Box className={styles.cartArea}>
-          <Stack gap="md" className={styles.cartSection}>
-            <Box className={styles.searchRow} ref={searchWrapperRef}>
-              <Inline className={styles.searchForm} gap="sm" align="center" width="full">
-                <Inline className={styles.searchInputWrapper} gap="sm" align="center" width="full">
-                  <Text aria-hidden>🔍</Text>
-                  <Input
-                    type="text"
-                    className={styles.searchInput}
-                    placeholder="Search menu items..."
-                    value={searchQuery}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                      setSearchQuery(e.currentTarget.value)
+      <Inline className={styles.mainRow} gap="md" align="start" width="full">
+        <Box display="flex" className={styles.cartArea}>
+          <Stack
+            gap="md"
+            bg="elevated"
+            border
+            rounded="lg"
+            padding="lg"
+            className={styles.cartSection}
+          >
+            <Box
+              position="relative"
+              width="full"
+              className={styles.searchRow}
+              ref={searchWrapperRef}
+            >
+              <Inline className={styles.searchInputWrapper} gap="sm" align="center" width="full">
+                <Text aria-hidden>🔍</Text>
+                <Input
+                  type="text"
+                  className={styles.searchInput}
+                  placeholder="Search menu items..."
+                  value={searchQuery}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setSearchQuery(e.currentTarget.value)
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSearchSubmit();
                     }
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleSearchSubmit();
-                      }
-                    }}
-                    disabled={isSyncing || isSearching}
-                    autoFocus
-                    aria-expanded={showSearchDropdown}
-                    aria-haspopup="listbox"
-                    aria-controls="menu-search-results-list"
-                  />
-                  <Button
-                    type="button"
-                    variant="solid"
-                    className={styles.searchSubmitBtn}
-                    disabled={isSyncing || isSearching}
-                    onClick={handleSearchSubmit}
-                  >
-                    {isSearching ? 'Searching…' : 'Search'}
-                  </Button>
-                </Inline>
+                  }}
+                  disabled={isSyncing || isSearching}
+                  autoFocus
+                  aria-expanded={showSearchDropdown}
+                  aria-haspopup="listbox"
+                  aria-controls="menu-search-results-list"
+                />
+                <Button
+                  type="button"
+                  variant="solid"
+                  disabled={isSyncing || isSearching}
+                  onClick={handleSearchSubmit}
+                >
+                  {isSearching ? 'Searching…' : 'Search'}
+                </Button>
               </Inline>
               {showSearchDropdown ? (
                 <Box id="menu-search-results-list" className={styles.searchDropdown} role="listbox">
                   {isSearching ? (
-                    <Text color="secondary" className={styles.dropdownLoading}>
-                      Searching…
-                    </Text>
+                    <Box padding="md" style={{ textAlign: 'center' }}>
+                      <Text color="secondary">Searching…</Text>
+                    </Box>
                   ) : searchResults.length === 0 ? (
-                    <Text color="secondary" className={styles.dropdownEmpty}>
-                      No menu items found
-                    </Text>
+                    <Box padding="md" style={{ textAlign: 'center' }}>
+                      <Text color="secondary">No menu items found</Text>
+                    </Box>
                   ) : (
                     <Stack as="ul" gap="none" className={styles.dropdownList}>
                       {searchResults.map((hit) => (
@@ -695,14 +709,16 @@ export function MenuSellPage() {
                   const ref = lineSellableRef(line) ?? line.name ?? '';
                   const lineTotal = line.totalAmount ?? line.priceToRetail * line.quantity;
                   return (
-                    <Box key={ref} className={styles.cartItem}>
-                      <Stack gap="xs" className={styles.itemInfo}>
-                        <Stack gap="xs" className={styles.itemHeader}>
-                          <Box className={styles.itemHeaderTop}>
-                            <Text weight="semibold" className={styles.itemNameButton}>
-                              {line.name || 'Menu item'}
-                            </Text>
-                          </Box>
+                    <Inline
+                      key={ref}
+                      justify="between"
+                      align="start"
+                      gap="md"
+                      className={styles.cartItem}
+                    >
+                      <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
+                        <Stack gap="xs">
+                          <Text weight="semibold">{line.name || 'Menu item'}</Text>
                           {ref ? (
                             <CustomerProductHistoryHint
                               sellableRef={ref}
@@ -710,24 +726,13 @@ export function MenuSellPage() {
                               loading={customerProductHistoryLoading}
                             />
                           ) : null}
-                          <Inline className={styles.itemMetaRow}>
-                            <Text
-                              variant="caption"
-                              color="secondary"
-                              className={styles.itemUnitMeta}
-                            >
-                              {money(line.priceToRetail)} each · {money(lineTotal)} total
-                            </Text>
-                          </Inline>
+                          <Text variant="caption" color="secondary">
+                            {money(line.priceToRetail)} each · {money(lineTotal)} total
+                          </Text>
                         </Stack>
                       </Stack>
-                      <Stack gap="sm" className={styles.itemActions}>
-                        <Inline
-                          className={styles.itemActionTopRow}
-                          gap="sm"
-                          align="center"
-                          width="full"
-                        >
+                      <Stack gap="sm" align="end">
+                        <Inline gap="sm" align="center" width="full">
                           <Inline className={qtyStyles.qtyStepper} gap="none" align="center">
                             <IconButton
                               label="Decrease quantity"
@@ -763,7 +768,7 @@ export function MenuSellPage() {
                           </Button>
                         </Inline>
                       </Stack>
-                    </Box>
+                    </Inline>
                   );
                 })
               )}
@@ -771,38 +776,40 @@ export function MenuSellPage() {
           </Stack>
         </Box>
 
-        <Box as="aside" className={styles.summarySidebar}>
-          <Box className={styles.customerBlock}>
+        <Stack as="aside" gap="md" className={styles.summarySidebar}>
+          <Box className={customerStyles.customerBlock}>
             <Button
               type="button"
               variant="ghost"
-              className={styles.customerToggle}
+              className={customerStyles.customerToggle}
               onClick={() => setCustomerSectionOpen((o) => !o)}
               aria-expanded={customerSectionOpen}
             >
               <Inline gap="sm" align="center" width="full">
                 <Text weight="semibold">Customer</Text>
                 {customerName || customerPhone ? (
-                  <Text className={styles.customerToggleValue}>
+                  <Text className={customerStyles.customerToggleValue}>
                     {customerName || customerPhone}
                   </Text>
                 ) : (
-                  <Text color="secondary" className={styles.customerToggleHint}>
+                  <Text color="secondary" className={customerStyles.customerToggleHint}>
                     Optional
                   </Text>
                 )}
-                <Text className={styles.customerToggleIcon}>{customerSectionOpen ? '▼' : '▶'}</Text>
+                <Text className={customerStyles.customerToggleIcon}>
+                  {customerSectionOpen ? '▼' : '▶'}
+                </Text>
               </Inline>
             </Button>
             {customerSectionOpen ? (
-              <Stack gap="md" className={styles.customerForm}>
-                <Stack gap="sm" className={styles.customerFieldsVertical}>
+              <Stack gap="md" className={customerStyles.customerForm}>
+                <Stack gap="sm" className={customerStyles.customerFields}>
                   <FormField label="Phone" id="menu-sell-customerPhone">
-                    <Inline gap="sm" className={styles.customerInputRow} width="full">
+                    <Inline gap="sm" width="full">
                       <Input
                         id="menu-sell-customerPhone"
                         type="tel"
-                        className={styles.customerInput}
+                        className={customerStyles.customerInput}
                         placeholder="Phone"
                         value={customerPhone}
                         onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -813,7 +820,7 @@ export function MenuSellPage() {
                       <IconButton
                         label="Search customer"
                         title="Search customer"
-                        className={styles.sidebarSearchBtn}
+                        className={customerStyles.sidebarSearchBtn}
                         onClick={() => void handleCustomerSearch()}
                         disabled={isSearchingCustomer || !customerPhone.trim()}
                       >
@@ -825,7 +832,7 @@ export function MenuSellPage() {
                     <Input
                       id="menu-sell-customerName"
                       type="text"
-                      className={styles.customerInput}
+                      className={customerStyles.customerInput}
                       placeholder="Name"
                       value={customerName}
                       onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -834,11 +841,11 @@ export function MenuSellPage() {
                     />
                   </FormField>
                   <FormField label="Email" id="menu-sell-customerEmail">
-                    <Inline gap="sm" className={styles.customerInputRow} width="full">
+                    <Inline gap="sm" width="full">
                       <Input
                         id="menu-sell-customerEmail"
                         type="email"
-                        className={styles.customerInput}
+                        className={customerStyles.customerInput}
                         placeholder="Email"
                         value={customerEmail}
                         onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -849,7 +856,7 @@ export function MenuSellPage() {
                       <IconButton
                         label="Search customer by email"
                         title="Search customer by email"
-                        className={styles.sidebarSearchBtn}
+                        className={customerStyles.sidebarSearchBtn}
                         onClick={() => void handleCustomerSearchByEmail()}
                         disabled={isSearchingCustomer || !customerEmail.trim()}
                       >
@@ -861,7 +868,7 @@ export function MenuSellPage() {
                     <Input
                       id="menu-sell-customerAddress"
                       type="text"
-                      className={styles.customerInput}
+                      className={customerStyles.customerInput}
                       placeholder="Address"
                       value={customerAddress}
                       onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -870,7 +877,7 @@ export function MenuSellPage() {
                     />
                   </FormField>
                 </Stack>
-                <Box className={styles.retailerCheckboxContainer}>
+                <Box className={customerStyles.retailerDivider}>
                   <Checkbox
                     label="Is Retailer"
                     checked={isRetailer}
@@ -882,16 +889,15 @@ export function MenuSellPage() {
                         setCustomerPan('');
                       }
                     }}
-                    className={styles.retailerCheckboxLabel}
                   />
                 </Box>
                 {isRetailer ? (
-                  <Stack gap="sm" className={styles.retailerSection}>
+                  <Stack gap="sm" className={customerStyles.retailerSection}>
                     <FormField label="GSTIN" id="menu-sell-customerGstin">
                       <Input
                         id="menu-sell-customerGstin"
                         type="text"
-                        className={styles.customerInput}
+                        className={customerStyles.customerInput}
                         placeholder="GSTIN"
                         value={customerGstin}
                         onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -903,7 +909,7 @@ export function MenuSellPage() {
                       <Input
                         id="menu-sell-customerDlNo"
                         type="text"
-                        className={styles.customerInput}
+                        className={customerStyles.customerInput}
                         placeholder="DL No"
                         value={customerDlNo}
                         onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -915,7 +921,7 @@ export function MenuSellPage() {
                       <Input
                         id="menu-sell-customerPan"
                         type="text"
-                        className={styles.customerInput}
+                        className={customerStyles.customerInput}
                         placeholder="PAN"
                         value={customerPan}
                         onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -925,15 +931,10 @@ export function MenuSellPage() {
                     </FormField>
                   </Stack>
                 ) : null}
-                <Stack gap="sm" className={styles.customerLinkSection}>
+                <Stack gap="sm" className={customerStyles.linkSection}>
                   <Text weight="semibold">Link to StockKart user</Text>
                   {linkedUser ? (
-                    <Inline
-                      className={styles.customerLinkStatus}
-                      gap="sm"
-                      align="center"
-                      width="full"
-                    >
+                    <Inline gap="sm" align="center" width="full" flexWrap>
                       <Text>
                         Linked: {linkedUser.name} ({linkedUser.email})
                       </Text>
@@ -942,7 +943,7 @@ export function MenuSellPage() {
                       </Button>
                     </Inline>
                   ) : (
-                    <Stack gap="sm" className={styles.customerLinkSearch}>
+                    <Stack gap="sm">
                       <Text color="secondary">
                         Enter email above and search to link a customer to their StockKart account.
                       </Text>
@@ -967,7 +968,7 @@ export function MenuSellPage() {
             ) : null}
           </Box>
 
-          <Card className={styles.cartSummary}>
+          <Card>
             <CardBody>
               <Stack gap="xs">
                 <SummaryRow label="Subtotal" value={money(cartData?.subTotal ?? 0)} />
@@ -979,7 +980,7 @@ export function MenuSellPage() {
             </CardBody>
           </Card>
 
-          <Inline gap="sm" className={styles.cartActions}>
+          <Inline gap="sm" width="full" className={styles.cartActions}>
             <Button
               type="button"
               variant="outline"
@@ -1000,7 +1001,7 @@ export function MenuSellPage() {
               {isProcessing ? 'Processing...' : isSyncing ? 'Updating...' : 'Process Payment'}
             </Button>
           </Inline>
-        </Box>
+        </Stack>
       </Inline>
     </Stack>
   );

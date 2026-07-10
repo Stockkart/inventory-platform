@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 import { plansApi } from '@inventory-platform/plan/api';
-import { Alert, Box, CenteredLoader, Stack, Text } from '@inventory-platform/ui-kit';
+import {
+  Alert,
+  Box,
+  Button,
+  CenteredLoader,
+  Inline,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { PlanCarousel } from './PlanCarousel';
 import styles from './Pricing.module.css';
 
@@ -31,18 +39,16 @@ export function Pricing() {
 
   if (loading) {
     return (
-      <Box as="section" id="pricing" className={styles.pricing}>
-        <Box className={styles.container}>
-          <CenteredLoader label="Loading plans..." />
-        </Box>
+      <Box as="section" id="pricing" className={styles.pricing} padding="xl" width="full">
+        <CenteredLoader label="Loading plans..." />
       </Box>
     );
   }
 
   if (error) {
     return (
-      <Box as="section" id="pricing" className={styles.pricing}>
-        <Box className={styles.container}>
+      <Box as="section" id="pricing" className={styles.pricing} padding="xl" width="full">
+        <Box maxWidth="lg" mx="auto">
           <Alert variant="danger">{error}</Alert>
         </Box>
       </Box>
@@ -50,13 +56,15 @@ export function Pricing() {
   }
 
   return (
-    <Box as="section" id="pricing" className={styles.pricing}>
-      <Box className={styles.container}>
-        <Stack gap="sm" as="header" className={styles.header}>
-          <Text as="h2" variant="heading2" className={styles.title}>
+    <Box as="section" id="pricing" className={styles.pricing} padding="xl" width="full">
+      <Stack gap="xl" maxWidth="lg" mx="auto">
+        <Stack gap="sm" align="center">
+          <Text as="h2" variant="heading2" align="center">
             Simple, Transparent Pricing
           </Text>
-          <Text className={styles.subtitle}>Choose the plan that fits your business needs</Text>
+          <Text color="secondary" align="center">
+            Choose the plan that fits your business needs
+          </Text>
         </Stack>
 
         <PlanCarousel
@@ -65,12 +73,13 @@ export function Pricing() {
           ctaLabel="Get Started"
           showTrialBadge
         />
-        <Box className={styles.showAllWrapper}>
-          <RouterLink to="/plans" className={styles.showAllButton}>
+
+        <Inline justify="center">
+          <Button variant="outline" size="lg" onClick={() => navigate('/plans')}>
             Show all pricing
-          </RouterLink>
-        </Box>
-      </Box>
+          </Button>
+        </Inline>
+      </Stack>
     </Box>
   );
 }

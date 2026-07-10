@@ -166,7 +166,7 @@ export function LedgerPage() {
       </Stack>
 
       <Box display="grid" className={styles.ledgerLayout}>
-        <Card className={styles.acctList}>
+        <Card style={{ maxHeight: '78vh', overflow: 'auto' }}>
           <CardBody>
             <Stack gap="md">
               <SearchInput
@@ -215,7 +215,7 @@ export function LedgerPage() {
                               className={active ? styles.acctItemActive : styles.acctItem}
                               onClick={() => openAccount(account.id)}
                             >
-                              <Stack gap="none" className={styles.acctItemName}>
+                              <Stack gap="none" style={{ minWidth: 0 }}>
                                 <Text as="span" className={styles.acctItemCode}>
                                   {account.code}
                                 </Text>

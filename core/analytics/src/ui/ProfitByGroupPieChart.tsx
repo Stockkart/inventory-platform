@@ -1,7 +1,5 @@
 import { Box, Stack, Text } from '@inventory-platform/ui-kit';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import styles from './analytics.module.css';
-
 interface ProfitGroupData {
   groupKey: string | null;
   totalQuantitySold: number;
@@ -72,11 +70,27 @@ export function ProfitByGroupPieChart({ data, groupBy }: ProfitByGroupPieChartPr
   };
 
   return (
-    <Stack gap="sm" className={styles.chartWrapper}>
-      <Text variant="heading4" weight="semibold" className={styles.chartHeader}>
+    <Stack gap="sm" style={{ minHeight: 300 }}>
+      <Text
+        variant="heading4"
+        weight="semibold"
+        style={{
+          marginBottom: '0.75rem',
+          paddingBottom: '0.5rem',
+          borderBottom: '1px solid var(--border-color, #e5e7eb)',
+        }}
+      >
         {getTitle()}
       </Text>
-      <Box className={styles.pieChartContent}>
+      <Box
+        style={{
+          flex: 1,
+          minHeight: 320,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie

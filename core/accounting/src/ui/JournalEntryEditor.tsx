@@ -126,7 +126,7 @@ export function JournalEntryEditor({
   return (
     <Stack gap="md">
       {showTemplates ? (
-        <Inline gap="sm" className={styles.templateBar}>
+        <Inline gap="sm" flexWrap>
           {JOURNAL_TEMPLATES.filter((t) => t.id !== 'BLANK').map((t) => (
             <Button
               key={t.id}
@@ -194,7 +194,7 @@ export function JournalEntryEditor({
       </Box>
       {lines.map((line, idx) => (
         <Box key={idx} className={styles.lineGrid}>
-          <Box className={styles.lineAccountCell}>
+          <Stack gap="xs">
             <AccountPicker
               accounts={accounts}
               value={line.accountCode}
@@ -218,7 +218,7 @@ export function JournalEntryEditor({
                 disabled={disabled}
               />
             ) : null}
-          </Box>
+          </Stack>
           <Input
             style={{ textAlign: 'right' }}
             type="number"

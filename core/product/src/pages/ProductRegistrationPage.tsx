@@ -2616,7 +2616,8 @@ export function ProductRegistrationPage() {
                         />
                         <Button
                           type="button"
-                          className={styles.searchBtn}
+                          variant="solid"
+                          size="sm"
                           onClick={handleVendorSearch}
                           disabled={isLoading || isSearchingVendor || !vendorSearchQuery.trim()}
                         >
@@ -2624,7 +2625,8 @@ export function ProductRegistrationPage() {
                         </Button>
                         <Button
                           type="button"
-                          className={styles.createVendorBtn}
+                          variant="solid"
+                          size="sm"
                           onClick={() => setShowVendorModal(true)}
                           disabled={isLoading || isCreatingVendor}
                         >
@@ -2633,7 +2635,8 @@ export function ProductRegistrationPage() {
                         {selectedVendor && (
                           <Button
                             type="button"
-                            className={styles.clearBtn}
+                            variant="outline"
+                            size="sm"
                             onClick={handleClearVendor}
                             disabled={isLoading}
                           >
@@ -2681,7 +2684,8 @@ export function ProductRegistrationPage() {
                             <Text>No vendors found. Would you like to create a new vendor?</Text>
                             <Button
                               type="button"
-                              className={styles.createVendorBtn}
+                              variant="solid"
+                              size="sm"
                               onClick={() => {
                                 setShowVendorModal(true);
                                 setShowVendorDropdown(false);
@@ -4016,7 +4020,7 @@ export function ProductRegistrationPage() {
                   <Box className={styles.formActions}>
                     <Button
                       type="button"
-                      className={styles.cancelBtn}
+                      variant="outline"
                       onClick={handleCancel}
                       disabled={isLoading}
                     >
@@ -4024,7 +4028,7 @@ export function ProductRegistrationPage() {
                     </Button>
                     <Button
                       type="button"
-                      className={styles.submitBtn}
+                      variant="solid"
                       onClick={() => void handleSubmit()}
                       disabled={isLoading || !vendorPaymentMethod}
                       title={
@@ -4048,7 +4052,6 @@ export function ProductRegistrationPage() {
         open={showVendorModal}
         onClose={() => !isCreatingVendor && handleCloseVendorModal()}
         size="lg"
-        className={styles.modalContent}
       >
         <Modal.Header
           title="Create New Vendor"
@@ -4126,7 +4129,8 @@ export function ProductRegistrationPage() {
             <Box style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <Button
                 type="button"
-                className={styles.cancelBtn}
+                variant="outline"
+                size="sm"
                 onClick={handleSearchUserForLink}
                 disabled={
                   isCreatingVendor || isSearchingUser || !vendorFormData.contactEmail?.trim()
@@ -4137,7 +4141,8 @@ export function ProductRegistrationPage() {
               {linkedUser && (
                 <Button
                   type="button"
-                  className={styles.clearBtn}
+                  variant="outline"
+                  size="sm"
                   onClick={handleUnlinkUser}
                   disabled={isCreatingVendor}
                 >
@@ -4249,7 +4254,6 @@ export function ProductRegistrationPage() {
           <Button
             type="button"
             variant="outline"
-            className={styles.cancelBtn}
             onClick={handleCloseVendorModal}
             disabled={isCreatingVendor}
           >
@@ -4258,7 +4262,6 @@ export function ProductRegistrationPage() {
           <Button
             type="button"
             variant="solid"
-            className={styles.submitBtn}
             onClick={handleCreateVendor}
             disabled={isCreatingVendor}
             loading={isCreatingVendor}
@@ -4269,12 +4272,7 @@ export function ProductRegistrationPage() {
       </Modal>
 
       {/* QR Code Upload Modal */}
-      <Modal
-        open={showQrModal}
-        onClose={handleCloseQrModal}
-        size="sm"
-        className={styles.modalContent}
-      >
+      <Modal open={showQrModal} onClose={handleCloseQrModal} size="sm">
         <Modal.Header title="Scan QR Code to Upload Invoice" />
         <Modal.Body>
           <Box
@@ -4359,12 +4357,7 @@ export function ProductRegistrationPage() {
           </Box>
         </Modal.Body>
         <Modal.Footer>
-          <Button
-            type="button"
-            variant="outline"
-            className={styles.cancelBtn}
-            onClick={handleCloseQrModal}
-          >
+          <Button type="button" variant="outline" onClick={handleCloseQrModal}>
             Cancel
           </Button>
         </Modal.Footer>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
   Badge,
+  Box,
   Button,
   Card,
   CardBody,
@@ -196,7 +197,11 @@ export function AccountingOverviewPage() {
             <Text variant="title" weight="bold">
               Quick journal templates
             </Text>
-            <Grid gap="sm" className={styles.quickActionGrid}>
+            <Box
+              display="grid"
+              gap="sm"
+              style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}
+            >
               {quickActions.map((action) => (
                 <Button
                   key={action.key}
@@ -211,7 +216,7 @@ export function AccountingOverviewPage() {
                   </Text>
                 </Button>
               ))}
-            </Grid>
+            </Box>
           </Stack>
         </CardBody>
       </Card>

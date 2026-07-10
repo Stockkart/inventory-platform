@@ -5,7 +5,6 @@ import { FormKeyboardNavScope } from '@inventory-platform/routing';
 import { PlanGrid, Header, Footer } from '../ui';
 import { useAuthStore } from '@inventory-platform/session';
 import { Alert, Box, CenteredLoader, Stack, Text } from '@inventory-platform/ui-kit';
-import styles from './plans.module.css';
 
 export function meta() {
   return [
@@ -47,32 +46,36 @@ export default function PlansPage() {
   };
 
   return (
-    <Box className={styles.page}>
+    <Box bg="canvas" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Header />
-      <Box as="main" className={styles.main}>
-        <FormKeyboardNavScope className={styles.container}>
-          <Stack gap="sm" as="header" className={styles.header}>
-            <RouterLink to="/" className={styles.backLink}>
-              ← Back to home
-            </RouterLink>
-            <Text as="h1" variant="heading1" className={styles.title}>
-              All Plans & Pricing
-            </Text>
-            <Text className={styles.subtitle}>Choose the plan that fits your business needs</Text>
+      <Box as="main" padding="xl" style={{ flex: 1 }}>
+        <FormKeyboardNavScope>
+          <Stack gap="xl" maxWidth="lg" mx="auto">
+            <Stack gap="sm" align="center">
+              <RouterLink to="/">
+                <Text color="secondary">← Back to home</Text>
+              </RouterLink>
+              <Text as="h1" variant="heading1" align="center">
+                All Plans & Pricing
+              </Text>
+              <Text color="secondary" align="center">
+                Choose the plan that fits your business needs
+              </Text>
+            </Stack>
+
+            {loading ? <CenteredLoader label="Loading plans..." /> : null}
+
+            {error ? <Alert variant="danger">{error}</Alert> : null}
+
+            {!loading && !error && plans.length > 0 ? (
+              <PlanGrid
+                plans={plans}
+                onSelectPlan={handleSelectPlan}
+                ctaLabel={isAuthenticated ? 'Select Plan' : 'Get Started'}
+                showTrialBadge
+              />
+            ) : null}
           </Stack>
-
-          {loading ? <CenteredLoader label="Loading plans..." /> : null}
-
-          {error ? <Alert variant="danger">{error}</Alert> : null}
-
-          {!loading && !error && plans.length > 0 ? (
-            <PlanGrid
-              plans={plans}
-              onSelectPlan={handleSelectPlan}
-              ctaLabel={isAuthenticated ? 'Select Plan' : 'Get Started'}
-              showTrialBadge
-            />
-          ) : null}
         </FormKeyboardNavScope>
       </Box>
       <Footer />

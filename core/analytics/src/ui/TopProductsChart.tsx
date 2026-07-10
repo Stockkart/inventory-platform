@@ -10,8 +10,6 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import styles from './analytics.module.css';
-
 interface TopProduct {
   inventoryId: string;
   productName: string;
@@ -51,8 +49,16 @@ export function TopProductsChart({ data }: TopProductsChartProps) {
   };
 
   return (
-    <Stack gap="sm" className={styles.chartWrapper}>
-      <Inline align="center" justify="between" className={styles.chartHeader}>
+    <Stack gap="sm" style={{ minHeight: 300 }}>
+      <Inline
+        align="center"
+        justify="between"
+        style={{
+          marginBottom: '0.75rem',
+          paddingBottom: '0.5rem',
+          borderBottom: '1px solid var(--border-color, #e5e7eb)',
+        }}
+      >
         <Text variant="heading4" weight="semibold">
           Top Products by Revenue
         </Text>
@@ -69,7 +75,7 @@ export function TopProductsChart({ data }: TopProductsChartProps) {
           />
         </Inline>
       </Inline>
-      <Box className={styles.chartContent}>
+      <Box style={{ flex: 1, minHeight: 320 }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 50 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />

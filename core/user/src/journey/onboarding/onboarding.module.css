@@ -1,13 +1,3 @@
-.onboardingLayout {
-  display: flex;
-  min-height: 100vh;
-}
-
-.sidebar {
-  width: 280px;
-  flex-shrink: 0;
-}
-
 @media (max-width: 768px) {
   .onboardingLayout {
     flex-direction: column;

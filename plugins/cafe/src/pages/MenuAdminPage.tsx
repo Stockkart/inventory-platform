@@ -24,7 +24,6 @@ import {
   Switch,
   Text,
 } from '@inventory-platform/ui-kit';
-import styles from './menu.module.css';
 
 export function meta() {
   return [{ title: 'Menu - StockKart' }, { name: 'description', content: 'Manage your cafe menu' }];
@@ -449,7 +448,11 @@ export function MenuAdminPage() {
                 {!isCollapsed ? (
                   <CardBody>
                     <Stack gap="md">
-                      <Box className={styles.itemsGrid}>
+                      <Box
+                        display="grid"
+                        gap="sm"
+                        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
+                      >
                         {section.items.map((item) => {
                           const isAvailable = item.available !== false;
                           return (

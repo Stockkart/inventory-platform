@@ -61,6 +61,10 @@ import {
 } from '@inventory-platform/product/types';
 import styles from './scan-sell.module.css';
 import qtyStyles from '../ui/scan-sell-qty.module.css';
+import customerStyles from '../ui/scan-sell-customer.module.css';
+import detailStyles from '../ui/scan-sell-detail-modal.module.css';
+import excelStyles from '../ui/scan-sell-excel.module.css';
+import cafeStyles from '../ui/scan-sell-cafe.module.css';
 import { CafeSellCatalogPanel } from '../ui/CafeSellCatalogPanel';
 import { ScanSellMenuCartLine } from '../ui/ScanSellMenuCartLine';
 import { ScanSellCafeStockLine } from '../ui/ScanSellCafeStockLine';
@@ -514,29 +518,29 @@ function DetailField({
   pricing?: boolean;
 }) {
   return (
-    <Box
-      className={`${styles.detailModalDetailCard} ${pricing ? styles.detailModalPricingCard : ''}`}
+    <Inline
+      gap="sm"
+      align="start"
+      className={`${detailStyles.detailCard} ${pricing ? detailStyles.pricingCard : ''}`}
     >
-      <Text className={styles.detailModalDetailIcon}>{icon}</Text>
-      <Stack gap="xs" className={styles.detailModalDetailContent}>
-        <Text variant="caption" color="secondary" className={styles.detailModalDetailLabel}>
+      <Text className={detailStyles.detailIcon}>{icon}</Text>
+      <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
+        <Text variant="caption" color="secondary" className={detailStyles.detailLabel}>
           {label}
         </Text>
-        <Text className={styles.detailModalDetailValue}>{children}</Text>
+        <Text className={detailStyles.detailValue}>{children}</Text>
       </Stack>
-    </Box>
+    </Inline>
   );
 }
 
 function DetailSectionHeader({ icon, title }: { icon: string; title: string }) {
   return (
-    <Inline gap="sm" align="center" className={styles.detailModalSectionHeader}>
-      <Text aria-hidden className={styles.detailModalSectionIcon}>
+    <Inline gap="sm" align="center" className={detailStyles.sectionHeader}>
+      <Text aria-hidden className={detailStyles.sectionIcon}>
         {icon}
       </Text>
-      <Text variant="heading3" className={styles.detailModalSectionTitle}>
-        {title}
-      </Text>
+      <Text variant="heading3">{title}</Text>
     </Inline>
   );
 }
@@ -552,6 +556,7 @@ function ProductSearchBlock({
   autoFocus,
   onAddToCart,
   addDisabled,
+  rowClassName,
 }: {
   searchQuery: string;
   setSearchQuery: (value: string) => void;
@@ -563,51 +568,44 @@ function ProductSearchBlock({
   autoFocus?: boolean;
   onAddToCart: (item: InventoryItem, price?: number) => void;
   addDisabled: (item: InventoryItem) => boolean;
+  rowClassName?: string;
 }) {
   return (
-    <Box className={styles.searchRow}>
-      <Inline className={styles.searchForm} gap="sm" align="center" width="full">
-        <Inline className={styles.searchInputWrapper} gap="sm" align="center" width="full">
-          <Text aria-hidden>🔍</Text>
-          <Input
-            type="text"
-            className={styles.searchInput}
-            placeholder={placeholder}
-            value={searchQuery}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchQuery(e.currentTarget.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                onSearch();
-              }
-            }}
-            disabled={isSearching}
-            autoFocus={autoFocus}
-            aria-expanded={showSearchDropdown}
-            aria-haspopup="listbox"
-            aria-controls="search-results-list"
-          />
-          <Button
-            type="button"
-            variant="solid"
-            className={styles.searchSubmitBtn}
-            disabled={isSearching}
-            onClick={onSearch}
-          >
-            {isSearching ? 'Searching…' : 'Search'}
-          </Button>
-        </Inline>
+    <Box position="relative" width="full" className={`${styles.searchRow} ${rowClassName ?? ''}`}>
+      <Inline className={styles.searchInputWrapper} gap="sm" align="center" width="full">
+        <Text aria-hidden>🔍</Text>
+        <Input
+          type="text"
+          className={styles.searchInput}
+          placeholder={placeholder}
+          value={searchQuery}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchQuery(e.currentTarget.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              onSearch();
+            }
+          }}
+          disabled={isSearching}
+          autoFocus={autoFocus}
+          aria-expanded={showSearchDropdown}
+          aria-haspopup="listbox"
+          aria-controls="search-results-list"
+        />
+        <Button type="button" variant="solid" disabled={isSearching} onClick={onSearch}>
+          {isSearching ? 'Searching…' : 'Search'}
+        </Button>
       </Inline>
       {showSearchDropdown ? (
         <Box className={styles.searchDropdown}>
           {isSearching ? (
-            <Text color="secondary" className={styles.dropdownLoading}>
-              Searching…
-            </Text>
+            <Box padding="md" style={{ textAlign: 'center' }}>
+              <Text color="secondary">Searching…</Text>
+            </Box>
           ) : searchResults.length === 0 ? (
-            <Text color="secondary" className={styles.dropdownEmpty}>
-              No products found
-            </Text>
+            <Box padding="md" style={{ textAlign: 'center' }}>
+              <Text color="secondary">No products found</Text>
+            </Box>
           ) : (
             <Stack as="ul" gap="none" className={styles.dropdownList}>
               {searchResults.map((item) => (
@@ -676,35 +674,43 @@ function CustomerSectionBlock({
   setCustomerPan: (v: string) => void;
 }) {
   return (
-    <Box className={styles.customerBlock}>
+    <Box
+      className={`${customerStyles.customerBlock} ${
+        idPrefix === 'cafe' ? customerStyles.cafeEmbedded : ''
+      }`}
+    >
       <Button
         type="button"
         variant="ghost"
-        className={styles.customerToggle}
+        className={customerStyles.customerToggle}
         onClick={() => setCustomerSectionOpen((o) => !o)}
         aria-expanded={customerSectionOpen}
       >
         <Inline gap="sm" align="center" width="full">
           <Text weight="semibold">Customer</Text>
           {customerName || customerPhone ? (
-            <Text className={styles.customerToggleValue}>{customerName || customerPhone}</Text>
+            <Text className={customerStyles.customerToggleValue}>
+              {customerName || customerPhone}
+            </Text>
           ) : (
-            <Text color="secondary" className={styles.customerToggleHint}>
+            <Text color="secondary" className={customerStyles.customerToggleHint}>
               Optional
             </Text>
           )}
-          <Text className={styles.customerToggleIcon}>{customerSectionOpen ? '▼' : '▶'}</Text>
+          <Text className={customerStyles.customerToggleIcon}>
+            {customerSectionOpen ? '▼' : '▶'}
+          </Text>
         </Inline>
       </Button>
       {customerSectionOpen ? (
-        <Stack gap="md" className={styles.customerForm}>
-          <Stack gap="sm" className={styles.customerFieldsVertical}>
+        <Stack gap="md" className={customerStyles.customerForm}>
+          <Stack gap="sm" className={customerStyles.customerFields}>
             <FormField label="Phone" id={`${idPrefix}-customerPhone`}>
-              <Inline gap="sm" className={styles.customerInputRow} width="full">
+              <Inline gap="sm" width="full">
                 <Input
                   id={`${idPrefix}-customerPhone`}
                   type="tel"
-                  className={styles.customerInput}
+                  className={customerStyles.customerInput}
                   placeholder="Phone"
                   value={customerPhone}
                   onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -716,7 +722,7 @@ function CustomerSectionBlock({
                 <IconButton
                   label="Search customer"
                   title="Search customer"
-                  className={styles.sidebarSearchBtn}
+                  className={customerStyles.sidebarSearchBtn}
                   onClick={handleCustomerSearch}
                   disabled={isSearchingCustomer || !customerPhone.trim()}
                 >
@@ -728,7 +734,7 @@ function CustomerSectionBlock({
               <Input
                 id={`${idPrefix}-customerName`}
                 type="text"
-                className={styles.customerInput}
+                className={customerStyles.customerInput}
                 placeholder="Name"
                 value={customerName}
                 onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -738,11 +744,11 @@ function CustomerSectionBlock({
               />
             </FormField>
             <FormField label="Email" id={`${idPrefix}-customerEmail`}>
-              <Inline gap="sm" className={styles.customerInputRow} width="full">
+              <Inline gap="sm" width="full">
                 <Input
                   id={`${idPrefix}-customerEmail`}
                   type="email"
-                  className={styles.customerInput}
+                  className={customerStyles.customerInput}
                   placeholder="Email"
                   value={customerEmail}
                   onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -754,7 +760,7 @@ function CustomerSectionBlock({
                 <IconButton
                   label="Search customer by email"
                   title="Search customer by email"
-                  className={styles.sidebarSearchBtn}
+                  className={customerStyles.sidebarSearchBtn}
                   onClick={handleCustomerSearchByEmail}
                   disabled={isSearchingCustomer || !customerEmail.trim()}
                 >
@@ -766,7 +772,7 @@ function CustomerSectionBlock({
               <Input
                 id={`${idPrefix}-customerAddress`}
                 type="text"
-                className={styles.customerInput}
+                className={customerStyles.customerInput}
                 placeholder="Address"
                 value={customerAddress}
                 onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -778,7 +784,7 @@ function CustomerSectionBlock({
           </Stack>
           {idPrefix === 'sidebar' ? (
             <>
-              <Box className={styles.retailerCheckboxContainer}>
+              <Box className={customerStyles.retailerDivider}>
                 <Checkbox
                   label="Is Retailer"
                   checked={isRetailer}
@@ -790,16 +796,15 @@ function CustomerSectionBlock({
                       setCustomerPan('');
                     }
                   }}
-                  className={styles.retailerCheckboxLabel}
                 />
               </Box>
               {isRetailer ? (
-                <Stack gap="sm" className={styles.retailerSection}>
+                <Stack gap="sm" className={customerStyles.retailerSection}>
                   <FormField label="GSTIN" id={`${idPrefix}-customerGstin`}>
                     <Input
                       id={`${idPrefix}-customerGstin`}
                       type="text"
-                      className={styles.customerInput}
+                      className={customerStyles.customerInput}
                       placeholder="GSTIN"
                       value={customerGstin}
                       onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -811,7 +816,7 @@ function CustomerSectionBlock({
                     <Input
                       id={`${idPrefix}-customerDlNo`}
                       type="text"
-                      className={styles.customerInput}
+                      className={customerStyles.customerInput}
                       placeholder="DL No"
                       value={customerDlNo}
                       onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -823,7 +828,7 @@ function CustomerSectionBlock({
                     <Input
                       id={`${idPrefix}-customerPan`}
                       type="text"
-                      className={styles.customerInput}
+                      className={customerStyles.customerInput}
                       placeholder="PAN"
                       value={customerPan}
                       onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -2694,7 +2699,7 @@ export function ScanSellPage() {
   const renderCafeOrderLines = () => {
     if (isLoadingCart) {
       return (
-        <Text color="secondary" className={styles.cafeOrderEmpty}>
+        <Text color="secondary" className={cafeStyles.orderEmpty}>
           Loading order…
         </Text>
       );
@@ -2703,7 +2708,7 @@ export function ScanSellPage() {
       return (
         <EmptyState
           title="Tap menu or stock items to start an order"
-          className={styles.cafeOrderEmpty}
+          className={cafeStyles.orderEmpty}
         />
       );
     }
@@ -2754,9 +2759,9 @@ export function ScanSellPage() {
   };
 
   const renderCafeCheckoutBar = () => (
-    <Box className={styles.cafeCheckoutBar}>
-      <Inline className={styles.cafeCheckoutBarInner} justify="between" align="center" width="full">
-        <Stack gap="xs" className={styles.cafeCheckoutTotals}>
+    <Box className={cafeStyles.checkoutBar}>
+      <Inline className={cafeStyles.checkoutBarInner} justify="between" align="center" width="full">
+        <Stack gap="xs" className={cafeStyles.checkoutTotals}>
           {isLoadingCart ? (
             <Text color="secondary">Loading…</Text>
           ) : (
@@ -2767,18 +2772,20 @@ export function ScanSellPage() {
                 (cartData?.cgstAmount ?? 0) !== 0) && (
                 <SummaryRow label="Tax" value={`₹${calculateTax().toFixed(2)}`} />
               )}
-              <Inline justify="between" width="full" className={styles.cafeCheckoutTotal}>
+              <Inline justify="between" width="full" className={cafeStyles.checkoutTotal}>
                 <Text weight="bold">Total</Text>
-                <Text weight="bold">₹{calculateTotal().toFixed(2)}</Text>
+                <Text weight="bold" className={cafeStyles.checkoutTotalValue}>
+                  ₹{calculateTotal().toFixed(2)}
+                </Text>
               </Inline>
             </>
           )}
         </Stack>
-        <Inline gap="sm" className={styles.cafeCheckoutActions}>
+        <Inline gap="sm" className={cafeStyles.checkoutActions}>
           <Button
             type="button"
             variant="outline"
-            className={styles.clearBtn}
+            className={`${styles.clearBtn} ${cafeStyles.checkoutClearBtn}`}
             onClick={() => void handleClearCart()}
             disabled={isUpdatingCart || isLoadingCart}
           >
@@ -2787,7 +2794,7 @@ export function ScanSellPage() {
           <Button
             type="button"
             variant="solid"
-            className={styles.checkoutBtn}
+            className={`${styles.checkoutBtn} ${cafeStyles.checkoutPayBtn}`}
             onClick={() => void handleProcessPayment()}
             disabled={
               (cartItems.length === 0 && menuCartLines.length === 0) ||
@@ -2804,7 +2811,12 @@ export function ScanSellPage() {
   );
 
   return (
-    <Stack gap="md" className={`${styles.page} ${isCafeSell ? styles.pageCafe : ''}`}>
+    <Stack
+      gap="md"
+      maxWidth={isCafeSell ? undefined : 'xl'}
+      mx={isCafeSell ? undefined : 'auto'}
+      className={`${styles.pageShell} ${isCafeSell ? cafeStyles.pageCafe : ''}`}
+    >
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
       <PageHeader
@@ -2831,10 +2843,17 @@ export function ScanSellPage() {
 
           {isCafeSell ? (
             <>
-              <Box className={styles.cafeSellShell}>
-                <Inline className={styles.cafeSellWorkspace} align="start" width="full">
-                  <Box className={styles.cafePickerColumn}>
-                    <Stack gap="md" className={styles.cafePickerSection}>
+              <Box className={cafeStyles.sellShell}>
+                <Inline className={cafeStyles.sellWorkspace} align="start" width="full">
+                  <Box className={cafeStyles.pickerColumn}>
+                    <Stack
+                      gap="md"
+                      bg="elevated"
+                      border
+                      rounded="lg"
+                      padding="md"
+                      className={cafeStyles.pickerSection}
+                    >
                       <ProductSearchBlock
                         searchQuery={searchQuery}
                         setSearchQuery={setSearchQuery}
@@ -2844,6 +2863,7 @@ export function ScanSellPage() {
                         onSearch={() => handleSearchSubmit()}
                         placeholder="Filter menu, or search more products…"
                         onAddToCart={handleAddToCart}
+                        rowClassName={cafeStyles.searchRowCafe}
                         addDisabled={(item) =>
                           item.currentCount <= 0 ||
                           (item.sellingPrice ?? item.priceToRetail) == null ||
@@ -2861,7 +2881,7 @@ export function ScanSellPage() {
                     </Stack>
                   </Box>
 
-                  <Box as="aside" className={styles.cafeOrderColumn}>
+                  <Box as="aside" className={cafeStyles.orderColumn}>
                     <CustomerSectionBlock
                       idPrefix="cafe"
                       customerSectionOpen={customerSectionOpen}
@@ -2888,21 +2908,21 @@ export function ScanSellPage() {
                       setCustomerPan={setCustomerPan}
                     />
 
-                    <Card className={styles.cafeOrderPanel}>
+                    <Card className={cafeStyles.orderPanel}>
                       <CardBody>
                         <Inline
-                          className={styles.cafeOrderHeader}
+                          className={cafeStyles.orderHeader}
                           justify="between"
                           align="center"
                           width="full"
                         >
                           <Text variant="heading3">Current order</Text>
-                          <Badge variant="neutral" className={styles.cafeOrderCount}>
+                          <Badge variant="neutral" className={cafeStyles.orderCount}>
                             {cafeOrderItemCount} item
                             {cafeOrderItemCount === 1 ? '' : 's'}
                           </Badge>
                         </Inline>
-                        <Stack gap="sm" className={styles.cafeOrderList}>
+                        <Stack gap="sm" className={cafeStyles.orderList}>
                           {renderCafeOrderLines()}
                         </Stack>
                       </CardBody>
@@ -2913,7 +2933,7 @@ export function ScanSellPage() {
                         cartData.revenueAfterTax != null ||
                         cartData.totalProfit != null ||
                         cartData.marginPercent != null) && (
-                        <Stack gap="xs" className={styles.cafeAnalytics}>
+                        <Stack gap="xs" className={cafeStyles.analytics}>
                           <SummaryRow
                             label="Total Cost"
                             value={`₹${(cartData.totalCost ?? 0).toFixed(2)}`}
@@ -2944,9 +2964,16 @@ export function ScanSellPage() {
               {renderCafeCheckoutBar()}
             </>
           ) : (
-            <Inline className={styles.mainRow} align="start" width="full">
-              <Box className={styles.cartArea}>
-                <Stack gap="md" className={styles.cartSection}>
+            <Inline className={styles.mainRow} gap="md" align="start" width="full">
+              <Box display="flex" className={styles.cartArea}>
+                <Stack
+                  gap="md"
+                  bg="elevated"
+                  border
+                  rounded="lg"
+                  padding="lg"
+                  className={styles.cartSection}
+                >
                   <ProductSearchBlock
                     searchQuery={searchQuery}
                     setSearchQuery={setSearchQuery}
@@ -2967,7 +2994,7 @@ export function ScanSellPage() {
                   {cartItems.length > 0 ? (
                     <Inline className={styles.viewToggleWrap} gap="sm" align="center">
                       <Text color="secondary">View:</Text>
-                      <Inline className={styles.viewToggleButtons} gap="none">
+                      <Inline gap="xs">
                         <Button
                           type="button"
                           variant="ghost"
@@ -3006,7 +3033,7 @@ export function ScanSellPage() {
 
                   <Box
                     className={`${styles.cartItems} ${
-                      cartViewMode === 'grid' ? styles.cartItemsExcel : ''
+                      cartViewMode === 'grid' ? excelStyles.cartItemsExcel : ''
                     }`}
                   >
                     {isLoadingCart ? (
@@ -3014,20 +3041,20 @@ export function ScanSellPage() {
                     ) : cartItems.length === 0 ? (
                       <EmptyState title="Cart is empty" className={styles.emptyCart} />
                     ) : cartViewMode === 'grid' ? (
-                      <Box className={styles.excelTableWrap}>
-                        <Table className={styles.excelTable}>
+                      <Box className={excelStyles.tableWrap}>
+                        <Table className={excelStyles.table}>
                           <TableHead>
                             <TableRow>
-                              <TableHeaderCell className={styles.excelTh}>#</TableHeaderCell>
-                              <TableHeaderCell className={styles.excelTh}>Product</TableHeaderCell>
-                              <TableHeaderCell className={styles.excelTh}>Company</TableHeaderCell>
-                              <TableHeaderCell className={styles.excelTh}>Qty</TableHeaderCell>
-                              <TableHeaderCell className={styles.excelTh}>Unit</TableHeaderCell>
-                              <TableHeaderCell className={styles.excelTh}>Amount</TableHeaderCell>
-                              <TableHeaderCell className={styles.excelTh}>Price</TableHeaderCell>
-                              <TableHeaderCell className={styles.excelTh}>Discount</TableHeaderCell>
-                              <TableHeaderCell className={styles.excelTh}>Scheme</TableHeaderCell>
-                              <TableHeaderCell className={styles.excelTh}>Actions</TableHeaderCell>
+                              <TableHeaderCell className={excelStyles.th}>#</TableHeaderCell>
+                              <TableHeaderCell className={excelStyles.th}>Product</TableHeaderCell>
+                              <TableHeaderCell className={excelStyles.th}>Company</TableHeaderCell>
+                              <TableHeaderCell className={excelStyles.th}>Qty</TableHeaderCell>
+                              <TableHeaderCell className={excelStyles.th}>Unit</TableHeaderCell>
+                              <TableHeaderCell className={excelStyles.th}>Amount</TableHeaderCell>
+                              <TableHeaderCell className={excelStyles.th}>Price</TableHeaderCell>
+                              <TableHeaderCell className={excelStyles.th}>Discount</TableHeaderCell>
+                              <TableHeaderCell className={excelStyles.th}>Scheme</TableHeaderCell>
+                              <TableHeaderCell className={excelStyles.th}>Actions</TableHeaderCell>
                             </TableRow>
                           </TableHead>
                           <TableBody>
@@ -3068,14 +3095,14 @@ export function ScanSellPage() {
                               return (
                                 <TableRow
                                   key={cartItem.inventoryItem.id}
-                                  className={styles.excelTr}
+                                  className={excelStyles.tr}
                                 >
-                                  <TableCell className={styles.excelTd}>{idx + 1}</TableCell>
-                                  <TableCell className={styles.excelTd}>
+                                  <TableCell className={excelStyles.td}>{idx + 1}</TableCell>
+                                  <TableCell className={excelStyles.td}>
                                     <Button
                                       type="button"
                                       variant="ghost"
-                                      className={styles.excelProductBtn}
+                                      className={excelStyles.productBtn}
                                       onClick={() => setDetailModalItem(cartItem)}
                                     >
                                       {cartItem.inventoryItem.name || '—'}
@@ -3086,11 +3113,11 @@ export function ScanSellPage() {
                                       loading={customerProductHistoryLoading}
                                     />
                                   </TableCell>
-                                  <TableCell className={styles.excelTd}>
+                                  <TableCell className={excelStyles.td}>
                                     {cartItem.inventoryItem.companyName || '—'}
                                   </TableCell>
-                                  <TableCell className={styles.excelTd}>
-                                    <Box className={styles.excelCellInput}>
+                                  <TableCell className={excelStyles.td}>
+                                    <Box className={excelStyles.cellInput}>
                                       <CartQuantityInput
                                         value={quantityInputValue}
                                         disabled={isUpdatingCart}
@@ -3107,9 +3134,9 @@ export function ScanSellPage() {
                                       />
                                     </Box>
                                   </TableCell>
-                                  <TableCell className={styles.excelTd}>
+                                  <TableCell className={excelStyles.td}>
                                     <Select
-                                      className={styles.excelSelect}
+                                      className={excelStyles.select}
                                       value={cartItem.unit}
                                       onChange={(e) =>
                                         handleUnitChange(
@@ -3130,11 +3157,11 @@ export function ScanSellPage() {
                                       }))}
                                     />
                                   </TableCell>
-                                  <TableCell className={styles.excelTd}>
+                                  <TableCell className={excelStyles.td}>
                                     {formatPrice(lineTotal)}
                                   </TableCell>
-                                  <TableCell className={styles.excelTd}>
-                                    <Stack gap="xs" className={styles.excelPriceCell}>
+                                  <TableCell className={excelStyles.td}>
+                                    <Stack gap="xs" className={excelStyles.priceCell}>
                                       <CartSellingPriceInput
                                         value={cartItem.price}
                                         onCommit={(n) =>
@@ -3144,7 +3171,7 @@ export function ScanSellPage() {
                                       />
                                       {showRateDropdown ? (
                                         <Select
-                                          className={styles.excelRateSelect}
+                                          className={excelStyles.rateSelect}
                                           value={matched ? matched.label : '__custom__'}
                                           onChange={(e) => {
                                             const sel = e.target.value;
@@ -3174,7 +3201,7 @@ export function ScanSellPage() {
                                       ) : null}
                                     </Stack>
                                   </TableCell>
-                                  <TableCell className={styles.excelTd}>
+                                  <TableCell className={excelStyles.td}>
                                     <Stack gap="xs" className={styles.compareCell}>
                                       {!hidePurchaseDetailsInSell ? (
                                         <Text variant="caption" className={styles.compareTop}>
@@ -3203,7 +3230,7 @@ export function ScanSellPage() {
                                       </Box>
                                     </Stack>
                                   </TableCell>
-                                  <TableCell className={styles.excelTd}>
+                                  <TableCell className={excelStyles.td}>
                                     <Stack gap="xs" className={styles.compareCell}>
                                       {!hidePurchaseDetailsInSell ? (
                                         <Text variant="caption" className={styles.compareTop}>
@@ -3230,12 +3257,12 @@ export function ScanSellPage() {
                                       </Box>
                                     </Stack>
                                   </TableCell>
-                                  <TableCell className={styles.excelTd}>
+                                  <TableCell className={excelStyles.td}>
                                     <Button
                                       type="button"
                                       variant="ghost"
                                       size="sm"
-                                      className={styles.excelRemoveBtn}
+                                      className={excelStyles.removeBtn}
                                       onClick={() => handleRemoveItem(cartItem.inventoryItem.id)}
                                       disabled={isUpdatingCart}
                                     >
@@ -3264,13 +3291,14 @@ export function ScanSellPage() {
                           return (
                             <Card key={cartItem.inventoryItem.id} className={styles.cartItem}>
                               <CardBody>
-                                <Stack gap="md" className={styles.itemInfo}>
-                                  <Stack gap="xs" className={styles.itemHeader}>
+                                <Stack gap="md" style={{ flex: 1, minWidth: 0 }}>
+                                  <Stack gap="xs">
                                     <Inline
-                                      className={styles.itemHeaderTop}
-                                      justify="between"
+                                      gap="sm"
                                       align="center"
+                                      justify="between"
                                       width="full"
+                                      flexWrap
                                     >
                                       <Button
                                         type="button"
@@ -3286,11 +3314,7 @@ export function ScanSellPage() {
                                       </Badge>
                                     </Inline>
                                     {cartItem.inventoryItem.companyName ? (
-                                      <Text
-                                        variant="caption"
-                                        color="secondary"
-                                        className={styles.itemCompany}
-                                      >
+                                      <Text variant="caption" color="secondary">
                                         {cartItem.inventoryItem.companyName}
                                       </Text>
                                     ) : null}
@@ -3299,15 +3323,11 @@ export function ScanSellPage() {
                                       history={customerProductHistory}
                                       loading={customerProductHistoryLoading}
                                     />
-                                    <Box className={styles.itemMetaRow}>
-                                      <Text
-                                        variant="caption"
-                                        color="secondary"
-                                        className={styles.itemUnitMeta}
-                                      >
+                                    <Inline gap="sm" align="center" flexWrap>
+                                      <Text variant="caption" color="secondary">
                                         {formatCartPackagingMeta(cartItem)}
                                       </Text>
-                                    </Box>
+                                    </Inline>
                                     {cartItem.inventoryItem.maximumRetailPrice > cartItem.price ? (
                                       <Text variant="caption" className={styles.itemDiscount}>
                                         {(
@@ -3320,13 +3340,18 @@ export function ScanSellPage() {
                                       </Text>
                                     ) : null}
                                   </Stack>
-                                  <Inline className={styles.itemEditRow} align="start" width="full">
+                                  <Inline align="start" gap="lg" width="full" flexWrap>
                                     <Stack gap="md" className={styles.itemEditFields}>
                                       <FormField
                                         label="Price"
                                         id={`price-${cartItem.inventoryItem.id}`}
                                       >
-                                        <Stack gap="xs" className={styles.itemPriceBlock}>
+                                        <Inline
+                                          gap="sm"
+                                          align="center"
+                                          width="full"
+                                          className={styles.itemPriceBlock}
+                                        >
                                           <CartSellingPriceInput
                                             id={`price-${cartItem.inventoryItem.id}`}
                                             value={cartItem.price}
@@ -3427,7 +3452,7 @@ export function ScanSellPage() {
                                               />
                                             );
                                           })()}
-                                        </Stack>
+                                        </Inline>
                                       </FormField>
                                       <Inline
                                         className={styles.itemSaleRowInline}
@@ -3525,12 +3550,12 @@ export function ScanSellPage() {
                                         </FormField>
                                       </Inline>
                                     </Stack>
-                                    <Stack gap="sm" className={styles.itemActions} align="end">
-                                      <Inline
-                                        className={styles.itemActionTopRow}
-                                        gap="sm"
-                                        align="center"
-                                      >
+                                    <Stack
+                                      gap="sm"
+                                      align="end"
+                                      style={{ flexShrink: 0, marginLeft: 'auto' }}
+                                    >
+                                      <Inline gap="sm" align="center">
                                         <Inline
                                           className={qtyStyles.qtyStepper}
                                           gap="none"
@@ -3608,7 +3633,7 @@ export function ScanSellPage() {
                 </Stack>
               </Box>
 
-              <Box as="aside" className={styles.summarySidebar}>
+              <Stack as="aside" gap="md" className={styles.summarySidebar}>
                 <CustomerSectionBlock
                   idPrefix="sidebar"
                   customerSectionOpen={customerSectionOpen}
@@ -3635,7 +3660,7 @@ export function ScanSellPage() {
                   setCustomerPan={setCustomerPan}
                 />
 
-                <Stack gap="xs" className={styles.cartSummary}>
+                <Stack gap="xs" className={styles.sectionDivider}>
                   {isLoadingCart ? (
                     <CenteredLoader label="Loading..." />
                   ) : (
@@ -3688,7 +3713,7 @@ export function ScanSellPage() {
                     cartData.revenueAfterTax != null ||
                     cartData.totalProfit != null ||
                     cartData.marginPercent != null) && (
-                    <Stack gap="xs" className={styles.costMarginDetail}>
+                    <Stack gap="xs" className={styles.sectionDivider}>
                       <SummaryRow
                         label="Total Cost"
                         value={`₹${(cartData.totalCost ?? 0).toFixed(2)}`}
@@ -3710,7 +3735,7 @@ export function ScanSellPage() {
                       )}
                     </Stack>
                   )}
-                <Inline gap="sm" className={styles.cartActions}>
+                <Inline gap="sm" width="full" className={styles.cartActions}>
                   <Button
                     type="button"
                     variant="outline"
@@ -3738,7 +3763,7 @@ export function ScanSellPage() {
                       : 'Process Payment'}
                   </Button>
                 </Inline>
-              </Box>
+              </Stack>
             </Inline>
           )}
         </>
@@ -3769,11 +3794,11 @@ export function ScanSellPage() {
                 open
                 onClose={() => setDetailModalItem(null)}
                 size="lg"
-                className={styles.detailModalContent}
+                className={detailStyles.content}
               >
-                <Box className={styles.detailModalHeader}>
-                  <Inline className={styles.detailModalHeaderContent} gap="md" align="center">
-                    <Text aria-hidden className={styles.detailModalProductIcon}>
+                <Box className={detailStyles.header}>
+                  <Inline className={detailStyles.headerContent} gap="md" align="center">
+                    <Text aria-hidden className={detailStyles.productIcon}>
                       📦
                     </Text>
                     <Stack gap="xs">
@@ -3783,17 +3808,17 @@ export function ScanSellPage() {
                   </Inline>
                   <IconButton
                     label="Close"
-                    className={styles.detailModalClose}
+                    className={detailStyles.close}
                     onClick={() => setDetailModalItem(null)}
                   >
                     ×
                   </IconButton>
                 </Box>
                 <Modal.Body>
-                  <Stack gap="lg" className={styles.detailModalBody}>
-                    <Stack gap="md" className={styles.detailModalSection}>
+                  <Stack gap="lg" className={detailStyles.body}>
+                    <Stack gap="md" className={detailStyles.section}>
                       <DetailSectionHeader icon="📋" title="Product Information" />
-                      <Grid className={styles.detailModalDetailsGrid}>
+                      <Grid className={detailStyles.detailsGrid}>
                         {detailModalFullItemLoading ? (
                           <DetailField icon="⏳" label="Loading full details">
                             …
@@ -3847,14 +3872,14 @@ export function ScanSellPage() {
                         </DetailField>
                       </Grid>
                     </Stack>
-                    <Stack gap="md" className={styles.detailModalSection}>
+                    <Stack gap="md" className={detailStyles.section}>
                       <DetailSectionHeader icon="💰" title="Pricing" />
-                      <Grid className={styles.detailModalPricingGrid}>
+                      <Grid className={detailStyles.pricingGrid}>
                         <DetailField icon="💵" label="Selling Price" pricing>
-                          <Text className={styles.detailModalPriceValue}>₹{price.toFixed(2)}</Text>
+                          <Text className={detailStyles.priceValue}>₹{price.toFixed(2)}</Text>
                         </DetailField>
                         <DetailField icon="🏷️" label="MRP" pricing>
-                          <Text className={styles.detailModalMrpValue}>₹{mrp.toFixed(2)}</Text>
+                          <Text className={detailStyles.mrpValue}>₹{mrp.toFixed(2)}</Text>
                         </DetailField>
                         {mrp > 0 ? (
                           <DetailField icon="📉" label="Discount off MRP" pricing>
@@ -3900,13 +3925,13 @@ export function ScanSellPage() {
                           </DetailField>
                         ) : null}
                         <DetailField icon="₹" label="Total amount" pricing>
-                          <Text className={styles.detailModalTotalValue}>
+                          <Text className={detailStyles.totalValue}>
                             ₹{(apiItem?.totalAmount ?? price * qty).toFixed(2)}
                           </Text>
                         </DetailField>
                       </Grid>
                       {detailModalItem.inventoryItem.pricingId ? (
-                        <Box className={styles.detailModalPricingActions}>
+                        <Box className={detailStyles.pricingActions}>
                           <Link
                             to={`/dashboard/price-edit/${detailModalItem.inventoryItem.pricingId}`}
                             state={{
@@ -3916,7 +3941,7 @@ export function ScanSellPage() {
                               rates: detailModalItem.inventoryItem.rates ?? undefined,
                               defaultRate: detailModalItem.inventoryItem.defaultRate ?? undefined,
                             }}
-                            className={styles.editPriceLink}
+                            className={detailStyles.editPriceLink}
                           >
                             <Text>Edit price</Text>
                           </Link>
@@ -3948,8 +3973,8 @@ function SearchDropdownItem({
   };
 
   return (
-    <Box as="li" className={styles.dropdownItem}>
-      <Stack gap="xs" className={styles.dropdownItemInfo}>
+    <Inline as="li" justify="between" align="start" gap="md" className={styles.dropdownItem}>
+      <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
         <Inline gap="sm" align="center">
           <Text weight="semibold" className={styles.dropdownItemName}>
             {item.name || 'Unnamed Product'}
@@ -3998,18 +4023,9 @@ function SearchDropdownItem({
           </Text>
         ) : null}
       </Stack>
-      <Box className={styles.dropdownItemActions}>
-        <Button
-          type="button"
-          variant="solid"
-          size="sm"
-          className={styles.dropdownAddBtn}
-          onClick={handleAdd}
-          disabled={disabled}
-        >
-          Add
-        </Button>
-      </Box>
-    </Box>
+      <Button type="button" variant="solid" size="sm" onClick={handleAdd} disabled={disabled}>
+        Add
+      </Button>
+    </Inline>
   );
 }

@@ -10,7 +10,7 @@ import {
   Stack,
   Text,
 } from '@inventory-platform/ui-kit';
-import styles from './../pages/product-registration.module.css';
+import styles from './packaging-factor-input.module.css';
 
 /** Map free-text or datalist selection to a UQC code (catalog or legacy). */
 export function resolvePackagingUqc(raw: string, catalog: PackagingUnit[]): string {

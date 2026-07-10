@@ -1,4 +1,4 @@
-import { Box, Grid, Stack, Text } from '@inventory-platform/ui-kit';
+import { Box, Stack, Text } from '@inventory-platform/ui-kit';
 import styles from './Stats.module.css';
 
 export function Stats() {
@@ -10,15 +10,15 @@ export function Stats() {
   ];
 
   return (
-    <Box as="section" className={styles.stats}>
-      <Grid className={styles.container}>
+    <Box as="section" padding="xl" bg="canvas" width="full">
+      <Box className={styles.statsGrid} maxWidth="xl" mx="auto">
         {stats.map((stat, index) => (
-          <Stack key={index} gap="sm" className={styles.statItem}>
+          <Stack key={index} gap="sm" align="center">
             <Text className={styles.statValue}>{stat.value}</Text>
-            <Text className={styles.statLabel}>{stat.label}</Text>
+            <Text color="secondary">{stat.label}</Text>
           </Stack>
         ))}
-      </Grid>
+      </Box>
     </Box>
   );
 }

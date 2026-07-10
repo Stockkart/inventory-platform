@@ -31,6 +31,13 @@
   opacity: 1;
 }
 
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+}
+
 .title {
   font-size: 3.5rem;
   font-weight: 700;
@@ -46,71 +53,17 @@
   color: #f6f8f8;
 }
 
-.description {
-  font-size: 1.25rem;
-  font-weight: 500;
-  color: #f6f8f8;
-  line-height: 1.6;
-  margin-bottom: 2.5rem;
-  margin-left: auto;
-  margin-right: auto;
-  transition: color 0.3s ease;
-}
-
-.overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(2px);
-}
-
-.container {
-  position: relative;
-  z-index: 2;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 0 1rem;
-}
-
-.ctaButtons {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
 .primaryBtn {
   background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
   color: white;
   border: none;
-  padding: 0.875rem 2rem;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: opacity 0.2s;
-}
-
-.primaryBtn:hover {
-  opacity: 0.9;
 }
 
 .secondaryBtn {
   background: transparent;
   color: #ffffff;
   border: 0.2px solid rgba(255, 255, 255, 0.35);
-  padding: 0.875rem 2rem;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.25s ease;
   backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
 }
 
 .secondaryBtn:hover {
@@ -126,20 +79,5 @@
 
   .title {
     font-size: 2.5rem;
-  }
-
-  .description {
-    font-size: 1rem;
-  }
-
-  .ctaButtons {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .primaryBtn,
-  .secondaryBtn {
-    width: 100%;
-    justify-content: center;
   }
 }

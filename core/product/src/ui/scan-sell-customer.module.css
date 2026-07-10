@@ -1,0 +1,109 @@
+/* Collapsible customer block — shared by ScanSell + MenuSell */
+
+.customerBlock {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  overflow: hidden;
+}
+
+.cafeEmbedded {
+  flex-shrink: 0;
+  margin: 0.75rem 0.75rem 0;
+  border-radius: 10px;
+}
+
+.customerToggle {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.customerToggleValue {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+
+.customerToggleHint {
+  flex: 1;
+}
+
+.customerToggleIcon {
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.customerForm {
+  padding: 0 0.85rem 0.85rem;
+  border-top: 1px solid var(--border-color);
+  animation: customerFormIn 0.2s ease-out;
+}
+
+@keyframes customerFormIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.customerFields {
+  padding-top: 0.75rem;
+}
+
+.customerInput {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebarSearchBtn {
+  width: 40px;
+  flex-shrink: 0;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.sidebarSearchBtn:hover:not(:disabled) {
+  background: var(--hover-bg);
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.sidebarSearchBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.retailerDivider {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.retailerSection {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  border-radius: 8px;
+}
+
+.linkSection {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}

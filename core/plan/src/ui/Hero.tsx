@@ -65,7 +65,14 @@ export function Hero() {
         <Box className={styles.overlay} />
       </Box>
 
-      <Box className={styles.container}>
+      <Stack
+        gap="lg"
+        align="center"
+        position="relative"
+        mx="auto"
+        padding="sm"
+        style={{ zIndex: 2, maxWidth: 800 }}
+      >
         <Text as="h1" variant="heading1" className={styles.title}>
           <Text as="span" className={styles.titleBlue}>
             Powerful Inventory
@@ -74,13 +81,18 @@ export function Hero() {
             Management
           </Text>
         </Text>
-        <Stack gap="none" className={styles.description}>
-          <Text>Everything you need to manage your inventory efficiently and scale</Text>
-          <Text>your business operations</Text>
+        <Stack gap="none" align="center">
+          <Text color="inverse" weight="medium" style={{ fontSize: '1.25rem', lineHeight: 1.6 }}>
+            Everything you need to manage your inventory efficiently and scale
+          </Text>
+          <Text color="inverse" weight="medium" style={{ fontSize: '1.25rem', lineHeight: 1.6 }}>
+            your business operations
+          </Text>
         </Stack>
-        <Inline gap="md" className={styles.ctaButtons}>
+        <Inline gap="md" justify="center" flexWrap>
           <Button
             variant="solid"
+            size="lg"
             className={styles.primaryBtn}
             onClick={() => navigate('/plans')}
             rightIcon={<ChevronRight size={20} />}
@@ -90,6 +102,7 @@ export function Hero() {
           <Button
             type="button"
             variant="outline"
+            size="lg"
             className={styles.secondaryBtn}
             onClick={() => void handleWatchDemo()}
             disabled={demoLoading}
@@ -98,7 +111,7 @@ export function Hero() {
             {demoLoading ? 'Loading…' : 'Watch Demo'}
           </Button>
         </Inline>
-      </Box>
+      </Stack>
 
       <YouTubeHelpModal
         video={demoVideo}

@@ -13,7 +13,6 @@ import {
   Stack,
 } from '@inventory-platform/ui-kit';
 import { useSalesAnalyticsQuery } from '../queries/hooks';
-import styles from './analytics.module.css';
 import { SummaryCards } from './SummaryCards';
 import { RevenueChart } from './RevenueChart';
 import { TopProductsChart } from './TopProductsChart';
@@ -212,28 +211,28 @@ export function SalesAnalytics() {
           {data.periodComparison ? <ComparisonMetrics data={data} /> : null}
           <Stack gap="md">
             {data.timeSeries && data.timeSeries.length > 0 ? (
-              <Card className={styles.chartCard}>
+              <Card style={{ minHeight: 400 }}>
                 <CardBody>
                   <RevenueChart data={data.timeSeries} />
                 </CardBody>
               </Card>
             ) : null}
-            <Card className={styles.chartCard}>
+            <Card style={{ minHeight: 400 }}>
               <CardBody>
                 <TopProductsChart data={data.topProducts} />
               </CardBody>
             </Card>
-            <Card className={styles.chartCard}>
+            <Card style={{ minHeight: 400 }}>
               <CardBody>
                 <SalesByGroupChart data={data.salesByProduct} groupBy="product" />
               </CardBody>
             </Card>
-            <Card className={styles.chartCard}>
+            <Card style={{ minHeight: 400 }}>
               <CardBody>
                 <SalesByGroupChart data={data.salesByLotId} groupBy="lotId" />
               </CardBody>
             </Card>
-            <Card className={styles.chartCard}>
+            <Card style={{ minHeight: 400 }}>
               <CardBody>
                 <SalesByGroupChart data={data.salesByCompany} groupBy="company" />
               </CardBody>
@@ -241,7 +240,7 @@ export function SalesAnalytics() {
           </Stack>
 
           <Stack gap="md">
-            <Card className={styles.chartCard}>
+            <Card style={{ minHeight: 400 }}>
               <CardBody>
                 <SalesByGroupPieChart
                   data={data.salesByProduct}
@@ -250,12 +249,12 @@ export function SalesAnalytics() {
                 />
               </CardBody>
             </Card>
-            <Card className={styles.chartCard}>
+            <Card style={{ minHeight: 400 }}>
               <CardBody>
                 <SalesByGroupPieChart data={data.salesByLotId} groupBy="lotId" showRevenue={true} />
               </CardBody>
             </Card>
-            <Card className={styles.chartCard}>
+            <Card style={{ minHeight: 400 }}>
               <CardBody>
                 <SalesByGroupPieChart
                   data={data.salesByCompany}

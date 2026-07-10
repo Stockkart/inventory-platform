@@ -12,7 +12,6 @@ import {
   Stack,
 } from '@inventory-platform/ui-kit';
 import { useProfitAnalyticsQuery } from '../queries/hooks';
-import styles from './analytics.module.css';
 import { ProfitSummaryCards } from './ProfitSummaryCards';
 import { ProfitByGroupChart } from './ProfitByGroupChart';
 import { ProfitByGroupPieChart } from './ProfitByGroupPieChart';
@@ -204,23 +203,23 @@ export function ProfitAnalytics() {
 
           <Stack gap="md">
             {profitData.costPriceTrends && profitData.costPriceTrends.length > 0 ? (
-              <Card className={styles.chartCard}>
+              <Card style={{ minHeight: 400 }}>
                 <CardBody>
                   <CostPriceTrendsChart data={profitData.costPriceTrends} />
                 </CardBody>
               </Card>
             ) : null}
-            <Card className={styles.chartCard}>
+            <Card style={{ minHeight: 400 }}>
               <CardBody>
                 <ProfitByGroupChart data={profitData.profitByProduct} groupBy="product" />
               </CardBody>
             </Card>
-            <Card className={styles.chartCard}>
+            <Card style={{ minHeight: 400 }}>
               <CardBody>
                 <ProfitByGroupChart data={profitData.profitByLotId} groupBy="lotId" />
               </CardBody>
             </Card>
-            <Card className={styles.chartCard}>
+            <Card style={{ minHeight: 400 }}>
               <CardBody>
                 <ProfitByGroupChart data={profitData.profitByBusinessType} groupBy="businessType" />
               </CardBody>
@@ -228,17 +227,17 @@ export function ProfitAnalytics() {
           </Stack>
 
           <Stack gap="md">
-            <Card className={styles.chartCard}>
+            <Card style={{ minHeight: 400 }}>
               <CardBody>
                 <ProfitByGroupPieChart data={profitData.profitByProduct} groupBy="product" />
               </CardBody>
             </Card>
-            <Card className={styles.chartCard}>
+            <Card style={{ minHeight: 400 }}>
               <CardBody>
                 <ProfitByGroupPieChart data={profitData.profitByLotId} groupBy="lotId" />
               </CardBody>
             </Card>
-            <Card className={styles.chartCard}>
+            <Card style={{ minHeight: 400 }}>
               <CardBody>
                 <ProfitByGroupPieChart
                   data={profitData.profitByBusinessType}
@@ -249,7 +248,7 @@ export function ProfitAnalytics() {
           </Stack>
 
           {profitData.lowMarginProducts && profitData.lowMarginProducts.length > 0 ? (
-            <Card className={styles.chartCard}>
+            <Card style={{ minHeight: 400 }}>
               <CardBody>
                 <LowMarginProductsTable data={profitData.lowMarginProducts} />
               </CardBody>
