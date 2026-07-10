@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { PaginationBar, SearchInput, PageHeader, EmptyState } from './PaginationBar';
 import { Button } from '../forms/Button';
-import { Inline } from '../layout/Stack';
+import { Inline, Stack, Text } from '../layout';
 
 const meta: Meta = {
   title: 'Patterns/List page',
@@ -61,13 +61,13 @@ export const ListPageChrome: StoryObj = {
     const [page, setPage] = useState(0);
     const [query, setQuery] = useState('');
     return (
-      <>
+      <Stack gap="md">
         <PageHeader
           title="Vendors"
           description="Manage your vendor contacts"
           actions={<Button variant="solid">New vendor</Button>}
         />
-        <Inline gap="md" style={{ marginBottom: '1rem' }}>
+        <Inline gap="md">
           <SearchInput
             value={query}
             onChange={setQuery}
@@ -76,8 +76,15 @@ export const ListPageChrome: StoryObj = {
             placeholder="Search vendors…"
           />
         </Inline>
+        <EmptyState
+          title={query ? `No results for “${query}”` : 'Start with a search'}
+          description="List-page chrome uses PageHeader + SearchInput + PaginationBar — no domain CSS."
+        />
         <PaginationBar page={page} totalPages={3} totalItems={42} onPageChange={setPage} />
-      </>
+        <Text variant="caption" color="secondary">
+          Domains compose these patterns; styling lives only in ui-kit.
+        </Text>
+      </Stack>
     );
   },
 };

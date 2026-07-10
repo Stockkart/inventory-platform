@@ -42,15 +42,23 @@ export interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ children, defaultMode = 'system' }: ThemeProviderProps) {
-  const [mode, setModeState] = useState<ThemeMode>(() =>
-    typeof window !== 'undefined' ? readStoredMode() : defaultMode,
-  );
+  const [mode, setModeState] = useState<ThemeMode>(() => {
+    if (typeof window === 'undefined') {
+      return defaultMode;
+    }
+    // Explicit non-system default (e.g. Storybook) wins over stored preference.
+    if (defaultMode === 'light' || defaultMode === 'dark') {
+      return defaultMode;
+    }
+    return readStoredMode();
+  });
   const [theme, setTheme] = useState<Theme>(() => resolveTheme(mode));
 
   useEffect(() => {
     const next = resolveTheme(mode);
     setTheme(next);
     document.documentElement.setAttribute('data-theme', next);
+    document.documentElement.style.colorScheme = next;
     localStorage.setItem(STORAGE_KEY, mode);
     localStorage.setItem('theme', next);
   }, [mode]);
