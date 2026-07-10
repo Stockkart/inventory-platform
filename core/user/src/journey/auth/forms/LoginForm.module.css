@@ -5,8 +5,8 @@
   box-shadow: 0 8px 24px var(--shadow);
   width: 100%;
   border: 1px solid var(--border-color);
-  transition: background-color 0.3s ease, border-color 0.3s ease,
-    box-shadow 0.3s ease, transform 0.2s ease;
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease,
+    transform 0.2s ease;
 }
 
 @media (hover: hover) {
@@ -212,7 +212,7 @@
   max-width: 100% !important;
 }
 
-.socialButtons div[role="button"] {
+.socialButtons div[role='button'] {
   width: 100% !important;
   max-width: 100% !important;
 }
@@ -239,7 +239,7 @@
 }
 
 /* Override Google button styles for a simpler, cleaner look */
-.googleButtonWrapper div[role="button"] {
+.googleButtonWrapper div[role='button'] {
   background: white !important;
   border: 1px solid #dadce0 !important;
   border-radius: 8px !important;
@@ -255,31 +255,30 @@
   height: 100% !important;
 }
 
-.googleButtonWrapper div[role="button"]:hover {
+.googleButtonWrapper div[role='button']:hover {
   background: #f8f9fa !important;
   border-color: #dadce0 !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
 }
 
 /* Hide the text label, keep only the Google logo */
-.googleButtonWrapper div[role="button"] > div {
+.googleButtonWrapper div[role='button'] > div {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
 }
 
-
 /* Hide account picker text and email when Google shows account selector */
-.googleButtonWrapper div[role="button"] div[data-profile] {
+.googleButtonWrapper div[role='button'] div[data-profile] {
   display: none !important;
 }
 
-.googleButtonWrapper div[role="button"] div[aria-label*="Sign in as"] {
+.googleButtonWrapper div[role='button'] div[aria-label*='Sign in as'] {
   display: none !important;
 }
 
 /* When using icon mode, ensure the icon container is visible */
-.googleButtonWrapper div[role="button"] > div {
+.googleButtonWrapper div[role='button'] > div {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -287,7 +286,7 @@
 }
 
 /* Don't hide child divs when in icon mode - they contain the icon */
-.googleButtonWrapper div[role="button"] > div > div {
+.googleButtonWrapper div[role='button'] > div > div {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -303,7 +302,7 @@
 }
 
 /* Force Google icon to be visible when using icon mode */
-.googleButtonWrapper div[role="button"] svg {
+.googleButtonWrapper div[role='button'] svg {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
@@ -312,7 +311,7 @@
   margin: 0 auto !important;
 }
 
-.googleButtonWrapper div[role="button"] img {
+.googleButtonWrapper div[role='button'] img {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
@@ -356,7 +355,7 @@
 }
 
 .facebookIcon path {
-  fill: #0866FF !important;
+  fill: #0866ff !important;
 }
 
 @media (max-width: 640px) {

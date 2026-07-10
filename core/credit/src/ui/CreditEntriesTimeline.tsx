@@ -10,9 +10,7 @@ type Props = {
 
 export function CreditEntriesTimeline({ entries, partyType }: Props) {
   if (!entries.length) {
-    return (
-      <Text className={styles.empty}>No ledger entries for this party yet.</Text>
-    );
+    return <Text className={styles.empty}>No ledger entries for this party yet.</Text>;
   }
 
   return (
@@ -29,14 +27,11 @@ export function CreditEntriesTimeline({ entries, partyType }: Props) {
           >
             <Inline justify="between" className={styles.timelineHead}>
               <Text weight="semibold">{title}</Text>
-              <Text variant="caption">
-                {new Date(e.createdAt).toLocaleString('en-IN')}
-              </Text>
+              <Text variant="caption">{new Date(e.createdAt).toLocaleString('en-IN')}</Text>
             </Inline>
             <Box className={styles.timelineMeta}>{subtitle}</Box>
             <Box className={styles.timelineMeta}>
-              Amount: Rs {formatMoney(e.amount)} · Balance after: Rs{' '}
-              {formatMoney(e.balanceAfter)}
+              Amount: Rs {formatMoney(e.amount)} · Balance after: Rs {formatMoney(e.balanceAfter)}
             </Box>
             {e.entryType === 'SETTLEMENT' && e.paymentMethod ? (
               <Box className={styles.timelineMeta}>

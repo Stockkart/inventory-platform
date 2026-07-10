@@ -22,17 +22,15 @@ import {
 } from '@inventory-platform/ui-kit';
 import { accountingApi } from '../api/accounting.api';
 import { useNotify } from '@inventory-platform/session';
-import type { AccountResponse, AccountType, CreateAccountRequest } from '@inventory-platform/accounting/types';
+import type {
+  AccountResponse,
+  AccountType,
+  CreateAccountRequest,
+} from '@inventory-platform/accounting/types';
 import { AccountingTabs } from '../ui/AccountingTabs';
 import styles from '../ui/accounting.module.css';
 
-const TYPE_ORDER: AccountType[] = [
-  'ASSET',
-  'LIABILITY',
-  'EQUITY',
-  'REVENUE',
-  'EXPENSE',
-];
+const TYPE_ORDER: AccountType[] = ['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE'];
 
 const TYPE_LABEL: Record<AccountType, string> = {
   ASSET: 'Assets',
@@ -85,9 +83,7 @@ export function ChartOfAccountsPage() {
       EXPENSE: [],
     };
     accounts.forEach((a) => out[a.type].push(a));
-    TYPE_ORDER.forEach((t) =>
-      out[t].sort((a, b) => a.code.localeCompare(b.code))
-    );
+    TYPE_ORDER.forEach((t) => out[t].sort((a, b) => a.code.localeCompare(b.code)));
     return out;
   }, [accounts]);
 
@@ -165,16 +161,10 @@ export function ChartOfAccountsPage() {
                   <Select
                     value={draft.type}
                     options={TYPE_OPTIONS}
-                    onChange={(e) =>
-                      setDraft({ ...draft, type: e.target.value as AccountType })
-                    }
+                    onChange={(e) => setDraft({ ...draft, type: e.target.value as AccountType })}
                   />
                 </FormField>
-                <Button
-                  variant="solid"
-                  loading={submitting}
-                  onClick={() => void submit()}
-                >
+                <Button variant="solid" loading={submitting} onClick={() => void submit()}>
                   Save account
                 </Button>
               </Inline>
@@ -215,9 +205,7 @@ export function ChartOfAccountsPage() {
                       type={type}
                       rows={rows}
                       onToggleActive={toggleActive}
-                      onOpenLedger={(id) =>
-                        navigate(`/dashboard/accounting/ledger/${id}`)
-                      }
+                      onOpenLedger={(id) => navigate(`/dashboard/accounting/ledger/${id}`)}
                     />
                   );
                 })

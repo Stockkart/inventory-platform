@@ -1,11 +1,5 @@
 import { useState } from 'react';
-import {
-  Box,
-  Checkbox,
-  Inline,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { Box, Checkbox, Inline, Stack, Text } from '@inventory-platform/ui-kit';
 import {
   LineChart,
   Line,
@@ -64,11 +58,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
             checked={showRevenue}
             onChange={(e) => setShowRevenue(e.target.checked)}
           />
-          <Checkbox
-            label="AOV"
-            checked={showAOV}
-            onChange={(e) => setShowAOV(e.target.checked)}
-          />
+          <Checkbox label="AOV" checked={showAOV} onChange={(e) => setShowAOV(e.target.checked)} />
           <Checkbox
             label="Purchases"
             checked={showPurchases}

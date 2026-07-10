@@ -4,14 +4,11 @@ import type { VerticalPlugin } from './types';
 export const DEFAULT_SKU_SCAN_SELL_PATH = '/dashboard/scan-sell';
 export const DEFAULT_MENU_LIST_SELL_PATH = '/dashboard/menu-sell';
 
-export type SellPathPlugin = Pick<
-  VerticalPlugin,
-  'sellSurfaces' | 'navContributions'
->;
+export type SellPathPlugin = Pick<VerticalPlugin, 'sellSurfaces' | 'navContributions'>;
 
 function sellNavPathFromPlugin(
   plugin: SellPathPlugin,
-  sellSurface: SellSurface
+  sellSurface: SellSurface,
 ): string | undefined {
   const items = plugin.navContributions?.flatMap((c) => c.items) ?? [];
   if (sellSurface === 'MENU_LIST') {
@@ -26,13 +23,11 @@ function sellNavPathFromPlugin(
  */
 export function resolveSellPath(
   capabilities: ShopUiCapabilities | null | undefined,
-  plugin?: SellPathPlugin | null
+  plugin?: SellPathPlugin | null,
 ): string {
   const sellSurface: SellSurface = capabilities?.sellSurface ?? 'SKU_SCAN';
 
-  const pluginSurface = plugin?.sellSurfaces?.find(
-    (entry) => entry.sellSurface === sellSurface
-  );
+  const pluginSurface = plugin?.sellSurfaces?.find((entry) => entry.sellSurface === sellSurface);
   if (pluginSurface?.path) {
     return pluginSurface.path;
   }
@@ -45,17 +40,13 @@ export function resolveSellPath(
   }
 
   if (capabilities?.navigation?.length) {
-    const preferredId =
-      sellSurface === 'MENU_LIST' ? 'menu-sell' : 'scan-sell';
+    const preferredId = sellSurface === 'MENU_LIST' ? 'menu-sell' : 'scan-sell';
     const fromApi =
-      capabilities.navigation.find((n) => n.id === preferredId) ??
-      capabilities.navigation[0];
+      capabilities.navigation.find((n) => n.id === preferredId) ?? capabilities.navigation[0];
     if (fromApi?.path) {
       return fromApi.path;
     }
   }
 
-  return sellSurface === 'MENU_LIST'
-    ? DEFAULT_MENU_LIST_SELL_PATH
-    : DEFAULT_SKU_SCAN_SELL_PATH;
+  return sellSurface === 'MENU_LIST' ? DEFAULT_MENU_LIST_SELL_PATH : DEFAULT_SKU_SCAN_SELL_PATH;
 }

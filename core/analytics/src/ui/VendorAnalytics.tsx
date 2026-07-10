@@ -20,10 +20,7 @@ import {
   Text,
 } from '@inventory-platform/ui-kit';
 import { useVendorAnalyticsQuery } from '../queries/hooks';
-import {
-  AnalyticsCollapsibleSection,
-  riskLevelBadgeVariant,
-} from './AnalyticsCollapsibleSection';
+import { AnalyticsCollapsibleSection, riskLevelBadgeVariant } from './AnalyticsCollapsibleSection';
 import { AnalyticsMetricCard } from './AnalyticsMetricCard';
 import styles from './analytics.module.css';
 
@@ -41,7 +38,7 @@ export function VendorAnalytics() {
       startDate: localFilters.startDate,
       endDate: localFilters.endDate,
     }),
-    [localFilters]
+    [localFilters],
   );
 
   const {
@@ -167,9 +164,7 @@ export function VendorAnalytics() {
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
-      {isLoading ? (
-        <CenteredLoader label="Loading vendor analytics data…" size="md" />
-      ) : null}
+      {isLoading ? <CenteredLoader label="Loading vendor analytics data…" size="md" /> : null}
 
       {vendorData && !isLoading ? (
         <>

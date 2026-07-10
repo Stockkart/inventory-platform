@@ -50,8 +50,7 @@ export function PrintInvoiceModal({
       setTimeout(() => window.URL.revokeObjectURL(url), 1000);
       onClose();
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to download invoice PDF';
+      const message = err instanceof Error ? err.message : 'Failed to download invoice PDF';
       onError?.(message);
     } finally {
       setIsGenerating(false);

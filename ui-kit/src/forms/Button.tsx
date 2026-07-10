@@ -34,7 +34,7 @@ export function Button({
         styles[`variant-${variant}`],
         styles[`size-${size}`],
         fullWidth && styles.fullWidth,
-        className
+        className,
       )}
       disabled={disabled || loading}
       aria-busy={loading || undefined}

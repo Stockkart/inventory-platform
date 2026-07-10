@@ -1,11 +1,4 @@
-import {
-  ChangeEvent,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { userLookupApi } from '@inventory-platform/user/users';
 import { cartApi, sellCatalogApi } from '@inventory-platform/product/api';
@@ -14,10 +7,7 @@ import type { CartResponse } from '@inventory-platform/product/types';
 import type { MenuItem, SellCatalog, ShopMenu } from '@inventory-platform/plugin-cafe/types';
 import { lineSellableRef, menuSellableRef } from '@inventory-platform/product/types';
 import { useNotify, useVerticalSchemaStore } from '@inventory-platform/session';
-import {
-  CustomerProductHistoryHint,
-  useCustomerProductHistory,
-} from '@inventory-platform/product';
+import { CustomerProductHistoryHint, useCustomerProductHistory } from '@inventory-platform/product';
 import {
   Alert,
   Box,
@@ -38,10 +28,7 @@ import {
 import styles from '@inventory-platform/product/pages/scan-sell.module.css';
 
 export function meta() {
-  return [
-    { title: 'Sell - StockKart' },
-    { name: 'description', content: 'Sell menu items' },
-  ];
+  return [{ title: 'Sell - StockKart' }, { name: 'description', content: 'Sell menu items' }];
 }
 
 type FlatMenuItem = MenuItem & { sectionTitle: string };
@@ -58,7 +45,7 @@ function flattenMenu(menu: ShopMenu | null): FlatMenuItem[] {
     (section.items ?? []).map((item) => ({
       ...item,
       sectionTitle: section.title,
-    }))
+    })),
   );
 }
 
@@ -69,15 +56,7 @@ function catalogToSearchHits(catalog: SellCatalog | null): SellSearchHit[] {
     .map((item) => ({ kind: 'menu' as const, item }));
 }
 
-function SummaryRow({
-  label,
-  value,
-  total,
-}: {
-  label: string;
-  value: string;
-  total?: boolean;
-}) {
+function SummaryRow({ label, value, total }: { label: string; value: string; total?: boolean }) {
   if (total) {
     return (
       <Inline justify="between" width="full" className={styles.summaryRowTotal}>
@@ -248,19 +227,14 @@ export function MenuSellPage() {
         setCustomerPhone(cart.customerPhone || '');
         setCustomerId(cart.customerId || '');
         setCustomerEmail(cart.customerEmail || '');
-        const hasRetailerFields = !!(
-          cart.customerGstin ||
-          cart.customerDlNo ||
-          cart.customerPan
-        );
+        const hasRetailerFields = !!(cart.customerGstin || cart.customerDlNo || cart.customerPan);
         setIsRetailer(hasRetailerFields);
         setCustomerGstin(cart.customerGstin || '');
         setCustomerDlNo(cart.customerDlNo || '');
         setCustomerPan(cart.customerPan || '');
       }
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to load menu';
+      const message = err instanceof Error ? err.message : 'Failed to load menu';
       setError(message);
       notifyError(message);
     } finally {
@@ -286,10 +260,7 @@ export function MenuSellPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showSearchDropdown]);
 
-  const searchResults = useMemo(
-    () => catalogToSearchHits(searchCatalog),
-    [searchCatalog]
-  );
+  const searchResults = useMemo(() => catalogToSearchHits(searchCatalog), [searchCatalog]);
 
   const runSearch = useCallback(
     async (q: string) => {
@@ -299,8 +270,7 @@ export function MenuSellPage() {
         const result = await sellCatalogApi.get(q);
         setSearchCatalog(result);
       } catch (err) {
-        const message =
-          err instanceof Error ? err.message : 'Search failed';
+        const message = err instanceof Error ? err.message : 'Search failed';
         setError(message);
         notifyError(message);
         setSearchCatalog(null);
@@ -308,7 +278,7 @@ export function MenuSellPage() {
         setIsSearching(false);
       }
     },
-    [notifyError]
+    [notifyError],
   );
 
   const customerPayload = useCallback(
@@ -317,10 +287,8 @@ export function MenuSellPage() {
       ...(customerAddress.trim() && { customerAddress: customerAddress.trim() }),
       ...(customerPhone.trim() && { customerPhone: customerPhone.trim() }),
       ...(customerEmail.trim() && { customerEmail: customerEmail.trim() }),
-      ...(isRetailer &&
-        customerGstin.trim() && { customerGstin: customerGstin.trim() }),
-      ...(isRetailer &&
-        customerDlNo.trim() && { customerDlNo: customerDlNo.trim() }),
+      ...(isRetailer && customerGstin.trim() && { customerGstin: customerGstin.trim() }),
+      ...(isRetailer && customerDlNo.trim() && { customerDlNo: customerDlNo.trim() }),
       ...(isRetailer && customerPan.trim() && { customerPan: customerPan.trim() }),
       ...(linkedUser && { customerUserId: linkedUser.userId }),
     }),
@@ -334,7 +302,7 @@ export function MenuSellPage() {
       customerDlNo,
       customerPan,
       linkedUser,
-    ]
+    ],
   );
 
   /** Cart upsert merges quantities — always send deltas, never absolute totals. */
@@ -354,8 +322,7 @@ export function MenuSellPage() {
         });
         setCartData(updated);
       } catch (err) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to update cart';
+        const message = err instanceof Error ? err.message : 'Failed to update cart';
         setError(message);
         notifyError(message);
         throw err;
@@ -364,7 +331,7 @@ export function MenuSellPage() {
         setIsSyncing(false);
       }
     },
-    [businessType, customerPayload, notifyError]
+    [businessType, customerPayload, notifyError],
   );
 
   const addMenuItem = async (item: MenuItem) => {
@@ -380,9 +347,7 @@ export function MenuSellPage() {
   };
 
   const setQuantity = async (sellableRef: string, newQty: number) => {
-    const line = (cartData?.items ?? []).find(
-      (row) => lineSellableRef(row) === sellableRef
-    );
+    const line = (cartData?.items ?? []).find((row) => lineSellableRef(row) === sellableRef);
     if (!line) return;
     const current = Math.trunc(Number(line.quantity));
     const next = Math.trunc(newQty);
@@ -392,9 +357,7 @@ export function MenuSellPage() {
   };
 
   const removeLine = async (sellableRef: string) => {
-    const line = (cartData?.items ?? []).find(
-      (row) => lineSellableRef(row) === sellableRef
-    );
+    const line = (cartData?.items ?? []).find((row) => lineSellableRef(row) === sellableRef);
     if (!line) return;
     const qty = Math.trunc(Number(line.quantity));
     if (qty <= 0) return;
@@ -441,11 +404,7 @@ export function MenuSellPage() {
         setCustomerId(customer.customerId || '');
         setCustomerEmail(customer.email || '');
         setCustomerAddress(customer.address || '');
-        const hasRetailerFields = !!(
-          customer.gstin ||
-          customer.dlNo ||
-          customer.pan
-        );
+        const hasRetailerFields = !!(customer.gstin || customer.dlNo || customer.pan);
         if (hasRetailerFields) {
           setIsRetailer(true);
           setCustomerGstin(customer.gstin || '');
@@ -475,8 +434,7 @@ export function MenuSellPage() {
         setCustomerPan('');
       }
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to search customer';
+      const message = err instanceof Error ? err.message : 'Failed to search customer';
       notifyError(message);
       setCustomerName('');
       setCustomerId('');
@@ -505,11 +463,7 @@ export function MenuSellPage() {
         setCustomerPhone(customer.phone || '');
         setCustomerId(customer.customerId || '');
         setCustomerAddress(customer.address || '');
-        const hasRetailerFields = !!(
-          customer.gstin ||
-          customer.dlNo ||
-          customer.pan
-        );
+        const hasRetailerFields = !!(customer.gstin || customer.dlNo || customer.pan);
         if (hasRetailerFields) {
           setIsRetailer(true);
           setCustomerGstin(customer.gstin || '');
@@ -539,8 +493,7 @@ export function MenuSellPage() {
         setCustomerPan('');
       }
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to search customer';
+      const message = err instanceof Error ? err.message : 'Failed to search customer';
       notifyError(message);
       setCustomerName('');
       setCustomerPhone('');
@@ -613,8 +566,7 @@ export function MenuSellPage() {
       });
       navigate('/dashboard/checkout');
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to process payment';
+      const message = err instanceof Error ? err.message : 'Failed to process payment';
       setError(message);
       notifyError(message);
     } finally {
@@ -625,10 +577,8 @@ export function MenuSellPage() {
   const cartItems = cartData?.items ?? [];
   const cartSellableRefs = useMemo(
     () =>
-      cartItems
-        .map((line) => lineSellableRef(line))
-        .filter((ref): ref is string => Boolean(ref)),
-    [cartItems]
+      cartItems.map((line) => lineSellableRef(line)).filter((ref): ref is string => Boolean(ref)),
+    [cartItems],
   );
   const { data: customerProductHistory, loading: customerProductHistoryLoading } =
     useCustomerProductHistory({
@@ -651,34 +601,21 @@ export function MenuSellPage() {
     cartData?.grandTotal ??
     cartItems.reduce(
       (sum, line) => sum + (line.totalAmount ?? line.priceToRetail * line.quantity),
-      0
+      0,
     );
 
   return (
     <Stack gap="md" className={styles.page}>
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
-      <PageHeader
-        title="Sell"
-        description="Search and add menu items to the cart"
-      />
+      <PageHeader title="Sell" description="Search and add menu items to the cart" />
 
       <Inline className={styles.mainRow} align="start" width="full">
         <Box className={styles.cartArea}>
           <Stack gap="md" className={styles.cartSection}>
             <Box className={styles.searchRow} ref={searchWrapperRef}>
-              <Inline
-                className={styles.searchForm}
-                gap="sm"
-                align="center"
-                width="full"
-              >
-                <Inline
-                  className={styles.searchInputWrapper}
-                  gap="sm"
-                  align="center"
-                  width="full"
-                >
+              <Inline className={styles.searchForm} gap="sm" align="center" width="full">
+                <Inline className={styles.searchInputWrapper} gap="sm" align="center" width="full">
                   <Text className={styles.searchIcon} aria-hidden>
                     🔍
                   </Text>
@@ -713,11 +650,7 @@ export function MenuSellPage() {
                 </Inline>
               </Inline>
               {showSearchDropdown ? (
-                <Box
-                  id="menu-search-results-list"
-                  className={styles.searchDropdown}
-                  role="listbox"
-                >
+                <Box id="menu-search-results-list" className={styles.searchDropdown} role="listbox">
                   {isSearching ? (
                     <Text color="secondary" className={styles.dropdownLoading}>
                       Searching…
@@ -750,8 +683,7 @@ export function MenuSellPage() {
               ) : (
                 cartItems.map((line) => {
                   const ref = lineSellableRef(line) ?? line.name ?? '';
-                  const lineTotal =
-                    line.totalAmount ?? line.priceToRetail * line.quantity;
+                  const lineTotal = line.totalAmount ?? line.priceToRetail * line.quantity;
                   return (
                     <Box key={ref} className={styles.cartItem}>
                       <Stack gap="xs" className={styles.itemInfo}>
@@ -769,9 +701,12 @@ export function MenuSellPage() {
                             />
                           ) : null}
                           <Inline className={styles.itemMetaRow}>
-                            <Text variant="caption" color="secondary" className={styles.itemUnitMeta}>
-                              {money(line.priceToRetail)} each ·{' '}
-                              {money(lineTotal)} total
+                            <Text
+                              variant="caption"
+                              color="secondary"
+                              className={styles.itemUnitMeta}
+                            >
+                              {money(line.priceToRetail)} each · {money(lineTotal)} total
                             </Text>
                           </Inline>
                         </Stack>
@@ -848,9 +783,7 @@ export function MenuSellPage() {
                     Optional
                   </Text>
                 )}
-                <Text className={styles.customerToggleIcon}>
-                  {customerSectionOpen ? '▼' : '▶'}
-                </Text>
+                <Text className={styles.customerToggleIcon}>{customerSectionOpen ? '▼' : '▶'}</Text>
               </Inline>
             </Button>
             {customerSectionOpen ? (
@@ -1011,8 +944,7 @@ export function MenuSellPage() {
                   ) : (
                     <Stack gap="sm" className={styles.customerLinkSearch}>
                       <Text color="secondary" className={styles.customerLinkHint}>
-                        Enter email above and search to link a customer to their
-                        StockKart account.
+                        Enter email above and search to link a customer to their StockKart account.
                       </Text>
                       <Button
                         type="button"
@@ -1043,15 +975,9 @@ export function MenuSellPage() {
           <Card className={styles.cartSummary}>
             <CardBody>
               <Stack gap="xs">
-                <SummaryRow
-                  label="Subtotal"
-                  value={money(cartData?.subTotal ?? 0)}
-                />
+                <SummaryRow label="Subtotal" value={money(cartData?.subTotal ?? 0)} />
                 {(cartData?.taxTotal ?? 0) > 0 ? (
-                  <SummaryRow
-                    label="Tax"
-                    value={money(cartData?.taxTotal ?? 0)}
-                  />
+                  <SummaryRow label="Tax" value={money(cartData?.taxTotal ?? 0)} />
                 ) : null}
                 <SummaryRow label="Total" value={money(grandTotal)} total />
               </Stack>
@@ -1076,11 +1002,7 @@ export function MenuSellPage() {
               disabled={isProcessing || isSyncing || cartItems.length === 0}
               loading={isProcessing || isSyncing}
             >
-              {isProcessing
-                ? 'Processing...'
-                : isSyncing
-                  ? 'Updating...'
-                  : 'Process Payment'}
+              {isProcessing ? 'Processing...' : isSyncing ? 'Updating...' : 'Process Payment'}
             </Button>
           </Inline>
         </Box>

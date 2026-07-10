@@ -1,14 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuthStore } from '@inventory-platform/session';
-import {
-  Box,
-  Button,
-  Card,
-  CardBody,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { Box, Button, Card, CardBody, Stack, Text } from '@inventory-platform/ui-kit';
 import styles from './shop-selection.module.css';
 
 export function meta() {
@@ -24,9 +17,7 @@ export function meta() {
 export default function ShopSelectionPage() {
   const navigate = useNavigate();
   const { user, isAuthenticated, fetchCurrentUser, logout } = useAuthStore();
-  const [selectedOption, setSelectedOption] = useState<
-    'onboard' | 'request' | 'view' | null
-  >(null);
+  const [selectedOption, setSelectedOption] = useState<'onboard' | 'request' | 'view' | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -130,9 +121,7 @@ export default function ShopSelectionPage() {
         {options.map(({ key, icon, title, description }) => (
           <Card
             key={key}
-            className={`${styles.optionCard} ${
-              selectedOption === key ? styles.selected : ''
-            }`}
+            className={`${styles.optionCard} ${selectedOption === key ? styles.selected : ''}`}
             onClick={() => handleOptionSelect(key)}
             role="button"
             tabIndex={0}
@@ -158,22 +147,14 @@ export default function ShopSelectionPage() {
 
       {selectedOption ? (
         <Box className={styles.actions}>
-          <Button
-            variant="solid"
-            className={styles.continueButton}
-            onClick={handleContinue}
-          >
+          <Button variant="solid" className={styles.continueButton} onClick={handleContinue}>
             Continue
           </Button>
         </Box>
       ) : null}
 
       <Box className={styles.footer}>
-        <Button
-          variant="ghost"
-          className={styles.logoutButton}
-          onClick={() => void handleLogout()}
-        >
+        <Button variant="ghost" className={styles.logoutButton} onClick={() => void handleLogout()}>
           Logout
         </Button>
       </Box>

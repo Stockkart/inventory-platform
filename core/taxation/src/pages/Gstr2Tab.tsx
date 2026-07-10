@@ -17,13 +17,7 @@ import {
 import { triggerBlobDownload } from '../api/download';
 import { gstr2Api } from '../api/gstr2.api';
 import { useGstr2ReportQuery } from '../queries/hooks';
-import {
-  formatCurrency,
-  formatDate,
-  getDefaultPeriod,
-  GstrReportHeader,
-  GstrSubTabs,
-} from '../ui';
+import { formatCurrency, formatDate, getDefaultPeriod, GstrReportHeader, GstrSubTabs } from '../ui';
 import styles from '../ui/gstr.module.css';
 
 const TABS = [
@@ -54,21 +48,14 @@ function EmptySection({ message }: { message: string }) {
 
 export function Gstr2Tab() {
   const [period, setPeriod] = useState(getDefaultPeriod);
-  const {
-    data = null,
-    isLoading,
-    isError,
-    error: queryError,
-  } = useGstr2ReportQuery(period);
+  const { data = null, isLoading, isError, error: queryError } = useGstr2ReportQuery(period);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Gstr2SectionId>('b2b');
   const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     if (isError) {
-      setError(
-        queryError instanceof Error ? queryError.message : 'Failed to load GSTR-2 report'
-      );
+      setError(queryError instanceof Error ? queryError.message : 'Failed to load GSTR-2 report');
     } else {
       setError(null);
     }
@@ -103,9 +90,7 @@ export function Gstr2Tab() {
       <GstrReportHeader
         title="GSTR-2 Report"
         description="View and download your GSTR-2 tax return for inward supplies"
-        shopInfo={
-          data ? `GSTIN: ${data.shopGstin || '—'} · Period: ${data.period}` : undefined
-        }
+        shopInfo={data ? `GSTIN: ${data.shopGstin || '—'} · Period: ${data.period}` : undefined}
         periodId="gstr2-period"
         period={period}
         onPeriodChange={setPeriod}
@@ -414,7 +399,9 @@ export function Gstr2Tab() {
                         <TableRow>
                           <TableHeaderCell>Place of Supply</TableHeaderCell>
                           <TableHeaderCell>Rate %</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>Gross Advance Paid</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>
+                            Gross Advance Paid
+                          </TableHeaderCell>
                           <TableHeaderCell className={styles.numCol}>Cess</TableHeaderCell>
                         </TableRow>
                       </TableHead>
@@ -448,7 +435,9 @@ export function Gstr2Tab() {
                         <TableRow>
                           <TableHeaderCell>Place of Supply</TableHeaderCell>
                           <TableHeaderCell>Rate %</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>Advance to Adjust</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>
+                            Advance to Adjust
+                          </TableHeaderCell>
                           <TableHeaderCell className={styles.numCol}>Cess Adjusted</TableHeaderCell>
                         </TableRow>
                       </TableHead>

@@ -5,13 +5,10 @@ const base = createQueryKeyFactory('reminders');
 
 export const remindersKeys = {
   ...base,
-  reminderDetails: (page: number, size: number) =>
-    [...base.all, 'details', page, size] as const,
+  reminderDetails: (page: number, size: number) => [...base.all, 'details', page, size] as const,
   reminderDetail: (id: string) => [...base.all, 'detail', id] as const,
-  expiryBuckets: (params: ExpiryBucketsParams) =>
-    [...base.all, 'expiry-buckets', params] as const,
-  lowStock: (page: number, size: number) =>
-    [...base.all, 'low-stock', page, size] as const,
+  expiryBuckets: (params: ExpiryBucketsParams) => [...base.all, 'expiry-buckets', params] as const,
+  lowStock: (page: number, size: number) => [...base.all, 'low-stock', page, size] as const,
   inventoryItem: (id: string) => [...base.all, 'inventory-item', id] as const,
 };
 

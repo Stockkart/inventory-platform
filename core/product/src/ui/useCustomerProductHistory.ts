@@ -9,9 +9,11 @@ function buildCacheKey(
   customerPhone: string | null | undefined,
   refs: string[],
   excludePurchaseId: string | null | undefined,
-  limit: number
+  limit: number,
 ): string {
-  return `${customerId ?? ''}|${customerPhone ?? ''}|${excludePurchaseId ?? ''}|${limit}|${refs.join(',')}`;
+  return `${customerId ?? ''}|${customerPhone ?? ''}|${
+    excludePurchaseId ?? ''
+  }|${limit}|${refs.join(',')}`;
 }
 
 export interface UseCustomerProductHistoryParams {
@@ -48,13 +50,7 @@ export function useCustomerProductHistory({
       return;
     }
 
-    const key = buildCacheKey(
-      customerId,
-      customerPhone,
-      stableRefs,
-      excludePurchaseId,
-      limit
-    );
+    const key = buildCacheKey(customerId, customerPhone, stableRefs, excludePurchaseId, limit);
     const cached = historyCache.get(key);
     if (cached) {
       setData(cached);
@@ -91,15 +87,7 @@ export function useCustomerProductHistory({
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [
-    enabled,
-    hasCustomer,
-    customerId,
-    customerPhone,
-    stableRefs,
-    excludePurchaseId,
-    limit,
-  ]);
+  }, [enabled, hasCustomer, customerId, customerPhone, stableRefs, excludePurchaseId, limit]);
 
   return { data, loading };
 }

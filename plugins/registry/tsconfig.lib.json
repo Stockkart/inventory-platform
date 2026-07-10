@@ -13,9 +13,7 @@
     "types": ["node"],
     "paths": {
       "@inventory-platform/routing": ["../../platform/routing/src/index.ts"],
-      "@inventory-platform/accounting/nav": [
-        "../../core/accounting/src/nav.ts"
-      ],
+      "@inventory-platform/accounting/nav": ["../../core/accounting/src/nav.ts"],
       "@inventory-platform/analytics/nav": ["../../core/analytics/src/nav.ts"],
       "@inventory-platform/credit/nav": ["../../core/credit/src/nav.ts"],
       "@inventory-platform/plan/nav": ["../../core/plan/src/nav.ts"],

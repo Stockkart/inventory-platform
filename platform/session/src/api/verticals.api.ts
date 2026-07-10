@@ -10,16 +10,14 @@ import { SESSION_SHOP_ENDPOINTS, VERTICAL_ENDPOINTS } from './endpoints';
 
 export const verticalsApi = {
   listActive: async (): Promise<VerticalSummary[]> => {
-    const response = await apiClient.get<ApiResponse<VerticalSummary[]>>(
-      VERTICAL_ENDPOINTS.BASE
-    );
+    const response = await apiClient.get<ApiResponse<VerticalSummary[]>>(VERTICAL_ENDPOINTS.BASE);
     return response.data;
   },
 
   getSchema: async (
     verticalId: string,
     mode: SchemaDisplayMode = 'regular',
-    version?: string
+    version?: string,
   ): Promise<VerticalSchemaResponse> => {
     const params: Record<string, string> = { mode };
     if (version) {
@@ -27,17 +25,15 @@ export const verticalsApi = {
     }
     const response = await apiClient.get<ApiResponse<VerticalSchemaResponse>>(
       VERTICAL_ENDPOINTS.SCHEMA(verticalId),
-      params
+      params,
     );
     return response.data;
   },
 
-  getShopSchema: async (
-    mode: SchemaDisplayMode = 'regular'
-  ): Promise<ShopSchemaResponse> => {
+  getShopSchema: async (mode: SchemaDisplayMode = 'regular'): Promise<ShopSchemaResponse> => {
     const response = await apiClient.get<ApiResponse<ShopSchemaResponse>>(
       SESSION_SHOP_ENDPOINTS.ME_SCHEMA,
-      { mode }
+      { mode },
     );
     return response.data;
   },

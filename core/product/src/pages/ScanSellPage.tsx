@@ -41,11 +41,24 @@ import { cartApi } from '../api/cart.api';
 import { sellCatalogApi } from '../api/sell-catalog.api';
 import { pricingClient } from '../api/pricing-client.api';
 import { customersApi } from '@inventory-platform/user/customers';
-import type { AvailableUnit, BillingMode, InventoryItem, CartResponse, CheckoutItemResponse, QuotationSummary } from '@inventory-platform/product/types';
+import type {
+  AvailableUnit,
+  BillingMode,
+  InventoryItem,
+  CartResponse,
+  CheckoutItemResponse,
+  QuotationSummary,
+} from '@inventory-platform/product/types';
 import type { PricingResponse } from '@inventory-platform/contracts';
 import type { CustomerResponse } from '@inventory-platform/user/types';
 import type { MenuItem, SellCatalog } from '@inventory-platform/product/types';
-import { inventoryLotIdFromSellableRef, inventorySellableRef, lineSellableRef, menuSellableRef, menuItemIdFromSellableRef } from '@inventory-platform/product/types';
+import {
+  inventoryLotIdFromSellableRef,
+  inventorySellableRef,
+  lineSellableRef,
+  menuSellableRef,
+  menuItemIdFromSellableRef,
+} from '@inventory-platform/product/types';
 import styles from './scan-sell.module.css';
 import { CafeSellCatalogPanel } from '../ui/CafeSellCatalogPanel';
 import { ScanSellMenuCartLine } from '../ui/ScanSellMenuCartLine';
@@ -61,10 +74,7 @@ import {
   getExtensionFieldString,
   sortInventoryByExpirySoonest,
 } from '@inventory-platform/schema';
-import {
-  useCustomerProductHistory,
-  CustomerProductHistoryHint,
-} from '../ui';
+import { useCustomerProductHistory, CustomerProductHistoryHint } from '../ui';
 import { ScanSellQuotationStack } from '../ui/ScanSellQuotationStack';
 
 export function meta() {
@@ -90,10 +100,7 @@ interface RateOption {
 }
 
 /** Build available rate options from inventory item and/or pricing API response */
-function getRateOptions(
-  item: InventoryItem,
-  pricing?: PricingResponse | null
-): RateOption[] {
+function getRateOptions(item: InventoryItem, pricing?: PricingResponse | null): RateOption[] {
   const opts: RateOption[] = [];
   const mrp = pricing?.maximumRetailPrice ?? item.maximumRetailPrice;
   const ptr = pricing?.priceToRetail ?? item.priceToRetail;
@@ -125,11 +132,8 @@ interface CartItem {
 }
 
 function resolveInventoryBaseUnit(
-  inv: Pick<
-    InventoryItem,
-    'baseUnit' | 'uqc' | 'unitConversions' | 'packUnitUqc'
-  >,
-  availableUnits?: AvailableUnit[]
+  inv: Pick<InventoryItem, 'baseUnit' | 'uqc' | 'unitConversions' | 'packUnitUqc'>,
+  availableUnits?: AvailableUnit[],
 ): string {
   const direct = inv.baseUnit?.trim();
   if (direct) return direct;
@@ -141,17 +145,12 @@ function resolveInventoryBaseUnit(
 
 /** e.g. "1 BTL = 50 MLT" when pack conversion is configured. */
 function formatPackConversionLabel(
-  inv: Pick<
-    InventoryItem,
-    'baseUnit' | 'uqc' | 'unitConversions' | 'unitsPerPack' | 'packUnitUqc'
-  >,
-  availableUnits?: AvailableUnit[]
+  inv: Pick<InventoryItem, 'baseUnit' | 'uqc' | 'unitConversions' | 'unitsPerPack' | 'packUnitUqc'>,
+  availableUnits?: AvailableUnit[],
 ): string | null {
   const base = resolveInventoryBaseUnit(inv, availableUnits);
-  const packUnit =
-    inv.unitConversions?.unit?.trim() ?? inv.packUnitUqc?.trim() ?? null;
-  const factor =
-    inv.unitConversions?.factor ?? inv.unitsPerPack ?? null;
+  const packUnit = inv.unitConversions?.unit?.trim() ?? inv.packUnitUqc?.trim() ?? null;
+  const factor = inv.unitConversions?.factor ?? inv.unitsPerPack ?? null;
   if (!packUnit || factor == null || factor <= 1) return null;
   if (packUnit.toUpperCase() === base.toUpperCase()) return null;
   return `1 ${packUnit} = ${factor} ${base}`;
@@ -301,9 +300,7 @@ function CartAdditionalDiscountInput({
   onCommit: (value: number | null) => void;
   disabled: boolean;
 }) {
-  const [draft, setDraft] = useState(
-    value !== null && value !== undefined ? value.toString() : ''
-  );
+  const [draft, setDraft] = useState(value !== null && value !== undefined ? value.toString() : '');
 
   useEffect(() => {
     const next = value !== null && value !== undefined ? value.toString() : '';
@@ -369,17 +366,10 @@ function CartSchemeInput({
 }) {
   const formatFromProps = () => {
     // Use schemeType first to decide what to show (API can return both values)
-    if (
-      schemeType === 'PERCENTAGE' &&
-      percentage != null &&
-      percentage !== undefined
-    ) {
+    if (schemeType === 'PERCENTAGE' && percentage != null && percentage !== undefined) {
       return `${percentage}%`;
     }
-    if (
-      (schemeType === 'FIXED_UNITS' || schemeType == null) &&
-      (payFor != null || free != null)
-    ) {
+    if ((schemeType === 'FIXED_UNITS' || schemeType == null) && (payFor != null || free != null)) {
       const payStr = (payFor ?? 0).toString();
       const freeStr = (free ?? 0).toString();
       return `${payStr} + ${freeStr}`;
@@ -475,9 +465,7 @@ function CartSchemeInput({
       value={draft}
       placeholder="0, 10, 10 + 1 (number = %)"
       disabled={disabled}
-      onChange={(e: ChangeEvent<HTMLInputElement>) =>
-        handleChange(e.target.value)
-      }
+      onChange={(e: ChangeEvent<HTMLInputElement>) => handleChange(e.target.value)}
       onBlur={() => {
         if (skipNextBlurCommitRef.current) {
           skipNextBlurCommitRef.current = false;
@@ -496,15 +484,7 @@ function CartSchemeInput({
   );
 }
 
-function SummaryRow({
-  label,
-  value,
-  total,
-}: {
-  label: string;
-  value: string;
-  total?: boolean;
-}) {
+function SummaryRow({ label, value, total }: { label: string; value: string; total?: boolean }) {
   if (total) {
     return (
       <Inline justify="between" width="full" className={styles.summaryRowTotal}>
@@ -534,9 +514,7 @@ function DetailField({
 }) {
   return (
     <Box
-      className={`${styles.detailModalDetailCard} ${
-        pricing ? styles.detailModalPricingCard : ''
-      }`}
+      className={`${styles.detailModalDetailCard} ${pricing ? styles.detailModalPricingCard : ''}`}
     >
       <Text className={styles.detailModalDetailIcon}>{icon}</Text>
       <Stack gap="xs" className={styles.detailModalDetailContent}>
@@ -597,9 +575,7 @@ function ProductSearchBlock({
             className={styles.searchInput}
             placeholder={placeholder}
             value={searchQuery}
-            onChange={(e: ChangeEvent<HTMLInputElement>) =>
-              setSearchQuery(e.currentTarget.value)
-            }
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchQuery(e.currentTarget.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
@@ -713,17 +689,13 @@ function CustomerSectionBlock({
             Customer
           </Text>
           {customerName || customerPhone ? (
-            <Text className={styles.customerToggleValue}>
-              {customerName || customerPhone}
-            </Text>
+            <Text className={styles.customerToggleValue}>{customerName || customerPhone}</Text>
           ) : (
             <Text color="secondary" className={styles.customerToggleHint}>
               Optional
             </Text>
           )}
-          <Text className={styles.customerToggleIcon}>
-            {customerSectionOpen ? '▼' : '▶'}
-          </Text>
+          <Text className={styles.customerToggleIcon}>{customerSectionOpen ? '▼' : '▶'}</Text>
         </Inline>
       </Button>
       {customerSectionOpen ? (
@@ -916,16 +888,13 @@ export function ScanSellPage() {
   const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [customerSectionOpen, setCustomerSectionOpen] = useState(false);
-  const [additionalDiscountOverrides, setAdditionalDiscountOverrides] =
-    useState<Record<string, number | null>>({});
+  const [additionalDiscountOverrides, setAdditionalDiscountOverrides] = useState<
+    Record<string, number | null>
+  >({});
   const [detailModalItem, setDetailModalItem] = useState<CartItem | null>(null);
-  const [detailModalFullItem, setDetailModalFullItem] =
-    useState<InventoryItem | null>(null);
-  const [detailModalFullItemLoading, setDetailModalFullItemLoading] =
-    useState(false);
-  const [detailModalFullItemError, setDetailModalFullItemError] = useState<
-    string | null
-  >(null);
+  const [detailModalFullItem, setDetailModalFullItem] = useState<InventoryItem | null>(null);
+  const [detailModalFullItemLoading, setDetailModalFullItemLoading] = useState(false);
+  const [detailModalFullItemError, setDetailModalFullItemError] = useState<string | null>(null);
   const [cartViewMode, setCartViewMode] = useState<'list' | 'grid'>(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('scan-sell-view-mode');
@@ -934,18 +903,12 @@ export function ScanSellPage() {
     return 'list';
   });
   /** When true, purchase scheme / purchase add. discount read-only rows are hidden in cart (sale inputs stay). */
-  const [hidePurchaseDetailsInSell, setHidePurchaseDetailsInSell] = useState(
-    () => {
-      if (typeof window === 'undefined') return false;
-      return localStorage.getItem('scan-sell-hide-purchase-details') === '1';
-    }
-  );
-  const [pricingCache, setPricingCache] = useState<
-    Record<string, PricingResponse>
-  >({});
-  const [pricingLoading, setPricingLoading] = useState<Record<string, boolean>>(
-    {}
-  );
+  const [hidePurchaseDetailsInSell, setHidePurchaseDetailsInSell] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('scan-sell-hide-purchase-details') === '1';
+  });
+  const [pricingCache, setPricingCache] = useState<Record<string, PricingResponse>>({});
+  const [pricingLoading, setPricingLoading] = useState<Record<string, boolean>>({});
   const { error: notifyError } = useNotify;
 
   useEffect(() => {
@@ -980,9 +943,7 @@ export function ScanSellPage() {
       .catch((err) => {
         if (cancelled) return;
         catalogLoadedForShopRef.current = null;
-        notifyError(
-          err instanceof Error ? err.message : 'Failed to load menu'
-        );
+        notifyError(err instanceof Error ? err.message : 'Failed to load menu');
       })
       .finally(() => {
         if (!cancelled) setIsLoadingCatalog(false);
@@ -1006,7 +967,7 @@ export function ScanSellPage() {
     inventoryApi
       .getById(
         resolveInventoryDocumentId(detailModalItem.inventoryItem) ??
-          detailModalItem.inventoryItem.id
+          detailModalItem.inventoryItem.id,
       )
       .then((inv) => {
         if (cancelled) return;
@@ -1016,7 +977,7 @@ export function ScanSellPage() {
         if (cancelled) return;
         setDetailModalFullItem(null);
         setDetailModalFullItemError(
-          err instanceof Error ? err.message : 'Failed to load product details'
+          err instanceof Error ? err.message : 'Failed to load product details',
         );
       })
       .finally(() => {
@@ -1029,9 +990,7 @@ export function ScanSellPage() {
     };
   }, [detailModalItem]);
 
-  const [inventoryToPricingId, setInventoryToPricingId] = useState<
-    Record<string, string>
-  >({});
+  const [inventoryToPricingId, setInventoryToPricingId] = useState<Record<string, string>>({});
 
   const loadPricingOnDropdownClick = useCallback(
     async (pricingId: string | undefined, inventoryId: string) => {
@@ -1051,9 +1010,7 @@ export function ScanSellPage() {
             [inventoryId]: resolvedId,
           }));
         } catch (err) {
-          notifyError(
-            err instanceof Error ? err.message : 'Failed to load inventory'
-          );
+          notifyError(err instanceof Error ? err.message : 'Failed to load inventory');
           return;
         } finally {
           setPricingLoading((prev) => ({ ...prev, [loadingKey]: false }));
@@ -1068,14 +1025,12 @@ export function ScanSellPage() {
         const pricing = await pricingClient.getById(finalPricingId);
         setPricingCache((prev) => ({ ...prev, [finalPricingId]: pricing }));
       } catch (err) {
-        notifyError(
-          err instanceof Error ? err.message : 'Failed to load pricing'
-        );
+        notifyError(err instanceof Error ? err.message : 'Failed to load pricing');
       } finally {
         setPricingLoading((prev) => ({ ...prev, [finalPricingId]: false }));
       }
     },
-    [pricingCache, pricingLoading, inventoryToPricingId, notifyError]
+    [pricingCache, pricingLoading, inventoryToPricingId, notifyError],
   );
 
   // Preload rates when cart items are displayed (before dropdown interaction).
@@ -1087,8 +1042,7 @@ export function ScanSellPage() {
     if (!cartItems.length) return;
     cartItems.forEach((item) => {
       const invId = item.inventoryItem.id;
-      const pricingId =
-        item.inventoryItem.pricingId ?? inventoryToPricingId[invId];
+      const pricingId = item.inventoryItem.pricingId ?? inventoryToPricingId[invId];
       loadPricingRef.current(pricingId ?? undefined, invId);
     });
   }, [cartItemIds, cartItems, inventoryToPricingId]);
@@ -1100,10 +1054,7 @@ export function ScanSellPage() {
       e.preventDefault();
       setHidePurchaseDetailsInSell((v) => {
         const next = !v;
-        localStorage.setItem(
-          'scan-sell-hide-purchase-details',
-          next ? '1' : '0'
-        );
+        localStorage.setItem('scan-sell-hide-purchase-details', next ? '1' : '0');
         return next;
       });
     };
@@ -1116,21 +1067,16 @@ export function ScanSellPage() {
   }, [location.key]);
 
   useLayoutEffect(() => {
-    const raw = (
-      location.state as
-        | { prefillCustomer?: CustomerResponse }
-        | null
-        | undefined
-    )?.prefillCustomer;
+    const raw = (location.state as { prefillCustomer?: CustomerResponse } | null | undefined)
+      ?.prefillCustomer;
     if (!raw?.customerId) return;
     scanSellCustomerPrefillRef.current = raw;
     navigate(location.pathname, { replace: true, state: {} });
   }, [location.state, location.pathname, navigate]);
 
   const normalizeBillingMode = useCallback(
-    (mode?: BillingMode | null): BillingMode =>
-      mode === 'BASIC' ? 'BASIC' : 'REGULAR',
-    []
+    (mode?: BillingMode | null): BillingMode => (mode === 'BASIC' ? 'BASIC' : 'REGULAR'),
+    [],
   );
 
   const toNumber = useCallback((value: unknown, fallback: number) => {
@@ -1138,9 +1084,7 @@ export function ScanSellPage() {
     return Number.isFinite(num) ? num : fallback;
   }, []);
 
-  const getAvailableUnitsFromInventory = (
-    item: InventoryItem
-  ): AvailableUnit[] => {
+  const getAvailableUnitsFromInventory = (item: InventoryItem): AvailableUnit[] => {
     const fromApi = item.availableUnits ?? [];
     if (Array.isArray(fromApi) && fromApi.length > 0) {
       return fromApi;
@@ -1158,7 +1102,7 @@ export function ScanSellPage() {
   const getUnitFactorForUnit = (
     item: InventoryItem,
     unit: string | null | undefined,
-    fallback = 1
+    fallback = 1,
   ) => {
     if (!unit) return fallback;
     if (item.baseUnit && unit === item.baseUnit) return 1;
@@ -1177,8 +1121,7 @@ export function ScanSellPage() {
       item.packUnitUqc?.trim() ??
       availableUnits.find((u) => !u.baseUnit)?.unit?.trim() ??
       null;
-    const packFactor =
-      item.unitConversions?.factor ?? item.unitsPerPack ?? null;
+    const packFactor = item.unitConversions?.factor ?? item.unitsPerPack ?? null;
 
     if (item.sellUnitRule === 'PACK_ONLY') {
       if (packUnit) return packUnit;
@@ -1216,11 +1159,7 @@ export function ScanSellPage() {
       setIsSearching(true);
       setError(null);
       try {
-        const response = await inventoryApi.search(
-          query.trim(),
-          pageNum,
-          pageSize
-        );
+        const response = await inventoryApi.search(query.trim(), pageNum, pageSize);
         let items: InventoryItem[] = [];
         if (response) {
           if (Array.isArray(response)) items = response;
@@ -1231,8 +1170,7 @@ export function ScanSellPage() {
               typeof response.data === 'object' &&
               'data' in response.data
             ) {
-              const nestedData = (response.data as { data?: InventoryItem[] })
-                .data;
+              const nestedData = (response.data as { data?: InventoryItem[] }).data;
               items = Array.isArray(nestedData) ? nestedData : [];
             }
           }
@@ -1251,7 +1189,7 @@ export function ScanSellPage() {
         setIsSearching(false);
       }
     },
-    [searchPageSize, notifyError]
+    [searchPageSize, notifyError],
   );
 
   const handleSearchSubmit = useCallback(
@@ -1265,7 +1203,7 @@ export function ScanSellPage() {
       setShowSearchDropdown(true);
       runSearch(searchQuery, 0, 8);
     },
-    [searchQuery, runSearch]
+    [searchQuery, runSearch],
   );
 
   // Close search dropdown when clicking outside
@@ -1349,7 +1287,7 @@ export function ScanSellPage() {
       customerPhone?: string;
       customerEmail?: string;
       customerAddress?: string;
-    }
+    },
   ) => {
     const resolved = resolveCustomerFieldsFromCart(cart);
     setCustomerName(resolved.name || typed?.customerName?.trim() || '');
@@ -1437,11 +1375,7 @@ export function ScanSellPage() {
       normCustomerField(gstin).length > 0 ||
       normCustomerField(dlNo).length > 0 ||
       normCustomerField(pan).length > 0;
-    if (
-      !hasCustomerInput &&
-      !cartData?.customerId &&
-      !normCustomerField(cartData?.customerName)
-    ) {
+    if (!hasCustomerInput && !cartData?.customerId && !normCustomerField(cartData?.customerName)) {
       return;
     }
 
@@ -1469,9 +1403,7 @@ export function ScanSellPage() {
       });
       await refreshQuotationList();
     } catch (err) {
-      notifyError(
-        err instanceof Error ? err.message : 'Failed to save customer details'
-      );
+      notifyError(err instanceof Error ? err.message : 'Failed to save customer details');
     } finally {
       isSavingCustomerRef.current = false;
       suppressCustomerSyncRef.current = false;
@@ -1513,9 +1445,10 @@ export function ScanSellPage() {
     try {
       const list = await refreshQuotationList();
       if (list.length > 0) {
-        const targetId = activePurchaseId && list.some((q) => q.purchaseId === activePurchaseId)
-          ? activePurchaseId
-          : list[0].purchaseId;
+        const targetId =
+          activePurchaseId && list.some((q) => q.purchaseId === activePurchaseId)
+            ? activePurchaseId
+            : list[0].purchaseId;
         await loadQuotation(targetId);
         return;
       }
@@ -1550,9 +1483,7 @@ export function ScanSellPage() {
       await syncCustomerToQuotation();
       await ensureDefaultQuotation();
     } catch (err) {
-      notifyError(
-        err instanceof Error ? err.message : 'Failed to create quotation'
-      );
+      notifyError(err instanceof Error ? err.message : 'Failed to create quotation');
     } finally {
       setIsUpdatingCart(false);
     }
@@ -1605,9 +1536,7 @@ export function ScanSellPage() {
     try {
       return await ensureDefaultQuotation();
     } catch (err) {
-      notifyError(
-        err instanceof Error ? err.message : 'Failed to create quotation'
-      );
+      notifyError(err instanceof Error ? err.message : 'Failed to create quotation');
       return null;
     }
   };
@@ -1646,151 +1575,133 @@ export function ScanSellPage() {
       return cart.items
         .filter((resItem) => !isMenuLine(resItem))
         .map((resItem: CheckoutItemResponse) => {
-        const existing = previousItems.find(
-          (i) => i.inventoryItem.id === resItem.inventoryId
-        );
-        const availableUnits =
-          (Array.isArray(resItem.availableUnits) &&
-          resItem.availableUnits.length > 0
-            ? resItem.availableUnits
-            : existing?.availableUnits) ?? [];
-        const inferredBaseUnit =
-          resItem.baseUnit?.trim() ??
-          existing?.inventoryItem.baseUnit?.trim() ??
-          availableUnits.find((u) => u.baseUnit)?.unit?.trim() ??
-          null;
-        const packUnitUqc =
-          resItem.packUnitUqc?.trim() ??
-          existing?.inventoryItem.packUnitUqc?.trim() ??
-          existing?.inventoryItem.unitConversions?.unit?.trim() ??
-          null;
-        const saleUnit =
-          resItem.saleUnit ??
-          existing?.unit ??
-          availableUnits.find((u) => !u.baseUnit)?.unit ??
-          availableUnits[0]?.unit ??
-          inferredBaseUnit ??
-          'UNIT';
-        const unitFactor = Math.max(
-          1,
-          toNumber(
-            resItem.unitFactor,
-            existing?.unitFactor ??
-              (saleUnit === inferredBaseUnit
-                ? 1
-                : toNumber(existing?.unitFactor, 1))
-          )
-        );
-        const apiBaseQuantity = toNumber(
-          resItem.baseQuantity,
-          toNumber(resItem.quantity, 0) * unitFactor
-        );
-        const quantity = toNumber(
-          resItem.quantity,
-          unitFactor > 0 ? apiBaseQuantity / unitFactor : apiBaseQuantity
-        );
-        const resolvedLotId =
-          resItem.inventoryId ??
-          inventoryLotIdFromSellableRef(resItem.stockRef ?? resItem.sellableRef) ??
-          '';
-        const inventoryItem: InventoryItem = existing
-          ? {
-              ...existing.inventoryItem,
-              saleAdditionalDiscount:
-                resItem.saleAdditionalDiscount ??
-                existing.inventoryItem.saleAdditionalDiscount,
-              billingMode: normalizeBillingMode(
-                resItem.billingMode ?? existing.inventoryItem.billingMode
-              ),
-              baseUnit: inferredBaseUnit ?? existing.inventoryItem.baseUnit,
-              packUnitUqc: packUnitUqc ?? existing.inventoryItem.packUnitUqc,
-              availableUnits,
-              unitConversions:
-                existing.inventoryItem.unitConversions ??
-                (packUnitUqc && unitFactor > 1
-                  ? { unit: packUnitUqc, factor: unitFactor }
-                  : null),
-              purchaseAdditionalDiscount:
-                resItem.purchaseAdditionalDiscount ??
-                existing.inventoryItem.purchaseAdditionalDiscount ??
-                null,
-              purchaseSchemeType:
-                resItem.purchaseSchemeType ??
-                existing.inventoryItem.purchaseSchemeType ??
-                null,
-              purchaseSchemePayFor:
-                resItem.purchaseSchemePayFor ??
-                existing.inventoryItem.purchaseSchemePayFor ??
-                null,
-              purchaseSchemeFree:
-                resItem.purchaseSchemeFree ??
-                existing.inventoryItem.purchaseSchemeFree ??
-                null,
-              purchaseSchemePercentage:
-                resItem.purchaseSchemePercentage ??
-                existing.inventoryItem.purchaseSchemePercentage ??
-                null,
-            }
-          : {
-              id: resolvedLotId,
-              lotId: resolvedLotId,
-              barcode: null,
-              name: resItem.name,
-              description: null,
-              companyName: null,
-              maximumRetailPrice: resItem.maximumRetailPrice,
-              costPrice: resItem.costPrice ?? 0,
-              priceToRetail: resItem.priceToRetail,
-              receivedCount: 0,
-              soldCount: 0,
-              currentCount: 999999,
-              location: '',
-              expiryDate: '',
-              shopId: cart.shopId,
-              saleAdditionalDiscount: resItem.saleAdditionalDiscount ?? null,
-              billingMode: normalizeBillingMode(
-                resItem.billingMode ?? cart.billingMode
-              ),
-              baseUnit: inferredBaseUnit ?? undefined,
-              packUnitUqc: packUnitUqc ?? undefined,
-              unitConversions:
-                packUnitUqc && unitFactor > 1
-                  ? { unit: packUnitUqc, factor: unitFactor }
-                  : null,
-              availableUnits,
-              pricingId: resItem.pricingId ?? undefined,
-              purchaseAdditionalDiscount:
-                resItem.purchaseAdditionalDiscount ?? null,
-              purchaseSchemeType: resItem.purchaseSchemeType ?? null,
-              purchaseSchemePayFor: resItem.purchaseSchemePayFor ?? null,
-              purchaseSchemeFree: resItem.purchaseSchemeFree ?? null,
-              purchaseSchemePercentage:
-                resItem.purchaseSchemePercentage ?? null,
-            };
-        return {
-          inventoryItem,
-          unit: saleUnit,
-          baseQuantity: apiBaseQuantity,
-          unitFactor,
-          availableUnits,
-          quantity,
-          price: resItem.priceToRetail,
-          schemeType: resItem.schemeType ?? null,
-          schemePayFor: resItem.schemePayFor ?? null,
-          schemeFree: resItem.schemeFree ?? null,
-          schemePercentage: resItem.schemePercentage ?? null,
-        };
-      });
+          const existing = previousItems.find((i) => i.inventoryItem.id === resItem.inventoryId);
+          const availableUnits =
+            (Array.isArray(resItem.availableUnits) && resItem.availableUnits.length > 0
+              ? resItem.availableUnits
+              : existing?.availableUnits) ?? [];
+          const inferredBaseUnit =
+            resItem.baseUnit?.trim() ??
+            existing?.inventoryItem.baseUnit?.trim() ??
+            availableUnits.find((u) => u.baseUnit)?.unit?.trim() ??
+            null;
+          const packUnitUqc =
+            resItem.packUnitUqc?.trim() ??
+            existing?.inventoryItem.packUnitUqc?.trim() ??
+            existing?.inventoryItem.unitConversions?.unit?.trim() ??
+            null;
+          const saleUnit =
+            resItem.saleUnit ??
+            existing?.unit ??
+            availableUnits.find((u) => !u.baseUnit)?.unit ??
+            availableUnits[0]?.unit ??
+            inferredBaseUnit ??
+            'UNIT';
+          const unitFactor = Math.max(
+            1,
+            toNumber(
+              resItem.unitFactor,
+              existing?.unitFactor ??
+                (saleUnit === inferredBaseUnit ? 1 : toNumber(existing?.unitFactor, 1)),
+            ),
+          );
+          const apiBaseQuantity = toNumber(
+            resItem.baseQuantity,
+            toNumber(resItem.quantity, 0) * unitFactor,
+          );
+          const quantity = toNumber(
+            resItem.quantity,
+            unitFactor > 0 ? apiBaseQuantity / unitFactor : apiBaseQuantity,
+          );
+          const resolvedLotId =
+            resItem.inventoryId ??
+            inventoryLotIdFromSellableRef(resItem.stockRef ?? resItem.sellableRef) ??
+            '';
+          const inventoryItem: InventoryItem = existing
+            ? {
+                ...existing.inventoryItem,
+                saleAdditionalDiscount:
+                  resItem.saleAdditionalDiscount ?? existing.inventoryItem.saleAdditionalDiscount,
+                billingMode: normalizeBillingMode(
+                  resItem.billingMode ?? existing.inventoryItem.billingMode,
+                ),
+                baseUnit: inferredBaseUnit ?? existing.inventoryItem.baseUnit,
+                packUnitUqc: packUnitUqc ?? existing.inventoryItem.packUnitUqc,
+                availableUnits,
+                unitConversions:
+                  existing.inventoryItem.unitConversions ??
+                  (packUnitUqc && unitFactor > 1
+                    ? { unit: packUnitUqc, factor: unitFactor }
+                    : null),
+                purchaseAdditionalDiscount:
+                  resItem.purchaseAdditionalDiscount ??
+                  existing.inventoryItem.purchaseAdditionalDiscount ??
+                  null,
+                purchaseSchemeType:
+                  resItem.purchaseSchemeType ?? existing.inventoryItem.purchaseSchemeType ?? null,
+                purchaseSchemePayFor:
+                  resItem.purchaseSchemePayFor ??
+                  existing.inventoryItem.purchaseSchemePayFor ??
+                  null,
+                purchaseSchemeFree:
+                  resItem.purchaseSchemeFree ?? existing.inventoryItem.purchaseSchemeFree ?? null,
+                purchaseSchemePercentage:
+                  resItem.purchaseSchemePercentage ??
+                  existing.inventoryItem.purchaseSchemePercentage ??
+                  null,
+              }
+            : {
+                id: resolvedLotId,
+                lotId: resolvedLotId,
+                barcode: null,
+                name: resItem.name,
+                description: null,
+                companyName: null,
+                maximumRetailPrice: resItem.maximumRetailPrice,
+                costPrice: resItem.costPrice ?? 0,
+                priceToRetail: resItem.priceToRetail,
+                receivedCount: 0,
+                soldCount: 0,
+                currentCount: 999999,
+                location: '',
+                expiryDate: '',
+                shopId: cart.shopId,
+                saleAdditionalDiscount: resItem.saleAdditionalDiscount ?? null,
+                billingMode: normalizeBillingMode(resItem.billingMode ?? cart.billingMode),
+                baseUnit: inferredBaseUnit ?? undefined,
+                packUnitUqc: packUnitUqc ?? undefined,
+                unitConversions:
+                  packUnitUqc && unitFactor > 1 ? { unit: packUnitUqc, factor: unitFactor } : null,
+                availableUnits,
+                pricingId: resItem.pricingId ?? undefined,
+                purchaseAdditionalDiscount: resItem.purchaseAdditionalDiscount ?? null,
+                purchaseSchemeType: resItem.purchaseSchemeType ?? null,
+                purchaseSchemePayFor: resItem.purchaseSchemePayFor ?? null,
+                purchaseSchemeFree: resItem.purchaseSchemeFree ?? null,
+                purchaseSchemePercentage: resItem.purchaseSchemePercentage ?? null,
+              };
+          return {
+            inventoryItem,
+            unit: saleUnit,
+            baseQuantity: apiBaseQuantity,
+            unitFactor,
+            availableUnits,
+            quantity,
+            price: resItem.priceToRetail,
+            schemeType: resItem.schemeType ?? null,
+            schemePayFor: resItem.schemePayFor ?? null,
+            schemeFree: resItem.schemeFree ?? null,
+            schemePercentage: resItem.schemePercentage ?? null,
+          };
+        });
     },
-    [normalizeBillingMode, toNumber]
+    [normalizeBillingMode, toNumber],
   );
 
   const getEffectiveAdditionalDiscount = useCallback(
     (inventoryId: string, item: CartItem) =>
-      additionalDiscountOverrides[inventoryId] ??
-      item.inventoryItem.saleAdditionalDiscount ??
-      null,
-    [additionalDiscountOverrides]
+      additionalDiscountOverrides[inventoryId] ?? item.inventoryItem.saleAdditionalDiscount ?? null,
+    [additionalDiscountOverrides],
   );
 
   useEffect(() => {
@@ -1837,13 +1748,11 @@ export function ScanSellPage() {
       schemePercentage?: number | null;
     },
     priceToRetailUpdate?: { inventoryId: string; priceToRetail: number },
-    baseQuantityDeltaMode = false
+    baseQuantityDeltaMode = false,
   ) => {
     // Prevent duplicate full-cart syncs; allow item-specific updates (scheme, discount, price) so they are not dropped
     const isItemSpecificUpdate =
-      schemeUpdate != null ||
-      saleAdditionalDiscountUpdate != null ||
-      priceToRetailUpdate != null;
+      schemeUpdate != null || saleAdditionalDiscountUpdate != null || priceToRetailUpdate != null;
     if (isUpdatingRef.current && !isItemSpecificUpdate) {
       return;
     }
@@ -1864,10 +1773,7 @@ export function ScanSellPage() {
     };
 
     const effectiveOverrides = overrides ?? additionalDiscountOverrides;
-    const withItemFields = (
-      base: CartItemPayload,
-      cartItem?: CartItem
-    ): CartItemPayload => {
+    const withItemFields = (base: CartItemPayload, cartItem?: CartItem): CartItemPayload => {
       let result = { ...base };
       if (cartItem != null) {
         const addDisc =
@@ -1878,11 +1784,9 @@ export function ScanSellPage() {
           result = { ...result, saleAdditionalDiscount: addDisc };
         }
         const hasPercentage =
-          cartItem.schemePercentage !== undefined &&
-          cartItem.schemePercentage !== null;
+          cartItem.schemePercentage !== undefined && cartItem.schemePercentage !== null;
         const hasUnits =
-          (cartItem.schemePayFor !== undefined &&
-            cartItem.schemePayFor !== null) ||
+          (cartItem.schemePayFor !== undefined && cartItem.schemePayFor !== null) ||
           (cartItem.schemeFree !== undefined && cartItem.schemeFree !== null);
 
         if (hasPercentage) {
@@ -1909,20 +1813,14 @@ export function ScanSellPage() {
       quantity: number,
       baseQuantity: number,
       priceToRetail: number,
-      cartItem?: CartItem
-    ) =>
-      withItemFields(
-        { id, unit, quantity, baseQuantity, priceToRetail },
-        cartItem
-      );
+      cartItem?: CartItem,
+    ) => withItemFields({ id, unit, quantity, baseQuantity, priceToRetail }, cartItem);
 
     isUpdatingRef.current = true;
     setIsUpdatingCart(true);
     try {
       let targetPurchaseId = activePurchaseId;
-      const hasPositiveQty = items.some(
-        (item) => item.quantity > 0 || item.baseQuantity > 0
-      );
+      const hasPositiveQty = items.some((item) => item.quantity > 0 || item.baseQuantity > 0);
       if (!targetPurchaseId && hasPositiveQty) {
         targetPurchaseId = await ensureActiveQuotationId();
         if (!targetPurchaseId) {
@@ -1934,9 +1832,7 @@ export function ScanSellPage() {
 
       if (priceToRetailUpdate) {
         // Only price to retail changed: send id + priceToRetail (no quantity/baseQuantity)
-        const item = items.find(
-          (i) => i.inventoryItem.id === priceToRetailUpdate.inventoryId
-        );
+        const item = items.find((i) => i.inventoryItem.id === priceToRetailUpdate.inventoryId);
         if (!item) {
           isUpdatingRef.current = false;
           setIsUpdatingCart(false);
@@ -1951,22 +1847,17 @@ export function ScanSellPage() {
         ];
       } else if (schemeUpdate) {
         // Only scheme changed: send id + scheme info (no quantity/baseQuantity)
-        const item = items.find(
-          (i) => i.inventoryItem.id === schemeUpdate.inventoryId
-        );
+        const item = items.find((i) => i.inventoryItem.id === schemeUpdate.inventoryId);
         if (!item) {
           isUpdatingRef.current = false;
           setIsUpdatingCart(false);
           return;
         }
         const hasPercentage =
-          schemeUpdate.schemePercentage !== undefined &&
-          schemeUpdate.schemePercentage !== null;
+          schemeUpdate.schemePercentage !== undefined && schemeUpdate.schemePercentage !== null;
         const hasUnits =
-          (schemeUpdate.schemePayFor !== undefined &&
-            schemeUpdate.schemePayFor !== null) ||
-          (schemeUpdate.schemeFree !== undefined &&
-            schemeUpdate.schemeFree !== null);
+          (schemeUpdate.schemePayFor !== undefined && schemeUpdate.schemePayFor !== null) ||
+          (schemeUpdate.schemeFree !== undefined && schemeUpdate.schemeFree !== null);
         itemsToSend = [
           {
             id: item.inventoryItem.id,
@@ -1990,7 +1881,7 @@ export function ScanSellPage() {
       } else if (saleAdditionalDiscountUpdate) {
         // Only discount changed: send id + saleAdditionalDiscount (no quantity/baseQuantity)
         const item = items.find(
-          (i) => i.inventoryItem.id === saleAdditionalDiscountUpdate.inventoryId
+          (i) => i.inventoryItem.id === saleAdditionalDiscountUpdate.inventoryId,
         );
         if (!item) {
           isUpdatingRef.current = false;
@@ -2010,16 +1901,12 @@ export function ScanSellPage() {
         ];
       } else if (changedItemId && quantityDelta !== undefined) {
         // Only send the changed item with the delta quantity (1 for increment, -1 for decrement)
-        const changedItem = items.find(
-          (item) => item.inventoryItem.id === changedItemId
-        );
+        const changedItem = items.find((item) => item.inventoryItem.id === changedItemId);
         if (changedItem) {
           const effectiveBaseDelta = baseQuantityDeltaMode
             ? quantityDelta
             : quantityDelta * Math.max(1, changedItem.unitFactor);
-          const effectiveQuantityDelta = baseQuantityDeltaMode
-            ? 0
-            : quantityDelta;
+          const effectiveQuantityDelta = baseQuantityDeltaMode ? 0 : quantityDelta;
           // Send the actual delta value (1 for +, -1 for -)
           itemsToSend = [
             withAdditionalDiscount(
@@ -2028,7 +1915,7 @@ export function ScanSellPage() {
               effectiveQuantityDelta,
               effectiveBaseDelta,
               changedItem.price,
-              changedItem
+              changedItem,
             ),
           ];
         } else {
@@ -2039,7 +1926,7 @@ export function ScanSellPage() {
             originalItem ||
             (() => {
               const cartItem = cartData?.items.find(
-                (ci: CheckoutItemResponse) => ci.inventoryId === changedItemId
+                (ci: CheckoutItemResponse) => ci.inventoryId === changedItemId,
               );
               return cartItem
                 ? {
@@ -2077,16 +1964,14 @@ export function ScanSellPage() {
             const effectiveBaseDelta = baseQuantityDeltaMode
               ? quantityDelta
               : quantityDelta * Math.max(1, itemToRemove.unitFactor);
-            const effectiveQuantityDelta = baseQuantityDeltaMode
-              ? 0
-              : quantityDelta;
+            const effectiveQuantityDelta = baseQuantityDeltaMode ? 0 : quantityDelta;
             itemsToSend = [
               withAdditionalDiscount(
                 changedItemId,
                 itemToRemove.unit,
                 effectiveQuantityDelta,
                 effectiveBaseDelta,
-                itemToRemove.price
+                itemToRemove.price,
               ),
             ];
           } else {
@@ -2098,8 +1983,8 @@ export function ScanSellPage() {
                 item.quantity,
                 item.baseQuantity,
                 item.price,
-                item
-              )
+                item,
+              ),
             );
           }
         }
@@ -2112,8 +1997,8 @@ export function ScanSellPage() {
             item.quantity,
             item.baseQuantity,
             item.price,
-            item
-          )
+            item,
+          ),
         );
       }
 
@@ -2141,15 +2026,9 @@ export function ScanSellPage() {
       setError(null);
     } catch (err) {
       // Handle API errors - might include stock validation errors
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to update cart';
-      if (
-        errorMessage.includes(
-          'Cannot mix REGULAR and BASIC inventory items in a single cart'
-        )
-      ) {
-        const mixedModeMessage =
-          'Cannot mix REGULAR and BASIC inventory items in a single cart';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update cart';
+      if (errorMessage.includes('Cannot mix REGULAR and BASIC inventory items in a single cart')) {
+        const mixedModeMessage = 'Cannot mix REGULAR and BASIC inventory items in a single cart';
         setError(mixedModeMessage);
         notifyError(mixedModeMessage);
       } else {
@@ -2177,11 +2056,10 @@ export function ScanSellPage() {
 
   const handleAddToCart = async (item: InventoryItem, price?: number) => {
     // Use sellingPrice (effective) as default, or override with provided price
-    const finalPrice =
-      price !== undefined ? price : item.sellingPrice ?? item.priceToRetail;
+    const finalPrice = price !== undefined ? price : item.sellingPrice ?? item.priceToRetail;
     const incomingMode = normalizeBillingMode(item.billingMode);
     const activeMode = normalizeBillingMode(
-      cartData?.billingMode ?? cartItems[0]?.inventoryItem.billingMode
+      cartData?.billingMode ?? cartItems[0]?.inventoryItem.billingMode,
     );
 
     if (finalPrice <= 0) {
@@ -2196,25 +2074,20 @@ export function ScanSellPage() {
     }
 
     if (cartItems.length > 0 && activeMode !== incomingMode) {
-      notifyError(
-        'Cannot mix REGULAR and BASIC inventory items in a single cart'
-      );
+      notifyError('Cannot mix REGULAR and BASIC inventory items in a single cart');
       return;
     }
 
     setShowSearchDropdown(false);
 
     setCartItems((prev) => {
-      const existingItem = prev.find(
-        (cartItem) => cartItem.inventoryItem.id === item.id
-      );
+      const existingItem = prev.find((cartItem) => cartItem.inventoryItem.id === item.id);
 
       let updatedItems: CartItem[];
       if (existingItem) {
         // Update quantity if item already in cart
         const newQuantity = existingItem.quantity + 1;
-        const newBaseQuantity =
-          existingItem.baseQuantity + existingItem.unitFactor;
+        const newBaseQuantity = existingItem.baseQuantity + existingItem.unitFactor;
         // Validate stock: compare base quantities (currentBaseCount is in base units)
         const availableBase = item.currentBaseCount ?? item.currentCount;
         if (availableBase > 0 && newBaseQuantity > availableBase) {
@@ -2228,7 +2101,7 @@ export function ScanSellPage() {
                 quantity: newQuantity,
                 baseQuantity: newBaseQuantity,
               }
-            : cartItem
+            : cartItem,
         );
       } else {
         const defaultUnit = getDefaultUnit(item);
@@ -2262,25 +2135,18 @@ export function ScanSellPage() {
     setError(null);
   };
 
-  const handleUpdateQuantity = async (
-    id: string,
-    delta: number,
-    isBaseUnitSelected = false
-  ) => {
+  const handleUpdateQuantity = async (id: string, delta: number, isBaseUnitSelected = false) => {
     const originalItem = cartItems.find((item) => item.inventoryItem.id === id);
 
     if (!originalItem) return;
 
-    const baseDelta = isBaseUnitSelected
-      ? delta
-      : delta * Math.max(1, originalItem.unitFactor);
+    const baseDelta = isBaseUnitSelected ? delta : delta * Math.max(1, originalItem.unitFactor);
     const newBaseQuantity = originalItem.baseQuantity + baseDelta;
     const factor = Math.max(1, originalItem.unitFactor);
     const newQuantity = Number((newBaseQuantity / factor).toFixed(3));
 
     const availableBase =
-      originalItem.inventoryItem.currentBaseCount ??
-      originalItem.inventoryItem.currentCount;
+      originalItem.inventoryItem.currentBaseCount ?? originalItem.inventoryItem.currentCount;
     if (availableBase < 999999 && newBaseQuantity > availableBase) {
       setError(`Only ${availableBase} items available in stock`);
       throw new Error('Stock exceeded');
@@ -2295,7 +2161,7 @@ export function ScanSellPage() {
       undefined,
       undefined,
       undefined,
-      isBaseUnitSelected
+      isBaseUnitSelected,
     );
 
     setCartItems((prev) =>
@@ -2307,9 +2173,9 @@ export function ScanSellPage() {
                 quantity: newQuantity,
                 baseQuantity: newBaseQuantity,
               }
-            : item
+            : item,
         )
-        .filter((item) => item.baseQuantity > 0)
+        .filter((item) => item.baseQuantity > 0),
     );
   };
 
@@ -2357,9 +2223,7 @@ export function ScanSellPage() {
       applyCartToState(updated, cartItems);
       await refreshQuotationList();
     } catch (err) {
-      notifyError(
-        err instanceof Error ? err.message : 'Failed to update order'
-      );
+      notifyError(err instanceof Error ? err.message : 'Failed to update order');
     } finally {
       isUpdatingRef.current = false;
       setIsUpdatingCart(false);
@@ -2384,9 +2248,7 @@ export function ScanSellPage() {
   };
 
   const handleMenuSetQuantity = async (sellableRef: string, newQty: number) => {
-    const line = (cartData?.items ?? []).find(
-      (row) => lineSellableRef(row) === sellableRef
-    );
+    const line = (cartData?.items ?? []).find((row) => lineSellableRef(row) === sellableRef);
     if (!line) return;
     const current = Math.trunc(Number(line.quantity));
     const next = Math.trunc(newQty);
@@ -2396,19 +2258,14 @@ export function ScanSellPage() {
   };
 
   const handleMenuRemove = (sellableRef: string) => {
-    const line = (cartData?.items ?? []).find(
-      (row) => lineSellableRef(row) === sellableRef
-    );
+    const line = (cartData?.items ?? []).find((row) => lineSellableRef(row) === sellableRef);
     if (!line) return;
     const qty = Math.trunc(Number(line.quantity));
     if (qty <= 0) return;
     void applyMenuCartDelta(sellableRef, -qty);
   };
 
-  const handleAdditionalDiscountChange = (
-    inventoryId: string,
-    value: number | null
-  ) => {
+  const handleAdditionalDiscountChange = (inventoryId: string, value: number | null) => {
     const next = { ...additionalDiscountOverrides, [inventoryId]: value };
     setAdditionalDiscountOverrides(next);
     // Send only this item to API (id + additionalDiscount), like quantity update
@@ -2421,7 +2278,7 @@ export function ScanSellPage() {
   const handleSchemeChange = (
     inventoryId: string,
     schemePayFor: number | null,
-    schemeFree: number | null
+    schemeFree: number | null,
   ) => {
     setCartItems((prev) =>
       prev.map((item) =>
@@ -2433,29 +2290,18 @@ export function ScanSellPage() {
               schemeFree,
               schemePercentage: null,
             }
-          : item
-      )
+          : item,
+      ),
     );
-    syncCartToAPI(
-      cartItems,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      {
-        inventoryId,
-        schemePayFor,
-        schemeFree,
-        schemePercentage: null,
-      }
-    );
+    syncCartToAPI(cartItems, undefined, undefined, undefined, undefined, undefined, {
+      inventoryId,
+      schemePayFor,
+      schemeFree,
+      schemePercentage: null,
+    });
   };
 
-  const handleSchemePercentageChange = (
-    inventoryId: string,
-    schemePercentage: number | null
-  ) => {
+  const handleSchemePercentageChange = (inventoryId: string, schemePercentage: number | null) => {
     setCartItems((prev) =>
       prev.map((item) =>
         item.inventoryItem.id === inventoryId
@@ -2466,74 +2312,43 @@ export function ScanSellPage() {
               schemePayFor: null,
               schemeFree: null,
             }
-          : item
-      )
+          : item,
+      ),
     );
-    syncCartToAPI(
-      cartItems,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      {
-        inventoryId,
-        schemePercentage,
-        schemePayFor: null,
-        schemeFree: null,
-      }
-    );
+    syncCartToAPI(cartItems, undefined, undefined, undefined, undefined, undefined, {
+      inventoryId,
+      schemePercentage,
+      schemePayFor: null,
+      schemeFree: null,
+    });
   };
 
-  const handleSellingPriceChange = (
-    inventoryId: string,
-    priceToRetail: number
-  ) => {
+  const handleSellingPriceChange = (inventoryId: string, priceToRetail: number) => {
     setCartItems((prev) =>
       prev.map((item) =>
-        item.inventoryItem.id === inventoryId
-          ? { ...item, price: priceToRetail }
-          : item
-      )
+        item.inventoryItem.id === inventoryId ? { ...item, price: priceToRetail } : item,
+      ),
     );
-    syncCartToAPI(
-      cartItems,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      { inventoryId, priceToRetail }
-    );
+    syncCartToAPI(cartItems, undefined, undefined, undefined, undefined, undefined, undefined, {
+      inventoryId,
+      priceToRetail,
+    });
   };
 
   const handleUnitChange = (inventoryId: string, unit: string) => {
     setCartItems((prev) => {
       const updatedItems = prev.map((item) => {
         if (item.inventoryItem.id !== inventoryId) return item;
-        const nextFactor = getUnitFactorForUnit(
-          item.inventoryItem,
-          unit,
-          item.unitFactor
-        );
+        const nextFactor = getUnitFactorForUnit(item.inventoryItem, unit, item.unitFactor);
         const preservedBaseQty = Math.max(
           1,
-          toNumber(
-            item.baseQuantity,
-            item.quantity * Math.max(1, item.unitFactor)
-          )
+          toNumber(item.baseQuantity, item.quantity * Math.max(1, item.unitFactor)),
         );
         const nextQty =
-          nextFactor > 0
-            ? Number((preservedBaseQty / nextFactor).toFixed(3))
-            : preservedBaseQty;
+          nextFactor > 0 ? Number((preservedBaseQty / nextFactor).toFixed(3)) : preservedBaseQty;
         // Keep line total: price is always per selected unit (PAC ₹120 → TBS ₹12 when qty 10).
         const lineTotal = item.price * item.quantity;
-        const nextPrice =
-          nextQty > 0
-            ? Math.round((lineTotal / nextQty) * 100) / 100
-            : item.price;
+        const nextPrice = nextQty > 0 ? Math.round((lineTotal / nextQty) * 100) / 100 : item.price;
         const next = {
           ...item,
           unit,
@@ -2599,8 +2414,7 @@ export function ScanSellPage() {
         setCartData(updatedCart);
         void refreshQuotationList();
       } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : 'Failed to clear cart';
+        const errorMessage = err instanceof Error ? err.message : 'Failed to clear cart';
         notifyError(errorMessage);
         // Reload cart on error to restore state
         try {
@@ -2623,13 +2437,12 @@ export function ScanSellPage() {
 
   const calculateSubtotal = () => {
     return (
-      cartData?.subTotal ??
-      cartItems.reduce((total, item) => total + item.price * item.quantity, 0)
+      cartData?.subTotal ?? cartItems.reduce((total, item) => total + item.price * item.quantity, 0)
     );
   };
 
   const cartBillingMode = normalizeBillingMode(
-    cartData?.billingMode ?? cartItems[0]?.inventoryItem.billingMode
+    cartData?.billingMode ?? cartItems[0]?.inventoryItem.billingMode,
   );
 
   const calculateSGST = () => {
@@ -2704,11 +2517,7 @@ export function ScanSellPage() {
         // Phone is already set from the search input
 
         // Check if retailer fields are present
-        const hasRetailerFields = !!(
-          customer.gstin ||
-          customer.dlNo ||
-          customer.pan
-        );
+        const hasRetailerFields = !!(customer.gstin || customer.dlNo || customer.pan);
         if (hasRetailerFields) {
           setIsRetailer(true);
           setCustomerGstin(customer.gstin || '');
@@ -2734,8 +2543,7 @@ export function ScanSellPage() {
         notifyError('No customer found with this phone number');
       }
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to search customer';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to search customer';
       notifyError(errorMessage);
     } finally {
       setIsSearchingCustomer(false);
@@ -2757,11 +2565,7 @@ export function ScanSellPage() {
         setCustomerPhone(customer.phone || '');
         setCustomerId(customer.customerId || '');
         setCustomerAddress(customer.address || '');
-        const hasRetailerFields = !!(
-          customer.gstin ||
-          customer.dlNo ||
-          customer.pan
-        );
+        const hasRetailerFields = !!(customer.gstin || customer.dlNo || customer.pan);
         if (hasRetailerFields) {
           setIsRetailer(true);
           setCustomerGstin(customer.gstin || '');
@@ -2787,8 +2591,7 @@ export function ScanSellPage() {
         notifyError('No customer found with this email');
       }
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to search customer';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to search customer';
       notifyError(errorMessage);
     } finally {
       setIsSearchingCustomer(false);
@@ -2822,10 +2625,8 @@ export function ScanSellPage() {
         ...(customerAddress && { customerAddress }),
         ...(customerPhone && { customerPhone: customerPhone.trim() }),
         ...(customerEmail && { customerEmail: customerEmail.trim() }),
-        ...(isRetailer &&
-          customerGstin && { customerGstin: customerGstin.trim() }),
-        ...(isRetailer &&
-          customerDlNo && { customerDlNo: customerDlNo.trim() }),
+        ...(isRetailer && customerGstin && { customerGstin: customerGstin.trim() }),
+        ...(isRetailer && customerDlNo && { customerDlNo: customerDlNo.trim() }),
         ...(isRetailer && customerPan && { customerPan: customerPan.trim() }),
       };
 
@@ -2850,8 +2651,7 @@ export function ScanSellPage() {
       // Navigate to checkout page (it will load data via GET cart API)
       navigate('/dashboard/checkout');
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to process payment';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to process payment';
       setError(errorMessage);
     } finally {
       setIsProcessing(false);
@@ -2860,7 +2660,7 @@ export function ScanSellPage() {
 
   const menuCartLines = useMemo(
     () => (cartData?.items ?? []).filter((line) => isMenuLine(line)),
-    [cartData]
+    [cartData],
   );
 
   const cartSellableRefs = useMemo(
@@ -2870,7 +2670,7 @@ export function ScanSellPage() {
         .map((line) => lineSellableRef(line))
         .filter((ref): ref is string => Boolean(ref)),
     ],
-    [cartItems, menuCartLines]
+    [cartItems, menuCartLines],
   );
 
   const { data: customerProductHistory, loading: customerProductHistoryLoading } =
@@ -2886,7 +2686,7 @@ export function ScanSellPage() {
     () =>
       menuCartLines.reduce((sum, line) => sum + line.quantity, 0) +
       cartItems.reduce((sum, item) => sum + item.quantity, 0),
-    [menuCartLines, cartItems]
+    [menuCartLines, cartItems],
   );
 
   const renderCafeOrderLines = () => {
@@ -2935,20 +2735,12 @@ export function ScanSellPage() {
               customerProductHistory={customerProductHistory}
               customerProductHistoryLoading={customerProductHistoryLoading}
               onChangeQty={(delta) => {
-                void handleUpdateQuantity(
-                  cartItem.inventoryItem.id,
-                  delta,
-                  false
-                );
+                void handleUpdateQuantity(cartItem.inventoryItem.id, delta, false);
               }}
               onSetQuantity={async (newQty) => {
                 const delta = newQty - cartItem.quantity;
                 if (delta !== 0) {
-                  await handleUpdateQuantity(
-                    cartItem.inventoryItem.id,
-                    delta,
-                    false
-                  );
+                  await handleUpdateQuantity(cartItem.inventoryItem.id, delta, false);
                 }
               }}
               onRemove={() => void handleRemoveItem(cartItem.inventoryItem.id)}
@@ -2969,23 +2761,13 @@ export function ScanSellPage() {
             </Text>
           ) : (
             <>
-              <SummaryRow
-                label="Subtotal"
-                value={`₹${calculateSubtotal().toFixed(2)}`}
-              />
+              <SummaryRow label="Subtotal" value={`₹${calculateSubtotal().toFixed(2)}`} />
               {((cartData?.taxTotal ?? 0) !== 0 ||
                 (cartData?.sgstAmount ?? 0) !== 0 ||
                 (cartData?.cgstAmount ?? 0) !== 0) && (
-                <SummaryRow
-                  label="Tax"
-                  value={`₹${calculateTax().toFixed(2)}`}
-                />
+                <SummaryRow label="Tax" value={`₹${calculateTax().toFixed(2)}`} />
               )}
-              <Inline
-                justify="between"
-                width="full"
-                className={styles.cafeCheckoutTotal}
-              >
+              <Inline justify="between" width="full" className={styles.cafeCheckoutTotal}>
                 <Text weight="bold">Total</Text>
                 <Text weight="bold">₹{calculateTotal().toFixed(2)}</Text>
               </Inline>
@@ -3013,11 +2795,7 @@ export function ScanSellPage() {
               isLoadingCart
             }
           >
-            {isProcessing
-              ? 'Processing…'
-              : isUpdatingCart
-              ? 'Updating…'
-              : 'Process Payment'}
+            {isProcessing ? 'Processing…' : isUpdatingCart ? 'Updating…' : 'Process Payment'}
           </Button>
         </Inline>
       </Inline>
@@ -3050,1163 +2828,1112 @@ export function ScanSellPage() {
             onCancel={handleCancelQuotation}
           />
 
-      {isCafeSell ? (
-        <>
-        <Box className={styles.cafeSellShell}>
-          <Inline className={styles.cafeSellWorkspace} align="start" width="full">
-            <Box className={styles.cafePickerColumn}>
-              <Stack gap="md" className={styles.cafePickerSection}>
-                <ProductSearchBlock
-                  searchQuery={searchQuery}
-                  setSearchQuery={setSearchQuery}
-                  isSearching={isSearching}
-                  showSearchDropdown={showSearchDropdown}
-                  searchResults={searchResults}
-                  onSearch={() => handleSearchSubmit()}
-                  placeholder="Filter menu, or search more products…"
-                  onAddToCart={handleAddToCart}
-                  addDisabled={(item) =>
-                    item.currentCount <= 0 ||
-                    (item.sellingPrice ?? item.priceToRetail) == null ||
-                    isUpdatingCart
-                  }
-                />
-                <CafeSellCatalogPanel
-                  catalog={sellCatalog}
-                  loading={isLoadingCatalog}
-                  disabled={isUpdatingCart || isLoadingCart}
-                  filterQuery={searchQuery}
-                  onAddMenuItem={(item) => void handleAddMenuItem(item)}
-                  onAddDirectStock={handleAddDirectStock}
-                />
-              </Stack>
-            </Box>
+          {isCafeSell ? (
+            <>
+              <Box className={styles.cafeSellShell}>
+                <Inline className={styles.cafeSellWorkspace} align="start" width="full">
+                  <Box className={styles.cafePickerColumn}>
+                    <Stack gap="md" className={styles.cafePickerSection}>
+                      <ProductSearchBlock
+                        searchQuery={searchQuery}
+                        setSearchQuery={setSearchQuery}
+                        isSearching={isSearching}
+                        showSearchDropdown={showSearchDropdown}
+                        searchResults={searchResults}
+                        onSearch={() => handleSearchSubmit()}
+                        placeholder="Filter menu, or search more products…"
+                        onAddToCart={handleAddToCart}
+                        addDisabled={(item) =>
+                          item.currentCount <= 0 ||
+                          (item.sellingPrice ?? item.priceToRetail) == null ||
+                          isUpdatingCart
+                        }
+                      />
+                      <CafeSellCatalogPanel
+                        catalog={sellCatalog}
+                        loading={isLoadingCatalog}
+                        disabled={isUpdatingCart || isLoadingCart}
+                        filterQuery={searchQuery}
+                        onAddMenuItem={(item) => void handleAddMenuItem(item)}
+                        onAddDirectStock={handleAddDirectStock}
+                      />
+                    </Stack>
+                  </Box>
 
-            <Box as="aside" className={styles.cafeOrderColumn}>
-              <CustomerSectionBlock
-                idPrefix="cafe"
-                customerSectionOpen={customerSectionOpen}
-                setCustomerSectionOpen={setCustomerSectionOpen}
-                customerName={customerName}
-                customerPhone={customerPhone}
-                customerEmail={customerEmail}
-                customerAddress={customerAddress}
-                setCustomerName={setCustomerName}
-                setCustomerPhone={setCustomerPhone}
-                setCustomerEmail={setCustomerEmail}
-                setCustomerAddress={setCustomerAddress}
-                handleCustomerFieldBlur={handleCustomerFieldBlur}
-                isSearchingCustomer={isSearchingCustomer}
-                handleCustomerSearch={handleCustomerSearch}
-                handleCustomerSearchByEmail={handleCustomerSearchByEmail}
-                isRetailer={isRetailer}
-                setIsRetailer={setIsRetailer}
-                customerGstin={customerGstin}
-                customerDlNo={customerDlNo}
-                customerPan={customerPan}
-                setCustomerGstin={setCustomerGstin}
-                setCustomerDlNo={setCustomerDlNo}
-                setCustomerPan={setCustomerPan}
-              />
-
-              <Card className={styles.cafeOrderPanel}>
-                <CardBody>
-                  <Inline className={styles.cafeOrderHeader} justify="between" align="center" width="full">
-                    <Text variant="heading3" className={styles.cafeOrderTitle}>
-                      Current order
-                    </Text>
-                    <Badge variant="neutral" className={styles.cafeOrderCount}>
-                      {cafeOrderItemCount} item
-                      {cafeOrderItemCount === 1 ? '' : 's'}
-                    </Badge>
-                  </Inline>
-                  <Stack gap="sm" className={styles.cafeOrderList}>
-                    {renderCafeOrderLines()}
-                  </Stack>
-                </CardBody>
-              </Card>
-
-              {cartData &&
-                (cartData.totalCost != null ||
-                  cartData.revenueAfterTax != null ||
-                  cartData.totalProfit != null ||
-                  cartData.marginPercent != null) && (
-                  <Stack gap="xs" className={styles.cafeAnalytics}>
-                    <SummaryRow
-                      label="Total Cost"
-                      value={`₹${(cartData.totalCost ?? 0).toFixed(2)}`}
+                  <Box as="aside" className={styles.cafeOrderColumn}>
+                    <CustomerSectionBlock
+                      idPrefix="cafe"
+                      customerSectionOpen={customerSectionOpen}
+                      setCustomerSectionOpen={setCustomerSectionOpen}
+                      customerName={customerName}
+                      customerPhone={customerPhone}
+                      customerEmail={customerEmail}
+                      customerAddress={customerAddress}
+                      setCustomerName={setCustomerName}
+                      setCustomerPhone={setCustomerPhone}
+                      setCustomerEmail={setCustomerEmail}
+                      setCustomerAddress={setCustomerAddress}
+                      handleCustomerFieldBlur={handleCustomerFieldBlur}
+                      isSearchingCustomer={isSearchingCustomer}
+                      handleCustomerSearch={handleCustomerSearch}
+                      handleCustomerSearchByEmail={handleCustomerSearchByEmail}
+                      isRetailer={isRetailer}
+                      setIsRetailer={setIsRetailer}
+                      customerGstin={customerGstin}
+                      customerDlNo={customerDlNo}
+                      customerPan={customerPan}
+                      setCustomerGstin={setCustomerGstin}
+                      setCustomerDlNo={setCustomerDlNo}
+                      setCustomerPan={setCustomerPan}
                     />
-                    {cartData.revenueAfterTax != null && (
-                      <SummaryRow
-                        label="Revenue (after tax)"
-                        value={`₹${cartData.revenueAfterTax.toFixed(2)}`}
-                      />
-                    )}
-                    {cartData.totalProfit != null && (
-                      <SummaryRow
-                        label="Profit"
-                        value={`₹${cartData.totalProfit.toFixed(2)}`}
-                      />
-                    )}
-                    {cartData.marginPercent != null && (
-                      <SummaryRow
-                        label="Margin"
-                        value={`${cartData.marginPercent.toFixed(1)}%`}
-                      />
-                    )}
-                  </Stack>
-                )}
-            </Box>
-          </Inline>
-        </Box>
-        {renderCafeCheckoutBar()}
-        </>
-      ) : (
-      <Inline className={styles.mainRow} align="start" width="full">
-        <Box className={styles.cartArea}>
-          <Stack gap="md" className={styles.cartSection}>
-            <ProductSearchBlock
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              isSearching={isSearching}
-              showSearchDropdown={showSearchDropdown}
-              searchResults={searchResults}
-              onSearch={() => handleSearchSubmit()}
-              placeholder="Search products..."
-              autoFocus
-              onAddToCart={handleAddToCart}
-              addDisabled={(item) =>
-                item.currentCount <= 0 ||
-                (item.sellingPrice ?? item.priceToRetail) == null ||
-                isUpdatingCart
-              }
-            />
 
-            {cartItems.length > 0 ? (
-              <Inline className={styles.viewToggleWrap} gap="sm" align="center">
-                <Text className={styles.viewToggleLabel}>View:</Text>
-                <Inline
-                  className={styles.viewToggleButtons}
-                  gap="none"
-                >
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className={`${styles.viewToggleBtn} ${
-                      cartViewMode === 'list' ? styles.viewToggleBtnActive : ''
-                    }`}
-                    onClick={() => {
-                      setCartViewMode('list');
-                      localStorage.setItem('scan-sell-view-mode', 'list');
-                    }}
-                    title="List view"
-                    aria-pressed={cartViewMode === 'list'}
-                  >
-                    <Text aria-hidden>☰</Text> List
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className={`${styles.viewToggleBtn} ${
-                      cartViewMode === 'grid' ? styles.viewToggleBtnActive : ''
-                    }`}
-                    onClick={() => {
-                      setCartViewMode('grid');
-                      localStorage.setItem('scan-sell-view-mode', 'grid');
-                    }}
-                    title="Grid view"
-                    aria-pressed={cartViewMode === 'grid'}
-                  >
-                    <Text aria-hidden>⊞</Text> Grid
-                  </Button>
-                </Inline>
-              </Inline>
-            ) : null}
+                    <Card className={styles.cafeOrderPanel}>
+                      <CardBody>
+                        <Inline
+                          className={styles.cafeOrderHeader}
+                          justify="between"
+                          align="center"
+                          width="full"
+                        >
+                          <Text variant="heading3" className={styles.cafeOrderTitle}>
+                            Current order
+                          </Text>
+                          <Badge variant="neutral" className={styles.cafeOrderCount}>
+                            {cafeOrderItemCount} item
+                            {cafeOrderItemCount === 1 ? '' : 's'}
+                          </Badge>
+                        </Inline>
+                        <Stack gap="sm" className={styles.cafeOrderList}>
+                          {renderCafeOrderLines()}
+                        </Stack>
+                      </CardBody>
+                    </Card>
 
-            <Box
-              className={`${styles.cartItems} ${
-                cartViewMode === 'grid' ? styles.cartItemsExcel : ''
-              }`}
-            >
-              {isLoadingCart ? (
-                <CenteredLoader label="Loading cart..." />
-              ) : cartItems.length === 0 ? (
-                <EmptyState title="Cart is empty" className={styles.emptyCart} />
-              ) : cartViewMode === 'grid' ? (
-                <Box className={styles.excelTableWrap}>
-                  <Table className={styles.excelTable}>
-                    <TableHead>
-                      <TableRow>
-                        <TableHeaderCell className={styles.excelTh}>#</TableHeaderCell>
-                        <TableHeaderCell className={styles.excelTh}>Product</TableHeaderCell>
-                        <TableHeaderCell className={styles.excelTh}>Company</TableHeaderCell>
-                        <TableHeaderCell className={styles.excelTh}>Qty</TableHeaderCell>
-                        <TableHeaderCell className={styles.excelTh}>Unit</TableHeaderCell>
-                        <TableHeaderCell className={styles.excelTh}>Amount</TableHeaderCell>
-                        <TableHeaderCell className={styles.excelTh}>Price</TableHeaderCell>
-                        <TableHeaderCell className={styles.excelTh}>Discount</TableHeaderCell>
-                        <TableHeaderCell className={styles.excelTh}>Scheme</TableHeaderCell>
-                        <TableHeaderCell className={styles.excelTh}>Actions</TableHeaderCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {cartItems.map((cartItem, idx) => {
-                        const isPackOnlySale =
-                          cartItem.inventoryItem.sellUnitRule === 'PACK_ONLY';
-                        const isBaseUnitSelected =
-                          !isPackOnlySale &&
-                          ((cartItem.inventoryItem.baseUnit != null &&
-                            cartItem.unit ===
-                              cartItem.inventoryItem.baseUnit) ||
-                            cartItem.availableUnits.some(
-                              (u) => u.baseUnit && u.unit === cartItem.unit
-                            ));
-                        const quantityInputValue = isBaseUnitSelected
-                          ? cartItem.baseQuantity
-                          : cartItem.quantity;
-                        const lineTotal = cartItem.price * cartItem.quantity;
-                        const formatPrice = (n: number) =>
-                          new Intl.NumberFormat('en-IN', {
-                            style: 'currency',
-                            currency: 'INR',
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          }).format(n);
-                        const pricingId =
-                          cartItem.inventoryItem.pricingId ??
-                          inventoryToPricingId[cartItem.inventoryItem.id];
-                        const pricing = pricingId
-                          ? pricingCache[pricingId]
-                          : undefined;
-                        const rateOpts = getRateOptions(
-                          cartItem.inventoryItem,
-                          pricing
-                        );
-                        const showRateDropdown =
-                          pricingId ||
-                          cartItem.inventoryItem.id ||
-                          rateOpts.length > 1;
-                        const matched = rateOpts.find(
-                          (o) => Math.abs(o.price - cartItem.price) < 0.01
-                        );
-                        const isLoading =
-                          pricingLoading[pricingId ?? ''] ||
-                          pricingLoading[`inv:${cartItem.inventoryItem.id}`];
-                        return (
-                          <TableRow
-                            key={cartItem.inventoryItem.id}
-                            className={styles.excelTr}
-                          >
-                            <TableCell className={styles.excelTd}>{idx + 1}</TableCell>
-                            <TableCell className={styles.excelTd}>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                className={styles.excelProductBtn}
-                                onClick={() => setDetailModalItem(cartItem)}
-                              >
-                                {cartItem.inventoryItem.name || '—'}
-                              </Button>
-                              <CustomerProductHistoryHint
-                                sellableRef={inventorySellableRef(
-                                  cartItem.inventoryItem.id
-                                )}
-                                history={customerProductHistory}
-                                loading={customerProductHistoryLoading}
-                              />
-                            </TableCell>
-                            <TableCell className={styles.excelTd}>
-                              {cartItem.inventoryItem.companyName || '—'}
-                            </TableCell>
-                            <TableCell className={styles.excelTd}>
-                              <Box className={styles.excelCellInput}>
-                                <CartQuantityInput
-                                  value={quantityInputValue}
-                                  disabled={isUpdatingCart}
-                                  onCommit={async (newQty) => {
-                                    const delta = newQty - quantityInputValue;
-                                    if (delta !== 0) {
-                                      await handleUpdateQuantity(
-                                        cartItem.inventoryItem.id,
-                                        delta,
-                                        isBaseUnitSelected
-                                      );
-                                    }
-                                  }}
-                                />
-                              </Box>
-                            </TableCell>
-                            <TableCell className={styles.excelTd}>
-                              <Select
-                                className={styles.excelSelect}
-                                value={cartItem.unit}
-                                onChange={(e) =>
-                                  handleUnitChange(
-                                    cartItem.inventoryItem.id,
-                                    e.currentTarget.value
-                                  )
-                                }
-                                disabled={
-                                  isUpdatingCart ||
-                                  cartItem.inventoryItem.sellUnitRule ===
-                                    'PACK_ONLY'
-                                }
-                                options={(cartItem.availableUnits.length > 0
-                                  ? cartItem.availableUnits
-                                  : [{ unit: cartItem.unit, baseUnit: false }]
-                                ).map((uo) => ({
-                                  value: uo.unit,
-                                  label: `${uo.unit}${uo.baseUnit ? ' (base)' : ''}`,
-                                }))}
-                              />
-                            </TableCell>
-                            <TableCell className={styles.excelTd}>
-                              {formatPrice(lineTotal)}
-                            </TableCell>
-                            <TableCell className={styles.excelTd}>
-                              <Stack gap="xs" className={styles.excelPriceCell}>
-                                <CartSellingPriceInput
-                                  value={cartItem.price}
-                                  onCommit={(n) =>
-                                    handleSellingPriceChange(
-                                      cartItem.inventoryItem.id,
-                                      n
-                                    )
-                                  }
-                                  disabled={isUpdatingCart}
-                                />
-                                {showRateDropdown ? (
-                                  <Select
-                                    className={styles.excelRateSelect}
-                                    value={
-                                      matched ? matched.label : '__custom__'
-                                    }
-                                    onChange={(e) => {
-                                      const sel = e.target.value;
-                                      if (sel === '__custom__') return;
-                                      const opt = rateOpts.find(
-                                        (o) => o.label === sel
-                                      );
-                                      if (opt)
-                                        handleSellingPriceChange(
-                                          cartItem.inventoryItem.id,
-                                          opt.price
-                                        );
-                                    }}
-                                    onMouseDown={() =>
-                                      loadPricingOnDropdownClick(
-                                        cartItem.inventoryItem.pricingId ??
-                                          undefined,
-                                        cartItem.inventoryItem.id
-                                      )
-                                    }
-                                    disabled={isUpdatingCart || isLoading}
-                                    options={[
-                                      { value: '__custom__', label: 'Custom' },
-                                      ...rateOpts.map((opt) => ({
-                                        value: opt.label,
-                                        label: `${opt.label} (${formatPrice(opt.price)})`,
-                                      })),
-                                    ]}
-                                  />
-                                ) : null}
-                              </Stack>
-                            </TableCell>
-                            <TableCell className={styles.excelTd}>
-                              <Stack gap="xs" className={styles.compareCell}>
-                                {!hidePurchaseDetailsInSell ? (
-                                  <Text variant="caption" className={styles.compareTop}>
-                                    {(() => {
-                                      const v = getPurchaseAdditionalDiscount(
-                                        cartItem.inventoryItem
-                                      );
-                                      return v != null ? `${v}%` : '—';
-                                    })()}
-                                  </Text>
-                                ) : null}
-                                <Box className={styles.compareBottom}>
-                                  <CartAdditionalDiscountInput
-                                    value={getEffectiveAdditionalDiscount(
-                                      cartItem.inventoryItem.id,
-                                      cartItem
-                                    )}
-                                    onCommit={(n) =>
-                                      handleAdditionalDiscountChange(
-                                        cartItem.inventoryItem.id,
-                                        n
-                                      )
-                                    }
-                                    disabled={isUpdatingCart}
-                                  />
-                                </Box>
-                              </Stack>
-                            </TableCell>
-                            <TableCell className={styles.excelTd}>
-                              <Stack gap="xs" className={styles.compareCell}>
-                                {!hidePurchaseDetailsInSell ? (
-                                  <Text variant="caption" className={styles.compareTop}>
-                                    {formatPurchaseSchemeLabel(
-                                      cartItem.inventoryItem
-                                    )}
-                                  </Text>
-                                ) : null}
-                                <Box className={styles.compareBottom}>
-                                  <CartSchemeInput
-                                    schemeType={cartItem.schemeType ?? null}
-                                    payFor={cartItem.schemePayFor ?? null}
-                                    free={cartItem.schemeFree ?? null}
-                                    percentage={
-                                      cartItem.schemePercentage ?? null
-                                    }
-                                    onCommitUnits={(pf, f) =>
-                                      handleSchemeChange(
-                                        cartItem.inventoryItem.id,
-                                        pf,
-                                        f
-                                      )
-                                    }
-                                    onCommitPercentage={(p) =>
-                                      handleSchemePercentageChange(
-                                        cartItem.inventoryItem.id,
-                                        p
-                                      )
-                                    }
-                                    disabled={isUpdatingCart}
-                                  />
-                                </Box>
-                              </Stack>
-                            </TableCell>
-                            <TableCell className={styles.excelTd}>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className={styles.excelRemoveBtn}
-                                onClick={() =>
-                                  handleRemoveItem(cartItem.inventoryItem.id)
-                                }
-                                disabled={isUpdatingCart}
-                              >
-                                Remove
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </Box>
-              ) : (
-                cartItems.map((cartItem) =>
-                  (() => {
-                    const isBaseUnitSelected =
-                      (cartItem.inventoryItem.baseUnit != null &&
-                        cartItem.unit === cartItem.inventoryItem.baseUnit) ||
-                      cartItem.availableUnits.some(
-                        (unitOption) =>
-                          unitOption.baseUnit &&
-                          unitOption.unit === cartItem.unit
-                      );
-                    const quantityInputValue = isBaseUnitSelected
-                      ? cartItem.baseQuantity
-                      : cartItem.quantity;
-                    return (
-                      <Card
-                        key={cartItem.inventoryItem.id}
-                        className={styles.cartItem}
-                      >
-                        <CardBody>
-                        <Stack gap="md" className={styles.itemInfo}>
-                          <Stack gap="xs" className={styles.itemHeader}>
-                            <Inline className={styles.itemHeaderTop} justify="between" align="center" width="full">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                className={styles.itemNameButton}
-                                onClick={() => setDetailModalItem(cartItem)}
-                                aria-label="View pricing details"
-                              >
-                                {cartItem.inventoryItem.name || 'Unnamed Product'}
-                              </Button>
-                              <Badge variant="neutral" className={styles.modeBadge}>
-                                {normalizeBillingMode(
-                                  cartItem.inventoryItem.billingMode
-                                )}
-                              </Badge>
-                            </Inline>
-                            {cartItem.inventoryItem.companyName ? (
-                              <Text variant="caption" color="secondary" className={styles.itemCompany}>
-                                {cartItem.inventoryItem.companyName}
-                              </Text>
-                            ) : null}
-                            <CustomerProductHistoryHint
-                              sellableRef={inventorySellableRef(
-                                cartItem.inventoryItem.id
-                              )}
-                              history={customerProductHistory}
-                              loading={customerProductHistoryLoading}
+                    {cartData &&
+                      (cartData.totalCost != null ||
+                        cartData.revenueAfterTax != null ||
+                        cartData.totalProfit != null ||
+                        cartData.marginPercent != null) && (
+                        <Stack gap="xs" className={styles.cafeAnalytics}>
+                          <SummaryRow
+                            label="Total Cost"
+                            value={`₹${(cartData.totalCost ?? 0).toFixed(2)}`}
+                          />
+                          {cartData.revenueAfterTax != null && (
+                            <SummaryRow
+                              label="Revenue (after tax)"
+                              value={`₹${cartData.revenueAfterTax.toFixed(2)}`}
                             />
-                            <Box className={styles.itemMetaRow}>
-                              <Text variant="caption" color="secondary" className={styles.itemUnitMeta}>
-                                {formatCartPackagingMeta(cartItem)}
-                              </Text>
-                            </Box>
-                            {cartItem.inventoryItem.maximumRetailPrice >
-                              cartItem.price ? (
-                              <Text variant="caption" className={styles.itemDiscount}>
-                                {(
-                                  ((cartItem.inventoryItem.maximumRetailPrice -
-                                    cartItem.price) /
-                                    cartItem.inventoryItem.maximumRetailPrice) *
-                                  100
-                                ).toFixed(1)}
-                                % off MRP
-                              </Text>
-                            ) : null}
-                          </Stack>
-                          <Inline className={styles.itemEditRow} align="start" width="full">
-                            <Stack gap="md" className={styles.itemEditFields}>
-                              <FormField
-                                label="Price"
-                                id={`price-${cartItem.inventoryItem.id}`}
-                              >
-                                <Stack gap="xs" className={styles.itemPriceBlock}>
-                                  <CartSellingPriceInput
-                                    id={`price-${cartItem.inventoryItem.id}`}
-                                    value={cartItem.price}
-                                    onCommit={(num) =>
-                                      handleSellingPriceChange(
-                                        cartItem.inventoryItem.id,
-                                        num
-                                      )
-                                    }
-                                    disabled={isUpdatingCart}
-                                  />
-                                  <Text variant="caption" color="secondary" className={styles.itemFieldUnit}>
-                                    per {cartItem.unit}
-                                  </Text>
-                                  {(() => {
-                                    const pricingId =
-                                      cartItem.inventoryItem.pricingId ??
-                                      inventoryToPricingId[
-                                        cartItem.inventoryItem.id
-                                      ];
-                                    const pricing = pricingId
-                                      ? pricingCache[pricingId]
-                                      : undefined;
-                                    const invId = cartItem.inventoryItem.id;
-                                    const isLoading =
-                                      pricingLoading[pricingId ?? ''] ||
-                                      pricingLoading[`inv:${invId}`];
-                                    const rateOpts = getRateOptions(
-                                      cartItem.inventoryItem,
-                                      pricing
-                                    );
-                                    const formatPrice = (n: number) =>
-                                      new Intl.NumberFormat('en-IN', {
-                                        style: 'currency',
-                                        currency: 'INR',
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                      }).format(n);
-                                    const showDropdown =
-                                      pricingId || invId || rateOpts.length > 1;
-                                    if (!showDropdown) return null;
-                                    const matched = rateOpts.find(
-                                      (o) =>
-                                        Math.abs(o.price - cartItem.price) <
-                                        0.01
-                                    );
-                                    const selectValue = matched
-                                      ? matched.label
-                                      : '__custom__';
-                                    // Never switch select value to loading - keep current selection to avoid flicker
-                                    const displayValue =
-                                      isLoading && rateOpts.length === 0
-                                        ? '__custom__'
-                                        : selectValue;
-                                    const selectedOpt = rateOpts.find(
-                                      (o) => o.label === displayValue
-                                    );
-                                    return (
-                                      <Select
-                                        className={styles.itemRateSelect}
-                                        value={displayValue}
-                                        onChange={(e) => {
-                                          const sel = e.target.value;
-                                          if (sel === '__custom__') return;
-                                          const opt = rateOpts.find(
-                                            (o) => o.label === sel
-                                          );
-                                          if (opt) {
-                                            handleSellingPriceChange(
+                          )}
+                          {cartData.totalProfit != null && (
+                            <SummaryRow
+                              label="Profit"
+                              value={`₹${cartData.totalProfit.toFixed(2)}`}
+                            />
+                          )}
+                          {cartData.marginPercent != null && (
+                            <SummaryRow
+                              label="Margin"
+                              value={`${cartData.marginPercent.toFixed(1)}%`}
+                            />
+                          )}
+                        </Stack>
+                      )}
+                  </Box>
+                </Inline>
+              </Box>
+              {renderCafeCheckoutBar()}
+            </>
+          ) : (
+            <Inline className={styles.mainRow} align="start" width="full">
+              <Box className={styles.cartArea}>
+                <Stack gap="md" className={styles.cartSection}>
+                  <ProductSearchBlock
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    isSearching={isSearching}
+                    showSearchDropdown={showSearchDropdown}
+                    searchResults={searchResults}
+                    onSearch={() => handleSearchSubmit()}
+                    placeholder="Search products..."
+                    autoFocus
+                    onAddToCart={handleAddToCart}
+                    addDisabled={(item) =>
+                      item.currentCount <= 0 ||
+                      (item.sellingPrice ?? item.priceToRetail) == null ||
+                      isUpdatingCart
+                    }
+                  />
+
+                  {cartItems.length > 0 ? (
+                    <Inline className={styles.viewToggleWrap} gap="sm" align="center">
+                      <Text className={styles.viewToggleLabel}>View:</Text>
+                      <Inline className={styles.viewToggleButtons} gap="none">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className={`${styles.viewToggleBtn} ${
+                            cartViewMode === 'list' ? styles.viewToggleBtnActive : ''
+                          }`}
+                          onClick={() => {
+                            setCartViewMode('list');
+                            localStorage.setItem('scan-sell-view-mode', 'list');
+                          }}
+                          title="List view"
+                          aria-pressed={cartViewMode === 'list'}
+                        >
+                          <Text aria-hidden>☰</Text> List
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className={`${styles.viewToggleBtn} ${
+                            cartViewMode === 'grid' ? styles.viewToggleBtnActive : ''
+                          }`}
+                          onClick={() => {
+                            setCartViewMode('grid');
+                            localStorage.setItem('scan-sell-view-mode', 'grid');
+                          }}
+                          title="Grid view"
+                          aria-pressed={cartViewMode === 'grid'}
+                        >
+                          <Text aria-hidden>⊞</Text> Grid
+                        </Button>
+                      </Inline>
+                    </Inline>
+                  ) : null}
+
+                  <Box
+                    className={`${styles.cartItems} ${
+                      cartViewMode === 'grid' ? styles.cartItemsExcel : ''
+                    }`}
+                  >
+                    {isLoadingCart ? (
+                      <CenteredLoader label="Loading cart..." />
+                    ) : cartItems.length === 0 ? (
+                      <EmptyState title="Cart is empty" className={styles.emptyCart} />
+                    ) : cartViewMode === 'grid' ? (
+                      <Box className={styles.excelTableWrap}>
+                        <Table className={styles.excelTable}>
+                          <TableHead>
+                            <TableRow>
+                              <TableHeaderCell className={styles.excelTh}>#</TableHeaderCell>
+                              <TableHeaderCell className={styles.excelTh}>Product</TableHeaderCell>
+                              <TableHeaderCell className={styles.excelTh}>Company</TableHeaderCell>
+                              <TableHeaderCell className={styles.excelTh}>Qty</TableHeaderCell>
+                              <TableHeaderCell className={styles.excelTh}>Unit</TableHeaderCell>
+                              <TableHeaderCell className={styles.excelTh}>Amount</TableHeaderCell>
+                              <TableHeaderCell className={styles.excelTh}>Price</TableHeaderCell>
+                              <TableHeaderCell className={styles.excelTh}>Discount</TableHeaderCell>
+                              <TableHeaderCell className={styles.excelTh}>Scheme</TableHeaderCell>
+                              <TableHeaderCell className={styles.excelTh}>Actions</TableHeaderCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {cartItems.map((cartItem, idx) => {
+                              const isPackOnlySale =
+                                cartItem.inventoryItem.sellUnitRule === 'PACK_ONLY';
+                              const isBaseUnitSelected =
+                                !isPackOnlySale &&
+                                ((cartItem.inventoryItem.baseUnit != null &&
+                                  cartItem.unit === cartItem.inventoryItem.baseUnit) ||
+                                  cartItem.availableUnits.some(
+                                    (u) => u.baseUnit && u.unit === cartItem.unit,
+                                  ));
+                              const quantityInputValue = isBaseUnitSelected
+                                ? cartItem.baseQuantity
+                                : cartItem.quantity;
+                              const lineTotal = cartItem.price * cartItem.quantity;
+                              const formatPrice = (n: number) =>
+                                new Intl.NumberFormat('en-IN', {
+                                  style: 'currency',
+                                  currency: 'INR',
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                }).format(n);
+                              const pricingId =
+                                cartItem.inventoryItem.pricingId ??
+                                inventoryToPricingId[cartItem.inventoryItem.id];
+                              const pricing = pricingId ? pricingCache[pricingId] : undefined;
+                              const rateOpts = getRateOptions(cartItem.inventoryItem, pricing);
+                              const showRateDropdown =
+                                pricingId || cartItem.inventoryItem.id || rateOpts.length > 1;
+                              const matched = rateOpts.find(
+                                (o) => Math.abs(o.price - cartItem.price) < 0.01,
+                              );
+                              const isLoading =
+                                pricingLoading[pricingId ?? ''] ||
+                                pricingLoading[`inv:${cartItem.inventoryItem.id}`];
+                              return (
+                                <TableRow
+                                  key={cartItem.inventoryItem.id}
+                                  className={styles.excelTr}
+                                >
+                                  <TableCell className={styles.excelTd}>{idx + 1}</TableCell>
+                                  <TableCell className={styles.excelTd}>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      className={styles.excelProductBtn}
+                                      onClick={() => setDetailModalItem(cartItem)}
+                                    >
+                                      {cartItem.inventoryItem.name || '—'}
+                                    </Button>
+                                    <CustomerProductHistoryHint
+                                      sellableRef={inventorySellableRef(cartItem.inventoryItem.id)}
+                                      history={customerProductHistory}
+                                      loading={customerProductHistoryLoading}
+                                    />
+                                  </TableCell>
+                                  <TableCell className={styles.excelTd}>
+                                    {cartItem.inventoryItem.companyName || '—'}
+                                  </TableCell>
+                                  <TableCell className={styles.excelTd}>
+                                    <Box className={styles.excelCellInput}>
+                                      <CartQuantityInput
+                                        value={quantityInputValue}
+                                        disabled={isUpdatingCart}
+                                        onCommit={async (newQty) => {
+                                          const delta = newQty - quantityInputValue;
+                                          if (delta !== 0) {
+                                            await handleUpdateQuantity(
                                               cartItem.inventoryItem.id,
-                                              opt.price
+                                              delta,
+                                              isBaseUnitSelected,
                                             );
                                           }
                                         }}
-                                        onMouseDown={() => {
-                                          loadPricingOnDropdownClick(
-                                            cartItem.inventoryItem.pricingId ??
-                                              undefined,
-                                            invId
-                                          );
-                                        }}
-                                        disabled={isUpdatingCart || isLoading}
-                                        aria-label={
-                                          isLoading
-                                            ? 'Loading rates'
-                                            : selectedOpt
-                                              ? `Rate: ${selectedOpt.label}, ${formatPrice(selectedOpt.price)}`
-                                              : 'Select selling rate'
-                                        }
-                                        options={[
-                                          { value: '__custom__', label: 'Custom' },
-                                          ...rateOpts.map((opt) => ({
-                                            value: opt.label,
-                                            label: `${opt.label} · ${formatPrice(opt.price)}`,
-                                          })),
-                                        ]}
-                                      />
-                                    );
-                                  })()}
-                                </Stack>
-                              </FormField>
-                              <Inline className={styles.itemSaleRowInline} gap="md" align="start">
-                                <FormField label="Disc">
-                                  <Stack gap="xs" className={styles.compareCell}>
-                                    {!hidePurchaseDetailsInSell ? (
-                                      <Text variant="caption" className={styles.compareTop}>
-                                        {(() => {
-                                          const v =
-                                            getPurchaseAdditionalDiscount(
-                                              cartItem.inventoryItem
-                                            );
-                                          return v != null ? `${v}%` : '—';
-                                        })()}
-                                      </Text>
-                                    ) : null}
-                                    <Box className={styles.compareBottom}>
-                                      <CartAdditionalDiscountInput
-                                        value={getEffectiveAdditionalDiscount(
-                                          cartItem.inventoryItem.id,
-                                          cartItem
-                                        )}
-                                        onCommit={(num) =>
-                                          handleAdditionalDiscountChange(
-                                            cartItem.inventoryItem.id,
-                                            num
-                                          )
-                                        }
-                                        disabled={isUpdatingCart}
                                       />
                                     </Box>
-                                  </Stack>
-                                </FormField>
-
-                                <FormField label="Scheme">
-                                  <Stack gap="xs" className={styles.compareCell}>
-                                    {!hidePurchaseDetailsInSell ? (
-                                      <Text variant="caption" className={styles.compareTop}>
-                                        {formatPurchaseSchemeLabel(
-                                          cartItem.inventoryItem
-                                        )}
-                                      </Text>
-                                    ) : null}
-                                    <Box className={styles.compareBottom}>
-                                      <CartSchemeInput
-                                        schemeType={cartItem.schemeType ?? null}
-                                        payFor={cartItem.schemePayFor ?? null}
-                                        free={cartItem.schemeFree ?? null}
-                                        percentage={
-                                          cartItem.schemePercentage ?? null
-                                        }
-                                        onCommitUnits={(pf, f) =>
-                                          handleSchemeChange(
-                                            cartItem.inventoryItem.id,
-                                            pf,
-                                            f
-                                          )
-                                        }
-                                        onCommitPercentage={(p) =>
-                                          handleSchemePercentageChange(
-                                            cartItem.inventoryItem.id,
-                                            p
-                                          )
-                                        }
-                                        disabled={isUpdatingCart}
-                                      />
-                                    </Box>
-                                  </Stack>
-                                </FormField>
-
-                                <FormField label="Unit">
-                                  <Select
-                                    className={styles.itemUnitSelect}
-                                    value={cartItem.unit}
-                                    onChange={(e) =>
-                                      handleUnitChange(
-                                        cartItem.inventoryItem.id,
-                                        e.currentTarget.value
-                                      )
-                                    }
-                                    disabled={isUpdatingCart}
-                                    options={(cartItem.availableUnits.length > 0
-                                      ? cartItem.availableUnits
-                                      : [
-                                          {
-                                            unit: cartItem.unit,
-                                            baseUnit: false,
-                                          },
-                                        ]
-                                    ).map((unitOption) => ({
-                                      value: unitOption.unit,
-                                      label: `${unitOption.unit}${unitOption.baseUnit ? ' (base)' : ''}`,
-                                    }))}
-                                  />
-                                </FormField>
-                              </Inline>
-                            </Stack>
-                            <Stack gap="sm" className={styles.itemActions} align="end">
-                              <Inline className={styles.itemActionTopRow} gap="sm" align="center">
-                                <Inline className={styles.qtyStepper} gap="none" align="center">
-                                  <IconButton
-                                    label="Decrease quantity"
-                                    className={styles.qtyBtn}
-                                    onClick={() =>
-                                      handleUpdateQuantity(
-                                        cartItem.inventoryItem.id,
-                                        -1,
-                                        isBaseUnitSelected
-                                      )
-                                    }
-                                    disabled={isUpdatingCart}
-                                  >
-                                    −
-                                  </IconButton>
-                                  <CartQuantityInput
-                                    value={quantityInputValue}
-                                    disabled={isUpdatingCart}
-                                    onCommit={async (newQty) => {
-                                      const delta = newQty - quantityInputValue;
-                                      if (delta !== 0) {
-                                        await handleUpdateQuantity(
+                                  </TableCell>
+                                  <TableCell className={styles.excelTd}>
+                                    <Select
+                                      className={styles.excelSelect}
+                                      value={cartItem.unit}
+                                      onChange={(e) =>
+                                        handleUnitChange(
                                           cartItem.inventoryItem.id,
-                                          delta,
-                                          isBaseUnitSelected
-                                        );
+                                          e.currentTarget.value,
+                                        )
                                       }
-                                    }}
-                                  />
-                                  <IconButton
-                                    label="Increase quantity"
-                                    className={styles.qtyBtn}
-                                    onClick={() =>
-                                      handleUpdateQuantity(
-                                        cartItem.inventoryItem.id,
-                                        1,
-                                        isBaseUnitSelected
-                                      )
-                                    }
-                                    disabled={isUpdatingCart}
-                                  >
-                                    +
-                                  </IconButton>
-                                </Inline>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  className={styles.removeBtn}
-                                  onClick={() =>
-                                    handleRemoveItem(cartItem.inventoryItem.id)
-                                  }
-                                  disabled={isUpdatingCart}
-                                >
-                                  Remove
-                                </Button>
-                              </Inline>
-                              <Text weight="semibold" className={styles.itemActionAmount}>
-                                ₹
-                                {(cartItem.price * cartItem.quantity).toFixed(
-                                  2
-                                )}
-                              </Text>
-                            </Stack>
-                          </Inline>
-                        </Stack>
-                        </CardBody>
-                      </Card>
-                    );
-                  })()
-                )
-              )}
-            </Box>
-          </Stack>
-        </Box>
+                                      disabled={
+                                        isUpdatingCart ||
+                                        cartItem.inventoryItem.sellUnitRule === 'PACK_ONLY'
+                                      }
+                                      options={(cartItem.availableUnits.length > 0
+                                        ? cartItem.availableUnits
+                                        : [{ unit: cartItem.unit, baseUnit: false }]
+                                      ).map((uo) => ({
+                                        value: uo.unit,
+                                        label: `${uo.unit}${uo.baseUnit ? ' (base)' : ''}`,
+                                      }))}
+                                    />
+                                  </TableCell>
+                                  <TableCell className={styles.excelTd}>
+                                    {formatPrice(lineTotal)}
+                                  </TableCell>
+                                  <TableCell className={styles.excelTd}>
+                                    <Stack gap="xs" className={styles.excelPriceCell}>
+                                      <CartSellingPriceInput
+                                        value={cartItem.price}
+                                        onCommit={(n) =>
+                                          handleSellingPriceChange(cartItem.inventoryItem.id, n)
+                                        }
+                                        disabled={isUpdatingCart}
+                                      />
+                                      {showRateDropdown ? (
+                                        <Select
+                                          className={styles.excelRateSelect}
+                                          value={matched ? matched.label : '__custom__'}
+                                          onChange={(e) => {
+                                            const sel = e.target.value;
+                                            if (sel === '__custom__') return;
+                                            const opt = rateOpts.find((o) => o.label === sel);
+                                            if (opt)
+                                              handleSellingPriceChange(
+                                                cartItem.inventoryItem.id,
+                                                opt.price,
+                                              );
+                                          }}
+                                          onMouseDown={() =>
+                                            loadPricingOnDropdownClick(
+                                              cartItem.inventoryItem.pricingId ?? undefined,
+                                              cartItem.inventoryItem.id,
+                                            )
+                                          }
+                                          disabled={isUpdatingCart || isLoading}
+                                          options={[
+                                            { value: '__custom__', label: 'Custom' },
+                                            ...rateOpts.map((opt) => ({
+                                              value: opt.label,
+                                              label: `${opt.label} (${formatPrice(opt.price)})`,
+                                            })),
+                                          ]}
+                                        />
+                                      ) : null}
+                                    </Stack>
+                                  </TableCell>
+                                  <TableCell className={styles.excelTd}>
+                                    <Stack gap="xs" className={styles.compareCell}>
+                                      {!hidePurchaseDetailsInSell ? (
+                                        <Text variant="caption" className={styles.compareTop}>
+                                          {(() => {
+                                            const v = getPurchaseAdditionalDiscount(
+                                              cartItem.inventoryItem,
+                                            );
+                                            return v != null ? `${v}%` : '—';
+                                          })()}
+                                        </Text>
+                                      ) : null}
+                                      <Box className={styles.compareBottom}>
+                                        <CartAdditionalDiscountInput
+                                          value={getEffectiveAdditionalDiscount(
+                                            cartItem.inventoryItem.id,
+                                            cartItem,
+                                          )}
+                                          onCommit={(n) =>
+                                            handleAdditionalDiscountChange(
+                                              cartItem.inventoryItem.id,
+                                              n,
+                                            )
+                                          }
+                                          disabled={isUpdatingCart}
+                                        />
+                                      </Box>
+                                    </Stack>
+                                  </TableCell>
+                                  <TableCell className={styles.excelTd}>
+                                    <Stack gap="xs" className={styles.compareCell}>
+                                      {!hidePurchaseDetailsInSell ? (
+                                        <Text variant="caption" className={styles.compareTop}>
+                                          {formatPurchaseSchemeLabel(cartItem.inventoryItem)}
+                                        </Text>
+                                      ) : null}
+                                      <Box className={styles.compareBottom}>
+                                        <CartSchemeInput
+                                          schemeType={cartItem.schemeType ?? null}
+                                          payFor={cartItem.schemePayFor ?? null}
+                                          free={cartItem.schemeFree ?? null}
+                                          percentage={cartItem.schemePercentage ?? null}
+                                          onCommitUnits={(pf, f) =>
+                                            handleSchemeChange(cartItem.inventoryItem.id, pf, f)
+                                          }
+                                          onCommitPercentage={(p) =>
+                                            handleSchemePercentageChange(
+                                              cartItem.inventoryItem.id,
+                                              p,
+                                            )
+                                          }
+                                          disabled={isUpdatingCart}
+                                        />
+                                      </Box>
+                                    </Stack>
+                                  </TableCell>
+                                  <TableCell className={styles.excelTd}>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      className={styles.excelRemoveBtn}
+                                      onClick={() => handleRemoveItem(cartItem.inventoryItem.id)}
+                                      disabled={isUpdatingCart}
+                                    >
+                                      Remove
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </Box>
+                    ) : (
+                      cartItems.map((cartItem) =>
+                        (() => {
+                          const isBaseUnitSelected =
+                            (cartItem.inventoryItem.baseUnit != null &&
+                              cartItem.unit === cartItem.inventoryItem.baseUnit) ||
+                            cartItem.availableUnits.some(
+                              (unitOption) =>
+                                unitOption.baseUnit && unitOption.unit === cartItem.unit,
+                            );
+                          const quantityInputValue = isBaseUnitSelected
+                            ? cartItem.baseQuantity
+                            : cartItem.quantity;
+                          return (
+                            <Card key={cartItem.inventoryItem.id} className={styles.cartItem}>
+                              <CardBody>
+                                <Stack gap="md" className={styles.itemInfo}>
+                                  <Stack gap="xs" className={styles.itemHeader}>
+                                    <Inline
+                                      className={styles.itemHeaderTop}
+                                      justify="between"
+                                      align="center"
+                                      width="full"
+                                    >
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        className={styles.itemNameButton}
+                                        onClick={() => setDetailModalItem(cartItem)}
+                                        aria-label="View pricing details"
+                                      >
+                                        {cartItem.inventoryItem.name || 'Unnamed Product'}
+                                      </Button>
+                                      <Badge variant="neutral" className={styles.modeBadge}>
+                                        {normalizeBillingMode(cartItem.inventoryItem.billingMode)}
+                                      </Badge>
+                                    </Inline>
+                                    {cartItem.inventoryItem.companyName ? (
+                                      <Text
+                                        variant="caption"
+                                        color="secondary"
+                                        className={styles.itemCompany}
+                                      >
+                                        {cartItem.inventoryItem.companyName}
+                                      </Text>
+                                    ) : null}
+                                    <CustomerProductHistoryHint
+                                      sellableRef={inventorySellableRef(cartItem.inventoryItem.id)}
+                                      history={customerProductHistory}
+                                      loading={customerProductHistoryLoading}
+                                    />
+                                    <Box className={styles.itemMetaRow}>
+                                      <Text
+                                        variant="caption"
+                                        color="secondary"
+                                        className={styles.itemUnitMeta}
+                                      >
+                                        {formatCartPackagingMeta(cartItem)}
+                                      </Text>
+                                    </Box>
+                                    {cartItem.inventoryItem.maximumRetailPrice > cartItem.price ? (
+                                      <Text variant="caption" className={styles.itemDiscount}>
+                                        {(
+                                          ((cartItem.inventoryItem.maximumRetailPrice -
+                                            cartItem.price) /
+                                            cartItem.inventoryItem.maximumRetailPrice) *
+                                          100
+                                        ).toFixed(1)}
+                                        % off MRP
+                                      </Text>
+                                    ) : null}
+                                  </Stack>
+                                  <Inline className={styles.itemEditRow} align="start" width="full">
+                                    <Stack gap="md" className={styles.itemEditFields}>
+                                      <FormField
+                                        label="Price"
+                                        id={`price-${cartItem.inventoryItem.id}`}
+                                      >
+                                        <Stack gap="xs" className={styles.itemPriceBlock}>
+                                          <CartSellingPriceInput
+                                            id={`price-${cartItem.inventoryItem.id}`}
+                                            value={cartItem.price}
+                                            onCommit={(num) =>
+                                              handleSellingPriceChange(
+                                                cartItem.inventoryItem.id,
+                                                num,
+                                              )
+                                            }
+                                            disabled={isUpdatingCart}
+                                          />
+                                          <Text
+                                            variant="caption"
+                                            color="secondary"
+                                            className={styles.itemFieldUnit}
+                                          >
+                                            per {cartItem.unit}
+                                          </Text>
+                                          {(() => {
+                                            const pricingId =
+                                              cartItem.inventoryItem.pricingId ??
+                                              inventoryToPricingId[cartItem.inventoryItem.id];
+                                            const pricing = pricingId
+                                              ? pricingCache[pricingId]
+                                              : undefined;
+                                            const invId = cartItem.inventoryItem.id;
+                                            const isLoading =
+                                              pricingLoading[pricingId ?? ''] ||
+                                              pricingLoading[`inv:${invId}`];
+                                            const rateOpts = getRateOptions(
+                                              cartItem.inventoryItem,
+                                              pricing,
+                                            );
+                                            const formatPrice = (n: number) =>
+                                              new Intl.NumberFormat('en-IN', {
+                                                style: 'currency',
+                                                currency: 'INR',
+                                                minimumFractionDigits: 2,
+                                                maximumFractionDigits: 2,
+                                              }).format(n);
+                                            const showDropdown =
+                                              pricingId || invId || rateOpts.length > 1;
+                                            if (!showDropdown) return null;
+                                            const matched = rateOpts.find(
+                                              (o) => Math.abs(o.price - cartItem.price) < 0.01,
+                                            );
+                                            const selectValue = matched
+                                              ? matched.label
+                                              : '__custom__';
+                                            // Never switch select value to loading - keep current selection to avoid flicker
+                                            const displayValue =
+                                              isLoading && rateOpts.length === 0
+                                                ? '__custom__'
+                                                : selectValue;
+                                            const selectedOpt = rateOpts.find(
+                                              (o) => o.label === displayValue,
+                                            );
+                                            return (
+                                              <Select
+                                                className={styles.itemRateSelect}
+                                                value={displayValue}
+                                                onChange={(e) => {
+                                                  const sel = e.target.value;
+                                                  if (sel === '__custom__') return;
+                                                  const opt = rateOpts.find((o) => o.label === sel);
+                                                  if (opt) {
+                                                    handleSellingPriceChange(
+                                                      cartItem.inventoryItem.id,
+                                                      opt.price,
+                                                    );
+                                                  }
+                                                }}
+                                                onMouseDown={() => {
+                                                  loadPricingOnDropdownClick(
+                                                    cartItem.inventoryItem.pricingId ?? undefined,
+                                                    invId,
+                                                  );
+                                                }}
+                                                disabled={isUpdatingCart || isLoading}
+                                                aria-label={
+                                                  isLoading
+                                                    ? 'Loading rates'
+                                                    : selectedOpt
+                                                    ? `Rate: ${selectedOpt.label}, ${formatPrice(
+                                                        selectedOpt.price,
+                                                      )}`
+                                                    : 'Select selling rate'
+                                                }
+                                                options={[
+                                                  { value: '__custom__', label: 'Custom' },
+                                                  ...rateOpts.map((opt) => ({
+                                                    value: opt.label,
+                                                    label: `${opt.label} · ${formatPrice(
+                                                      opt.price,
+                                                    )}`,
+                                                  })),
+                                                ]}
+                                              />
+                                            );
+                                          })()}
+                                        </Stack>
+                                      </FormField>
+                                      <Inline
+                                        className={styles.itemSaleRowInline}
+                                        gap="md"
+                                        align="start"
+                                      >
+                                        <FormField label="Disc">
+                                          <Stack gap="xs" className={styles.compareCell}>
+                                            {!hidePurchaseDetailsInSell ? (
+                                              <Text variant="caption" className={styles.compareTop}>
+                                                {(() => {
+                                                  const v = getPurchaseAdditionalDiscount(
+                                                    cartItem.inventoryItem,
+                                                  );
+                                                  return v != null ? `${v}%` : '—';
+                                                })()}
+                                              </Text>
+                                            ) : null}
+                                            <Box className={styles.compareBottom}>
+                                              <CartAdditionalDiscountInput
+                                                value={getEffectiveAdditionalDiscount(
+                                                  cartItem.inventoryItem.id,
+                                                  cartItem,
+                                                )}
+                                                onCommit={(num) =>
+                                                  handleAdditionalDiscountChange(
+                                                    cartItem.inventoryItem.id,
+                                                    num,
+                                                  )
+                                                }
+                                                disabled={isUpdatingCart}
+                                              />
+                                            </Box>
+                                          </Stack>
+                                        </FormField>
 
-        <Box as="aside" className={styles.summarySidebar}>
-          <CustomerSectionBlock
-            idPrefix="sidebar"
-            customerSectionOpen={customerSectionOpen}
-            setCustomerSectionOpen={setCustomerSectionOpen}
-            customerName={customerName}
-            customerPhone={customerPhone}
-            customerEmail={customerEmail}
-            customerAddress={customerAddress}
-            setCustomerName={setCustomerName}
-            setCustomerPhone={setCustomerPhone}
-            setCustomerEmail={setCustomerEmail}
-            setCustomerAddress={setCustomerAddress}
-            handleCustomerFieldBlur={handleCustomerFieldBlur}
-            isSearchingCustomer={isSearchingCustomer}
-            handleCustomerSearch={handleCustomerSearch}
-            handleCustomerSearchByEmail={handleCustomerSearchByEmail}
-            isRetailer={isRetailer}
-            setIsRetailer={setIsRetailer}
-            customerGstin={customerGstin}
-            customerDlNo={customerDlNo}
-            customerPan={customerPan}
-            setCustomerGstin={setCustomerGstin}
-            setCustomerDlNo={setCustomerDlNo}
-            setCustomerPan={setCustomerPan}
-          />
+                                        <FormField label="Scheme">
+                                          <Stack gap="xs" className={styles.compareCell}>
+                                            {!hidePurchaseDetailsInSell ? (
+                                              <Text variant="caption" className={styles.compareTop}>
+                                                {formatPurchaseSchemeLabel(cartItem.inventoryItem)}
+                                              </Text>
+                                            ) : null}
+                                            <Box className={styles.compareBottom}>
+                                              <CartSchemeInput
+                                                schemeType={cartItem.schemeType ?? null}
+                                                payFor={cartItem.schemePayFor ?? null}
+                                                free={cartItem.schemeFree ?? null}
+                                                percentage={cartItem.schemePercentage ?? null}
+                                                onCommitUnits={(pf, f) =>
+                                                  handleSchemeChange(
+                                                    cartItem.inventoryItem.id,
+                                                    pf,
+                                                    f,
+                                                  )
+                                                }
+                                                onCommitPercentage={(p) =>
+                                                  handleSchemePercentageChange(
+                                                    cartItem.inventoryItem.id,
+                                                    p,
+                                                  )
+                                                }
+                                                disabled={isUpdatingCart}
+                                              />
+                                            </Box>
+                                          </Stack>
+                                        </FormField>
 
-          <Stack gap="xs" className={styles.cartSummary}>
-            {isLoadingCart ? (
-              <CenteredLoader label="Loading..." />
-            ) : (
-              <>
-                <SummaryRow label="Billing Mode" value={cartBillingMode} />
-                <SummaryRow
-                  label="Subtotal"
-                  value={`₹${calculateSubtotal().toFixed(2)}`}
+                                        <FormField label="Unit">
+                                          <Select
+                                            className={styles.itemUnitSelect}
+                                            value={cartItem.unit}
+                                            onChange={(e) =>
+                                              handleUnitChange(
+                                                cartItem.inventoryItem.id,
+                                                e.currentTarget.value,
+                                              )
+                                            }
+                                            disabled={isUpdatingCart}
+                                            options={(cartItem.availableUnits.length > 0
+                                              ? cartItem.availableUnits
+                                              : [
+                                                  {
+                                                    unit: cartItem.unit,
+                                                    baseUnit: false,
+                                                  },
+                                                ]
+                                            ).map((unitOption) => ({
+                                              value: unitOption.unit,
+                                              label: `${unitOption.unit}${
+                                                unitOption.baseUnit ? ' (base)' : ''
+                                              }`,
+                                            }))}
+                                          />
+                                        </FormField>
+                                      </Inline>
+                                    </Stack>
+                                    <Stack gap="sm" className={styles.itemActions} align="end">
+                                      <Inline
+                                        className={styles.itemActionTopRow}
+                                        gap="sm"
+                                        align="center"
+                                      >
+                                        <Inline
+                                          className={styles.qtyStepper}
+                                          gap="none"
+                                          align="center"
+                                        >
+                                          <IconButton
+                                            label="Decrease quantity"
+                                            className={styles.qtyBtn}
+                                            onClick={() =>
+                                              handleUpdateQuantity(
+                                                cartItem.inventoryItem.id,
+                                                -1,
+                                                isBaseUnitSelected,
+                                              )
+                                            }
+                                            disabled={isUpdatingCart}
+                                          >
+                                            −
+                                          </IconButton>
+                                          <CartQuantityInput
+                                            value={quantityInputValue}
+                                            disabled={isUpdatingCart}
+                                            onCommit={async (newQty) => {
+                                              const delta = newQty - quantityInputValue;
+                                              if (delta !== 0) {
+                                                await handleUpdateQuantity(
+                                                  cartItem.inventoryItem.id,
+                                                  delta,
+                                                  isBaseUnitSelected,
+                                                );
+                                              }
+                                            }}
+                                          />
+                                          <IconButton
+                                            label="Increase quantity"
+                                            className={styles.qtyBtn}
+                                            onClick={() =>
+                                              handleUpdateQuantity(
+                                                cartItem.inventoryItem.id,
+                                                1,
+                                                isBaseUnitSelected,
+                                              )
+                                            }
+                                            disabled={isUpdatingCart}
+                                          >
+                                            +
+                                          </IconButton>
+                                        </Inline>
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="sm"
+                                          className={styles.removeBtn}
+                                          onClick={() =>
+                                            handleRemoveItem(cartItem.inventoryItem.id)
+                                          }
+                                          disabled={isUpdatingCart}
+                                        >
+                                          Remove
+                                        </Button>
+                                      </Inline>
+                                      <Text weight="semibold" className={styles.itemActionAmount}>
+                                        ₹{(cartItem.price * cartItem.quantity).toFixed(2)}
+                                      </Text>
+                                    </Stack>
+                                  </Inline>
+                                </Stack>
+                              </CardBody>
+                            </Card>
+                          );
+                        })(),
+                      )
+                    )}
+                  </Box>
+                </Stack>
+              </Box>
+
+              <Box as="aside" className={styles.summarySidebar}>
+                <CustomerSectionBlock
+                  idPrefix="sidebar"
+                  customerSectionOpen={customerSectionOpen}
+                  setCustomerSectionOpen={setCustomerSectionOpen}
+                  customerName={customerName}
+                  customerPhone={customerPhone}
+                  customerEmail={customerEmail}
+                  customerAddress={customerAddress}
+                  setCustomerName={setCustomerName}
+                  setCustomerPhone={setCustomerPhone}
+                  setCustomerEmail={setCustomerEmail}
+                  setCustomerAddress={setCustomerAddress}
+                  handleCustomerFieldBlur={handleCustomerFieldBlur}
+                  isSearchingCustomer={isSearchingCustomer}
+                  handleCustomerSearch={handleCustomerSearch}
+                  handleCustomerSearchByEmail={handleCustomerSearchByEmail}
+                  isRetailer={isRetailer}
+                  setIsRetailer={setIsRetailer}
+                  customerGstin={customerGstin}
+                  customerDlNo={customerDlNo}
+                  customerPan={customerPan}
+                  setCustomerGstin={setCustomerGstin}
+                  setCustomerDlNo={setCustomerDlNo}
+                  setCustomerPan={setCustomerPan}
                 />
-                {cartData &&
-                  cartData.saleAdditionalDiscountTotal !== undefined &&
-                  cartData.saleAdditionalDiscountTotal !== null &&
-                  cartData.saleAdditionalDiscountTotal !== 0 && (
-                    <SummaryRow
-                      label={
-                        cartData.saleAdditionalDiscountTotal > 0
-                          ? 'Additional Discount'
-                          : 'Additional (markup)'
-                      }
-                      value={
-                        cartData.saleAdditionalDiscountTotal > 0
-                          ? `-₹${cartData.saleAdditionalDiscountTotal.toFixed(2)}`
-                          : `+₹${Math.abs(
-                              cartData.saleAdditionalDiscountTotal
-                            ).toFixed(2)}`
-                      }
-                    />
-                  )}
-                {cartBillingMode === 'REGULAR' &&
-                  ((cartData?.taxTotal ?? 0) !== 0 ||
-                    (cartData?.sgstAmount ?? 0) !== 0 ||
-                    (cartData?.cgstAmount ?? 0) !== 0) && (
+
+                <Stack gap="xs" className={styles.cartSummary}>
+                  {isLoadingCart ? (
+                    <CenteredLoader label="Loading..." />
+                  ) : (
                     <>
-                      <SummaryRow
-                        label={`SGST (${getSGSTPercentage()}%)`}
-                        value={`₹${calculateSGST().toFixed(2)}`}
-                      />
-                      <SummaryRow
-                        label={`CGST (${getCGSTPercentage()}%)`}
-                        value={`₹${calculateCGST().toFixed(2)}`}
-                      />
+                      <SummaryRow label="Billing Mode" value={cartBillingMode} />
+                      <SummaryRow label="Subtotal" value={`₹${calculateSubtotal().toFixed(2)}`} />
+                      {cartData &&
+                        cartData.saleAdditionalDiscountTotal !== undefined &&
+                        cartData.saleAdditionalDiscountTotal !== null &&
+                        cartData.saleAdditionalDiscountTotal !== 0 && (
+                          <SummaryRow
+                            label={
+                              cartData.saleAdditionalDiscountTotal > 0
+                                ? 'Additional Discount'
+                                : 'Additional (markup)'
+                            }
+                            value={
+                              cartData.saleAdditionalDiscountTotal > 0
+                                ? `-₹${cartData.saleAdditionalDiscountTotal.toFixed(2)}`
+                                : `+₹${Math.abs(cartData.saleAdditionalDiscountTotal).toFixed(2)}`
+                            }
+                          />
+                        )}
+                      {cartBillingMode === 'REGULAR' &&
+                        ((cartData?.taxTotal ?? 0) !== 0 ||
+                          (cartData?.sgstAmount ?? 0) !== 0 ||
+                          (cartData?.cgstAmount ?? 0) !== 0) && (
+                          <>
+                            <SummaryRow
+                              label={`SGST (${getSGSTPercentage()}%)`}
+                              value={`₹${calculateSGST().toFixed(2)}`}
+                            />
+                            <SummaryRow
+                              label={`CGST (${getCGSTPercentage()}%)`}
+                              value={`₹${calculateCGST().toFixed(2)}`}
+                            />
+                          </>
+                        )}
+                      {((cartData?.taxTotal ?? 0) !== 0 ||
+                        (cartData?.sgstAmount ?? 0) !== 0 ||
+                        (cartData?.cgstAmount ?? 0) !== 0) && (
+                        <SummaryRow label="Total Tax" value={`₹${calculateTax().toFixed(2)}`} />
+                      )}
+                      <SummaryRow label="Total" value={`₹${calculateTotal().toFixed(2)}`} total />
                     </>
                   )}
-                {((cartData?.taxTotal ?? 0) !== 0 ||
-                  (cartData?.sgstAmount ?? 0) !== 0 ||
-                  (cartData?.cgstAmount ?? 0) !== 0) && (
-                  <SummaryRow
-                    label="Total Tax"
-                    value={`₹${calculateTax().toFixed(2)}`}
-                  />
-                )}
-                <SummaryRow
-                  label="Total"
-                  value={`₹${calculateTotal().toFixed(2)}`}
-                  total
-                />
-              </>
-            )}
-          </Stack>
-          {cartData &&
-            (cartData.totalCost != null ||
-              cartData.revenueAfterTax != null ||
-              cartData.totalProfit != null ||
-              cartData.marginPercent != null) && (
-              <Stack gap="xs" className={styles.costMarginDetail}>
-                <SummaryRow
-                  label="Total Cost"
-                  value={`₹${(cartData.totalCost ?? 0).toFixed(2)}`}
-                />
-                {cartData.revenueAfterTax != null && (
-                  <SummaryRow
-                    label="Revenue (after tax)"
-                    value={`₹${cartData.revenueAfterTax.toFixed(2)}`}
-                  />
-                )}
-                {cartData.totalProfit != null && (
-                  <SummaryRow
-                    label="Profit"
-                    value={`₹${cartData.totalProfit.toFixed(2)}`}
-                  />
-                )}
-                {cartData.marginPercent != null && (
-                  <SummaryRow
-                    label="Margin"
-                    value={`${cartData.marginPercent.toFixed(1)}%`}
-                  />
-                )}
-              </Stack>
-            )}
-          <Inline gap="sm" className={styles.cartActions}>
-            <Button
-              type="button"
-              variant="outline"
-              className={styles.clearBtn}
-              onClick={handleClearCart}
-            >
-              Clear Cart
-            </Button>
-            <Button
-              type="button"
-              className={styles.checkoutBtn}
-              onClick={handleProcessPayment}
-              disabled={
-                (cartItems.length === 0 && menuCartLines.length === 0) ||
-                isProcessing ||
-                isUpdatingCart ||
-                isLoadingCart
-              }
-            >
-              {isProcessing
-                ? 'Processing...'
-                : isUpdatingCart
-                ? 'Updating...'
-                : 'Process Payment'}
-            </Button>
-          </Inline>
-        </Box>
-      </Inline>
-      )}
+                </Stack>
+                {cartData &&
+                  (cartData.totalCost != null ||
+                    cartData.revenueAfterTax != null ||
+                    cartData.totalProfit != null ||
+                    cartData.marginPercent != null) && (
+                    <Stack gap="xs" className={styles.costMarginDetail}>
+                      <SummaryRow
+                        label="Total Cost"
+                        value={`₹${(cartData.totalCost ?? 0).toFixed(2)}`}
+                      />
+                      {cartData.revenueAfterTax != null && (
+                        <SummaryRow
+                          label="Revenue (after tax)"
+                          value={`₹${cartData.revenueAfterTax.toFixed(2)}`}
+                        />
+                      )}
+                      {cartData.totalProfit != null && (
+                        <SummaryRow label="Profit" value={`₹${cartData.totalProfit.toFixed(2)}`} />
+                      )}
+                      {cartData.marginPercent != null && (
+                        <SummaryRow
+                          label="Margin"
+                          value={`${cartData.marginPercent.toFixed(1)}%`}
+                        />
+                      )}
+                    </Stack>
+                  )}
+                <Inline gap="sm" className={styles.cartActions}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={styles.clearBtn}
+                    onClick={handleClearCart}
+                  >
+                    Clear Cart
+                  </Button>
+                  <Button
+                    type="button"
+                    className={styles.checkoutBtn}
+                    onClick={handleProcessPayment}
+                    disabled={
+                      (cartItems.length === 0 && menuCartLines.length === 0) ||
+                      isProcessing ||
+                      isUpdatingCart ||
+                      isLoadingCart
+                    }
+                  >
+                    {isProcessing
+                      ? 'Processing...'
+                      : isUpdatingCart
+                      ? 'Updating...'
+                      : 'Process Payment'}
+                  </Button>
+                </Inline>
+              </Box>
+            </Inline>
+          )}
         </>
       )}
 
       {detailModalItem
         ? (() => {
-          const apiItem = cartData?.items?.find(
-            (i: CheckoutItemResponse) =>
-              i.inventoryId === detailModalItem.inventoryItem.id
-          );
-          const inv = detailModalFullItem ?? detailModalItem.inventoryItem;
-          const mrp = inv.maximumRetailPrice;
-          const price = detailModalItem.price;
-          const qty = detailModalItem.quantity;
-          const addDisc = getEffectiveAdditionalDiscount(
-            detailModalItem.inventoryItem.id,
-            detailModalItem
-          );
-          const schemeLabel =
-            detailModalItem.schemeType === 'PERCENTAGE' &&
-            detailModalItem.schemePercentage != null
-              ? `${detailModalItem.schemePercentage}%`
-              : detailModalItem.schemePayFor != null ||
-                detailModalItem.schemeFree != null
-              ? `${detailModalItem.schemePayFor ?? 0} + ${
-                  detailModalItem.schemeFree ?? 0
-                }`
-              : '—';
-          return (
-            <Modal
-              open
-              onClose={() => setDetailModalItem(null)}
-              size="lg"
-              className={styles.detailModalContent}
-            >
-              <Box className={styles.detailModalHeader}>
-                <Inline className={styles.detailModalHeaderContent} gap="md" align="center">
-                  <Text aria-hidden className={styles.detailModalProductIcon}>
-                    📦
-                  </Text>
-                  <Stack gap="xs">
-                    <Text variant="heading3" className={styles.detailModalTitle}>
-                      {inv.name || 'Product'}
+            const apiItem = cartData?.items?.find(
+              (i: CheckoutItemResponse) => i.inventoryId === detailModalItem.inventoryItem.id,
+            );
+            const inv = detailModalFullItem ?? detailModalItem.inventoryItem;
+            const mrp = inv.maximumRetailPrice;
+            const price = detailModalItem.price;
+            const qty = detailModalItem.quantity;
+            const addDisc = getEffectiveAdditionalDiscount(
+              detailModalItem.inventoryItem.id,
+              detailModalItem,
+            );
+            const schemeLabel =
+              detailModalItem.schemeType === 'PERCENTAGE' &&
+              detailModalItem.schemePercentage != null
+                ? `${detailModalItem.schemePercentage}%`
+                : detailModalItem.schemePayFor != null || detailModalItem.schemeFree != null
+                ? `${detailModalItem.schemePayFor ?? 0} + ${detailModalItem.schemeFree ?? 0}`
+                : '—';
+            return (
+              <Modal
+                open
+                onClose={() => setDetailModalItem(null)}
+                size="lg"
+                className={styles.detailModalContent}
+              >
+                <Box className={styles.detailModalHeader}>
+                  <Inline className={styles.detailModalHeaderContent} gap="md" align="center">
+                    <Text aria-hidden className={styles.detailModalProductIcon}>
+                      📦
                     </Text>
-                    {inv.companyName ? (
-                      <Text color="secondary" className={styles.detailModalSubtitle}>
-                        {inv.companyName}
+                    <Stack gap="xs">
+                      <Text variant="heading3" className={styles.detailModalTitle}>
+                        {inv.name || 'Product'}
                       </Text>
-                    ) : null}
-                  </Stack>
-                </Inline>
-                <IconButton
-                  label="Close"
-                  className={styles.detailModalClose}
-                  onClick={() => setDetailModalItem(null)}
-                >
-                  ×
-                </IconButton>
-              </Box>
-              <Modal.Body>
-                <Stack gap="lg" className={styles.detailModalBody}>
-                  <Stack gap="md" className={styles.detailModalSection}>
-                    <DetailSectionHeader icon="📋" title="Product Information" />
-                    <Grid className={styles.detailModalDetailsGrid}>
-                      {detailModalFullItemLoading ? (
-                        <DetailField icon="⏳" label="Loading full details">
-                          …
-                        </DetailField>
-                      ) : null}
-                      {detailModalFullItemError ? (
-                        <DetailField icon="⚠️" label="Details">
-                          {detailModalFullItemError}
-                        </DetailField>
-                      ) : null}
-                      <DetailField icon="🏷️" label="Product name">
-                        {inv.name || '—'}
-                      </DetailField>
                       {inv.companyName ? (
-                        <DetailField icon="🏢" label="Company">
+                        <Text color="secondary" className={styles.detailModalSubtitle}>
                           {inv.companyName}
-                        </DetailField>
-                      ) : null}
-                      {inv.barcode ? (
-                        <DetailField icon="🏷️" label="Barcode">
-                          {inv.barcode}
-                        </DetailField>
-                      ) : null}
-                      {inv.location ? (
-                        <DetailField icon="📍" label="Location">
-                          {inv.location}
-                        </DetailField>
-                      ) : null}
-                      {(inv.hsn || inv.batchNo) ? (
-                        <DetailField icon="🧾" label="HSN / Batch">
-                          {[inv.hsn, getExtensionFieldString(inv, 'batchNo')]
-                            .filter(Boolean)
-                            .join(' / ')}
-                        </DetailField>
-                      ) : null}
-                      {hasInventoryExpiryDate(inv) ? (
-                        <DetailField icon="📅" label="Expiry">
-                          {formatInventoryExpiryDate(inv)}
-                        </DetailField>
-                      ) : null}
-                      {(inv.currentCount != null ||
-                        inv.currentBaseCount != null) ? (
-                        <DetailField icon="📦" label="Stock (current)">
-                          {inv.currentCount ?? inv.currentBaseCount ?? '—'}
-                        </DetailField>
-                      ) : null}
-                      <DetailField icon="🔢" label="Quantity">
-                        {qty}
-                      </DetailField>
-                      <DetailField icon="🧾" label="Billing mode">
-                        {normalizeBillingMode(inv.billingMode)}
-                      </DetailField>
-                    </Grid>
-                  </Stack>
-                  <Stack gap="md" className={styles.detailModalSection}>
-                    <DetailSectionHeader icon="💰" title="Pricing" />
-                    <Grid className={styles.detailModalPricingGrid}>
-                      <DetailField icon="💵" label="Selling Price" pricing>
-                        <Text className={styles.detailModalPriceValue}>
-                          ₹{price.toFixed(2)}
                         </Text>
-                      </DetailField>
-                      <DetailField icon="🏷️" label="MRP" pricing>
-                        <Text className={styles.detailModalMrpValue}>
-                          ₹{mrp.toFixed(2)}
-                        </Text>
-                      </DetailField>
-                      {mrp > 0 ? (
-                        <DetailField icon="📉" label="Discount off MRP" pricing>
-                          {(((mrp - price) / mrp) * 100).toFixed(1)}%
-                        </DetailField>
                       ) : null}
-                      {!hidePurchaseDetailsInSell ? (
-                        <>
-                          <DetailField icon="🏷️" label="Purchase add. discount" pricing>
-                            {(() => {
-                              const v = getPurchaseAdditionalDiscount(
-                                detailModalItem.inventoryItem
-                              );
-                              return v != null ? `${v}%` : '—';
-                            })()}
+                    </Stack>
+                  </Inline>
+                  <IconButton
+                    label="Close"
+                    className={styles.detailModalClose}
+                    onClick={() => setDetailModalItem(null)}
+                  >
+                    ×
+                  </IconButton>
+                </Box>
+                <Modal.Body>
+                  <Stack gap="lg" className={styles.detailModalBody}>
+                    <Stack gap="md" className={styles.detailModalSection}>
+                      <DetailSectionHeader icon="📋" title="Product Information" />
+                      <Grid className={styles.detailModalDetailsGrid}>
+                        {detailModalFullItemLoading ? (
+                          <DetailField icon="⏳" label="Loading full details">
+                            …
                           </DetailField>
-                          <DetailField icon="🎁" label="Purchase scheme/deal" pricing>
-                            {formatPurchaseSchemeLabel(
-                              detailModalItem.inventoryItem
-                            )}
+                        ) : null}
+                        {detailModalFullItemError ? (
+                          <DetailField icon="⚠️" label="Details">
+                            {detailModalFullItemError}
                           </DetailField>
-                        </>
-                      ) : null}
-                      <DetailField icon="🏷️" label="Sale add. discount" pricing>
-                        {addDisc != null ? `${addDisc}%` : '—'}
-                      </DetailField>
-                      <DetailField icon="🎁" label="Sale scheme/deal" pricing>
-                        {schemeLabel}
-                      </DetailField>
-                      {normalizeBillingMode(
-                        detailModalItem.inventoryItem.billingMode
-                      ) === 'REGULAR' &&
-                      apiItem?.sgst != null ? (
-                        <DetailField icon="📊" label="SGST" pricing>
-                          {apiItem.sgst}%
+                        ) : null}
+                        <DetailField icon="🏷️" label="Product name">
+                          {inv.name || '—'}
                         </DetailField>
-                      ) : null}
-                      {normalizeBillingMode(
-                        detailModalItem.inventoryItem.billingMode
-                      ) === 'REGULAR' &&
-                      apiItem?.cgst != null ? (
-                        <DetailField icon="📊" label="CGST" pricing>
-                          {apiItem.cgst}%
+                        {inv.companyName ? (
+                          <DetailField icon="🏢" label="Company">
+                            {inv.companyName}
+                          </DetailField>
+                        ) : null}
+                        {inv.barcode ? (
+                          <DetailField icon="🏷️" label="Barcode">
+                            {inv.barcode}
+                          </DetailField>
+                        ) : null}
+                        {inv.location ? (
+                          <DetailField icon="📍" label="Location">
+                            {inv.location}
+                          </DetailField>
+                        ) : null}
+                        {inv.hsn || inv.batchNo ? (
+                          <DetailField icon="🧾" label="HSN / Batch">
+                            {[inv.hsn, getExtensionFieldString(inv, 'batchNo')]
+                              .filter(Boolean)
+                              .join(' / ')}
+                          </DetailField>
+                        ) : null}
+                        {hasInventoryExpiryDate(inv) ? (
+                          <DetailField icon="📅" label="Expiry">
+                            {formatInventoryExpiryDate(inv)}
+                          </DetailField>
+                        ) : null}
+                        {inv.currentCount != null || inv.currentBaseCount != null ? (
+                          <DetailField icon="📦" label="Stock (current)">
+                            {inv.currentCount ?? inv.currentBaseCount ?? '—'}
+                          </DetailField>
+                        ) : null}
+                        <DetailField icon="🔢" label="Quantity">
+                          {qty}
                         </DetailField>
-                      ) : null}
-                      {apiItem?.discount != null ? (
-                        <DetailField icon="💰" label="Discount (amount)" pricing>
-                          ₹{Number(apiItem.discount).toFixed(2)}
+                        <DetailField icon="🧾" label="Billing mode">
+                          {normalizeBillingMode(inv.billingMode)}
                         </DetailField>
+                      </Grid>
+                    </Stack>
+                    <Stack gap="md" className={styles.detailModalSection}>
+                      <DetailSectionHeader icon="💰" title="Pricing" />
+                      <Grid className={styles.detailModalPricingGrid}>
+                        <DetailField icon="💵" label="Selling Price" pricing>
+                          <Text className={styles.detailModalPriceValue}>₹{price.toFixed(2)}</Text>
+                        </DetailField>
+                        <DetailField icon="🏷️" label="MRP" pricing>
+                          <Text className={styles.detailModalMrpValue}>₹{mrp.toFixed(2)}</Text>
+                        </DetailField>
+                        {mrp > 0 ? (
+                          <DetailField icon="📉" label="Discount off MRP" pricing>
+                            {(((mrp - price) / mrp) * 100).toFixed(1)}%
+                          </DetailField>
+                        ) : null}
+                        {!hidePurchaseDetailsInSell ? (
+                          <>
+                            <DetailField icon="🏷️" label="Purchase add. discount" pricing>
+                              {(() => {
+                                const v = getPurchaseAdditionalDiscount(
+                                  detailModalItem.inventoryItem,
+                                );
+                                return v != null ? `${v}%` : '—';
+                              })()}
+                            </DetailField>
+                            <DetailField icon="🎁" label="Purchase scheme/deal" pricing>
+                              {formatPurchaseSchemeLabel(detailModalItem.inventoryItem)}
+                            </DetailField>
+                          </>
+                        ) : null}
+                        <DetailField icon="🏷️" label="Sale add. discount" pricing>
+                          {addDisc != null ? `${addDisc}%` : '—'}
+                        </DetailField>
+                        <DetailField icon="🎁" label="Sale scheme/deal" pricing>
+                          {schemeLabel}
+                        </DetailField>
+                        {normalizeBillingMode(detailModalItem.inventoryItem.billingMode) ===
+                          'REGULAR' && apiItem?.sgst != null ? (
+                          <DetailField icon="📊" label="SGST" pricing>
+                            {apiItem.sgst}%
+                          </DetailField>
+                        ) : null}
+                        {normalizeBillingMode(detailModalItem.inventoryItem.billingMode) ===
+                          'REGULAR' && apiItem?.cgst != null ? (
+                          <DetailField icon="📊" label="CGST" pricing>
+                            {apiItem.cgst}%
+                          </DetailField>
+                        ) : null}
+                        {apiItem?.discount != null ? (
+                          <DetailField icon="💰" label="Discount (amount)" pricing>
+                            ₹{Number(apiItem.discount).toFixed(2)}
+                          </DetailField>
+                        ) : null}
+                        <DetailField icon="₹" label="Total amount" pricing>
+                          <Text className={styles.detailModalTotalValue}>
+                            ₹{(apiItem?.totalAmount ?? price * qty).toFixed(2)}
+                          </Text>
+                        </DetailField>
+                      </Grid>
+                      {detailModalItem.inventoryItem.pricingId ? (
+                        <Box className={styles.detailModalPricingActions}>
+                          <Link
+                            to={`/dashboard/price-edit/${detailModalItem.inventoryItem.pricingId}`}
+                            state={{
+                              priceToRetail: detailModalItem.inventoryItem.priceToRetail,
+                              maximumRetailPrice: detailModalItem.inventoryItem.maximumRetailPrice,
+                              productName: detailModalItem.inventoryItem.name,
+                              rates: detailModalItem.inventoryItem.rates ?? undefined,
+                              defaultRate: detailModalItem.inventoryItem.defaultRate ?? undefined,
+                            }}
+                            className={styles.editPriceLink}
+                          >
+                            <Text>Edit price</Text>
+                          </Link>
+                        </Box>
                       ) : null}
-                      <DetailField icon="₹" label="Total amount" pricing>
-                        <Text className={styles.detailModalTotalValue}>
-                          ₹{(apiItem?.totalAmount ?? price * qty).toFixed(2)}
-                        </Text>
-                      </DetailField>
-                    </Grid>
-                    {detailModalItem.inventoryItem.pricingId ? (
-                      <Box className={styles.detailModalPricingActions}>
-                        <Link
-                          to={`/dashboard/price-edit/${detailModalItem.inventoryItem.pricingId}`}
-                          state={{
-                            priceToRetail:
-                              detailModalItem.inventoryItem.priceToRetail,
-                            maximumRetailPrice:
-                              detailModalItem.inventoryItem.maximumRetailPrice,
-                            productName: detailModalItem.inventoryItem.name,
-                            rates:
-                              detailModalItem.inventoryItem.rates ?? undefined,
-                            defaultRate:
-                              detailModalItem.inventoryItem.defaultRate ??
-                              undefined,
-                          }}
-                          className={styles.editPriceLink}
-                        >
-                          <Text>Edit price</Text>
-                        </Link>
-                      </Box>
-                    ) : null}
+                    </Stack>
                   </Stack>
-                </Stack>
-              </Modal.Body>
-            </Modal>
-          );
-        })()
+                </Modal.Body>
+              </Modal>
+            );
+          })()
         : null}
     </Stack>
   );
@@ -4255,10 +3982,7 @@ function SearchDropdownItem({
           weight="semibold"
           className={`${styles.dropdownItemMeta} ${styles.dropdownItemMetaBold}`}
         >
-          MRP: ₹
-          {item.maximumRetailPrice != null
-            ? item.maximumRetailPrice.toFixed(2)
-            : '—'}
+          MRP: ₹{item.maximumRetailPrice != null ? item.maximumRetailPrice.toFixed(2) : '—'}
         </Text>
         <Text
           variant="caption"

@@ -45,7 +45,9 @@ export function buildCleanedLines(lines: DraftLine[]): CreateJournalLineRequest[
       return 'A single line cannot be both debit and credit.';
     }
     if (needsPartyOnLine(l.accountCode) && !l.partyRefId) {
-      return `Select a ${l.accountCode === '1200' ? 'customer' : 'vendor'} for account ${l.accountCode}.`;
+      return `Select a ${l.accountCode === '1200' ? 'customer' : 'vendor'} for account ${
+        l.accountCode
+      }.`;
     }
   }
   return cleaned.map((l) => ({

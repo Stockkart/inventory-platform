@@ -1,6 +1,11 @@
 import { apiClient } from '@inventory-platform/api-client';
 import type { ApiResponse } from '@inventory-platform/contracts';
-import type { CreateVendorDto, UpdateVendorDto, VendorListResponse, VendorResponse } from '@inventory-platform/user/types';
+import type {
+  CreateVendorDto,
+  UpdateVendorDto,
+  VendorListResponse,
+  VendorResponse,
+} from '@inventory-platform/user/types';
 import { VENDOR_ENDPOINTS } from './endpoints';
 
 export type VendorsListParams = {
@@ -17,36 +22,29 @@ export const vendorsApi = {
     if (params.q) queryParams.q = params.q;
     const response = await apiClient.get<ApiResponse<VendorListResponse>>(
       VENDOR_ENDPOINTS.BASE,
-      Object.keys(queryParams).length > 0 ? queryParams : undefined
+      Object.keys(queryParams).length > 0 ? queryParams : undefined,
     );
     return response.data;
   },
 
-  update: async (
-    vendorId: string,
-    data: UpdateVendorDto
-  ): Promise<VendorResponse> => {
+  update: async (vendorId: string, data: UpdateVendorDto): Promise<VendorResponse> => {
     const response = await apiClient.patch<ApiResponse<VendorResponse>>(
       VENDOR_ENDPOINTS.BY_ID(vendorId),
-      data
+      data,
     );
     return response.data;
   },
 
   create: async (data: CreateVendorDto): Promise<VendorResponse> => {
-    const response = await apiClient.post<ApiResponse<VendorResponse>>(
-      VENDOR_ENDPOINTS.BASE,
-      data
-    );
+    const response = await apiClient.post<ApiResponse<VendorResponse>>(VENDOR_ENDPOINTS.BASE, data);
     return response.data;
   },
 
   search: async (query: string): Promise<VendorResponse[]> => {
     try {
-      const response = await apiClient.get<ApiResponse<VendorResponse[]>>(
-        VENDOR_ENDPOINTS.SEARCH,
-        { q: query }
-      );
+      const response = await apiClient.get<ApiResponse<VendorResponse[]>>(VENDOR_ENDPOINTS.SEARCH, {
+        q: query,
+      });
       return response.data || [];
     } catch (error: unknown) {
       if (
@@ -63,7 +61,7 @@ export const vendorsApi = {
 
   getById: async (vendorId: string): Promise<VendorResponse> => {
     const response = await apiClient.get<ApiResponse<VendorResponse>>(
-      VENDOR_ENDPOINTS.BY_ID(vendorId)
+      VENDOR_ENDPOINTS.BY_ID(vendorId),
     );
     return response.data;
   },

@@ -1,12 +1,5 @@
 import { Box, Stack, Text } from '@inventory-platform/ui-kit';
-import {
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import styles from './analytics.module.css';
 
 interface GroupData {
@@ -22,7 +15,17 @@ interface SalesByGroupPieChartProps {
   showRevenue: boolean;
 }
 
-const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00ff00', '#0088fe', '#00c49f', '#ffbb28', '#ff8042'];
+const COLORS = [
+  '#8884d8',
+  '#82ca9d',
+  '#ffc658',
+  '#ff7300',
+  '#00ff00',
+  '#0088fe',
+  '#00c49f',
+  '#ffbb28',
+  '#ff8042',
+];
 
 export function SalesByGroupPieChart({ data, groupBy, showRevenue }: SalesByGroupPieChartProps) {
   const chartData = data
@@ -98,7 +101,11 @@ export function SalesByGroupPieChart({ data, groupBy, showRevenue }: SalesByGrou
               ))}
             </Pie>
             <Tooltip
-              formatter={(value: number | undefined, name: string | undefined, props: { payload?: { fullName?: string } }) => {
+              formatter={(
+                value: number | undefined,
+                name: string | undefined,
+                props: { payload?: { fullName?: string } },
+              ) => {
                 if (value === undefined) return '';
                 const formattedValue = formatTooltip(value);
                 const fullName = props?.payload?.fullName || name || '';

@@ -16,10 +16,7 @@ export function PaymentBillingPage() {
 
   return (
     <Stack gap="md" className={styles.page}>
-      <PageHeader
-        title="Payment & Billing"
-        description="Process payments and manage invoices"
-      />
+      <PageHeader title="Payment & Billing" description="Process payments and manage invoices" />
 
       <Box className={styles.container}>
         <Box className={styles.paymentSection}>
@@ -36,12 +33,7 @@ export function PaymentBillingPage() {
                 value: 'card',
                 label: (
                   <Box className={styles.paymentCard}>
-                    <Text
-                      as="span"
-                      className={styles.cardIcon}
-                      role="img"
-                      aria-label="Credit card"
-                    >
+                    <Text as="span" className={styles.cardIcon} role="img" aria-label="Credit card">
                       💳
                     </Text>
                     <Text as="span">Credit/Debit Card</Text>
@@ -52,12 +44,7 @@ export function PaymentBillingPage() {
                 value: 'cash',
                 label: (
                   <Box className={styles.paymentCard}>
-                    <Text
-                      as="span"
-                      className={styles.cardIcon}
-                      role="img"
-                      aria-label="Cash"
-                    >
+                    <Text as="span" className={styles.cardIcon} role="img" aria-label="Cash">
                       💵
                     </Text>
                     <Text as="span">Cash</Text>

@@ -28,4 +28,3 @@ export interface SchemeDto {
   schemeFree?: number | null;
   schemePercentage?: number | null;
 }
-

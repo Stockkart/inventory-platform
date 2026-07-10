@@ -1,6 +1,11 @@
 import { apiClient } from '@inventory-platform/api-client';
 import type { ApiResponse } from '@inventory-platform/contracts';
-import type { CreateCustomerDto, CustomerListResponse, CustomerResponse, UpdateCustomerDto } from '@inventory-platform/user/types';
+import type {
+  CreateCustomerDto,
+  CustomerListResponse,
+  CustomerResponse,
+  UpdateCustomerDto,
+} from '@inventory-platform/user/types';
 import { CUSTOMER_ENDPOINTS } from './endpoints';
 
 export type CustomersListParams = {
@@ -13,7 +18,7 @@ export const customersApi = {
   create: async (data: CreateCustomerDto): Promise<CustomerResponse> => {
     const response = await apiClient.post<ApiResponse<CustomerResponse>>(
       CUSTOMER_ENDPOINTS.BASE,
-      data
+      data,
     );
     return response.data;
   },
@@ -25,18 +30,15 @@ export const customersApi = {
     if (params.q) queryParams.q = params.q;
     const response = await apiClient.get<ApiResponse<CustomerListResponse>>(
       CUSTOMER_ENDPOINTS.BASE,
-      Object.keys(queryParams).length > 0 ? queryParams : undefined
+      Object.keys(queryParams).length > 0 ? queryParams : undefined,
     );
     return response.data;
   },
 
-  update: async (
-    customerId: string,
-    data: UpdateCustomerDto
-  ): Promise<CustomerResponse> => {
+  update: async (customerId: string, data: UpdateCustomerDto): Promise<CustomerResponse> => {
     const response = await apiClient.patch<ApiResponse<CustomerResponse>>(
       CUSTOMER_ENDPOINTS.BY_ID(customerId),
-      data
+      data,
     );
     return response.data;
   },
@@ -45,7 +47,7 @@ export const customersApi = {
     try {
       const response = await apiClient.get<ApiResponse<CustomerResponse>>(
         CUSTOMER_ENDPOINTS.SEARCH,
-        { phone }
+        { phone },
       );
       return response.data;
     } catch (error: unknown) {
@@ -65,7 +67,7 @@ export const customersApi = {
     try {
       const response = await apiClient.get<ApiResponse<CustomerResponse>>(
         CUSTOMER_ENDPOINTS.SEARCH,
-        { email }
+        { email },
       );
       return response.data;
     } catch (error: unknown) {

@@ -5,12 +5,23 @@ import {
   type UseMutationOptions,
   type UseQueryOptions,
 } from '@tanstack/react-query';
-import type { CreateCustomerDto, CreateVendorDto, CustomerListResponse, CustomerResponse, UpdateCustomerDto, UpdateVendorDto, VendorListResponse, VendorResponse } from '@inventory-platform/user/types';
-import type { ShopMemberAccess, ShopRbacAdmin, UpdateMemberPermissionsRequest, UpdateShopRbacPolicyRequest } from '@inventory-platform/access';
-import {
-  customersApi,
-  type CustomersListParams,
-} from '../api/customers.api';
+import type {
+  CreateCustomerDto,
+  CreateVendorDto,
+  CustomerListResponse,
+  CustomerResponse,
+  UpdateCustomerDto,
+  UpdateVendorDto,
+  VendorListResponse,
+  VendorResponse,
+} from '@inventory-platform/user/types';
+import type {
+  ShopMemberAccess,
+  ShopRbacAdmin,
+  UpdateMemberPermissionsRequest,
+  UpdateShopRbacPolicyRequest,
+} from '@inventory-platform/access';
+import { customersApi, type CustomersListParams } from '../api/customers.api';
 import { invitationsApi } from '../api/invitations.api';
 import { shopAccessApi } from '../api/shop-access.api';
 import { vendorsApi, type VendorsListParams } from '../api/vendors.api';
@@ -18,7 +29,7 @@ import { userKeys } from './keys';
 
 export function useCustomersQuery(
   params: CustomersListParams,
-  options?: Omit<UseQueryOptions<CustomerListResponse>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<CustomerListResponse>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: userKeys.customers(params),
@@ -28,7 +39,7 @@ export function useCustomersQuery(
 }
 
 export function useCreateCustomerMutation(
-  options?: UseMutationOptions<CustomerResponse, Error, CreateCustomerDto>
+  options?: UseMutationOptions<CustomerResponse, Error, CreateCustomerDto>,
 ) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -46,12 +57,11 @@ export function useUpdateCustomerMutation(
     CustomerResponse,
     Error,
     { customerId: string; data: UpdateCustomerDto }
-  >
+  >,
 ) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ customerId, data }) =>
-      customersApi.update(customerId, data),
+    mutationFn: ({ customerId, data }) => customersApi.update(customerId, data),
     onSuccess: (...args) => {
       void queryClient.invalidateQueries({ queryKey: userKeys.all });
       options?.onSuccess?.(...args);
@@ -62,7 +72,7 @@ export function useUpdateCustomerMutation(
 
 export function useVendorsQuery(
   params: VendorsListParams,
-  options?: Omit<UseQueryOptions<VendorListResponse>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<VendorListResponse>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: userKeys.vendors(params),
@@ -72,7 +82,7 @@ export function useVendorsQuery(
 }
 
 export function useCreateVendorMutation(
-  options?: UseMutationOptions<VendorResponse, Error, CreateVendorDto>
+  options?: UseMutationOptions<VendorResponse, Error, CreateVendorDto>,
 ) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -86,11 +96,7 @@ export function useCreateVendorMutation(
 }
 
 export function useUpdateVendorMutation(
-  options?: UseMutationOptions<
-    VendorResponse,
-    Error,
-    { vendorId: string; data: UpdateVendorDto }
-  >
+  options?: UseMutationOptions<VendorResponse, Error, { vendorId: string; data: UpdateVendorDto }>,
 ) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -105,7 +111,7 @@ export function useUpdateVendorMutation(
 
 export function useShopRbacAdminQuery(
   shopId: string | undefined,
-  options?: Omit<UseQueryOptions<ShopRbacAdmin>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<ShopRbacAdmin>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: userKeys.shopRbacAdmin(shopId ?? ''),
@@ -116,11 +122,7 @@ export function useShopRbacAdminQuery(
 }
 
 export function useUpdateShopPolicyMutation(
-  options?: UseMutationOptions<
-    void,
-    Error,
-    { shopId: string; body: UpdateShopRbacPolicyRequest }
-  >
+  options?: UseMutationOptions<void, Error, { shopId: string; body: UpdateShopRbacPolicyRequest }>,
 ) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -138,12 +140,11 @@ export function useUpdateMemberAccessMutation(
     ShopMemberAccess,
     Error,
     { shopId: string; userId: string; body: UpdateMemberPermissionsRequest }
-  >
+  >,
 ) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ shopId, userId, body }) =>
-      shopAccessApi.updateMember(shopId, userId, body),
+    mutationFn: ({ shopId, userId, body }) => shopAccessApi.updateMember(shopId, userId, body),
     onSuccess: (...args) => {
       void queryClient.invalidateQueries({ queryKey: userKeys.all });
       options?.onSuccess?.(...args);
@@ -152,9 +153,4 @@ export function useUpdateMemberAccessMutation(
   });
 }
 
-export {
-  customersApi,
-  vendorsApi,
-  shopAccessApi,
-  invitationsApi,
-};
+export { customersApi, vendorsApi, shopAccessApi, invitationsApi };

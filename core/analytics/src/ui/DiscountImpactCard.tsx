@@ -1,11 +1,4 @@
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Grid,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { Card, CardBody, CardHeader, Grid, Stack, Text } from '@inventory-platform/ui-kit';
 import styles from './analytics.module.css';
 
 interface DiscountImpact {
@@ -23,7 +16,15 @@ interface DiscountImpactCardProps {
   data: DiscountImpact;
 }
 
-function DiscountItem({ label, value, danger }: { label: string; value: string; danger?: boolean }) {
+function DiscountItem({
+  label,
+  value,
+  danger,
+}: {
+  label: string;
+  value: string;
+  danger?: boolean;
+}) {
   return (
     <Stack gap="xs">
       <Text variant="caption" color="secondary">

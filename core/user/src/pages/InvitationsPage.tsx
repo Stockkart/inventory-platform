@@ -1,12 +1,5 @@
 import { useState } from 'react';
-import {
-  Alert,
-  Card,
-  CardBody,
-  PageHeader,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { Alert, Card, CardBody, PageHeader, Stack, Text } from '@inventory-platform/ui-kit';
 import { useAuthStore } from '@inventory-platform/session';
 import { InvitationList, InviteForm } from '../ui';
 import styles from './invitations.module.css';
@@ -20,9 +13,7 @@ export function InvitationsPage() {
   if (!shopId) {
     return (
       <Stack gap="md" className={styles.container}>
-        <Alert variant="danger">
-          You need to be part of a shop to manage invitations.
-        </Alert>
+        <Alert variant="danger">You need to be part of a shop to manage invitations.</Alert>
       </Stack>
     );
   }
@@ -30,9 +21,7 @@ export function InvitationsPage() {
   if (user?.role === 'CASHIER') {
     return (
       <Stack gap="md" className={styles.container}>
-        <Alert variant="danger">
-          You don&apos;t have permission to manage invitations.
-        </Alert>
+        <Alert variant="danger">You don&apos;t have permission to manage invitations.</Alert>
       </Stack>
     );
   }
@@ -47,10 +36,7 @@ export function InvitationsPage() {
       <Stack gap="lg" className={styles.content}>
         <Card className={styles.section}>
           <CardBody>
-            <InviteForm
-              shopId={shopId}
-              onInviteSent={() => setRefreshKey((prev) => prev + 1)}
-            />
+            <InviteForm shopId={shopId} onInviteSent={() => setRefreshKey((prev) => prev + 1)} />
           </CardBody>
         </Card>
 

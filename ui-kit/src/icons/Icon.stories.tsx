@@ -1,10 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import {
-  LayoutDashboard,
-  Package,
-  Search,
-  Users,
-} from 'lucide-react';
+import { LayoutDashboard, Package, Search, Users } from 'lucide-react';
 import { Icon } from './Icon';
 import { Stack } from '../layout/Stack';
 import { Text } from '../layout/Text';

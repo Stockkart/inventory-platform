@@ -44,10 +44,7 @@ export {
   shouldSkipContainerKeyboardNav,
 } from './lib/formKeyboardNav';
 export { FormKeyboardNavScope } from './lib/FormKeyboardNavScope';
-export {
-  isCustomerReturnEnabled,
-  isVendorReturnEnabled,
-} from './lib/capability-guards';
+export { isCustomerReturnEnabled, isVendorReturnEnabled } from './lib/capability-guards';
 export { useCapabilityFeatureGuard } from './lib/useCapabilityFeatureGuard';
 export {
   isScanSellHidePurchaseKey,

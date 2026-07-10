@@ -22,9 +22,7 @@ function DashboardLayoutShell() {
     return s.shopSchemaByKey[`shop:${user.shopId}:regular`];
   });
   const verticalPlugin = useVerticalPluginStore((s) =>
-    shopSchema?.verticalId
-      ? s.pluginByVerticalId[shopSchema.verticalId]
-      : undefined
+    shopSchema?.verticalId ? s.pluginByVerticalId[shopSchema.verticalId] : undefined,
   );
 
   return (

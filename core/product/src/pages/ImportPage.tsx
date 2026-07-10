@@ -2,7 +2,11 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { inventoryApi } from '../api/inventory.api';
 import { vendorsApi } from '@inventory-platform/user/vendors';
-import type { BulkCreateInventoryDto, ParseInvoiceItem, BillingMode } from '@inventory-platform/product/types';
+import type {
+  BulkCreateInventoryDto,
+  ParseInvoiceItem,
+  BillingMode,
+} from '@inventory-platform/product/types';
 import type { Vendor } from '@inventory-platform/user/types';
 import {
   Badge,
@@ -52,9 +56,9 @@ export function ImportPage() {
   const [uploadProgress, setUploadProgress] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileInputKey, setFileInputKey] = useState(0);
-  const [importTableItems, setImportTableItems] = useState<
-    (ParseInvoiceItem & { id: string })[]
-  >([]);
+  const [importTableItems, setImportTableItems] = useState<(ParseInvoiceItem & { id: string })[]>(
+    [],
+  );
   const [importTablePage, setImportTablePage] = useState(0);
   const [editingCell, setEditingCell] = useState<{
     rowIdx: number;
@@ -84,12 +88,10 @@ export function ImportPage() {
           response.items.map((item) => ({
             ...item,
             id: `import-${Date.now()}-${Math.random()}`,
-          }))
+          })),
         );
         setImportTablePage(0);
-        notifySuccess(
-          `Parsed ${response.totalItems} items. Review and import below.`
-        );
+        notifySuccess(`Parsed ${response.totalItems} items. Review and import below.`);
         setSelectedFile(null);
         setFileInputKey((k) => k + 1);
       } else {
@@ -106,24 +108,22 @@ export function ImportPage() {
   const handleCellChange = (
     index: number,
     field: keyof ParseInvoiceItem,
-    value: string | number | null | undefined
+    value: string | number | null | undefined,
   ) => {
     setImportTableItems((prev) =>
-      prev.map((row, i) => (i === index ? { ...row, [field]: value } : row))
+      prev.map((row, i) => (i === index ? { ...row, [field]: value } : row)),
     );
   };
 
   const toBulkItem = (
-    row: ParseInvoiceItem & { id: string }
+    row: ParseInvoiceItem & { id: string },
   ): import('@inventory-platform/product/types').BulkCreateInventoryItem => {
     const loc = row.location?.trim() || '';
     const expiry = row.expiryDate?.trim()
       ? row.expiryDate.includes('T')
         ? row.expiryDate
         : `${String(row.expiryDate).trim().slice(0, 10)}T00:00:00Z`
-      : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .slice(0, 10) + 'T00:00:00Z';
+      : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10) + 'T00:00:00Z';
     const verticalFields: Record<string, unknown> = { expiryDate: expiry };
     if (row.batchNo?.trim()) {
       verticalFields.batchNo = row.batchNo.trim();
@@ -172,12 +172,10 @@ export function ImportPage() {
       notifyError('No items to import.');
       return;
     }
-    const invalid = importTableItems.filter(
-      (r) => !r.name?.trim() || (Number(r.count) || 0) <= 0
-    );
+    const invalid = importTableItems.filter((r) => !r.name?.trim() || (Number(r.count) || 0) <= 0);
     if (invalid.length > 0) {
       notifyError(
-        `${invalid.length} row(s) have missing name or invalid count. Fix or remove them.`
+        `${invalid.length} row(s) have missing name or invalid count. Fix or remove them.`,
       );
       return;
     }
@@ -191,9 +189,7 @@ export function ImportPage() {
       const response = await inventoryApi.createBulk(bulkData);
       const created = response?.createdCount ?? response?.items?.length ?? 0;
       const regId = response?.vendorPurchaseInvoiceId ?? response?.lotId;
-      notifySuccess(
-        `Imported ${created} items!${regId ? ` Stock-in ID: ${regId}` : ''}`
-      );
+      notifySuccess(`Imported ${created} items!${regId ? ` Stock-in ID: ${regId}` : ''}`);
       setImportTableItems([]);
       setSelectedVendor(null);
       setVendorSearchQuery('');
@@ -257,11 +253,7 @@ export function ImportPage() {
           handleCellChange(
             rowIdx,
             field,
-            numeric
-              ? e.target.value === ''
-                ? null
-                : parseFloat(e.target.value)
-              : e.target.value
+            numeric ? (e.target.value === '' ? null : parseFloat(e.target.value)) : e.target.value,
           )
         }
       />
@@ -281,7 +273,7 @@ export function ImportPage() {
 
   const visibleRows = importTableItems.slice(
     importTablePage * importTablePageSize,
-    (importTablePage + 1) * importTablePageSize
+    (importTablePage + 1) * importTablePageSize,
   );
 
   return (
@@ -320,13 +312,9 @@ export function ImportPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() =>
-                  document.getElementById(fileInputId)?.click()
-                }
+                onClick={() => document.getElementById(fileInputId)?.click()}
               >
-                {selectedFile
-                  ? selectedFile.name
-                  : 'Choose Excel file (.xls / .xlsx)'}
+                {selectedFile ? selectedFile.name : 'Choose Excel file (.xls / .xlsx)'}
               </Button>
               {isUploading ? (
                 <Inline gap="sm" align="center">
@@ -362,9 +350,7 @@ export function ImportPage() {
                 <PaginationBar
                   compact
                   page={importTablePage}
-                  totalPages={Math.ceil(
-                    importTableItems.length / importTablePageSize
-                  )}
+                  totalPages={Math.ceil(importTableItems.length / importTablePageSize)}
                   totalItems={importTableItems.length}
                   onPageChange={setImportTablePage}
                   aria-label="Import preview pages"
@@ -382,9 +368,7 @@ export function ImportPage() {
                     <TableHeaderCell className={styles.numCol}>Count</TableHeaderCell>
                     <TableHeaderCell className={styles.numCol}>MRP</TableHeaderCell>
                     <TableHeaderCell className={styles.numCol}>Cost</TableHeaderCell>
-                    <TableHeaderCell className={styles.numCol}>
-                      Sales Price
-                    </TableHeaderCell>
+                    <TableHeaderCell className={styles.numCol}>Sales Price</TableHeaderCell>
                     <TableHeaderCell>Batch</TableHeaderCell>
                     <TableHeaderCell>Expiry</TableHeaderCell>
                     <TableHeaderCell className={styles.numCol}>Deal</TableHeaderCell>
@@ -394,27 +378,15 @@ export function ImportPage() {
                 </TableHead>
                 <TableBody>
                   {visibleRows.map((row, idx) => {
-                    const globalIdx =
-                      importTablePage * importTablePageSize + idx;
+                    const globalIdx = importTablePage * importTablePageSize + idx;
                     return (
-                      <TableRow
-                        key={row.id}
-                        className={idx % 2 === 1 ? styles.altRow : undefined}
-                      >
+                      <TableRow key={row.id} className={idx % 2 === 1 ? styles.altRow : undefined}>
                         <TableCell>{globalIdx + 1}</TableCell>
                         <TableCell>
-                          <EditableCell
-                            rowIdx={globalIdx}
-                            field="barcode"
-                            value={row.barcode}
-                          />
+                          <EditableCell rowIdx={globalIdx} field="barcode" value={row.barcode} />
                         </TableCell>
                         <TableCell>
-                          <EditableCell
-                            rowIdx={globalIdx}
-                            field="name"
-                            value={row.name}
-                          />
+                          <EditableCell rowIdx={globalIdx} field="name" value={row.name} />
                         </TableCell>
                         <TableCell>
                           <EditableCell
@@ -456,21 +428,13 @@ export function ImportPage() {
                           />
                         </TableCell>
                         <TableCell>
-                          <EditableCell
-                            rowIdx={globalIdx}
-                            field="batchNo"
-                            value={row.batchNo}
-                          />
+                          <EditableCell rowIdx={globalIdx} field="batchNo" value={row.batchNo} />
                         </TableCell>
                         <TableCell>
                           <EditableCell
                             rowIdx={globalIdx}
                             field="expiryDate"
-                            value={
-                              row.expiryDate
-                                ? row.expiryDate.slice(0, 10)
-                                : null
-                            }
+                            value={row.expiryDate ? row.expiryDate.slice(0, 10) : null}
                           />
                         </TableCell>
                         <TableCell className={styles.numCol}>
@@ -493,11 +457,7 @@ export function ImportPage() {
                           <EditableCell
                             rowIdx={globalIdx}
                             field="purchaseDate"
-                            value={
-                              row.purchaseDate
-                                ? row.purchaseDate.slice(0, 10)
-                                : null
-                            }
+                            value={row.purchaseDate ? row.purchaseDate.slice(0, 10) : null}
                           />
                         </TableCell>
                       </TableRow>
@@ -518,9 +478,7 @@ export function ImportPage() {
                   <Select
                     value={billingMode}
                     options={BILLING_MODE_OPTIONS}
-                    onChange={(e) =>
-                      setBillingMode(e.target.value as BillingMode)
-                    }
+                    onChange={(e) => setBillingMode(e.target.value as BillingMode)}
                   />
                   <SearchInput
                     value={vendorSearchQuery}
@@ -572,11 +530,7 @@ export function ImportPage() {
           </Card>
 
           <Inline gap="sm" justify="end">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate('/dashboard')}
-            >
+            <Button type="button" variant="outline" onClick={() => navigate('/dashboard')}>
               Cancel
             </Button>
             <Button
@@ -586,9 +540,7 @@ export function ImportPage() {
               disabled={isLoading || !selectedVendor}
               loading={isLoading}
             >
-              {isLoading
-                ? 'Importing…'
-                : `Import ${importTableItems.length} items`}
+              {isLoading ? 'Importing…' : `Import ${importTableItems.length} items`}
             </Button>
           </Inline>
         </Stack>

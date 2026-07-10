@@ -56,9 +56,7 @@ export function bindingSignature(b: FavoriteBinding): string {
   return `chord:${b.mod ? 1 : 0}:${b.alt ? 1 : 0}:${b.shift ? 1 : 0}:${b.key}`;
 }
 
-function parseBindingFromStorage(
-  r: Record<string, unknown>
-): FavoriteBinding | null {
+function parseBindingFromStorage(r: Record<string, unknown>): FavoriteBinding | null {
   const raw = r.binding;
   if (raw && typeof raw === 'object' && raw !== null) {
     const o = raw as Record<string, unknown>;
@@ -125,10 +123,7 @@ export function loadFavoritePageShortcuts(): FavoritePageShortcut[] {
 export function saveFavoritePageShortcuts(items: FavoritePageShortcut[]): void {
   if (typeof localStorage === 'undefined') return;
   try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(items.slice(0, MAX_FAVORITE_PAGE_SHORTCUTS))
-    );
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items.slice(0, MAX_FAVORITE_PAGE_SHORTCUTS)));
   } catch {
     /* ignore quota */
   }
@@ -136,7 +131,7 @@ export function saveFavoritePageShortcuts(items: FavoritePageShortcut[]): void {
 
 export function refreshFavoriteLabels(
   items: FavoritePageShortcut[],
-  navRows: DashboardNavRow[]
+  navRows: DashboardNavRow[],
 ): FavoritePageShortcut[] {
   const byPath = new Map(navRows.map((r) => [r.path, r.label]));
   return items.map((item) => ({
@@ -147,7 +142,7 @@ export function refreshFavoriteLabels(
 
 export function formatFavoriteShortcutDisplay(
   s: FavoritePageShortcut,
-  modLabel: string
+  modLabel: string,
 ): string[][] {
   const b = s.binding;
   if (b.kind === 'fn') {
@@ -173,21 +168,14 @@ export function bindingConflictsWithBuiltIns(b: FavoriteBinding): boolean {
   return false;
 }
 
-export function parseRecordedFavoriteBinding(
-  e: KeyboardEvent
-): FavoriteBinding | null {
+export function parseRecordedFavoriteBinding(e: KeyboardEvent): FavoriteBinding | null {
   if (e.repeat) return null;
 
   const mod = e.metaKey || e.ctrlKey;
   const alt = e.altKey;
   const shift = e.shiftKey;
 
-  if (
-    e.key === 'Control' ||
-    e.key === 'Meta' ||
-    e.key === 'Shift' ||
-    e.key === 'Alt'
-  ) {
+  if (e.key === 'Control' || e.key === 'Meta' || e.key === 'Shift' || e.key === 'Alt') {
     return null;
   }
 
@@ -211,22 +199,13 @@ export function parseRecordedFavoriteBinding(
   };
 }
 
-export function favoriteShortcutMatches(
-  e: KeyboardEvent,
-  s: FavoritePageShortcut
-): boolean {
+export function favoriteShortcutMatches(e: KeyboardEvent, s: FavoritePageShortcut): boolean {
   if (e.repeat) return false;
   const b = s.binding;
 
   if (b.kind === 'fn') {
     const fnNorm = normalizeFnKey(e.key);
-    return (
-      fnNorm === b.fn &&
-      !e.metaKey &&
-      !e.ctrlKey &&
-      !e.altKey &&
-      !e.shiftKey
-    );
+    return fnNorm === b.fn && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey;
   }
 
   const mod = e.metaKey || e.ctrlKey;
@@ -246,22 +225,18 @@ export function favoriteShortcutMatches(
 export function findDuplicateBinding(
   items: FavoritePageShortcut[],
   binding: FavoriteBinding,
-  exceptId?: string
+  exceptId?: string,
 ): boolean {
   const sig = bindingSignature(binding);
-  return items.some(
-    (i) => bindingSignature(i.binding) === sig && i.id !== exceptId
-  );
+  return items.some((i) => bindingSignature(i.binding) === sig && i.id !== exceptId);
 }
 
 export function addOrUpdateFavoritePageShortcut(
   items: FavoritePageShortcut[],
   path: string,
   label: string,
-  binding: FavoriteBinding
-):
-  | { ok: true; next: FavoritePageShortcut[] }
-  | { ok: false; message: string } {
+  binding: FavoriteBinding,
+): { ok: true; next: FavoritePageShortcut[] } | { ok: false; message: string } {
   if (bindingConflictsWithBuiltIns(binding)) {
     return {
       ok: false,
@@ -279,9 +254,7 @@ export function addOrUpdateFavoritePageShortcut(
   if (existing) {
     return {
       ok: true,
-      next: items.map((i) =>
-        i.path === path ? { ...i, binding, label } : i
-      ),
+      next: items.map((i) => (i.path === path ? { ...i, binding, label } : i)),
     };
   }
   if (items.length >= MAX_FAVORITE_PAGE_SHORTCUTS) {
@@ -298,7 +271,7 @@ export function addOrUpdateFavoritePageShortcut(
 
 export function removeFavoritePageShortcut(
   items: FavoritePageShortcut[],
-  id: string
+  id: string,
 ): FavoritePageShortcut[] {
   return items.filter((i) => i.id !== id);
 }

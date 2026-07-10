@@ -18,7 +18,7 @@ const config: StorybookConfig = {
         plugin &&
         typeof plugin === 'object' &&
         'name' in plugin &&
-        plugin.name === 'vite:react-babel'
+        plugin.name === 'vite:react-babel',
     );
 
     return mergeConfig(config, {

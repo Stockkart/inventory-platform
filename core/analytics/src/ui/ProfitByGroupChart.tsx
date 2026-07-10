@@ -1,11 +1,5 @@
 import { useState } from 'react';
-import {
-  Box,
-  Checkbox,
-  Inline,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { Box, Checkbox, Inline, Stack, Text } from '@inventory-platform/ui-kit';
 import {
   BarChart,
   Bar,
@@ -108,7 +102,9 @@ export function ProfitByGroupChart({ data, groupBy }: ProfitByGroupChartProps) {
               tick={{ fontSize: 11 }}
               stroke="#6b7280"
             />
-            {(showRevenue || showCost || showProfit) && <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />}
+            {(showRevenue || showCost || showProfit) && (
+              <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
+            )}
             {showProfit && <YAxis yAxisId="right" orientation="right" stroke="#10b981" />}
             <Tooltip
               formatter={(value: number | undefined, name: string | undefined) => {
@@ -132,9 +128,7 @@ export function ProfitByGroupChart({ data, groupBy }: ProfitByGroupChartProps) {
             {showRevenue ? (
               <Bar yAxisId="left" dataKey="revenue" fill="#8884d8" name="Revenue" />
             ) : null}
-            {showCost ? (
-              <Bar yAxisId="left" dataKey="cost" fill="#ef4444" name="Cost" />
-            ) : null}
+            {showCost ? <Bar yAxisId="left" dataKey="cost" fill="#ef4444" name="Cost" /> : null}
             {showProfit ? (
               <Bar yAxisId="right" dataKey="profit" fill="#10b981" name="Profit" />
             ) : null}

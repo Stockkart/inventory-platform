@@ -65,7 +65,7 @@ export function CafeSellCatalogPanel({
           }),
         }))
         .filter((section) => section.items.length > 0),
-    [sections, normalizedFilter]
+    [sections, normalizedFilter],
   );
 
   const filteredDirectStock = useMemo(
@@ -79,7 +79,7 @@ export function CafeSellCatalogPanel({
         }
         return item.name.toLowerCase().includes(normalizedFilter);
       }),
-    [directStock, normalizedFilter]
+    [directStock, normalizedFilter],
   );
 
   const tabs = useMemo((): CafeTab[] => {
@@ -99,9 +99,7 @@ export function CafeSellCatalogPanel({
 
   const [activeTab, setActiveTab] = useState('all');
 
-  const resolvedTab = tabs.some((tab) => tab.id === activeTab)
-    ? activeTab
-    : 'all';
+  const resolvedTab = tabs.some((tab) => tab.id === activeTab) ? activeTab : 'all';
 
   const showStock = resolvedTab === 'all' || resolvedTab === '__stock__';
 
@@ -138,10 +136,7 @@ export function CafeSellCatalogPanel({
   return (
     <Stack gap="md" className={styles.panel}>
       {tabs.length > 1 ? (
-        <Inline
-          className={styles.tabBar}
-          gap="none"
-        >
+        <Inline className={styles.tabBar} gap="none">
           {tabs.map((tab) => (
             <Button
               key={tab.id}
@@ -150,9 +145,7 @@ export function CafeSellCatalogPanel({
               size="sm"
               role="tab"
               aria-selected={resolvedTab === tab.id}
-              className={`${styles.tab} ${
-                resolvedTab === tab.id ? styles.tabActive : ''
-              }`}
+              className={`${styles.tab} ${resolvedTab === tab.id ? styles.tabActive : ''}`}
               onClick={() => setActiveTab(tab.id)}
             >
               {tab.label}
@@ -186,7 +179,12 @@ export function CafeSellCatalogPanel({
                     <Text weight="semibold" className={styles.tileName}>
                       {item.name}
                     </Text>
-                    <Inline className={styles.tileFooter} justify="between" align="center" width="full">
+                    <Inline
+                      className={styles.tileFooter}
+                      justify="between"
+                      align="center"
+                      width="full"
+                    >
                       <Text weight="semibold" className={styles.tilePrice}>
                         {money(item.sellingPrice)}
                       </Text>
@@ -231,7 +229,12 @@ export function CafeSellCatalogPanel({
                       <Text variant="caption" color="secondary" className={styles.tileMeta}>
                         {outOfStock ? 'Out of stock' : `${available} in stock`}
                       </Text>
-                      <Inline className={styles.tileFooter} justify="between" align="center" width="full">
+                      <Inline
+                        className={styles.tileFooter}
+                        justify="between"
+                        align="center"
+                        width="full"
+                      >
                         <Text weight="semibold" className={styles.tilePrice}>
                           {money(stockPrice(item))}
                         </Text>

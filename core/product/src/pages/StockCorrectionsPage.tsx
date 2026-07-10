@@ -1,13 +1,13 @@
-import {
-  Fragment,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { inventoryApi } from '../api/inventory.api';
 import { useAuthStore, useShopAccessStore } from '@inventory-platform/session';
-import type { InventoryCorrection, InventoryCorrectionLine, InventoryItem, VendorPurchaseInvoiceDetail, VendorPurchaseInvoiceSummary } from '@inventory-platform/product/types';
+import type {
+  InventoryCorrection,
+  InventoryCorrectionLine,
+  InventoryItem,
+  VendorPurchaseInvoiceDetail,
+  VendorPurchaseInvoiceSummary,
+} from '@inventory-platform/product/types';
 import {
   Alert,
   Box,
@@ -125,9 +125,7 @@ function formatStockImpact(args: {
     };
   }
   const sp =
-    args.sellingPrice != null && Number.isFinite(args.sellingPrice)
-      ? args.sellingPrice
-      : null;
+    args.sellingPrice != null && Number.isFinite(args.sellingPrice) ? args.sellingPrice : null;
   if (sp == null) {
     return { text: '—', kind: 'na' };
   }
@@ -142,7 +140,7 @@ function formatStockImpact(args: {
 function lineImpactRupees(
   line: InventoryCorrectionLine,
   inv: InventoryItem | undefined,
-  approvedOnly: boolean
+  approvedOnly: boolean,
 ): number | null {
   if (approvedOnly && line.status !== 'APPROVED') return null;
   const prev = parseDisplayNumber(line.previousCurrentCount);
@@ -164,11 +162,10 @@ function lineImpactRupees(
 /** Net ₹ from approved-only lines for history summary. */
 function summarizeApprovedNetImpact(
   c: InventoryCorrection,
-  invMap: Record<string, InventoryItem>
+  invMap: Record<string, InventoryItem>,
 ): { total: number | null; partial: boolean } {
   const approvedLines = c.lines.filter((l) => l.status === 'APPROVED');
-  if (approvedLines.length === 0)
-    return { total: null, partial: false };
+  if (approvedLines.length === 0) return { total: null, partial: false };
   let sum = 0;
   let partial = false;
   let counted = 0;
@@ -182,8 +179,7 @@ function summarizeApprovedNetImpact(
     counted += 1;
     sum += contrib;
   }
-  if (partial && counted === 0)
-    return { total: null, partial: true };
+  if (partial && counted === 0) return { total: null, partial: true };
   return { total: sum, partial };
 }
 
@@ -208,35 +204,24 @@ export function StockCorrectionsPage() {
 
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
-  const [invoiceResults, setInvoiceResults] = useState<VendorPurchaseInvoiceSummary[]>(
-    []
-  );
-  const [selectedInvoice, setSelectedInvoice] =
-    useState<VendorPurchaseInvoiceDetail | null>(null);
-  const [inventoryById, setInventoryById] = useState<Record<string, InventoryItem>>(
-    {}
-  );
-  const [draftQtyByInventoryId, setDraftQtyByInventoryId] = useState<
-    Record<string, string>
-  >({});
+  const [invoiceResults, setInvoiceResults] = useState<VendorPurchaseInvoiceSummary[]>([]);
+  const [selectedInvoice, setSelectedInvoice] = useState<VendorPurchaseInvoiceDetail | null>(null);
+  const [inventoryById, setInventoryById] = useState<Record<string, InventoryItem>>({});
+  const [draftQtyByInventoryId, setDraftQtyByInventoryId] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<'workbench' | 'history'>(
-    'workbench'
-  );
+  const [activeTab, setActiveTab] = useState<'workbench' | 'history'>('workbench');
   const [pending, setPending] = useState<InventoryCorrection[]>([]);
   const [history, setHistory] = useState<InventoryCorrection[]>([]);
-  const [historyInventoryById, setHistoryInventoryById] = useState<
-    Record<string, InventoryItem>
-  >({});
+  const [historyInventoryById, setHistoryInventoryById] = useState<Record<string, InventoryItem>>(
+    {},
+  );
   const [pendingLoading, setPendingLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [lineBusy, setLineBusy] = useState<string | null>(null);
-  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(
-    null
-  );
+  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
 
   const searchInvoices = useCallback(async () => {
     setSearching(true);
@@ -319,8 +304,8 @@ export function StockCorrectionsPage() {
         new Set(
           (detail.lines ?? [])
             .map((line) => line.inventoryId)
-            .filter((v): v is string => Boolean(v))
-        )
+            .filter((v): v is string => Boolean(v)),
+        ),
       );
       if (ids.length > 0) {
         const rows = await inventoryApi.getByIds(ids);
@@ -349,18 +334,15 @@ export function StockCorrectionsPage() {
           inv != null
             ? inv.receivedCount
             : line.count != null && Number.isFinite(Number(line.count))
-              ? Number(line.count)
-              : null;
+            ? Number(line.count)
+            : null;
         const currentRaw = inv?.currentCount ?? line.count ?? null;
         const draft = draftQtyByInventoryId[inventoryId] ?? '';
         const currentNum = parseDisplayNumber(currentRaw);
-        const correctedNum =
-          draft.trim() === '' ? null : Number(draft.trim());
-        const correctedValid =
-          correctedNum != null && Number.isFinite(correctedNum);
+        const correctedNum = draft.trim() === '' ? null : Number(draft.trim());
+        const correctedValid = correctedNum != null && Number.isFinite(correctedNum);
         const costPrice = line.costPrice ?? inv?.costPrice ?? null;
-        const sellingPrice =
-          inv?.sellingPrice ?? inv?.priceToRetail ?? null;
+        const sellingPrice = inv?.sellingPrice ?? inv?.priceToRetail ?? null;
         let qtyDeltaDisplay = '—';
         let impact: { text: string; kind: 'neutral' | 'loss' | 'gain' | 'na' } = {
           text: '—',
@@ -372,8 +354,7 @@ export function StockCorrectionsPage() {
             corrected: correctedNum,
             current: currentNum,
             costPrice: costPrice != null ? Number(costPrice) : null,
-            sellingPrice:
-              sellingPrice != null ? Number(sellingPrice) : null,
+            sellingPrice: sellingPrice != null ? Number(sellingPrice) : null,
           });
         }
 
@@ -436,7 +417,7 @@ export function StockCorrectionsPage() {
   const processLine = async (
     correctionId: string,
     lineId: string,
-    action: 'approve' | 'reject'
+    action: 'approve' | 'reject',
   ) => {
     const key = `${correctionId}:${lineId}:${action}`;
     setLineBusy(key);
@@ -675,8 +656,8 @@ export function StockCorrectionsPage() {
                 </Text>
                 {!canApproveCorrections ? (
                   <Text color="secondary">
-                    Pending corrections are listed below. Only the shop owner or a
-                    manager can approve or reject them.
+                    Pending corrections are listed below. Only the shop owner or a manager can
+                    approve or reject them.
                   </Text>
                 ) : null}
                 {pendingLoading ? (
@@ -710,33 +691,22 @@ export function StockCorrectionsPage() {
                             <TableBody>
                               {c.lines.map((line) => (
                                 <TableRow key={line.lineId}>
-                                  <TableCell>
-                                    {line.productName ?? line.inventoryId}
-                                  </TableCell>
-                                  <TableCell>
-                                    {line.previousCurrentCount ?? '-'}
-                                  </TableCell>
+                                  <TableCell>{line.productName ?? line.inventoryId}</TableCell>
+                                  <TableCell>{line.previousCurrentCount ?? '-'}</TableCell>
                                   <TableCell>{line.requestedCurrentCount}</TableCell>
                                   <TableCell>{line.status}</TableCell>
                                   <TableCell>
-                                    {line.status === 'PENDING' &&
-                                    canApproveCorrections ? (
+                                    {line.status === 'PENDING' && canApproveCorrections ? (
                                       <Inline gap="sm">
                                         <Button
                                           type="button"
                                           size="sm"
                                           variant="ghost"
                                           disabled={lineBusy != null}
-                                          loading={
-                                            lineBusy ===
-                                            `${c.id}:${line.lineId}:approve`
-                                          }
-                                          onClick={() =>
-                                            processLine(c.id, line.lineId, 'approve')
-                                          }
+                                          loading={lineBusy === `${c.id}:${line.lineId}:approve`}
+                                          onClick={() => processLine(c.id, line.lineId, 'approve')}
                                         >
-                                          {lineBusy ===
-                                          `${c.id}:${line.lineId}:approve`
+                                          {lineBusy === `${c.id}:${line.lineId}:approve`
                                             ? 'Approving...'
                                             : 'Approve'}
                                         </Button>
@@ -745,16 +715,10 @@ export function StockCorrectionsPage() {
                                           size="sm"
                                           variant="outline"
                                           disabled={lineBusy != null}
-                                          loading={
-                                            lineBusy ===
-                                            `${c.id}:${line.lineId}:reject`
-                                          }
-                                          onClick={() =>
-                                            processLine(c.id, line.lineId, 'reject')
-                                          }
+                                          loading={lineBusy === `${c.id}:${line.lineId}:reject`}
+                                          onClick={() => processLine(c.id, line.lineId, 'reject')}
                                         >
-                                          {lineBusy ===
-                                          `${c.id}:${line.lineId}:reject`
+                                          {lineBusy === `${c.id}:${line.lineId}:reject`
                                             ? 'Rejecting...'
                                             : 'Reject'}
                                         </Button>
@@ -785,11 +749,7 @@ export function StockCorrectionsPage() {
               <Text variant="heading3" weight="semibold">
                 Correction history
               </Text>
-              <Text
-                variant="caption"
-                color="secondary"
-                className={styles.historyDetailCaption}
-              >
+              <Text variant="caption" color="secondary" className={styles.historyDetailCaption}>
                 Net impact sums{' '}
                 <Text as="span" weight="semibold">
                   approved
@@ -825,11 +785,11 @@ export function StockCorrectionsPage() {
                     </TableHead>
                     <TableBody>
                       {history.map((c) => {
-                        const approvedCount = c.lines.filter(
-                          (l) => l.status === 'APPROVED'
-                        ).length;
-                        const { total: netTotal, partial: netPartial } =
-                          summarizeApprovedNetImpact(c, historyInventoryById);
+                        const approvedCount = c.lines.filter((l) => l.status === 'APPROVED').length;
+                        const { total: netTotal, partial: netPartial } = summarizeApprovedNetImpact(
+                          c,
+                          historyInventoryById,
+                        );
                         const open = expandedHistoryId === c.id;
                         return (
                           <Fragment key={c.id}>
@@ -840,9 +800,7 @@ export function StockCorrectionsPage() {
                                   size="sm"
                                   variant="ghost"
                                   className={styles.detailToggle}
-                                  onClick={() =>
-                                    setExpandedHistoryId(open ? null : c.id)
-                                  }
+                                  onClick={() => setExpandedHistoryId(open ? null : c.id)}
                                   aria-expanded={open}
                                 >
                                   {open ? 'Hide' : 'Details'}
@@ -860,10 +818,7 @@ export function StockCorrectionsPage() {
                                   <Inline gap="none" align="center">
                                     <Text as="span">—</Text>
                                     {netPartial ? (
-                                      <Text
-                                        as="span"
-                                        className={styles.estPartial}
-                                      >
+                                      <Text as="span" className={styles.estPartial}>
                                         {' '}
                                         *
                                       </Text>
@@ -878,17 +833,14 @@ export function StockCorrectionsPage() {
                                         netTotal > 0
                                           ? styles.impactGain
                                           : netTotal < 0
-                                            ? styles.impactLoss
-                                            : undefined
+                                          ? styles.impactLoss
+                                          : undefined
                                       }
                                     >
                                       {money(netTotal)}
                                     </Text>
                                     {netPartial ? (
-                                      <Text
-                                        as="span"
-                                        className={styles.estPartial}
-                                      >
+                                      <Text as="span" className={styles.estPartial}>
                                         {' '}
                                         *
                                       </Text>
@@ -907,18 +859,16 @@ export function StockCorrectionsPage() {
                                       color="secondary"
                                       className={styles.historyDetailCaption}
                                     >
-                                      Line breakdown: change vs quantity before
-                                      correction. Impact uses the same rules as
-                                      Workbench (loss at cost, gain at selling
-                                      price). Rejected lines were not applied. An
-                                      asterisk on net impact means some approved
-                                      lines lack pricing on file or were excluded
-                                      from the total.
+                                      Line breakdown: change vs quantity before correction. Impact
+                                      uses the same rules as Workbench (loss at cost, gain at
+                                      selling price). Rejected lines were not applied. An asterisk
+                                      on net impact means some approved lines lack pricing on file
+                                      or were excluded from the total.
                                       {netPartial && approvedCount > 0 ? (
                                         <>
                                           {' '}
-                                          Some rows above may show “—” for impact
-                                          until pricing loads or is filled in.
+                                          Some rows above may show “—” for impact until pricing
+                                          loads or is filled in.
                                         </>
                                       ) : null}
                                     </Text>
@@ -936,16 +886,12 @@ export function StockCorrectionsPage() {
                                         </TableHead>
                                         <TableBody>
                                           {c.lines.map((line) => {
-                                            const inv =
-                                              historyInventoryById[line.inventoryId];
+                                            const inv = historyInventoryById[line.inventoryId];
                                             const prev = parseDisplayNumber(
-                                              line.previousCurrentCount
+                                              line.previousCurrentCount,
                                             );
-                                            const req = Number(
-                                              line.requestedCurrentCount
-                                            );
-                                            const qtyOk =
-                                              prev != null && Number.isFinite(req);
+                                            const req = Number(line.requestedCurrentCount);
+                                            const qtyOk = prev != null && Number.isFinite(req);
                                             const qtyDisplay = qtyOk
                                               ? formatQtyDelta(req, prev)
                                               : '—';
@@ -961,8 +907,8 @@ export function StockCorrectionsPage() {
                                                     inv?.sellingPrice != null
                                                       ? Number(inv.sellingPrice)
                                                       : inv?.priceToRetail != null
-                                                        ? Number(inv.priceToRetail)
-                                                        : null,
+                                                      ? Number(inv.priceToRetail)
+                                                      : null,
                                                 })
                                               : {
                                                   text: '—',
@@ -973,17 +919,14 @@ export function StockCorrectionsPage() {
                                               line.status === 'REJECTED'
                                                 ? ' (not applied)'
                                                 : line.status !== 'APPROVED'
-                                                  ? ''
-                                                  : '';
+                                                ? ''
+                                                : '';
                                             return (
                                               <TableRow key={line.lineId}>
                                                 <TableCell>
                                                   {line.productName ?? '—'}{' '}
                                                   {inv?.batchNo ? (
-                                                    <Text
-                                                      as="span"
-                                                      className={styles.estPartial}
-                                                    >
+                                                    <Text as="span" className={styles.estPartial}>
                                                       · batch {inv.batchNo}
                                                     </Text>
                                                   ) : null}
@@ -991,16 +934,12 @@ export function StockCorrectionsPage() {
                                                 <TableCell>
                                                   {line.previousCurrentCount ?? '—'}
                                                 </TableCell>
-                                                <TableCell>
-                                                  {line.requestedCurrentCount}
-                                                </TableCell>
+                                                <TableCell>{line.requestedCurrentCount}</TableCell>
                                                 <TableCell>
                                                   <Text
                                                     as="span"
                                                     weight="semibold"
-                                                    className={qtyDeltaClassName(
-                                                      qtyDisplay
-                                                    )}
+                                                    className={qtyDeltaClassName(qtyDisplay)}
                                                   >
                                                     {qtyDisplay}
                                                   </Text>
@@ -1009,16 +948,12 @@ export function StockCorrectionsPage() {
                                                   <Text
                                                     as="span"
                                                     weight="semibold"
-                                                    className={impactClassName(
-                                                      impactUi.kind
-                                                    )}
+                                                    className={impactClassName(impactUi.kind)}
                                                   >
                                                     {impactUi.text}
                                                   </Text>
                                                 </TableCell>
-                                                <TableCell
-                                                  className={styles.lineStatusMuted}
-                                                >
+                                                <TableCell className={styles.lineStatusMuted}>
                                                   {line.status}
                                                   {statusHint}
                                                   {line.rejectionReason &&

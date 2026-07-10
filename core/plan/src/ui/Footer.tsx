@@ -68,9 +68,7 @@ export function Footer() {
           </Stack>
         </Box>
 
-        <Text className={styles.copyright}>
-          © 2025 StockKart. All rights reserved.
-        </Text>
+        <Text className={styles.copyright}>© 2025 StockKart. All rights reserved.</Text>
       </Box>
     </Box>
   );

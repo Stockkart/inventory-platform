@@ -33,9 +33,7 @@ export function PlanPaymentPage() {
 
   const { data: plans = [] } = usePlansQuery();
   const { data: planById } = usePlanQuery(
-    planIdFromUrl && !plans.some((p) => p.id === planIdFromUrl)
-      ? planIdFromUrl
-      : null
+    planIdFromUrl && !plans.some((p) => p.id === planIdFromUrl) ? planIdFromUrl : null,
   );
   const {
     data: transactions = [],
@@ -45,7 +43,7 @@ export function PlanPaymentPage() {
 
   const selectedPlan = useMemo(
     () => plans.find((p) => p.id === planIdFromUrl) ?? planById ?? null,
-    [plans, planIdFromUrl, planById]
+    [plans, planIdFromUrl, planById],
   );
 
   const createCheckoutMutation = useCreatePlanCheckoutMutation();
@@ -77,9 +75,7 @@ export function PlanPaymentPage() {
       await refetchTransactions();
       navigate('/dashboard', { replace: true });
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to process payment'
-      );
+      setError(err instanceof Error ? err.message : 'Failed to process payment');
     } finally {
       setPaying(false);
     }
@@ -124,23 +120,17 @@ export function PlanPaymentPage() {
                     </Text>
                     <Text className={styles.planPrice}>
                       ₹{selectedPlan.arcPrice?.toLocaleString('en-IN')} /{' '}
-                      {selectedPlan.planName === 'Extra User Plan'
-                        ? 'user/year'
-                        : 'year'}
+                      {selectedPlan.planName === 'Extra User Plan' ? 'user/year' : 'year'}
                     </Text>
                     {selectedPlan.planName !== 'Extra User Plan' &&
                       selectedPlan.price != null &&
                       selectedPlan.price > 0 && (
                         <Text className={styles.oneTimePrice}>
-                          One-time ₹
-                          {selectedPlan.price?.toLocaleString('en-IN')} if taking
-                          support
+                          One-time ₹{selectedPlan.price?.toLocaleString('en-IN')} if taking support
                         </Text>
                       )}
                     {selectedPlan.bestFor ? (
-                      <Text className={styles.planBestFor}>
-                        {selectedPlan.bestFor}
-                      </Text>
+                      <Text className={styles.planBestFor}>{selectedPlan.bestFor}</Text>
                     ) : null}
                   </Box>
 
@@ -156,14 +146,11 @@ export function PlanPaymentPage() {
                       {paying
                         ? 'Opening Razorpay…'
                         : `Pay ₹${selectedPlan.arcPrice?.toLocaleString('en-IN')}${
-                            selectedPlan.planName === 'Extra User Plan'
-                              ? ' per user/year'
-                              : '/year'
+                            selectedPlan.planName === 'Extra User Plan' ? ' per user/year' : '/year'
                           }`}
                     </Button>
                     <Text className={styles.razorpayNote}>
-                      Secured by Razorpay. Choose your payment method in the
-                      checkout window.
+                      Secured by Razorpay. Choose your payment method in the checkout window.
                     </Text>
                   </Box>
                 </CardBody>
@@ -174,13 +161,8 @@ export function PlanPaymentPage() {
           {!selectedPlan ? (
             <Box as="section" className={styles.section}>
               <Stack gap="sm" className={styles.noPlanSelected}>
-                <Text>
-                  Select a plan from the Plan page to proceed with payment.
-                </Text>
-                <RouterLink
-                  to="/dashboard/plan-status"
-                  className={styles.linkToPlans}
-                >
+                <Text>Select a plan from the Plan page to proceed with payment.</Text>
+                <RouterLink to="/dashboard/plan-status" className={styles.linkToPlans}>
                   Go to Plan
                 </RouterLink>
               </Stack>

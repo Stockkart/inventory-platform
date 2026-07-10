@@ -1,5 +1,15 @@
-# Add files here to ignore them from prettier formatting
-/dist
-/coverage
-/.nx/cache
-/.nx/workspace-data
+# Build outputs
+dist
+build
+coverage
+storybook-static
+.react-router
+
+# Tooling caches
+.nx
+node_modules
+
+# Lockfiles (formatting churn, no value)
+pnpm-lock.yaml
+package-lock.json
+yarn.lock

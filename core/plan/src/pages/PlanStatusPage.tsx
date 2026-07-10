@@ -31,7 +31,7 @@ export function PlanStatusPage() {
     (plan: PlanResponse) => {
       navigate(`/dashboard/plan-payment?planId=${plan.id}`);
     },
-    [navigate]
+    [navigate],
   );
 
   if (statusLoading) {
@@ -46,9 +46,7 @@ export function PlanStatusPage() {
     return (
       <Box className={styles.page}>
         <Alert variant="danger">
-          {statusErr instanceof Error
-            ? statusErr.message
-            : 'Failed to load plan status'}
+          {statusErr instanceof Error ? statusErr.message : 'Failed to load plan status'}
         </Alert>
       </Box>
     );
@@ -60,16 +58,11 @@ export function PlanStatusPage() {
 
   const formatDate = (iso: string | null) =>
     iso ? new Date(iso).toLocaleDateString('en-IN') : '—';
-  const currentPlanIndex = status.plan
-    ? plans.findIndex((p) => p.id === status.planId)
-    : -1;
+  const currentPlanIndex = status.plan ? plans.findIndex((p) => p.id === status.planId) : -1;
 
   return (
     <Stack gap="md" className={styles.page}>
-      <PageHeader
-        title="Plan"
-        description="View your subscription, usage, and upgrade options"
-      />
+      <PageHeader title="Plan" description="View your subscription, usage, and upgrade options" />
 
       <Box className={styles.container}>
         <Stack gap="md">
@@ -82,9 +75,7 @@ export function PlanStatusPage() {
                 {status.trial ? (
                   <Stack gap="sm">
                     <Badge className={styles.trialBadge}>Trial</Badge>
-                    <Text className={styles.planName}>
-                      Base (Trial) — 30 days
-                    </Text>
+                    <Text className={styles.planName}>Base (Trial) — 30 days</Text>
                     <Text className={styles.planExpiry}>
                       Expires: {formatDate(status.planExpiryDate)}
                     </Text>
@@ -96,17 +87,14 @@ export function PlanStatusPage() {
                   </Stack>
                 ) : (
                   <Stack gap="sm">
-                    <Text className={styles.planName}>
-                      {status.plan?.planName ?? '—'}
-                    </Text>
+                    <Text className={styles.planName}>{status.plan?.planName ?? '—'}</Text>
                     <Text className={styles.planExpiry}>
                       {status.planExpired ? 'Expired' : 'Renews'}:{' '}
                       {formatDate(status.planExpiryDate)}
                     </Text>
                     {status.planExpired ? (
                       <Alert variant="warning" className={styles.trialExpired}>
-                        Your subscription has ended. Choose a plan below to
-                        continue.
+                        Your subscription has ended. Choose a plan below to continue.
                       </Alert>
                     ) : null}
                     <Text className={styles.planPosition}>
@@ -129,14 +117,9 @@ export function PlanStatusPage() {
                 </Text>
                 <Text
                   as="span"
-                  className={
-                    status.billingLimitReached ? styles.usageLimitReached : undefined
-                  }
+                  className={status.billingLimitReached ? styles.usageLimitReached : undefined}
                 >
-                  ₹
-                  {status.currentUsage?.billingAmountUsed?.toLocaleString(
-                    'en-IN'
-                  ) ?? 0}
+                  ₹{status.currentUsage?.billingAmountUsed?.toLocaleString('en-IN') ?? 0}
                 </Text>
               </Box>
               <Box className={styles.usageItem}>
@@ -145,9 +128,7 @@ export function PlanStatusPage() {
                 </Text>
                 <Text
                   as="span"
-                  className={
-                    status.billCountLimitReached ? styles.usageLimitReached : undefined
-                  }
+                  className={status.billCountLimitReached ? styles.usageLimitReached : undefined}
                 >
                   {status.currentUsage?.billCountUsed ?? 0}
                 </Text>
@@ -158,9 +139,7 @@ export function PlanStatusPage() {
                 </Text>
                 <Text
                   as="span"
-                  className={
-                    status.smsLimitReached ? styles.usageLimitReached : undefined
-                  }
+                  className={status.smsLimitReached ? styles.usageLimitReached : undefined}
                 >
                   {status.currentUsage?.smsUsed ?? 0}
                 </Text>
@@ -171,9 +150,7 @@ export function PlanStatusPage() {
                 </Text>
                 <Text
                   as="span"
-                  className={
-                    status.whatsappLimitReached ? styles.usageLimitReached : undefined
-                  }
+                  className={status.whatsappLimitReached ? styles.usageLimitReached : undefined}
                 >
                   {status.currentUsage?.whatsappUsed ?? 0}
                 </Text>
@@ -185,9 +162,7 @@ export function PlanStatusPage() {
             <Text as="h3" variant="heading3" className={styles.sectionTitle}>
               {status.planExpired ? 'Choose a Plan' : 'Available Plans'}
             </Text>
-            <Text className={styles.sectionSubtitle}>
-              Select a plan to proceed to payment
-            </Text>
+            <Text className={styles.sectionSubtitle}>Select a plan to proceed to payment</Text>
             <PlanGrid
               plans={plans}
               currentPlanId={status.trial ? null : status.planId}
@@ -199,9 +174,7 @@ export function PlanStatusPage() {
 
           {statusError ? (
             <Alert variant="danger" className={styles.errorInline}>
-              {statusErr instanceof Error
-                ? statusErr.message
-                : 'Failed to load plan status'}
+              {statusErr instanceof Error ? statusErr.message : 'Failed to load plan status'}
             </Alert>
           ) : null}
         </Stack>

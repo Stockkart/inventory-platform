@@ -1,5 +1,23 @@
 import { apiClient } from '@inventory-platform/api-client';
-import type { AccountResponse, AccountingPartyType, BackfillResult, CreateAccountRequest, BalanceSheetResponse, CreateJournalEntryRequest, JournalEntriesPageResponse, JournalEntryResponse, JournalSource, LedgerPageResponse, OpeningBalanceRequest, PartyStatementResponse, PartySummariesResponse, ProfitAndLossResponse, ReverseJournalRequest, TrialBalanceResponse, UpdateAccountRequest } from '@inventory-platform/accounting/types';
+import type {
+  AccountResponse,
+  AccountingPartyType,
+  BackfillResult,
+  CreateAccountRequest,
+  BalanceSheetResponse,
+  CreateJournalEntryRequest,
+  JournalEntriesPageResponse,
+  JournalEntryResponse,
+  JournalSource,
+  LedgerPageResponse,
+  OpeningBalanceRequest,
+  PartyStatementResponse,
+  PartySummariesResponse,
+  ProfitAndLossResponse,
+  ReverseJournalRequest,
+  TrialBalanceResponse,
+  UpdateAccountRequest,
+} from '@inventory-platform/accounting/types';
 import { ACCOUNTING_ENDPOINTS } from './endpoints';
 
 function unwrap<T>(raw: unknown): T | undefined {
@@ -49,7 +67,7 @@ function normalizeLedgerPage(page: LedgerPageResponse): LedgerPageResponse {
 }
 
 function normalizeFinancialLines(
-  lines: ProfitAndLossResponse['revenueLines'] | undefined
+  lines: ProfitAndLossResponse['revenueLines'] | undefined,
 ): ProfitAndLossResponse['revenueLines'] {
   return (lines ?? []).map((l) => ({ ...l, amount: asNum(l.amount) }));
 }
@@ -186,22 +204,14 @@ export const accountingApi = {
     return normalizeAccount(inner);
   },
 
-  updateAccount: async (
-    id: string,
-    body: UpdateAccountRequest
-  ): Promise<AccountResponse> => {
-    const raw = await apiClient.patch<unknown>(
-      ACCOUNTING_ENDPOINTS.ACCOUNT_BY_ID(id),
-      body
-    );
+  updateAccount: async (id: string, body: UpdateAccountRequest): Promise<AccountResponse> => {
+    const raw = await apiClient.patch<unknown>(ACCOUNTING_ENDPOINTS.ACCOUNT_BY_ID(id), body);
     const inner = unwrap<AccountResponse>(raw);
     if (!inner) throw new Error('Invalid response updating account');
     return normalizeAccount(inner);
   },
 
-  journals: async (
-    params: JournalListParams = {}
-  ): Promise<JournalEntriesPageResponse> => {
+  journals: async (params: JournalListParams = {}): Promise<JournalEntriesPageResponse> => {
     const raw = await apiClient.get<unknown>(
       ACCOUNTING_ENDPOINTS.JOURNAL,
       toQuery({
@@ -210,7 +220,7 @@ export const accountingApi = {
         to: params.to,
         page: params.page ?? 0,
         size: params.size ?? 20,
-      })
+      }),
     );
     const inner = unwrap<JournalEntriesPageResponse>(raw);
     if (!inner || !Array.isArray(inner.entries)) {
@@ -226,9 +236,7 @@ export const accountingApi = {
     return normalizeJournalEntry(inner);
   },
 
-  createManualJournal: async (
-    body: CreateJournalEntryRequest
-  ): Promise<JournalEntryResponse> => {
+  createManualJournal: async (body: CreateJournalEntryRequest): Promise<JournalEntryResponse> => {
     const raw = await apiClient.post<unknown>(ACCOUNTING_ENDPOINTS.JOURNAL, body);
     const inner = unwrap<JournalEntryResponse>(raw);
     if (!inner) throw new Error('Invalid response posting manual journal');
@@ -237,21 +245,15 @@ export const accountingApi = {
 
   reverseJournal: async (
     id: string,
-    body: ReverseJournalRequest = {}
+    body: ReverseJournalRequest = {},
   ): Promise<JournalEntryResponse> => {
-    const raw = await apiClient.post<unknown>(
-      ACCOUNTING_ENDPOINTS.JOURNAL_REVERSE(id),
-      body
-    );
+    const raw = await apiClient.post<unknown>(ACCOUNTING_ENDPOINTS.JOURNAL_REVERSE(id), body);
     const inner = unwrap<JournalEntryResponse>(raw);
     if (!inner) throw new Error('Invalid response reversing journal');
     return normalizeJournalEntry(inner);
   },
 
-  ledger: async (
-    accountId: string,
-    params: LedgerParams = {}
-  ): Promise<LedgerPageResponse> => {
+  ledger: async (accountId: string, params: LedgerParams = {}): Promise<LedgerPageResponse> => {
     const raw = await apiClient.get<unknown>(
       ACCOUNTING_ENDPOINTS.LEDGER(accountId),
       toQuery({
@@ -259,7 +261,7 @@ export const accountingApi = {
         to: params.to,
         page: params.page ?? 0,
         size: params.size ?? 50,
-      })
+      }),
     );
     const inner = unwrap<LedgerPageResponse>(raw);
     if (!inner) {
@@ -271,7 +273,7 @@ export const accountingApi = {
   parties: async (params: PartiesListParams): Promise<PartySummariesResponse> => {
     const raw = await apiClient.get<unknown>(
       ACCOUNTING_ENDPOINTS.PARTIES,
-      toQuery({ type: params.type, from: params.from, to: params.to })
+      toQuery({ type: params.type, from: params.from, to: params.to }),
     );
     const inner = unwrap<PartySummariesResponse>(raw);
     if (!inner) {
@@ -293,7 +295,7 @@ export const accountingApi = {
   partyStatement: async (
     type: AccountingPartyType,
     partyRefId: string,
-    params: PartyStatementParams = {}
+    params: PartyStatementParams = {},
   ): Promise<PartyStatementResponse> => {
     const raw = await apiClient.get<unknown>(
       ACCOUNTING_ENDPOINTS.PARTY_STATEMENT(type, encodeURIComponent(partyRefId)),
@@ -302,7 +304,7 @@ export const accountingApi = {
         to: params.to,
         page: params.page ?? 0,
         size: params.size ?? 50,
-      })
+      }),
     );
     const inner = unwrap<PartyStatementResponse>(raw);
     if (!inner) {
@@ -323,10 +325,7 @@ export const accountingApi = {
   },
 
   trialBalance: async (asOf?: string): Promise<TrialBalanceResponse> => {
-    const raw = await apiClient.get<unknown>(
-      ACCOUNTING_ENDPOINTS.TRIAL_BALANCE,
-      toQuery({ asOf })
-    );
+    const raw = await apiClient.get<unknown>(ACCOUNTING_ENDPOINTS.TRIAL_BALANCE, toQuery({ asOf }));
     const inner = unwrap<TrialBalanceResponse>(raw);
     if (!inner) {
       const today = (asOf ?? new Date().toISOString().slice(0, 10)) as string;
@@ -338,7 +337,7 @@ export const accountingApi = {
   profitAndLoss: async (from: string, to: string): Promise<ProfitAndLossResponse> => {
     const raw = await apiClient.get<unknown>(
       ACCOUNTING_ENDPOINTS.PROFIT_AND_LOSS,
-      toQuery({ from, to })
+      toQuery({ from, to }),
     );
     const inner = unwrap<ProfitAndLossResponse>(raw);
     if (!inner) {
@@ -356,10 +355,7 @@ export const accountingApi = {
   },
 
   balanceSheet: async (asOf?: string): Promise<BalanceSheetResponse> => {
-    const raw = await apiClient.get<unknown>(
-      ACCOUNTING_ENDPOINTS.BALANCE_SHEET,
-      toQuery({ asOf })
-    );
+    const raw = await apiClient.get<unknown>(ACCOUNTING_ENDPOINTS.BALANCE_SHEET, toQuery({ asOf }));
     const inner = unwrap<BalanceSheetResponse>(raw);
     if (!inner) {
       const today = (asOf ?? new Date().toISOString().slice(0, 10)) as string;
@@ -378,29 +374,22 @@ export const accountingApi = {
     return normalizeBalanceSheet(inner);
   },
 
-  postOpeningBalance: async (
-    body: OpeningBalanceRequest
-  ): Promise<JournalEntryResponse> => {
-    const raw = await apiClient.post<unknown>(
-      ACCOUNTING_ENDPOINTS.OPENING_BALANCES,
-      body
-    );
+  postOpeningBalance: async (body: OpeningBalanceRequest): Promise<JournalEntryResponse> => {
+    const raw = await apiClient.post<unknown>(ACCOUNTING_ENDPOINTS.OPENING_BALANCES, body);
     const inner = unwrap<JournalEntryResponse>(raw);
     if (!inner) throw new Error('Invalid response posting opening balances');
     return normalizeJournalEntry(inner);
   },
 
   openingBalanceStatus: async (): Promise<JournalEntryResponse | null> => {
-    const raw = await apiClient.get<unknown>(
-      ACCOUNTING_ENDPOINTS.OPENING_BALANCES_STATUS
-    );
+    const raw = await apiClient.get<unknown>(ACCOUNTING_ENDPOINTS.OPENING_BALANCES_STATUS);
     const inner = unwrap<JournalEntryResponse | null>(raw);
     if (!inner) return null;
     return normalizeJournalEntry(inner);
   },
 
   backfill: async (
-    options: { from?: string; to?: string; force?: boolean } = {}
+    options: { from?: string; to?: string; force?: boolean } = {},
   ): Promise<BackfillResult> => {
     const raw = await apiClient.post<unknown>(
       `${ACCOUNTING_ENDPOINTS.BACKFILL}${toQs({
@@ -408,7 +397,7 @@ export const accountingApi = {
         to: options.to,
         force: options.force ? 'true' : undefined,
       })}`,
-      {}
+      {},
     );
     const inner = unwrap<BackfillResult>(raw);
     return inner ?? { processed: 0, posted: 0, reposted: 0, skipped: 0, failed: 0 };

@@ -1,11 +1,5 @@
 import type { QuotationSummary } from '@inventory-platform/product/types';
-import {
-  Button,
-  IconButton,
-  Inline,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { Button, IconButton, Inline, Stack, Text } from '@inventory-platform/ui-kit';
 import styles from './ScanSellQuotationStack.module.css';
 
 function formatMoney(n: number): string {
@@ -46,11 +40,7 @@ export function ScanSellQuotationStack({
   }
 
   return (
-    <Stack
-      gap="xs"
-      className={styles.quotationBar}
-      aria-label="Open quotations"
-    >
+    <Stack gap="xs" className={styles.quotationBar} aria-label="Open quotations">
       <Inline className={styles.barRow} gap="sm" align="center">
         <Text variant="caption" weight="semibold" color="secondary" className={styles.barLabel}>
           Open quotations
@@ -67,10 +57,7 @@ export function ScanSellQuotationStack({
         </Button>
       </Inline>
 
-      <Inline
-        className={styles.chipStrip}
-        gap="sm"
-      >
+      <Inline className={styles.chipStrip} gap="sm">
         {quotations.map((q) => {
           const isActive = q.purchaseId === activePurchaseId;
           const total = formatMoney(Number(q.grandTotal) || 0);

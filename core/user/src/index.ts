@@ -27,12 +27,7 @@ export {
   whatsAppMarketingRoutes,
   userDashboardRoutes,
 } from './routes';
-export {
-  userContactNav,
-  userOverviewNav,
-  userTeamNav,
-  userMarketingNav,
-} from './nav';
+export { userContactNav, userOverviewNav, userTeamNav, userMarketingNav } from './nav';
 
 export {
   CustomerEditForm,

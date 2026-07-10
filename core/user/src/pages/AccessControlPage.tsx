@@ -71,8 +71,7 @@ function modulesFromMember(member: ShopMemberAccess): MemberModulePermissions {
     stockCorrection: stored.stockCorrection ?? effective.stockCorrection,
     marketing: stored.marketing ?? effective.marketing,
     paymentPlan: stored.paymentPlan ?? effective.paymentPlan,
-    productSearchEdit:
-      stored.productSearchEdit ?? effective.productSearchEdit,
+    productSearchEdit: stored.productSearchEdit ?? effective.productSearchEdit,
   };
 }
 
@@ -81,16 +80,14 @@ export function AccessControlPage() {
   const { success: notifySuccess, error: notifyError } = useNotify;
   const fetchAccess = useShopAccessStore((s) => s.fetchAccess);
   const shopAccess = useShopAccessStore((s) =>
-    user?.shopId ? s.byShopId[user.shopId] : undefined
+    user?.shopId ? s.byShopId[user.shopId] : undefined,
   );
 
   const shopId = user?.shopId;
   const [loading, setLoading] = useState(true);
   const [savingUserId, setSavingUserId] = useState<string | null>(null);
   const [admin, setAdmin] = useState<ShopRbacAdmin | null>(null);
-  const [draftModules, setDraftModules] = useState<
-    Record<string, MemberModulePermissions>
-  >({});
+  const [draftModules, setDraftModules] = useState<Record<string, MemberModulePermissions>>({});
   const [editMode, setEditMode] = useState<ProductSearchEditMode>('FULL_EDIT');
   const [policySaving, setPolicySaving] = useState(false);
   const [draftFields, setDraftFields] = useState<Record<string, string[]>>({});
@@ -107,22 +104,16 @@ export function AccessControlPage() {
       const fieldDrafts: Record<string, string[]> = {};
       for (const member of data.members) {
         drafts[member.userId] = modulesFromMember(member);
-        fieldDrafts[member.userId] = [
-          ...(member.permissions?.productSearchEditableFields ?? []),
-        ];
+        fieldDrafts[member.userId] = [...(member.permissions?.productSearchEditableFields ?? [])];
       }
       setDraftModules(drafts);
       setDraftFields(fieldDrafts);
-      const firstEditableMember = data.members.find(
-        (m) => m.relationship !== 'OWNER'
-      );
+      const firstEditableMember = data.members.find((m) => m.relationship !== 'OWNER');
       setFieldMemberId((prev) =>
-        prev && fieldDrafts[prev] ? prev : firstEditableMember?.userId ?? ''
+        prev && fieldDrafts[prev] ? prev : firstEditableMember?.userId ?? '',
       );
     } catch (err) {
-      notifyError(
-        err instanceof Error ? err.message : 'Failed to load access settings'
-      );
+      notifyError(err instanceof Error ? err.message : 'Failed to load access settings');
     } finally {
       setLoading(false);
     }
@@ -143,9 +134,7 @@ export function AccessControlPage() {
   if (!shopAccess?.canManageAccess) {
     return (
       <Stack gap="md" className={styles.container}>
-        <Alert variant="danger">
-          Only the shop owner can manage access settings.
-        </Alert>
+        <Alert variant="danger">Only the shop owner can manage access settings.</Alert>
       </Stack>
     );
   }
@@ -165,11 +154,7 @@ export function AccessControlPage() {
     }
   };
 
-  const setModuleDraft = (
-    userId: string,
-    key: keyof MemberModulePermissions,
-    value: boolean
-  ) => {
+  const setModuleDraft = (userId: string, key: keyof MemberModulePermissions, value: boolean) => {
     setDraftModules((prev) => ({
       ...prev,
       [userId]: { ...prev[userId], [key]: value },
@@ -188,9 +173,7 @@ export function AccessControlPage() {
     try {
       await shopAccessApi.updateMember(shopId, member.userId, {
         modules: modulesToSave,
-        ...(editMode === 'PERMISSION_BASED'
-          ? { productSearchEditableFields: fields }
-          : {}),
+        ...(editMode === 'PERMISSION_BASED' ? { productSearchEditableFields: fields } : {}),
       });
       notifySuccess(`Access updated for ${member.name || member.email}.`);
       await load();
@@ -221,11 +204,8 @@ export function AccessControlPage() {
     });
   };
 
-  const editableMembers =
-    admin?.members.filter((m) => m.relationship !== 'OWNER') ?? [];
-  const selectedFieldMember = editableMembers.find(
-    (m) => m.userId === fieldMemberId
-  );
+  const editableMembers = admin?.members.filter((m) => m.relationship !== 'OWNER') ?? [];
+  const selectedFieldMember = editableMembers.find((m) => m.userId === fieldMemberId);
   const moduleColumns =
     editMode === 'PERMISSION_BASED'
       ? MODULE_COLUMNS.filter((col) => col.key !== 'productSearchEdit')
@@ -262,9 +242,7 @@ export function AccessControlPage() {
               className={styles.select}
               value={editMode}
               disabled={policySaving}
-              onChange={(e) =>
-                void handlePolicyChange(e.target.value as ProductSearchEditMode)
-              }
+              onChange={(e) => void handlePolicyChange(e.target.value as ProductSearchEditMode)}
               options={EDIT_MODE_OPTIONS.map((opt) => ({
                 value: opt.value,
                 label: opt.label,
@@ -281,9 +259,8 @@ export function AccessControlPage() {
               Product search field access
             </Text>
             <Text color="secondary" className={styles.cardHint}>
-              Choose which fields each member can edit in product search. Checking
-              any field enables edit for that member (only those fields are
-              editable).
+              Choose which fields each member can edit in product search. Checking any field enables
+              edit for that member (only those fields are editable).
             </Text>
             {loading ? (
               <CenteredLoader label="Loading…" />
@@ -313,9 +290,7 @@ export function AccessControlPage() {
                       disabled={savingUserId === selectedFieldMember.userId}
                       onClick={() => void saveMember(selectedFieldMember)}
                     >
-                      {savingUserId === selectedFieldMember.userId
-                        ? 'Saving…'
-                        : 'Save fields'}
+                      {savingUserId === selectedFieldMember.userId ? 'Saving…' : 'Save fields'}
                     </Button>
                   ) : null}
                 </Inline>
@@ -327,14 +302,10 @@ export function AccessControlPage() {
                         className={styles.fieldChip}
                         label={field.label}
                         checked={(draftFields[selectedFieldMember.userId] ?? []).includes(
-                          field.key
+                          field.key,
                         )}
                         onChange={(e) =>
-                          toggleFieldDraft(
-                            selectedFieldMember.userId,
-                            field.key,
-                            e.target.checked
-                          )
+                          toggleFieldDraft(selectedFieldMember.userId, field.key, e.target.checked)
                         }
                       />
                     ))}
@@ -352,9 +323,9 @@ export function AccessControlPage() {
             Team module access
           </Text>
           <Text color="secondary" className={styles.cardHint}>
-            Toggle modules for each member, then click Save on their row. The shop
-            owner always has full access. Stock corrections: any member can create
-            pending corrections; only owner/manager can approve.
+            Toggle modules for each member, then click Save on their row. The shop owner always has
+            full access. Stock corrections: any member can create pending corrections; only
+            owner/manager can approve.
           </Text>
 
           {loading ? (
@@ -409,11 +380,7 @@ export function AccessControlPage() {
                             checked={Boolean(draft?.[col.key])}
                             disabled={isOwner || savingUserId === member.userId}
                             onChange={(e) =>
-                              setModuleDraft(
-                                member.userId,
-                                col.key,
-                                e.target.checked
-                              )
+                              setModuleDraft(member.userId, col.key, e.target.checked)
                             }
                           />
                         </TableCell>
@@ -443,8 +410,8 @@ export function AccessControlPage() {
             </Table>
           )}
           <Text color="secondary" variant="caption" className={styles.saveHint}>
-            Invitations and shop user management remain owner/manager only.
-            Cashiers cannot see Payment &amp; Plan unless you enable Plan here.
+            Invitations and shop user management remain owner/manager only. Cashiers cannot see
+            Payment &amp; Plan unless you enable Plan here.
           </Text>
         </CardBody>
       </Card>

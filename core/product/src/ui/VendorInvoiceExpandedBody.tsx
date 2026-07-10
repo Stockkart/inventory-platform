@@ -90,25 +90,18 @@ export function VendorInvoiceExpandedBody({
       { label: 'Invoice total', value: formatMoney(detail.invoiceTotal) },
       { label: 'Recorded', value: formatDate(detail.createdAt) },
     ],
-    [detail]
+    [detail],
   );
 
   return (
     <Stack gap="md" className={styles.expandedInner}>
-      <Inline
-        className={styles.expandedHeader}
-        justify="between"
-        align="start"
-        gap="md"
-      >
+      <Inline className={styles.expandedHeader} justify="between" align="start" gap="md">
         <Stack gap="xs">
           <Inline gap="sm" align="center">
             <Text variant="heading3" weight="bold">
               {detail.invoiceNo}
             </Text>
-            {detail.synthetic ? (
-              <Badge variant="neutral">Auto invoice no.</Badge>
-            ) : null}
+            {detail.synthetic ? <Badge variant="neutral">Auto invoice no.</Badge> : null}
           </Inline>
           <Text weight="semibold">{vendorDisplay(detail)}</Text>
           {detail.invoiceDate ? (
@@ -139,20 +132,11 @@ export function VendorInvoiceExpandedBody({
       </Grid>
 
       <Stack gap="sm" className={styles.linesSection}>
-        <Text
-          variant="caption"
-          color="secondary"
-          weight="bold"
-          className={styles.linesHeading}
-        >
+        <Text variant="caption" color="secondary" weight="bold" className={styles.linesHeading}>
           Products on this invoice
         </Text>
-        {inventoryLoading ? (
-          <CenteredLoader label="Loading inventory details…" size="sm" />
-        ) : null}
-        {inventoryWarning ? (
-          <Alert variant="warning">{inventoryWarning}</Alert>
-        ) : null}
+        {inventoryLoading ? <CenteredLoader label="Loading inventory details…" size="sm" /> : null}
+        {inventoryWarning ? <Alert variant="warning">{inventoryWarning}</Alert> : null}
         <Box className={styles.linesTableWrap}>
           <Table className={styles.linesTable}>
             <TableHead>
@@ -179,19 +163,13 @@ export function VendorInvoiceExpandedBody({
                     : undefined;
                 return (
                   <TableRow key={`${line.lineIndex}-${line.inventoryId ?? ''}`}>
-                    <TableCell className={styles.linesNum}>
-                      {line.lineIndex + 1}
-                    </TableCell>
+                    <TableCell className={styles.linesNum}>{line.lineIndex + 1}</TableCell>
                     <TableCell>{line.name}</TableCell>
-                    <TableCell className={styles.linesMuted}>
-                      {inv?.companyName ?? '—'}
-                    </TableCell>
+                    <TableCell className={styles.linesMuted}>{inv?.companyName ?? '—'}</TableCell>
                     <TableCell className={styles.linesMuted}>
                       {line.barcode ?? inv?.barcode ?? '—'}
                     </TableCell>
-                    <TableCell className={styles.linesMuted}>
-                      {inv?.batchNo ?? '—'}
-                    </TableCell>
+                    <TableCell className={styles.linesMuted}>{inv?.batchNo ?? '—'}</TableCell>
                     <TableCell className={styles.linesMuted}>
                       {formatCompactDate(inv?.expiryDate)}
                     </TableCell>
@@ -205,12 +183,8 @@ export function VendorInvoiceExpandedBody({
                     <TableCell className={styles.linesMoney}>
                       {formatMoney(inv?.priceToRetail)}
                     </TableCell>
-                    <TableCell className={styles.linesMuted}>
-                      {formatGst(inv)}
-                    </TableCell>
-                    <TableCell className={styles.linesMoney}>
-                      {inv?.currentCount ?? '—'}
-                    </TableCell>
+                    <TableCell className={styles.linesMuted}>{formatGst(inv)}</TableCell>
+                    <TableCell className={styles.linesMoney}>{inv?.currentCount ?? '—'}</TableCell>
                   </TableRow>
                 );
               })}

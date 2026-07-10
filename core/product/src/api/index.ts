@@ -1,7 +1,4 @@
-export {
-  inventoryApi,
-  resolveInventoryDocumentId,
-} from './inventory.api';
+export { inventoryApi, resolveInventoryDocumentId } from './inventory.api';
 export { cartApi } from './cart.api';
 export { checkoutApi } from './checkout.api';
 export { shopMenuApi } from './menu.api';

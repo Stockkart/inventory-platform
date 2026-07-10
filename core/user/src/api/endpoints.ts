@@ -17,8 +17,7 @@ export const SHOP_ACCESS_ENDPOINTS = {
   ME_ACCESS: '/shops/me/access',
   RBAC: (shopId: string) => `/shops/${shopId}/rbac`,
   RBAC_POLICY: (shopId: string) => `/shops/${shopId}/rbac/policy`,
-  RBAC_MEMBER: (shopId: string, userId: string) =>
-    `/shops/${shopId}/rbac/members/${userId}`,
+  RBAC_MEMBER: (shopId: string, userId: string) => `/shops/${shopId}/rbac/members/${userId}`,
   INVITATIONS: (shopId: string) => `/shops/${shopId}/invitations`,
   USERS_ALL: (shopId: string) => `/shops/${shopId}/users/all`,
 } as const;
@@ -37,8 +36,7 @@ export const SHOP_ENDPOINTS = {
   BY_OWNER_EMAIL: '/shops/by-owner-email',
   JOIN_REQUEST: '/shops/join-request',
   JOIN_REQUESTS: '/shops/join-requests',
-  PROCESS_JOIN_REQUEST: (requestId: string) =>
-    `/shops/join-requests/${requestId}/process`,
+  PROCESS_JOIN_REQUEST: (requestId: string) => `/shops/join-requests/${requestId}/process`,
 } as const;
 
 /** User lookup paths (vendor/customer linking). */

@@ -6,12 +6,35 @@ import {
   VENDOR_PURCHASE_RETURNS_ENDPOINTS,
 } from './endpoints';
 import type { ApiResponse } from '@inventory-platform/contracts';
-import type { CreateInventoryDto, InventoryResponse, InventoryListResponse, InventoryExpiryBuckets, InventorySearchParams, LotsListResponse, PaginationInventoryResponse, BulkCreateInventoryDto, BulkCreateInventoryResponse, ParseInvoiceResponse, UpdateInventoryRequest, InventoryItem, VendorPurchaseInvoiceDetail, VendorPurchaseInvoiceListResponse, VendorPurchaseReturnPayload, VendorPurchaseReturnResult, VendorPurchaseReturnListDto, GetVendorPurchaseReturnsParams, CreateInventoryCorrectionRequest, InventoryCorrection, InventoryCorrectionListResponse, PackagingUnit } from '@inventory-platform/product/types';
+import type {
+  CreateInventoryDto,
+  InventoryResponse,
+  InventoryListResponse,
+  InventoryExpiryBuckets,
+  InventorySearchParams,
+  LotsListResponse,
+  PaginationInventoryResponse,
+  BulkCreateInventoryDto,
+  BulkCreateInventoryResponse,
+  ParseInvoiceResponse,
+  UpdateInventoryRequest,
+  InventoryItem,
+  VendorPurchaseInvoiceDetail,
+  VendorPurchaseInvoiceListResponse,
+  VendorPurchaseReturnPayload,
+  VendorPurchaseReturnResult,
+  VendorPurchaseReturnListDto,
+  GetVendorPurchaseReturnsParams,
+  CreateInventoryCorrectionRequest,
+  InventoryCorrection,
+  InventoryCorrectionListResponse,
+  PackagingUnit,
+} from '@inventory-platform/product/types';
 import axios from 'axios';
 
 /** Resolve inventory document id for GET/PUT `/inventory/{id}`. */
 export function resolveInventoryDocumentId(
-  item: Pick<InventoryItem, 'id' | 'lotId'> | null | undefined
+  item: Pick<InventoryItem, 'id' | 'lotId'> | null | undefined,
 ): string | null {
   if (!item) return null;
   const id = item.id?.trim();
@@ -20,10 +43,7 @@ export function resolveInventoryDocumentId(
   return lotId || null;
 }
 
-function normalizeInventoryItem(
-  row: InventoryItem,
-  inventoryDocumentId: string
-): InventoryItem {
+function normalizeInventoryItem(row: InventoryItem, inventoryDocumentId: string): InventoryItem {
   return {
     ...row,
     id: row.id?.trim() || inventoryDocumentId,
@@ -34,7 +54,7 @@ function normalizeInventoryItem(
 export const inventoryApi = {
   listPackagingUnits: async (): Promise<PackagingUnit[]> => {
     const response = await apiClient.get<ApiResponse<PackagingUnit[]>>(
-      INVENTORY_ENDPOINTS.PACKAGING_UNITS
+      INVENTORY_ENDPOINTS.PACKAGING_UNITS,
     );
     return response.data ?? [];
   },
@@ -42,17 +62,16 @@ export const inventoryApi = {
   create: async (data: CreateInventoryDto): Promise<InventoryResponse> => {
     const response = await apiClient.post<ApiResponse<InventoryResponse>>(
       INVENTORY_ENDPOINTS.BASE,
-      data
+      data,
     );
     return response.data;
   },
 
-  createBulk: async (
-    data: BulkCreateInventoryDto
-  ): Promise<BulkCreateInventoryResponse> => {
-    const response = await apiClient.post<
-      ApiResponse<BulkCreateInventoryResponse>
-    >(INVENTORY_ENDPOINTS.BULK, data);
+  createBulk: async (data: BulkCreateInventoryDto): Promise<BulkCreateInventoryResponse> => {
+    const response = await apiClient.post<ApiResponse<BulkCreateInventoryResponse>>(
+      INVENTORY_ENDPOINTS.BULK,
+      data,
+    );
     // apiClient.post returns ApiResponse<T> directly
     // So response is ApiResponse<BulkCreateInventoryResponse> = { success: true, data: BulkCreateInventoryResponse }
     // We need to return response.data to get the actual BulkCreateInventoryResponse
@@ -60,32 +79,31 @@ export const inventoryApi = {
   },
 
   getAll: async (page = 0, size = 10): Promise<PaginationInventoryResponse> => {
-    const response = await apiClient.get<
-      ApiResponse<PaginationInventoryResponse>
-    >(INVENTORY_ENDPOINTS.BASE, {
-      page: String(page),
-      size: String(size),
-    });
+    const response = await apiClient.get<ApiResponse<PaginationInventoryResponse>>(
+      INVENTORY_ENDPOINTS.BASE,
+      {
+        page: String(page),
+        size: String(size),
+      },
+    );
     return response.data;
   },
 
-  getLowStock: async (
-    page = 0,
-    size = 10
-  ): Promise<PaginationInventoryResponse> => {
-    const response = await apiClient.get<
-      ApiResponse<PaginationInventoryResponse>
-    >(INVENTORY_ENDPOINTS.LOW_STOCK, {
-      page: String(page),
-      size: String(size),
-    });
+  getLowStock: async (page = 0, size = 10): Promise<PaginationInventoryResponse> => {
+    const response = await apiClient.get<ApiResponse<PaginationInventoryResponse>>(
+      INVENTORY_ENDPOINTS.LOW_STOCK,
+      {
+        page: String(page),
+        size: String(size),
+      },
+    );
     return response.data;
   },
 
   search: async (
     queryOrParams: string | InventorySearchParams,
     page?: number,
-    size?: number
+    size?: number,
   ): Promise<InventoryListResponse> => {
     const params: InventorySearchParams =
       typeof queryOrParams === 'string'
@@ -111,62 +129,51 @@ export const inventoryApi = {
 
     const response = await apiClient.get<ApiResponse<InventoryListResponse>>(
       INVENTORY_ENDPOINTS.SEARCH,
-      queryParams
+      queryParams,
     );
     return response.data;
   },
 
   /** @deprecated Use inventoryApi.search with flat params */
-  searchWithFilters: async (
-    params: InventorySearchParams
-  ): Promise<InventoryListResponse> => {
+  searchWithFilters: async (params: InventorySearchParams): Promise<InventoryListResponse> => {
     return inventoryApi.search(params);
   },
 
-  getExpiryBuckets: async (
-    expiringSoonDays?: number
-  ): Promise<InventoryExpiryBuckets> => {
+  getExpiryBuckets: async (expiringSoonDays?: number): Promise<InventoryExpiryBuckets> => {
     const params: Record<string, string> = {};
     if (expiringSoonDays !== undefined && expiringSoonDays > 0) {
       params.expiringSoonDays = String(expiringSoonDays);
     }
     const response = await apiClient.get<ApiResponse<InventoryExpiryBuckets>>(
       INVENTORY_ENDPOINTS.EXPIRY_BUCKETS,
-      params
+      params,
     );
     return response.data;
   },
 
-  searchLots: async (
-    search: string,
-    page = 0,
-    size = 10
-  ): Promise<LotsListResponse> => {
-    const response = await apiClient.get<ApiResponse<LotsListResponse>>(
-      INVENTORY_ENDPOINTS.LOTS,
-      { search, page: String(page), size: String(size) }
-    );
+  searchLots: async (search: string, page = 0, size = 10): Promise<LotsListResponse> => {
+    const response = await apiClient.get<ApiResponse<LotsListResponse>>(INVENTORY_ENDPOINTS.LOTS, {
+      search,
+      page: String(page),
+      size: String(size),
+    });
     return response.data;
   },
 
   /** GET /inventory/{inventoryDocumentId} — full detail for edit modals. */
   getById: async (inventoryDocumentId: string): Promise<InventoryItem> => {
     const id = inventoryDocumentId.trim();
-    const response = await apiClient.get<ApiResponse<InventoryItem>>(
-      INVENTORY_ENDPOINTS.BY_ID(id)
-    );
+    const response = await apiClient.get<ApiResponse<InventoryItem>>(INVENTORY_ENDPOINTS.BY_ID(id));
     return normalizeInventoryItem(response.data, id);
   },
 
   getByIds: async (inventoryIds: string[]): Promise<InventoryItem[]> => {
-    const normalizedIds = inventoryIds
-      .map((x) => x?.trim())
-      .filter((x): x is string => !!x);
+    const normalizedIds = inventoryIds.map((x) => x?.trim()).filter((x): x is string => !!x);
     if (normalizedIds.length === 0) return [];
 
     const response = await apiClient.post<ApiResponse<InventoryItem[]>>(
       INVENTORY_ENDPOINTS.BY_IDS,
-      { inventoryIds: normalizedIds }
+      { inventoryIds: normalizedIds },
     );
     const rows = response.data ?? [];
     return normalizedIds
@@ -178,25 +185,21 @@ export const inventoryApi = {
       .filter((row): row is InventoryItem => row != null);
   },
 
-  updateThreshold: async (
-    inventoryId: string,
-    thresholdCount: number
-  ): Promise<void> => {
-    await apiClient.put<ApiResponse<void>>(
-      INVENTORY_ENDPOINTS.BY_ID(inventoryId),
-      { thresholdCount }
-    );
+  updateThreshold: async (inventoryId: string, thresholdCount: number): Promise<void> => {
+    await apiClient.put<ApiResponse<void>>(INVENTORY_ENDPOINTS.BY_ID(inventoryId), {
+      thresholdCount,
+    });
   },
 
   /** PUT /inventory/{inventoryDocumentId} */
   update: async (
     inventoryDocumentId: string,
-    data: UpdateInventoryRequest
+    data: UpdateInventoryRequest,
   ): Promise<InventoryItem> => {
     const id = inventoryDocumentId.trim();
     const response = await apiClient.put<ApiResponse<InventoryItem>>(
       INVENTORY_ENDPOINTS.BY_ID(id),
-      data
+      data,
     );
     return normalizeInventoryItem(response.data, id);
   },
@@ -211,8 +214,7 @@ export const inventoryApi = {
       throw new Error('At least one image is required');
     }
     const token = localStorage.getItem('auth_token');
-    const API_BASE_URL =
-      import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
     const formData = new FormData();
     if (imageFiles.length === 1) {
@@ -231,7 +233,7 @@ export const inventoryApi = {
           'Content-Type': 'multipart/form-data',
           Authorization: token ? `Bearer ${token}` : '',
         },
-      }
+      },
     );
 
     return response.data.data;
@@ -239,8 +241,7 @@ export const inventoryApi = {
 
   parseStockSheet: async (stockFile: File): Promise<ParseInvoiceResponse> => {
     const token = localStorage.getItem('auth_token');
-    const API_BASE_URL =
-      import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
     const formData = new FormData();
     formData.append('file', stockFile);
@@ -253,7 +254,7 @@ export const inventoryApi = {
           'Content-Type': 'multipart/form-data',
           Authorization: token ? `Bearer ${token}` : '',
         },
-      }
+      },
     );
 
     return response.data.data;
@@ -262,39 +263,39 @@ export const inventoryApi = {
   listVendorPurchaseInvoices: async (
     page = 0,
     size = 20,
-    query?: string
+    query?: string,
   ): Promise<VendorPurchaseInvoiceListResponse> => {
     const params: Record<string, string> = {
       page: String(page),
       size: String(size),
     };
     if (query && query.trim() !== '') params.q = query.trim();
-    const response = await apiClient.get<
-      ApiResponse<VendorPurchaseInvoiceListResponse>
-    >(VENDOR_PURCHASE_INVOICES_ENDPOINTS.BASE, params);
+    const response = await apiClient.get<ApiResponse<VendorPurchaseInvoiceListResponse>>(
+      VENDOR_PURCHASE_INVOICES_ENDPOINTS.BASE,
+      params,
+    );
     return response.data;
   },
 
-  getVendorPurchaseInvoice: async (
-    id: string
-  ): Promise<VendorPurchaseInvoiceDetail> => {
-    const response = await apiClient.get<
-      ApiResponse<VendorPurchaseInvoiceDetail>
-    >(VENDOR_PURCHASE_INVOICES_ENDPOINTS.BY_ID(id));
+  getVendorPurchaseInvoice: async (id: string): Promise<VendorPurchaseInvoiceDetail> => {
+    const response = await apiClient.get<ApiResponse<VendorPurchaseInvoiceDetail>>(
+      VENDOR_PURCHASE_INVOICES_ENDPOINTS.BY_ID(id),
+    );
     return response.data;
   },
 
   createVendorPurchaseReturn: async (
-    payload: VendorPurchaseReturnPayload
+    payload: VendorPurchaseReturnPayload,
   ): Promise<VendorPurchaseReturnResult> => {
-    const response = await apiClient.post<
-      ApiResponse<VendorPurchaseReturnResult>
-    >(VENDOR_PURCHASE_RETURNS_ENDPOINTS.BASE, payload);
+    const response = await apiClient.post<ApiResponse<VendorPurchaseReturnResult>>(
+      VENDOR_PURCHASE_RETURNS_ENDPOINTS.BASE,
+      payload,
+    );
     return response.data;
   },
 
   listVendorPurchaseReturns: async (
-    params?: GetVendorPurchaseReturnsParams
+    params?: GetVendorPurchaseReturnsParams,
   ): Promise<VendorPurchaseReturnListDto> => {
     const queryParams: Record<string, string> = {};
     if (params?.page) queryParams.page = String(params.page);
@@ -302,18 +303,19 @@ export const inventoryApi = {
     const inv = params?.invoiceNo?.trim();
     if (inv) queryParams.invoiceNo = inv;
 
-    const response = await apiClient.get<
-      ApiResponse<VendorPurchaseReturnListDto>
-    >(VENDOR_PURCHASE_RETURNS_ENDPOINTS.BASE, queryParams);
+    const response = await apiClient.get<ApiResponse<VendorPurchaseReturnListDto>>(
+      VENDOR_PURCHASE_RETURNS_ENDPOINTS.BASE,
+      queryParams,
+    );
     return response.data;
   },
 
   createInventoryCorrection: async (
-    payload: CreateInventoryCorrectionRequest
+    payload: CreateInventoryCorrectionRequest,
   ): Promise<InventoryCorrection> => {
     const response = await apiClient.post<ApiResponse<InventoryCorrection>>(
       INVENTORY_CORRECTIONS_ENDPOINTS.BASE,
-      payload
+      payload,
     );
     return response.data;
   },
@@ -321,7 +323,7 @@ export const inventoryApi = {
   listInventoryCorrections: async (
     page = 0,
     size = 20,
-    status?: string
+    status?: string,
   ): Promise<InventoryCorrectionListResponse> => {
     const params: Record<string, string> = {
       page: String(page),
@@ -330,18 +332,18 @@ export const inventoryApi = {
     if (status && status.trim() !== '') params.status = status;
     const response = await apiClient.get<ApiResponse<InventoryCorrectionListResponse>>(
       INVENTORY_CORRECTIONS_ENDPOINTS.BASE,
-      params
+      params,
     );
     return response.data;
   },
 
   approveInventoryCorrectionLine: async (
     correctionId: string,
-    lineId: string
+    lineId: string,
   ): Promise<InventoryCorrection> => {
     const response = await apiClient.post<ApiResponse<InventoryCorrection>>(
       INVENTORY_CORRECTIONS_ENDPOINTS.APPROVE_LINE(correctionId, lineId),
-      {}
+      {},
     );
     return response.data;
   },
@@ -349,11 +351,11 @@ export const inventoryApi = {
   rejectInventoryCorrectionLine: async (
     correctionId: string,
     lineId: string,
-    reason?: string
+    reason?: string,
   ): Promise<InventoryCorrection> => {
     const response = await apiClient.post<ApiResponse<InventoryCorrection>>(
       INVENTORY_CORRECTIONS_ENDPOINTS.REJECT_LINE(correctionId, lineId),
-      { reason: reason ?? null }
+      { reason: reason ?? null },
     );
     return response.data;
   },

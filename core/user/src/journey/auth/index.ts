@@ -8,9 +8,4 @@ export { meta as signupMeta } from './routes/signup';
 export { meta as forgotPasswordMeta } from './routes/forgot-password';
 export { meta as resetPasswordMeta } from './routes/reset-password';
 
-export {
-  LoginForm,
-  SignupForm,
-  ForgotPasswordForm,
-  ResetPasswordForm,
-} from './forms';
+export { LoginForm, SignupForm, ForgotPasswordForm, ResetPasswordForm } from './forms';

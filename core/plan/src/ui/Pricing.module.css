@@ -71,10 +71,7 @@
   flex-direction: column;
   justify-content: space-between;
   min-height: 420px;
-  transition:
-    border-color 0.2s ease,
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease,
     background-color 0.2s ease;
 }
 
@@ -85,7 +82,7 @@
 }
 
 .cardHighlight {
-  border-color: #2563eb; 
+  border-color: #2563eb;
 }
 
 .cardHighlight:hover {
@@ -186,11 +183,7 @@
   font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
-  transition:
-    color 0.2s ease,
-    border-color 0.2s ease,
-    transform 0.15s ease,
-    box-shadow 0.15s ease;
+  transition: color 0.2s ease, border-color 0.2s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .ctaPrimary {
@@ -254,4 +247,3 @@
     padding-inline: 1.25rem;
   }
 }
-

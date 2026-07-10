@@ -1,12 +1,7 @@
 import { Box, Button, Inline } from '@inventory-platform/ui-kit';
 import styles from './analytics.module.css';
 
-export type AnalyticsTabId =
-  | 'sales'
-  | 'profit'
-  | 'inventory'
-  | 'vendors'
-  | 'customers';
+export type AnalyticsTabId = 'sales' | 'profit' | 'inventory' | 'vendors' | 'customers';
 
 const TABS: ReadonlyArray<{ id: AnalyticsTabId; label: string }> = [
   { id: 'sales', label: 'Sales Analytics' },

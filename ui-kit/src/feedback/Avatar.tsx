@@ -19,10 +19,7 @@ function initials(name: string): string {
 
 export function Avatar({ name, size = 'md', className }: AvatarProps) {
   return (
-    <span
-      className={cn(styles.avatar, styles[`avatar-${size}`], className)}
-      aria-hidden
-    >
+    <span className={cn(styles.avatar, styles[`avatar-${size}`], className)} aria-hidden>
       {initials(name) || '?'}
     </span>
   );

@@ -1,15 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { CustomerProductHistoryResponse } from '@inventory-platform/product/types';
 import { inventorySellableRef } from '@inventory-platform/product/types';
-import {
-  Badge,
-  Button,
-  IconButton,
-  Inline,
-  Input,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { Badge, Button, IconButton, Inline, Input, Stack, Text } from '@inventory-platform/ui-kit';
 import { CustomerProductHistoryHint } from './CustomerProductHistoryHint';
 import styles from '../pages/scan-sell.module.css';
 
@@ -77,11 +69,7 @@ export function ScanSellCafeStockLine({
           >
             −
           </IconButton>
-          <StockQtyInput
-            value={quantity}
-            disabled={disabled}
-            onCommit={onSetQuantity}
-          />
+          <StockQtyInput value={quantity} disabled={disabled} onCommit={onSetQuantity} />
           <IconButton
             label="Increase quantity"
             onClick={() => onChangeQty(1)}

@@ -49,9 +49,7 @@ function ShopUserCard({ user, showUserId = false }: ShopUserCardProps) {
         <Inline className={styles.detailRow}>
           <Text className={styles.label}>Joined:</Text>
           <Text className={styles.value}>
-            {user.joinedAt
-              ? new Date(user.joinedAt).toLocaleDateString()
-              : 'N/A'}
+            {user.joinedAt ? new Date(user.joinedAt).toLocaleDateString() : 'N/A'}
           </Text>
         </Inline>
         <Inline className={styles.detailRow}>
@@ -88,11 +86,7 @@ function UserSection({ title, users, showUserId = false }: UserSectionProps) {
       </Text>
       <Box className={styles.grid}>
         {users.map((user) => (
-          <ShopUserCard
-            key={user.userId}
-            user={user}
-            showUserId={showUserId}
-          />
+          <ShopUserCard key={user.userId} user={user} showUserId={showUserId} />
         ))}
       </Box>
     </Stack>
@@ -147,25 +141,18 @@ export function ShopUsersList({ shopId, onUserChange }: ShopUsersListProps) {
   if (users.length === 0) {
     return (
       <Box className={styles.container}>
-        <EmptyState
-          title="No users found for this shop"
-          className={styles.empty}
-        />
+        <EmptyState title="No users found for this shop" className={styles.empty} />
       </Box>
     );
   }
 
   // Handle null relationship - if relationship is null but role is OWNER, treat as owner
   const owners = users.filter(
-    (u) =>
-      u.relationship === 'OWNER' ||
-      (u.relationship === null && u.role === 'OWNER')
+    (u) => u.relationship === 'OWNER' || (u.relationship === null && u.role === 'OWNER'),
   );
   const invited = users.filter((u) => u.relationship === 'INVITED');
   // Get users that don't match owner or invited (fallback for any edge cases)
-  const otherUsers = users.filter(
-    (u) => !owners.includes(u) && !invited.includes(u)
-  );
+  const otherUsers = users.filter((u) => !owners.includes(u) && !invited.includes(u));
   const active = users.filter((u) => u.active);
   const inactive = users.filter((u) => !u.active);
 
@@ -175,11 +162,7 @@ export function ShopUsersList({ shopId, onUserChange }: ShopUsersListProps) {
       <UserSection title={`Invited Users (${invited.length})`} users={invited} />
       <UserSection title={`Users (${otherUsers.length})`} users={otherUsers} />
       {active.length === 0 && inactive.length > 0 ? (
-        <UserSection
-          title={`Inactive Users (${inactive.length})`}
-          users={inactive}
-          showUserId
-        />
+        <UserSection title={`Inactive Users (${inactive.length})`} users={inactive} showUserId />
       ) : null}
     </Stack>
   );

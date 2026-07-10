@@ -1,4 +1,8 @@
-import type { SchemaDisplayMode, VerticalSchemaFieldDef, VerticalSchemaSurface } from '@inventory-platform/schema/types';
+import type {
+  SchemaDisplayMode,
+  VerticalSchemaFieldDef,
+  VerticalSchemaSurface,
+} from '@inventory-platform/schema/types';
 /** Product or form row that may carry core props and/or a verticalFields bag. */
 export type VerticalFieldProduct = {
   id?: string;
@@ -25,7 +29,7 @@ export function apiPropertyName(field: VerticalSchemaFieldDef): string {
 
 export function isVisibleOnSurface(
   field: VerticalSchemaFieldDef,
-  surface: VerticalSchemaSurface
+  surface: VerticalSchemaSurface,
 ): boolean {
   if (field.required) {
     return true;
@@ -38,7 +42,7 @@ export function isVisibleOnSurface(
 
 export function getEntityFields(
   entities: Record<string, { fields?: VerticalSchemaFieldDef[] }> | undefined,
-  entityName: string
+  entityName: string,
 ): VerticalSchemaFieldDef[] {
   return entities?.[entityName]?.fields ?? [];
 }
@@ -54,24 +58,24 @@ function isDynamicInventoryField(field: VerticalSchemaFieldDef): boolean {
 /** Schema-driven columns for a UI surface (excludes universal core fields rendered by platform layout). */
 export function getDynamicInventoryFields(
   entities: Record<string, { fields?: VerticalSchemaFieldDef[] }> | undefined,
-  surface: VerticalSchemaSurface
+  surface: VerticalSchemaSurface,
 ): VerticalSchemaFieldDef[] {
   return getEntityFields(entities, 'inventory').filter(
-    (field) =>
-      isVisibleOnSurface(field, surface) && isDynamicInventoryField(field)
+    (field) => isVisibleOnSurface(field, surface) && isDynamicInventoryField(field),
   );
 }
 
 /** Extension fields dropped from cafe ingredient registration (cost lives on pricing). */
-const SIMPLE_PRICING_REGISTRATION_EXCLUDED_KEYS = new Set([
-  'lastPurchaseRate',
-  'reorderLevel',
-]);
+const SIMPLE_PRICING_REGISTRATION_EXCLUDED_KEYS = new Set(['lastPurchaseRate', 'reorderLevel']);
 
 export function registrationFieldsForBilling(
-  shopSchema: { verticalId: string; mode: string; entities: Record<string, { fields?: VerticalSchemaFieldDef[] }> } | null,
+  shopSchema: {
+    verticalId: string;
+    mode: string;
+    entities: Record<string, { fields?: VerticalSchemaFieldDef[] }>;
+  } | null,
   billingMode: 'REGULAR' | 'BASIC',
-  shopId?: string | null
+  shopId?: string | null,
 ): VerticalSchemaFieldDef[] {
   if (!shopSchema || !isRegistrationSchemaReady(shopSchema, billingMode, { shopId })) {
     return [];
@@ -82,90 +86,82 @@ export function registrationFieldsForBilling(
 /** Hide legacy / medical-only schema columns when {@code simplePricing} is enabled (cafe). */
 export function filterRegistrationFieldsForSimplePricing(
   fields: VerticalSchemaFieldDef[],
-  simplePricing: boolean
+  simplePricing: boolean,
 ): VerticalSchemaFieldDef[] {
   if (!simplePricing) {
     return fields;
   }
-  return fields.filter(
-    (field) => !SIMPLE_PRICING_REGISTRATION_EXCLUDED_KEYS.has(field.key)
-  );
+  return fields.filter((field) => !SIMPLE_PRICING_REGISTRATION_EXCLUDED_KEYS.has(field.key));
 }
 
 /** True when shop schema is loaded and matches the active billing mode. */
 export function isRegistrationSchemaReady(
-  shopSchema: { shopId?: string; verticalId?: string; mode?: string; entities?: Record<string, unknown> } | null,
+  shopSchema: {
+    shopId?: string;
+    verticalId?: string;
+    mode?: string;
+    entities?: Record<string, unknown>;
+  } | null,
   billingMode: 'REGULAR' | 'BASIC',
-  options?: { shopId?: string | null }
+  options?: { shopId?: string | null },
 ): boolean {
   if (!shopSchema?.verticalId || !shopSchema.entities) {
     return false;
   }
-  if (
-    options &&
-    (options.shopId === null || options.shopId === undefined)
-  ) {
+  if (options && (options.shopId === null || options.shopId === undefined)) {
     return false;
   }
-  if (
-    shopSchema.shopId &&
-    options?.shopId &&
-    shopSchema.shopId !== options.shopId
-  ) {
+  if (shopSchema.shopId && options?.shopId && shopSchema.shopId !== options.shopId) {
     return false;
   }
   const expectedMode = schemaModeForBilling(billingMode);
   if (shopSchema.mode !== expectedMode) {
     return false;
   }
-  return getDynamicInventoryFields(
-    shopSchema.entities as Record<string, { fields?: VerticalSchemaFieldDef[] }>,
-    'registration'
-  ).length > 0;
+  return (
+    getDynamicInventoryFields(
+      shopSchema.entities as Record<string, { fields?: VerticalSchemaFieldDef[] }>,
+      'registration',
+    ).length > 0
+  );
 }
 
 /** Split company name (after barcode) and sell-direct from other vertical registration columns. */
-export function partitionRegistrationFields(
-  fields: VerticalSchemaFieldDef[]
-): {
+export function partitionRegistrationFields(fields: VerticalSchemaFieldDef[]): {
   companyField: VerticalSchemaFieldDef | null;
   sellDirectField: VerticalSchemaFieldDef | null;
   otherFields: VerticalSchemaFieldDef[];
 } {
-  const companyField =
-    fields.find((field) => field.key === 'companyName') ?? null;
-  const sellDirectField =
-    fields.find((field) => field.key === 'sellDirect') ?? null;
+  const companyField = fields.find((field) => field.key === 'companyName') ?? null;
+  const sellDirectField = fields.find((field) => field.key === 'sellDirect') ?? null;
   const otherFields = fields.filter(
-    (field) => field.key !== 'companyName' && field.key !== 'sellDirect'
+    (field) => field.key !== 'companyName' && field.key !== 'sellDirect',
   );
   return { companyField, sellDirectField, otherFields };
 }
 
 export function pickRegistrationField(
   fields: VerticalSchemaFieldDef[],
-  key: string
+  key: string,
 ): VerticalSchemaFieldDef | null {
   return fields.find((field) => field.key === key) ?? null;
 }
 
 export function getShopOnboardingFields(
-  entities: Record<string, { fields?: VerticalSchemaFieldDef[] }> | undefined
+  entities: Record<string, { fields?: VerticalSchemaFieldDef[] }> | undefined,
 ): VerticalSchemaFieldDef[] {
   return getEntityFields(entities, 'shop').filter((field) =>
-    isVisibleOnSurface(field, 'onboarding')
+    isVisibleOnSurface(field, 'onboarding'),
   );
 }
 
-export function schemaModeForBilling(
-  billingMode: 'REGULAR' | 'BASIC'
-): SchemaDisplayMode {
+export function schemaModeForBilling(billingMode: 'REGULAR' | 'BASIC'): SchemaDisplayMode {
   return billingMode === 'BASIC' ? 'basic' : 'regular';
 }
 
 export function getVerticalFieldValue(
   product: VerticalFieldProduct,
-  field: VerticalSchemaFieldDef
+  field: VerticalSchemaFieldDef,
 ): string {
   const record = product as Record<string, unknown>;
   const prop = apiPropertyName(field);
@@ -194,10 +190,7 @@ export function getVerticalFieldValue(
   return '';
 }
 
-function formatFieldValueForInput(
-  field: VerticalSchemaFieldDef,
-  value: unknown
-): string {
+function formatFieldValueForInput(field: VerticalSchemaFieldDef, value: unknown): string {
   if (field.key === 'sellDirect') {
     if (value === true || value === 'true' || value === 'yes') return 'yes';
     if (value === false || value === 'false' || value === 'no') return 'no';
@@ -213,7 +206,7 @@ function formatFieldValueForInput(
 
 export function setVerticalFieldPatch(
   field: VerticalSchemaFieldDef,
-  value: string
+  value: string,
 ): Record<string, unknown> {
   const prop = apiPropertyName(field);
   if (field.storage === 'extension') {
@@ -229,7 +222,7 @@ export function setVerticalFieldPatch(
 
 function coerceFieldValue(
   field: VerticalSchemaFieldDef,
-  value: string
+  value: string,
 ): string | number | boolean | null {
   if (value === '') {
     return null;
@@ -251,7 +244,7 @@ function coerceFieldValue(
 export function validateProductVerticalFields(
   product: VerticalFieldProduct,
   fields: VerticalSchemaFieldDef[],
-  productLabel: string
+  productLabel: string,
 ): string | null {
   for (const field of fields) {
     if (!field.required) {
@@ -267,7 +260,7 @@ export function validateProductVerticalFields(
 
 export function buildVerticalFieldsPayload(
   product: VerticalFieldProduct,
-  fields: VerticalSchemaFieldDef[]
+  fields: VerticalSchemaFieldDef[],
 ): Record<string, unknown> | undefined {
   const extensionFields = fields.filter((f) => f.storage === 'extension');
   if (extensionFields.length === 0) {
@@ -320,16 +313,11 @@ export function hydrateExtensionFieldsOnProduct<
 export function itemUsesExtensionBag(item: {
   verticalFields?: Record<string, unknown> | null;
 }): boolean {
-  return (
-    item.verticalFields != null && Object.keys(item.verticalFields).length > 0
-  );
+  return item.verticalFields != null && Object.keys(item.verticalFields).length > 0;
 }
 
 /** Read an extension field for display (verticalFields bag, then legacy top-level). */
-export function getExtensionFieldString(
-  item: VerticalFieldProduct,
-  key: string
-): string {
+export function getExtensionFieldString(item: VerticalFieldProduct, key: string): string {
   const bag = item.verticalFields as Record<string, unknown> | undefined;
   const fromBag = bag?.[key];
   if (fromBag != null && fromBag !== '') {
@@ -353,10 +341,7 @@ export function getInventoryBatchNo(item: VerticalFieldProduct): string {
   return value || '—';
 }
 
-export function formatInventoryExpiryDate(
-  item: VerticalFieldProduct,
-  locale = 'en-IN'
-): string {
+export function formatInventoryExpiryDate(item: VerticalFieldProduct, locale = 'en-IN'): string {
   const raw =
     getExtensionFieldString(item, 'expiryDate') ||
     String((item as { expiryDate?: string }).expiryDate ?? '');
@@ -375,9 +360,7 @@ export function hasInventoryExpiryDate(item: VerticalFieldProduct): boolean {
 }
 
 /** Epoch ms for sorting; null when no expiry on the item. */
-export function getInventoryExpiryTimestamp(
-  item: VerticalFieldProduct
-): number | null {
+export function getInventoryExpiryTimestamp(item: VerticalFieldProduct): number | null {
   const raw =
     getExtensionFieldString(item, 'expiryDate') ||
     String((item as { expiryDate?: string }).expiryDate ?? '');
@@ -389,9 +372,7 @@ export function getInventoryExpiryTimestamp(
 }
 
 /** Soonest expiry first; items without expiry sort last. */
-export function sortInventoryByExpirySoonest<T extends VerticalFieldProduct>(
-  items: T[]
-): T[] {
+export function sortInventoryByExpirySoonest<T extends VerticalFieldProduct>(items: T[]): T[] {
   return [...items].sort((a, b) => {
     const ta = getInventoryExpiryTimestamp(a);
     const tb = getInventoryExpiryTimestamp(b);
@@ -408,10 +389,7 @@ export function sortInventoryByExpirySoonest<T extends VerticalFieldProduct>(
   });
 }
 
-export function isExtensionSchemaField(
-  fields: VerticalSchemaFieldDef[],
-  key: string
-): boolean {
+export function isExtensionSchemaField(fields: VerticalSchemaFieldDef[], key: string): boolean {
   return fields.some((f) => f.key === key && f.storage === 'extension');
 }
 
@@ -422,7 +400,7 @@ export function isExtensionSchemaField(
 export function attachVerticalFieldsToBulkItem<T extends Record<string, unknown>>(
   item: T,
   product: VerticalFieldProduct,
-  registrationFields: VerticalSchemaFieldDef[]
+  registrationFields: VerticalSchemaFieldDef[],
 ): T & { verticalFields?: Record<string, unknown> } {
   const out: Record<string, unknown> = { ...item };
   for (const field of registrationFields) {
@@ -442,7 +420,5 @@ export function formatCoreExpiryDateForApi(raw: string): string {
   if (!raw.trim()) {
     return '';
   }
-  return raw.includes('T') && raw.includes('Z')
-    ? raw
-    : `${raw.trim().slice(0, 10)}T00:00:00Z`;
+  return raw.includes('T') && raw.includes('Z') ? raw : `${raw.trim().slice(0, 10)}T00:00:00Z`;
 }

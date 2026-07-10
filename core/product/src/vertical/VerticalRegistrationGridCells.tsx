@@ -24,11 +24,7 @@ export function VerticalRegistrationGridCompanyHeader({
   );
 }
 
-export function VerticalRegistrationGridHeaders({
-  fields,
-}: {
-  fields: VerticalSchemaFieldDef[];
-}) {
+export function VerticalRegistrationGridHeaders({ fields }: { fields: VerticalSchemaFieldDef[] }) {
   return (
     <>
       {fields.map((field) => (
@@ -98,11 +94,7 @@ export function VerticalRegistrationGridCells({
             onChange={(value) => onFieldChange(field, value)}
             disabled={disabled}
             idPrefix={`grid-${productId}`}
-            inputClassName={
-              field.type === 'date'
-                ? styles.excelInputDate
-                : styles.excelInput
-            }
+            inputClassName={field.type === 'date' ? styles.excelInputDate : styles.excelInput}
             labelClassName={styles.srOnly}
             compact
           />

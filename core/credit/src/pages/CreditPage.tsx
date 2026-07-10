@@ -29,23 +29,18 @@ export function CreditPage() {
   const { error: notifyError, success: notifySuccess } = useNotify;
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const {
-    data: accountsRaw = [],
-    isLoading,
-    isError,
-    error,
-  } = useCreditAccountsQuery();
+  const { data: accountsRaw = [], isLoading, isError, error } = useCreditAccountsQuery();
 
   const accounts = useMemo(() => [...accountsRaw].sort(accountSort), [accountsRaw]);
 
   const pendingAccounts = useMemo(
     () => accounts.filter((a) => a.currentBalance > BALANCE_EPS).sort(accountSort),
-    [accounts]
+    [accounts],
   );
 
   const favourAccounts = useMemo(
     () => accounts.filter((a) => a.currentBalance < -BALANCE_EPS).sort(accountSort),
-    [accounts]
+    [accounts],
   );
 
   useEffect(() => {
@@ -60,14 +55,13 @@ export function CreditPage() {
       return;
     }
     if (selectedId && accounts.some((a) => a.id === selectedId)) return;
-    const nextId =
-      pendingAccounts[0]?.id ?? favourAccounts[0]?.id ?? accounts[0]?.id ?? null;
+    const nextId = pendingAccounts[0]?.id ?? favourAccounts[0]?.id ?? accounts[0]?.id ?? null;
     setSelectedId(nextId);
   }, [accounts, pendingAccounts, favourAccounts, selectedId]);
 
   const selected = useMemo(
     () => accounts.find((a) => a.id === selectedId) ?? null,
-    [accounts, selectedId]
+    [accounts, selectedId],
   );
 
   const { data: entriesPage } = useCreditEntriesQuery(selectedId, 0, 30);
@@ -120,8 +114,8 @@ export function CreditPage() {
                   accounts.length === 0
                     ? 'No credit accounts yet. Add a charge or settlement first.'
                     : favourAccounts.length > 0
-                      ? 'No amounts due right now. See “In your favour” below (e.g. supplier credit from returns).'
-                      : 'No outstanding dues right now.'
+                    ? 'No amounts due right now. See “In your favour” below (e.g. supplier credit from returns).'
+                    : 'No outstanding dues right now.'
                 }
               />
             </CardBody>
@@ -153,15 +147,12 @@ export function CreditPage() {
                   <Text variant="heading3" weight="semibold">
                     Ledger timeline
                   </Text>
-                  <CreditEntriesTimeline
-                    entries={entries}
-                    partyType={selected.partyType}
-                  />
+                  <CreditEntriesTimeline entries={entries} partyType={selected.partyType} />
                 </Stack>
               ) : (
                 <Text color="secondary">
-                  Search the sidebar for a party to view their history, or add an
-                  outstanding charge to see them under Due now.
+                  Search the sidebar for a party to view their history, or add an outstanding charge
+                  to see them under Due now.
                 </Text>
               )}
             </CardBody>

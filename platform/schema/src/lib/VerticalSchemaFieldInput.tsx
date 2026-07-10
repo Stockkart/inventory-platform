@@ -102,8 +102,7 @@ export function VerticalSchemaFieldInput({
   const id = `${idPrefix}-${field.key}`;
   const label = fieldLabel(field);
   const required = Boolean(field.required);
-  const inputPlaceholder =
-    placeholder ?? FIELD_PLACEHOLDERS[field.key] ?? label;
+  const inputPlaceholder = placeholder ?? FIELD_PLACEHOLDERS[field.key] ?? label;
 
   if (field.key === 'sellDirect') {
     const selected = value === 'yes' || value === 'true' ? 'yes' : 'no';
@@ -132,9 +131,7 @@ export function VerticalSchemaFieldInput({
 
   if (field.type === 'enum' && field.values?.length) {
     const options = [
-      ...(field.key !== 'sellDirect'
-        ? [{ value: '', label: 'Select…' }]
-        : []),
+      ...(field.key !== 'sellDirect' ? [{ value: '', label: 'Select…' }] : []),
       ...field.values.map((v) => ({
         value: v,
         label: enumOptionLabel(v),

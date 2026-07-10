@@ -4,25 +4,25 @@
 
 ✨ Your new, shiny [Nx workspace](https://nx.dev) is almost ready ✨.
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/getting-started/tutorials/react-monorepo-tutorial?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `pnpm nx graph` to visually explore what was created. Now, let's get you up to speed!
+[Learn more about this workspace setup and its capabilities](https://nx.dev/getting-started/tutorials/react-monorepo-tutorial?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or run `pnpm nx graph` to visually explore what was created. Now, let's get you up to speed!
 
 ## Vertical schema (Phases 2–4)
 
 The platform renders **vertical-specific fields** from the inventory API schema — no hardcoded pharmacy forms or medical loading fallbacks.
 
-| Phase | Status | Highlights |
-|-------|--------|------------|
-| **2 — Dynamic UI** | Mostly shipped | Onboarding, registration, scan-sell `businessType` |
-| **3 — Extension storage** | Shipped | `verticalFields` on create/read; no top-level `batchNo`/`expiryDate` |
-| **4 — Search** | Shipped | `searchWithFilters`, expiry buckets, near-expiry filters |
+| Phase                     | Status         | Highlights                                                           |
+| ------------------------- | -------------- | -------------------------------------------------------------------- |
+| **2 — Dynamic UI**        | Mostly shipped | Onboarding, registration, scan-sell `businessType`                   |
+| **3 — Extension storage** | Shipped        | `verticalFields` on create/read; no top-level `batchNo`/`expiryDate` |
+| **4 — Search**            | Shipped        | `searchWithFilters`, expiry buckets, near-expiry filters             |
 
-| Surface | Schema source | Notes |
-|---------|---------------|--------|
-| Onboarding | `GET /verticals`, `GET /verticals/{id}/schema` | Vertical picker; shop fields (`dlNo`, `fssai`) only when in schema |
-| Product registration | `GET /shops/me/schema?mode=regular\|basic` | Grid + list columns from API schema; `verticalFields` on create |
-| Product search | `GET /inventory/search` + schema `searchable` fields | Batch no. + near-expiry days filters when in schema |
-| Scan-sell | Shop `verticalId` | `businessType` from shop, not `pharmacy` |
-| Reminders | `GET /reminders/expiry-buckets` | Expiry bucket summary cards |
+| Surface              | Schema source                                        | Notes                                                              |
+| -------------------- | ---------------------------------------------------- | ------------------------------------------------------------------ |
+| Onboarding           | `GET /verticals`, `GET /verticals/{id}/schema`       | Vertical picker; shop fields (`dlNo`, `fssai`) only when in schema |
+| Product registration | `GET /shops/me/schema?mode=regular\|basic`           | Grid + list columns from API schema; `verticalFields` on create    |
+| Product search       | `GET /inventory/search` + schema `searchable` fields | Batch no. + near-expiry days filters when in schema                |
+| Scan-sell            | Shop `verticalId`                                    | `businessType` from shop, not `pharmacy`                           |
+| Reminders            | `GET /reminders/expiry-buckets`                      | Expiry bucket summary cards                                        |
 
 **Shared libraries:** `@inventory-platform/types` (`vertical-schema.ts`), `@inventory-platform/api` (`verticals.ts`, `inventory.ts`), `@inventory-platform/store` (`useVerticalSchemaStore`), `@inventory-platform/ui` (`verticalSchemaUtils`, `VerticalSchemaFieldInput`).
 
@@ -58,7 +58,6 @@ pnpm nx dev inventory
 
 [Click here to finish setting up your workspace!](https://cloud.nx.app/connect/rh86xW12uX)
 
-
 ## Run tasks
 
 To run the dev server for your app, use:
@@ -92,6 +91,7 @@ These targets are either [inferred automatically](https://nx.dev/concepts/inferr
 ## Docker Setup
 
 This project includes Docker configuration for easy development and deployment. The setup includes three containers:
+
 - **MongoDB** - Database service
 - **Inventory Server** - Backend API (using `myntrack/inventory-backend` image)
 - **Inventory Platform** - Frontend application
@@ -110,6 +110,7 @@ This project includes Docker configuration for easy development and deployment. 
    ```
 
    Edit `.env` file with your configuration values. The `.env` file contains:
+
    - MongoDB credentials
    - Server ports
    - API URLs
@@ -136,26 +137,31 @@ This project includes Docker configuration for easy development and deployment. 
 ### Docker Commands
 
 **Start services:**
+
 ```sh
 docker-compose up
 ```
 
 **Start services in background:**
+
 ```sh
 docker-compose up -d
 ```
 
 **Stop services:**
+
 ```sh
 docker-compose down
 ```
 
 **Stop services and remove volumes (⚠️ deletes database data):**
+
 ```sh
 docker-compose down -v
 ```
 
 **View logs:**
+
 ```sh
 # All services
 docker-compose logs -f
@@ -167,11 +173,13 @@ docker-compose logs -f mongo
 ```
 
 **Rebuild containers:**
+
 ```sh
 docker-compose up --build
 ```
 
 **Restart a specific service:**
+
 ```sh
 docker-compose restart inventory-platform
 ```
@@ -202,19 +210,23 @@ The `docker-compose.yml` uses `Dockerfile.dev` by default for development. To us
 ### Troubleshooting
 
 **Port already in use:**
+
 - Check if ports 4200, 8080, or 27017 are already in use
 - Modify the port mappings in `.env` file or `docker-compose.yml`
 
 **Environment variables not loading:**
+
 - Ensure `.env` file exists in the project root
 - Check that variable names match in `.env` and `docker-compose.yml`
 
 **Container won't start:**
+
 - Check logs: `docker-compose logs <service-name>`
 - Ensure Docker has enough resources allocated
 - Try rebuilding: `docker-compose up --build`
 
 **Database connection issues:**
+
 - Verify MongoDB credentials in `.env` match the backend configuration
 - Ensure MongoDB container is running: `docker-compose ps`
 
@@ -240,7 +252,6 @@ You can use `pnpm nx list` to get a list of installed plugins. Then, run `pnpm n
 
 [Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
 
-
 [Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
 
 ## Install Nx Console
@@ -253,12 +264,13 @@ Nx Console is an editor extension that enriches your developer experience. It le
 
 Learn more:
 
-- [Learn more about this workspace setup](https://nx.dev/getting-started/tutorials/react-monorepo-tutorial?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
+- [Learn more about this workspace setup](https://nx.dev/getting-started/tutorials/react-monorepo-tutorial?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
 - [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
 - [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
 - [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
 
 And join the Nx community:
+
 - [Discord](https://go.nx.dev/community)
 - [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
 - [Our Youtube channel](https://www.youtube.com/@nxdevtools)

@@ -29,7 +29,7 @@ export {
 } from './composed-nav.js';
 
 export async function loadVerticalPluginRoutes(
-  plugin: import('@inventory-platform/routing').VerticalPlugin
+  plugin: import('@inventory-platform/routing').VerticalPlugin,
 ): Promise<RouteModule[]> {
   if (!plugin.loadRoutes) {
     return [];
@@ -40,8 +40,5 @@ export async function loadVerticalPluginRoutes(
 
 export { useVerticalPluginStore } from './useVerticalPluginStore';
 export { loadSellSurfaceComponent, resolveSellPath } from './sell-surface';
-export {
-  composedDashboardRoutes,
-  DASHBOARD_ROUTE_ENTRIES,
-} from './composed-dashboard-routes.js';
+export { composedDashboardRoutes, DASHBOARD_ROUTE_ENTRIES } from './composed-dashboard-routes.js';
 export { publicRoutes, PUBLIC_ROUTE_MANIFEST } from './public-routes.js';

@@ -5,12 +5,20 @@ import {
   type UseMutationOptions,
   type UseQueryOptions,
 } from '@tanstack/react-query';
-import type { CreatePlanCheckoutRequest, PlanCheckoutResponse, PlanResponse, PlanTransactionResponse, ShopPlanStatusResponse, VerifyPlanPaymentRequest, VerifyPlanPaymentResponse } from '@inventory-platform/plan/types';
+import type {
+  CreatePlanCheckoutRequest,
+  PlanCheckoutResponse,
+  PlanResponse,
+  PlanTransactionResponse,
+  ShopPlanStatusResponse,
+  VerifyPlanPaymentRequest,
+  VerifyPlanPaymentResponse,
+} from '@inventory-platform/plan/types';
 import { plansApi } from '../api/plans.api';
 import { planKeys } from './keys';
 
 export function usePlansQuery(
-  options?: Omit<UseQueryOptions<PlanResponse[]>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<PlanResponse[]>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: planKeys.list(),
@@ -21,7 +29,7 @@ export function usePlansQuery(
 
 export function usePlanQuery(
   planId: string | null | undefined,
-  options?: Omit<UseQueryOptions<PlanResponse>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<PlanResponse>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: planKeys.detail(planId ?? ''),
@@ -32,7 +40,7 @@ export function usePlanQuery(
 }
 
 export function useShopPlanStatusQuery(
-  options?: Omit<UseQueryOptions<ShopPlanStatusResponse>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<ShopPlanStatusResponse>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: planKeys.shopStatus(),
@@ -42,10 +50,7 @@ export function useShopPlanStatusQuery(
 }
 
 export function usePlanTransactionsQuery(
-  options?: Omit<
-    UseQueryOptions<PlanTransactionResponse[]>,
-    'queryKey' | 'queryFn'
-  >
+  options?: Omit<UseQueryOptions<PlanTransactionResponse[]>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: planKeys.transactions(),
@@ -55,11 +60,7 @@ export function usePlanTransactionsQuery(
 }
 
 export function useCreatePlanCheckoutMutation(
-  options?: UseMutationOptions<
-    PlanCheckoutResponse,
-    Error,
-    CreatePlanCheckoutRequest
-  >
+  options?: UseMutationOptions<PlanCheckoutResponse, Error, CreatePlanCheckoutRequest>,
 ) {
   return useMutation({
     mutationFn: (data) => plansApi.createCheckout(data),
@@ -68,11 +69,7 @@ export function useCreatePlanCheckoutMutation(
 }
 
 export function useVerifyPlanPaymentMutation(
-  options?: UseMutationOptions<
-    VerifyPlanPaymentResponse,
-    Error,
-    VerifyPlanPaymentRequest
-  >
+  options?: UseMutationOptions<VerifyPlanPaymentResponse, Error, VerifyPlanPaymentRequest>,
 ) {
   const queryClient = useQueryClient();
   return useMutation({

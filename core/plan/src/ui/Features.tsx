@@ -52,8 +52,7 @@ export function Features() {
     {
       icon: '👥',
       title: 'Supplier & Customer Management',
-      description:
-        'Manage relationships with suppliers and customers in one centralized platform.',
+      description: 'Manage relationships with suppliers and customers in one centralized platform.',
     },
     {
       icon: '🛡️',
@@ -64,8 +63,7 @@ export function Features() {
     {
       icon: '↩️',
       title: 'Returns & Refund Management',
-      description:
-        'Handle returns and refunds efficiently with streamlined processing workflows.',
+      description: 'Handle returns and refunds efficiently with streamlined processing workflows.',
     },
   ];
 
@@ -77,8 +75,8 @@ export function Features() {
             Powerful Features
           </Text>
           <Text className={styles.subtitle}>
-            Everything you need to manage your inventory efficiently and scale
-            your business operations.
+            Everything you need to manage your inventory efficiently and scale your business
+            operations.
           </Text>
         </Stack>
 
@@ -93,9 +91,7 @@ export function Features() {
               <Text as="h3" variant="heading3" className={styles.featureTitle}>
                 {feature.title}
               </Text>
-              <Text className={styles.featureDescription}>
-                {feature.description}
-              </Text>
+              <Text className={styles.featureDescription}>{feature.description}</Text>
             </Box>
           ))}
         </Grid>
@@ -111,9 +107,7 @@ export function Features() {
               <Text as="h3" variant="heading3" className={styles.featureTitle}>
                 {feature.title}
               </Text>
-              <Text className={styles.featureDescription}>
-                {feature.description}
-              </Text>
+              <Text className={styles.featureDescription}>{feature.description}</Text>
             </Box>
           ))}
         </Grid>

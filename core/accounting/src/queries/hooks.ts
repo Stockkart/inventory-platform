@@ -5,7 +5,15 @@ import {
   type UseMutationOptions,
   type UseQueryOptions,
 } from '@tanstack/react-query';
-import type { AccountResponse, CreateAccountRequest, CreateJournalEntryRequest, JournalEntriesPageResponse, JournalEntryResponse, ReverseJournalRequest, UpdateAccountRequest } from '@inventory-platform/accounting/types';
+import type {
+  AccountResponse,
+  CreateAccountRequest,
+  CreateJournalEntryRequest,
+  JournalEntriesPageResponse,
+  JournalEntryResponse,
+  ReverseJournalRequest,
+  UpdateAccountRequest,
+} from '@inventory-platform/accounting/types';
 import {
   accountingApi,
   type JournalListParams,
@@ -16,7 +24,7 @@ import {
 import { accountingKeys } from './keys';
 
 export function useAccountsQuery(
-  options?: Omit<UseQueryOptions<AccountResponse[]>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<AccountResponse[]>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: accountingKeys.accounts(),
@@ -27,10 +35,7 @@ export function useAccountsQuery(
 
 export function useJournalsQuery(
   params: JournalListParams = {},
-  options?: Omit<
-    UseQueryOptions<JournalEntriesPageResponse>,
-    'queryKey' | 'queryFn'
-  >
+  options?: Omit<UseQueryOptions<JournalEntriesPageResponse>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: accountingKeys.journals(params),
@@ -41,7 +46,7 @@ export function useJournalsQuery(
 
 export function useJournalQuery(
   id: string | undefined,
-  options?: Omit<UseQueryOptions<JournalEntryResponse>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<JournalEntryResponse>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: accountingKeys.journal(id ?? ''),
@@ -57,7 +62,7 @@ export function useLedgerQuery(
   options?: Omit<
     UseQueryOptions<Awaited<ReturnType<typeof accountingApi.ledger>>>,
     'queryKey' | 'queryFn'
-  >
+  >,
 ) {
   return useQuery({
     queryKey: accountingKeys.ledger(accountId ?? '', params),
@@ -72,7 +77,7 @@ export function usePartiesQuery(
   options?: Omit<
     UseQueryOptions<Awaited<ReturnType<typeof accountingApi.parties>>>,
     'queryKey' | 'queryFn'
-  >
+  >,
 ) {
   return useQuery({
     queryKey: accountingKeys.parties(params),
@@ -88,7 +93,7 @@ export function usePartyStatementQuery(
   options?: Omit<
     UseQueryOptions<Awaited<ReturnType<typeof accountingApi.partyStatement>>>,
     'queryKey' | 'queryFn'
-  >
+  >,
 ) {
   return useQuery({
     queryKey: accountingKeys.partyStatement(type, partyRefId ?? '', params),
@@ -103,7 +108,7 @@ export function useTrialBalanceQuery(
   options?: Omit<
     UseQueryOptions<Awaited<ReturnType<typeof accountingApi.trialBalance>>>,
     'queryKey' | 'queryFn'
-  >
+  >,
 ) {
   return useQuery({
     queryKey: accountingKeys.trialBalance(asOf),
@@ -118,7 +123,7 @@ export function useProfitAndLossQuery(
   options?: Omit<
     UseQueryOptions<Awaited<ReturnType<typeof accountingApi.profitAndLoss>>>,
     'queryKey' | 'queryFn'
-  >
+  >,
 ) {
   return useQuery({
     queryKey: accountingKeys.profitAndLoss(from, to),
@@ -133,7 +138,7 @@ export function useBalanceSheetQuery(
   options?: Omit<
     UseQueryOptions<Awaited<ReturnType<typeof accountingApi.balanceSheet>>>,
     'queryKey' | 'queryFn'
-  >
+  >,
 ) {
   return useQuery({
     queryKey: accountingKeys.balanceSheet(asOf),
@@ -143,10 +148,7 @@ export function useBalanceSheetQuery(
 }
 
 export function useOpeningBalanceStatusQuery(
-  options?: Omit<
-    UseQueryOptions<JournalEntryResponse | null>,
-    'queryKey' | 'queryFn'
-  >
+  options?: Omit<UseQueryOptions<JournalEntryResponse | null>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: accountingKeys.openingBalanceStatus(),
@@ -156,7 +158,7 @@ export function useOpeningBalanceStatusQuery(
 }
 
 export function useCreateAccountMutation(
-  options?: UseMutationOptions<AccountResponse, Error, CreateAccountRequest>
+  options?: UseMutationOptions<AccountResponse, Error, CreateAccountRequest>,
 ) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -170,11 +172,7 @@ export function useCreateAccountMutation(
 }
 
 export function useUpdateAccountMutation(
-  options?: UseMutationOptions<
-    AccountResponse,
-    Error,
-    { id: string; body: UpdateAccountRequest }
-  >
+  options?: UseMutationOptions<AccountResponse, Error, { id: string; body: UpdateAccountRequest }>,
 ) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -188,7 +186,7 @@ export function useUpdateAccountMutation(
 }
 
 export function useCreateManualJournalMutation(
-  options?: UseMutationOptions<JournalEntryResponse, Error, CreateJournalEntryRequest>
+  options?: UseMutationOptions<JournalEntryResponse, Error, CreateJournalEntryRequest>,
 ) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -206,7 +204,7 @@ export function useReverseJournalMutation(
     JournalEntryResponse,
     Error,
     { id: string; body?: ReverseJournalRequest }
-  >
+  >,
 ) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -225,7 +223,7 @@ export function usePostOpeningBalanceMutation(
     JournalEntryResponse,
     Error,
     Parameters<typeof accountingApi.postOpeningBalance>[0]
-  >
+  >,
 ) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -243,7 +241,7 @@ export function useBackfillMutation(
     Awaited<ReturnType<typeof accountingApi.backfill>>,
     Error,
     Parameters<typeof accountingApi.backfill>[0]
-  >
+  >,
 ) {
   const queryClient = useQueryClient();
   return useMutation({

@@ -45,7 +45,7 @@ export function InventoryAnalytics() {
       deadStockDays: localFilters.deadStockDays,
       expiringSoonDays: localFilters.expiringSoonDays,
     }),
-    [localFilters]
+    [localFilters],
   );
 
   const {
@@ -120,7 +120,7 @@ export function InventoryAnalytics() {
     title: string,
     items: InventoryItemAnalytics[] | null | undefined,
     sectionKey: keyof typeof expandedSections,
-    showAllColumns = true
+    showAllColumns = true,
   ) => {
     if (!items || items.length === 0) {
       return null;
@@ -181,8 +181,8 @@ export function InventoryAnalytics() {
                       item.daysUntilExpiry < 0
                         ? 'danger'
                         : item.daysUntilExpiry <= localFilters.expiringSoonDays
-                          ? 'warning'
-                          : 'neutral'
+                        ? 'warning'
+                        : 'neutral'
                     }
                   >
                     {item.daysUntilExpiry}
@@ -284,9 +284,7 @@ export function InventoryAnalytics() {
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
-      {isLoading ? (
-        <CenteredLoader label="Loading inventory analytics data…" size="md" />
-      ) : null}
+      {isLoading ? <CenteredLoader label="Loading inventory analytics data…" size="md" /> : null}
 
       {inventoryData && !isLoading ? (
         <>
@@ -365,16 +363,21 @@ export function InventoryAnalytics() {
             'Not Selling Items',
             inventoryData.notSellingItems,
             'notSelling',
-            true
+            true,
           )}
           {renderInventoryTable(
             'Expiring Soon Items',
             inventoryData.expiringSoonItems,
             'expiringSoon',
-            true
+            true,
           )}
           {renderInventoryTable('Expired Items', inventoryData.expiredItems, 'expired', true)}
-          {renderInventoryTable('Dead Stock Items', inventoryData.deadStockItems, 'deadStock', true)}
+          {renderInventoryTable(
+            'Dead Stock Items',
+            inventoryData.deadStockItems,
+            'deadStock',
+            true,
+          )}
           {renderInventoryTable('All Items', inventoryData.allItems, 'allItems', true)}
         </>
       ) : null}

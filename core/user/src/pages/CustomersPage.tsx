@@ -45,7 +45,7 @@ export function CustomersPage() {
   const navigate = useNavigate();
   const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
   const shopCapabilities = useShopCapabilitiesStore((s) =>
-    activeShopId ? s.byShopId[activeShopId] : undefined
+    activeShopId ? s.byShopId[activeShopId] : undefined,
   );
   const sellPath = useResolvedSellPath(shopCapabilities ?? null);
   const [data, setData] = useState<CustomerResponse[]>([]);
@@ -141,9 +141,7 @@ export function CustomersPage() {
       void load();
       handleCloseCreate();
     } catch (err) {
-      setSaveError(
-        err instanceof Error ? err.message : 'Failed to create customer'
-      );
+      setSaveError(err instanceof Error ? err.message : 'Failed to create customer');
     } finally {
       setSaving(false);
     }
@@ -158,9 +156,7 @@ export function CustomersPage() {
       void load();
       handleCloseEdit();
     } catch (err) {
-      setSaveError(
-        err instanceof Error ? err.message : 'Failed to update customer'
-      );
+      setSaveError(err instanceof Error ? err.message : 'Failed to update customer');
     } finally {
       setSaving(false);
     }

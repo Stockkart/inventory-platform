@@ -2,14 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { shopsApi } from '../api/shops.api';
 import type { JoinRequest } from '@inventory-platform/user/types';
 import { JoinRequestCard } from './JoinRequestCard';
-import {
-  Box,
-  Button,
-  CenteredLoader,
-  EmptyState,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { Box, Button, CenteredLoader, EmptyState, Stack, Text } from '@inventory-platform/ui-kit';
 import styles from './JoinRequestList.module.css';
 import { useNotify } from '@inventory-platform/session';
 
@@ -25,12 +18,7 @@ interface JoinRequestSectionProps {
   onProcess?: () => void;
 }
 
-function JoinRequestSection({
-  title,
-  requests,
-  showActions,
-  onProcess,
-}: JoinRequestSectionProps) {
+function JoinRequestSection({ title, requests, showActions, onProcess }: JoinRequestSectionProps) {
   if (requests.length === 0) {
     return null;
   }
@@ -93,10 +81,7 @@ export function JoinRequestList({ shopId, onRequestChange }: JoinRequestListProp
   if (isLoading) {
     return (
       <Box className={styles.container}>
-        <CenteredLoader
-          label="Loading join requests..."
-          className={styles.loading}
-        />
+        <CenteredLoader label="Loading join requests..." className={styles.loading} />
       </Box>
     );
   }
@@ -135,10 +120,7 @@ export function JoinRequestList({ shopId, onRequestChange }: JoinRequestListProp
         onProcess={handleRequestProcess}
       />
       {joinRequests.length === 0 ? (
-        <EmptyState
-          title="No join requests found."
-          className={styles.emptyState}
-        />
+        <EmptyState title="No join requests found." className={styles.emptyState} />
       ) : null}
     </Stack>
   );

@@ -12,8 +12,7 @@ export function CTA() {
           Ready to Transform Your Inventory Management?
         </Text>
         <Text className={styles.subtitle}>
-          Join thousands of businesses that trust StockKart to streamline their
-          operations.
+          Join thousands of businesses that trust StockKart to streamline their operations.
         </Text>
         <Button
           variant="solid"

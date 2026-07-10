@@ -1,11 +1,47 @@
-.page { display: grid; gap: 1rem; }
-.grid { display: grid; gap: 1rem; grid-template-columns: 20rem 1fr; }
-.panel { height: fit-content; }
-.subtitle { margin: 0.35rem 0 0; color: var(--text-secondary, #64748b); font-size: 0.88rem; }
-.accountList { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.45rem; }
-.accountBtn { width: 100%; text-align: left; border: 1px solid var(--border-color, rgba(148, 163, 184, 0.3)); background: #fff; border-radius: 10px; padding: 0.6rem 0.65rem; cursor: pointer; display: grid; gap: 0.28rem; }
-.accountBtnActive { border-color: #2563eb; background: rgba(59, 130, 246, 0.08); }
-.accountName { font-weight: 600; font-size: 0.92rem; color: var(--text-primary, #0f172a); }
+.page {
+  display: grid;
+  gap: 1rem;
+}
+.grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 20rem 1fr;
+}
+.panel {
+  height: fit-content;
+}
+.subtitle {
+  margin: 0.35rem 0 0;
+  color: var(--text-secondary, #64748b);
+  font-size: 0.88rem;
+}
+.accountList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+.accountBtn {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--border-color, rgba(148, 163, 184, 0.3));
+  background: #fff;
+  border-radius: 10px;
+  padding: 0.6rem 0.65rem;
+  cursor: pointer;
+  display: grid;
+  gap: 0.28rem;
+}
+.accountBtnActive {
+  border-color: #2563eb;
+  background: rgba(59, 130, 246, 0.08);
+}
+.accountName {
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--text-primary, #0f172a);
+}
 
 .accountRole {
   font-size: 0.68rem;
@@ -37,40 +73,88 @@
 }
 
 /* Customer collect (money in) */
-.balCollect .accountBalHeadline { color: #047857; }
-.balCollect .accountBalAmt { color: #065f46; }
+.balCollect .accountBalHeadline {
+  color: #047857;
+}
+.balCollect .accountBalAmt {
+  color: #065f46;
+}
 
 /* Vendor pay (money out) */
-.balPay .accountBalHeadline { color: #b45309; }
-.balPay .accountBalAmt { color: #9a3412; }
+.balPay .accountBalHeadline {
+  color: #b45309;
+}
+.balPay .accountBalAmt {
+  color: #9a3412;
+}
 
-.balAdvCustomer .accountBalHeadline { color: #0369a1; }
-.balAdvCustomer .accountBalAmt { color: #0c4a6e; }
+.balAdvCustomer .accountBalHeadline {
+  color: #0369a1;
+}
+.balAdvCustomer .accountBalAmt {
+  color: #0c4a6e;
+}
 
-.balAdvVendor .accountBalHeadline { color: #6d28d9; }
-.balAdvVendor .accountBalAmt { color: #5b21b6; }
+.balAdvVendor .accountBalHeadline {
+  color: #6d28d9;
+}
+.balAdvVendor .accountBalAmt {
+  color: #5b21b6;
+}
 
 .balSettled .accountBalHeadline {
   color: var(--text-secondary, #64748b);
   font-weight: 600;
 }
 
-[data-theme='dark'] .balCollect .accountBalHeadline { color: #6ee7b7; }
-[data-theme='dark'] .balCollect .accountBalAmt { color: #a7f3d0; }
-[data-theme='dark'] .balPay .accountBalHeadline { color: #fcd34d; }
-[data-theme='dark'] .balPay .accountBalAmt { color: #fde68a; }
-.timeline { display: grid; gap: 0.55rem; }
-.timelineRow { border: 1px solid var(--border-color, rgba(148, 163, 184, 0.28)); border-radius: 10px; padding: 0.55rem 0.65rem; }
+[data-theme='dark'] .balCollect .accountBalHeadline {
+  color: #6ee7b7;
+}
+[data-theme='dark'] .balCollect .accountBalAmt {
+  color: #a7f3d0;
+}
+[data-theme='dark'] .balPay .accountBalHeadline {
+  color: #fcd34d;
+}
+[data-theme='dark'] .balPay .accountBalAmt {
+  color: #fde68a;
+}
+.timeline {
+  display: grid;
+  gap: 0.55rem;
+}
+.timelineRow {
+  border: 1px solid var(--border-color, rgba(148, 163, 184, 0.28));
+  border-radius: 10px;
+  padding: 0.55rem 0.65rem;
+}
 .timelineRowReturn {
   border-color: rgba(16, 185, 129, 0.45);
   background: rgba(16, 185, 129, 0.06);
 }
-.timelineHead { display: flex; justify-content: space-between; gap: 0.75rem; font-size: 0.82rem; }
-.timelineMeta { font-size: 0.78rem; color: var(--text-secondary, #64748b); margin-top: 0.15rem; }
-.empty { color: var(--text-secondary, #64748b); margin: 0; padding: 0.5rem 0; }
+.timelineHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.82rem;
+}
+.timelineMeta {
+  font-size: 0.78rem;
+  color: var(--text-secondary, #64748b);
+  margin-top: 0.15rem;
+}
+.empty {
+  color: var(--text-secondary, #64748b);
+  margin: 0;
+  padding: 0.5rem 0;
+}
 
 /* Party-scoped actions (selected account) */
-.partyActions { display: flex; flex-direction: column; gap: 0.75rem; }
+.partyActions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
 
 .partyContext {
   display: flex;
@@ -131,9 +215,21 @@
   background: color-mix(in srgb, #059669 28%, transparent);
 }
 
-.partyContextMain { display: flex; flex-direction: column; gap: 0.12rem; min-width: 0; }
-.partyContextName { font-weight: 700; font-size: 1.02rem; color: var(--text-primary, #0f172a); }
-.partyContextPhone { font-size: 0.8rem; color: var(--text-secondary, #64748b); }
+.partyContextMain {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  min-width: 0;
+}
+.partyContextName {
+  font-weight: 700;
+  font-size: 1.02rem;
+  color: var(--text-primary, #0f172a);
+}
+.partyContextPhone {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #64748b);
+}
 
 .partyContextBalBlock {
   display: flex;
@@ -163,29 +259,45 @@
   border-color: color-mix(in srgb, #059669 35%, var(--border-color, #e2e8f0));
   background: color-mix(in srgb, #059669 9%, var(--card-bg, #fff));
 }
-.contextBalCollect .partyContextBalLabel { color: #047857; }
-.contextBalCollect .partyContextBalAmt { color: #065f46; }
+.contextBalCollect .partyContextBalLabel {
+  color: #047857;
+}
+.contextBalCollect .partyContextBalAmt {
+  color: #065f46;
+}
 
 .contextBalPay {
   border-color: color-mix(in srgb, #d97706 40%, var(--border-color, #e2e8f0));
   background: color-mix(in srgb, #d97706 10%, var(--card-bg, #fff));
 }
-.contextBalPay .partyContextBalLabel { color: #b45309; }
-.contextBalPay .partyContextBalAmt { color: #9a3412; }
+.contextBalPay .partyContextBalLabel {
+  color: #b45309;
+}
+.contextBalPay .partyContextBalAmt {
+  color: #9a3412;
+}
 
 .contextBalAdvIn {
   border-color: color-mix(in srgb, #0284c7 35%, var(--border-color, #e2e8f0));
   background: color-mix(in srgb, #0284c7 8%, var(--card-bg, #fff));
 }
-.contextBalAdvIn .partyContextBalLabel { color: #0369a1; }
-.contextBalAdvIn .partyContextBalAmt { color: #0c4a6e; }
+.contextBalAdvIn .partyContextBalLabel {
+  color: #0369a1;
+}
+.contextBalAdvIn .partyContextBalAmt {
+  color: #0c4a6e;
+}
 
 .contextBalAdvOut {
   border-color: color-mix(in srgb, #7c3aed 35%, var(--border-color, #e2e8f0));
   background: color-mix(in srgb, #7c3aed 9%, var(--card-bg, #fff));
 }
-.contextBalAdvOut .partyContextBalLabel { color: #6d28d9; }
-.contextBalAdvOut .partyContextBalAmt { color: #5b21b6; }
+.contextBalAdvOut .partyContextBalLabel {
+  color: #6d28d9;
+}
+.contextBalAdvOut .partyContextBalAmt {
+  color: #5b21b6;
+}
 
 .contextBalSettled {
   border-style: dashed;
@@ -196,10 +308,18 @@
   font-weight: 600;
 }
 
-[data-theme='dark'] .contextBalCollect .partyContextBalLabel { color: #6ee7b7; }
-[data-theme='dark'] .contextBalCollect .partyContextBalAmt { color: #a7f3d0; }
-[data-theme='dark'] .contextBalPay .partyContextBalLabel { color: #fcd34d; }
-[data-theme='dark'] .contextBalPay .partyContextBalAmt { color: #fde68a; }
+[data-theme='dark'] .contextBalCollect .partyContextBalLabel {
+  color: #6ee7b7;
+}
+[data-theme='dark'] .contextBalCollect .partyContextBalAmt {
+  color: #a7f3d0;
+}
+[data-theme='dark'] .contextBalPay .partyContextBalLabel {
+  color: #fcd34d;
+}
+[data-theme='dark'] .contextBalPay .partyContextBalAmt {
+  color: #fde68a;
+}
 
 .actionTabs {
   display: flex;
@@ -516,9 +636,13 @@
 }
 
 @media (max-width: 980px) {
-  .grid { grid-template-columns: 1fr; }
+  .grid {
+    grid-template-columns: 1fr;
+  }
   .advancedFields,
-  .manualRow { grid-template-columns: 1fr; }
+  .manualRow {
+    grid-template-columns: 1fr;
+  }
 
   .partyContextBal {
     width: 100%;

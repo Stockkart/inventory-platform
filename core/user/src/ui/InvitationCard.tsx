@@ -2,15 +2,7 @@ import { useState } from 'react';
 import { invitationsApi } from '../api/invitations.api';
 import type { Invitation, UserRole } from '@inventory-platform/user/types';
 import { RoleBadge } from './RoleBadge';
-import {
-  Alert,
-  Box,
-  Button,
-  Card,
-  Inline,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { Alert, Box, Button, Card, Inline, Stack, Text } from '@inventory-platform/ui-kit';
 import styles from './InvitationCard.module.css';
 import { useNotify } from '@inventory-platform/session';
 
@@ -75,10 +67,7 @@ export function InvitationCard({
 
   const isExpired = new Date(invitation.expiresAt) < new Date();
   const isPending = invitation.status === 'PENDING' && !isExpired;
-  const statusLabel =
-    isExpired && invitation.status === 'PENDING'
-      ? 'EXPIRED'
-      : invitation.status;
+  const statusLabel = isExpired && invitation.status === 'PENDING' ? 'EXPIRED' : invitation.status;
 
   return (
     <Card className={styles.card}>
@@ -91,31 +80,17 @@ export function InvitationCard({
           </Box>
           <RoleBadge role={invitation.role as UserRole} />
         </Inline>
-        <Box
-          as="span"
-          className={`${styles.status} ${getStatusColor(invitation.status)}`}
-        >
+        <Box as="span" className={`${styles.status} ${getStatusColor(invitation.status)}`}>
           {statusLabel}
         </Box>
       </Stack>
 
       <Stack className={styles.details} gap="sm">
-        <DetailRow
-          label="Invited by:"
-          value={invitation.inviterName || invitation.inviterUserId}
-        />
+        <DetailRow label="Invited by:" value={invitation.inviterName || invitation.inviterUserId} />
         <DetailRow label="Email:" value={invitation.inviteeEmail} />
-        {invitation.inviteeName ? (
-          <DetailRow label="Name:" value={invitation.inviteeName} />
-        ) : null}
-        <DetailRow
-          label="Invited:"
-          value={new Date(invitation.createdAt).toLocaleDateString()}
-        />
-        <DetailRow
-          label="Expires:"
-          value={new Date(invitation.expiresAt).toLocaleDateString()}
-        />
+        {invitation.inviteeName ? <DetailRow label="Name:" value={invitation.inviteeName} /> : null}
+        <DetailRow label="Invited:" value={new Date(invitation.createdAt).toLocaleDateString()} />
+        <DetailRow label="Expires:" value={new Date(invitation.expiresAt).toLocaleDateString()} />
         {invitation.acceptedAt ? (
           <DetailRow
             label="Accepted:"

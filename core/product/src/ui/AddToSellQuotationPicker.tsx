@@ -1,10 +1,5 @@
 import type { QuotationSummary } from '@inventory-platform/product/types';
-import {
-  Button,
-  Modal,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { Button, Modal, Stack, Text } from '@inventory-platform/ui-kit';
 import styles from './AddToSellQuotationPicker.module.css';
 
 function formatMoney(n: number): string {
@@ -41,8 +36,7 @@ export function AddToSellQuotationPicker({
       <Modal.Body>
         <Stack gap="md">
           <Text color="secondary">
-            Choose which open sale should include{' '}
-            <Text weight="semibold">{productLabel}</Text>
+            Choose which open sale should include <Text weight="semibold">{productLabel}</Text>
           </Text>
 
           <Button
@@ -56,11 +50,7 @@ export function AddToSellQuotationPicker({
             + New quotation
           </Button>
 
-          <Stack
-            gap="sm"
-            className={styles.list}
-            aria-label="Open quotations"
-          >
+          <Stack gap="sm" className={styles.list} aria-label="Open quotations">
             {quotations.map((q) => (
               <Button
                 key={q.purchaseId}
@@ -84,12 +74,7 @@ export function AddToSellQuotationPicker({
         </Stack>
       </Modal.Body>
       <Modal.Footer>
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={onCancel}
-          disabled={isSubmitting}
-        >
+        <Button type="button" variant="ghost" onClick={onCancel} disabled={isSubmitting}>
           Cancel
         </Button>
       </Modal.Footer>

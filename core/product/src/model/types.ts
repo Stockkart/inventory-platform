@@ -330,11 +330,7 @@ export interface VendorPurchaseReturnListDto {
   totalPages: number;
 }
 
-export type InventoryCorrectionStatus =
-  | 'PENDING'
-  | 'PARTIALLY_APPROVED'
-  | 'APPLIED'
-  | 'REJECTED';
+export type InventoryCorrectionStatus = 'PENDING' | 'PARTIALLY_APPROVED' | 'APPLIED' | 'REJECTED';
 
 export type InventoryCorrectionLineStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
@@ -973,7 +969,6 @@ export interface GetRefundsResponse {
   totalPages: number;
 }
 
-
 // Upload Token types (QR Code Upload Flow)
 export type UploadStatus =
   | 'PENDING'
@@ -1008,4 +1003,3 @@ export interface ParsedItemsResponse {
   totalItems: number;
   vendorPurchaseInvoice?: ParsedVendorInvoiceDto | null;
 }
-

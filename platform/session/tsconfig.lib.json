@@ -13,16 +13,10 @@
     "jsx": "react-jsx",
     "types": ["node"],
     "paths": {
-      "@inventory-platform/api-client": [
-        "../../platform/api-client/src/index.ts"
-      ],
-      "@inventory-platform/contracts": [
-        "../../platform/contracts/src/index.ts"
-      ],
+      "@inventory-platform/api-client": ["../../platform/api-client/src/index.ts"],
+      "@inventory-platform/contracts": ["../../platform/contracts/src/index.ts"],
       "@inventory-platform/access": ["../../platform/access/src/index.ts"],
-      "@inventory-platform/schema/types": [
-        "../../platform/schema/src/types/index.ts"
-      ],
+      "@inventory-platform/schema/types": ["../../platform/schema/src/types/index.ts"],
       "@inventory-platform/plan/types": ["../../core/plan/src/model/index.ts"]
     }
   },

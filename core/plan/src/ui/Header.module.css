@@ -47,7 +47,7 @@
 }
 
 .navLink {
-  color: var(--link); 
+  color: var(--link);
   text-decoration: none;
   font-size: 0.95rem;
   transition: color 0.25s ease, font-weight 0.25s ease;
@@ -125,4 +125,3 @@
     box-shadow: 0 6px 14px rgba(37, 99, 235, 0.5);
   }
 }
-

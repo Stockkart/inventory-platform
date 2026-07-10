@@ -119,5 +119,7 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
 ];
 
 export function getTemplate(id: JournalTemplateId): JournalTemplate {
-  return JOURNAL_TEMPLATES.find((t) => t.id === id) ?? JOURNAL_TEMPLATES[JOURNAL_TEMPLATES.length - 1]!;
+  return (
+    JOURNAL_TEMPLATES.find((t) => t.id === id) ?? JOURNAL_TEMPLATES[JOURNAL_TEMPLATES.length - 1]!
+  );
 }

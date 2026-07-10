@@ -1,9 +1,6 @@
 import { useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { Box } from '@inventory-platform/ui-kit';
-import {
-  runFormKeyboardNavigation,
-  shouldSkipNestedFormKeyboardNav,
-} from './formKeyboardNav';
+import { runFormKeyboardNavigation, shouldSkipNestedFormKeyboardNav } from './formKeyboardNav';
 
 type FormKeyboardNavScopeProps = {
   children: ReactNode;

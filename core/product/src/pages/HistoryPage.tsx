@@ -1,14 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router';
-import {
-  Box,
-  Button,
-  Card,
-  CardBody,
-  Inline,
-  PageHeader,
-  Stack,
-} from '@inventory-platform/ui-kit';
+import { Box, Button, Card, CardBody, Inline, PageHeader, Stack } from '@inventory-platform/ui-kit';
 import {
   PurchaseList,
   RefundHistoryList,
@@ -48,11 +40,7 @@ function parseHistoryTab(state: unknown): HistoryTab {
   return 'saleHistory';
 }
 
-function isTabEnabled(
-  tab: HistoryTab,
-  customerReturn: boolean,
-  vendorReturn: boolean
-): boolean {
+function isTabEnabled(tab: HistoryTab, customerReturn: boolean, vendorReturn: boolean): boolean {
   if (tab === 'customerReturnHistory') return customerReturn;
   if (tab === 'vendorReturnHistory') return vendorReturn;
   return true;
@@ -74,22 +62,16 @@ export function HistoryPage() {
   const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
   const fetchCapabilities = useShopCapabilitiesStore((s) => s.fetchCapabilities);
   const shopCapabilities = useShopCapabilitiesStore((s) =>
-    activeShopId ? s.byShopId[activeShopId] : undefined
+    activeShopId ? s.byShopId[activeShopId] : undefined,
   );
 
   const customerReturnEnabled = isCustomerReturnEnabled(shopCapabilities);
   const vendorReturnEnabled = isVendorReturnEnabled(shopCapabilities);
   const showReturnHints = customerReturnEnabled || vendorReturnEnabled;
 
-  const [activeTab, setActiveTab] = useState<HistoryTab>(() =>
-    parseHistoryTab(location.state)
-  );
-  const [draftFilters, setDraftFilters] = useState<HistoryFilters>(
-    EMPTY_HISTORY_FILTERS
-  );
-  const [appliedFilters, setAppliedFilters] = useState<HistoryFilters>(
-    EMPTY_HISTORY_FILTERS
-  );
+  const [activeTab, setActiveTab] = useState<HistoryTab>(() => parseHistoryTab(location.state));
+  const [draftFilters, setDraftFilters] = useState<HistoryFilters>(EMPTY_HISTORY_FILTERS);
+  const [appliedFilters, setAppliedFilters] = useState<HistoryFilters>(EMPTY_HISTORY_FILTERS);
 
   useEffect(() => {
     void fetchCapabilities();
@@ -100,9 +82,7 @@ export function HistoryPage() {
   }, [location.state, location.key]);
 
   useEffect(() => {
-    if (
-      !isTabEnabled(activeTab, customerReturnEnabled, vendorReturnEnabled)
-    ) {
+    if (!isTabEnabled(activeTab, customerReturnEnabled, vendorReturnEnabled)) {
       setActiveTab('saleHistory');
     }
   }, [activeTab, customerReturnEnabled, vendorReturnEnabled]);
@@ -114,8 +94,7 @@ export function HistoryPage() {
     const labels: string[] = [];
     if (customerReturnEnabled) labels.push('Return to customer');
     if (vendorReturnEnabled) labels.push('Return to vendor');
-    const joined =
-      labels.length === 2 ? `${labels[0]} or ${labels[1]}` : labels[0] ?? '';
+    const joined = labels.length === 2 ? `${labels[0]} or ${labels[1]}` : labels[0] ?? '';
     return `Read-only timelines: invoices and past returns — use ${joined} under Products & Sales to record new returns`;
   }, [customerReturnEnabled, showReturnHints, vendorReturnEnabled]);
 
@@ -179,9 +158,7 @@ export function HistoryPage() {
               hasAppliedFilters={filtersActive}
             />
 
-            {activeTab === 'saleHistory' && (
-              <PurchaseList filters={appliedFilters} />
-            )}
+            {activeTab === 'saleHistory' && <PurchaseList filters={appliedFilters} />}
             {activeTab === 'purchaseHistory' && (
               <VendorInvoicesPage embedded filters={appliedFilters} />
             )}

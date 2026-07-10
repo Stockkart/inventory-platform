@@ -1,10 +1,5 @@
 import { Link } from 'react-router';
-import {
-  Box,
-  Inline,
-  Link as UiLink,
-  ThemeToggle,
-} from '@inventory-platform/ui-kit';
+import { Box, Inline, Link as UiLink, ThemeToggle } from '@inventory-platform/ui-kit';
 import { useAuthStore } from '@inventory-platform/session';
 import styles from './JourneyHeader.module.css';
 
@@ -15,11 +10,7 @@ export function JourneyHeader() {
     <Box as="header" className={styles.header}>
       <Inline className={styles.container} justify="between" width="full">
         <Link to="/" className={styles.logo}>
-          <img
-            src="/assets/logo/STOCKKART-3x.png"
-            alt="StockKart"
-            className={styles.logoImg}
-          />
+          <img src="/assets/logo/STOCKKART-3x.png" alt="StockKart" className={styles.logoImg} />
         </Link>
 
         <Box as="nav" className={styles.nav}>

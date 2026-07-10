@@ -9,10 +9,13 @@ export const remindersRoutes: RouteModule = {
 /** Low-stock inventory alert route tree. */
 export const inventoryAlertRoutes: RouteModule = {
   path: 'inventory-alert',
-  children: [{ path: '', file: 'routes/inventory-alert.tsx', lazy: () => import('./routes/inventory-alert') }],
+  children: [
+    {
+      path: '',
+      file: 'routes/inventory-alert.tsx',
+      lazy: () => import('./routes/inventory-alert'),
+    },
+  ],
 };
 
-export const remindersDashboardRoutes: RouteModule[] = [
-  inventoryAlertRoutes,
-  remindersRoutes,
-];
+export const remindersDashboardRoutes: RouteModule[] = [inventoryAlertRoutes, remindersRoutes];

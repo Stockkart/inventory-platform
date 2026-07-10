@@ -1,19 +1,7 @@
 import { useState } from 'react';
 import type { HistoryFilters, HistoryTab } from './historyFilters';
-import {
-  showCustomerFilter,
-  showVendorFilter,
-  validateHistoryFilters,
-} from './historyFilters';
-import {
-  Alert,
-  Box,
-  Button,
-  FormField,
-  Inline,
-  Input,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { showCustomerFilter, showVendorFilter, validateHistoryFilters } from './historyFilters';
+import { Alert, Box, Button, FormField, Inline, Input, Text } from '@inventory-platform/ui-kit';
 import styles from './HistoryFiltersBar.module.css';
 
 type HistoryFiltersBarProps = {

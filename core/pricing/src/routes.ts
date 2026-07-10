@@ -7,7 +7,9 @@ export const pricingRoutes: RouteModule = {
 
 export const priceEditRoutes: RouteModule = {
   path: 'price-edit/:pricingId',
-  children: [{ path: '', file: 'routes/price-edit.tsx', lazy: () => import('./routes/price-edit') }],
+  children: [
+    { path: '', file: 'routes/price-edit.tsx', lazy: () => import('./routes/price-edit') },
+  ],
 };
 
 export const pricingDashboardRoutes: RouteModule[] = [pricingRoutes, priceEditRoutes];

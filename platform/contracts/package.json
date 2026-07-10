@@ -16,7 +16,10 @@
     }
   },
   "nx": {
-    "tags": ["type:platform", "scope:contracts"]
+    "tags": [
+      "type:platform",
+      "scope:contracts"
+    ]
   },
   "dependencies": {
     "tslib": "^2.3.0"

@@ -1,11 +1,6 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
-import {
-  PaginationBar,
-  SearchInput,
-  PageHeader,
-  EmptyState,
-} from './PaginationBar';
+import { PaginationBar, SearchInput, PageHeader, EmptyState } from './PaginationBar';
 import { Button } from '../forms/Button';
 import { Inline } from '../layout/Stack';
 
@@ -47,14 +42,7 @@ export const PageHeaderExample: StoryObj = {
 export const Pagination: StoryObj = {
   render: function PaginationStory() {
     const [page, setPage] = useState(0);
-    return (
-      <PaginationBar
-        page={page}
-        totalPages={5}
-        totalItems={92}
-        onPageChange={setPage}
-      />
-    );
+    return <PaginationBar page={page} totalPages={5} totalItems={92} onPageChange={setPage} />;
   },
 };
 
@@ -88,12 +76,7 @@ export const ListPageChrome: StoryObj = {
             placeholder="Search vendors…"
           />
         </Inline>
-        <PaginationBar
-          page={page}
-          totalPages={3}
-          totalItems={42}
-          onPageChange={setPage}
-        />
+        <PaginationBar page={page} totalPages={3} totalItems={42} onPageChange={setPage} />
       </>
     );
   },

@@ -13,56 +13,31 @@
     "jsx": "react-jsx",
     "types": ["node"],
     "paths": {
-      "@inventory-platform/user/customers": [
-        "../../core/user/src/api/customers.api.ts"
-      ],
-      "@inventory-platform/user/vendors": [
-        "../../core/user/src/api/vendors.api.ts"
-      ],
-      "@inventory-platform/api-client": [
-        "../../platform/api-client/src/index.ts"
-      ],
+      "@inventory-platform/user/customers": ["../../core/user/src/api/customers.api.ts"],
+      "@inventory-platform/user/vendors": ["../../core/user/src/api/vendors.api.ts"],
+      "@inventory-platform/api-client": ["../../platform/api-client/src/index.ts"],
       "@inventory-platform/query": ["../../platform/query/src/index.ts"],
       "@inventory-platform/routing": ["../../platform/routing/src/index.ts"],
       "@inventory-platform/session": ["../../platform/session/src/index.ts"],
-      "@inventory-platform/contracts": [
-        "../../platform/contracts/src/index.ts"
-      ],
+      "@inventory-platform/contracts": ["../../platform/contracts/src/index.ts"],
       "@inventory-platform/access": ["../../platform/access/src/index.ts"],
-      "@inventory-platform/schema/types": [
-        "../../platform/schema/src/types/index.ts"
-      ],
-      "@inventory-platform/session/types": [
-        "../../platform/session/src/model/index.ts"
-      ],
-      "@inventory-platform/shell/types": [
-        "../../platform/shell/src/model/index.ts"
-      ],
+      "@inventory-platform/schema/types": ["../../platform/schema/src/types/index.ts"],
+      "@inventory-platform/session/types": ["../../platform/session/src/model/index.ts"],
+      "@inventory-platform/shell/types": ["../../platform/shell/src/model/index.ts"],
       "@inventory-platform/user/types": ["../user/src/model/index.ts"],
       "@inventory-platform/product/types": ["../product/src/model/index.ts"],
-      "@inventory-platform/analytics/types": [
-        "../analytics/src/model/index.ts"
-      ],
-      "@inventory-platform/reminders/types": [
-        "../reminders/src/model/index.ts"
-      ],
+      "@inventory-platform/analytics/types": ["../analytics/src/model/index.ts"],
+      "@inventory-platform/reminders/types": ["../reminders/src/model/index.ts"],
       "@inventory-platform/credit/types": ["../credit/src/model/index.ts"],
       "@inventory-platform/plan/types": ["../plan/src/model/index.ts"],
       "@inventory-platform/pricing/types": ["../pricing/src/model/index.ts"],
       "@inventory-platform/taxation/types": ["../taxation/src/model/index.ts"],
       "@inventory-platform/accounting/types": ["./src/model/index.ts"],
-      "@inventory-platform/plugin-cafe/types": [
-        "../../plugins/cafe/src/types/index.ts"
-      ]
+      "@inventory-platform/plugin-cafe/types": ["../../plugins/cafe/src/types/index.ts"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
-  "exclude": [
-    "src/**/*.spec.ts",
-    "src/**/*.test.ts",
-    "src/**/*.spec.tsx",
-    "src/**/*.test.tsx"
-  ],
+  "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts", "src/**/*.spec.tsx", "src/**/*.test.tsx"],
   "references": [
     {
       "path": "../../platform/contracts/tsconfig.lib.json"

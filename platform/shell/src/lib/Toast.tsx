@@ -8,18 +8,6 @@ const variantMap = {
   warning: 'warning',
 } as const;
 
-export function Toast({
-  toast,
-  onClose,
-}: {
-  toast: ToastItem;
-  onClose: () => void;
-}) {
-  return (
-    <UiKitToast
-      message={toast.message}
-      variant={variantMap[toast.type]}
-      onClose={onClose}
-    />
-  );
+export function Toast({ toast, onClose }: { toast: ToastItem; onClose: () => void }) {
+  return <UiKitToast message={toast.message} variant={variantMap[toast.type]} onClose={onClose} />;
 }

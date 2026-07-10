@@ -161,10 +161,7 @@
   color: #e5e7eb;
 }
 
-:global(
-    [data-theme='dark']
-      [class^='ReminderForm_cancelButton']:hover:not(:disabled)
-  ) {
+:global([data-theme='dark'] [class^='ReminderForm_cancelButton']:hover:not(:disabled)) {
   background: #111a2e;
 }
 
@@ -174,10 +171,7 @@
   color: #fca5a5;
 }
 
-:global(
-    [data-theme='dark']
-      input[type='datetime-local']::-webkit-calendar-picker-indicator
-  ) {
+:global([data-theme='dark'] input[type='datetime-local']::-webkit-calendar-picker-indicator) {
   filter: invert(1) brightness(1.5);
   opacity: 1;
   cursor: pointer;

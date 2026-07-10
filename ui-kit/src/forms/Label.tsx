@@ -25,7 +25,8 @@ export interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement
 }
 
 export function Checkbox({ label, className, id, ...rest }: CheckboxProps) {
-  const inputId = id ?? (typeof label === 'string' ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
+  const inputId =
+    id ?? (typeof label === 'string' ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
   return (
     <label className={cn(styles.checkboxLabel, className)} htmlFor={inputId}>
       <input id={inputId} type="checkbox" {...rest} />
@@ -81,7 +82,8 @@ export interface SwitchProps extends Omit<InputHTMLAttributes<HTMLInputElement>,
 }
 
 export function Switch({ label, className, id, ...rest }: SwitchProps) {
-  const inputId = id ?? (typeof label === 'string' ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
+  const inputId =
+    id ?? (typeof label === 'string' ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
   return (
     <label className={cn(styles.switchLabel, className)} htmlFor={inputId}>
       <input id={inputId} type="checkbox" className={styles.switch} {...rest} />

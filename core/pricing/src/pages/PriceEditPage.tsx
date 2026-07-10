@@ -140,12 +140,11 @@ export function PriceEditPage() {
     if (!pricingId) return;
 
     const ptr = priceToRetail.trim() ? parseFloat(priceToRetail) : undefined;
-    const mrp = maximumRetailPrice.trim()
-      ? parseFloat(maximumRetailPrice)
-      : undefined;
+    const mrp = maximumRetailPrice.trim() ? parseFloat(maximumRetailPrice) : undefined;
 
     const hasRates = rates.length > 0;
-    const ratesValid = !hasRates || rates.every((r) => r.name.trim() && !isNaN(r.price) && r.price >= 0);
+    const ratesValid =
+      !hasRates || rates.every((r) => r.name.trim() && !isNaN(r.price) && r.price >= 0);
     const systemRates = ['maximumRetailPrice', 'priceToRetail', 'costPrice'];
     const defaultRateValid =
       !defaultRate.trim() ||
@@ -153,12 +152,7 @@ export function PriceEditPage() {
       rates.some((r) => r.name.trim() === defaultRate.trim());
 
     const sendingRates = hasRates || loadedFromApi;
-    if (
-      ptr === undefined &&
-      mrp === undefined &&
-      !sendingRates &&
-      !defaultRate.trim()
-    ) {
+    if (ptr === undefined && mrp === undefined && !sendingRates && !defaultRate.trim()) {
       setError('Provide at least one of PTR, MRP, rates, or default rate');
       return;
     }
@@ -175,7 +169,9 @@ export function PriceEditPage() {
       return;
     }
     if (!defaultRateValid) {
-      setError('Default rate must be maximumRetailPrice, priceToRetail, costPrice, or a custom rate name');
+      setError(
+        'Default rate must be maximumRetailPrice, priceToRetail, costPrice, or a custom rate name',
+      );
       return;
     }
 
@@ -200,8 +196,7 @@ export function PriceEditPage() {
       await pricingApi.update(pricingId, payload);
       notifySuccess('Pricing updated successfully');
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to update pricing';
+      const message = err instanceof Error ? err.message : 'Failed to update pricing';
       notifyError(message);
       setError(message);
     } finally {
@@ -243,9 +238,7 @@ export function PriceEditPage() {
     <Stack gap="md" className={styles.page}>
       <PageHeader
         title="Edit Price"
-        description={
-          state?.productName ? `Product: ${state.productName}` : undefined
-        }
+        description={state?.productName ? `Product: ${state.productName}` : undefined}
       />
 
       <Text color="secondary" variant="caption" className={styles.pricingIdLabel}>
@@ -300,7 +293,8 @@ export function PriceEditPage() {
                 </Button>
               </Inline>
               <Text variant="caption" color="secondary" className={styles.ratesHint}>
-                Sending rates replaces the entire list. Include all rates you want to keep; any omitted will be removed.
+                Sending rates replaces the entire list. Include all rates you want to keep; any
+                omitted will be removed.
               </Text>
               {rates.map((rate, i) => (
                 <Inline key={i} gap="sm" align="center" className={styles.rateRow}>

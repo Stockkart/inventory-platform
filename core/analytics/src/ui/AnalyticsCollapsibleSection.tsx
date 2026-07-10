@@ -1,12 +1,5 @@
 import type { ReactNode } from 'react';
-import {
-  Badge,
-  Button,
-  Card,
-  CardBody,
-  Inline,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { Badge, Button, Card, CardBody, Inline, Text } from '@inventory-platform/ui-kit';
 import type { BadgeVariant } from '@inventory-platform/ui-kit';
 import styles from './analytics.module.css';
 

@@ -1,10 +1,4 @@
-import {
-  Alert,
-  Card,
-  CardBody,
-  PageHeader,
-  Stack,
-} from '@inventory-platform/ui-kit';
+import { Alert, Card, CardBody, PageHeader, Stack } from '@inventory-platform/ui-kit';
 import { useAuthStore } from '@inventory-platform/session';
 import { JoinRequestList } from '../ui';
 import styles from './join-requests.module.css';
@@ -24,9 +18,7 @@ export function JoinRequestsPage() {
   if (!shopId) {
     return (
       <Stack gap="md" className={styles.container}>
-        <Alert variant="danger">
-          You need to be part of a shop to manage join requests.
-        </Alert>
+        <Alert variant="danger">You need to be part of a shop to manage join requests.</Alert>
       </Stack>
     );
   }
@@ -34,9 +26,7 @@ export function JoinRequestsPage() {
   if (user?.role === 'CASHIER') {
     return (
       <Stack gap="md" className={styles.container}>
-        <Alert variant="danger">
-          You don&apos;t have permission to manage join requests.
-        </Alert>
+        <Alert variant="danger">You don&apos;t have permission to manage join requests.</Alert>
       </Stack>
     );
   }

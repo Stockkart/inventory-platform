@@ -44,7 +44,7 @@ export function CustomerAnalytics() {
       topN: localFilters.topN,
       includeAll: localFilters.includeAll,
     }),
-    [localFilters]
+    [localFilters],
   );
 
   const {
@@ -121,9 +121,7 @@ export function CustomerAnalytics() {
     });
   };
 
-  const renderCustomerTable = (
-    customers: NonNullable<typeof customerData>['topCustomers']
-  ) => (
+  const renderCustomerTable = (customers: NonNullable<typeof customerData>['topCustomers']) => (
     <Table>
       <TableHead>
         <TableRow>
@@ -215,9 +213,7 @@ export function CustomerAnalytics() {
                 min={1}
                 max={100}
                 value={localFilters.topN}
-                onChange={(e) =>
-                  handleFilterChange('topN', parseInt(e.target.value, 10) || 10)
-                }
+                onChange={(e) => handleFilterChange('topN', parseInt(e.target.value, 10) || 10)}
               />
             </FormField>
 
@@ -237,9 +233,7 @@ export function CustomerAnalytics() {
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
-      {isLoading ? (
-        <CenteredLoader label="Loading customer analytics data…" size="md" />
-      ) : null}
+      {isLoading ? <CenteredLoader label="Loading customer analytics data…" size="md" /> : null}
 
       {customerData && !isLoading ? (
         <>
@@ -257,7 +251,9 @@ export function CustomerAnalytics() {
             <AnalyticsMetricCard
               label="Returning Customers"
               value={String(customerData.summary.returningCustomers)}
-              period={`${formatPercentage(customerData.summary.returningCustomerPercentage)} of total`}
+              period={`${formatPercentage(
+                customerData.summary.returningCustomerPercentage,
+              )} of total`}
             />
             <AnalyticsMetricCard
               label="Avg Purchase Frequency"

@@ -16,7 +16,10 @@
     }
   },
   "nx": {
-    "tags": ["type:core", "scope:checkout"]
+    "tags": [
+      "type:core",
+      "scope:checkout"
+    ]
   },
   "dependencies": {
     "@inventory-platform/query": "workspace:*"

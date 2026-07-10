@@ -76,11 +76,7 @@ export interface LinkableUser {
 }
 
 // Vendor types
-export type VendorBusinessType =
-  | 'WHOLESALE'
-  | 'RETAIL'
-  | 'MANUFACTURER'
-  | 'DISTRIBUTOR';
+export type VendorBusinessType = 'WHOLESALE' | 'RETAIL' | 'MANUFACTURER' | 'DISTRIBUTOR';
 
 export interface Vendor {
   vendorId: string;
@@ -201,4 +197,3 @@ export interface UpdateVendorDto {
   businessType?: string;
   gstinUin?: string;
 }
-

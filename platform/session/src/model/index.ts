@@ -1,9 +1,4 @@
-import type {
-  LoginDto,
-  SignupDto,
-  User,
-  Shop,
-} from './auth.types.js';
+import type { LoginDto, SignupDto, User, Shop } from './auth.types.js';
 
 export interface AuthState {
   user: User | null;

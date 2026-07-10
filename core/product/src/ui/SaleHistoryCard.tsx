@@ -71,20 +71,15 @@ export function SaleHistoryCard({ purchase }: { purchase: Purchase }) {
     purchase.status === 'COMPLETED'
       ? 'success'
       : purchase.status === 'CANCELLED'
-        ? 'danger'
-        : 'neutral';
+      ? 'danger'
+      : 'neutral';
 
   return (
     <>
       <Card className={styles.recordCard}>
         <CardBody>
           <Stack gap="md">
-            <Inline
-              className={styles.recordHeader}
-              justify="between"
-              align="start"
-              gap="md"
-            >
+            <Inline className={styles.recordHeader} justify="between" align="start" gap="md">
               <DetailLine label="Invoice" value={purchase.invoiceNo} />
               <Inline className={styles.recordActions} gap="sm" align="center">
                 <DetailLine label="Date" value={formatDate(purchase.soldAt)} />
@@ -113,10 +108,7 @@ export function SaleHistoryCard({ purchase }: { purchase: Purchase }) {
             </Inline>
 
             <Grid columns={2} gap="sm" className={styles.recordDetails}>
-              <DetailLine
-                label="Customer"
-                value={purchase.customerName ?? '—'}
-              />
+              <DetailLine label="Customer" value={purchase.customerName ?? '—'} />
               <DetailLine label="Phone" value={purchase.customerPhone ?? '—'} />
               <DetailLine label="Total" value={formatCurrency(purchase.grandTotal)} />
               <Inline gap="xs" align="center">
@@ -125,13 +117,8 @@ export function SaleHistoryCard({ purchase }: { purchase: Purchase }) {
                 </Text>
                 <Badge variant={statusVariant}>{purchase.status}</Badge>
               </Inline>
-              <DetailLine
-                label="Payment"
-                value={formatPaymentMethod(purchase.paymentMethod)}
-              />
-              {paymentSplitLine ? (
-                <DetailLine label="Split" value={paymentSplitLine} />
-              ) : null}
+              <DetailLine label="Payment" value={formatPaymentMethod(purchase.paymentMethod)} />
+              {paymentSplitLine ? <DetailLine label="Split" value={paymentSplitLine} /> : null}
               <DetailLine label="Items" value={String(purchase.items.length)} />
             </Grid>
 
@@ -158,17 +145,11 @@ export function SaleHistoryCard({ purchase }: { purchase: Purchase }) {
                     <TableBody>
                       {purchase.items.map((item, idx) => (
                         <TableRow key={`${item.inventoryId ?? item.name}-${idx}`}>
-                          <TableCell>
-                            {item.name ?? item.inventoryId ?? '—'}
-                          </TableCell>
+                          <TableCell>{item.name ?? item.inventoryId ?? '—'}</TableCell>
                           <TableCell>{item.quantity}</TableCell>
+                          <TableCell>{formatCurrency(item.priceToRetail ?? 0)}</TableCell>
                           <TableCell>
-                            {formatCurrency(item.priceToRetail ?? 0)}
-                          </TableCell>
-                          <TableCell>
-                            {formatCurrency(
-                              (item.priceToRetail ?? 0) * (item.quantity ?? 0)
-                            )}
+                            {formatCurrency((item.priceToRetail ?? 0) * (item.quantity ?? 0))}
                           </TableCell>
                         </TableRow>
                       ))}

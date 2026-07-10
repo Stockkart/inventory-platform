@@ -20,7 +20,7 @@ export const authApi = {
   login: async (credentials: LoginDto): Promise<AuthResponse> => {
     const response = await apiClient.post<ApiResponse<AuthResponse>>(
       AUTH_ENDPOINTS.LOGIN,
-      credentials
+      credentials,
     );
     if (response.success && response.data.accessToken) {
       apiClient.setToken(response.data.accessToken);
@@ -29,10 +29,7 @@ export const authApi = {
   },
 
   signup: async (data: SignupDto): Promise<AuthResponse> => {
-    const response = await apiClient.post<ApiResponse<AuthResponse>>(
-      AUTH_ENDPOINTS.SIGNUP,
-      data
-    );
+    const response = await apiClient.post<ApiResponse<AuthResponse>>(AUTH_ENDPOINTS.SIGNUP, data);
     if (response.success && response.data.accessToken) {
       apiClient.setToken(response.data.accessToken);
     }
@@ -42,7 +39,7 @@ export const authApi = {
   acceptInvite: async (data: AcceptInviteDto): Promise<AcceptInviteResponse> => {
     const response = await apiClient.post<ApiResponse<AcceptInviteResponse>>(
       AUTH_ENDPOINTS.ACCEPT_INVITE,
-      data
+      data,
     );
     return response.data;
   },
@@ -51,7 +48,7 @@ export const authApi = {
     try {
       const response = await apiClient.post<ApiResponse<LogoutResponse>>(
         AUTH_ENDPOINTS.LOGOUT,
-        data
+        data,
       );
       return response.data;
     } finally {
@@ -65,31 +62,25 @@ export const authApi = {
   },
 
   refreshToken: async (): Promise<AuthResponse> => {
-    const response = await apiClient.post<ApiResponse<AuthResponse>>(
-      AUTH_ENDPOINTS.REFRESH
-    );
+    const response = await apiClient.post<ApiResponse<AuthResponse>>(AUTH_ENDPOINTS.REFRESH);
     if (response.success && response.data.accessToken) {
       apiClient.setToken(response.data.accessToken);
     }
     return response.data;
   },
 
-  forgotPassword: async (
-    data: ForgotPasswordDto
-  ): Promise<ForgotPasswordResponse> => {
+  forgotPassword: async (data: ForgotPasswordDto): Promise<ForgotPasswordResponse> => {
     const response = await apiClient.post<ApiResponse<ForgotPasswordResponse>>(
       AUTH_ENDPOINTS.FORGOT_PASSWORD,
-      data
+      data,
     );
     return response.data;
   },
 
-  resetPassword: async (
-    data: ResetPasswordDto
-  ): Promise<ResetPasswordResponse> => {
+  resetPassword: async (data: ResetPasswordDto): Promise<ResetPasswordResponse> => {
     const response = await apiClient.post<ApiResponse<ResetPasswordResponse>>(
       AUTH_ENDPOINTS.RESET_PASSWORD,
-      data
+      data,
     );
     return response.data;
   },

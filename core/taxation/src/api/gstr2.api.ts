@@ -8,7 +8,7 @@ export const gstr2Api = {
   getReport: async (period: string): Promise<Gstr2ReportResponse> => {
     const response = await apiClient.get<ApiResponse<Gstr2ReportResponse>>(
       TAXATION_ENDPOINTS.GSTR2,
-      { period }
+      { period },
     );
     return response.data;
   },
@@ -17,7 +17,7 @@ export const gstr2Api = {
     return downloadTaxationBlob(
       TAXATION_ENDPOINTS.GSTR2_DOWNLOAD,
       { period },
-      `GSTR2_RETURN_${period.replace('-', '_')}.xlsx`
+      `GSTR2_RETURN_${period.replace('-', '_')}.xlsx`,
     );
   },
 };

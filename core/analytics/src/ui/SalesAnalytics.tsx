@@ -62,7 +62,7 @@ export function SalesAnalytics() {
       topN: localFilters.topN,
       compare: localFilters.compare,
     }),
-    [localFilters]
+    [localFilters],
   );
 
   const {
@@ -155,7 +155,7 @@ export function SalesAnalytics() {
                   const value = e.target.value;
                   handleFilterChange(
                     'groupBy',
-                    value === '' ? null : (value as 'product' | 'lotId' | 'company')
+                    value === '' ? null : (value as 'product' | 'lotId' | 'company'),
                   );
                 }}
                 options={[...GROUP_BY_OPTIONS]}
@@ -170,7 +170,7 @@ export function SalesAnalytics() {
                   const value = e.target.value;
                   handleFilterChange(
                     'timeSeries',
-                    value === '' ? null : (value as 'hour' | 'day' | 'week' | 'month')
+                    value === '' ? null : (value as 'hour' | 'day' | 'week' | 'month'),
                   );
                 }}
                 options={[...TIME_SERIES_OPTIONS]}
@@ -204,9 +204,7 @@ export function SalesAnalytics() {
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
-      {isLoading ? (
-        <CenteredLoader label="Loading analytics data…" size="md" />
-      ) : null}
+      {isLoading ? <CenteredLoader label="Loading analytics data…" size="md" /> : null}
 
       {data && !isLoading ? (
         <>
@@ -254,11 +252,7 @@ export function SalesAnalytics() {
             </Card>
             <Card className={styles.chartCard}>
               <CardBody>
-                <SalesByGroupPieChart
-                  data={data.salesByLotId}
-                  groupBy="lotId"
-                  showRevenue={true}
-                />
+                <SalesByGroupPieChart data={data.salesByLotId} groupBy="lotId" showRevenue={true} />
               </CardBody>
             </Card>
             <Card className={styles.chartCard}>

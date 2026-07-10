@@ -1,10 +1,4 @@
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent,
-} from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import type { PackagingUnit } from '@inventory-platform/product/types';
 import {
   Box,
@@ -19,18 +13,13 @@ import {
 import styles from './../pages/product-registration.module.css';
 
 /** Map free-text or datalist selection to a UQC code (catalog or legacy). */
-export function resolvePackagingUqc(
-  raw: string,
-  catalog: PackagingUnit[]
-): string {
+export function resolvePackagingUqc(raw: string, catalog: PackagingUnit[]): string {
   const trimmed = raw.trim();
   if (!trimmed) return '';
   const upper = trimmed.toUpperCase();
   const byUqc = catalog.find((u) => u.uqc === upper);
   if (byUqc) return byUqc.uqc;
-  const byFull = catalog.find(
-    (u) => `${u.uqc} — ${u.label}`.toUpperCase() === upper
-  );
+  const byFull = catalog.find((u) => `${u.uqc} — ${u.label}`.toUpperCase() === upper);
   if (byFull) return byFull.uqc;
   const byLabel = catalog.find((u) => u.label.toUpperCase() === upper);
   if (byLabel) return byLabel.uqc;
@@ -54,31 +43,26 @@ function displayUnitValue(uqc: string, catalog: PackagingUnit[]): string {
   return def ? formatUnitOption(def) : code;
 }
 
-function filterPackagingUnits(
-  catalog: PackagingUnit[],
-  query: string
-): PackagingUnit[] {
+function filterPackagingUnits(catalog: PackagingUnit[], query: string): PackagingUnit[] {
   const q = query.trim().toLowerCase();
   if (!q) return catalog;
   return catalog.filter(
     (u) =>
       u.uqc.toLowerCase().includes(q) ||
       u.label.toLowerCase().includes(q) ||
-      formatUnitOption(u).toLowerCase().includes(q)
+      formatUnitOption(u).toLowerCase().includes(q),
   );
 }
 
 /** unitsPerPack stored on product; 0 means “1 × unit” with no pack conversion. */
-export function packagingFactorForDisplay(
-  unitsPerPack: number | undefined
-): number {
+export function packagingFactorForDisplay(unitsPerPack: number | undefined): number {
   const n = Number(unitsPerPack) || 0;
   return n > 0 ? n : 1;
 }
 
 export function packagingFactorToUnitsPerPack(
   factor: number,
-  _unitDef: PackagingUnit | undefined
+  _unitDef: PackagingUnit | undefined,
 ): number {
   const n = Math.floor(Number(factor)) || 0;
   if (n <= 1) return 0;
@@ -112,9 +96,7 @@ export function PackagingUnitInput({
   id,
   compact = false,
 }: PackagingUnitInputProps) {
-  const [unitDraft, setUnitDraft] = useState(() =>
-    displayUnitValue(baseUnit, packagingUnits)
-  );
+  const [unitDraft, setUnitDraft] = useState(() => displayUnitValue(baseUnit, packagingUnits));
   const [listOpen, setListOpen] = useState(false);
   const [highlightIdx, setHighlightIdx] = useState(0);
   const unitWrapRef = useRef<HTMLDivElement>(null);
@@ -159,7 +141,7 @@ export function PackagingUnitInput({
 
   const filteredUnits = useMemo(
     () => filterPackagingUnits(packagingUnits, unitDraft),
-    [packagingUnits, unitDraft]
+    [packagingUnits, unitDraft],
   );
 
   useEffect(() => {
@@ -169,10 +151,7 @@ export function PackagingUnitInput({
   useEffect(() => {
     if (!listOpen) return;
     const onDocMouseDown = (e: MouseEvent) => {
-      if (
-        unitWrapRef.current &&
-        !unitWrapRef.current.contains(e.target as Node)
-      ) {
+      if (unitWrapRef.current && !unitWrapRef.current.contains(e.target as Node)) {
         setListOpen(false);
       }
     };
@@ -218,9 +197,7 @@ export function PackagingUnitInput({
         return;
       }
       setHighlightIdx((i) =>
-        filteredUnits.length === 0
-          ? 0
-          : Math.min(i + 1, filteredUnits.length - 1)
+        filteredUnits.length === 0 ? 0 : Math.min(i + 1, filteredUnits.length - 1),
       );
       return;
     }
@@ -354,12 +331,7 @@ export function PackagingUnitInput({
           ▾
         </IconButton>
         {listOpen && filteredUnits.length > 0 ? (
-          <Stack
-            id={listboxId}
-            className={styles.unitDropdown}
-            role="listbox"
-            gap="none"
-          >
+          <Stack id={listboxId} className={styles.unitDropdown} role="listbox" gap="none">
             {filteredUnits.map((u, i) => (
               <Button
                 key={u.uqc}
@@ -381,9 +353,7 @@ export function PackagingUnitInput({
             ))}
           </Stack>
         ) : null}
-        {listOpen &&
-        filteredUnits.length === 0 &&
-        packagingUnits.length > 0 ? (
+        {listOpen && filteredUnits.length === 0 && packagingUnits.length > 0 ? (
           <Text className={styles.unitDropdownEmpty}>No matching units</Text>
         ) : null}
       </Box>

@@ -1,11 +1,6 @@
 // Accounting module --------------------------------------------------------
 
-export type AccountType =
-  | 'ASSET'
-  | 'LIABILITY'
-  | 'EQUITY'
-  | 'REVENUE'
-  | 'EXPENSE';
+export type AccountType = 'ASSET' | 'LIABILITY' | 'EQUITY' | 'REVENUE' | 'EXPENSE';
 
 export type NormalBalance = 'DEBIT' | 'CREDIT';
 

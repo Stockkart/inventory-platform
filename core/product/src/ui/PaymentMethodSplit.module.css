@@ -77,13 +77,16 @@
   line-height: 1.2;
   letter-spacing: -0.005em;
   cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease,
-    color 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
   white-space: nowrap;
 }
 
 .chip:hover {
-  border-color: color-mix(in srgb, var(--border-color, #cbd5e1) 35%, var(--text-primary, #0f172a) 65%);
+  border-color: color-mix(
+    in srgb,
+    var(--border-color, #cbd5e1) 35%,
+    var(--text-primary, #0f172a) 65%
+  );
   color: var(--text-primary, #0f172a);
 }
 

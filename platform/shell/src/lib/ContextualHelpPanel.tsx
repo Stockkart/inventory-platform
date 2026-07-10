@@ -35,9 +35,7 @@ export function ContextualHelpPanel({
   const [videos, setVideos] = useState<TutorialResourceResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedVideo, setSelectedVideo] = useState<TutorialResourceResponse | null>(
-    null
-  );
+  const [selectedVideo, setSelectedVideo] = useState<TutorialResourceResponse | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -51,9 +49,7 @@ export function ContextualHelpPanel({
       })
       .catch((e: unknown) => {
         if (!cancelled) {
-          setError(
-            e instanceof Error ? e.message : 'Could not load help videos'
-          );
+          setError(e instanceof Error ? e.message : 'Could not load help videos');
           setVideos([]);
         }
       })
@@ -84,11 +80,7 @@ export function ContextualHelpPanel({
 
   return (
     <>
-      <Box
-        className={styles.backdrop}
-        role="presentation"
-        onClick={onClose}
-      />
+      <Box className={styles.backdrop} role="presentation" onClick={onClose} />
       <Box
         as="aside"
         className={styles.panel}
@@ -99,26 +91,17 @@ export function ContextualHelpPanel({
         <Inline className={styles.header} align="start" justify="between">
           <Stack gap="xs">
             <Text className={styles.kicker}>Help for this page</Text>
-            <Text
-              id="contextual-help-title"
-              variant="title"
-              className={styles.title}
-            >
+            <Text id="contextual-help-title" variant="title" className={styles.title}>
               {pageLabel}
             </Text>
           </Stack>
-          <IconButton
-            label="Close help"
-            className={styles.closeBtn}
-            onClick={onClose}
-          >
+          <IconButton label="Close help" className={styles.closeBtn} onClick={onClose}>
             <X size={20} />
           </IconButton>
         </Inline>
 
         <Text className={styles.hint}>
-          Tutorial videos matched to{' '}
-          <Text as="code">{currentPath}</Text>
+          Tutorial videos matched to <Text as="code">{currentPath}</Text>
         </Text>
 
         {loading ? (

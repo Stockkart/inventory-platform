@@ -1,8 +1,5 @@
 import type { ShopAccess } from '@inventory-platform/access';
-import type {
-  DashboardMenuGroup,
-  DashboardMenuItem,
-} from '@inventory-platform/routing';
+import type { DashboardMenuGroup, DashboardMenuItem } from '@inventory-platform/routing';
 
 const ACCOUNTING_PREFIX = '/dashboard/accounting';
 
@@ -58,17 +55,14 @@ function isPathAllowed(path: string, access: ShopAccess): boolean {
   return true;
 }
 
-function filterGroupItems(
-  items: DashboardMenuItem[],
-  access: ShopAccess
-): DashboardMenuItem[] {
+function filterGroupItems(items: DashboardMenuItem[], access: ShopAccess): DashboardMenuItem[] {
   return items.filter((item) => isPathAllowed(item.path, access));
 }
 
 /** Filter sidebar groups using effective shop access from the API. */
 export function filterDashboardMenuGroupsByAccess(
   groups: DashboardMenuGroup[],
-  access: ShopAccess | null | undefined
+  access: ShopAccess | null | undefined,
 ): DashboardMenuGroup[] {
   if (!access) {
     return groups
@@ -87,9 +81,7 @@ export function filterDashboardMenuGroupsByAccess(
     }
     const items = filterGroupItems(group.items, access);
     if (access.canManageAccess) {
-      const hasAccessControl = items.some(
-        (i) => i.path === '/dashboard/access-control'
-      );
+      const hasAccessControl = items.some((i) => i.path === '/dashboard/access-control');
       if (!hasAccessControl) {
         items.push({
           path: '/dashboard/access-control',
@@ -106,7 +98,7 @@ export function filterDashboardMenuGroupsByAccess(
 
 export function canAccessDashboardPath(
   path: string,
-  access: ShopAccess | null | undefined
+  access: ShopAccess | null | undefined,
 ): boolean {
   if (!access) {
     return !isRbacGatedPath(path);

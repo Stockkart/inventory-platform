@@ -2,14 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { invitationsApi } from '../api/invitations.api';
 import type { Invitation } from '@inventory-platform/user/types';
 import { InvitationCard } from './InvitationCard';
-import {
-  Box,
-  Button,
-  CenteredLoader,
-  EmptyState,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { Box, Button, CenteredLoader, EmptyState, Stack, Text } from '@inventory-platform/ui-kit';
 import styles from './InvitationList.module.css';
 import { useNotify } from '@inventory-platform/session';
 
@@ -104,10 +97,7 @@ export function InvitationList({
   if (isLoading) {
     return (
       <Box className={styles.container}>
-        <CenteredLoader
-          label="Loading invitations..."
-          className={styles.loading}
-        />
+        <CenteredLoader label="Loading invitations..." className={styles.loading} />
       </Box>
     );
   }
@@ -135,13 +125,13 @@ export function InvitationList({
 
   // Group invitations by status
   const pending = invitations.filter(
-    (inv) => inv.status === 'PENDING' && new Date(inv.expiresAt) >= new Date()
+    (inv) => inv.status === 'PENDING' && new Date(inv.expiresAt) >= new Date(),
   );
   const accepted = invitations.filter((inv) => inv.status === 'ACCEPTED');
   const expired = invitations.filter(
     (inv) =>
       inv.status === 'EXPIRED' ||
-      (inv.status === 'PENDING' && new Date(inv.expiresAt) < new Date())
+      (inv.status === 'PENDING' && new Date(inv.expiresAt) < new Date()),
   );
   const rejected = invitations.filter((inv) => inv.status === 'REJECTED');
 

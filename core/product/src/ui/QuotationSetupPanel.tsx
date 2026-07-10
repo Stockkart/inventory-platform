@@ -108,9 +108,7 @@ export function QuotationSetupPanel({
                       size="sm"
                       className={styles.searchBtn}
                       onClick={onSearchByPhone}
-                      disabled={
-                        isSearchingCustomer || !customerPhone.trim() || isSubmitting
-                      }
+                      disabled={isSearchingCustomer || !customerPhone.trim() || isSubmitting}
                       title="Look up customer by phone"
                     >
                       {isSearchingCustomer ? '…' : 'Find'}
@@ -147,9 +145,7 @@ export function QuotationSetupPanel({
                       size="sm"
                       className={styles.searchBtn}
                       onClick={onSearchByEmail}
-                      disabled={
-                        isSearchingCustomer || !customerEmail.trim() || isSubmitting
-                      }
+                      disabled={isSearchingCustomer || !customerEmail.trim() || isSubmitting}
                       title="Look up customer by email"
                     >
                       {isSearchingCustomer ? '…' : 'Find'}

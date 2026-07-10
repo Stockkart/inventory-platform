@@ -5,7 +5,7 @@ import { EVENT_ENDPOINTS } from './endpoints';
 export const eventsApi = {
   subscribe(
     onReminderDue: (data: ReminderDetail) => void,
-    onInventoryLow?: (data: InventoryLowEvent) => void
+    onInventoryLow?: (data: InventoryLowEvent) => void,
   ): EventSource {
     const es = apiClient.createSseConnection(EVENT_ENDPOINTS.STREAM);
 

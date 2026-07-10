@@ -56,9 +56,7 @@ export function Pricing() {
           <Text as="h2" variant="heading2" className={styles.title}>
             Simple, Transparent Pricing
           </Text>
-          <Text className={styles.subtitle}>
-            Choose the plan that fits your business needs
-          </Text>
+          <Text className={styles.subtitle}>Choose the plan that fits your business needs</Text>
         </Stack>
 
         <PlanCarousel

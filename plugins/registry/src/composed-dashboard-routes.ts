@@ -33,9 +33,7 @@ const DASHBOARD_ROUTE_REGISTRATIONS: RoutePackageRegistration[] = [
   { root: `${CORE}/credit/src`, modules: creditRoutes },
 ];
 
-const DASHBOARD_ROUTE_ENTRIES = composeDashboardRouteEntries(
-  DASHBOARD_ROUTE_REGISTRATIONS
-);
+const DASHBOARD_ROUTE_ENTRIES = composeDashboardRouteEntries(DASHBOARD_ROUTE_REGISTRATIONS);
 
 /** Flattened dashboard child routes for the inventory app shell. */
 export function composedDashboardRoutes(): RouteConfigEntry[] {

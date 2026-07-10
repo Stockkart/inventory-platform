@@ -42,12 +42,7 @@ export interface CreditEntriesPageResponse {
 }
 
 /** Tender used when posting a settlement (required on settlement API). */
-export type CreditSettlementPaymentMethod =
-  | 'CASH'
-  | 'UPI'
-  | 'BANK'
-  | 'CARD'
-  | 'ADJUSTMENT';
+export type CreditSettlementPaymentMethod = 'CASH' | 'UPI' | 'BANK' | 'CARD' | 'ADJUSTMENT';
 
 export interface CreateCreditEntryDto {
   partyType: CreditPartyType;

@@ -17,11 +17,7 @@ export interface OrderState {
     total: number;
     totalPages: number;
   };
-  fetchOrders: (params?: {
-    page?: number;
-    limit?: number;
-    status?: string;
-  }) => Promise<void>;
+  fetchOrders: (params?: { page?: number; limit?: number; status?: string }) => Promise<void>;
   fetchOrderById: (id: string) => Promise<void>;
   createOrder: (data: CreateOrderDto) => Promise<Order>;
   updateOrderStatus: (id: string, status: Order['status']) => Promise<void>;

@@ -1,9 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useMemo,
-  type ReactNode,
-} from 'react';
+import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import type { ShopUiCapabilities } from '@inventory-platform/access';
 import type { VerticalPlugin } from './types';
 import { resolveSellPath } from './sell-surface';
@@ -29,12 +24,7 @@ export function useDashboardVerticalPlugin(): VerticalPlugin | null {
 }
 
 /** Active shop sell path: plugin sellSurfaces first, then capabilities, then core default. */
-export function useResolvedSellPath(
-  capabilities: ShopUiCapabilities | null | undefined
-): string {
+export function useResolvedSellPath(capabilities: ShopUiCapabilities | null | undefined): string {
   const plugin = useDashboardVerticalPlugin();
-  return useMemo(
-    () => resolveSellPath(capabilities, plugin),
-    [capabilities, plugin]
-  );
+  return useMemo(() => resolveSellPath(capabilities, plugin), [capabilities, plugin]);
 }

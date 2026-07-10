@@ -81,7 +81,7 @@ export function ProfilePage() {
               pin: data.location.pin ?? '',
               country: data.location.country ?? 'IND',
             }
-          : { ...emptyLocation }
+          : { ...emptyLocation },
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load shop');
@@ -107,7 +107,7 @@ export function ProfilePage() {
               pin: shop.location.pin ?? '',
               country: shop.location.country ?? 'IND',
             }
-          : { ...emptyLocation }
+          : { ...emptyLocation },
       );
     }
     setSaveError(null);
@@ -137,9 +137,7 @@ export function ProfilePage() {
       setShop(updated);
       setEditing(false);
     } catch (err) {
-      setSaveError(
-        err instanceof Error ? err.message : 'Failed to update shop'
-      );
+      setSaveError(err instanceof Error ? err.message : 'Failed to update shop');
     } finally {
       setSaving(false);
     }
@@ -163,10 +161,7 @@ export function ProfilePage() {
 
   return (
     <Stack gap="md" className={styles.container}>
-      <PageHeader
-        title="Shop Profile"
-        description="View and edit your active shop information"
-      />
+      <PageHeader title="Shop Profile" description="View and edit your active shop information" />
 
       {!editing ? (
         <Card className={styles.card}>
@@ -274,12 +269,7 @@ export function ProfilePage() {
               <Button type="button" variant="outline" onClick={handleCancelEdit}>
                 Cancel
               </Button>
-              <Button
-                type="button"
-                variant="solid"
-                onClick={handleSave}
-                disabled={saving}
-              >
+              <Button type="button" variant="solid" onClick={handleSave} disabled={saving}>
                 {saving ? 'Saving…' : 'Save'}
               </Button>
             </Inline>

@@ -1,11 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useId,
-  useRef,
-  type ReactNode,
-} from 'react';
+import { createContext, useContext, useEffect, useId, useRef, type ReactNode } from 'react';
 import { cn } from '../utils/cn';
 import { IconButton } from '../forms/IconButton';
 import styles from './overlay.module.css';
@@ -35,13 +28,7 @@ function useModalContext() {
   return ctx;
 }
 
-export function Modal({
-  open,
-  onClose,
-  size = 'md',
-  children,
-  className,
-}: ModalProps) {
+export function Modal({ open, onClose, size = 'md', children, className }: ModalProps) {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -89,13 +76,7 @@ export function Modal({
   );
 }
 
-function ModalHeader({
-  title,
-  onClose,
-}: {
-  title: ReactNode;
-  onClose?: () => void;
-}) {
+function ModalHeader({ title, onClose }: { title: ReactNode; onClose?: () => void }) {
   const { titleId, onClose: contextClose } = useModalContext();
   const close = onClose ?? contextClose;
 
@@ -223,12 +204,7 @@ export interface DropdownMenuProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function DropdownMenu({
-  trigger,
-  items,
-  open,
-  onOpenChange,
-}: DropdownMenuProps) {
+export function DropdownMenu({ trigger, items, open, onOpenChange }: DropdownMenuProps) {
   return (
     <span className={styles.popoverAnchor}>
       <span onClick={() => onOpenChange(!open)}>{trigger}</span>

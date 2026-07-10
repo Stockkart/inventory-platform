@@ -29,15 +29,8 @@ export function showVendorFilter(tab: HistoryTab): boolean {
   return tab === 'purchaseHistory' || tab === 'vendorReturnHistory';
 }
 
-export function hasActiveHistoryFilters(
-  filters: HistoryFilters,
-  tab?: HistoryTab
-): boolean {
-  const base = !!(
-    filters.dateFrom ||
-    filters.dateTo ||
-    filters.invoiceNo.trim()
-  );
+export function hasActiveHistoryFilters(filters: HistoryFilters, tab?: HistoryTab): boolean {
+  const base = !!(filters.dateFrom || filters.dateTo || filters.invoiceNo.trim());
   if (!tab) {
     return base || !!filters.customer.trim() || !!filters.vendor.trim();
   }
@@ -62,14 +55,15 @@ export function isValidRegexPattern(pattern: string): boolean {
   }
 }
 
-export function validateHistoryFilters(
-  filters: HistoryFilters,
-  tab: HistoryTab
-): string | null {
+export function validateHistoryFilters(filters: HistoryFilters, tab: HistoryTab): string | null {
   if (filters.invoiceNo.trim() && !isValidRegexPattern(filters.invoiceNo)) {
     return 'Invoice number search is not valid — try a simpler value like INV-001.';
   }
-  if (showCustomerFilter(tab) && filters.customer.trim() && !isValidRegexPattern(filters.customer)) {
+  if (
+    showCustomerFilter(tab) &&
+    filters.customer.trim() &&
+    !isValidRegexPattern(filters.customer)
+  ) {
     return 'Customer search is not valid — try a name or phone number.';
   }
   if (showVendorFilter(tab) && filters.vendor.trim() && !isValidRegexPattern(filters.vendor)) {
@@ -115,7 +109,7 @@ function endOfDayMs(yyyyMmDd: string): number {
 export function isDateInRange(
   iso: string | null | undefined,
   dateFrom: string,
-  dateTo: string
+  dateTo: string,
 ): boolean {
   if (!dateFrom && !dateTo) return true;
   if (!iso) return false;
@@ -127,9 +121,7 @@ export function isDateInRange(
 }
 
 /** Regex `q` for vendor purchase invoice list (invoice no. and/or vendor name). */
-export function buildVendorInvoiceSearchQuery(
-  filters: HistoryFilters
-): string | undefined {
+export function buildVendorInvoiceSearchQuery(filters: HistoryFilters): string | undefined {
   const inv = filters.invoiceNo.trim();
   const ven = filters.vendor.trim();
   if (inv && ven) return `(?:${inv}|${ven})`;
@@ -141,7 +133,7 @@ export function buildVendorInvoiceSearchQuery(
 export function paginateLocal<T>(
   items: T[],
   page: number,
-  limit: number
+  limit: number,
 ): { slice: T[]; total: number; totalPages: number } {
   const total = items.length;
   const totalPages = Math.max(1, Math.ceil(total / limit) || 1);
@@ -153,4 +145,3 @@ export function paginateLocal<T>(
     totalPages,
   };
 }
-

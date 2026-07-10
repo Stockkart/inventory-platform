@@ -11,14 +11,12 @@ const PLUGIN_LOADERS: Record<string, VerticalPluginLoader> = {
 
 export function registerVerticalPluginLoader(
   verticalId: string,
-  loader: VerticalPluginLoader
+  loader: VerticalPluginLoader,
 ): void {
   PLUGIN_LOADERS[verticalId] = loader;
 }
 
-export async function loadVerticalPlugin(
-  verticalId: string
-): Promise<VerticalPlugin | null> {
+export async function loadVerticalPlugin(verticalId: string): Promise<VerticalPlugin | null> {
   const loader = PLUGIN_LOADERS[verticalId];
   if (!loader) {
     return null;

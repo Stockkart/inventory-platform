@@ -60,11 +60,7 @@ export function PlanCarousel({
     return 0;
   });
 
-  const clones = [
-    ...sortedPlans.slice(-visible),
-    ...sortedPlans,
-    ...sortedPlans.slice(0, visible),
-  ];
+  const clones = [...sortedPlans.slice(-visible), ...sortedPlans, ...sortedPlans.slice(0, visible)];
 
   const total = sortedPlans.length;
 
@@ -143,9 +139,7 @@ export function PlanCarousel({
           <Box
             className={styles.track}
             style={{
-              transform: `translateX(-${
-                (activeIndex - Math.floor(visible / 2)) * step
-              }px)`,
+              transform: `translateX(-${(activeIndex - Math.floor(visible / 2)) * step}px)`,
             }}
           >
             {clones.map((plan, idx) => {
@@ -162,8 +156,7 @@ export function PlanCarousel({
                   ? allFeatures.filter((f) => f !== plan.bestFor)
                   : allFeatures;
 
-              const highlight =
-                plan.planName === 'Silver' || plan.planName === 'Gold';
+              const highlight = plan.planName === 'Silver' || plan.planName === 'Gold';
 
               return (
                 <Box
@@ -186,45 +179,33 @@ export function PlanCarousel({
                     ) : null}
 
                     <Stack gap="sm" className={styles.cardInner}>
-                      {showTrialBadge &&
-                        !EXTRA_PLANS.includes(plan.planName) && (
-                          <Badge className={styles.trialBadge}>
-                            Free 30-day trial
-                          </Badge>
-                        )}
+                      {showTrialBadge && !EXTRA_PLANS.includes(plan.planName) && (
+                        <Badge className={styles.trialBadge}>Free 30-day trial</Badge>
+                      )}
 
                       <Text as="h3" variant="heading3" className={styles.planName}>
                         {plan.planName}
                       </Text>
 
                       {!EXTRA_PLANS.includes(plan.planName) && plan.bestFor ? (
-                        <Text className={styles.planDescription}>
-                          {plan.bestFor}
-                        </Text>
+                        <Text className={styles.planDescription}>{plan.bestFor}</Text>
                       ) : null}
 
                       <Box className={styles.priceRow}>
                         <Text as="span" className={styles.price}>
-                          ₹
-                          {(plan.arcPrice ?? plan.price)?.toLocaleString(
-                            'en-IN'
-                          ) ?? 0}
+                          ₹{(plan.arcPrice ?? plan.price)?.toLocaleString('en-IN') ?? 0}
                         </Text>
 
                         <Text as="span" className={styles.priceSuffix}>
-                          {EXTRA_PLANS.includes(plan.planName)
-                            ? '/year'
-                            : '/year'}
+                          {EXTRA_PLANS.includes(plan.planName) ? '/year' : '/year'}
                         </Text>
                       </Box>
 
-                      {!EXTRA_PLANS.includes(plan.planName) &&
-                        plan.price &&
-                        plan.price > 0 && (
-                          <Text className={styles.oneTimePrice}>
-                            One-time ₹{plan.price.toLocaleString('en-IN')}
-                          </Text>
-                        )}
+                      {!EXTRA_PLANS.includes(plan.planName) && plan.price && plan.price > 0 && (
+                        <Text className={styles.oneTimePrice}>
+                          One-time ₹{plan.price.toLocaleString('en-IN')}
+                        </Text>
+                      )}
 
                       <Box as="ul" className={styles.featuresList}>
                         {features.map((f) => (
@@ -255,12 +236,7 @@ export function PlanCarousel({
           </Box>
         </Box>
 
-        <IconButton
-          type="button"
-          label="Next plan"
-          className={styles.navButton}
-          onClick={goNext}
-        >
+        <IconButton type="button" label="Next plan" className={styles.navButton} onClick={goNext}>
           ›
         </IconButton>
       </Box>
@@ -271,9 +247,7 @@ export function PlanCarousel({
             key={i}
             type="button"
             label={`Go to slide ${i + 1}`}
-            className={`${styles.dot} ${
-              i === activeIndex ? styles.dotActive : ''
-            }`}
+            className={`${styles.dot} ${i === activeIndex ? styles.dotActive : ''}`}
             onClick={() => {
               setIsPaused(true);
               setActiveIndex(i + 1);

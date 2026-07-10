@@ -5,9 +5,7 @@ import { DASHBOARD_ENDPOINTS } from './endpoints';
 
 export const dashboardApi = {
   getDashboard: async (): Promise<DashboardData> => {
-    const response = await apiClient.get<ApiResponse<DashboardData>>(
-      DASHBOARD_ENDPOINTS.BASE
-    );
+    const response = await apiClient.get<ApiResponse<DashboardData>>(DASHBOARD_ENDPOINTS.BASE);
     return response.data;
   },
 };

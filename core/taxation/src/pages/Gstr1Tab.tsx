@@ -57,12 +57,7 @@ function EmptySection({ message }: { message: string }) {
 /** GSTR-1 report content - used as a tab within the Taxes page */
 export function Gstr1Tab() {
   const [period, setPeriod] = useState(getDefaultPeriod);
-  const {
-    data = null,
-    isLoading,
-    isError,
-    error: queryError,
-  } = useGstr1ReportQuery(period);
+  const { data = null, isLoading, isError, error: queryError } = useGstr1ReportQuery(period);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<Gstr1SectionId>('b2b');
   const [isDownloading, setIsDownloading] = useState(false);
@@ -70,9 +65,7 @@ export function Gstr1Tab() {
 
   useEffect(() => {
     if (isError) {
-      setError(
-        queryError instanceof Error ? queryError.message : 'Failed to load GSTR-1 report'
-      );
+      setError(queryError instanceof Error ? queryError.message : 'Failed to load GSTR-1 report');
     } else {
       setError(null);
     }
@@ -132,9 +125,7 @@ export function Gstr1Tab() {
       <GstrReportHeader
         title="GSTR-1 Report"
         description="View and download your GSTR-1 tax return for GST filing"
-        shopInfo={
-          data ? `GSTIN: ${data.shopGstin || '—'} · Period: ${data.period}` : undefined
-        }
+        shopInfo={data ? `GSTIN: ${data.shopGstin || '—'} · Period: ${data.period}` : undefined}
         periodId="gstr1-period"
         period={period}
         onPeriodChange={setPeriod}
@@ -422,8 +413,8 @@ export function Gstr1Tab() {
                               {row.noteType === 'C'
                                 ? 'Credit'
                                 : row.noteType === 'D'
-                                  ? 'Debit'
-                                  : row.noteType || '—'}
+                                ? 'Debit'
+                                : row.noteType || '—'}
                             </TableCell>
                             <TableCell>{row.recipientGstin || '—'}</TableCell>
                             <TableCell>{row.receiverName || '—'}</TableCell>
@@ -497,8 +488,8 @@ export function Gstr1Tab() {
                               {row.noteType === 'C'
                                 ? 'Credit'
                                 : row.noteType === 'D'
-                                  ? 'Debit'
-                                  : row.noteType || '—'}
+                                ? 'Debit'
+                                : row.noteType || '—'}
                             </TableCell>
                             <TableCell>{row.receiverName || '—'}</TableCell>
                             <TableCell className={styles.numCol}>
@@ -662,7 +653,9 @@ export function Gstr1Tab() {
                         <TableRow>
                           <TableHeaderCell>Place of Supply</TableHeaderCell>
                           <TableHeaderCell>Tax %</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>Gross Adjusted</TableHeaderCell>
+                          <TableHeaderCell className={styles.numCol}>
+                            Gross Adjusted
+                          </TableHeaderCell>
                           <TableHeaderCell className={styles.numCol}>Cess</TableHeaderCell>
                         </TableRow>
                       </TableHead>
@@ -970,9 +963,7 @@ export function Gstr1Tab() {
                             <TableCell className={styles.numCol}>
                               {row.totalNumber ?? '—'}
                             </TableCell>
-                            <TableCell className={styles.numCol}>
-                              {row.cancelled ?? '—'}
-                            </TableCell>
+                            <TableCell className={styles.numCol}>{row.cancelled ?? '—'}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>

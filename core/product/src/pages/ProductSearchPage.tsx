@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
 import { cartApi } from '../api/cart.api';
 import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
-import type { BillingMode, InventoryItem, QuotationSummary } from '@inventory-platform/product/types';
+import type {
+  BillingMode,
+  InventoryItem,
+  QuotationSummary,
+} from '@inventory-platform/product/types';
 import {
   Alert,
   Box,
@@ -22,7 +26,12 @@ import {
 import { InventoryAlertDetails, ProductSearchCard, normalizedBillingMode } from '../ui';
 import { sortInventoryByExpirySoonest } from '@inventory-platform/schema';
 import styles from './product-search.module.css';
-import { useAuthStore, useNotify, useShopAccessStore, useVerticalSchemaStore } from '@inventory-platform/session';
+import {
+  useAuthStore,
+  useNotify,
+  useShopAccessStore,
+  useVerticalSchemaStore,
+} from '@inventory-platform/session';
 import { AddToSellQuotationPicker } from '../ui/AddToSellQuotationPicker';
 
 const BILLING_MODE_OPTIONS: readonly SelectOptionDef[] = [
@@ -54,21 +63,16 @@ export function ProductSearchPage() {
   const [searchTotalItems, setSearchTotalItems] = useState(0);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
-  const [billingModeFilter, setBillingModeFilter] = useState<
-    'ALL' | BillingMode
-  >('ALL');
-  const [quotationPickerItem, setQuotationPickerItem] =
-    useState<InventoryItem | null>(null);
-  const [quotationPickerList, setQuotationPickerList] = useState<
-    QuotationSummary[]
-  >([]);
+  const [billingModeFilter, setBillingModeFilter] = useState<'ALL' | BillingMode>('ALL');
+  const [quotationPickerItem, setQuotationPickerItem] = useState<InventoryItem | null>(null);
+  const [quotationPickerList, setQuotationPickerList] = useState<QuotationSummary[]>([]);
   const [cartBusinessType, setCartBusinessType] = useState('medical');
   const { success: notifySuccess, error: notifyError } = useNotify;
   const { user } = useAuthStore();
   const activeShopId = user?.shopId;
   const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
   const productSearchAccess = useShopAccessStore((s) =>
-    user?.shopId ? s.byShopId[user.shopId]?.productSearch : undefined
+    user?.shopId ? s.byShopId[user.shopId]?.productSearch : undefined,
   );
 
   const hasActiveSearch = searchQuery.trim().length > 0;
@@ -106,8 +110,7 @@ export function ProductSearchPage() {
         setSearchPage(0);
       }
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to fetch inventory';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch inventory';
       notifyError(errorMessage);
       setInventory([]);
     } finally {
@@ -146,8 +149,7 @@ export function ProductSearchPage() {
       setSearchTotalItems(total);
       setSearchPage(0);
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to search inventory';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to search inventory';
       notifyError(errorMessage);
       setInventory([]);
     } finally {
@@ -175,19 +177,14 @@ export function ProductSearchPage() {
       const full = await inventoryApi.getById(inventoryId);
       setSelectedItem(full);
     } catch (err) {
-      notifyError(
-        err instanceof Error ? err.message : 'Failed to load product details'
-      );
+      notifyError(err instanceof Error ? err.message : 'Failed to load product details');
       setSelectedItem(null);
     } finally {
       setDetailLoadingId(null);
     }
   };
 
-  const addItemToQuotation = async (
-    item: InventoryItem,
-    purchaseId: string
-  ): Promise<void> => {
+  const addItemToQuotation = async (item: InventoryItem, purchaseId: string): Promise<void> => {
     const inventoryId = resolveInventoryDocumentId(item);
     if (!inventoryId) {
       notifyError('Cannot add: missing inventory id');
@@ -215,30 +212,20 @@ export function ProductSearchPage() {
 
   const quotationLabel = (q: QuotationSummary) => q.customerName;
 
-  const notifyAddedToQuotation = (
-    item: InventoryItem,
-    quotation?: QuotationSummary
-  ) => {
+  const notifyAddedToQuotation = (item: InventoryItem, quotation?: QuotationSummary) => {
     const productName = item.name || 'Product';
     if (quotation) {
-      notifySuccess(
-        `Added "${productName}" to quotation for ${quotationLabel(quotation)}`
-      );
+      notifySuccess(`Added "${productName}" to quotation for ${quotationLabel(quotation)}`);
     } else {
       notifySuccess(`Added "${productName}" to a new quotation`);
     }
   };
 
   const handleAddToSellError = (err: unknown) => {
-    const errorMessage =
-      err instanceof Error ? err.message : 'Failed to add item to cart';
-    if (
-      errorMessage.includes(
-        'Cannot mix REGULAR and BASIC inventory items in a single cart'
-      )
-    ) {
+    const errorMessage = err instanceof Error ? err.message : 'Failed to add item to cart';
+    if (errorMessage.includes('Cannot mix REGULAR and BASIC inventory items in a single cart')) {
       notifyError(
-        'Cannot add this item because the quotation already contains a different billing mode (REGULAR/BASIC). Pick another quotation or clear that cart.'
+        'Cannot add this item because the quotation already contains a different billing mode (REGULAR/BASIC). Pick another quotation or clear that cart.',
       );
     } else {
       notifyError(errorMessage);
@@ -263,7 +250,7 @@ export function ProductSearchPage() {
   const commitAddToSell = async (
     item: InventoryItem,
     purchaseId: string,
-    quotations: QuotationSummary[]
+    quotations: QuotationSummary[],
   ) => {
     const inventoryId = resolveInventoryDocumentId(item);
     if (!inventoryId) {
@@ -323,11 +310,7 @@ export function ProductSearchPage() {
     if (!quotationPickerItem) {
       return;
     }
-    await commitAddToSell(
-      quotationPickerItem,
-      purchaseId,
-      quotationPickerList
-    );
+    await commitAddToSell(quotationPickerItem, purchaseId, quotationPickerList);
   };
 
   const handlePickerNewQuotation = async () => {
@@ -354,10 +337,8 @@ export function ProductSearchPage() {
 
   const filteredInventory = sortInventoryByExpirySoonest(
     inventory.filter((item) =>
-      billingModeFilter === 'ALL'
-        ? true
-        : normalizedBillingMode(item) === billingModeFilter
-    )
+      billingModeFilter === 'ALL' ? true : normalizedBillingMode(item) === billingModeFilter,
+    ),
   );
 
   return (
@@ -392,17 +373,13 @@ export function ProductSearchPage() {
         <Select
           value={billingModeFilter}
           options={BILLING_MODE_OPTIONS}
-          onChange={(e) =>
-            setBillingModeFilter(e.target.value as 'ALL' | BillingMode)
-          }
+          onChange={(e) => setBillingModeFilter(e.target.value as 'ALL' | BillingMode)}
           disabled={isLoading}
         />
       </Inline>
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
-      {successMessage ? (
-        <Alert variant="success">{successMessage}</Alert>
-      ) : null}
+      {successMessage ? <Alert variant="success">{successMessage}</Alert> : null}
 
       <Card>
         <CardBody>
@@ -470,9 +447,7 @@ export function ProductSearchPage() {
         editable
         productSearchAccess={productSearchAccess}
         onUpdated={(updated) => {
-          setInventory((prev) =>
-            prev.map((i) => (i.id === updated.id ? updated : i))
-          );
+          setInventory((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
           setSelectedItem(updated);
         }}
       />

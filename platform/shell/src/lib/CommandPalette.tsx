@@ -4,10 +4,7 @@ import { useNavigate } from 'react-router';
 import { Search } from 'lucide-react';
 import { Box, Input, Modal, Text } from '@inventory-platform/ui-kit';
 import type { DashboardNavRow } from '@inventory-platform/routing';
-import {
-  DASHBOARD_HOTKEY,
-  getQuickNavFooterHints,
-} from './dashboardHotkeys';
+import { DASHBOARD_HOTKEY, getQuickNavFooterHints } from './dashboardHotkeys';
 import { KEYBOARD_NAV_SKIP } from './formKeyboardNav';
 import styles from './CommandPalette.module.css';
 import { NavIcon } from './NavIcon';
@@ -23,12 +20,7 @@ function normalize(s: string) {
   return s.trim().toLowerCase();
 }
 
-export function CommandPalette({
-  open,
-  onClose,
-  navRows,
-  modLabel,
-}: CommandPaletteProps) {
+export function CommandPalette({ open, onClose, navRows, modLabel }: CommandPaletteProps) {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
@@ -37,10 +29,7 @@ export function CommandPalette({
   const filteredRef = useRef<DashboardNavRow[]>([]);
   const activeRef = useRef(0);
 
-  const footerHints = useMemo(
-    () => getQuickNavFooterHints(modLabel),
-    [modLabel]
-  );
+  const footerHints = useMemo(() => getQuickNavFooterHints(modLabel), [modLabel]);
 
   const filtered = useMemo(() => {
     const q = normalize(query);
@@ -49,7 +38,7 @@ export function CommandPalette({
       (row) =>
         normalize(row.label).includes(q) ||
         normalize(row.path).includes(q) ||
-        normalize(row.groupLabel).includes(q)
+        normalize(row.groupLabel).includes(q),
     );
   }, [navRows, query]);
 
@@ -95,7 +84,7 @@ export function CommandPalette({
       navigate(path);
       onClose();
     },
-    [navigate, onClose]
+    [navigate, onClose],
   );
 
   const moveActive = useCallback((delta: number) => {
@@ -119,7 +108,7 @@ export function CommandPalette({
         go(list[idx].path);
       }
     },
-    [go]
+    [go],
   );
 
   const onPaletteKeyDownCapture = useCallback(
@@ -167,7 +156,7 @@ export function CommandPalette({
         }
       }
     },
-    [go, moveActive, onClose, openQuickIndex]
+    [go, moveActive, onClose, openQuickIndex],
   );
 
   if (!open) return null;
@@ -217,9 +206,7 @@ export function CommandPalette({
                 ref={(el) => {
                   itemRefs.current[idx] = el;
                 }}
-                className={`${styles.item} ${
-                  idx === active ? styles.itemActive : ''
-                }`}
+                className={`${styles.item} ${idx === active ? styles.itemActive : ''}`}
                 onMouseEnter={() => {
                   setActive(idx);
                   activeRef.current = idx;

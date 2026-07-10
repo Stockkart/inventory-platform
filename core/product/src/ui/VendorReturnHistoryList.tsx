@@ -47,8 +47,7 @@ function moneyOrDash(n: number | null | undefined): string {
 }
 
 function formatReturnedDisplayQty(displayQuantityReturned: unknown): string {
-  const d =
-    typeof displayQuantityReturned === 'number' ? displayQuantityReturned : null;
+  const d = typeof displayQuantityReturned === 'number' ? displayQuantityReturned : null;
   if (d == null || Number.isNaN(d) || !Number.isFinite(d)) {
     return '—';
   }
@@ -97,7 +96,7 @@ const PAGE_SIZE = 20;
 
 function applyVendorReturnFilters(
   rows: VendorPurchaseReturnSummary[],
-  applied: HistoryFilters
+  applied: HistoryFilters,
 ): VendorPurchaseReturnSummary[] {
   return rows
     .filter((r) => isDateInRange(r.createdAt, applied.dateFrom, applied.dateTo))
@@ -105,13 +104,9 @@ function applyVendorReturnFilters(
     .filter((r) => matchesRegexField(applied.vendor, r.vendorName));
 }
 
-export function VendorReturnHistoryList({
-  refreshTrigger,
-  filters,
-}: VendorReturnHistoryListProps) {
+export function VendorReturnHistoryList({ refreshTrigger, filters }: VendorReturnHistoryListProps) {
   const applied = filters;
-  const filtering =
-    applied != null && hasActiveHistoryFilters(applied, 'vendorReturnHistory');
+  const filtering = applied != null && hasActiveHistoryFilters(applied, 'vendorReturnHistory');
 
   const [returns, setReturns] = useState<VendorPurchaseReturnSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -145,9 +140,7 @@ export function VendorReturnHistoryList({
         setTotal(res.total);
       }
     } catch (err) {
-      notifyError(
-        err instanceof Error ? err.message : 'Failed to load supplier return history.'
-      );
+      notifyError(err instanceof Error ? err.message : 'Failed to load supplier return history.');
       setReturns([]);
     } finally {
       setIsLoading(false);
@@ -186,9 +179,7 @@ export function VendorReturnHistoryList({
       {returns.length === 0 ? (
         <EmptyState
           title={
-            filtering
-              ? 'No supplier returns match these filters.'
-              : 'No supplier returns yet.'
+            filtering ? 'No supplier returns match these filters.' : 'No supplier returns yet.'
           }
         />
       ) : (
@@ -211,22 +202,11 @@ export function VendorReturnHistoryList({
                       <DetailLine label="Date" value={formatDate(r.createdAt)} />
                     </Inline>
                     <Grid columns={2} gap="sm" className={recordStyles.recordDetails}>
-                      <DetailLine
-                        label="Purchase invoice"
-                        value={r.invoiceNo ?? '—'}
-                      />
+                      <DetailLine label="Purchase invoice" value={r.invoiceNo ?? '—'} />
                       <DetailLine label="Vendor" value={r.vendorName ?? '—'} />
-                      <DetailLine
-                        label="Lines returned"
-                        value={String(r.totalLinesReturned)}
-                      />
-                      <DetailLine
-                        label="Note value"
-                        value={formatCurrency(r.returnAmount)}
-                      />
-                      {r.reason ? (
-                        <DetailLine label="Reason" value={r.reason} />
-                      ) : null}
+                      <DetailLine label="Lines returned" value={String(r.totalLinesReturned)} />
+                      <DetailLine label="Note value" value={formatCurrency(r.returnAmount)} />
+                      {r.reason ? <DetailLine label="Reason" value={r.reason} /> : null}
                     </Grid>
                     {(r.lines?.length ?? 0) > 0 ? (
                       <Stack gap="sm" className={recordStyles.breakdownWrap}>
@@ -253,9 +233,7 @@ export function VendorReturnHistoryList({
                             </TableHead>
                             <TableBody>
                               {r.lines!.map((line, idx) => (
-                                <TableRow
-                                  key={`${line.inventoryId ?? 'unknown'}-${idx}`}
-                                >
+                                <TableRow key={`${line.inventoryId ?? 'unknown'}-${idx}`}>
                                   <TableCell>
                                     {line.productName?.trim()
                                       ? line.productName
@@ -263,9 +241,7 @@ export function VendorReturnHistoryList({
                                   </TableCell>
                                   <TableCell>{line.barcode ?? '—'}</TableCell>
                                   <TableCell>
-                                    {formatReturnedDisplayQty(
-                                      line.displayQuantityReturned
-                                    )}
+                                    {formatReturnedDisplayQty(line.displayQuantityReturned)}
                                   </TableCell>
                                   <TableCell>{moneyOrDash(line.taxableValue)}</TableCell>
                                   <TableCell>{moneyOrDash(line.centralGstAmount)}</TableCell>
@@ -283,8 +259,7 @@ export function VendorReturnHistoryList({
                         color="secondary"
                         className={recordStyles.breakdownLegacyNote}
                       >
-                        No saved line breakdown for this debit note (often older
-                        returns).
+                        No saved line breakdown for this debit note (often older returns).
                       </Text>
                     )}
                   </Stack>

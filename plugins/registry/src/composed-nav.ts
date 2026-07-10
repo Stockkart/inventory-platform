@@ -11,11 +11,7 @@ import { analyticsNav } from '@inventory-platform/analytics/nav';
 import { creditNav } from '@inventory-platform/credit/nav';
 import { planNav } from '@inventory-platform/plan/nav';
 import { pricingNav } from '@inventory-platform/pricing/nav';
-import {
-  productHistoryNav,
-  productNav,
-  productReturnsNav,
-} from '@inventory-platform/product/nav';
+import { productHistoryNav, productNav, productReturnsNav } from '@inventory-platform/product/nav';
 import { remindersNav } from '@inventory-platform/reminders/nav';
 import { taxationNav } from '@inventory-platform/taxation/nav';
 import {
@@ -74,21 +70,17 @@ export { mergeNavContributions };
 
 export const COMPOSED_DASHBOARD_MENU_GROUPS = mergeNavContributions(
   CORE_NAV_CONTRIBUTIONS,
-  NAV_GROUP_ORDER
+  NAV_GROUP_ORDER,
 );
 
 /** @deprecated Use {@link COMPOSED_DASHBOARD_MENU_GROUPS}. */
 export const DASHBOARD_MENU_GROUPS = COMPOSED_DASHBOARD_MENU_GROUPS;
 
 /** Sidebar groups — RBAC filtering happens in shell {@link filterDashboardMenuGroupsByAccess}. */
-export function getDashboardMenuGroupsForRole(
-  _role: string | undefined
-): DashboardMenuGroup[] {
+export function getDashboardMenuGroupsForRole(_role: string | undefined): DashboardMenuGroup[] {
   return COMPOSED_DASHBOARD_MENU_GROUPS;
 }
 
-export function getDashboardNavRowsForRole(
-  _role: string | undefined
-): DashboardNavRow[] {
+export function getDashboardNavRowsForRole(_role: string | undefined): DashboardNavRow[] {
   return getDashboardNavRows(COMPOSED_DASHBOARD_MENU_GROUPS);
 }

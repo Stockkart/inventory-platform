@@ -6,9 +6,7 @@ export function isScanSellHidePurchaseKey(e: KeyboardEvent): boolean {
 }
 
 /** Skip tilde shortcut when typing in a text-like field. */
-export function shouldSkipScanSellHidePurchaseKey(
-  activeElement: Element | null
-): boolean {
+export function shouldSkipScanSellHidePurchaseKey(activeElement: Element | null): boolean {
   if (!activeElement || !(activeElement instanceof HTMLElement)) {
     return false;
   }

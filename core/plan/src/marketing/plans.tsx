@@ -4,13 +4,7 @@ import { plansApi } from '../api';
 import { FormKeyboardNavScope } from '@inventory-platform/routing';
 import { PlanGrid, Header, Footer } from '../ui';
 import { useAuthStore } from '@inventory-platform/session';
-import {
-  Alert,
-  Box,
-  CenteredLoader,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { Alert, Box, CenteredLoader, Stack, Text } from '@inventory-platform/ui-kit';
 import styles from './plans.module.css';
 
 export function meta() {
@@ -26,9 +20,7 @@ export function meta() {
 export default function PlansPage() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
-  const [plans, setPlans] = useState<Awaited<ReturnType<typeof plansApi.list>>>(
-    []
-  );
+  const [plans, setPlans] = useState<Awaited<ReturnType<typeof plansApi.list>>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,14 +58,10 @@ export default function PlansPage() {
             <Text as="h1" variant="heading1" className={styles.title}>
               All Plans & Pricing
             </Text>
-            <Text className={styles.subtitle}>
-              Choose the plan that fits your business needs
-            </Text>
+            <Text className={styles.subtitle}>Choose the plan that fits your business needs</Text>
           </Stack>
 
-          {loading ? (
-            <CenteredLoader label="Loading plans..." />
-          ) : null}
+          {loading ? <CenteredLoader label="Loading plans..." /> : null}
 
           {error ? <Alert variant="danger">{error}</Alert> : null}
 

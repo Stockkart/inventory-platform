@@ -29,7 +29,7 @@ export function InventoryAlertPage() {
   const location = useLocation();
   const { user } = useAuthStore();
   const productSearchAccess = useShopAccessStore((s) =>
-    user?.shopId ? s.byShopId[user.shopId]?.productSearch : undefined
+    user?.shopId ? s.byShopId[user.shopId]?.productSearch : undefined,
   );
   const inventoryIdFromNotification =
     location.state?.fromNotification === true
@@ -51,21 +51,15 @@ export function InventoryAlertPage() {
   const { error: notifyError } = useNotify;
 
   const { data: lowStockData, isLoading } = useLowStockAlertsQuery(page, size);
-  const { data: detailItem, isLoading: detailLoading } = useInventoryItemQuery(
-    detailItemId,
-    { retry: false }
-  );
+  const { data: detailItem, isLoading: detailLoading } = useInventoryItemQuery(detailItemId, {
+    retry: false,
+  });
   const updateThresholdMutation = useUpdateThresholdMutation({
     onError: (err) =>
-      notifyError(
-        err instanceof Error ? err.message : 'Failed to update threshold'
-      ),
+      notifyError(err instanceof Error ? err.message : 'Failed to update threshold'),
   });
 
-  const alerts = useMemo(
-    () => mapLowStockItems(lowStockData?.data ?? []),
-    [lowStockData?.data]
-  );
+  const alerts = useMemo(() => mapLowStockItems(lowStockData?.data ?? []), [lowStockData?.data]);
   const totalPages = lowStockData?.page?.totalPages ?? 0;
   const totalItems = lowStockData?.page?.totalItems ?? alerts.length;
   const selected = detailItem ?? detailFallback;
@@ -87,8 +81,7 @@ export function InventoryAlertPage() {
     if (found) openInventoryDetails(found.raw);
   }, [inventoryIdFromNotification, alerts]);
 
-  const productLabel =
-    thresholdModal.item?.name ?? thresholdModal.item?.barcode ?? 'Unknown';
+  const productLabel = thresholdModal.item?.name ?? thresholdModal.item?.barcode ?? 'Unknown';
 
   return (
     <Stack gap="md">
@@ -112,13 +105,8 @@ export function InventoryAlertPage() {
       ) : (
         <Stack gap="md" className={styles.alertsList}>
           {alerts.map((alert: LowStockAlertRow) => (
-            <Box
-              key={alert.id}
-              className={`${styles.alertCard} ${styles[alert.status]}`}
-            >
-              <Box className={styles.alertIcon}>
-                {alert.status === 'critical' ? '🔴' : '🟡'}
-              </Box>
+            <Box key={alert.id} className={`${styles.alertCard} ${styles[alert.status]}`}>
+              <Box className={styles.alertIcon}>{alert.status === 'critical' ? '🔴' : '🟡'}</Box>
 
               <Stack gap="sm" className={styles.alertInfo}>
                 <Text variant="heading3" weight="semibold" className={styles.alertProduct}>
@@ -144,10 +132,7 @@ export function InventoryAlertPage() {
                   <Box
                     className={styles.stockFill}
                     style={{
-                      width: `${Math.min(
-                        (alert.current / alert.threshold) * 100,
-                        100
-                      )}%`,
+                      width: `${Math.min((alert.current / alert.threshold) * 100, 100)}%`,
                     }}
                   />
                 </Box>
@@ -171,8 +156,7 @@ export function InventoryAlertPage() {
                     setThresholdModal({
                       open: true,
                       item: alert.raw,
-                      threshold:
-                        alert.raw?.thresholdCount ?? alert.threshold ?? 10,
+                      threshold: alert.raw?.thresholdCount ?? alert.threshold ?? 10,
                     })
                   }
                 >

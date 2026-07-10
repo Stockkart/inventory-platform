@@ -28,10 +28,18 @@
   flex-direction: column;
 }
 
-.size-sm { max-width: 420px; }
-.size-md { max-width: 540px; }
-.size-lg { max-width: 720px; }
-.size-full { max-width: min(960px, 100%); }
+.size-sm {
+  max-width: 420px;
+}
+.size-md {
+  max-width: 540px;
+}
+.size-lg {
+  max-width: 720px;
+}
+.size-full {
+  max-width: min(960px, 100%);
+}
 
 .header {
   display: flex;

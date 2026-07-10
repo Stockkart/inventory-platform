@@ -11,7 +11,7 @@ export const sellCatalogApi = {
     }
     const response = await apiClient.get<ApiResponse<SellCatalog>>(
       SHOP_SELL_ENDPOINTS.ME_SELL_CATALOG,
-      params
+      params,
     );
     const data = response.data;
     return {

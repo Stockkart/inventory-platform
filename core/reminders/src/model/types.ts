@@ -95,4 +95,3 @@ export type InventoryLowEvent = {
   currentCount: number;
   threshold: number;
 };
-

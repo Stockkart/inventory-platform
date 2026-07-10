@@ -1,7 +1,4 @@
-import type {
-  PaymentCheckoutPort,
-  RazorpayPaymentSuccess,
-} from './types.js';
+import type { PaymentCheckoutPort, RazorpayPaymentSuccess } from './types.js';
 import { ensureRazorpayLoaded } from './razorpayScript.js';
 
 export const razorpayCheckout: PaymentCheckoutPort = {
@@ -33,8 +30,7 @@ export const razorpayCheckout: PaymentCheckoutPort = {
       });
 
       rzp.on('payment.failed', (response) => {
-        const description =
-          response.error?.description ?? 'Payment failed. Please try again.';
+        const description = response.error?.description ?? 'Payment failed. Please try again.';
         reject(new Error(description));
       });
 

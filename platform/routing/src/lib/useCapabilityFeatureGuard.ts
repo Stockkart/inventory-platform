@@ -1,18 +1,15 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/session';
-import {
-  isCustomerReturnEnabled,
-  isVendorReturnEnabled,
-} from './capability-guards';
+import { isCustomerReturnEnabled, isVendorReturnEnabled } from './capability-guards';
 
 type ReturnFeature = 'customerReturn' | 'vendorReturn';
 
 function isFeatureEnabled(
   feature: ReturnFeature,
-  capabilities: ReturnType<
-    typeof useShopCapabilitiesStore.getState
-  >['byShopId'][string] | undefined
+  capabilities:
+    | ReturnType<typeof useShopCapabilitiesStore.getState>['byShopId'][string]
+    | undefined,
 ): boolean {
   return feature === 'customerReturn'
     ? isCustomerReturnEnabled(capabilities)
@@ -20,16 +17,13 @@ function isFeatureEnabled(
 }
 
 /** Redirects away when a shop capability feature is disabled (e.g. cafe returns). */
-export function useCapabilityFeatureGuard(
-  feature: ReturnFeature,
-  redirectTo = '/dashboard'
-) {
+export function useCapabilityFeatureGuard(feature: ReturnFeature, redirectTo = '/dashboard') {
   const navigate = useNavigate();
   const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
   const fetchCapabilities = useShopCapabilitiesStore((s) => s.fetchCapabilities);
   const loading = useShopCapabilitiesStore((s) => s.loading);
   const capabilities = useShopCapabilitiesStore((s) =>
-    activeShopId ? s.byShopId[activeShopId] : undefined
+    activeShopId ? s.byShopId[activeShopId] : undefined,
   );
 
   useEffect(() => {

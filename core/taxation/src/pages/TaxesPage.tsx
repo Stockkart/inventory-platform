@@ -11,10 +11,7 @@ export function TaxesPage() {
 
   return (
     <Stack gap="md" className={styles.page}>
-      <PageHeader
-        title="Taxes"
-        description="View tax reports and GST filings for your business"
-      />
+      <PageHeader title="Taxes" description="View tax reports and GST filings for your business" />
       <TaxTabs activeTab={activeTab} onTabChange={setActiveTab} />
       {activeTab === 'gstr1' && <Gstr1Tab />}
       {activeTab === 'gstr2' && <Gstr2Tab />}

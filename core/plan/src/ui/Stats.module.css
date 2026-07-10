@@ -34,7 +34,7 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 2rem 1rem;
   }
-  
+
   .statValue {
     font-size: 2rem;
   }
@@ -45,4 +45,3 @@
     grid-template-columns: 1fr;
   }
 }
-

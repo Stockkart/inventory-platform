@@ -1,6 +1,10 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { eventsApi } from '../api/events.api';
-import type { ReminderDetail, ReminderNotification, InventoryLowEvent } from '@inventory-platform/contracts';
+import type {
+  ReminderDetail,
+  ReminderNotification,
+  InventoryLowEvent,
+} from '@inventory-platform/contracts';
 const STORAGE_KEY = 'reminder_notifications';
 
 /* SAFE LOCAL STORAGE HYDRATION */
@@ -19,8 +23,7 @@ export function useNotifications(shopId?: string) {
   const esRef = useRef<EventSource | null>(null);
 
   // hydrate ONCE, before effects
-  const [notifications, setNotifications] =
-    useState<ReminderNotification[]>(loadFromStorage);
+  const [notifications, setNotifications] = useState<ReminderNotification[]>(loadFromStorage);
   const [isConnected, setIsConnected] = useState(false);
 
   /* ---------- PERSIST (STRICTMODE SAFE) ---------- */
@@ -40,14 +43,12 @@ export function useNotifications(shopId?: string) {
     const es = eventsApi.subscribe(
       /* REMINDER_DUE */
       (data: ReminderDetail) => {
-        const title =
-          data.type === 'EXPIRY' ? 'Expiry Reminder' : 'Custom Reminder';
+        const title = data.type === 'EXPIRY' ? 'Expiry Reminder' : 'Custom Reminder';
 
         const message = [
           data.notes,
           data.inventory?.name && `Product: ${data.inventory.name}`,
-          data.inventory?.companyName &&
-            `Company: ${data.inventory.companyName}`,
+          data.inventory?.companyName && `Company: ${data.inventory.companyName}`,
         ]
           .filter(Boolean)
           .join('\n');
@@ -55,11 +56,7 @@ export function useNotifications(shopId?: string) {
         setNotifications((prev) => {
           // prevent duplicates
           if (prev.some((n) => n.id === data.id)) return prev;
-          console.log(
-            'SSE reminderId = ',
-            (data as any).reminderId,
-            (data as any).id
-          );
+          console.log('SSE reminderId = ', (data as any).reminderId, (data as any).id);
 
           return [
             {
@@ -92,7 +89,7 @@ export function useNotifications(shopId?: string) {
             ...prev,
           ];
         });
-      }
+      },
     );
 
     esRef.current = es;
@@ -106,9 +103,7 @@ export function useNotifications(shopId?: string) {
 
   /* ---------- ACTIONS ---------- */
   const markAsRead = useCallback((id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
   }, []);
 
   const clearAll = useCallback(() => {

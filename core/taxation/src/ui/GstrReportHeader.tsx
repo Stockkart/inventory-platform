@@ -1,11 +1,4 @@
-import {
-  Button,
-  FormField,
-  Inline,
-  Input,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { Button, FormField, Inline, Input, Stack, Text } from '@inventory-platform/ui-kit';
 import styles from './gstr.module.css';
 
 export interface GstrDownloadAction {

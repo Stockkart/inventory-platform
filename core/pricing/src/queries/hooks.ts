@@ -11,7 +11,7 @@ import { pricingKeys } from './keys';
 
 export function usePricingQuery(
   pricingId: string | undefined,
-  options?: Omit<UseQueryOptions<PricingResponse>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<PricingResponse>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: pricingKeys.detail(pricingId ?? ''),
@@ -26,7 +26,7 @@ export function useUpdatePricingMutation(
     PricingResponse,
     Error,
     { pricingId: string; data: PatchPricingDto }
-  >
+  >,
 ) {
   const queryClient = useQueryClient();
   return useMutation({

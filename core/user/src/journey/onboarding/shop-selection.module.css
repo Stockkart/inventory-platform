@@ -67,8 +67,7 @@
 .optionCard:hover {
   border-color: var(--border-hover);
   transform: translateY(-6px);
-  box-shadow: 0 12px 40px -8px rgba(59, 130, 246, 0.15),
-    0 4px 20px -4px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 12px 40px -8px rgba(59, 130, 246, 0.15), 0 4px 20px -4px rgba(0, 0, 0, 0.08);
 }
 
 .optionCard:hover::before {
@@ -77,13 +76,8 @@
 
 .optionCard.selected {
   border-color: #3b82f6;
-  background: linear-gradient(
-    180deg,
-    rgba(59, 130, 246, 0.08) 0%,
-    var(--bg-card) 100%
-  );
-  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3),
-    0 12px 40px -8px rgba(59, 130, 246, 0.2);
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.08) 0%, var(--bg-card) 100%);
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3), 0 12px 40px -8px rgba(59, 130, 246, 0.2);
 }
 
 .optionCard.selected::before {

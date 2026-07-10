@@ -1,11 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { UpdateVendorDto } from '@inventory-platform/user/types';
-import {
-  FormField,
-  Select,
-  Stack,
-  type SelectOptionDef,
-} from '@inventory-platform/ui-kit';
+import { FormField, Select, Stack, type SelectOptionDef } from '@inventory-platform/ui-kit';
 
 interface VendorEditFormProps {
   value: UpdateVendorDto;
@@ -22,19 +17,13 @@ const BUSINESS_TYPE_OPTIONS: readonly SelectOptionDef[] = [
   { value: 'OTHER', label: 'Other' },
 ];
 
-const PRESET_BUSINESS_TYPES = new Set(
-  BUSINESS_TYPE_OPTIONS.map((opt) => opt.value)
-);
+const PRESET_BUSINESS_TYPES = new Set(BUSINESS_TYPE_OPTIONS.map((opt) => opt.value));
 
 function isPresetBusinessType(value: string): boolean {
   return PRESET_BUSINESS_TYPES.has(value);
 }
 
-export function VendorEditForm({
-  value,
-  onChange,
-  disabled = false,
-}: VendorEditFormProps) {
+export function VendorEditForm({ value, onChange, disabled = false }: VendorEditFormProps) {
   const [showCustom, setShowCustom] = useState(false);
   const [customType, setCustomType] = useState('');
 

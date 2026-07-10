@@ -1,10 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
-import {
-  cartApi,
-  inventoryApi,
-  resolveInventoryDocumentId,
-} from '@inventory-platform/product/api';
+import { cartApi, inventoryApi, resolveInventoryDocumentId } from '@inventory-platform/product/api';
 import type { InventoryItem } from '@inventory-platform/product/types';
 import { inventorySellableRef } from '@inventory-platform/product/types';
 import { InventoryAlertDetails } from '@inventory-platform/product';
@@ -28,10 +24,7 @@ import {
   Text,
   Textarea,
 } from '@inventory-platform/ui-kit';
-import {
-  getExtensionFieldString,
-  isSellDirectInventory,
-} from '@inventory-platform/schema';
+import { getExtensionFieldString, isSellDirectInventory } from '@inventory-platform/schema';
 import {
   useNotify,
   useVerticalSchemaStore,
@@ -105,8 +98,7 @@ function StockCorrectionModal({
   const [error, setError] = useState<string | null>(null);
 
   const parsedQty = Number(newQty);
-  const isValidQty =
-    newQty.trim() !== '' && Number.isFinite(parsedQty) && parsedQty >= 0;
+  const isValidQty = newQty.trim() !== '' && Number.isFinite(parsedQty) && parsedQty >= 0;
   const hasChange = isValidQty && parsedQty !== current;
 
   const deltaClass = useMemo(() => {
@@ -142,18 +134,14 @@ function StockCorrectionModal({
       if (!line?.lineId) {
         throw new Error('Correction created but line id missing');
       }
-      await inventoryApi.approveInventoryCorrectionLine(
-        correction.id,
-        line.lineId
-      );
+      await inventoryApi.approveInventoryCorrectionLine(correction.id, line.lineId);
 
       const updated = await inventoryApi.getById(inventoryId);
       notifySuccess(`Stock updated for "${item.name || 'ingredient'}"`);
       onSuccess(updated);
       onClose();
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to correct stock';
+      const message = err instanceof Error ? err.message : 'Failed to correct stock';
       setError(message);
       notifyError(message);
     } finally {
@@ -236,16 +224,14 @@ export function ManualStockPage() {
   const [searchTotalPages, setSearchTotalPages] = useState(0);
   const [searchTotalItems, setSearchTotalItems] = useState(0);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
-  const [correctionItem, setCorrectionItem] = useState<InventoryItem | null>(
-    null
-  );
+  const [correctionItem, setCorrectionItem] = useState<InventoryItem | null>(null);
   const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
   const [addingToCartId, setAddingToCartId] = useState<string | null>(null);
   const [businessType, setBusinessType] = useState('cafe');
   const { error: notifyError, success: notifySuccess } = useNotify;
   const { user } = useAuthStore();
   const productSearchAccess = useShopAccessStore((s) =>
-    user?.shopId ? s.byShopId[user.shopId]?.productSearch : undefined
+    user?.shopId ? s.byShopId[user.shopId]?.productSearch : undefined,
   );
   const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
 
@@ -280,8 +266,7 @@ export function ManualStockPage() {
         setSearchPage(0);
       }
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to fetch ingredients';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch ingredients';
       notifyError(errorMessage);
       setInventory([]);
     } finally {
@@ -309,11 +294,7 @@ export function ManualStockPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await inventoryApi.search(
-        searchQuery.trim(),
-        currentPage,
-        currentPageSize
-      );
+      const response = await inventoryApi.search(searchQuery.trim(), currentPage, currentPageSize);
       setInventory(response.data || []);
       if (response.page) {
         setSearchTotalPages(response.page.totalPages || 0);
@@ -326,8 +307,7 @@ export function ManualStockPage() {
         setSearchPage(0);
       }
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to search ingredients';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to search ingredients';
       notifyError(errorMessage);
       setInventory([]);
     } finally {
@@ -353,9 +333,7 @@ export function ManualStockPage() {
       const full = await inventoryApi.getById(inventoryId);
       setSelectedItem(full);
     } catch (err) {
-      notifyError(
-        err instanceof Error ? err.message : 'Failed to load ingredient details'
-      );
+      notifyError(err instanceof Error ? err.message : 'Failed to load ingredient details');
       setSelectedItem(null);
     } finally {
       setDetailLoadingId(null);
@@ -365,9 +343,7 @@ export function ManualStockPage() {
   const refreshItemInList = (updated: InventoryItem) => {
     const id = resolveInventoryDocumentId(updated);
     setInventory((prev) =>
-      prev.map((row) =>
-        resolveInventoryDocumentId(row) === id ? updated : row
-      )
+      prev.map((row) => (resolveInventoryDocumentId(row) === id ? updated : row)),
     );
   };
 
@@ -396,9 +372,7 @@ export function ManualStockPage() {
       });
       notifySuccess(`Added "${item.name || 'item'}" to cart`);
     } catch (err) {
-      notifyError(
-        err instanceof Error ? err.message : 'Failed to add item to cart'
-      );
+      notifyError(err instanceof Error ? err.message : 'Failed to add item to cart');
     } finally {
       setAddingToCartId(null);
     }
@@ -406,17 +380,16 @@ export function ManualStockPage() {
 
   return (
     <Stack gap="md">
-      <PageHeader
-        title="Ingredient Search"
-        description="Search ingredients by name or barcode."
-      />
+      <PageHeader title="Ingredient Search" description="Search ingredients by name or barcode." />
 
       <Text color="secondary">
         Register new stock via{' '}
-        <Link to="/dashboard/product-registration">Ingredient Registration</Link>
-        . Adjust counts with <Text as="span" weight="semibold">Correct stock</Text>{' '}
-        or review{' '}
-        <Link to="/dashboard/stock-corrections">correction history</Link>.
+        <Link to="/dashboard/product-registration">Ingredient Registration</Link>. Adjust counts
+        with{' '}
+        <Text as="span" weight="semibold">
+          Correct stock
+        </Text>{' '}
+        or review <Link to="/dashboard/stock-corrections">correction history</Link>.
       </Text>
 
       <Inline gap="sm" className={styles.searchToolbar}>
@@ -450,9 +423,7 @@ export function ManualStockPage() {
             <Text variant="caption" color="secondary">
               {isLoading
                 ? 'Loading…'
-                : `Showing ${inventory.length} ${
-                    inventory.length === 1 ? 'result' : 'results'
-                  }`}
+                : `Showing ${inventory.length} ${inventory.length === 1 ? 'result' : 'results'}`}
             </Text>
 
             {isLoading && inventory.length === 0 ? (
@@ -472,10 +443,7 @@ export function ManualStockPage() {
               <>
                 <Grid className={styles.productsGrid}>
                   {inventory.map((item) => {
-                    const ingredientType = getExtensionFieldString(
-                      item,
-                      'ingredientType'
-                    );
+                    const ingredientType = getExtensionFieldString(item, 'ingredientType');
                     const stock = stockQty(item);
                     const unit = stockUnit(item);
                     const low = isLowStock(item);
@@ -512,10 +480,7 @@ export function ManualStockPage() {
                             ) : null}
 
                             <Stack gap="xs">
-                              <Text
-                                variant="caption"
-                                color={low ? 'danger' : 'secondary'}
-                              >
+                              <Text variant="caption" color={low ? 'danger' : 'secondary'}>
                                 Stock: {stock} {unit}
                                 {low ? ' (low)' : ''}
                               </Text>
@@ -525,8 +490,7 @@ export function ManualStockPage() {
                                 </Text>
                               ) : null}
                               <Text variant="caption" color="secondary">
-                                Received: {item.receivedCount ?? 0} | Used:{' '}
-                                {item.soldCount ?? 0}
+                                Received: {item.receivedCount ?? 0} | Used: {item.soldCount ?? 0}
                               </Text>
                               {item.costPrice != null ? (
                                 <Text variant="caption" color="secondary">
@@ -555,9 +519,7 @@ export function ManualStockPage() {
                                 onClick={() => void openIngredientDetails(item)}
                                 disabled={isLoading || detailLoadingId === itemId}
                               >
-                                {detailLoadingId === itemId
-                                  ? 'Loading…'
-                                  : 'View Details'}
+                                {detailLoadingId === itemId ? 'Loading…' : 'View Details'}
                               </Button>
                               <Button
                                 type="button"
@@ -577,15 +539,10 @@ export function ManualStockPage() {
                                   className={styles.addToCartBtn}
                                   onClick={() => void handleAddToCart(item)}
                                   disabled={
-                                    !itemId ||
-                                    addingToCartId === itemId ||
-                                    stock <= 0 ||
-                                    price <= 0
+                                    !itemId || addingToCartId === itemId || stock <= 0 || price <= 0
                                   }
                                 >
-                                  {addingToCartId === itemId
-                                    ? 'Adding…'
-                                    : 'Add to cart'}
+                                  {addingToCartId === itemId ? 'Adding…' : 'Add to cart'}
                                 </Button>
                               ) : null}
                             </Inline>

@@ -1,15 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useRef } from 'react';
 import type { PaymentMethod, PaymentSplit } from '@inventory-platform/contracts';
-import {
-  Alert,
-  Badge,
-  Box,
-  Button,
-  Inline,
-  Input,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { Alert, Badge, Box, Button, Inline, Input, Stack, Text } from '@inventory-platform/ui-kit';
 import styles from './PaymentMethodSplit.module.css';
 import {
   PAYMENT_METHODS,
@@ -74,11 +65,7 @@ function tenderAmount(split: PaymentSplit, tender: Tender): number {
   return split.creditAmount;
 }
 
-function setTenderAmount(
-  split: PaymentSplit,
-  tender: Tender,
-  amount: number
-): PaymentSplit {
+function setTenderAmount(split: PaymentSplit, tender: Tender, amount: number): PaymentSplit {
   if (tender === 'CASH') return { ...split, cashAmount: amount };
   if (tender === 'ONLINE') return { ...split, onlineAmount: amount };
   return { ...split, creditAmount: amount };
@@ -107,7 +94,7 @@ export function PaymentMethodSplit({
   const meta = method ? PAYMENT_METHOD_META[method] : null;
   const validation = useMemo(
     () => validatePaymentSplit(method, value.split, safeTotal),
-    [method, value.split, safeTotal]
+    [method, value.split, safeTotal],
   );
 
   // When the total changes (e.g. invoice rows are added), re-fit the split
@@ -130,7 +117,7 @@ export function PaymentMethodSplit({
       return;
     }
     const currentSum = roundMoney(
-      value.split.cashAmount + value.split.onlineAmount + value.split.creditAmount
+      value.split.cashAmount + value.split.onlineAmount + value.split.creditAmount,
     );
     if (currentSum === 0 || prevTotal === 0 || currentSum === safeTotal) {
       onChange({ method, split: defaultPaymentSplit(method, safeTotal) });
@@ -143,7 +130,7 @@ export function PaymentMethodSplit({
       creditAmount: roundMoney(value.split.creditAmount * ratio),
     };
     const drift = roundMoney(
-      safeTotal - (scaled.cashAmount + scaled.onlineAmount + scaled.creditAmount)
+      safeTotal - (scaled.cashAmount + scaled.onlineAmount + scaled.creditAmount),
     );
     if (drift !== 0) {
       const credit = PAYMENT_METHOD_META[method].creditTender;
@@ -165,7 +152,7 @@ export function PaymentMethodSplit({
       if (next === method) return;
       onChange({ method: next, split: defaultPaymentSplit(next, safeTotal) });
     },
-    [method, onChange, safeTotal]
+    [method, onChange, safeTotal],
   );
 
   const handleLegChange = useCallback(
@@ -185,23 +172,20 @@ export function PaymentMethodSplit({
       let next: PaymentSplit = setTenderAmount(
         emptyPaymentSplit(),
         tender,
-        Math.min(amount, safeTotal)
+        Math.min(amount, safeTotal),
       );
       if (otherTender) {
         next = setTenderAmount(
           next,
           otherTender,
           roundMoney(
-            Math.max(
-              0,
-              safeTotal - next.cashAmount - next.onlineAmount - next.creditAmount
-            )
-          )
+            Math.max(0, safeTotal - next.cashAmount - next.onlineAmount - next.creditAmount),
+          ),
         );
       }
       onChange({ method, split: next });
     },
-    [method, onChange, safeTotal]
+    [method, onChange, safeTotal],
   );
 
   const showError = !validation.ok && !hideError && method != null && safeTotal > 0;
@@ -209,11 +193,7 @@ export function PaymentMethodSplit({
   const summaryTenders: readonly Tender[] = meta?.tenders ?? [];
 
   return (
-    <Stack
-      gap="sm"
-      className={styles.panel}
-      aria-describedby={`${reactId}-summary`}
-    >
+    <Stack gap="sm" className={styles.panel} aria-describedby={`${reactId}-summary`}>
       <Stack gap="xs" className={styles.head}>
         <Text variant="heading4" weight="semibold" className={styles.title}>
           {title ?? 'Payment'}

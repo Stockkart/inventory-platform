@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
-import { useAuthStore, useShopCapabilitiesStore, useShopAccessStore } from '@inventory-platform/session';
+import {
+  useAuthStore,
+  useShopCapabilitiesStore,
+  useShopAccessStore,
+} from '@inventory-platform/session';
 import { useNotifications } from './useNotifications';
 import { shopsApi } from '@inventory-platform/user/shops';
 import type { DashboardLayoutProps } from '@inventory-platform/shell/types';
@@ -25,9 +29,7 @@ import {
   Text,
 } from '@inventory-platform/ui-kit';
 import { ToastProvider } from './ToastProvider';
-import {
-  getDashboardMenuGroupsWithCapabilities,
-} from './capabilityNav';
+import { getDashboardMenuGroupsWithCapabilities } from './capabilityNav';
 import { CommandPalette } from './CommandPalette';
 import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 import {
@@ -86,11 +88,11 @@ export function DashboardLayout({
   const { user, shop, logout, isLoading } = useAuthStore();
   const fetchCapabilities = useShopCapabilitiesStore((s) => s.fetchCapabilities);
   const shopCapabilities = useShopCapabilitiesStore((s) =>
-    user?.shopId ? s.byShopId[user.shopId] : undefined
+    user?.shopId ? s.byShopId[user.shopId] : undefined,
   );
   const fetchAccess = useShopAccessStore((s) => s.fetchAccess);
   const shopAccess = useShopAccessStore((s) =>
-    user?.shopId ? s.byShopId[user.shopId] : undefined
+    user?.shopId ? s.byShopId[user.shopId] : undefined,
   );
 
   useEffect(() => {
@@ -112,19 +114,19 @@ export function DashboardLayout({
 
   //const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(() =>
-    typeof window !== 'undefined' && window.innerWidth <= 768 ? false : true
+    typeof window !== 'undefined' && window.innerWidth <= 768 ? false : true,
   );
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [showNotificationMenu, setShowNotificationMenu] = useState(false);
   const [contextualHelpOpen, setContextualHelpOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
-    () => new Set(['overview', 'products'])
+    () => new Set(['overview', 'products']),
   );
   const [supportOpen, setSupportOpen] = useState(false);
   const [chatMessage, setChatMessage] = useState('');
-  const [chatMessages, setChatMessages] = useState<
-    { text: string; from: 'user' | 'support' }[]
-  >([]);
+  const [chatMessages, setChatMessages] = useState<{ text: string; from: 'user' | 'support' }[]>(
+    [],
+  );
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
@@ -141,9 +143,9 @@ export function DashboardLayout({
 
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
-  const [favoritePageShortcuts, setFavoritePageShortcuts] = useState<
-    FavoritePageShortcut[]
-  >(() => loadFavoritePageShortcuts());
+  const [favoritePageShortcuts, setFavoritePageShortcuts] = useState<FavoritePageShortcut[]>(() =>
+    loadFavoritePageShortcuts(),
+  );
 
   const userMenuRef = useRef<HTMLElement>(null);
   const mainContentRef = useRef<HTMLElement>(null);
@@ -157,22 +159,22 @@ export function DashboardLayout({
         user?.role,
         shopCapabilities ?? null,
         shopAccess ?? null,
-        verticalPlugin ?? null
+        verticalPlugin ?? null,
       ),
-    [baseMenuGroups, user?.role, shopCapabilities, shopAccess, verticalPlugin]
+    [baseMenuGroups, user?.role, shopCapabilities, shopAccess, verticalPlugin],
   );
 
   const navRowsForPalette = useMemo(
     () =>
       filteredMenuGroups.flatMap((group) =>
-        group.items.map((item) => ({ ...item, groupLabel: group.label }))
+        group.items.map((item) => ({ ...item, groupLabel: group.label })),
       ),
-    [filteredMenuGroups]
+    [filteredMenuGroups],
   );
 
   const favoritesNav = useMemo(
     () => refreshFavoriteLabels(favoritePageShortcuts, navRowsForPalette),
-    [favoritePageShortcuts, navRowsForPalette]
+    [favoritePageShortcuts, navRowsForPalette],
   );
 
   useEffect(() => {
@@ -189,9 +191,7 @@ export function DashboardLayout({
   }, [navRowsForPalette]);
 
   // Reminder notifications (ALL logic lives in hook)
-  const { notifications, unreadCount, markAsRead } = useNotifications(
-    user?.shopId ?? undefined
-  );
+  const { notifications, unreadCount, markAsRead } = useNotifications(user?.shopId ?? undefined);
 
   useEffect(() => {
     if (shop?.name) {
@@ -235,7 +235,7 @@ export function DashboardLayout({
 
       setShowNotificationMenu(false);
     },
-    [notifications, markAsRead, navigate]
+    [notifications, markAsRead, navigate],
   );
 
   const currentPath = location.pathname;
@@ -275,8 +275,7 @@ export function DashboardLayout({
         }
       } else {
         const fav = favoritesNav.find(
-          (f) =>
-            f.binding.kind === 'fn' && favoriteShortcutMatches(e, f)
+          (f) => f.binding.kind === 'fn' && favoriteShortcutMatches(e, f),
         );
         if (fav) {
           e.preventDefault();
@@ -290,7 +289,7 @@ export function DashboardLayout({
 
   const allMenuItems = useMemo(
     () => filteredMenuGroups.flatMap((g) => g.items),
-    [filteredMenuGroups]
+    [filteredMenuGroups],
   );
 
   const currentPageLabel = useMemo(() => {
@@ -300,7 +299,7 @@ export function DashboardLayout({
       .filter(
         (i) =>
           currentPath === i.path ||
-          (i.path !== '/dashboard' && currentPath.startsWith(`${i.path}/`))
+          (i.path !== '/dashboard' && currentPath.startsWith(`${i.path}/`)),
       )
       .sort((a, b) => b.path.length - a.path.length)[0];
     return prefixMatch?.label ?? 'Dashboard';
@@ -311,12 +310,12 @@ export function DashboardLayout({
       const group = filteredMenuGroups.find((g) => g.id === groupId);
       return group?.items.some((i) => i.path === path) ?? false;
     },
-    [filteredMenuGroups]
+    [filteredMenuGroups],
   );
 
   useEffect(() => {
     const groupWithPath = filteredMenuGroups.find((g) =>
-      g.items.some((i) => i.path === currentPath)
+      g.items.some((i) => i.path === currentPath),
     );
     if (groupWithPath) {
       setExpandedGroups(new Set([groupWithPath.id]));
@@ -370,7 +369,7 @@ export function DashboardLayout({
                 city: '',
                 pin: '',
                 country: 'IND',
-              }
+              },
         );
       })
       .catch((err) => {
@@ -405,10 +404,7 @@ export function DashboardLayout({
 
   const handleChatSend = () => {
     if (!chatMessage.trim()) return;
-    setChatMessages((prev) => [
-      ...prev,
-      { text: chatMessage.trim(), from: 'user' },
-    ]);
+    setChatMessages((prev) => [...prev, { text: chatMessage.trim(), from: 'user' }]);
     setChatMessage('');
     // Placeholder: simulate support reply (will integrate with backend later)
     setTimeout(() => {
@@ -423,11 +419,7 @@ export function DashboardLayout({
   };
 
   return (
-    <Box
-      className={`${styles.dashboard} ${
-        sidebarOpen ? '' : styles.dashboardCollapsed
-      }`}
-    >
+    <Box className={`${styles.dashboard} ${sidebarOpen ? '' : styles.dashboardCollapsed}`}>
       <CommandPalette
         open={commandPaletteOpen}
         onClose={() => setCommandPaletteOpen(false)}
@@ -441,9 +433,7 @@ export function DashboardLayout({
         navRows={navRowsForPalette}
         favorites={favoritesNav}
         onFavoritesChange={(next) =>
-          setFavoritePageShortcuts(
-            refreshFavoriteLabels(next, navRowsForPalette)
-          )
+          setFavoritePageShortcuts(refreshFavoriteLabels(next, navRowsForPalette))
         }
       />
       <ContextualHelpPanel
@@ -470,435 +460,380 @@ export function DashboardLayout({
         />
       )}
       <Box className={styles.dashboardBody}>
-      {/* Sidebar */}
-      <Box className={styles.sidebarColumn}>
-      <Box
-        as="aside"
-        className={`${styles.sidebar} ${
-          sidebarOpen ? styles.sidebarOpen : styles.sidebarClosed
-        }`}
-      >
-        <Box className={styles.sidebarHeader}>
-          <Link to="/dashboard" className={styles.logo}>
-            <img
-              src={
-                sidebarOpen
-                  ? '/assets/logo/STOCKKART-3x.png'
-                  : '/assets/logo/stockkart_icon.png'
-              }
-              alt="StockKart"
-              className={styles.logoImg}
-            />
-          </Link>
-
-          <IconButton
-            label="Toggle sidebar"
-            className={styles.toggleBtn}
-            onClick={() => setSidebarOpen((s) => !s)}
+        {/* Sidebar */}
+        <Box className={styles.sidebarColumn}>
+          <Box
+            as="aside"
+            className={`${styles.sidebar} ${
+              sidebarOpen ? styles.sidebarOpen : styles.sidebarClosed
+            }`}
           >
-            <Menu size={18} />
-          </IconButton>
-        </Box>
+            <Box className={styles.sidebarHeader}>
+              <Link to="/dashboard" className={styles.logo}>
+                <img
+                  src={
+                    sidebarOpen
+                      ? '/assets/logo/STOCKKART-3x.png'
+                      : '/assets/logo/stockkart_icon.png'
+                  }
+                  alt="StockKart"
+                  className={styles.logoImg}
+                />
+              </Link>
 
-        <Box as="nav" className={styles.nav}>
-          {sidebarOpen ? (
-            filteredMenuGroups.map((group) => {
-              const isExpanded =
-                expandedGroups.has(group.id) ||
-                isPathInGroup(group.id, currentPath);
-              return (
-                <Box key={group.id} className={styles.navGroup}>
-                  <Box
-                    as="button"
-                    className={styles.navGroupHeader}
-                    onClick={() => toggleGroup(group.id)}
-                    aria-expanded={isExpanded}
-                  >
-                    <Box as="span" className={styles.navGroupIcon}>
-                      <NavIcon name={group.icon} size="sm" />
-                    </Box>
-                    <Box as="span" className={styles.navGroupLabel}>
-                      {group.label}
-                    </Box>
-                    <Box
-                      as="span"
-                      className={`${styles.navGroupChevron} ${
-                        isExpanded ? styles.navGroupChevronOpen : ''
-                      }`}
-                    >
-                      ▾
-                    </Box>
-                  </Box>
-                  {isExpanded && (
-                    <Box className={styles.navGroupItems}>
-                      {group.items.map((item) => (
-                        <Link
-                          key={item.path}
-                          to={item.path}
-                          className={`${styles.navItem} ${
-                            currentPath === item.path ? styles.active : ''
+              <IconButton
+                label="Toggle sidebar"
+                className={styles.toggleBtn}
+                onClick={() => setSidebarOpen((s) => !s)}
+              >
+                <Menu size={18} />
+              </IconButton>
+            </Box>
+
+            <Box as="nav" className={styles.nav}>
+              {sidebarOpen ? (
+                filteredMenuGroups.map((group) => {
+                  const isExpanded =
+                    expandedGroups.has(group.id) || isPathInGroup(group.id, currentPath);
+                  return (
+                    <Box key={group.id} className={styles.navGroup}>
+                      <Box
+                        as="button"
+                        className={styles.navGroupHeader}
+                        onClick={() => toggleGroup(group.id)}
+                        aria-expanded={isExpanded}
+                      >
+                        <Box as="span" className={styles.navGroupIcon}>
+                          <NavIcon name={group.icon} size="sm" />
+                        </Box>
+                        <Box as="span" className={styles.navGroupLabel}>
+                          {group.label}
+                        </Box>
+                        <Box
+                          as="span"
+                          className={`${styles.navGroupChevron} ${
+                            isExpanded ? styles.navGroupChevronOpen : ''
                           }`}
                         >
-                          <Box as="span" className={styles.navIcon}>
-                            <NavIcon name={item.icon} size="sm" />
-                          </Box>
-                          <Box as="span" className={styles.navLabel}>
-                            {item.label}
-                          </Box>
-                        </Link>
-                      ))}
-                    </Box>
-                  )}
-                </Box>
-              );
-            })
-          ) : (
-            <Box className={styles.navCollapsed}>
-              {allMenuItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`${styles.navItem} ${styles.navItemCollapsed} ${
-                    currentPath === item.path ? styles.active : ''
-                  }`}
-                  title={item.label}
-                >
-                  <Box as="span" className={styles.navIcon}>
-                    <NavIcon name={item.icon} size="sm" />
-                  </Box>
-                </Link>
-              ))}
-            </Box>
-          )}
-        </Box>
-
-        {/* Support section at bottom */}
-        <Box className={styles.sidebarSupport}>
-          <Box
-            as="button"
-            className={styles.supportToggle}
-            onClick={() => {
-              if (!sidebarOpen) {
-                setSidebarOpen(true);
-                setSupportOpen(true);
-              } else {
-                setSupportOpen((o) => !o);
-              }
-            }}
-            aria-expanded={supportOpen}
-            title="Support"
-          >
-            <Headphones size={18} className={styles.supportIcon} />
-            {sidebarOpen && (
-              <Box as="span" className={styles.supportLabel}>
-                Support
-              </Box>
-            )}
-            {sidebarOpen &&
-              (supportOpen ? (
-                <ChevronUp size={16} />
-              ) : (
-                <ChevronDown size={16} />
-              ))}
-          </Box>
-
-          {supportOpen && (
-            <Box
-              className={styles.supportPanel}
-              {...{ 'data-keyboard-nav': KEYBOARD_NAV_SKIP }}
-            >
-              {/* Phone */}
-              <Box className={styles.supportSection}>
-                <Phone size={14} className={styles.supportSectionIcon} />
-                <Text as="span" className={styles.supportSectionTitle}>
-                  Call us
-                </Text>
-                <UiLink href="tel:+919828606899" className={styles.supportLink}>
-                  +91-9828606899
-                </UiLink>
-                <UiLink href="tel:+918800107393" className={styles.supportLink}>
-                  +91-8800107393
-                </UiLink>
-              </Box>
-
-              {/* Email */}
-              <Box className={styles.supportSection}>
-                <Mail size={14} className={styles.supportSectionIcon} />
-                <Text as="span" className={styles.supportSectionTitle}>
-                  Email
-                </Text>
-                <UiLink
-                  href="mailto:stockkartofficial@gmail.com"
-                  className={styles.supportLink}
-                >
-                  stockkartofficial@gmail.com
-                </UiLink>
-              </Box>
-
-              {/* Online chat placeholder */}
-              <Box className={styles.supportSection}>
-                <MessageCircle
-                  size={14}
-                  className={styles.supportSectionIcon}
-                />
-                <Text as="span" className={styles.supportSectionTitle}>
-                  Instant online support
-                </Text>
-                <Box className={styles.chatPlaceholder}>
-                  <Box className={styles.chatMessages}>
-                    {chatMessages.length === 0 && (
-                      <Text as="span" className={styles.chatEmpty}>
-                        Start a conversation. We&apos;ll integrate with backend
-                        soon.
-                      </Text>
-                    )}
-                    {chatMessages.map((m, i) => (
-                      <Box
-                        key={i}
-                        className={
-                          m.from === 'user'
-                            ? styles.chatBubbleUser
-                            : styles.chatBubbleSupport
-                        }
-                      >
-                        {m.text}
-                      </Box>
-                    ))}
-                  </Box>
-                  <Box className={styles.chatInputRow}>
-                    <Input
-                      type="text"
-                      placeholder="Type your message..."
-                      value={chatMessage}
-                      onChange={(e) => setChatMessage(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
-                      className={styles.chatInput}
-                    />
-                    <Button
-                      type="button"
-                      variant="solid"
-                      onClick={handleChatSend}
-                      className={styles.chatSendBtn}
-                      aria-label="Send message"
-                    >
-                      Send
-                    </Button>
-                  </Box>
-                </Box>
-              </Box>
-            </Box>
-          )}
-        </Box>
-      </Box>
-      </Box>
-
-      {/* Main */}
-      <Box className={styles.mainContent}>
-        <Box as="header" className={styles.header}>
-          <Box className={styles.headerContent}>
-            <Text
-              as="span"
-              role="heading"
-              aria-level={1}
-              className={styles.pageTitle}
-            >
-              {currentPageLabel}
-            </Text>
-
-            <Box className={styles.headerActions}>
-              <Box className={styles.headerToolbar}>
-                <IconButton
-                  label="Help for this page"
-                  size="sm"
-                  className={styles.headerToolBtn}
-                  onClick={() => {
-                    setShowNotificationMenu(false);
-                    setContextualHelpOpen(true);
-                  }}
-                  title="Help for this page"
-                >
-                  <Info size={18} aria-hidden />
-                </IconButton>
-
-                <Box className={styles.notificationWrapper}>
-                  <IconButton
-                    label="Notifications"
-                    size="sm"
-                    className={styles.headerToolBtn}
-                    onClick={() => setShowNotificationMenu((o) => !o)}
-                  >
-                    <Bell size={18} aria-hidden />
-                    {unreadCount > 0 && (
-                      <Badge variant="danger" className={styles.notificationBadge}>
-                        {unreadCount}
-                      </Badge>
-                    )}
-                  </IconButton>
-
-                  {showNotificationMenu && (
-                    <Box className={styles.notificationMenu}>
-                      {notifications.length === 0 ? (
-                        <Box className={styles.notificationEmpty}>
-                          No notifications
+                          ▾
                         </Box>
-                      ) : (
-                        notifications.map((n) => (
-                          <Button
-                            key={n.id}
-                            type="button"
-                            variant="ghost"
-                            className={styles.notificationItem}
-                            onClick={() => handleNotificationClick(n.id)}
-                          >
-                            <Box className={styles.notificationTitle}>
-                              <Text as="span">{n.title}</Text>
-                              {!n.read && (
-                                <Box
-                                  as="span"
-                                  className={styles.notificationDot}
-                                />
-                              )}
-                            </Box>
-                            <Box className={styles.notificationMessage}>
-                              {n.message}
-                            </Box>
-                          </Button>
-                        ))
+                      </Box>
+                      {isExpanded && (
+                        <Box className={styles.navGroupItems}>
+                          {group.items.map((item) => (
+                            <Link
+                              key={item.path}
+                              to={item.path}
+                              className={`${styles.navItem} ${
+                                currentPath === item.path ? styles.active : ''
+                              }`}
+                            >
+                              <Box as="span" className={styles.navIcon}>
+                                <NavIcon name={item.icon} size="sm" />
+                              </Box>
+                              <Box as="span" className={styles.navLabel}>
+                                {item.label}
+                              </Box>
+                            </Link>
+                          ))}
+                        </Box>
                       )}
                     </Box>
-                  )}
-                </Box>
-
-                <IconButton
-                  label="Keyboard shortcuts"
-                  size="sm"
-                  className={styles.headerToolBtn}
-                  onClick={() => setShortcutsHelpOpen(true)}
-                  title={`Keyboard shortcuts (${DASHBOARD_HOTKEY.shortcutsHelp})`}
-                >
-                  <Keyboard size={18} aria-hidden />
-                </IconButton>
-              </Box>
-
-              <Divider
-                orientation="vertical"
-                className={styles.headerDivider}
-                aria-hidden
-              />
-
-              <Box className={styles.headerAccount}>
-                <ThemeToggle
-                  size="sm"
-                  variant="outline"
-                  className={styles.headerThemeBtn}
-                />
-
-                <Box ref={userMenuRef} className={styles.userMenuAnchor}>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className={styles.userBtn}
-                    onClick={() => setUserMenuOpen((o) => !o)}
-                    disabled={isLoading}
-                  >
-                    <Avatar
-                      name={user?.name || user?.email || 'User'}
-                      size="sm"
-                    />
-                    <Text
-                      as="span"
-                      variant="caption"
-                      weight="medium"
-                      className={styles.userBtnLabel}
+                  );
+                })
+              ) : (
+                <Box className={styles.navCollapsed}>
+                  {allMenuItems.map((item) => (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className={`${styles.navItem} ${styles.navItemCollapsed} ${
+                        currentPath === item.path ? styles.active : ''
+                      }`}
+                      title={item.label}
                     >
-                      {user?.name || user?.email || 'User'}
-                    </Text>
-                  </Button>
-
-                {userMenuOpen && (
-                  <Box className={styles.userMenu}>
-                    <Box className={styles.userMenuHeader}>
-                      <Box className={styles.userIdentity}>
-                        <Avatar
-                          name={user?.name || user?.email || 'User'}
-                          size="md"
-                        />
-                        <Box className={styles.userMeta}>
-                          <Box className={styles.userMenuName}>
-                            {user?.name || 'User'}
-                          </Box>
-                          <Box className={styles.userMenuEmail}>
-                            {user?.email}
-                          </Box>
-                        </Box>
+                      <Box as="span" className={styles.navIcon}>
+                        <NavIcon name={item.icon} size="sm" />
                       </Box>
-                    </Box>
+                    </Link>
+                  ))}
+                </Box>
+              )}
+            </Box>
 
-                    <UserMenuShopSection onClose={() => setUserMenuOpen(false)} />
-
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className={styles.profileMenuBtn}
-                      onClick={() => {
-                        setUserMenuOpen(false);
-                        navigate('/dashboard/profile');
-                      }}
-                    >
-                      <User size={16} aria-hidden />
-                      View profile
-                    </Button>
-
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={handleLogout}
-                      className={styles.logoutBtn}
-                    >
-                      <LogOut size={16} aria-hidden />
-                      Logout
-                    </Button>
+            {/* Support section at bottom */}
+            <Box className={styles.sidebarSupport}>
+              <Box
+                as="button"
+                className={styles.supportToggle}
+                onClick={() => {
+                  if (!sidebarOpen) {
+                    setSidebarOpen(true);
+                    setSupportOpen(true);
+                  } else {
+                    setSupportOpen((o) => !o);
+                  }
+                }}
+                aria-expanded={supportOpen}
+                title="Support"
+              >
+                <Headphones size={18} className={styles.supportIcon} />
+                {sidebarOpen && (
+                  <Box as="span" className={styles.supportLabel}>
+                    Support
                   </Box>
                 )}
-                </Box>
+                {sidebarOpen && (supportOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />)}
               </Box>
+
+              {supportOpen && (
+                <Box
+                  className={styles.supportPanel}
+                  {...{ 'data-keyboard-nav': KEYBOARD_NAV_SKIP }}
+                >
+                  {/* Phone */}
+                  <Box className={styles.supportSection}>
+                    <Phone size={14} className={styles.supportSectionIcon} />
+                    <Text as="span" className={styles.supportSectionTitle}>
+                      Call us
+                    </Text>
+                    <UiLink href="tel:+919828606899" className={styles.supportLink}>
+                      +91-9828606899
+                    </UiLink>
+                    <UiLink href="tel:+918800107393" className={styles.supportLink}>
+                      +91-8800107393
+                    </UiLink>
+                  </Box>
+
+                  {/* Email */}
+                  <Box className={styles.supportSection}>
+                    <Mail size={14} className={styles.supportSectionIcon} />
+                    <Text as="span" className={styles.supportSectionTitle}>
+                      Email
+                    </Text>
+                    <UiLink
+                      href="mailto:stockkartofficial@gmail.com"
+                      className={styles.supportLink}
+                    >
+                      stockkartofficial@gmail.com
+                    </UiLink>
+                  </Box>
+
+                  {/* Online chat placeholder */}
+                  <Box className={styles.supportSection}>
+                    <MessageCircle size={14} className={styles.supportSectionIcon} />
+                    <Text as="span" className={styles.supportSectionTitle}>
+                      Instant online support
+                    </Text>
+                    <Box className={styles.chatPlaceholder}>
+                      <Box className={styles.chatMessages}>
+                        {chatMessages.length === 0 && (
+                          <Text as="span" className={styles.chatEmpty}>
+                            Start a conversation. We&apos;ll integrate with backend soon.
+                          </Text>
+                        )}
+                        {chatMessages.map((m, i) => (
+                          <Box
+                            key={i}
+                            className={
+                              m.from === 'user' ? styles.chatBubbleUser : styles.chatBubbleSupport
+                            }
+                          >
+                            {m.text}
+                          </Box>
+                        ))}
+                      </Box>
+                      <Box className={styles.chatInputRow}>
+                        <Input
+                          type="text"
+                          placeholder="Type your message..."
+                          value={chatMessage}
+                          onChange={(e) => setChatMessage(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
+                          className={styles.chatInput}
+                        />
+                        <Button
+                          type="button"
+                          variant="solid"
+                          onClick={handleChatSend}
+                          className={styles.chatSendBtn}
+                          aria-label="Send message"
+                        >
+                          Send
+                        </Button>
+                      </Box>
+                    </Box>
+                  </Box>
+                </Box>
+              )}
             </Box>
           </Box>
         </Box>
 
-        <Box
-          as="main"
-          ref={mainContentRef}
-          className={styles.content}
-          onKeyDownCapture={(e) => {
-            const mainEl = mainContentRef.current;
-            if (!mainEl) return;
-            const active = document.activeElement;
-            if (
-              active?.closest(
-                `[data-keyboard-nav="${KEYBOARD_NAV_GRID}"]`
-              )
-            ) {
-              return;
-            }
-            if (shouldSkipGlobalMainKeyboardNav(active)) return;
-            runFormKeyboardNavigation(e, mainEl, 'list');
-          }}
-        >
-          {children}
+        {/* Main */}
+        <Box className={styles.mainContent}>
+          <Box as="header" className={styles.header}>
+            <Box className={styles.headerContent}>
+              <Text as="span" role="heading" aria-level={1} className={styles.pageTitle}>
+                {currentPageLabel}
+              </Text>
+
+              <Box className={styles.headerActions}>
+                <Box className={styles.headerToolbar}>
+                  <IconButton
+                    label="Help for this page"
+                    size="sm"
+                    className={styles.headerToolBtn}
+                    onClick={() => {
+                      setShowNotificationMenu(false);
+                      setContextualHelpOpen(true);
+                    }}
+                    title="Help for this page"
+                  >
+                    <Info size={18} aria-hidden />
+                  </IconButton>
+
+                  <Box className={styles.notificationWrapper}>
+                    <IconButton
+                      label="Notifications"
+                      size="sm"
+                      className={styles.headerToolBtn}
+                      onClick={() => setShowNotificationMenu((o) => !o)}
+                    >
+                      <Bell size={18} aria-hidden />
+                      {unreadCount > 0 && (
+                        <Badge variant="danger" className={styles.notificationBadge}>
+                          {unreadCount}
+                        </Badge>
+                      )}
+                    </IconButton>
+
+                    {showNotificationMenu && (
+                      <Box className={styles.notificationMenu}>
+                        {notifications.length === 0 ? (
+                          <Box className={styles.notificationEmpty}>No notifications</Box>
+                        ) : (
+                          notifications.map((n) => (
+                            <Button
+                              key={n.id}
+                              type="button"
+                              variant="ghost"
+                              className={styles.notificationItem}
+                              onClick={() => handleNotificationClick(n.id)}
+                            >
+                              <Box className={styles.notificationTitle}>
+                                <Text as="span">{n.title}</Text>
+                                {!n.read && <Box as="span" className={styles.notificationDot} />}
+                              </Box>
+                              <Box className={styles.notificationMessage}>{n.message}</Box>
+                            </Button>
+                          ))
+                        )}
+                      </Box>
+                    )}
+                  </Box>
+
+                  <IconButton
+                    label="Keyboard shortcuts"
+                    size="sm"
+                    className={styles.headerToolBtn}
+                    onClick={() => setShortcutsHelpOpen(true)}
+                    title={`Keyboard shortcuts (${DASHBOARD_HOTKEY.shortcutsHelp})`}
+                  >
+                    <Keyboard size={18} aria-hidden />
+                  </IconButton>
+                </Box>
+
+                <Divider orientation="vertical" className={styles.headerDivider} aria-hidden />
+
+                <Box className={styles.headerAccount}>
+                  <ThemeToggle size="sm" variant="outline" className={styles.headerThemeBtn} />
+
+                  <Box ref={userMenuRef} className={styles.userMenuAnchor}>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className={styles.userBtn}
+                      onClick={() => setUserMenuOpen((o) => !o)}
+                      disabled={isLoading}
+                    >
+                      <Avatar name={user?.name || user?.email || 'User'} size="sm" />
+                      <Text
+                        as="span"
+                        variant="caption"
+                        weight="medium"
+                        className={styles.userBtnLabel}
+                      >
+                        {user?.name || user?.email || 'User'}
+                      </Text>
+                    </Button>
+
+                    {userMenuOpen && (
+                      <Box className={styles.userMenu}>
+                        <Box className={styles.userMenuHeader}>
+                          <Box className={styles.userIdentity}>
+                            <Avatar name={user?.name || user?.email || 'User'} size="md" />
+                            <Box className={styles.userMeta}>
+                              <Box className={styles.userMenuName}>{user?.name || 'User'}</Box>
+                              <Box className={styles.userMenuEmail}>{user?.email}</Box>
+                            </Box>
+                          </Box>
+                        </Box>
+
+                        <UserMenuShopSection onClose={() => setUserMenuOpen(false)} />
+
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className={styles.profileMenuBtn}
+                          onClick={() => {
+                            setUserMenuOpen(false);
+                            navigate('/dashboard/profile');
+                          }}
+                        >
+                          <User size={16} aria-hidden />
+                          View profile
+                        </Button>
+
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={handleLogout}
+                          className={styles.logoutBtn}
+                        >
+                          <LogOut size={16} aria-hidden />
+                          Logout
+                        </Button>
+                      </Box>
+                    )}
+                  </Box>
+                </Box>
+              </Box>
+            </Box>
+          </Box>
+
+          <Box
+            as="main"
+            ref={mainContentRef}
+            className={styles.content}
+            onKeyDownCapture={(e) => {
+              const mainEl = mainContentRef.current;
+              if (!mainEl) return;
+              const active = document.activeElement;
+              if (active?.closest(`[data-keyboard-nav="${KEYBOARD_NAV_GRID}"]`)) {
+                return;
+              }
+              if (shouldSkipGlobalMainKeyboardNav(active)) return;
+              runFormKeyboardNavigation(e, mainEl, 'list');
+            }}
+          >
+            {children}
+          </Box>
         </Box>
       </Box>
-      </Box>
 
-      <Modal
-        open={editModalOpen}
-        onClose={closeEditModal}
-        className={styles.modal}
-      >
-        <Modal.Header
-          title="Edit tagline & location"
-          onClose={closeEditModal}
-        />
+      <Modal open={editModalOpen} onClose={closeEditModal} className={styles.modal}>
+        <Modal.Header title="Edit tagline & location" onClose={closeEditModal} />
         <Modal.Body>
           {editLoading ? (
             <CenteredLoader className={styles.modalLoading} />

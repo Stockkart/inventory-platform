@@ -1,13 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router';
 import { authApi } from '@inventory-platform/session/api';
-import {
-  Alert,
-  Button,
-  FormField,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { Alert, Button, FormField, Stack, Text } from '@inventory-platform/ui-kit';
 import styles from './LoginForm.module.css';
 
 export function ResetPasswordForm() {
@@ -60,9 +54,7 @@ export function ResetPasswordForm() {
       setTimeout(() => navigate('/login'), 3000);
     } catch (err) {
       const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'Something went wrong. Please try again.';
+        err instanceof Error ? err.message : 'Something went wrong. Please try again.';
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -77,8 +69,7 @@ export function ResetPasswordForm() {
             Invalid Reset Link
           </Text>
           <Text color="secondary" className={styles.subtitle}>
-            This password reset link is invalid or has expired. Please request a
-            new one.
+            This password reset link is invalid or has expired. Please request a new one.
           </Text>
         </Stack>
         {error ? (
@@ -105,8 +96,7 @@ export function ResetPasswordForm() {
             Password Reset
           </Text>
           <Text color="secondary" className={styles.subtitle}>
-            Your password has been reset successfully. Redirecting you to sign
-            in...
+            Your password has been reset successfully. Redirecting you to sign in...
           </Text>
         </Stack>
         <Stack className={styles.footer} gap="xs">

@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
-import type { CreateCreditEntryDto, CreditAccountResponse, CreditSettlementPaymentMethod } from '@inventory-platform/credit/types';
+import type {
+  CreateCreditEntryDto,
+  CreditAccountResponse,
+  CreditSettlementPaymentMethod,
+} from '@inventory-platform/credit/types';
 import {
   Box,
   Button,
@@ -52,8 +56,7 @@ export function CreditPartyActions({
   const [note, setNote] = useState('');
   const [referenceType, setReferenceType] = useState('');
   const [referenceId, setReferenceId] = useState('');
-  const [paymentMethod, setPaymentMethod] =
-    useState<CreditSettlementPaymentMethod>('CASH');
+  const [paymentMethod, setPaymentMethod] = useState<CreditSettlementPaymentMethod>('CASH');
   const [bankRef, setBankRef] = useState('');
   const [txnDate, setTxnDate] = useState(todayLocalDate());
 
@@ -153,12 +156,7 @@ export function CreditPartyActions({
         </Box>
       </Box>
 
-      <Inline
-        className={styles.actionTabs}
-        role="tablist"
-        aria-label="Entry type"
-        gap="none"
-      >
+      <Inline className={styles.actionTabs} role="tablist" aria-label="Entry type" gap="none">
         <Button
           type="button"
           variant="ghost"
@@ -188,7 +186,12 @@ export function CreditPartyActions({
       </Text>
 
       <Box as="form" className={styles.compactForm} onSubmit={handleSubmit}>
-        <FormField label="Amount (₹)" id="credit-party-amount" required className={styles.compactField}>
+        <FormField
+          label="Amount (₹)"
+          id="credit-party-amount"
+          required
+          className={styles.compactField}
+        >
           <Input
             id="credit-party-amount"
             type="text"
@@ -228,9 +231,7 @@ export function CreditPartyActions({
                 className={styles.compactInput}
                 options={PAYMENT_METHOD_OPTIONS}
                 value={paymentMethod}
-                onChange={(e) =>
-                  setPaymentMethod(e.target.value as CreditSettlementPaymentMethod)
-                }
+                onChange={(e) => setPaymentMethod(e.target.value as CreditSettlementPaymentMethod)}
                 disabled={submitting}
                 required
               />
@@ -291,12 +292,13 @@ export function CreditPartyActions({
           </Box>
         </Box>
 
-        <Button type="submit" variant="solid" className={styles.primarySubmit} disabled={submitting}>
-          {submitting
-            ? 'Saving…'
-            : mode === 'charge'
-              ? copy.submitIncrease
-              : copy.submitReduce}
+        <Button
+          type="submit"
+          variant="solid"
+          className={styles.primarySubmit}
+          disabled={submitting}
+        >
+          {submitting ? 'Saving…' : mode === 'charge' ? copy.submitIncrease : copy.submitReduce}
         </Button>
       </Box>
     </Box>

@@ -16,141 +16,69 @@
       "@inventory-platform/ui-kit": ["../../ui-kit/src/index.ts"],
       "@inventory-platform/schema": ["../../platform/schema/src/index.ts"],
       "@inventory-platform/session": ["../../platform/session/src/index.ts"],
-      "@inventory-platform/session/api": [
-        "../../platform/session/src/api/index.ts"
-      ],
-      "@inventory-platform/shell/api": [
-        "../../platform/shell/src/api/index.ts"
-      ],
-      "@inventory-platform/plan/payment": [
-        "../../core/plan/src/payment/index.ts"
-      ],
-      "@inventory-platform/user/journey/auth": [
-        "../../core/user/src/journey/auth/index.ts"
-      ],
+      "@inventory-platform/session/api": ["../../platform/session/src/api/index.ts"],
+      "@inventory-platform/shell/api": ["../../platform/shell/src/api/index.ts"],
+      "@inventory-platform/plan/payment": ["../../core/plan/src/payment/index.ts"],
+      "@inventory-platform/user/journey/auth": ["../../core/user/src/journey/auth/index.ts"],
       "@inventory-platform/user/journey/onboarding": [
         "../../core/user/src/journey/onboarding/index.ts"
       ],
       "@inventory-platform/analytics": ["../../core/analytics/src/index.ts"],
-      "@inventory-platform/analytics/routes/*": [
-        "../../core/analytics/src/routes/*"
-      ],
+      "@inventory-platform/analytics/routes/*": ["../../core/analytics/src/routes/*"],
       "@inventory-platform/accounting": ["../../core/accounting/src/index.ts"],
-      "@inventory-platform/accounting/routes/*": [
-        "../../core/accounting/src/routes/*"
-      ],
+      "@inventory-platform/accounting/routes/*": ["../../core/accounting/src/routes/*"],
       "@inventory-platform/credit": ["../../core/credit/src/index.ts"],
       "@inventory-platform/credit/routes/*": ["../../core/credit/src/routes/*"],
       "@inventory-platform/taxation": ["../../core/taxation/src/index.ts"],
-      "@inventory-platform/taxation/routes/*": [
-        "../../core/taxation/src/routes/*"
-      ],
+      "@inventory-platform/taxation/routes/*": ["../../core/taxation/src/routes/*"],
       "@inventory-platform/reminders": ["../../core/reminders/src/index.ts"],
-      "@inventory-platform/reminders/routes/*": [
-        "../../core/reminders/src/routes/*"
-      ],
-      "@inventory-platform/plan/marketing": [
-        "../../core/plan/src/marketing/index.ts"
-      ],
+      "@inventory-platform/reminders/routes/*": ["../../core/reminders/src/routes/*"],
+      "@inventory-platform/plan/marketing": ["../../core/plan/src/marketing/index.ts"],
       "@inventory-platform/plan/api": ["../../core/plan/src/api/index.ts"],
       "@inventory-platform/plan": ["../../core/plan/src/index.ts"],
       "@inventory-platform/plan/routes/*": ["../../core/plan/src/routes/*"],
-      "@inventory-platform/user/customers": [
-        "../../core/user/src/api/customers.api.ts"
-      ],
-      "@inventory-platform/user/vendors": [
-        "../../core/user/src/api/vendors.api.ts"
-      ],
-      "@inventory-platform/user/shop-access": [
-        "../../core/user/src/api/shop-access.api.ts"
-      ],
-      "@inventory-platform/user/invitations": [
-        "../../core/user/src/api/invitations.api.ts"
-      ],
-      "@inventory-platform/user/shops": [
-        "../../core/user/src/api/shops.api.ts"
-      ],
-      "@inventory-platform/user/users": [
-        "../../core/user/src/api/user-lookup.api.ts"
-      ],
+      "@inventory-platform/user/customers": ["../../core/user/src/api/customers.api.ts"],
+      "@inventory-platform/user/vendors": ["../../core/user/src/api/vendors.api.ts"],
+      "@inventory-platform/user/shop-access": ["../../core/user/src/api/shop-access.api.ts"],
+      "@inventory-platform/user/invitations": ["../../core/user/src/api/invitations.api.ts"],
+      "@inventory-platform/user/shops": ["../../core/user/src/api/shops.api.ts"],
+      "@inventory-platform/user/users": ["../../core/user/src/api/user-lookup.api.ts"],
       "@inventory-platform/user/ui": ["../../core/user/src/ui/index.ts"],
       "@inventory-platform/user": ["../../core/user/src/index.ts"],
       "@inventory-platform/user/routes/*": ["../../core/user/src/routes/*"],
-      "@inventory-platform/pricing/api": [
-        "../../core/pricing/src/api/index.ts"
-      ],
+      "@inventory-platform/pricing/api": ["../../core/pricing/src/api/index.ts"],
       "@inventory-platform/pricing": ["../../core/pricing/src/index.ts"],
-      "@inventory-platform/pricing/routes/*": [
-        "../../core/pricing/src/routes/*"
-      ],
-      "@inventory-platform/product/api": [
-        "../../core/product/src/api/index.ts"
-      ],
+      "@inventory-platform/pricing/routes/*": ["../../core/pricing/src/routes/*"],
+      "@inventory-platform/product/api": ["../../core/product/src/api/index.ts"],
       "@inventory-platform/product/pages/product-search.module.css": [
         "../../core/product/src/pages/product-search.module.css"
       ],
       "@inventory-platform/product": ["../../core/product/src/index.ts"],
-      "@inventory-platform/product/routes/*": [
-        "../../core/product/src/routes/*"
-      ],
+      "@inventory-platform/product/routes/*": ["../../core/product/src/routes/*"],
       "@inventory-platform/query": ["../../platform/query/src/index.ts"],
-      "@inventory-platform/api-client": [
-        "../../platform/api-client/src/index.ts"
-      ],
+      "@inventory-platform/api-client": ["../../platform/api-client/src/index.ts"],
       "@inventory-platform/routing": ["../../platform/routing/src/index.ts"],
       "@inventory-platform/shell": ["../../platform/shell/src/index.ts"],
-      "@inventory-platform/shell/routes/*": [
-        "../../platform/shell/src/routes/*"
-      ],
-      "@inventory-platform/plugin-registry/routes": [
-        "../../plugins/registry/src/routes/index.ts"
-      ],
-      "@inventory-platform/plugin-registry": [
-        "../../plugins/registry/src/index.ts"
-      ],
+      "@inventory-platform/shell/routes/*": ["../../platform/shell/src/routes/*"],
+      "@inventory-platform/plugin-registry/routes": ["../../plugins/registry/src/routes/index.ts"],
+      "@inventory-platform/plugin-registry": ["../../plugins/registry/src/index.ts"],
       "@inventory-platform/plugin-cafe": ["../../plugins/cafe/src/index.ts"],
-      "@inventory-platform/plugin-cafe/routes/*": [
-        "../../plugins/cafe/src/routes/*"
-      ],
-      "@inventory-platform/contracts": [
-        "../../platform/contracts/src/index.ts"
-      ],
+      "@inventory-platform/plugin-cafe/routes/*": ["../../plugins/cafe/src/routes/*"],
+      "@inventory-platform/contracts": ["../../platform/contracts/src/index.ts"],
       "@inventory-platform/access": ["../../platform/access/src/index.ts"],
-      "@inventory-platform/schema/types": [
-        "../../platform/schema/src/types/index.ts"
-      ],
-      "@inventory-platform/session/types": [
-        "../../platform/session/src/model/index.ts"
-      ],
-      "@inventory-platform/shell/types": [
-        "../../platform/shell/src/model/index.ts"
-      ],
+      "@inventory-platform/schema/types": ["../../platform/schema/src/types/index.ts"],
+      "@inventory-platform/session/types": ["../../platform/session/src/model/index.ts"],
+      "@inventory-platform/shell/types": ["../../platform/shell/src/model/index.ts"],
       "@inventory-platform/user/types": ["../../core/user/src/model/index.ts"],
-      "@inventory-platform/product/types": [
-        "../../core/product/src/model/index.ts"
-      ],
-      "@inventory-platform/analytics/types": [
-        "../../core/analytics/src/model/index.ts"
-      ],
-      "@inventory-platform/reminders/types": [
-        "../../core/reminders/src/model/index.ts"
-      ],
-      "@inventory-platform/credit/types": [
-        "../../core/credit/src/model/index.ts"
-      ],
+      "@inventory-platform/product/types": ["../../core/product/src/model/index.ts"],
+      "@inventory-platform/analytics/types": ["../../core/analytics/src/model/index.ts"],
+      "@inventory-platform/reminders/types": ["../../core/reminders/src/model/index.ts"],
+      "@inventory-platform/credit/types": ["../../core/credit/src/model/index.ts"],
       "@inventory-platform/plan/types": ["../../core/plan/src/model/index.ts"],
-      "@inventory-platform/pricing/types": [
-        "../../core/pricing/src/model/index.ts"
-      ],
-      "@inventory-platform/taxation/types": [
-        "../../core/taxation/src/model/index.ts"
-      ],
-      "@inventory-platform/accounting/types": [
-        "../../core/accounting/src/model/index.ts"
-      ],
-      "@inventory-platform/plugin-cafe/types": [
-        "../../plugins/cafe/src/types/index.ts"
-      ]
+      "@inventory-platform/pricing/types": ["../../core/pricing/src/model/index.ts"],
+      "@inventory-platform/taxation/types": ["../../core/taxation/src/model/index.ts"],
+      "@inventory-platform/accounting/types": ["../../core/accounting/src/model/index.ts"],
+      "@inventory-platform/plugin-cafe/types": ["../../plugins/cafe/src/types/index.ts"]
     }
   },
   "include": [

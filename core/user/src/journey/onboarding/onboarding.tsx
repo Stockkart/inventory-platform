@@ -73,9 +73,7 @@ export default function OnboardingPage() {
   const { error: notifyError } = useNotify;
   const fetchVerticalSchema = useVerticalSchemaStore((s) => s.fetchVerticalSchema);
   const [verticals, setVerticals] = useState<VerticalSummary[]>([]);
-  const [verticalSchemaFields, setVerticalSchemaFields] = useState<
-    VerticalSchemaFieldDef[]
-  >([]);
+  const [verticalSchemaFields, setVerticalSchemaFields] = useState<VerticalSchemaFieldDef[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     verticalId: 'medical',
@@ -113,7 +111,10 @@ export default function OnboardingPage() {
   }, [isAuthenticated, user, navigate, formData.contactEmail, addShop]);
 
   useEffect(() => {
-    void verticalsApi.listActive().then(setVerticals).catch(() => setVerticals([]));
+    void verticalsApi
+      .listActive()
+      .then(setVerticals)
+      .catch(() => setVerticals([]));
   }, []);
 
   useEffect(() => {
@@ -152,9 +153,7 @@ export default function OnboardingPage() {
     if (step === 'contactEmail') return formData.contactEmail;
     if (step === 'tagline') return formData.tagline;
     if (step === 'location' && fieldName) {
-      return (
-        formData.location[fieldName as keyof typeof formData.location] || ''
-      );
+      return formData.location[fieldName as keyof typeof formData.location] || '';
     }
     if (step === 'businessDetails' && fieldName) {
       return (formData[fieldName as keyof typeof formData] as string) || '';
@@ -171,7 +170,10 @@ export default function OnboardingPage() {
         return;
       }
     } else if (step === 'shopType') {
-      if (!formData.shopType || !['RETAILER', 'DISTRIBUTOR', 'WHOLESALER'].includes(formData.shopType)) {
+      if (
+        !formData.shopType ||
+        !['RETAILER', 'DISTRIBUTOR', 'WHOLESALER'].includes(formData.shopType)
+      ) {
         notifyError('Please select a shop type');
         return;
       }
@@ -246,9 +248,7 @@ export default function OnboardingPage() {
         if (!field.required) {
           continue;
         }
-        const value = String(
-          (formData as Record<string, unknown>)[field.key] ?? ''
-        ).trim();
+        const value = String((formData as Record<string, unknown>)[field.key] ?? '').trim();
         if (!value) {
           notifyError(`${fieldLabel(field)} is required`);
           setIsLoading(false);
@@ -288,9 +288,7 @@ export default function OnboardingPage() {
       }
     } catch (err) {
       const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'Failed to register shop. Please try again.';
+        err instanceof Error ? err.message : 'Failed to register shop. Please try again.';
       notifyError(errorMessage);
       setIsLoading(false);
     }
@@ -421,9 +419,7 @@ export default function OnboardingPage() {
                   key={field.key}
                   field={field}
                   value={getCurrentValue(field.key)}
-                  onChange={(value: string) =>
-                    setFormData({ ...formData, [field.key]: value })
-                  }
+                  onChange={(value: string) => setFormData({ ...formData, [field.key]: value })}
                   disabled={isLoading}
                   idPrefix="onboard-shop"
                   inputClassName={styles.input}
@@ -475,16 +471,14 @@ export default function OnboardingPage() {
     if (step === 'shopType') {
       return (
         <FormField label="Shop Type *" id="shopType" required>
-          <Box
-            className={styles.radioGroup}
-            role="radiogroup"
-            aria-label="Shop type"
-          >
+          <Box className={styles.radioGroup} role="radiogroup" aria-label="Shop type">
             {SHOP_TYPES.map(({ value, label }) => (
               <Button
                 variant="ghost"
                 key={value}
-                className={`${styles.radioOption} ${formData.shopType === value ? styles.radioOptionSelected : ''}`}
+                className={`${styles.radioOption} ${
+                  formData.shopType === value ? styles.radioOptionSelected : ''
+                }`}
                 onClick={() => {
                   setFormData({ ...formData, shopType: value });
                   clearError();
@@ -528,15 +522,14 @@ export default function OnboardingPage() {
       );
     }
 
-    const inputType =
-      step === 'contactEmail' ? 'email' : step === 'contactPhone' ? 'tel' : 'text';
+    const inputType = step === 'contactEmail' ? 'email' : step === 'contactPhone' ? 'tel' : 'text';
 
     const placeholder =
       step === 'name'
         ? 'Enter shop name'
         : step === 'contactPhone'
-          ? '+91 1234 567890'
-          : 'Enter contact email';
+        ? '+91 1234 567890'
+        : 'Enter contact email';
 
     return (
       <FormField
@@ -575,9 +568,9 @@ export default function OnboardingPage() {
             {STEPS.map((step, index) => (
               <Inline
                 key={step}
-                className={`${styles.step} ${
-                  index === currentStep ? styles.stepActive : ''
-                } ${index < currentStep ? styles.stepCompleted : ''}`}
+                className={`${styles.step} ${index === currentStep ? styles.stepActive : ''} ${
+                  index < currentStep ? styles.stepCompleted : ''
+                }`}
                 gap="sm"
               >
                 <Text as="span" className={styles.stepNumber}>
@@ -591,11 +584,7 @@ export default function OnboardingPage() {
           </Stack>
         </Stack>
         <Inline className={styles.sidebarFooter} gap="sm">
-          <Button
-            variant="ghost"
-            onClick={() => void handleLogout()}
-            className={styles.logoutBtn}
-          >
+          <Button variant="ghost" onClick={() => void handleLogout()} className={styles.logoutBtn}>
             Logout
           </Button>
           <IconButton label="Help" className={styles.helpBtn}>
@@ -606,11 +595,7 @@ export default function OnboardingPage() {
 
       <Stack className={styles.content} gap="md">
         <Inline className={styles.contentHeader} justify="between" width="full">
-          <Button
-            variant="ghost"
-            onClick={handleBack}
-            className={styles.backBtn}
-          >
+          <Button variant="ghost" onClick={handleBack} className={styles.backBtn}>
             ← Back
           </Button>
           <Box className={styles.logo}>
@@ -625,8 +610,7 @@ export default function OnboardingPage() {
             Verify your Contact Details
           </Text>
           <Text color="secondary" className={styles.subtitle}>
-            We require this to verify your identity. Your details will remain
-            safe.
+            We require this to verify your identity. Your details will remain safe.
           </Text>
 
           {error ? (
@@ -649,8 +633,8 @@ export default function OnboardingPage() {
                 {isLoading
                   ? 'Registering...'
                   : currentStep === STEPS.length - 1
-                    ? 'Complete'
-                    : 'Continue'}
+                  ? 'Complete'
+                  : 'Continue'}
               </Button>
             </Box>
           </Stack>

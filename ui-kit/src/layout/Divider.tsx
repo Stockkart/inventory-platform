@@ -8,11 +8,7 @@ export interface DividerProps {
   className?: string;
 }
 
-export function Divider({
-  orientation = 'horizontal',
-  label,
-  className,
-}: DividerProps) {
+export function Divider({ orientation = 'horizontal', label, className }: DividerProps) {
   if (label) {
     return (
       <div className={cn(styles.withLabel, className)} role="separator">
@@ -26,7 +22,7 @@ export function Divider({
       className={cn(
         styles.divider,
         orientation === 'vertical' ? styles.vertical : styles.horizontal,
-        className
+        className,
       )}
     />
   );
@@ -47,11 +43,7 @@ const spacerSize: Record<SpacingScale, string> = {
   xl: 'var(--sk-space-xl)',
 };
 
-export function Spacer({
-  size = 'md',
-  axis = 'vertical',
-  className,
-}: SpacerProps) {
+export function Spacer({ size = 'md', axis = 'vertical', className }: SpacerProps) {
   const dimension = spacerSize[size];
   return (
     <span

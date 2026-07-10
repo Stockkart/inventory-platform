@@ -39,12 +39,12 @@ For raw CSS variables in app entry CSS:
 
 ## Architecture
 
-| Layer | Location | Examples |
-|-------|----------|----------|
-| Primitives | `ui-kit/src/forms`, `layout`, `feedback`, … | `Button`, `Input`, `Stack` |
-| Patterns | `ui-kit/src/patterns` | `PaginationBar`, `EditModal`, `SearchInput` |
-| Domain widgets | `core/*/ui` | `VendorEditForm`, `PurchaseList` |
-| Pages | `core/*/pages` | Compose ui-kit + domain ui |
+| Layer          | Location                                    | Examples                                    |
+| -------------- | ------------------------------------------- | ------------------------------------------- |
+| Primitives     | `ui-kit/src/forms`, `layout`, `feedback`, … | `Button`, `Input`, `Stack`                  |
+| Patterns       | `ui-kit/src/patterns`                       | `PaginationBar`, `EditModal`, `SearchInput` |
+| Domain widgets | `core/*/ui`                                 | `VendorEditForm`, `PurchaseList`            |
+| Pages          | `core/*/pages`                              | Compose ui-kit + domain ui                  |
 
 ui-kit must **not** import API clients, session stores, routing, or domain types.
 
@@ -135,12 +135,7 @@ export function ExampleListPage() {
         </TableBody>
       </Table>
 
-      <PaginationBar
-        page={page}
-        totalPages={5}
-        totalItems={100}
-        onPageChange={setPage}
-      />
+      <PaginationBar page={page} totalPages={5} totalItems={100} onPageChange={setPage} />
 
       <EditModal
         open={editOpen}

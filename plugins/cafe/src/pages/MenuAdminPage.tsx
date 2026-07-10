@@ -1,10 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { cartApi, shopMenuApi } from '@inventory-platform/product/api';
 import type { MenuItem, MenuSection, ShopMenu } from '@inventory-platform/plugin-cafe/types';
 import { menuSellableRef } from '@inventory-platform/product/types';
@@ -31,10 +25,7 @@ import {
 import styles from './menu.module.css';
 
 export function meta() {
-  return [
-    { title: 'Menu - StockKart' },
-    { name: 'description', content: 'Manage your cafe menu' },
-  ];
+  return [{ title: 'Menu - StockKart' }, { name: 'description', content: 'Manage your cafe menu' }];
 }
 
 function newId(): string {
@@ -74,21 +65,16 @@ function normalizeSectionsForCompare(sections: MenuSection[]): string {
           sellMode: 'menu' as const,
           available: i.available !== false,
         })),
-    }))
+    })),
   );
 }
 
-function menuItemMatchesSearch(
-  item: MenuItem,
-  sectionTitle: string,
-  query: string
-): boolean {
+function menuItemMatchesSearch(item: MenuItem, sectionTitle: string, query: string): boolean {
   const normalized = query.trim().toLowerCase();
   if (!normalized) return true;
   if (!item.name.trim()) return false;
   return (
-    item.name.toLowerCase().includes(normalized) ||
-    sectionTitle.toLowerCase().includes(normalized)
+    item.name.toLowerCase().includes(normalized) || sectionTitle.toLowerCase().includes(normalized)
   );
 }
 
@@ -98,9 +84,7 @@ export function MenuAdminPage() {
   const [businessType, setBusinessType] = useState('cafe');
   const [menu, setMenu] = useState<ShopMenu | null>(null);
   const [sections, setSections] = useState<MenuSection[]>([]);
-  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
-    new Set()
-  );
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [addingToSell, setAddingToSell] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -136,8 +120,7 @@ export function MenuAdminPage() {
       setSections(nextSections);
       savedSnapshotRef.current = normalizeSectionsForCompare(nextSections);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to load menu';
+      const message = err instanceof Error ? err.message : 'Failed to load menu';
       setError(message);
       notifyError(message);
     } finally {
@@ -154,7 +137,7 @@ export function MenuAdminPage() {
 
   const isDirty = useMemo(
     () => normalizeSectionsForCompare(sections) !== savedSnapshotRef.current,
-    [sections]
+    [sections],
   );
 
   const { totalItems, availableItems } = useMemo(() => {
@@ -176,7 +159,7 @@ export function MenuAdminPage() {
       .map((section) => ({
         ...section,
         items: section.items.filter((item) =>
-          menuItemMatchesSearch(item, section.title, searchQuery)
+          menuItemMatchesSearch(item, section.title, searchQuery),
         ),
       }))
       .filter((section) => section.items.length > 0);
@@ -185,9 +168,8 @@ export function MenuAdminPage() {
   const searchResultCount = useMemo(() => {
     if (!hasActiveSearch) return 0;
     return displaySections.reduce(
-      (sum, section) =>
-        sum + section.items.filter((item) => item.name.trim()).length,
-      0
+      (sum, section) => sum + section.items.filter((item) => item.name.trim()).length,
+      0,
     );
   }, [displaySections, hasActiveSearch]);
 
@@ -227,8 +209,7 @@ export function MenuAdminPage() {
       });
       notifySuccess(`Added "${item.name.trim()}" to sell cart`);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to add to sell';
+      const message = err instanceof Error ? err.message : 'Failed to add to sell';
       setError(message);
       notifyError(message);
     } finally {
@@ -237,37 +218,25 @@ export function MenuAdminPage() {
   };
 
   const updateSection = (sectionId: string, patch: Partial<MenuSection>) => {
-    setSections((prev) =>
-      prev.map((s) => (s.id === sectionId ? { ...s, ...patch } : s))
-    );
+    setSections((prev) => prev.map((s) => (s.id === sectionId ? { ...s, ...patch } : s)));
   };
 
-  const updateItem = (
-    sectionId: string,
-    itemId: string,
-    patch: Partial<MenuItem>
-  ) => {
+  const updateItem = (sectionId: string, itemId: string, patch: Partial<MenuItem>) => {
     setSections((prev) =>
       prev.map((s) =>
         s.id !== sectionId
           ? s
           : {
               ...s,
-              items: s.items.map((item) =>
-                item.id === itemId ? { ...item, ...patch } : item
-              ),
-            }
-      )
+              items: s.items.map((item) => (item.id === itemId ? { ...item, ...patch } : item)),
+            },
+      ),
     );
   };
 
   const addItem = (sectionId: string) => {
     setSections((prev) =>
-      prev.map((s) =>
-        s.id === sectionId
-          ? { ...s, items: [...s.items, emptyItem()] }
-          : s
-      )
+      prev.map((s) => (s.id === sectionId ? { ...s, items: [...s.items, emptyItem()] } : s)),
     );
   };
 
@@ -277,7 +246,7 @@ export function MenuAdminPage() {
         if (s.id !== sectionId) return s;
         const next = s.items.filter((i) => i.id !== itemId);
         return { ...s, items: next.length ? next : [emptyItem()] };
-      })
+      }),
     );
   };
 
@@ -337,8 +306,7 @@ export function MenuAdminPage() {
       setSavedMessage('Menu saved successfully.');
       notifySuccess('Menu saved');
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to save menu';
+      const message = err instanceof Error ? err.message : 'Failed to save menu';
       setError(message);
       notifyError(message);
     } finally {
@@ -390,8 +358,7 @@ export function MenuAdminPage() {
 
       <Inline gap="sm" className={styles.statsRow}>
         <Badge variant="neutral" className={styles.statPill}>
-          📂 {sections.length}{' '}
-          {sections.length === 1 ? 'section' : 'sections'}
+          📂 {sections.length} {sections.length === 1 ? 'section' : 'sections'}
         </Badge>
         <Badge variant="neutral" className={styles.statPill}>
           🍽️ {totalItems} {totalItems === 1 ? 'item' : 'items'}
@@ -402,9 +369,7 @@ export function MenuAdminPage() {
       </Inline>
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
-      {savedMessage ? (
-        <Alert variant="success">{savedMessage}</Alert>
-      ) : null}
+      {savedMessage ? <Alert variant="success">{savedMessage}</Alert> : null}
 
       <Stack gap="sm" className={styles.searchContainer}>
         <Inline gap="sm" className={styles.searchBar}>
@@ -428,8 +393,7 @@ export function MenuAdminPage() {
         </Inline>
         {hasActiveSearch ? (
           <Text variant="caption" color="secondary" className={styles.searchMeta}>
-            {searchResultCount}{' '}
-            {searchResultCount === 1 ? 'match' : 'matches'} for &ldquo;
+            {searchResultCount} {searchResultCount === 1 ? 'match' : 'matches'} for &ldquo;
             {searchQuery.trim()}&rdquo;
           </Text>
         ) : null}
@@ -440,11 +404,7 @@ export function MenuAdminPage() {
           title="No menu sections yet"
           description="Create a section for mains, beverages, or combos."
           action={
-            <Button
-              type="button"
-              variant="solid"
-              onClick={() => setSections([emptySection()])}
-            >
+            <Button type="button" variant="solid" onClick={() => setSections([emptySection()])}>
               Create first section
             </Button>
           }
@@ -455,11 +415,7 @@ export function MenuAdminPage() {
           title="No menu items found"
           description="Try a different name or section, or clear the search."
           action={
-            <Button
-              type="button"
-              variant="solid"
-              onClick={handleClearSearch}
-            >
+            <Button type="button" variant="solid" onClick={handleClearSearch}>
               Clear search
             </Button>
           }
@@ -468,22 +424,14 @@ export function MenuAdminPage() {
       ) : (
         <Stack gap="md" className={styles.sectionsList}>
           {displaySections.map((section) => {
-            const isCollapsed =
-              !hasActiveSearch && collapsedSections.has(section.id);
+            const isCollapsed = !hasActiveSearch && collapsedSections.has(section.id);
             const namedItems = section.items.filter((i) => i.name.trim());
             return (
               <Card key={section.id} className={styles.sectionCard}>
                 <CardBody>
-                  <Inline
-                    className={styles.sectionToolbar}
-                    gap="sm"
-                    align="center"
-                    width="full"
-                  >
+                  <Inline className={styles.sectionToolbar} gap="sm" align="center" width="full">
                     <IconButton
-                      label={
-                        isCollapsed ? 'Expand section' : 'Collapse section'
-                      }
+                      label={isCollapsed ? 'Expand section' : 'Collapse section'}
                       className={styles.collapseBtn}
                       onClick={() => toggleSectionCollapsed(section.id)}
                     >
@@ -495,9 +443,7 @@ export function MenuAdminPage() {
                     <Input
                       className={styles.sectionTitleInput}
                       value={section.title}
-                      onChange={(e) =>
-                        updateSection(section.id, { title: e.target.value })
-                      }
+                      onChange={(e) => updateSection(section.id, { title: e.target.value })}
                       placeholder="Section title (e.g. Main course)"
                     />
                     <Badge variant="neutral" className={styles.itemCountBadge}>
@@ -548,9 +494,7 @@ export function MenuAdminPage() {
                                       label="Remove item"
                                       title="Remove item"
                                       className={styles.removeItemBtn}
-                                      onClick={() =>
-                                        removeItem(section.id, item.id)
-                                      }
+                                      onClick={() => removeItem(section.id, item.id)}
                                     >
                                       ×
                                     </IconButton>
@@ -585,20 +529,11 @@ export function MenuAdminPage() {
                                     align="center"
                                     width="full"
                                   >
-                                    <Text
-                                      variant="caption"
-                                      className={styles.availabilityLabel}
-                                    >
-                                      {isAvailable
-                                        ? 'Available to sell'
-                                        : 'Hidden from sell'}
+                                    <Text variant="caption" className={styles.availabilityLabel}>
+                                      {isAvailable ? 'Available to sell' : 'Hidden from sell'}
                                     </Text>
                                     <Switch
-                                      label={
-                                        isAvailable
-                                          ? 'Mark unavailable'
-                                          : 'Mark available'
-                                      }
+                                      label={isAvailable ? 'Mark unavailable' : 'Mark available'}
                                       checked={isAvailable}
                                       onChange={() =>
                                         updateItem(section.id, item.id, {
@@ -616,18 +551,12 @@ export function MenuAdminPage() {
                                     size="sm"
                                     className={styles.addToSellBtn}
                                     onClick={() => void handleAddToSell(item)}
-                                    disabled={
-                                      !canAddItemToSell(item) ||
-                                      addingToSell === item.id
-                                    }
-                                    title={
-                                      addToSellDisabledReason(item) ?? undefined
-                                    }
+                                    disabled={!canAddItemToSell(item) || addingToSell === item.id}
+                                    title={addToSellDisabledReason(item) ?? undefined}
                                   >
                                     {addingToSell === item.id
                                       ? 'Adding…'
-                                      : addToSellDisabledReason(item) ??
-                                        'Add to Sell'}
+                                      : addToSellDisabledReason(item) ?? 'Add to Sell'}
                                   </Button>
                                 </Stack>
                               </CardBody>

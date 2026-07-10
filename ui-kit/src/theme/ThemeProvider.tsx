@@ -16,9 +16,7 @@ const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 function resolveTheme(mode: ThemeMode): Theme {
   if (mode === 'system' && typeof window !== 'undefined') {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches
-      ? 'dark'
-      : 'light';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   }
   return mode === 'dark' ? 'dark' : 'light';
 }
@@ -43,12 +41,9 @@ export interface ThemeProviderProps {
   defaultMode?: ThemeMode;
 }
 
-export function ThemeProvider({
-  children,
-  defaultMode = 'system',
-}: ThemeProviderProps) {
+export function ThemeProvider({ children, defaultMode = 'system' }: ThemeProviderProps) {
   const [mode, setModeState] = useState<ThemeMode>(() =>
-    typeof window !== 'undefined' ? readStoredMode() : defaultMode
+    typeof window !== 'undefined' ? readStoredMode() : defaultMode,
   );
   const [theme, setTheme] = useState<Theme>(() => resolveTheme(mode));
 
@@ -83,12 +78,10 @@ export function ThemeProvider({
 
   const value = useMemo(
     () => ({ theme, mode, setMode, toggleTheme }),
-    [theme, mode, setMode, toggleTheme]
+    [theme, mode, setMode, toggleTheme],
   );
 
-  return (
-    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme(): ThemeContextValue {

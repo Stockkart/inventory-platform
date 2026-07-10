@@ -9,12 +9,7 @@ type YouTubeHelpModalProps = {
   title?: string;
 };
 
-export function YouTubeHelpModal({
-  video,
-  open,
-  onClose,
-  title,
-}: YouTubeHelpModalProps) {
+export function YouTubeHelpModal({ video, open, onClose, title }: YouTubeHelpModalProps) {
   if (!video) return null;
 
   const embedSrc = video.youtubeVideoId
@@ -27,9 +22,7 @@ export function YouTubeHelpModal({
     <Modal open={open} onClose={onClose} size="lg" className={styles.modal}>
       <Modal.Header title={displayTitle} onClose={onClose} />
       <Modal.Body>
-        {video.description ? (
-          <Text className={styles.description}>{video.description}</Text>
-        ) : null}
+        {video.description ? <Text className={styles.description}>{video.description}</Text> : null}
         {embedSrc ? (
           <Box className={styles.playerWrap}>
             <iframe

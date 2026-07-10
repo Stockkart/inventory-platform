@@ -10,7 +10,7 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   { hasError, readOnlyStyle, className, readOnly, ...rest },
-  ref
+  ref,
 ) {
   return (
     <input
@@ -19,7 +19,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         styles.control,
         readOnlyStyle || readOnly ? styles.controlReadOnly : undefined,
         hasError && styles.controlError,
-        className
+        className,
       )}
       readOnly={readOnly}
       aria-invalid={hasError || undefined}

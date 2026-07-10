@@ -1,15 +1,10 @@
 import { useEffect, useState } from 'react';
-import type { CheckoutItemResponse, CustomerProductHistoryResponse } from '@inventory-platform/product/types';
+import type {
+  CheckoutItemResponse,
+  CustomerProductHistoryResponse,
+} from '@inventory-platform/product/types';
 import { lineSellableRef } from '@inventory-platform/product/types';
-import {
-  Badge,
-  Button,
-  IconButton,
-  Inline,
-  Input,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { Badge, Button, IconButton, Inline, Input, Stack, Text } from '@inventory-platform/ui-kit';
 import { CustomerProductHistoryHint } from './CustomerProductHistoryHint';
 import styles from '../pages/scan-sell.module.css';
 

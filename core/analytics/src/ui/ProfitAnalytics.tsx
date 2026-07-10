@@ -58,7 +58,7 @@ export function ProfitAnalytics() {
       timeSeries: localFilters.timeSeries,
       lowMarginThreshold: localFilters.lowMarginThreshold,
     }),
-    [localFilters]
+    [localFilters],
   );
 
   const {
@@ -151,7 +151,7 @@ export function ProfitAnalytics() {
                   const value = e.target.value;
                   handleFilterChange(
                     'groupBy',
-                    value === '' ? null : (value as 'product' | 'lotId' | 'businessType')
+                    value === '' ? null : (value as 'product' | 'lotId' | 'businessType'),
                   );
                 }}
                 options={[...GROUP_BY_OPTIONS]}
@@ -166,7 +166,7 @@ export function ProfitAnalytics() {
                   const value = e.target.value;
                   handleFilterChange(
                     'timeSeries',
-                    value === '' ? null : (value as 'hour' | 'day' | 'week' | 'month')
+                    value === '' ? null : (value as 'hour' | 'day' | 'week' | 'month'),
                   );
                 }}
                 options={[...TIME_SERIES_OPTIONS]}
@@ -195,9 +195,7 @@ export function ProfitAnalytics() {
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
-      {isLoading ? (
-        <CenteredLoader label="Loading profit analytics data…" size="md" />
-      ) : null}
+      {isLoading ? <CenteredLoader label="Loading profit analytics data…" size="md" /> : null}
 
       {profitData && !isLoading ? (
         <>
@@ -224,10 +222,7 @@ export function ProfitAnalytics() {
             </Card>
             <Card className={styles.chartCard}>
               <CardBody>
-                <ProfitByGroupChart
-                  data={profitData.profitByBusinessType}
-                  groupBy="businessType"
-                />
+                <ProfitByGroupChart data={profitData.profitByBusinessType} groupBy="businessType" />
               </CardBody>
             </Card>
           </Stack>

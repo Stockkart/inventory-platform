@@ -21,7 +21,10 @@ import {
 } from '@inventory-platform/ui-kit';
 import { accountingApi } from '../api/accounting.api';
 import { useNotify } from '@inventory-platform/session';
-import type { JournalEntryResponse, TrialBalanceResponse } from '@inventory-platform/accounting/types';
+import type {
+  JournalEntryResponse,
+  TrialBalanceResponse,
+} from '@inventory-platform/accounting/types';
 import { AccountingTabs } from '../ui/AccountingTabs';
 import { ACCOUNT_CODES } from '../model/accountingConstants';
 import { JOURNAL_TEMPLATES } from '../model/journalTemplates';
@@ -40,7 +43,7 @@ function pickBalance(tb: TrialBalanceResponse | null, code: string): number {
 }
 
 function statusVariant(
-  status: JournalEntryResponse['status']
+  status: JournalEntryResponse['status'],
 ): 'success' | 'warning' | 'danger' | 'neutral' {
   if (status === 'POSTED') return 'success';
   if (status === 'REVERSED') return 'warning';
@@ -65,9 +68,7 @@ export function AccountingOverviewPage() {
       setTb(tbRes);
       setRecent(journals.entries);
     } catch (e) {
-      notifyError(
-        e instanceof Error ? e.message : 'Failed to load accounting overview'
-      );
+      notifyError(e instanceof Error ? e.message : 'Failed to load accounting overview');
     } finally {
       setLoading(false);
     }
@@ -87,9 +88,7 @@ export function AccountingOverviewPage() {
         setRecent(journals.entries);
       } catch (e) {
         if (!cancelled) {
-          notifyError(
-            e instanceof Error ? e.message : 'Failed to load accounting overview'
-          );
+          notifyError(e instanceof Error ? e.message : 'Failed to load accounting overview');
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -102,14 +101,14 @@ export function AccountingOverviewPage() {
 
   const handleRebuild = useCallback(async () => {
     const ok = window.confirm(
-      'Re-post every vendor purchase invoice using the current shop settings (GST %, payment routing, CoA)?\n\nExisting journal entries for those invoices will be deleted and replaced. This cannot be undone.'
+      'Re-post every vendor purchase invoice using the current shop settings (GST %, payment routing, CoA)?\n\nExisting journal entries for those invoices will be deleted and replaced. This cannot be undone.',
     );
     if (!ok) return;
     setReposting(true);
     try {
       const res = await accountingApi.backfill({ force: true });
       notifySuccess(
-        `Re-posted ${res.reposted}, newly posted ${res.posted}, skipped ${res.skipped}, failed ${res.failed}.`
+        `Re-posted ${res.reposted}, newly posted ${res.posted}, skipped ${res.skipped}, failed ${res.failed}.`,
       );
       await load();
     } catch (e) {
@@ -186,18 +185,8 @@ export function AccountingOverviewPage() {
         <KpiCard label="Cash in Hand" value={cash} loading={loading} />
         <KpiCard label="Bank" value={bank} loading={loading} />
         <KpiCard label="Inventory (Cost)" value={inventory} loading={loading} />
-        <KpiCard
-          label="Receivable (Customers)"
-          value={debtors}
-          tone="positive"
-          loading={loading}
-        />
-        <KpiCard
-          label="Payable (Vendors)"
-          value={creditors}
-          tone="warning"
-          loading={loading}
-        />
+        <KpiCard label="Receivable (Customers)" value={debtors} tone="positive" loading={loading} />
+        <KpiCard label="Payable (Vendors)" value={creditors} tone="warning" loading={loading} />
       </Grid>
 
       <Card>
@@ -272,9 +261,7 @@ export function AccountingOverviewPage() {
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() =>
-                            navigate(`/dashboard/accounting/journal/${e.id}`)
-                          }
+                          onClick={() => navigate(`/dashboard/accounting/journal/${e.id}`)}
                         >
                           {e.entryNo}
                         </Button>
@@ -319,8 +306,7 @@ function KpiCard({
   loading: boolean;
   tone?: 'positive' | 'warning';
 }) {
-  const color =
-    tone === 'positive' ? 'success' : tone === 'warning' ? 'danger' : 'primary';
+  const color = tone === 'positive' ? 'success' : tone === 'warning' ? 'danger' : 'primary';
 
   return (
     <Card>

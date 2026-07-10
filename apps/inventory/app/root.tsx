@@ -68,9 +68,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         />
       </head>
       <body>
-        <GoogleOAuthProvider
-          clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || ''}
-        >
+        <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || ''}>
           <QueryProvider>
             <ThemeProvider>
               <AuthInitializer>{children}</AuthInitializer>

@@ -2,12 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuthStore } from '@inventory-platform/session';
 import { InvitationList } from '../../ui';
-import {
-  Box,
-  Button,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { Box, Button, Stack, Text } from '@inventory-platform/ui-kit';
 import styles from './my-requests-invitations.module.css';
 
 export function meta() {
@@ -48,8 +43,8 @@ export default function MyRequestsInvitationsPage() {
           My requests & invitations
         </Text>
         <Text color="secondary" className={styles.subtitle}>
-          View invitations to join shops and accept them here. After accepting,
-          you&apos;ll be taken to the dashboard.
+          View invitations to join shops and accept them here. After accepting, you&apos;ll be taken
+          to the dashboard.
         </Text>
       </Stack>
 

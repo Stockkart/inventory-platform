@@ -17,8 +17,7 @@ import styles from './SignupForm.module.css';
 
 export function SignupForm() {
   const navigate = useNavigate();
-  const { signup, isAuthenticated, isLoading, error, clearError } =
-    useAuthStore();
+  const { signup, isAuthenticated, isLoading, error, clearError } = useAuthStore();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -43,12 +42,7 @@ export function SignupForm() {
     setLocalError(null);
     clearError();
 
-    if (
-      !formData.name ||
-      !formData.email ||
-      !formData.password ||
-      !formData.confirmPassword
-    ) {
+    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
       setLocalError('Please fill in all required fields');
       return;
     }
@@ -67,15 +61,12 @@ export function SignupForm() {
       });
       navigate('/shop-selection');
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Signup failed. Please try again.';
+      const errorMessage = err instanceof Error ? err.message : 'Signup failed. Please try again.';
       setLocalError(errorMessage);
     }
   };
 
-  const handleGoogleSuccess = async (
-    credentialResponse: CredentialResponse
-  ) => {
+  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
     try {
       setLocalError(null);
       clearError();
@@ -91,9 +82,7 @@ export function SignupForm() {
       }
     } catch (err) {
       const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'Google signup failed. Please try again.';
+        err instanceof Error ? err.message : 'Google signup failed. Please try again.';
       setLocalError(errorMessage);
     }
   };

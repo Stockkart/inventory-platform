@@ -1,13 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
-import {
-  Button,
-  Card,
-  CardBody,
-  Inline,
-  PageHeader,
-  Stack,
-} from '@inventory-platform/ui-kit';
+import { Button, Card, CardBody, Inline, PageHeader, Stack } from '@inventory-platform/ui-kit';
 import { accountingApi } from '../api/accounting.api';
 import { useNotify } from '@inventory-platform/session';
 import type { AccountResponse } from '@inventory-platform/accounting/types';
@@ -43,7 +36,7 @@ export function ManualJournalEntryPage() {
   const [accountsLoading, setAccountsLoading] = useState(true);
   const [txnDate, setTxnDate] = useState<string>(todayLocalDate());
   const [narration, setNarration] = useState(() =>
-    templateId ? getTemplate(templateId).narration : ''
+    templateId ? getTemplate(templateId).narration : '',
   );
   const initialLines = useMemo(() => {
     if (!templateId) return [emptyLine(), emptyLine()];
@@ -86,10 +79,7 @@ export function ManualJournalEntryPage() {
     <Stack gap="md" className={styles.page}>
       <Stack gap="md">
         <AccountingTabs />
-        <PageHeader
-          title="Manual Journal Entry"
-          description="Posts with source MANUAL."
-        />
+        <PageHeader title="Manual Journal Entry" description="Posts with source MANUAL." />
         <Inline gap="sm" align="center">
           <Button
             type="button"

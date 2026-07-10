@@ -38,8 +38,7 @@ export const useShopCapabilitiesStore = create<ShopCapabilitiesState>((set, get)
       }));
       return capabilities;
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to load shop capabilities';
+      const message = err instanceof Error ? err.message : 'Failed to load shop capabilities';
       set({ loading: false, error: message });
       return null;
     }

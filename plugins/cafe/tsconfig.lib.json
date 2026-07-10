@@ -13,31 +13,19 @@
     "jsx": "react-jsx",
     "types": ["node", "vite/client"],
     "paths": {
-      "@inventory-platform/product/api": [
-        "../../core/product/src/api/index.ts"
-      ],
+      "@inventory-platform/product/api": ["../../core/product/src/api/index.ts"],
       "@inventory-platform/product/pages/product-search.module.css": [
         "../../core/product/src/pages/product-search.module.css"
       ],
       "@inventory-platform/product/pages/scan-sell.module.css": [
         "../../core/product/src/pages/scan-sell.module.css"
       ],
-      "@inventory-platform/product/types": [
-        "../../core/product/src/model/index.ts"
-      ],
-      "@inventory-platform/contracts": [
-        "../../platform/contracts/src/index.ts"
-      ],
+      "@inventory-platform/product/types": ["../../core/product/src/model/index.ts"],
+      "@inventory-platform/contracts": ["../../platform/contracts/src/index.ts"],
       "@inventory-platform/access": ["../../platform/access/src/index.ts"],
-      "@inventory-platform/schema/types": [
-        "../../platform/schema/src/types/index.ts"
-      ],
-      "@inventory-platform/session/types": [
-        "../../platform/session/src/model/index.ts"
-      ],
-      "@inventory-platform/shell/types": [
-        "../../platform/shell/src/model/index.ts"
-      ],
+      "@inventory-platform/schema/types": ["../../platform/schema/src/types/index.ts"],
+      "@inventory-platform/session/types": ["../../platform/session/src/model/index.ts"],
+      "@inventory-platform/shell/types": ["../../platform/shell/src/model/index.ts"],
       "@inventory-platform/user/types": ["../../core/user/src/model/index.ts"],
       "@inventory-platform/plugin-cafe/types": ["src/types/index.ts"],
       "@inventory-platform/routing": ["../../platform/routing/src/index.ts"],
@@ -45,18 +33,11 @@
       "@inventory-platform/ui-kit": ["../../ui-kit/src/index.ts"],
       "@inventory-platform/schema": ["../../platform/schema/src/index.ts"],
       "@inventory-platform/product": ["../../core/product/src/index.ts"],
-      "@inventory-platform/user/users": [
-        "../../core/user/src/api/user-lookup.api.ts"
-      ]
+      "@inventory-platform/user/users": ["../../core/user/src/api/user-lookup.api.ts"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
-  "exclude": [
-    "src/**/*.spec.ts",
-    "src/**/*.test.ts",
-    "src/**/*.spec.tsx",
-    "src/**/*.test.tsx"
-  ],
+  "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts", "src/**/*.spec.tsx", "src/**/*.test.tsx"],
   "references": [
     {
       "path": "../../platform/schema/tsconfig.lib.json"

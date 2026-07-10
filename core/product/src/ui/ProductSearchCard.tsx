@@ -1,13 +1,5 @@
 import type { BillingMode, InventoryItem } from '@inventory-platform/product/types';
-import {
-  Badge,
-  Button,
-  Card,
-  CardBody,
-  Inline,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { Badge, Button, Card, CardBody, Inline, Stack, Text } from '@inventory-platform/ui-kit';
 import { formatInventoryExpiryDate } from '@inventory-platform/schema';
 import styles from './product-search-card.module.css';
 
@@ -151,13 +143,15 @@ export function ProductSearchCard({
                 Selling Price: ₹{price != null ? price.toFixed(2) : '—'}
               </Text>
               <Text variant="caption" color="secondary" weight="semibold" className={styles.price}>
-                MRP: ₹
-                {item.maximumRetailPrice != null
-                  ? item.maximumRetailPrice.toFixed(2)
-                  : '—'}
+                MRP: ₹{item.maximumRetailPrice != null ? item.maximumRetailPrice.toFixed(2) : '—'}
               </Text>
               {item.saleAdditionalDiscount != null ? (
-                <Text variant="caption" color="secondary" weight="semibold" className={styles.price}>
+                <Text
+                  variant="caption"
+                  color="secondary"
+                  weight="semibold"
+                  className={styles.price}
+                >
                   Additional Discount: {item.saleAdditionalDiscount.toFixed(2)}%
                 </Text>
               ) : null}
@@ -226,10 +220,10 @@ export function ProductSearchCard({
               {isAddingToCart
                 ? 'Adding...'
                 : outOfStock
-                  ? 'Out of Stock'
-                  : priceMissing
-                    ? 'Price not set'
-                    : 'Add to Sell'}
+                ? 'Out of Stock'
+                : priceMissing
+                ? 'Price not set'
+                : 'Add to Sell'}
             </Button>
           </Inline>
         </Stack>

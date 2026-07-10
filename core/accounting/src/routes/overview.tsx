@@ -5,8 +5,7 @@ export function meta() {
     { title: 'Accounting - StockKart' },
     {
       name: 'description',
-      content:
-        'Double-entry accounting: journal entries, ledger, trial balance and reports.',
+      content: 'Double-entry accounting: journal entries, ledger, trial balance and reports.',
     },
   ];
 }

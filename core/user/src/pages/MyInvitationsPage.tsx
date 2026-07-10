@@ -10,10 +10,7 @@ export function MyInvitationsPage() {
 
   return (
     <Stack gap="md" className={styles.container}>
-      <PageHeader
-        title="My Invitations"
-        description="View and accept invitations to join shops"
-      />
+      <PageHeader title="My Invitations" description="View and accept invitations to join shops" />
 
       <Card className={styles.content}>
         <CardBody>

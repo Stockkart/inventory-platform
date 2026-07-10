@@ -1,12 +1,17 @@
 import { apiClient } from '@inventory-platform/api-client';
 import type { ApiResponse } from '@inventory-platform/contracts';
-import type { PurchaseHistoryResponse, GetPurchasesParams, SearchPurchasesParams, SearchPurchasesResponse, GetCustomerProductHistoryParams, CustomerProductHistoryResponse } from '@inventory-platform/product/types';
+import type {
+  PurchaseHistoryResponse,
+  GetPurchasesParams,
+  SearchPurchasesParams,
+  SearchPurchasesResponse,
+  GetCustomerProductHistoryParams,
+  CustomerProductHistoryResponse,
+} from '@inventory-platform/product/types';
 import { PURCHASE_ENDPOINTS } from './endpoints';
 
 export const purchasesApi = {
-  search: async (
-    params: SearchPurchasesParams
-  ): Promise<SearchPurchasesResponse> => {
+  search: async (params: SearchPurchasesParams): Promise<SearchPurchasesResponse> => {
     const queryParams: Record<string, string> = {};
     if (params.customerEmail) queryParams.customerEmail = params.customerEmail;
     if (params.customerPhone) queryParams.customerPhone = params.customerPhone;
@@ -17,7 +22,7 @@ export const purchasesApi = {
 
     const response = await apiClient.get<ApiResponse<SearchPurchasesResponse>>(
       PURCHASE_ENDPOINTS.SEARCH,
-      queryParams
+      queryParams,
     );
     return response.data;
   },
@@ -39,13 +44,13 @@ export const purchasesApi = {
 
     const response = await apiClient.get<ApiResponse<PurchaseHistoryResponse>>(
       PURCHASE_ENDPOINTS.BASE,
-      queryParams
+      queryParams,
     );
     return response.data;
   },
 
   getCustomerProductHistory: async (
-    params: GetCustomerProductHistoryParams
+    params: GetCustomerProductHistoryParams,
   ): Promise<CustomerProductHistoryResponse> => {
     const queryParams: Record<string, string> = {
       sellableRefs: params.sellableRefs.join(','),
@@ -59,7 +64,7 @@ export const purchasesApi = {
 
     const response = await apiClient.get<ApiResponse<CustomerProductHistoryResponse>>(
       PURCHASE_ENDPOINTS.CUSTOMER_PRODUCT_HISTORY,
-      queryParams
+      queryParams,
     );
     return response.data;
   },

@@ -9,7 +9,5 @@ export interface QueryProviderProps {
 export function QueryProvider({ children }: QueryProviderProps) {
   const [queryClient] = useState(createAppQueryClient);
 
-  return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
+  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }

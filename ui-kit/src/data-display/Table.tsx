@@ -9,11 +9,7 @@ import { cn } from '../utils/cn';
 import { CenteredLoader } from '../feedback/CenteredLoader';
 import styles from './data-display.module.css';
 
-export function Table({
-  className,
-  children,
-  ...rest
-}: TableHTMLAttributes<HTMLTableElement>) {
+export function Table({ className, children, ...rest }: TableHTMLAttributes<HTMLTableElement>) {
   return (
     <div className={styles.tableWrap}>
       <table className={cn(styles.table, className)} {...rest}>
@@ -73,10 +69,7 @@ export function TableEmptyRow({
   return (
     <TableRow>
       <td colSpan={colSpan} className={cn(styles.statusCell, className)} {...rest}>
-        <div
-          className={styles.statusMessage}
-          style={minHeight ? { minHeight } : undefined}
-        >
+        <div className={styles.statusMessage} style={minHeight ? { minHeight } : undefined}>
           {message}
         </div>
       </td>

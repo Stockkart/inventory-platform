@@ -16,30 +16,18 @@ import {
 import { triggerBlobDownload } from '../api/download';
 import { gstr3bApi } from '../api/gstr3b.api';
 import { useGstr3bReportQuery } from '../queries/hooks';
-import {
-  formatCurrency,
-  getDefaultPeriod,
-  GstrReportHeader,
-  GstrSummaryGrid,
-} from '../ui';
+import { formatCurrency, getDefaultPeriod, GstrReportHeader, GstrSummaryGrid } from '../ui';
 import styles from '../ui/gstr.module.css';
 
 export function Gstr3bTab() {
   const [period, setPeriod] = useState(getDefaultPeriod);
-  const {
-    data = null,
-    isLoading,
-    isError,
-    error: queryError,
-  } = useGstr3bReportQuery(period);
+  const { data = null, isLoading, isError, error: queryError } = useGstr3bReportQuery(period);
   const [error, setError] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     if (isError) {
-      setError(
-        queryError instanceof Error ? queryError.message : 'Failed to load GSTR-3B report'
-      );
+      setError(queryError instanceof Error ? queryError.message : 'Failed to load GSTR-3B report');
     } else {
       setError(null);
     }
@@ -158,11 +146,15 @@ export function Gstr3bTab() {
                   items={[
                     {
                       label: 'ITC Available (Other)',
-                      value: `IGST: ${formatCurrency(s4?.itcOtherIgst)} · CGST: ${formatCurrency(s4?.itcOtherCgst)} · SGST: ${formatCurrency(s4?.itcOtherSgst)}`,
+                      value: `IGST: ${formatCurrency(s4?.itcOtherIgst)} · CGST: ${formatCurrency(
+                        s4?.itcOtherCgst,
+                      )} · SGST: ${formatCurrency(s4?.itcOtherSgst)}`,
                     },
                     {
                       label: 'ITC Reversed',
-                      value: `CGST: ${formatCurrency(s4?.itcReversedOthersCgst)} · SGST: ${formatCurrency(s4?.itcReversedOthersSgst)}`,
+                      value: `CGST: ${formatCurrency(
+                        s4?.itcReversedOthersCgst,
+                      )} · SGST: ${formatCurrency(s4?.itcReversedOthersSgst)}`,
                     },
                   ]}
                 />
@@ -219,7 +211,7 @@ export function Gstr3bTab() {
                         {formatCurrency(
                           (s61?.cgstPaidByItcIgst ?? 0) +
                             (s61?.cgstPaidByItcCgst ?? 0) +
-                            (s61?.cgstPaidByItcSgst ?? 0)
+                            (s61?.cgstPaidByItcSgst ?? 0),
                         )}
                       </TableCell>
                       <TableCell className={styles.numCol}>
@@ -235,7 +227,7 @@ export function Gstr3bTab() {
                         {formatCurrency(
                           (s61?.sgstPaidByItcIgst ?? 0) +
                             (s61?.sgstPaidByItcCgst ?? 0) +
-                            (s61?.sgstPaidByItcSgst ?? 0)
+                            (s61?.sgstPaidByItcSgst ?? 0),
                         )}
                       </TableCell>
                       <TableCell className={styles.numCol}>

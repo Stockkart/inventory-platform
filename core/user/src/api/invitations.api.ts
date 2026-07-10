@@ -1,46 +1,52 @@
 import { apiClient } from '@inventory-platform/api-client';
-import type { AcceptInvitationResponse, Invitation, InvitationsResponse, SendInvitationDto, SendInvitationResponse, ShopUser, ShopUsersResponse } from '@inventory-platform/user/types';
+import type {
+  AcceptInvitationResponse,
+  Invitation,
+  InvitationsResponse,
+  SendInvitationDto,
+  SendInvitationResponse,
+  ShopUser,
+  ShopUsersResponse,
+} from '@inventory-platform/user/types';
 import type { ApiResponse } from '@inventory-platform/contracts';
 import { INVITATION_ENDPOINTS, SHOP_ACCESS_ENDPOINTS } from './endpoints';
 
 export const invitationsApi = {
   sendInvitation: async (
     shopId: string,
-    data: SendInvitationDto
+    data: SendInvitationDto,
   ): Promise<SendInvitationResponse> => {
     const response = await apiClient.post<ApiResponse<SendInvitationResponse>>(
       SHOP_ACCESS_ENDPOINTS.INVITATIONS(shopId),
-      data
+      data,
     );
     return response.data;
   },
 
-  acceptInvitation: async (
-    invitationId: string
-  ): Promise<AcceptInvitationResponse> => {
+  acceptInvitation: async (invitationId: string): Promise<AcceptInvitationResponse> => {
     const response = await apiClient.post<ApiResponse<AcceptInvitationResponse>>(
-      INVITATION_ENDPOINTS.ACCEPT(invitationId)
+      INVITATION_ENDPOINTS.ACCEPT(invitationId),
     );
     return response.data;
   },
 
   getMyInvitations: async (): Promise<Invitation[]> => {
     const response = await apiClient.get<ApiResponse<InvitationsResponse>>(
-      INVITATION_ENDPOINTS.MY_INVITATIONS
+      INVITATION_ENDPOINTS.MY_INVITATIONS,
     );
     return response.data.data;
   },
 
   getShopInvitations: async (shopId: string): Promise<Invitation[]> => {
     const response = await apiClient.get<ApiResponse<InvitationsResponse>>(
-      SHOP_ACCESS_ENDPOINTS.INVITATIONS(shopId)
+      SHOP_ACCESS_ENDPOINTS.INVITATIONS(shopId),
     );
     return response.data.data;
   },
 
   getShopUsers: async (shopId: string): Promise<ShopUser[]> => {
     const response = await apiClient.get<ApiResponse<ShopUsersResponse>>(
-      SHOP_ACCESS_ENDPOINTS.USERS_ALL(shopId)
+      SHOP_ACCESS_ENDPOINTS.USERS_ALL(shopId),
     );
     return response.data.data;
   },

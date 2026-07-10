@@ -25,11 +25,7 @@ export function CenteredLoader({
 }: CenteredLoaderProps) {
   return (
     <div
-      className={cn(
-        styles.centeredLoader,
-        fill && styles.centeredLoaderFill,
-        className
-      )}
+      className={cn(styles.centeredLoader, fill && styles.centeredLoaderFill, className)}
       style={{
         ...(minHeight && !fill ? { minHeight } : undefined),
         ...style,

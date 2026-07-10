@@ -17,12 +17,7 @@ export interface AlertProps {
   role?: 'alert' | 'status';
 }
 
-export function Alert({
-  variant = 'info',
-  children,
-  className,
-  role = 'alert',
-}: AlertProps) {
+export function Alert({ variant = 'info', children, className, role = 'alert' }: AlertProps) {
   return (
     <div className={cn(styles.alert, alertClass[variant], className)} role={role}>
       {children}
@@ -37,12 +32,7 @@ export interface ToastProps {
   className?: string;
 }
 
-export function Toast({
-  message,
-  variant = 'default',
-  onClose,
-  className,
-}: ToastProps) {
+export function Toast({ message, variant = 'default', onClose, className }: ToastProps) {
   return (
     <div
       className={cn(
@@ -50,7 +40,7 @@ export function Toast({
         variant === 'success' && styles.toastSuccess,
         variant === 'error' && styles.toastError,
         variant === 'warning' && styles.toastWarning,
-        className
+        className,
       )}
       role="status"
     >
@@ -71,12 +61,7 @@ export interface ProgressBarProps {
   label?: string;
 }
 
-export function ProgressBar({
-  value,
-  max = 100,
-  className,
-  label,
-}: ProgressBarProps) {
+export function ProgressBar({ value, max = 100, className, label }: ProgressBarProps) {
   return (
     <progress
       className={cn(styles.progress, className)}

@@ -16,7 +16,10 @@
     }
   },
   "nx": {
-    "tags": ["type:platform", "scope:access"]
+    "tags": [
+      "type:platform",
+      "scope:access"
+    ]
   },
   "dependencies": {
     "tslib": "^2.3.0"

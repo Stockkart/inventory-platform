@@ -35,11 +35,7 @@ type KeyboardShortcutsModalProps = {
   onFavoritesChange: (next: FavoritePageShortcut[]) => void;
 };
 
-function ShortcutKeys({
-  alternatives,
-}: {
-  alternatives: string[][];
-}) {
+function ShortcutKeys({ alternatives }: { alternatives: string[][] }) {
   return (
     <>
       {alternatives.map((segments, altIdx) => (
@@ -79,7 +75,7 @@ export function KeyboardShortcutsModal({
 
   const sortedNav = useMemo(() => {
     return [...navRows].sort((a, b) =>
-      a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })
+      a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }),
     );
   }, [navRows]);
 
@@ -122,18 +118,13 @@ export function KeyboardShortcutsModal({
       const binding = parseRecordedFavoriteBinding(e);
       if (!binding) {
         setFormError(
-          `Try a single F1–F12 key, or two keys together such as ${modLabel}+G, Alt+G, ${modLabel}+Shift+S, or ${modLabel}+F5.`
+          `Try a single F1–F12 key, or two keys together such as ${modLabel}+G, Alt+G, ${modLabel}+Shift+S, or ${modLabel}+F5.`,
         );
         return;
       }
       const row = sortedNav.find((r) => r.path === recordingPath);
       if (!row) return;
-      const result = addOrUpdateFavoritePageShortcut(
-        favorites,
-        row.path,
-        row.label,
-        binding
-      );
+      const result = addOrUpdateFavoritePageShortcut(favorites, row.path, row.label, binding);
       if (!result.ok) {
         setFormError(result.message);
         return;
@@ -144,15 +135,7 @@ export function KeyboardShortcutsModal({
     };
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
-  }, [
-    open,
-    onClose,
-    recordingPath,
-    sortedNav,
-    favorites,
-    modLabel,
-    onFavoritesChange,
-  ]);
+  }, [open, onClose, recordingPath, sortedNav, favorites, modLabel, onFavoritesChange]);
 
   const selectedRow = sortedNav.find((r) => r.path === selectedPath);
   const canAssign = Boolean(selectedPath && selectedRow && sortedNav.length > 0);
@@ -175,15 +158,11 @@ export function KeyboardShortcutsModal({
         <Modal.Body>
           <Text className={styles.intro}>
             Most shortcuts work when focus is not in a field. While{' '}
-            <Text as="strong">quick navigation</Text> is open (
-            <Text as="kbd">{modLabel}</Text> +{' '}
-            <Text as="kbd">
-              {DASHBOARD_HOTKEY.quickNavToggleModKey.toUpperCase()}
-            </Text>{' '}
-            or <Text as="kbd">{DASHBOARD_HOTKEY.quickNavOpenSlash}</Text>), use
-            arrows, <Text as="kbd">Enter</Text>, and <Text as="kbd">Alt</Text> +{' '}
-            <Text as="kbd">1</Text>–<Text as="kbd">9</Text> there. Close any
-            dialog with <Text as="kbd">Esc</Text> or ×.
+            <Text as="strong">quick navigation</Text> is open (<Text as="kbd">{modLabel}</Text> +{' '}
+            <Text as="kbd">{DASHBOARD_HOTKEY.quickNavToggleModKey.toUpperCase()}</Text> or{' '}
+            <Text as="kbd">{DASHBOARD_HOTKEY.quickNavOpenSlash}</Text>), use arrows,{' '}
+            <Text as="kbd">Enter</Text>, and <Text as="kbd">Alt</Text> + <Text as="kbd">1</Text>–
+            <Text as="kbd">9</Text> there. Close any dialog with <Text as="kbd">Esc</Text> or ×.
           </Text>
           <Table className={styles.table}>
             <TableHead>
@@ -212,13 +191,11 @@ export function KeyboardShortcutsModal({
           <Text className={styles.sectionIntro}>
             Jump straight to a screen you use often. Pick a page below, click{' '}
             <Text as="strong">Assign shortcut</Text>, then press one of: a{' '}
-            <Text as="strong">function key</Text> alone (
-            <Text as="kbd">F1</Text>–<Text as="kbd">F12</Text>), or a{' '}
-            <Text as="strong">two-part</Text> shortcut such as{' '}
-            <Text as="kbd">{modLabel}</Text> + <Text as="kbd">G</Text>,{' '}
-            <Text as="kbd">Alt</Text> + <Text as="kbd">G</Text>, or{' '}
-            <Text as="kbd">{modLabel}</Text> + <Text as="kbd">Shift</Text> +{' '}
-            <Text as="kbd">S</Text>. Saved on this device only.
+            <Text as="strong">function key</Text> alone (<Text as="kbd">F1</Text>–
+            <Text as="kbd">F12</Text>), or a <Text as="strong">two-part</Text> shortcut such as{' '}
+            <Text as="kbd">{modLabel}</Text> + <Text as="kbd">G</Text>, <Text as="kbd">Alt</Text> +{' '}
+            <Text as="kbd">G</Text>, or <Text as="kbd">{modLabel}</Text> +{' '}
+            <Text as="kbd">Shift</Text> + <Text as="kbd">S</Text>. Saved on this device only.
           </Text>
 
           <Box className={styles.favoriteToolbar}>
@@ -239,21 +216,11 @@ export function KeyboardShortcutsModal({
               ))}
             </Select>
             {!recordingPath ? (
-              <Button
-                type="button"
-                size="sm"
-                disabled={!canAssign}
-                onClick={startRecording}
-              >
+              <Button type="button" size="sm" disabled={!canAssign} onClick={startRecording}>
                 Assign shortcut
               </Button>
             ) : (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={cancelRecording}
-              >
+              <Button type="button" size="sm" variant="outline" onClick={cancelRecording}>
                 Cancel
               </Button>
             )}
@@ -261,9 +228,8 @@ export function KeyboardShortcutsModal({
 
           {recordingPath ? (
             <Alert variant="info" role="status" className={styles.recordingHint}>
-              Press your shortcut — e.g. <Text as="kbd">F7</Text>,{' '}
-              <Text as="kbd">{modLabel}</Text> + <Text as="kbd">R</Text>, or{' '}
-              <Text as="kbd">Alt</Text> + <Text as="kbd">2</Text>.{' '}
+              Press your shortcut — e.g. <Text as="kbd">F7</Text>, <Text as="kbd">{modLabel}</Text>{' '}
+              + <Text as="kbd">R</Text>, or <Text as="kbd">Alt</Text> + <Text as="kbd">2</Text>.{' '}
               <Text as="span" className={styles.recordingMuted}>
                 Esc cancels recording.
               </Text>
@@ -289,9 +255,7 @@ export function KeyboardShortcutsModal({
                   <TableRow key={f.id}>
                     <TableCell className={styles.action}>{f.label}</TableCell>
                     <TableCell className={styles.keys}>
-                      <ShortcutKeys
-                        alternatives={formatFavoriteShortcutDisplay(f, modLabel)}
-                      />
+                      <ShortcutKeys alternatives={formatFavoriteShortcutDisplay(f, modLabel)} />
                     </TableCell>
                     <TableCell className={styles.colActions}>
                       <Button
@@ -299,9 +263,7 @@ export function KeyboardShortcutsModal({
                         size="sm"
                         variant="ghost"
                         onClick={() =>
-                          onFavoritesChange(
-                            removeFavoritePageShortcut(favorites, f.id)
-                          )
+                          onFavoritesChange(removeFavoritePageShortcut(favorites, f.id))
                         }
                       >
                         Remove
@@ -320,10 +282,9 @@ export function KeyboardShortcutsModal({
           )}
 
           <Text className={styles.note}>
-            Quick navigation: <Text as="kbd">↑</Text> <Text as="kbd">↓</Text>{' '}
-            highlight a page, <Text as="kbd">Enter</Text> opens it. Hold{' '}
-            <Text as="kbd">Alt</Text> and press <Text as="kbd">1</Text>–
-            <Text as="kbd">9</Text> to jump straight to the matching row
+            Quick navigation: <Text as="kbd">↑</Text> <Text as="kbd">↓</Text> highlight a page,{' '}
+            <Text as="kbd">Enter</Text> opens it. Hold <Text as="kbd">Alt</Text> and press{' '}
+            <Text as="kbd">1</Text>–<Text as="kbd">9</Text> to jump straight to the matching row
             (shown at the left of each line).
           </Text>
         </Modal.Body>

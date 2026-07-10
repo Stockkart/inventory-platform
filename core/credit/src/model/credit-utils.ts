@@ -1,4 +1,8 @@
-import type { CreditAccountResponse, CreditEntryResponse, CreditPartyType } from '@inventory-platform/credit/types';
+import type {
+  CreditAccountResponse,
+  CreditEntryResponse,
+  CreditPartyType,
+} from '@inventory-platform/credit/types';
 export function formatMoney(n: number): string {
   return new Intl.NumberFormat('en-IN', {
     minimumFractionDigits: 2,
@@ -14,7 +18,9 @@ export type CreditBalanceTone =
   | 'settled';
 
 /** How a balance reads for customers (they pay you) vs vendors (you pay them). */
-export function presentCreditBalance(account: Pick<CreditAccountResponse, 'partyType' | 'currentBalance'>): {
+export function presentCreditBalance(
+  account: Pick<CreditAccountResponse, 'partyType' | 'currentBalance'>,
+): {
   tone: CreditBalanceTone;
   /** Short row label: “Owes you” (customer) / “You owe” (vendor) when money is due. */
   headline: string;
@@ -91,7 +97,7 @@ export function todayLocalDate(): string {
 /** Headline + subtitle for one ledger row on the Credit page. */
 export function formatCreditLedgerEntry(
   entry: CreditEntryResponse,
-  partyType: CreditPartyType
+  partyType: CreditPartyType,
 ): { title: string; subtitle: string } {
   const isReturnRow =
     entry.entryType === 'RETURN' ||
@@ -100,9 +106,7 @@ export function formatCreditLedgerEntry(
 
   if (isReturnRow) {
     const viaReturn =
-      entry.referenceType === 'VENDOR_RETURN' || isVendor
-        ? 'Purchase return'
-        : 'Sales return';
+      entry.referenceType === 'VENDOR_RETURN' || isVendor ? 'Purchase return' : 'Sales return';
     return {
       title: viaReturn,
       subtitle: isVendor
@@ -114,9 +118,7 @@ export function formatCreditLedgerEntry(
   if (entry.entryType === 'SETTLEMENT') {
     return {
       title: isVendor ? 'You paid them' : 'They paid you',
-      subtitle: entry.paymentMethod
-        ? `Settlement · ${entry.paymentMethod}`
-        : 'Settlement',
+      subtitle: entry.paymentMethod ? `Settlement · ${entry.paymentMethod}` : 'Settlement',
     };
   }
 

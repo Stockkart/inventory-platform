@@ -21,11 +21,7 @@ export function IconButton({
     <button
       type={type}
       aria-label={label}
-      className={cn(
-        styles.iconButton,
-        styles[`iconButton-${size}`],
-        className
-      )}
+      className={cn(styles.iconButton, styles[`iconButton-${size}`], className)}
       {...rest}
     >
       {children}

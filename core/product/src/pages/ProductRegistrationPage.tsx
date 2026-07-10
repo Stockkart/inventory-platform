@@ -1,11 +1,4 @@
-import {
-  useState,
-  useRef,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useCallback,
-} from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { QRCodeSVG } from 'qrcode.react';
 import { uploadApi } from '@inventory-platform/product/api';
@@ -13,9 +6,28 @@ import { apiClient } from '@inventory-platform/api-client';
 import { userLookupApi } from '@inventory-platform/user/users';
 import { inventoryApi } from '../api/inventory.api';
 import { vendorsApi } from '@inventory-platform/user/vendors';
-import type { CreateInventoryDto, BulkCreateInventoryDto, ParseInvoiceItem, ParsedVendorInvoiceDto, VendorPurchaseInvoicePayload, UploadStatus, ItemType, DiscountApplicable, SchemeType, PurchaseSchemeInputType, PackagingUnit, BillingMode } from '@inventory-platform/product/types';
+import type {
+  CreateInventoryDto,
+  BulkCreateInventoryDto,
+  ParseInvoiceItem,
+  ParsedVendorInvoiceDto,
+  VendorPurchaseInvoicePayload,
+  UploadStatus,
+  ItemType,
+  DiscountApplicable,
+  SchemeType,
+  PurchaseSchemeInputType,
+  PackagingUnit,
+  BillingMode,
+} from '@inventory-platform/product/types';
 import type { CustomReminderInput } from '@inventory-platform/contracts';
-import type { LinkableUser, Vendor, VendorResponse, CreateVendorDto, VendorBusinessType } from '@inventory-platform/user/types';
+import type {
+  LinkableUser,
+  Vendor,
+  VendorResponse,
+  CreateVendorDto,
+  VendorBusinessType,
+} from '@inventory-platform/user/types';
 import type { PricingRate } from '@inventory-platform/contracts';
 import type { PaymentMethod, PaymentSplit } from '@inventory-platform/contracts';
 import {
@@ -116,16 +128,14 @@ function toReminderIso(value: string): string {
 /** Maps registration form reminders to API shape (reminderAt + endDate required server-side). */
 function mapCustomRemindersForBulkApi(
   reminders: CustomReminderInput[] | undefined,
-  productExpiryRaw: string
+  productExpiryRaw: string,
 ): CustomReminderInput[] | null {
   if (!reminders?.length) return null;
   const mapped = reminders
     .filter((r) => r.reminderAt?.trim())
     .map((reminder) => {
       const reminderAt = toReminderIso(reminder.reminderAt);
-      let endDate = reminder.endDate?.trim()
-        ? toReminderIso(reminder.endDate)
-        : '';
+      let endDate = reminder.endDate?.trim() ? toReminderIso(reminder.endDate) : '';
       if (!endDate && productExpiryRaw.trim()) {
         endDate = toReminderIso(productExpiryRaw);
       }
@@ -161,22 +171,19 @@ function numOr0(v: number | null | undefined): number {
  * Tax total = SGST + CGST computed on top of that taxable (not reverse-calculated
  * from a tax-inclusive lump). Matches typical purchase bills: line amount ex-GST + tax.
  */
-function computeVendorInvoiceTotalsFromParseItems(
-  items: ParseInvoiceItem[]
-): { lineSubTotal: number; taxTotal: number } {
+function computeVendorInvoiceTotalsFromParseItems(items: ParseInvoiceItem[]): {
+  lineSubTotal: number;
+  taxTotal: number;
+} {
   let lineSubTotal = 0;
   let taxTotal = 0;
   for (const item of items) {
     const qtyRaw = item.count;
-    const q =
-      qtyRaw != null && Number.isFinite(Number(qtyRaw))
-        ? Math.max(0, Number(qtyRaw))
-        : 0;
+    const q = qtyRaw != null && Number.isFinite(Number(qtyRaw)) ? Math.max(0, Number(qtyRaw)) : 0;
     // Purchase valuation: PTS (costPrice / stockist) when present — including 0.
     // Do not fall through to PTR (retailer transfer) when PTS is intentionally 0;
     // use PTR only if stockist price was omitted (matches OCR-only-PTR lines).
-    const pts =
-      item.costPrice != null ? Number(item.costPrice) : Number.NaN;
+    const pts = item.costPrice != null ? Number(item.costPrice) : Number.NaN;
     const ptr = Number(item.priceToRetail);
     let unit = 0;
     if (item.costPrice != null && Number.isFinite(pts) && pts >= 0) {
@@ -189,12 +196,8 @@ function computeVendorInvoiceTotalsFromParseItems(
     const cgst = parseGstPercent(item.cgst ?? undefined);
     const pct = sgst + cgst;
     if (pct > 0 && lineTaxableExclusive > 0) {
-      const cgstAmt = roundMoney(
-        (lineTaxableExclusive * cgst) / 100
-      );
-      const sgstAmt = roundMoney(
-        (lineTaxableExclusive * sgst) / 100
-      );
+      const cgstAmt = roundMoney((lineTaxableExclusive * cgst) / 100);
+      const sgstAmt = roundMoney((lineTaxableExclusive * sgst) / 100);
       const lineTax = roundMoney(cgstAmt + sgstAmt);
       lineSubTotal += lineTaxableExclusive;
       taxTotal += lineTax;
@@ -214,16 +217,9 @@ function computeVendorInvoiceTotalFromFields(
   shippingCharge: string,
   otherCharges: string,
   overallDiscount: string,
-  roundOff: string
+  roundOff: string,
 ): string {
-  const values = [
-    lineSubTotal,
-    taxTotal,
-    shippingCharge,
-    otherCharges,
-    overallDiscount,
-    roundOff,
-  ];
+  const values = [lineSubTotal, taxTotal, shippingCharge, otherCharges, overallDiscount, roundOff];
   const hasAnyValue = values.some((v) => v.trim() !== '');
   if (!hasAnyValue) return '';
 
@@ -233,7 +229,7 @@ function computeVendorInvoiceTotalFromFields(
       numOr0(optionalNumFromString(shippingCharge)) +
       numOr0(optionalNumFromString(otherCharges)) +
       numOr0(optionalNumFromString(roundOff)) -
-      numOr0(optionalNumFromString(overallDiscount))
+      numOr0(optionalNumFromString(overallDiscount)),
   );
   return formatComputedAmount(Math.max(0, total));
 }
@@ -251,12 +247,7 @@ export function meta() {
 interface ProductFormData
   extends Omit<
     CreateInventoryDto,
-    | 'vendorId'
-    | 'lotId'
-    | 'priceToRetail'
-    | 'costPrice'
-    | 'maximumRetailPrice'
-    | 'sellingPrice'
+    'vendorId' | 'lotId' | 'priceToRetail' | 'costPrice' | 'maximumRetailPrice' | 'sellingPrice'
   > {
   id: string; // Unique ID for each product form
   isExpanded: boolean;
@@ -314,7 +305,7 @@ function gcdInt(a: number, b: number): number {
 /** e.g. paid 540 + free 60 → 9 + 1 */
 function schemeRatioFromPaidAndFree(
   paid: number,
-  freeQty: number
+  freeQty: number,
 ): { payFor: number; free: number } {
   const g = gcdInt(paid, freeQty);
   return { payFor: Math.max(1, paid / g), free: freeQty / g };
@@ -335,7 +326,7 @@ function billableCountForPurchaseFreeQty(product: {
 
 function buildPurchaseFreeQuantityPatch(
   product: ProductFormData,
-  freeQty: number
+  freeQty: number,
 ): Partial<ProductFormData> | null {
   if (freeQty <= 0 || !Number.isFinite(freeQty)) return null;
   const billable = billableCountForPurchaseFreeQty(product);
@@ -364,7 +355,7 @@ function buildPurchaseFreeQuantityPatch(
 /** Apply Free quantity input: plain "60" or explicit "0+60" / "0 + 60". */
 function applyPurchaseFreeQuantityFromRaw(
   product: ProductFormData,
-  raw: string
+  raw: string,
 ): Partial<ProductFormData> | null {
   const t = raw.trim();
   if (!t) return null;
@@ -392,7 +383,7 @@ function applyPurchaseFreeQuantityFromRaw(
 /** Display pay + free ratio (e.g. 4 + 1) for purchase scheme inputs. */
 function formatPurchaseSchemeRatioDisplay(
   payFor: number | null | undefined,
-  free: number | null | undefined
+  free: number | null | undefined,
 ): string {
   if (payFor == null && free == null) return '';
   return `${payFor ?? 0} + ${free ?? 0}`;
@@ -405,22 +396,15 @@ function formatPurchaseSchemeDealForDisplay(
     | 'purchaseSchemePercentage'
     | 'purchaseSchemePayFor'
     | 'purchaseSchemeFree'
-  >
+  >,
 ): string {
   if ((product.purchaseSchemeType ?? 'FIXED_UNITS') === 'PERCENTAGE') {
-    return product.purchaseSchemePercentage != null
-      ? `${product.purchaseSchemePercentage}%`
-      : '';
+    return product.purchaseSchemePercentage != null ? `${product.purchaseSchemePercentage}%` : '';
   }
-  return formatPurchaseSchemeRatioDisplay(
-    product.purchaseSchemePayFor,
-    product.purchaseSchemeFree
-  );
+  return formatPurchaseSchemeRatioDisplay(product.purchaseSchemePayFor, product.purchaseSchemeFree);
 }
 
-function clearPurchaseSchemePatch(
-  product: ProductFormData
-): Partial<ProductFormData> {
+function clearPurchaseSchemePatch(product: ProductFormData): Partial<ProductFormData> {
   const patch: Partial<ProductFormData> = {
     purchaseSchemePayFor: null,
     purchaseSchemeFree: null,
@@ -542,7 +526,7 @@ interface GridBulkFillDraft {
  */
 function applyPurchaseDiscountsToLine(
   lineTaxableExclusive: number,
-  scheme: PurchaseSchemeFields
+  scheme: PurchaseSchemeFields,
 ): number {
   if (lineTaxableExclusive <= 0) return 0;
   let line = lineTaxableExclusive;
@@ -580,7 +564,7 @@ function applyPurchaseDiscountsToLine(
 function purchaseLineTaxableExclusive(
   count: number,
   unit: number,
-  scheme: PurchaseSchemeFields
+  scheme: PurchaseSchemeFields,
 ): number {
   const gross = roundMoney(count * unit);
   if (gross <= 0) return 0;
@@ -600,11 +584,9 @@ function purchaseLineTaxableExclusive(
         : Math.max(
             0,
             Math.round(
-              (count *
-                (scheme.purchaseSchemePayFor ?? 0)) /
-                ((scheme.purchaseSchemePayFor ?? 0) +
-                  (scheme.purchaseSchemeFree ?? 0))
-            )
+              (count * (scheme.purchaseSchemePayFor ?? 0)) /
+                ((scheme.purchaseSchemePayFor ?? 0) + (scheme.purchaseSchemeFree ?? 0)),
+            ),
           );
     return roundMoney(Math.max(0, billable) * unit);
   }
@@ -614,7 +596,7 @@ function purchaseLineTaxableExclusive(
 
 function resolvePurchaseSchemeForTotals(
   product: ProductFormData,
-  purchaseDraft?: string
+  purchaseDraft?: string,
 ): PurchaseSchemeFields {
   const parsed = purchaseDraft ? parsePurchaseSchemeDraft(purchaseDraft) : null;
   if (parsed) {
@@ -637,17 +619,14 @@ function resolvePurchaseSchemeForTotals(
 function computeVendorInvoiceTotalsFromProducts(
   productRows: ProductFormData[],
   billingModeForGst: BillingMode,
-  schemeDrafts?: Record<string, { sale?: string; purchase?: string }>
+  schemeDrafts?: Record<string, { sale?: string; purchase?: string }>,
 ): { lineSubTotal: number; taxTotal: number } {
   let lineSubTotal = 0;
   let taxTotal = 0;
 
   for (const p of productRows) {
     const qtyRaw = p.count;
-    const q =
-      qtyRaw != null && Number.isFinite(Number(qtyRaw))
-        ? Math.max(0, Number(qtyRaw))
-        : 0;
+    const q = qtyRaw != null && Number.isFinite(Number(qtyRaw)) ? Math.max(0, Number(qtyRaw)) : 0;
     const pts = numericProductMoney(p.costPrice);
     const ptr = numericProductMoney(p.priceToRetail);
     let unit = 0;
@@ -657,10 +636,7 @@ function computeVendorInvoiceTotalsFromProducts(
       unit = ptr;
     }
 
-    const scheme = resolvePurchaseSchemeForTotals(
-      p,
-      schemeDrafts?.[p.id]?.purchase
-    );
+    const scheme = resolvePurchaseSchemeForTotals(p, schemeDrafts?.[p.id]?.purchase);
     const lineTaxableExclusive = purchaseLineTaxableExclusive(q, unit, scheme);
 
     const sgst =
@@ -691,11 +667,10 @@ function computeVendorInvoiceTotalsFromProducts(
 
 export function ProductRegistrationPage() {
   const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
-  const activeShopId =
-    useAuthStore((s) => s.user?.shopId ?? null) ?? apiClient.getShopId();
+  const activeShopId = useAuthStore((s) => s.user?.shopId ?? null) ?? apiClient.getShopId();
   const fetchCapabilities = useShopCapabilitiesStore((s) => s.fetchCapabilities);
   const shopCapabilities = useShopCapabilitiesStore((s) =>
-    activeShopId ? s.byShopId[activeShopId] ?? null : null
+    activeShopId ? s.byShopId[activeShopId] ?? null : null,
   );
   const isSimplePricing = shopCapabilities?.features?.simplePricing === true;
   const navigate = useNavigate();
@@ -711,9 +686,9 @@ export function ProductRegistrationPage() {
   const [uploadUrl, setUploadUrl] = useState<string | null>(null);
   const [uploadStatus, setUploadStatus] = useState<UploadStatus | null>(null);
   const [isPolling, setIsPolling] = useState(false);
-  const [pollingInterval, setPollingInterval] = useState<ReturnType<
-    typeof setInterval
-  > | null>(null);
+  const [pollingInterval, setPollingInterval] = useState<ReturnType<typeof setInterval> | null>(
+    null,
+  );
   const productsSectionRef = useRef<HTMLDivElement>(null);
   const [showReviewBanner, setShowReviewBanner] = useState(false);
   const [reviewBannerItemsCount, setReviewBannerItemsCount] = useState(0);
@@ -730,14 +705,11 @@ export function ProductRegistrationPage() {
   const billingSchemaMode = schemaModeForBilling(billingMode);
   const shopSchema = useVerticalSchemaStore((s) =>
     activeShopId
-      ? s.shopSchemaByKey[shopSchemaCacheKey(activeShopId, billingSchemaMode)] ??
-        null
-      : null
+      ? s.shopSchemaByKey[shopSchemaCacheKey(activeShopId, billingSchemaMode)] ?? null
+      : null,
   );
   const schemaLoadError = useVerticalSchemaStore((s) =>
-    activeShopId
-      ? s.errors[shopSchemaCacheKey(activeShopId, billingSchemaMode)] ?? ''
-      : ''
+    activeShopId ? s.errors[shopSchemaCacheKey(activeShopId, billingSchemaMode)] ?? '' : '',
   );
   const [vendorFormData, setVendorFormData] = useState<CreateVendorDto>({
     name: '',
@@ -752,9 +724,7 @@ export function ProductRegistrationPage() {
   // Link vendor to registered user
   const [linkedUser, setLinkedUser] = useState<LinkableUser | null>(null);
   const [isSearchingUser, setIsSearchingUser] = useState(false);
-  const [userSearchMessage, setUserSearchMessage] = useState<string | null>(
-    null
-  );
+  const [userSearchMessage, setUserSearchMessage] = useState<string | null>(null);
 
   const [vendorInvoiceNo, setVendorInvoiceNo] = useState('');
   const [vendorInvoiceDate, setVendorInvoiceDate] = useState('');
@@ -767,7 +737,7 @@ export function ProductRegistrationPage() {
   const [vendorInvoiceTotal, setVendorInvoiceTotal] = useState('');
   const [vendorPaymentMethod, setVendorPaymentMethod] = useState<PaymentMethod | null>(null);
   const [vendorPaymentSplit, setVendorPaymentSplit] = useState<PaymentSplit>(() =>
-    emptyPaymentSplit()
+    emptyPaymentSplit(),
   );
 
   /**
@@ -778,7 +748,7 @@ export function ProductRegistrationPage() {
    */
   const applyParsedVendorInvoice = (
     v: ParsedVendorInvoiceDto | null | undefined,
-    parsedItems?: ParseInvoiceItem[] | null
+    parsedItems?: ParseInvoiceItem[] | null,
   ) => {
     const hasItems = parsedItems != null && parsedItems.length > 0;
 
@@ -788,8 +758,7 @@ export function ProductRegistrationPage() {
         const raw = String(v.invoiceDate).trim();
         setVendorInvoiceDate(raw.length >= 10 ? raw.slice(0, 10) : raw);
       }
-      if (v.shippingCharge != null)
-        setVendorShippingCharge(String(v.shippingCharge));
+      if (v.shippingCharge != null) setVendorShippingCharge(String(v.shippingCharge));
       if (v.otherCharges != null) setVendorOtherCharges(String(v.otherCharges));
       if (v.roundOff != null) setVendorRoundOff(String(v.roundOff));
       if (!hasItems) {
@@ -800,8 +769,7 @@ export function ProductRegistrationPage() {
     }
 
     if (hasItems) {
-      const { lineSubTotal, taxTotal } =
-        computeVendorInvoiceTotalsFromParseItems(parsedItems);
+      const { lineSubTotal, taxTotal } = computeVendorInvoiceTotalsFromParseItems(parsedItems);
       setVendorLineSubTotal(formatComputedAmount(lineSubTotal));
       setVendorTaxTotal(formatComputedAmount(taxTotal));
     }
@@ -815,8 +783,8 @@ export function ProductRegistrationPage() {
         vendorShippingCharge,
         vendorOtherCharges,
         vendorOverallDiscount,
-        vendorRoundOff
-      )
+        vendorRoundOff,
+      ),
     );
   }, [
     vendorLineSubTotal,
@@ -828,13 +796,11 @@ export function ProductRegistrationPage() {
   ]);
 
   const vendorInvoiceTotalNum = optionalNumFromString(vendorInvoiceTotal) ?? 0;
-  const vendorCreditLedgerOutstandingNum = roundMoney(
-    Math.max(vendorPaymentSplit.creditAmount, 0)
-  );
+  const vendorCreditLedgerOutstandingNum = roundMoney(Math.max(vendorPaymentSplit.creditAmount, 0));
   const vendorPaymentSplitValidation = validatePaymentSplit(
     vendorPaymentMethod,
     vendorPaymentSplit,
-    vendorInvoiceTotalNum
+    vendorInvoiceTotalNum,
   );
 
   // Multiple products state
@@ -879,22 +845,20 @@ export function ProductRegistrationPage() {
     const { lineSubTotal, taxTotal } = computeVendorInvoiceTotalsFromProducts(
       products,
       billingMode,
-      gridSchemeDrafts
+      gridSchemeDrafts,
     );
     setVendorLineSubTotal(formatComputedAmount(lineSubTotal));
     setVendorTaxTotal(formatComputedAmount(taxTotal));
   }, [products, billingMode, gridSchemeDrafts]);
 
   // Product view mode: list (accordion) or grid (Excel-style)
-  const [productViewMode, setProductViewMode] = useState<'list' | 'grid'>(
-    () => {
-      if (typeof window !== 'undefined') {
-        const stored = localStorage.getItem('product-registration-view-mode');
-        if (stored === 'list' || stored === 'grid') return stored;
-      }
-      return 'list';
+  const [productViewMode, setProductViewMode] = useState<'list' | 'grid'>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('product-registration-view-mode');
+      if (stored === 'list' || stored === 'grid') return stored;
     }
-  );
+    return 'list';
+  });
 
   // Image upload state
   const [isUploading, setIsUploading] = useState(false);
@@ -947,30 +911,30 @@ export function ProductRegistrationPage() {
     conversionFactor: 0,
     rates: [],
     defaultRate: '',
-    verticalFields:
-      shopSchema?.verticalId === 'cafe' ? { sellDirect: 'no' } : {},
+    verticalFields: shopSchema?.verticalId === 'cafe' ? { sellDirect: 'no' } : {},
   });
 
   const registrationFields = useMemo(
     () =>
       filterRegistrationFieldsForSimplePricing(
         registrationFieldsForBilling(shopSchema, billingMode, activeShopId),
-        isSimplePricing
+        isSimplePricing,
       ),
-    [shopSchema, billingMode, activeShopId, isSimplePricing]
+    [shopSchema, billingMode, activeShopId, isSimplePricing],
   );
 
-  const { companyField, sellDirectField, otherFields: verticalRegistrationFields } = useMemo(
-    () => partitionRegistrationFields(registrationFields),
-    [registrationFields]
-  );
+  const {
+    companyField,
+    sellDirectField,
+    otherFields: verticalRegistrationFields,
+  } = useMemo(() => partitionRegistrationFields(registrationFields), [registrationFields]);
 
   const registrationSchemaReady = useMemo(
     () =>
       isRegistrationSchemaReady(shopSchema, billingMode, {
         shopId: activeShopId,
       }),
-    [shopSchema, billingMode, activeShopId]
+    [shopSchema, billingMode, activeShopId],
   );
 
   useEffect(() => {
@@ -990,22 +954,19 @@ export function ProductRegistrationPage() {
           const patch = setVerticalFieldPatch(field, value);
           const nextVerticalFields = {
             ...(p.verticalFields ?? {}),
-            ...((patch.verticalFields as Record<string, unknown> | undefined) ??
-              {}),
+            ...((patch.verticalFields as Record<string, unknown> | undefined) ?? {}),
           };
           const { verticalFields: _vf, ...restPatch } = patch;
           return {
             ...p,
             ...restPatch,
             verticalFields:
-              Object.keys(nextVerticalFields).length > 0
-                ? nextVerticalFields
-                : p.verticalFields,
+              Object.keys(nextVerticalFields).length > 0 ? nextVerticalFields : p.verticalFields,
           };
-        })
+        }),
       );
     },
-    []
+    [],
   );
 
   const handleAddProduct = () => {
@@ -1023,13 +984,11 @@ export function ProductRegistrationPage() {
         ...product,
         billingMode: mode,
         ...(mode === 'BASIC' ? { sgst: '', cgst: '' } : {}),
-      }))
+      })),
     );
   };
 
-  const transformParsedItemToProduct = (
-    item: ParseInvoiceItem
-  ): ProductFormData => {
+  const transformParsedItemToProduct = (item: ParseInvoiceItem): ProductFormData => {
     // Transform customReminders from API format to form format
     const customReminders: CustomReminderInput[] =
       item.customReminders && item.customReminders.length > 0
@@ -1044,110 +1003,95 @@ export function ProductRegistrationPage() {
 
     return hydrateExtensionFieldsOnProduct(
       {
-      id: `product-${Date.now()}-${Math.random()}`,
-      isExpanded: true,
-      barcode: item.barcode || '',
-      name: item.name || '',
-      companyName: item.companyName || '',
-      price: item.priceToRetail || 0,
-      maximumRetailPrice: item.maximumRetailPrice || 0,
-      costPrice: item.costPrice || 0,
-      priceToRetail: item.priceToRetail || 0,
-      businessType:
-        item.businessType?.toLowerCase() ||
-        shopSchema?.verticalId ||
-        'medical',
-      location: item.location || '',
-      count: item.count || 0,
-      expiryDate: item.expiryDate || '',
-      description: item.description || '',
-      reminderAt: item.reminderAt || undefined,
-      customReminders,
-      hsn: item.hsn || '',
-      batchNo: item.batchNo || '',
-      ...(() => {
-        const fromApi =
-          item.schemePayFor != null ||
-          item.schemeFree != null ||
-          item.purchaseSchemePayFor != null ||
-          item.purchaseSchemeFree != null;
-        if (fromApi) {
+        id: `product-${Date.now()}-${Math.random()}`,
+        isExpanded: true,
+        barcode: item.barcode || '',
+        name: item.name || '',
+        companyName: item.companyName || '',
+        price: item.priceToRetail || 0,
+        maximumRetailPrice: item.maximumRetailPrice || 0,
+        costPrice: item.costPrice || 0,
+        priceToRetail: item.priceToRetail || 0,
+        businessType: item.businessType?.toLowerCase() || shopSchema?.verticalId || 'medical',
+        location: item.location || '',
+        count: item.count || 0,
+        expiryDate: item.expiryDate || '',
+        description: item.description || '',
+        reminderAt: item.reminderAt || undefined,
+        customReminders,
+        hsn: item.hsn || '',
+        batchNo: item.batchNo || '',
+        ...(() => {
+          const fromApi =
+            item.schemePayFor != null ||
+            item.schemeFree != null ||
+            item.purchaseSchemePayFor != null ||
+            item.purchaseSchemeFree != null;
+          if (fromApi) {
+            return {
+              scheme: null,
+              schemePayFor: item.schemePayFor ?? item.purchaseSchemePayFor ?? null,
+              schemeFree: item.schemeFree ?? item.purchaseSchemeFree ?? null,
+              schemeType: (item.schemeType ?? 'FIXED_UNITS') as SchemeType,
+              purchaseSchemeType: (item.purchaseSchemeType ??
+                'FIXED_UNITS') as PurchaseSchemeInputType,
+              purchaseSchemePayFor: item.purchaseSchemePayFor ?? item.schemePayFor ?? null,
+              purchaseSchemeFree: item.purchaseSchemeFree ?? item.schemeFree ?? null,
+            };
+          }
+          const draft = typeof item.scheme === 'string' ? item.scheme : null;
+          const parsed = draft ? parsePurchaseSchemeDraft(draft) : null;
+          if (parsed) {
+            return {
+              scheme: null,
+              schemePayFor: parsed.purchaseSchemePayFor,
+              schemeFree: parsed.purchaseSchemeFree,
+              schemeType: 'FIXED_UNITS' as SchemeType,
+              purchaseSchemeType: parsed.purchaseSchemeType,
+              purchaseSchemePayFor: parsed.purchaseSchemePayFor,
+              purchaseSchemeFree: parsed.purchaseSchemeFree,
+            };
+          }
           return {
-            scheme: null,
-            schemePayFor: item.schemePayFor ?? item.purchaseSchemePayFor ?? null,
-            schemeFree: item.schemeFree ?? item.purchaseSchemeFree ?? null,
+            scheme:
+              item.scheme != null
+                ? typeof item.scheme === 'number'
+                  ? item.scheme
+                  : parseInt(String(item.scheme), 10) || null
+                : null,
+            schemePayFor: null,
+            schemeFree: null,
             schemeType: (item.schemeType ?? 'FIXED_UNITS') as SchemeType,
             purchaseSchemeType: (item.purchaseSchemeType ??
               'FIXED_UNITS') as PurchaseSchemeInputType,
-            purchaseSchemePayFor:
-              item.purchaseSchemePayFor ?? item.schemePayFor ?? null,
-            purchaseSchemeFree:
-              item.purchaseSchemeFree ?? item.schemeFree ?? null,
+            purchaseSchemePayFor: item.purchaseSchemePayFor ?? null,
+            purchaseSchemeFree: item.purchaseSchemeFree ?? null,
           };
-        }
-        const draft =
-          typeof item.scheme === 'string' ? item.scheme : null;
-        const parsed = draft ? parsePurchaseSchemeDraft(draft) : null;
-        if (parsed) {
-          return {
-            scheme: null,
-            schemePayFor: parsed.purchaseSchemePayFor,
-            schemeFree: parsed.purchaseSchemeFree,
-            schemeType: 'FIXED_UNITS' as SchemeType,
-            purchaseSchemeType: parsed.purchaseSchemeType,
-            purchaseSchemePayFor: parsed.purchaseSchemePayFor,
-            purchaseSchemeFree: parsed.purchaseSchemeFree,
-          };
-        }
-        return {
-          scheme:
-            item.scheme != null
-              ? typeof item.scheme === 'number'
-                ? item.scheme
-                : parseInt(String(item.scheme), 10) || null
-              : null,
-          schemePayFor: null,
-          schemeFree: null,
-          schemeType: (item.schemeType ?? 'FIXED_UNITS') as SchemeType,
-          purchaseSchemeType: (item.purchaseSchemeType ??
-            'FIXED_UNITS') as PurchaseSchemeInputType,
-          purchaseSchemePayFor: item.purchaseSchemePayFor ?? null,
-          purchaseSchemeFree: item.purchaseSchemeFree ?? null,
-        };
-      })(),
-      schemePercentage:
-        item.schemePercentage != null
-          ? (typeof item.schemePercentage === 'number'
-              ? item.schemePercentage
-              : parseFloat(String(item.schemePercentage))) || null
-          : null,
-      sgst: billingMode === 'BASIC' ? '' : item.sgst || '',
-      cgst: billingMode === 'BASIC' ? '' : item.cgst || '',
-      saleAdditionalDiscount: item.saleAdditionalDiscount ?? null,
-      purchaseSchemePercentage: item.purchaseSchemePercentage ?? null,
-      purchaseSchemeFreeQty: null,
-      purchaseAdditionalDiscount: item.purchaseAdditionalDiscount ?? null,
-      billingMode,
-      itemType: item.itemType ?? 'NORMAL',
-      itemTypeDegree: item.itemTypeDegree,
-      discountApplicable: item.discountApplicable,
-      baseUnit: item.baseUnit?.trim()
-        ? item.baseUnit.trim().toUpperCase()
-        : '',
-      unitsPerPack:
-        item.unitsPerPack ??
-        item.unitConversions?.factor ??
-        0,
-      conversionFactor:
-        item.unitsPerPack ??
-        item.unitConversions?.factor ??
-        0,
-      rates: item.rates ?? [],
-      defaultRate: item.defaultRate ?? '',
-      verticalFields:
-      shopSchema?.verticalId === 'cafe' ? { sellDirect: 'no' } : {},
-    },
-    registrationFields
+        })(),
+        schemePercentage:
+          item.schemePercentage != null
+            ? (typeof item.schemePercentage === 'number'
+                ? item.schemePercentage
+                : parseFloat(String(item.schemePercentage))) || null
+            : null,
+        sgst: billingMode === 'BASIC' ? '' : item.sgst || '',
+        cgst: billingMode === 'BASIC' ? '' : item.cgst || '',
+        saleAdditionalDiscount: item.saleAdditionalDiscount ?? null,
+        purchaseSchemePercentage: item.purchaseSchemePercentage ?? null,
+        purchaseSchemeFreeQty: null,
+        purchaseAdditionalDiscount: item.purchaseAdditionalDiscount ?? null,
+        billingMode,
+        itemType: item.itemType ?? 'NORMAL',
+        itemTypeDegree: item.itemTypeDegree,
+        discountApplicable: item.discountApplicable,
+        baseUnit: item.baseUnit?.trim() ? item.baseUnit.trim().toUpperCase() : '',
+        unitsPerPack: item.unitsPerPack ?? item.unitConversions?.factor ?? 0,
+        conversionFactor: item.unitsPerPack ?? item.unitConversions?.factor ?? 0,
+        rates: item.rates ?? [],
+        defaultRate: item.defaultRate ?? '',
+        verticalFields: shopSchema?.verticalId === 'cafe' ? { sellDirect: 'no' } : {},
+      },
+      registrationFields,
     );
   };
 
@@ -1165,7 +1109,7 @@ export function ProductRegistrationPage() {
     maxWidth = 1600,
     maxHeight = 1600,
     quality = 0.7,
-    maxFileSizeMB = 2
+    maxFileSizeMB = 2,
   ): Promise<File> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -1204,11 +1148,11 @@ export function ProductRegistrationPage() {
                   new File([blob], file.name, {
                     type: file.type,
                     lastModified: Date.now(),
-                  })
+                  }),
                 );
               },
               file.type,
-              currentQuality
+              currentQuality,
             );
           };
           compressWithQuality(quality);
@@ -1281,7 +1225,7 @@ export function ProductRegistrationPage() {
         setUploadProgress(
           selectedFiles.length === 1
             ? 'Compressing image...'
-            : `Compressing image ${i + 1} of ${selectedFiles.length}...`
+            : `Compressing image ${i + 1} of ${selectedFiles.length}...`,
         );
         compressedFiles.push(await compressImage(selectedFiles[i]));
       }
@@ -1289,23 +1233,17 @@ export function ProductRegistrationPage() {
       setUploadProgress(
         selectedFiles.length === 1
           ? 'Uploading and parsing invoice...'
-          : `Parsing ${selectedFiles.length} images...`
+          : `Parsing ${selectedFiles.length} images...`,
       );
       const response = await inventoryApi.parseInvoices(compressedFiles);
 
       if (response && response.items && response.items.length > 0) {
         const parsedProducts = response.items.map(transformParsedItemToProduct);
         setProducts(parsedProducts);
-        applyParsedVendorInvoice(
-          response.vendorPurchaseInvoice,
-          response.items
-        );
-        const pageNote =
-          selectedFiles.length > 1
-            ? ` from ${selectedFiles.length} images`
-            : '';
+        applyParsedVendorInvoice(response.vendorPurchaseInvoice, response.items);
+        const pageNote = selectedFiles.length > 1 ? ` from ${selectedFiles.length} images` : '';
         notifySuccess(
-          `Successfully parsed invoice${pageNote}! Found ${response.totalItems} item(s).`
+          `Successfully parsed invoice${pageNote}! Found ${response.totalItems} item(s).`,
         );
         scrollToProducts(response.totalItems);
         setSelectedFiles([]);
@@ -1313,15 +1251,11 @@ export function ProductRegistrationPage() {
           fileInputRef.current.value = '';
         }
       } else {
-        notifyError(
-          'No items found in the invoice image(s). Please try different photos.'
-        );
+        notifyError('No items found in the invoice image(s). Please try different photos.');
       }
     } catch (err) {
       const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'Failed to parse invoice. Please try again.';
+        err instanceof Error ? err.message : 'Failed to parse invoice. Please try again.';
       notifyError(errorMessage);
     } finally {
       setIsUploading(false);
@@ -1373,9 +1307,7 @@ export function ProductRegistrationPage() {
       startPolling(response.token);
     } catch (err) {
       const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'Failed to create upload token. Please try again.';
+        err instanceof Error ? err.message : 'Failed to create upload token. Please try again.';
       notifyError(errorMessage);
       setIsUploading(false);
     }
@@ -1396,21 +1328,12 @@ export function ProductRegistrationPage() {
           // Fetch parsed items
           try {
             const parsedResponse = await uploadApi.getParsedItems(token);
-            if (
-              parsedResponse &&
-              parsedResponse.items &&
-              parsedResponse.items.length > 0
-            ) {
-              const parsedProducts = parsedResponse.items.map(
-                transformParsedItemToProduct
-              );
+            if (parsedResponse && parsedResponse.items && parsedResponse.items.length > 0) {
+              const parsedProducts = parsedResponse.items.map(transformParsedItemToProduct);
               setProducts(parsedProducts);
-              applyParsedVendorInvoice(
-                parsedResponse.vendorPurchaseInvoice,
-                parsedResponse.items
-              );
+              applyParsedVendorInvoice(parsedResponse.vendorPurchaseInvoice, parsedResponse.items);
               notifySuccess(
-                `✅ Successfully parsed invoice! Found ${parsedResponse.totalItems} item(s).`
+                `✅ Successfully parsed invoice! Found ${parsedResponse.totalItems} item(s).`,
               );
               handleCloseQrModal();
               // Scroll to products section
@@ -1420,21 +1343,14 @@ export function ProductRegistrationPage() {
             }
           } catch (parseErr) {
             const errorMessage =
-              parseErr instanceof Error
-                ? parseErr.message
-                : 'Failed to retrieve parsed items.';
+              parseErr instanceof Error ? parseErr.message : 'Failed to retrieve parsed items.';
             notifyError(errorMessage);
           }
-        } else if (
-          statusResponse.status === 'FAILED' ||
-          statusResponse.status === 'EXPIRED'
-        ) {
+        } else if (statusResponse.status === 'FAILED' || statusResponse.status === 'EXPIRED') {
           clearInterval(interval);
           setIsPolling(false);
           setPollingInterval(null);
-          notifyError(
-            statusResponse.errorMessage || 'Upload failed or token expired.'
-          );
+          notifyError(statusResponse.errorMessage || 'Upload failed or token expired.');
         }
       } catch (err) {
         // Continue polling on error (might be temporary)
@@ -1476,57 +1392,36 @@ export function ProductRegistrationPage() {
 
   const handleToggleProduct = (productId: string) => {
     setProducts(
-      products.map((p) =>
-        p.id === productId ? { ...p, isExpanded: !p.isExpanded } : p
-      )
+      products.map((p) => (p.id === productId ? { ...p, isExpanded: !p.isExpanded } : p)),
     );
   };
 
   const handleProductChange = (
     productId: string,
     field: keyof ProductFormData,
-    value: ProductFormData[keyof ProductFormData]
+    value: ProductFormData[keyof ProductFormData],
   ) => {
-    setProducts((prev) =>
-      prev.map((p) => (p.id === productId ? { ...p, [field]: value } : p))
-    );
+    setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, [field]: value } : p)));
     setError(null);
     setSuccess(null);
   };
 
-  const handleApplyPurchasePatch = (
-    productId: string,
-    patch: Partial<ProductFormData>
-  ) => {
-    setProducts((prev) =>
-      prev.map((p) => (p.id === productId ? { ...p, ...patch } : p))
-    );
+  const handleApplyPurchasePatch = (productId: string, patch: Partial<ProductFormData>) => {
+    setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, ...patch } : p)));
     setError(null);
     setSuccess(null);
   };
 
-  const handleIntegerChange = (
-    productId: string,
-    field: string,
-    value: string
-  ) => {
+  const handleIntegerChange = (productId: string, field: string, value: string) => {
     if (value === '') {
       handleProductChange(productId, field as keyof ProductFormData, 0);
       return;
     }
     if (!/^\d+$/.test(value)) return;
-    handleProductChange(
-      productId,
-      field as keyof ProductFormData,
-      parseInt(value, 10)
-    );
+    handleProductChange(productId, field as keyof ProductFormData, parseInt(value, 10));
   };
 
-  const handleDecimalChange = (
-    productId: string,
-    field: string,
-    value: string
-  ) => {
+  const handleDecimalChange = (productId: string, field: string, value: string) => {
     if (value === '') {
       handleProductChange(productId, field as keyof ProductFormData, 0);
       return;
@@ -1538,7 +1433,7 @@ export function ProductRegistrationPage() {
 
   const handleGridBulkFillChange = (
     field: keyof GridBulkFillDraft,
-    value: GridBulkFillDraft[keyof GridBulkFillDraft]
+    value: GridBulkFillDraft[keyof GridBulkFillDraft],
   ) => {
     setGridBulkFill((prev) => ({ ...prev, [field]: value }));
   };
@@ -1693,31 +1588,26 @@ export function ProductRegistrationPage() {
         for (const field of registrationFields) {
           const raw =
             b.verticalBulk?.[field.key] ??
-            (field.key in b
-              ? String(b[field.key as keyof GridBulkFillDraft] ?? '')
-              : '');
+            (field.key in b ? String(b[field.key as keyof GridBulkFillDraft] ?? '') : '');
           if (!hasText(raw)) {
             continue;
           }
           const patch = setVerticalFieldPatch(field, trim(raw));
           const nextVerticalFields = {
             ...(next.verticalFields ?? {}),
-            ...((patch.verticalFields as Record<string, unknown> | undefined) ??
-              {}),
+            ...((patch.verticalFields as Record<string, unknown> | undefined) ?? {}),
           };
           const { verticalFields: _vf, ...restPatch } = patch;
           next = {
             ...next,
             ...restPatch,
             verticalFields:
-              Object.keys(nextVerticalFields).length > 0
-                ? nextVerticalFields
-                : next.verticalFields,
+              Object.keys(nextVerticalFields).length > 0 ? nextVerticalFields : next.verticalFields,
           };
         }
 
         return next;
-      })
+      }),
     );
 
     if (appliedSaleScheme || appliedPurchaseScheme) {
@@ -1753,9 +1643,7 @@ export function ProductRegistrationPage() {
     try {
       // Validate vendor is selected
       if (!selectedVendor || !selectedVendor.vendorId) {
-        notifyError(
-          'Vendor information is required. Please search and select a vendor.'
-        );
+        notifyError('Vendor information is required. Please search and select a vendor.');
         setIsLoading(false);
         return;
       }
@@ -1771,9 +1659,7 @@ export function ProductRegistrationPage() {
         optionalNumFromString(vendorRoundOff) !== undefined ||
         optionalNumFromString(vendorInvoiceTotal) !== undefined;
       if (hasInvoiceExtra && !trimmedInvNo) {
-        notifyError(
-          'Enter the vendor invoice number, or clear all vendor invoice fields.'
-        );
+        notifyError('Enter the vendor invoice number, or clear all vendor invoice fields.');
         setIsLoading(false);
         return;
       }
@@ -1790,11 +1676,11 @@ export function ProductRegistrationPage() {
             numOr0(optionalNumFromString(vendorTaxTotal)) +
             numOr0(optionalNumFromString(vendorShippingCharge)) +
             numOr0(optionalNumFromString(vendorOtherCharges)) +
-            numOr0(optionalNumFromString(vendorRoundOff))
+            numOr0(optionalNumFromString(vendorRoundOff)),
         );
         if (overallDisc > preDiscountTotal) {
           notifyError(
-            'Overall discount cannot exceed line subtotal + tax + shipping + other charges + round off.'
+            'Overall discount cannot exceed line subtotal + tax + shipping + other charges + round off.',
           );
           setIsLoading(false);
           return;
@@ -1814,19 +1700,15 @@ export function ProductRegistrationPage() {
       if (purchaseDateFromInvoice) {
         const purchase = new Date(purchaseDateFromInvoice);
         const now = new Date();
-        const daysPast =
-          (now.getTime() - purchase.getTime()) / (1000 * 60 * 60 * 24);
-        const daysFuture =
-          (purchase.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+        const daysPast = (now.getTime() - purchase.getTime()) / (1000 * 60 * 60 * 24);
+        const daysFuture = (purchase.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
         if (daysPast > 30) {
           notifyError('Invoice date must not be older than 30 days');
           setIsLoading(false);
           return;
         }
         if (daysFuture > 30) {
-          notifyError(
-            'Invoice date must not be more than 30 days in the future'
-          );
+          notifyError('Invoice date must not be more than 30 days in the future');
           setIsLoading(false);
           return;
         }
@@ -1840,11 +1722,7 @@ export function ProductRegistrationPage() {
           setIsLoading(false);
           return;
         }
-        const verticalError = validateProductVerticalFields(
-          product,
-          registrationFields,
-          label
-        );
+        const verticalError = validateProductVerticalFields(product, registrationFields, label);
         if (verticalError) {
           notifyError(verticalError);
           setIsLoading(false);
@@ -1852,11 +1730,7 @@ export function ProductRegistrationPage() {
         }
 
         if (product.count <= 0) {
-          notifyError(
-            `Product "${
-              product.name || 'Unnamed'
-            }" count must be greater than 0`
-          );
+          notifyError(`Product "${product.name || 'Unnamed'}" count must be greater than 0`);
           setIsLoading(false);
           return;
         }
@@ -1866,43 +1740,33 @@ export function ProductRegistrationPage() {
             notifyError(
               `Product "${
                 product.name || 'Unnamed'
-              }": packaging unit is required (e.g. 1 × 50 TBS)`
+              }": packaging unit is required (e.g. 1 × 50 TBS)`,
             );
             setIsLoading(false);
             return;
           }
-          const baseUqcForValidation = resolvePackagingUqc(
-            product.baseUnit,
-            packagingUnits
-          );
+          const baseUqcForValidation = resolvePackagingUqc(product.baseUnit, packagingUnits);
           if (!baseUqcForValidation) {
             notifyError(
-              `Product "${
-                product.name || 'Unnamed'
-              }": select a valid packaging unit from the list`
+              `Product "${product.name || 'Unnamed'}": select a valid packaging unit from the list`,
             );
             setIsLoading(false);
             return;
           }
-          const unitDef = packagingUnits.find(
-            (u) => u.uqc === baseUqcForValidation
-          );
+          const unitDef = packagingUnits.find((u) => u.uqc === baseUqcForValidation);
           const displayFactor = packagingFactorForDisplay(
-            product.unitsPerPack ?? product.conversionFactor
+            product.unitsPerPack ?? product.conversionFactor,
           );
-          const normalizedUnitsPerPack = packagingFactorToUnitsPerPack(
-            displayFactor,
-            unitDef
-          );
+          const normalizedUnitsPerPack = packagingFactorToUnitsPerPack(displayFactor, unitDef);
           if (
             unitDef?.allowsUnitsPerPack &&
             unitDef.sellUnitRule === 'PACK_ONLY' &&
             normalizedUnitsPerPack <= 0
           ) {
             notifyError(
-              `Product "${
-                product.name || 'Unnamed'
-              }": enter pack size after 1 × (e.g. 1 × 100 ${unitDef.uqc})`
+              `Product "${product.name || 'Unnamed'}": enter pack size after 1 × (e.g. 1 × 100 ${
+                unitDef.uqc
+              })`,
             );
             setIsLoading(false);
             return;
@@ -1917,22 +1781,18 @@ export function ProductRegistrationPage() {
             notifyError(
               `Product "${
                 product.name || 'Unnamed'
-              }": cost (rate) is required and must be greater than 0`
+              }": cost (rate) is required and must be greater than 0`,
             );
             setIsLoading(false);
             return;
           }
           const sellRaw = product.sellingPrice;
-          const sell =
-            sellRaw === '' || sellRaw == null ? null : Number(sellRaw);
-          if (
-            sell != null &&
-            (!Number.isFinite(sell) || sell < 0)
-          ) {
+          const sell = sellRaw === '' || sellRaw == null ? null : Number(sellRaw);
+          if (sell != null && (!Number.isFinite(sell) || sell < 0)) {
             notifyError(
               `Product "${
                 product.name || 'Unnamed'
-              }": selling price must be zero or greater when provided`
+              }": selling price must be zero or greater when provided`,
             );
             setIsLoading(false);
             return;
@@ -1941,7 +1801,7 @@ export function ProductRegistrationPage() {
           notifyError(
             `Product "${
               product.name || 'Unnamed'
-            }": PTR (price to retail) is required and must be greater than 0`
+            }": PTR (price to retail) is required and must be greater than 0`,
           );
           setIsLoading(false);
           return;
@@ -1949,15 +1809,13 @@ export function ProductRegistrationPage() {
           notifyError(
             `Product "${
               product.name || 'Unnamed'
-            }": cost (PTS) is required and must be greater than 0`
+            }": cost (PTS) is required and must be greater than 0`,
           );
           setIsLoading(false);
           return;
         } else if (!Number.isFinite(mrp) || mrp <= 0) {
           notifyError(
-            `Product "${
-              product.name || 'Unnamed'
-            }": MRP is required and must be greater than 0`
+            `Product "${product.name || 'Unnamed'}": MRP is required and must be greater than 0`,
           );
           setIsLoading(false);
           return;
@@ -1973,7 +1831,7 @@ export function ProductRegistrationPage() {
           notifyError(
             `Product "${
               product.name || 'Unnamed'
-            }": when itemType is DEGREE, itemTypeDegree must be present and greater than zero`
+            }": when itemType is DEGREE, itemTypeDegree must be present and greater than zero`,
           );
           setIsLoading(false);
           return;
@@ -1981,13 +1839,12 @@ export function ProductRegistrationPage() {
 
         if (
           billingMode === 'BASIC' &&
-          ((product.sgst && product.sgst.trim()) ||
-            (product.cgst && product.cgst.trim()))
+          ((product.sgst && product.sgst.trim()) || (product.cgst && product.cgst.trim()))
         ) {
           notifyError(
             `Product "${
               product.name || 'Unnamed'
-            }": SGST/CGST must not be provided when billingMode is BASIC`
+            }": SGST/CGST must not be provided when billingMode is BASIC`,
           );
           setIsLoading(false);
           return;
@@ -2004,14 +1861,13 @@ export function ProductRegistrationPage() {
             notifyError(
               `Product "${
                 product.name || 'Unnamed'
-              }": when schemeType is PERCENTAGE, schemePercentage is required and must be greater than 0 and not more than 100`
+              }": when schemeType is PERCENTAGE, schemePercentage is required and must be greater than 0 and not more than 100`,
             );
             setIsLoading(false);
             return;
           }
         } else {
-          const useNewStyle =
-            product.schemePayFor != null || product.schemeFree != null;
+          const useNewStyle = product.schemePayFor != null || product.schemeFree != null;
           if (useNewStyle) {
             const payFor = product.schemePayFor ?? 0;
             const free = product.schemeFree ?? 0;
@@ -2019,20 +1875,14 @@ export function ProductRegistrationPage() {
               notifyError(
                 `Product "${
                   product.name || 'Unnamed'
-                }": schemePayFor and schemeFree must be zero or greater (e.g. 10 + 2)`
+                }": schemePayFor and schemeFree must be zero or greater (e.g. 10 + 2)`,
               );
               setIsLoading(false);
               return;
             }
-          } else if (
-            product.scheme != null &&
-            product.scheme !== undefined &&
-            product.scheme < 0
-          ) {
+          } else if (product.scheme != null && product.scheme !== undefined && product.scheme < 0) {
             notifyError(
-              `Product "${
-                product.name || 'Unnamed'
-              }": Scheme (free units) must be zero or greater`
+              `Product "${product.name || 'Unnamed'}": Scheme (free units) must be zero or greater`,
             );
             setIsLoading(false);
             return;
@@ -2043,17 +1893,15 @@ export function ProductRegistrationPage() {
       // Transform products to bulk API format
       const items = products.map((product) => {
         const validRates = (product.rates ?? []).filter(
-          (r) => r.name.trim() && !isNaN(r.price) && r.price >= 0
+          (r) => r.name.trim() && !isNaN(r.price) && r.price >= 0,
         );
         const hasValidDefaultRate =
           product.defaultRate &&
           product.defaultRate.trim() &&
           (['priceToRetail', 'maximumRetailPrice', 'costPrice'].includes(
-            product.defaultRate.trim()
+            product.defaultRate.trim(),
           ) ||
-            (product.rates ?? []).some(
-              (r) => r.name.trim() === product.defaultRate?.trim()
-            ));
+            (product.rates ?? []).some((r) => r.name.trim() === product.defaultRate?.trim()));
 
         // Format reminderAt if provided
         let reminderAtISO: string | undefined;
@@ -2073,11 +1921,10 @@ export function ProductRegistrationPage() {
         // Custom reminders: send reminderAt/endDate/notes (works for all verticals)
         const customReminders = mapCustomRemindersForBulkApi(
           product.customReminders,
-          productExpiryRaw
+          productExpiryRaw,
         );
 
-        const unitsPerPackForApi =
-          Number(product.unitsPerPack ?? product.conversionFactor) || 0;
+        const unitsPerPackForApi = Number(product.unitsPerPack ?? product.conversionFactor) || 0;
 
         const batchField = registrationFields.find((f) => f.key === 'batchNo');
         const resolvedExpiryRaw = expiryField
@@ -2090,9 +1937,7 @@ export function ProductRegistrationPage() {
         const batchOnExtension = batchField?.storage === 'extension';
 
         const coreItem = {
-          ...(product.barcode?.trim()
-            ? { barcode: product.barcode.trim() }
-            : {}),
+          ...(product.barcode?.trim() ? { barcode: product.barcode.trim() } : {}),
           name: product.name,
           description: product.description || undefined,
           companyName: product.companyName,
@@ -2116,9 +1961,7 @@ export function ProductRegistrationPage() {
           location: product.location,
           count: product.count,
           baseUnit: resolvePackagingUqc(product.baseUnit ?? '', packagingUnits),
-          ...(unitsPerPackForApi > 0
-            ? { unitsPerPack: unitsPerPackForApi }
-            : {}),
+          ...(unitsPerPackForApi > 0 ? { unitsPerPack: unitsPerPackForApi } : {}),
           ...(resolvedExpiryRaw && !expiryOnExtension
             ? { expiryDate: formatCoreExpiryDateForApi(resolvedExpiryRaw) }
             : {}),
@@ -2140,8 +1983,7 @@ export function ProductRegistrationPage() {
                   scheme: null,
                 }
               : {
-                  schemeType: (product.schemeType ??
-                    'FIXED_UNITS') as 'FIXED_UNITS',
+                  schemeType: (product.schemeType ?? 'FIXED_UNITS') as 'FIXED_UNITS',
                   scheme: product.scheme ?? null,
                 }
             : {}),
@@ -2166,8 +2008,7 @@ export function ProductRegistrationPage() {
             ? (product.purchaseSchemeType ?? 'FIXED_UNITS') === 'PERCENTAGE'
               ? {
                   purchaseSchemeType: 'PERCENTAGE' as const,
-                  purchaseSchemePercentage:
-                    product.purchaseSchemePercentage ?? null,
+                  purchaseSchemePercentage: product.purchaseSchemePercentage ?? null,
                   purchaseSchemePayFor: null,
                   purchaseSchemeFree: null,
                 }
@@ -2185,9 +2026,7 @@ export function ProductRegistrationPage() {
                 purchaseAdditionalDiscount: product.purchaseAdditionalDiscount,
               }
             : {}),
-          ...(!isSimplePricing && product.itemType != null
-            ? { itemType: product.itemType }
-            : {}),
+          ...(!isSimplePricing && product.itemType != null ? { itemType: product.itemType } : {}),
           ...(!isSimplePricing &&
           product.itemType === 'DEGREE' &&
           product.itemTypeDegree != null &&
@@ -2197,9 +2036,7 @@ export function ProductRegistrationPage() {
           ...(product.discountApplicable != null && !isSimplePricing
             ? { discountApplicable: product.discountApplicable }
             : {}),
-          ...(purchaseDateFromInvoice
-            ? { purchaseDate: purchaseDateFromInvoice }
-            : {}),
+          ...(purchaseDateFromInvoice ? { purchaseDate: purchaseDateFromInvoice } : {}),
           ...(!isSimplePricing && validRates.length > 0
             ? {
                 rates: validRates.map((r) => ({
@@ -2213,21 +2050,14 @@ export function ProductRegistrationPage() {
             : {}),
         };
 
-        return attachVerticalFieldsToBulkItem(
-          coreItem,
-          product,
-          registrationFields
-        );
+        return attachVerticalFieldsToBulkItem(coreItem, product, registrationFields);
       });
 
       if (!vendorPaymentMethod) {
         throw new Error('Select a payment method for the vendor invoice.');
       }
       if (!vendorPaymentSplitValidation.ok && vendorInvoiceTotalNum > 0) {
-        throw new Error(
-          vendorPaymentSplitValidation.message ||
-            'Vendor payment split is invalid.'
-        );
+        throw new Error(vendorPaymentSplitValidation.message || 'Vendor payment split is invalid.');
       }
 
       const vendorPurchaseInvoice: VendorPurchaseInvoicePayload = {
@@ -2258,7 +2088,7 @@ export function ProductRegistrationPage() {
       // record the correct vendor receipt amount until they pick up the
       // new split fields.
       vendorPurchaseInvoice.paidAmount = roundMoney(
-        vendorPaymentSplit.cashAmount + vendorPaymentSplit.onlineAmount
+        vendorPaymentSplit.cashAmount + vendorPaymentSplit.onlineAmount,
       );
 
       // Create bulk request
@@ -2275,15 +2105,11 @@ export function ProductRegistrationPage() {
         // The response should be BulkCreateInventoryResponse
         // Handle cases where the response structure might vary
         const createdCount =
-          response?.createdCount ??
-          response?.totalCreated ??
-          response?.items?.length ??
-          0;
+          response?.createdCount ?? response?.totalCreated ?? response?.items?.length ?? 0;
         const failedCount = response?.totalFailed ?? 0;
         const itemErrors = response?.itemErrors ?? [];
         const items = response?.items ?? [];
-        const savedVendorInvoiceId =
-          response?.vendorPurchaseInvoiceId ?? response?.lotId;
+        const savedVendorInvoiceId = response?.vendorPurchaseInvoiceId ?? response?.lotId;
 
         // If we have items or a positive createdCount, consider it successful
         if (createdCount > 0 || items.length > 0) {
@@ -2292,20 +2118,14 @@ export function ProductRegistrationPage() {
               ? items
                   .map(
                     (item, index) =>
-                      `${products[index]?.name || 'Product'}: ${
-                        item.id || 'Created'
-                      }`
+                      `${products[index]?.name || 'Product'}: ${item.id || 'Created'}`,
                   )
                   .join('; ')
               : '';
           notifySuccess(
-            `Successfully registered ${
-              createdCount || items.length
-            } product(s)! ${
-              savedVendorInvoiceId
-                ? `Stock-in ID: ${savedVendorInvoiceId}. `
-                : ''
-            }${itemDetails ? `Details: ${itemDetails}` : ''}`
+            `Successfully registered ${createdCount || items.length} product(s)! ${
+              savedVendorInvoiceId ? `Stock-in ID: ${savedVendorInvoiceId}. ` : ''
+            }${itemDetails ? `Details: ${itemDetails}` : ''}`,
           );
 
           // Clear form after 5 seconds
@@ -2330,20 +2150,14 @@ export function ProductRegistrationPage() {
             itemErrors.length > 0
               ? itemErrors.slice(0, 3).join('; ')
               : `${failedCount} product(s) failed validation or save.`;
-          notifyError(
-            `No products were saved. ${detail}${
-              itemErrors.length > 3 ? ' …' : ''
-            }`
-          );
+          notifyError(`No products were saved. ${detail}${itemErrors.length > 3 ? ' …' : ''}`);
         } else if (response) {
           notifySuccess(
             `Successfully registered ${products.length} product(s)! ${
-              (response?.vendorPurchaseInvoiceId ?? response?.lotId)
-                ? `Stock-in ID: ${
-                    response.vendorPurchaseInvoiceId ?? response.lotId
-                  }. `
+              response?.vendorPurchaseInvoiceId ?? response?.lotId
+                ? `Stock-in ID: ${response.vendorPurchaseInvoiceId ?? response.lotId}. `
                 : ''
-            }`
+            }`,
           );
           setTimeout(() => {
             setProducts([]);
@@ -2373,9 +2187,7 @@ export function ProductRegistrationPage() {
       }
     } catch (err) {
       const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'Failed to register products. Please try again.';
+        err instanceof Error ? err.message : 'Failed to register products. Please try again.';
       notifyError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -2404,8 +2216,7 @@ export function ProductRegistrationPage() {
         setSelectedVendor(null);
       }
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to search vendor';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to search vendor';
       notifyError(errorMessage);
       setVendorSearchResults([]);
       setSelectedVendor(null);
@@ -2427,9 +2238,8 @@ export function ProductRegistrationPage() {
 
   useLayoutEffect(() => {
     if (vendorPrefillConsumedRef.current) return;
-    const raw = (
-      location.state as { prefillVendor?: VendorResponse } | null | undefined
-    )?.prefillVendor;
+    const raw = (location.state as { prefillVendor?: VendorResponse } | null | undefined)
+      ?.prefillVendor;
     if (!raw?.vendorId) return;
     vendorPrefillConsumedRef.current = true;
     const vendor: Vendor = {
@@ -2500,9 +2310,7 @@ export function ProductRegistrationPage() {
     setError(null);
     try {
       if (!vendorFormData.name || !vendorFormData.contactPhone) {
-        notifyError(
-          'Please fill in all required vendor fields (Name and Phone)'
-        );
+        notifyError('Please fill in all required vendor fields (Name and Phone)');
         setIsCreatingVendor(false);
         return;
       }
@@ -2533,8 +2341,7 @@ export function ProductRegistrationPage() {
       setVendorSearchQuery(vendor.contactPhone);
       handleCloseVendorModal();
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to create vendor';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create vendor';
       notifyError(errorMessage);
     } finally {
       setIsCreatingVendor(false);
@@ -2591,1709 +2398,1647 @@ export function ProductRegistrationPage() {
       <Card className={styles.formContainer}>
         <CardBody>
           <Stack gap="lg">
-        {error ? <Alert variant="danger">{error}</Alert> : null}
-        {success ? <Alert variant="success">{success}</Alert> : null}
+            {error ? <Alert variant="danger">{error}</Alert> : null}
+            {success ? <Alert variant="success">{success}</Alert> : null}
 
-        <Stack className={styles.form} gap="lg">
-          <Box className={styles.uploadSection}>
-            <Box className={styles.uploadHeader}>
-              <Text variant="heading3" className={styles.sectionTitle}>
-                Upload Invoice Image (Optional)
-              </Text>
-              <Box as="ul" className={styles.helperText}>
-                <Box as="li">Upload invoice image to auto-parse product details</Box>
-                <Box as="li">Review and edit parsed products before bulk save</Box>
-              </Box>
-            </Box>
-            <Box className={styles.uploadOptionsHeader}>
-              <Text as="span" className={styles.uploadOptionsLabel}>
-                Choose upload method:
-              </Text>
-            </Box>
-            <Box className={styles.uploadOptionsGrid}>
-              <Button
-                type="button"
-                className={styles.qrUploadBtn}
-                onClick={handleCreateQrCode}
-                disabled={isUploading || isLoading || isPolling}
-              >
-                <Box className={styles.qrBtnIcon}>
-                  <Text as="span" role="img" aria-label="QR Code icon">
-                    📱
+            <Stack className={styles.form} gap="lg">
+              <Box className={styles.uploadSection}>
+                <Box className={styles.uploadHeader}>
+                  <Text variant="heading3" className={styles.sectionTitle}>
+                    Upload Invoice Image (Optional)
                   </Text>
-                </Box>
-                <Box className={styles.qrBtnContent}>
-                  <Text as="span" className={styles.qrBtnTitle}>Upload via QR Code</Text>
-                  <Text as="span" className={styles.qrBtnSubtitle}>
-                    Use mobile device to scan & upload
-                  </Text>
-                </Box>
-              </Button>
-              <Box className={styles.uploadOptionsOr}>
-                <Box className={styles.uploadOptionsOrLine}></Box>
-                <Text as="span" className={styles.uploadOptionsOrText}>OR</Text>
-                <Box className={styles.uploadOptionsOrLine}></Box>
-              </Box>
-              <Box className={styles.uploadContainer}>
-                <Box className={styles.uploadOptionLabel}>
-                  <Text as="span" className={styles.uploadOptionTitle}>
-                    Upload from this device
-                  </Text>
-                  <Text as="span" className={styles.uploadOptionSubtitle}>
-                    Choose one or more photos (multi-page invoice)
-                  </Text>
-                </Box>
-                <Input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleFileSelect}
-                  className={styles.fileInput}
-                  id="invoice-upload"
-                  disabled={isUploading || isLoading}
-                />
-                <Box className={styles.uploadControls}>
-                  <Label
-                    htmlFor="invoice-upload"
-                    className={styles.fileInputLabel}
-                  >
-                    {selectedFiles.length > 0 ? (
-                      <Box className={styles.fileListSummary}>
-                        <Text as="span"
-                          className={styles.fileIcon}
-                          role="img"
-                          aria-label="Files selected"
-                        >
-                          📄
-                        </Text>
-                        <Text as="span" className={styles.fileListCount}>
-                          {selectedFiles.length} image
-                          {selectedFiles.length === 1 ? '' : 's'} selected
-                        </Text>
-                        <Text as="span" className={styles.fileListHint}>
-                          Click to add more
-                        </Text>
-                      </Box>
-                    ) : (
-                      <Box className={styles.uploadPlaceholder}>
-                        <Text as="span"
-                          className={styles.uploadIcon}
-                          role="img"
-                          aria-label="Upload icon"
-                        >
-                          📤
-                        </Text>
-                        <Text as="span">Click to browse images</Text>
-                      </Box>
-                    )}
-                  </Label>
-
-                  {selectedFiles.length > 0 && (
-                    <Box as="ul" className={styles.fileList}>
-                      {selectedFiles.map((file, index) => (
-                        <Box as="li" key={`${file.name}-${index}`} className={styles.fileListItem}>
-                          <Text as="span" className={styles.fileName} title={file.name}>
-                            {index + 1}. {file.name}
-                          </Text>
-                          <Text as="span" className={styles.fileSize}>
-                            ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                          </Text>
-                          {!isUploading && (
-                            <Button
-                              type="button"
-                              className={styles.fileRemoveBtn}
-                              onClick={() => handleRemoveSelectedFile(index)}
-                              aria-label={`Remove ${file.name}`}
-                            >
-                              ×
-                            </Button>
-                          )}
-                        </Box>
-                      ))}
-                    </Box>
-                  )}
-
-                  {isUploading && (
-                    <Box className={styles.uploadProgress}>
-                      <Spinner size="sm" />
-                      <Box className={styles.progressText}>
-                        {uploadProgress}
-                      </Box>
-                    </Box>
-                  )}
-
-                  {selectedFiles.length > 0 && !isUploading && (
-                    <Box className={styles.uploadActions}>
-                      <Button
-                        type="button"
-                        className={styles.uploadBtn}
-                        onClick={handleUploadInvoice}
-                        disabled={isLoading}
-                      >
-                        <Text as="span"
-                          className={styles.btnIcon}
-                          role="img"
-                          aria-label="Rocket icon"
-                        >
-                          🚀
-                        </Text>
-                        Parse{' '}
-                        {selectedFiles.length > 1 ? 'Invoices' : 'Invoice'}
-                      </Button>
-                      <Button
-                        type="button"
-                        className={styles.clearUploadBtn}
-                        onClick={handleClearUpload}
-                        disabled={isLoading}
-                      >
-                        Clear
-                      </Button>
-                    </Box>
-                  )}
-                </Box>
-              </Box>
-            </Box>
-          </Box>
-
-          {/* Shared vendor & billing */}
-          <Box className={styles.sharedSection}>
-            <Text variant="heading3" className={styles.sectionTitle}>Shared Information</Text>
-            <Box className={styles.sharedTopRow}>
-              <Text as="span" className={styles.sharedHint}>
-                Applies to all products.
-              </Text>
-              <Select
-                className={`${styles.input} ${styles.sharedModeSelect}`}
-                value={billingMode}
-                onChange={(e) =>
-                  handleBillingModeChange(e.target.value as BillingMode)
-                }
-                disabled={isLoading}
-                aria-label="Billing mode"
-              >
-                <option value="REGULAR">REGULAR</option>
-                <option value="BASIC">BASIC</option>
-              </Select>
-            </Box>
-
-            {/* Vendor Section */}
-            <Box className={styles.vendorSection}>
-              <Text variant="heading4" className={styles.subsectionTitle}>Vendor Information *</Text>
-              <Box className={styles.formGroup}>
-                <Label htmlFor="vendorSearch" className={styles.label}>
-                  Vendor Search *
-                </Label>
-                <Box style={{ position: 'relative' }}>
-                  <Box style={{ display: 'flex', gap: '8px' }}>
-                    <Input
-                      type="text"
-                      id="vendorSearch"
-                      className={styles.input}
-                      placeholder="Search by name, phone, email, or any keyword"
-                      value={vendorSearchQuery}
-                      onChange={(e) => {
-                        setVendorSearchQuery(e.target.value);
-                        setSelectedVendor(null);
-                        setShowVendorDropdown(false);
-                      }}
-                      disabled={isLoading || isSearchingVendor}
-                      style={{ flex: 1 }}
-                    />
-                    <Button
-                      type="button"
-                      className={styles.searchBtn}
-                      onClick={handleVendorSearch}
-                      disabled={
-                        isLoading ||
-                        isSearchingVendor ||
-                        !vendorSearchQuery.trim()
-                      }
-                    >
-                      {isSearchingVendor ? 'Searching...' : 'Search'}
-                    </Button>
-                    <Button
-                      type="button"
-                      className={styles.createVendorBtn}
-                      onClick={() => setShowVendorModal(true)}
-                      disabled={isLoading || isCreatingVendor}
-                    >
-                      Create New
-                    </Button>
-                    {selectedVendor && (
-                      <Button
-                        type="button"
-                        className={styles.clearBtn}
-                        onClick={handleClearVendor}
-                        disabled={isLoading}
-                      >
-                        Clear
-                      </Button>
-                    )}
+                  <Box as="ul" className={styles.helperText}>
+                    <Box as="li">Upload invoice image to auto-parse product details</Box>
+                    <Box as="li">Review and edit parsed products before bulk save</Box>
                   </Box>
-                  {showVendorDropdown && vendorSearchResults.length > 0 && (
-                    <Box className={styles.dropdown}>
-                      {vendorSearchResults.map((vendor) => (
-                        <Box
-                          key={vendor.vendorId}
-                          className={styles.dropdownItem}
-                          onClick={() => handleSelectVendor(vendor)}
-                        >
-                          <Box style={{ fontWeight: 500 }}>{vendor.name}</Box>
-                          {vendor.contactPhone && (
-                            <Box
-                              style={{
-                                fontSize: '0.85rem',
-                                color: 'var(--text-secondary)',
-                              }}
-                            >
-                              {vendor.contactPhone}
-                            </Box>
-                          )}
-                          {vendor.gstinUin && (
-                            <Box
-                              style={{
-                                fontSize: '0.8rem',
-                                color: 'var(--text-tertiary)',
-                              }}
-                            >
-                              GSTIN: {vendor.gstinUin}
-                            </Box>
-                          )}
-                        </Box>
-                      ))}
+                </Box>
+                <Box className={styles.uploadOptionsHeader}>
+                  <Text as="span" className={styles.uploadOptionsLabel}>
+                    Choose upload method:
+                  </Text>
+                </Box>
+                <Box className={styles.uploadOptionsGrid}>
+                  <Button
+                    type="button"
+                    className={styles.qrUploadBtn}
+                    onClick={handleCreateQrCode}
+                    disabled={isUploading || isLoading || isPolling}
+                  >
+                    <Box className={styles.qrBtnIcon}>
+                      <Text as="span" role="img" aria-label="QR Code icon">
+                        📱
+                      </Text>
                     </Box>
-                  )}
-                  {showVendorDropdown &&
-                    vendorSearchResults.length === 0 &&
-                    !isSearchingVendor && (
-                      <Box className={styles.vendorNotFound}>
-                        <Text>
-                          No vendors found. Would you like to create a new
-                          vendor?
-                        </Text>
+                    <Box className={styles.qrBtnContent}>
+                      <Text as="span" className={styles.qrBtnTitle}>
+                        Upload via QR Code
+                      </Text>
+                      <Text as="span" className={styles.qrBtnSubtitle}>
+                        Use mobile device to scan & upload
+                      </Text>
+                    </Box>
+                  </Button>
+                  <Box className={styles.uploadOptionsOr}>
+                    <Box className={styles.uploadOptionsOrLine}></Box>
+                    <Text as="span" className={styles.uploadOptionsOrText}>
+                      OR
+                    </Text>
+                    <Box className={styles.uploadOptionsOrLine}></Box>
+                  </Box>
+                  <Box className={styles.uploadContainer}>
+                    <Box className={styles.uploadOptionLabel}>
+                      <Text as="span" className={styles.uploadOptionTitle}>
+                        Upload from this device
+                      </Text>
+                      <Text as="span" className={styles.uploadOptionSubtitle}>
+                        Choose one or more photos (multi-page invoice)
+                      </Text>
+                    </Box>
+                    <Input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleFileSelect}
+                      className={styles.fileInput}
+                      id="invoice-upload"
+                      disabled={isUploading || isLoading}
+                    />
+                    <Box className={styles.uploadControls}>
+                      <Label htmlFor="invoice-upload" className={styles.fileInputLabel}>
+                        {selectedFiles.length > 0 ? (
+                          <Box className={styles.fileListSummary}>
+                            <Text
+                              as="span"
+                              className={styles.fileIcon}
+                              role="img"
+                              aria-label="Files selected"
+                            >
+                              📄
+                            </Text>
+                            <Text as="span" className={styles.fileListCount}>
+                              {selectedFiles.length} image
+                              {selectedFiles.length === 1 ? '' : 's'} selected
+                            </Text>
+                            <Text as="span" className={styles.fileListHint}>
+                              Click to add more
+                            </Text>
+                          </Box>
+                        ) : (
+                          <Box className={styles.uploadPlaceholder}>
+                            <Text
+                              as="span"
+                              className={styles.uploadIcon}
+                              role="img"
+                              aria-label="Upload icon"
+                            >
+                              📤
+                            </Text>
+                            <Text as="span">Click to browse images</Text>
+                          </Box>
+                        )}
+                      </Label>
+
+                      {selectedFiles.length > 0 && (
+                        <Box as="ul" className={styles.fileList}>
+                          {selectedFiles.map((file, index) => (
+                            <Box
+                              as="li"
+                              key={`${file.name}-${index}`}
+                              className={styles.fileListItem}
+                            >
+                              <Text as="span" className={styles.fileName} title={file.name}>
+                                {index + 1}. {file.name}
+                              </Text>
+                              <Text as="span" className={styles.fileSize}>
+                                ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                              </Text>
+                              {!isUploading && (
+                                <Button
+                                  type="button"
+                                  className={styles.fileRemoveBtn}
+                                  onClick={() => handleRemoveSelectedFile(index)}
+                                  aria-label={`Remove ${file.name}`}
+                                >
+                                  ×
+                                </Button>
+                              )}
+                            </Box>
+                          ))}
+                        </Box>
+                      )}
+
+                      {isUploading && (
+                        <Box className={styles.uploadProgress}>
+                          <Spinner size="sm" />
+                          <Box className={styles.progressText}>{uploadProgress}</Box>
+                        </Box>
+                      )}
+
+                      {selectedFiles.length > 0 && !isUploading && (
+                        <Box className={styles.uploadActions}>
+                          <Button
+                            type="button"
+                            className={styles.uploadBtn}
+                            onClick={handleUploadInvoice}
+                            disabled={isLoading}
+                          >
+                            <Text
+                              as="span"
+                              className={styles.btnIcon}
+                              role="img"
+                              aria-label="Rocket icon"
+                            >
+                              🚀
+                            </Text>
+                            Parse {selectedFiles.length > 1 ? 'Invoices' : 'Invoice'}
+                          </Button>
+                          <Button
+                            type="button"
+                            className={styles.clearUploadBtn}
+                            onClick={handleClearUpload}
+                            disabled={isLoading}
+                          >
+                            Clear
+                          </Button>
+                        </Box>
+                      )}
+                    </Box>
+                  </Box>
+                </Box>
+              </Box>
+
+              {/* Shared vendor & billing */}
+              <Box className={styles.sharedSection}>
+                <Text variant="heading3" className={styles.sectionTitle}>
+                  Shared Information
+                </Text>
+                <Box className={styles.sharedTopRow}>
+                  <Text as="span" className={styles.sharedHint}>
+                    Applies to all products.
+                  </Text>
+                  <Select
+                    className={`${styles.input} ${styles.sharedModeSelect}`}
+                    value={billingMode}
+                    onChange={(e) => handleBillingModeChange(e.target.value as BillingMode)}
+                    disabled={isLoading}
+                    aria-label="Billing mode"
+                  >
+                    <option value="REGULAR">REGULAR</option>
+                    <option value="BASIC">BASIC</option>
+                  </Select>
+                </Box>
+
+                {/* Vendor Section */}
+                <Box className={styles.vendorSection}>
+                  <Text variant="heading4" className={styles.subsectionTitle}>
+                    Vendor Information *
+                  </Text>
+                  <Box className={styles.formGroup}>
+                    <Label htmlFor="vendorSearch" className={styles.label}>
+                      Vendor Search *
+                    </Label>
+                    <Box style={{ position: 'relative' }}>
+                      <Box style={{ display: 'flex', gap: '8px' }}>
+                        <Input
+                          type="text"
+                          id="vendorSearch"
+                          className={styles.input}
+                          placeholder="Search by name, phone, email, or any keyword"
+                          value={vendorSearchQuery}
+                          onChange={(e) => {
+                            setVendorSearchQuery(e.target.value);
+                            setSelectedVendor(null);
+                            setShowVendorDropdown(false);
+                          }}
+                          disabled={isLoading || isSearchingVendor}
+                          style={{ flex: 1 }}
+                        />
+                        <Button
+                          type="button"
+                          className={styles.searchBtn}
+                          onClick={handleVendorSearch}
+                          disabled={isLoading || isSearchingVendor || !vendorSearchQuery.trim()}
+                        >
+                          {isSearchingVendor ? 'Searching...' : 'Search'}
+                        </Button>
                         <Button
                           type="button"
                           className={styles.createVendorBtn}
-                          onClick={() => {
-                            setShowVendorModal(true);
-                            setShowVendorDropdown(false);
-                          }}
-                          disabled={isLoading}
+                          onClick={() => setShowVendorModal(true)}
+                          disabled={isLoading || isCreatingVendor}
                         >
-                          Create New Vendor
+                          Create New
                         </Button>
+                        {selectedVendor && (
+                          <Button
+                            type="button"
+                            className={styles.clearBtn}
+                            onClick={handleClearVendor}
+                            disabled={isLoading}
+                          >
+                            Clear
+                          </Button>
+                        )}
                       </Box>
-                    )}
-                </Box>
-              </Box>
-              {selectedVendor && (
-                <Box className={styles.vendorInfo}>
-                  <Box className={styles.vendorCard}>
-                    {selectedVendor.userId && (
-                      <Text as="span" className={styles.stockkartUserBadge}>
-                        StockKart user
-                      </Text>
-                    )}
-                    <Text variant="heading4">{selectedVendor.name}</Text>
-                    <Text>
-                      <Text as="span" weight="bold">Phone:</Text> {selectedVendor.contactPhone}
+                      {showVendorDropdown && vendorSearchResults.length > 0 && (
+                        <Box className={styles.dropdown}>
+                          {vendorSearchResults.map((vendor) => (
+                            <Box
+                              key={vendor.vendorId}
+                              className={styles.dropdownItem}
+                              onClick={() => handleSelectVendor(vendor)}
+                            >
+                              <Box style={{ fontWeight: 500 }}>{vendor.name}</Box>
+                              {vendor.contactPhone && (
+                                <Box
+                                  style={{
+                                    fontSize: '0.85rem',
+                                    color: 'var(--text-secondary)',
+                                  }}
+                                >
+                                  {vendor.contactPhone}
+                                </Box>
+                              )}
+                              {vendor.gstinUin && (
+                                <Box
+                                  style={{
+                                    fontSize: '0.8rem',
+                                    color: 'var(--text-tertiary)',
+                                  }}
+                                >
+                                  GSTIN: {vendor.gstinUin}
+                                </Box>
+                              )}
+                            </Box>
+                          ))}
+                        </Box>
+                      )}
+                      {showVendorDropdown &&
+                        vendorSearchResults.length === 0 &&
+                        !isSearchingVendor && (
+                          <Box className={styles.vendorNotFound}>
+                            <Text>No vendors found. Would you like to create a new vendor?</Text>
+                            <Button
+                              type="button"
+                              className={styles.createVendorBtn}
+                              onClick={() => {
+                                setShowVendorModal(true);
+                                setShowVendorDropdown(false);
+                              }}
+                              disabled={isLoading}
+                            >
+                              Create New Vendor
+                            </Button>
+                          </Box>
+                        )}
+                    </Box>
+                  </Box>
+                  {selectedVendor && (
+                    <Box className={styles.vendorInfo}>
+                      <Box className={styles.vendorCard}>
+                        {selectedVendor.userId && (
+                          <Text as="span" className={styles.stockkartUserBadge}>
+                            StockKart user
+                          </Text>
+                        )}
+                        <Text variant="heading4">{selectedVendor.name}</Text>
+                        <Text>
+                          <Text as="span" weight="bold">
+                            Phone:
+                          </Text>{' '}
+                          {selectedVendor.contactPhone}
+                        </Text>
+                        {selectedVendor.contactEmail && (
+                          <Text>
+                            <Text as="span" weight="bold">
+                              Email:
+                            </Text>{' '}
+                            {selectedVendor.contactEmail}
+                          </Text>
+                        )}
+                        {selectedVendor.address && (
+                          <Text>
+                            <Text as="span" weight="bold">
+                              Address:
+                            </Text>{' '}
+                            {selectedVendor.address}
+                          </Text>
+                        )}
+                        {selectedVendor.gstinUin && (
+                          <Text>
+                            <Text as="span" weight="bold">
+                              GSTIN / UIN:
+                            </Text>{' '}
+                            {selectedVendor.gstinUin}
+                          </Text>
+                        )}
+                        <Text>
+                          <Text as="span" weight="bold">
+                            Business Type:
+                          </Text>{' '}
+                          {selectedVendor.businessType}
+                        </Text>
+                      </Box>
+                    </Box>
+                  )}
+
+                  <Box className={styles.vendorSection} style={{ marginTop: '1.25rem' }}>
+                    <Text variant="heading4" className={styles.subsectionTitle}>
+                      Vendor purchase invoice (optional)
                     </Text>
-                    {selectedVendor.contactEmail && (
-                      <Text>
-                        <Text as="span" weight="bold">Email:</Text> {selectedVendor.contactEmail}
-                      </Text>
-                    )}
-                    {selectedVendor.address && (
-                      <Text>
-                        <Text as="span" weight="bold">Address:</Text> {selectedVendor.address}
-                      </Text>
-                    )}
-                    {selectedVendor.gstinUin && (
-                      <Text>
-                        <Text as="span" weight="bold">GSTIN / UIN:</Text> {selectedVendor.gstinUin}
-                      </Text>
-                    )}
-                    <Text>
-                      <Text as="span" weight="bold">Business Type:</Text>{' '}
-                      {selectedVendor.businessType}
+                    <Text className={styles.helperText} style={{ marginBottom: '0.75rem' }}>
+                      Add the supplier&apos;s invoice number and amounts to keep a history of what
+                      was bought on each bill. Leave blank to register stock without an invoice
+                      record.
                     </Text>
+                    {products.length > 0 ? (
+                      <Text
+                        className={styles.helperText}
+                        style={{ marginBottom: '0.75rem', fontSize: '0.85rem' }}
+                      >
+                        Amounts tracked here follow each row&apos;s{' '}
+                        <Text as="span" weight="bold">
+                          PTS (price from stockist)
+                        </Text>{' '}
+                        × quantity when PTS is set;{' '}
+                        <Text as="span" weight="bold">
+                          PTR
+                        </Text>{' '}
+                        is only used when PTS is empty.{' '}
+                        {billingMode !== 'BASIC'
+                          ? 'With CGST/SGST on the row, PTS × qty is taxable value (ex‑GST); tax is added on top for line subtotal + tax totals.'
+                          : null}
+                      </Text>
+                    ) : null}
+                    <Box className={styles.sharedInfoGrid}>
+                      <Box className={styles.formGroup}>
+                        <Label htmlFor="vendorInvoiceNo" className={styles.label}>
+                          Invoice number
+                        </Label>
+                        <Input
+                          id="vendorInvoiceNo"
+                          type="text"
+                          className={styles.input}
+                          value={vendorInvoiceNo}
+                          onChange={(e) => setVendorInvoiceNo(e.target.value)}
+                          placeholder="e.g. INV-2024-001"
+                          disabled={isLoading}
+                        />
+                      </Box>
+                      <Box className={styles.formGroup}>
+                        <Label htmlFor="vendorInvoiceDate" className={styles.label}>
+                          Invoice date
+                        </Label>
+                        <Input
+                          id="vendorInvoiceDate"
+                          type="date"
+                          className={styles.input}
+                          value={vendorInvoiceDate}
+                          onChange={(e) => setVendorInvoiceDate(e.target.value)}
+                          disabled={isLoading}
+                        />
+                      </Box>
+                      <Box className={styles.formGroup}>
+                        <Label htmlFor="vendorLineSubTotal" className={styles.label}>
+                          Line subtotal
+                        </Label>
+                        <Input
+                          id="vendorLineSubTotal"
+                          type="text"
+                          inputMode="decimal"
+                          className={styles.input}
+                          value={vendorLineSubTotal}
+                          onChange={(e) => setVendorLineSubTotal(e.target.value)}
+                          placeholder="0"
+                          disabled={isLoading}
+                        />
+                      </Box>
+                      <Box className={styles.formGroup}>
+                        <Label htmlFor="vendorTaxTotal" className={styles.label}>
+                          Tax total
+                        </Label>
+                        <Input
+                          id="vendorTaxTotal"
+                          type="text"
+                          inputMode="decimal"
+                          className={styles.input}
+                          value={vendorTaxTotal}
+                          onChange={(e) => setVendorTaxTotal(e.target.value)}
+                          placeholder="0"
+                          disabled={isLoading}
+                        />
+                      </Box>
+                      <Box className={styles.formGroup}>
+                        <Label htmlFor="vendorShippingCharge" className={styles.label}>
+                          Shipping / delivery
+                        </Label>
+                        <Input
+                          id="vendorShippingCharge"
+                          type="text"
+                          inputMode="decimal"
+                          className={styles.input}
+                          value={vendorShippingCharge}
+                          onChange={(e) => setVendorShippingCharge(e.target.value)}
+                          placeholder="0"
+                          disabled={isLoading}
+                        />
+                      </Box>
+                      <Box className={styles.formGroup}>
+                        <Label htmlFor="vendorOtherCharges" className={styles.label}>
+                          Other charges
+                        </Label>
+                        <Input
+                          id="vendorOtherCharges"
+                          type="text"
+                          inputMode="decimal"
+                          className={styles.input}
+                          value={vendorOtherCharges}
+                          onChange={(e) => setVendorOtherCharges(e.target.value)}
+                          placeholder="0"
+                          disabled={isLoading}
+                        />
+                      </Box>
+                      <Box className={styles.formGroup}>
+                        <Label htmlFor="vendorOverallDiscount" className={styles.label}>
+                          Overall discount
+                        </Label>
+                        <Input
+                          id="vendorOverallDiscount"
+                          type="text"
+                          inputMode="decimal"
+                          className={styles.input}
+                          value={vendorOverallDiscount}
+                          onChange={(e) => setVendorOverallDiscount(e.target.value)}
+                          placeholder="0"
+                          disabled={isLoading}
+                        />
+                      </Box>
+                      <Box className={styles.formGroup}>
+                        <Label htmlFor="vendorRoundOff" className={styles.label}>
+                          Round off
+                        </Label>
+                        <Input
+                          id="vendorRoundOff"
+                          type="text"
+                          inputMode="decimal"
+                          className={styles.input}
+                          value={vendorRoundOff}
+                          onChange={(e) => setVendorRoundOff(e.target.value)}
+                          placeholder="0"
+                          disabled={isLoading}
+                        />
+                      </Box>
+                      <Box className={`${styles.formGroup} ${styles.sharedInfoGridSpanFull}`}>
+                        <Label htmlFor="vendorInvoiceTotal" className={styles.label}>
+                          Invoice total
+                        </Label>
+                        <Input
+                          id="vendorInvoiceTotal"
+                          type="text"
+                          inputMode="decimal"
+                          className={styles.input}
+                          value={vendorInvoiceTotal}
+                          placeholder="0"
+                          disabled={isLoading}
+                          readOnly
+                        />
+                      </Box>
+                    </Box>
                   </Box>
                 </Box>
-              )}
+              </Box>
 
-              <Box
-                className={styles.vendorSection}
-                style={{ marginTop: '1.25rem' }}
-              >
-                <Text variant="heading4" className={styles.subsectionTitle}>
-                  Vendor purchase invoice (optional)
-                </Text>
-                <Text
-                  className={styles.helperText}
-                  style={{ marginBottom: '0.75rem' }}
-                >
-                  Add the supplier&apos;s invoice number and amounts to keep a
-                  history of what was bought on each bill. Leave blank to
-                  register stock without an invoice record.
-                </Text>
-                {products.length > 0 ? (
+              <Box className={styles.separator}>
+                <Box className={styles.separatorLine}></Box>
+                <Box className={styles.separatorContent}>
                   <Text
-                    className={styles.helperText}
-                    style={{ marginBottom: '0.75rem', fontSize: '0.85rem' }}
-                  >
-                    Amounts tracked here follow each row&apos;s{' '}
-                    <Text as="span" weight="bold">PTS (price from stockist)</Text> × quantity when
-                    PTS is set; <Text as="span" weight="bold">PTR</Text> is only used when PTS is
-                    empty.{' '}
-                    {billingMode !== 'BASIC'
-                      ? 'With CGST/SGST on the row, PTS × qty is taxable value (ex‑GST); tax is added on top for line subtotal + tax totals.'
-                      : null}
-                  </Text>
-                ) : null}
-                <Box className={styles.sharedInfoGrid}>
-                  <Box className={styles.formGroup}>
-                    <Label htmlFor="vendorInvoiceNo" className={styles.label}>
-                      Invoice number
-                    </Label>
-                    <Input
-                      id="vendorInvoiceNo"
-                      type="text"
-                      className={styles.input}
-                      value={vendorInvoiceNo}
-                      onChange={(e) => setVendorInvoiceNo(e.target.value)}
-                      placeholder="e.g. INV-2024-001"
-                      disabled={isLoading}
-                    />
-                  </Box>
-                  <Box className={styles.formGroup}>
-                    <Label
-                      htmlFor="vendorInvoiceDate"
-                      className={styles.label}
-                    >
-                      Invoice date
-                    </Label>
-                    <Input
-                      id="vendorInvoiceDate"
-                      type="date"
-                      className={styles.input}
-                      value={vendorInvoiceDate}
-                      onChange={(e) => setVendorInvoiceDate(e.target.value)}
-                      disabled={isLoading}
-                    />
-                  </Box>
-                  <Box className={styles.formGroup}>
-                    <Label
-                      htmlFor="vendorLineSubTotal"
-                      className={styles.label}
-                    >
-                      Line subtotal
-                    </Label>
-                    <Input
-                      id="vendorLineSubTotal"
-                      type="text"
-                      inputMode="decimal"
-                      className={styles.input}
-                      value={vendorLineSubTotal}
-                      onChange={(e) => setVendorLineSubTotal(e.target.value)}
-                      placeholder="0"
-                      disabled={isLoading}
-                    />
-                  </Box>
-                  <Box className={styles.formGroup}>
-                    <Label htmlFor="vendorTaxTotal" className={styles.label}>
-                      Tax total
-                    </Label>
-                    <Input
-                      id="vendorTaxTotal"
-                      type="text"
-                      inputMode="decimal"
-                      className={styles.input}
-                      value={vendorTaxTotal}
-                      onChange={(e) => setVendorTaxTotal(e.target.value)}
-                      placeholder="0"
-                      disabled={isLoading}
-                    />
-                  </Box>
-                  <Box className={styles.formGroup}>
-                    <Label
-                      htmlFor="vendorShippingCharge"
-                      className={styles.label}
-                    >
-                      Shipping / delivery
-                    </Label>
-                    <Input
-                      id="vendorShippingCharge"
-                      type="text"
-                      inputMode="decimal"
-                      className={styles.input}
-                      value={vendorShippingCharge}
-                      onChange={(e) =>
-                        setVendorShippingCharge(e.target.value)
-                      }
-                      placeholder="0"
-                      disabled={isLoading}
-                    />
-                  </Box>
-                  <Box className={styles.formGroup}>
-                    <Label
-                      htmlFor="vendorOtherCharges"
-                      className={styles.label}
-                    >
-                      Other charges
-                    </Label>
-                    <Input
-                      id="vendorOtherCharges"
-                      type="text"
-                      inputMode="decimal"
-                      className={styles.input}
-                      value={vendorOtherCharges}
-                      onChange={(e) => setVendorOtherCharges(e.target.value)}
-                      placeholder="0"
-                      disabled={isLoading}
-                    />
-                  </Box>
-                  <Box className={styles.formGroup}>
-                    <Label
-                      htmlFor="vendorOverallDiscount"
-                      className={styles.label}
-                    >
-                      Overall discount
-                    </Label>
-                    <Input
-                      id="vendorOverallDiscount"
-                      type="text"
-                      inputMode="decimal"
-                      className={styles.input}
-                      value={vendorOverallDiscount}
-                      onChange={(e) =>
-                        setVendorOverallDiscount(e.target.value)
-                      }
-                      placeholder="0"
-                      disabled={isLoading}
-                    />
-                  </Box>
-                  <Box className={styles.formGroup}>
-                    <Label htmlFor="vendorRoundOff" className={styles.label}>
-                      Round off
-                    </Label>
-                    <Input
-                      id="vendorRoundOff"
-                      type="text"
-                      inputMode="decimal"
-                      className={styles.input}
-                      value={vendorRoundOff}
-                      onChange={(e) => setVendorRoundOff(e.target.value)}
-                      placeholder="0"
-                      disabled={isLoading}
-                    />
-                  </Box>
-                  <Box
-                    className={`${styles.formGroup} ${styles.sharedInfoGridSpanFull}`}
-                  >
-                    <Label
-                      htmlFor="vendorInvoiceTotal"
-                      className={styles.label}
-                    >
-                      Invoice total
-                    </Label>
-                    <Input
-                      id="vendorInvoiceTotal"
-                      type="text"
-                      inputMode="decimal"
-                      className={styles.input}
-                      value={vendorInvoiceTotal}
-                      placeholder="0"
-                      disabled={isLoading}
-                      readOnly
-                    />
-                  </Box>
-                </Box>
-              </Box>
-            </Box>
-          </Box>
-
-          <Box className={styles.separator}>
-            <Box className={styles.separatorLine}></Box>
-            <Box className={styles.separatorContent}>
-              <Text as="span"
-                className={styles.separatorIcon}
-                role="img"
-                aria-label="Sparkle icon"
-              >
-                ✨
-              </Text>
-              <Text as="span" className={styles.separatorText}>
-                Or manually add products below
-              </Text>
-            </Box>
-            <Box className={styles.separatorLine}></Box>
-          </Box>
-
-          {/* Products Section */}
-          <Box className={styles.productsSection} ref={productsSectionRef}>
-            {showReviewBanner && (
-              <Box className={styles.reviewBanner}>
-                <Box className={styles.reviewBannerContent}>
-                  <Text as="span"
-                    className={styles.reviewBannerIcon}
+                    as="span"
+                    className={styles.separatorIcon}
                     role="img"
-                    aria-label="Clipboard icon"
+                    aria-label="Sparkle icon"
                   >
-                    📋
+                    ✨
                   </Text>
-                  <Box className={styles.reviewBannerText}>
-                    <Text as="span" weight="bold">Review Required:</Text> Please review the{' '}
-                    {reviewBannerItemsCount} item(s) below and fill in any
-                    missing information before submitting.
-                  </Box>
-                  <Button
-                    type="button"
-                    className={styles.reviewBannerClose}
-                    onClick={() => setShowReviewBanner(false)}
-                    aria-label="Close review banner"
-                  >
-                    ×
-                  </Button>
+                  <Text as="span" className={styles.separatorText}>
+                    Or manually add products below
+                  </Text>
                 </Box>
+                <Box className={styles.separatorLine}></Box>
               </Box>
-            )}
-            <Box className={styles.productsHeader}>
-              <Text variant="heading3" className={styles.sectionTitle}>Products</Text>
-              <Box className={styles.productsHeaderRight}>
-                {products.length > 0 && (
-                  <Box className={styles.viewToggleWrap}>
-                    <Text as="span" className={styles.viewToggleLabel}>View:</Text>
-                    <Box
-                      className={styles.viewToggleButtons}
-                      role="group"
-                      aria-label="Product view mode"
-                    >
+
+              {/* Products Section */}
+              <Box className={styles.productsSection} ref={productsSectionRef}>
+                {showReviewBanner && (
+                  <Box className={styles.reviewBanner}>
+                    <Box className={styles.reviewBannerContent}>
+                      <Text
+                        as="span"
+                        className={styles.reviewBannerIcon}
+                        role="img"
+                        aria-label="Clipboard icon"
+                      >
+                        📋
+                      </Text>
+                      <Box className={styles.reviewBannerText}>
+                        <Text as="span" weight="bold">
+                          Review Required:
+                        </Text>{' '}
+                        Please review the {reviewBannerItemsCount} item(s) below and fill in any
+                        missing information before submitting.
+                      </Box>
                       <Button
                         type="button"
-                        className={`${styles.viewToggleBtn} ${
-                          productViewMode === 'list'
-                            ? styles.viewToggleBtnActive
-                            : ''
-                        }`}
-                        onClick={() => {
-                          setProductViewMode('list');
-                          localStorage.setItem(
-                            'product-registration-view-mode',
-                            'list'
-                          );
-                        }}
-                        title="List view"
-                        aria-pressed={productViewMode === 'list'}
+                        className={styles.reviewBannerClose}
+                        onClick={() => setShowReviewBanner(false)}
+                        aria-label="Close review banner"
                       >
-                        <Text as="span" aria-hidden>☰</Text> List
-                      </Button>
-                      <Button
-                        type="button"
-                        className={`${styles.viewToggleBtn} ${
-                          productViewMode === 'grid'
-                            ? styles.viewToggleBtnActive
-                            : ''
-                        }`}
-                        onClick={() => {
-                          setProductViewMode('grid');
-                          localStorage.setItem(
-                            'product-registration-view-mode',
-                            'grid'
-                          );
-                        }}
-                        title="Grid view"
-                        aria-pressed={productViewMode === 'grid'}
-                      >
-                        <Text as="span" aria-hidden>⊞</Text> Grid
+                        ×
                       </Button>
                     </Box>
                   </Box>
                 )}
-                <Button
-                  type="button"
-                  className={styles.addProductBtn}
-                  onClick={handleAddProduct}
-                  disabled={isLoading || !registrationSchemaReady}
-                  title={
-                    registrationSchemaReady
-                      ? undefined
-                      : 'Waiting for shop product schema to load'
-                  }
-                >
-                  + Add Product
-                </Button>
-              </Box>
-            </Box>
-
-            {!registrationSchemaReady ? (
-              <Box
-                className={styles.schemaLoadingState}
-                role="status"
-                aria-live="polite"
-              >
-                {schemaLoadError ? (
-                  <>
-                    <Text className={styles.schemaLoadingTitle}>
-                      Could not load product fields
-                    </Text>
-                    <Text className={styles.schemaLoadingHint}>{schemaLoadError}</Text>
-                  </>
-                ) : (
-                  <>
-                    <Spinner size="md" aria-hidden />
-                    <Text className={styles.schemaLoadingTitle}>
-                      Loading product fields…
-                    </Text>
-                    <Text className={styles.schemaLoadingHint}>
-                      Vertical columns come from your shop schema only — no
-                      fields are shown until loading finishes.
-                    </Text>
-                  </>
-                )}
-              </Box>
-            ) : (
-              <>
-                {products.length > 0 && (
-                  <Text className={styles.keyboardNavHint}>
-                    <Text as="span" className={styles.keyboardNavHintLabel}>Keyboard:</Text>{' '}
-                    <Text as="kbd" className={styles.kbdInline}>Enter</Text> next field ·{' '}
-                    <Text as="kbd" className={styles.kbdInline}>↑</Text>
-                    <Text as="kbd" className={styles.kbdInline}>↓</Text>{' '}
-                    {productViewMode === 'grid'
-                      ? 'same column'
-                      : 'previous / next'}
-                    {' · '}
-                    <Text as="kbd" className={styles.kbdInline}>Shift</Text>+
-                    <Text as="kbd" className={styles.kbdInline}>Enter</Text> back
+                <Box className={styles.productsHeader}>
+                  <Text variant="heading3" className={styles.sectionTitle}>
+                    Products
                   </Text>
-                )}
-
-                {products.length === 0 ? (
-                  <Box className={styles.emptyState}>
-                    <Text>
-                      No products added yet. Click &quot;Add Product&quot; to get
-                      started.
-                    </Text>
-                  </Box>
-                ) : productViewMode === 'grid' ? (
-              <Box
-                className={styles.excelTableWrap}
-                {...{ 'data-keyboard-nav': KEYBOARD_NAV_GRID }}
-                onKeyDownCapture={(e: React.KeyboardEvent<HTMLElement>) => {
-                  if (shouldSkipNestedFormKeyboardNav(document.activeElement)) {
-                    return;
-                  }
-                  runFormKeyboardNavigation(e, e.currentTarget, 'grid');
-                }}
-              >
-                <Table
-                  key={schemaModeForBilling(billingMode)}
-                  className={styles.excelTable}
-                >
-                  <TableHead>
-                    <TableRow>
-                      <TableHeaderCell className={styles.excelTh}>#</TableHeaderCell>
-                      <TableHeaderCell className={styles.excelTh}>Barcode</TableHeaderCell>
-                      <VerticalRegistrationGridCompanyHeader field={companyField} />
-                      <TableHeaderCell className={styles.excelTh}>Product *</TableHeaderCell>
-                      <VerticalRegistrationGridHeaders fields={verticalRegistrationFields} />
-                      <TableHeaderCell className={styles.excelTh}>Count *</TableHeaderCell>
-                      <TableHeaderCell className={styles.excelTh}>Packaging</TableHeaderCell>
-                      <TableHeaderCell className={styles.excelTh}>Location *</TableHeaderCell>
-                      {sellDirectField && (
-                        <TableHeaderCell className={styles.excelTh}>
-                          {fieldLabel(sellDirectField)} *
-                        </TableHeaderCell>
-                      )}
-                      {billingMode !== 'BASIC' && (
-                        <TableHeaderCell className={styles.excelTh}>HSN</TableHeaderCell>
-                      )}
-                      {isSimplePricing ? (
-                        <>
-                          <TableHeaderCell className={styles.excelTh}>Rate *</TableHeaderCell>
-                          <TableHeaderCell className={styles.excelTh}>Sell price</TableHeaderCell>
-                        </>
-                      ) : (
-                        <>
-                          <TableHeaderCell className={styles.excelTh}>PTS *</TableHeaderCell>
-                          <TableHeaderCell className={styles.excelTh}>PTR *</TableHeaderCell>
-                          <TableHeaderCell className={styles.excelTh}>MRP *</TableHeaderCell>
-                          <TableHeaderCell className={styles.excelTh}>Sale deal type</TableHeaderCell>
-                          <TableHeaderCell
-                            className={styles.excelTh}
-                            title='When deal type is Percentage, scheme % is required.'
-                          >
-                            Sale scheme
-                          </TableHeaderCell>
-                          <TableHeaderCell className={styles.excelTh}>Sale disc %</TableHeaderCell>
-                          <TableHeaderCell className={styles.excelTh}>Purchase deal type</TableHeaderCell>
-                          <TableHeaderCell className={styles.excelTh}>Purchase scheme</TableHeaderCell>
-                          <TableHeaderCell className={styles.excelTh}>Purchase disc %</TableHeaderCell>
-                          <TableHeaderCell className={styles.excelTh}>Item type</TableHeaderCell>
-                          <TableHeaderCell
-                            className={styles.excelTh}
-                            title="Required when item type is Temperature for the item"
-                          >
-                            ° *
-                          </TableHeaderCell>
-                          <TableHeaderCell className={styles.excelTh}>Disc appl.</TableHeaderCell>
-                        </>
-                      )}
-                      {billingMode === 'REGULAR' && (
-                        <>
-                          <TableHeaderCell className={styles.excelTh}>CGST %</TableHeaderCell>
-                          <TableHeaderCell className={styles.excelTh}>SGST %</TableHeaderCell>
-                        </>
-                      )}
-                      <TableHeaderCell className={styles.excelTh}>Actions</TableHeaderCell>
-                    </TableRow>
-                    <GridBulkFillRow
-                      bulk={gridBulkFill}
-                      billingMode={billingMode}
-                      simplePricing={isSimplePricing}
-                      companyField={companyField}
-                      sellDirectField={sellDirectField}
-                      schemaFields={verticalRegistrationFields}
-                      isLoading={isLoading}
-                      onBulkChange={handleGridBulkFillChange}
-                      onVerticalBulkChange={handleVerticalBulkChange}
-                      onApply={handleApplyGridBulkFill}
-                    />
-                  </TableHead>
-                  <TableBody>
-                    {products.map((product, idx) => (
-                      <TableRow key={product.id} className={styles.excelTr}>
-                        <TableCell className={styles.excelTd}>{idx + 1}</TableCell>
-                        <TableCell className={styles.excelTd}>
-                          <Input
-                            type="text"
-                            className={styles.excelInput}
-                            placeholder="Barcode"
-                            value={product.barcode}
-                            onChange={(e) =>
-                              handleProductChange(
-                                product.id,
-                                'barcode',
-                                e.target.value
-                              )
-                            }
-                            disabled={isLoading}
-                          />
-                        </TableCell>
-                        <VerticalRegistrationGridCompanyCell
-                          field={companyField}
-                          product={product}
-                          productId={product.id}
-                          disabled={isLoading}
-                          onFieldChange={(field, value) =>
-                            applyVerticalFieldChange(product.id, field, value)
-                          }
-                        />
-                        <TableCell className={styles.excelTd}>
-                          <Input
-                            type="text"
-                            className={styles.excelInput}
-                            placeholder="Product name"
-                            value={product.name}
-                            onChange={(e) =>
-                              handleProductChange(
-                                product.id,
-                                'name',
-                                e.target.value
-                              )
-                            }
-                            disabled={isLoading}
-                            required
-                          />
-                        </TableCell>
-                        <VerticalRegistrationGridCells
-                          fields={verticalRegistrationFields}
-                          product={product}
-                          productId={product.id}
-                          disabled={isLoading}
-                          onFieldChange={(field, value) =>
-                            applyVerticalFieldChange(product.id, field, value)
-                          }
-                        />
-                        <TableCell className={styles.excelTd}>
-                          <Input
-                            type="text"
-                            inputMode="numeric"
-                            pattern="[0-9]*"
-                            className={styles.excelInputNarrow}
-                            placeholder="0"
-                            value={product.count === 0 ? '' : product.count}
-                            onChange={(e) =>
-                              handleIntegerChange(
-                                product.id,
-                                'count',
-                                e.target.value
-                              )
-                            }
-                            disabled={isLoading}
-                            required
-                          />
-                        </TableCell>
-                        <TableCell className={styles.excelTd}>
-                          <PackagingUnitInput
-                            label=""
-                            compact
-                            baseUnit={product.baseUnit ?? ''}
-                            factor={packagingFactorForDisplay(
-                              product.unitsPerPack ??
-                                product.conversionFactor
-                            )}
-                            packagingUnits={packagingUnits}
-                            onChange={(uqc, f) => {
-                              const def = packagingUnits.find(
-                                (u) => u.uqc === uqc
-                              );
-                              const upp = packagingFactorToUnitsPerPack(
-                                f,
-                                def
-                              );
-                              handleProductChange(
-                                product.id,
-                                'baseUnit',
-                                uqc
-                              );
-                              handleProductChange(
-                                product.id,
-                                'unitsPerPack',
-                                upp
-                              );
-                              handleProductChange(
-                                product.id,
-                                'conversionFactor',
-                                upp
-                              );
-                            }}
-                            disabled={isLoading}
-                          />
-                        </TableCell>
-                        <TableCell className={styles.excelTd}>
-                          <Input
-                            type="text"
-                            className={styles.excelInput}
-                            placeholder="Location"
-                            value={product.location}
-                            onChange={(e) =>
-                              handleProductChange(
-                                product.id,
-                                'location',
-                                e.target.value
-                              )
-                            }
-                            disabled={isLoading}
-                            required
-                          />
-                        </TableCell>
-                        {sellDirectField && (
-                          <TableCell className={styles.excelTd}>
-                            <Select
-                              className={styles.excelInput}
-                              value={
-                                getVerticalFieldValue(product, sellDirectField) ||
-                                'no'
-                              }
-                              onChange={(e) =>
-                                applyVerticalFieldChange(
-                                  product.id,
-                                  sellDirectField,
-                                  e.target.value
-                                )
-                              }
-                              disabled={isLoading}
-                              required
-                            >
-                              <option value="no">No</option>
-                              <option value="yes">Yes</option>
-                            </Select>
-                          </TableCell>
-                        )}
-                        {billingMode !== 'BASIC' && (
-                          <>
-                            <TableCell className={styles.excelTd}>
-                              <Input
-                                type="text"
-                                className={styles.excelInput}
-                                placeholder="HSN"
-                                value={product.hsn || ''}
-                                onChange={(e) =>
-                                  handleProductChange(
-                                    product.id,
-                                    'hsn',
-                                    e.target.value
-                                  )
-                                }
-                                disabled={isLoading}
-                              />
-                            </TableCell>
-                          </>
-                        )}
-                        {isSimplePricing ? (
-                          <>
-                            <TableCell className={styles.excelTd}>
-                              <Input
-                                type="text"
-                                inputMode="decimal"
-                                pattern="[0-9]*\.?[0-9]*"
-                                className={styles.excelInputNarrow}
-                                placeholder="Rate"
-                                value={
-                                  product.costPrice === 0 ? '' : product.costPrice
-                                }
-                                onChange={(e) =>
-                                  handleDecimalChange(
-                                    product.id,
-                                    'costPrice',
-                                    e.target.value
-                                  )
-                                }
-                                disabled={isLoading}
-                                required
-                              />
-                            </TableCell>
-                            <TableCell className={styles.excelTd}>
-                              <Input
-                                type="text"
-                                inputMode="decimal"
-                                pattern="[0-9]*\.?[0-9]*"
-                                className={styles.excelInputNarrow}
-                                placeholder="Optional"
-                                value={
-                                  product.sellingPrice === 0 ||
-                                  product.sellingPrice == null
-                                    ? ''
-                                    : product.sellingPrice
-                                }
-                                onChange={(e) =>
-                                  handleDecimalChange(
-                                    product.id,
-                                    'sellingPrice',
-                                    e.target.value
-                                  )
-                                }
-                                disabled={isLoading}
-                              />
-                            </TableCell>
-                          </>
-                        ) : (
-                          <>
-                        <TableCell className={styles.excelTd}>
-                          <Input
-                            type="text"
-                            inputMode="decimal"
-                            pattern="[0-9]*\.?[0-9]*"
-                            className={styles.excelInputNarrow}
-                            placeholder="PTS"
-                            value={
-                              product.costPrice === 0 ? '' : product.costPrice
-                            }
-                            onChange={(e) =>
-                              handleDecimalChange(
-                                product.id,
-                                'costPrice',
-                                e.target.value
-                              )
-                            }
-                            disabled={isLoading}
-                            required
-                          />
-                        </TableCell>
-                        <TableCell className={styles.excelTd}>
-                          <Input
-                            type="text"
-                            inputMode="decimal"
-                            pattern="[0-9]*\.?[0-9]*"
-                            className={styles.excelInputNarrow}
-                            placeholder="PTR"
-                            value={
-                              product.priceToRetail === 0
-                                ? ''
-                                : product.priceToRetail
-                            }
-                            onChange={(e) =>
-                              handleDecimalChange(
-                                product.id,
-                                'priceToRetail',
-                                e.target.value
-                              )
-                            }
-                            disabled={isLoading}
-                            required
-                          />
-                        </TableCell>
-                        <TableCell className={styles.excelTd}>
-                          <Input
-                            type="text"
-                            inputMode="decimal"
-                            pattern="[0-9]*\.?[0-9]*"
-                            className={styles.excelInputNarrow}
-                            placeholder="MRP"
-                            value={
-                              product.maximumRetailPrice === 0
-                                ? ''
-                                : product.maximumRetailPrice
-                            }
-                            onChange={(e) =>
-                              handleDecimalChange(
-                                product.id,
-                                'maximumRetailPrice',
-                                e.target.value
-                              )
-                            }
-                            disabled={isLoading}
-                            required
-                          />
-                        </TableCell>
-                        <TableCell className={styles.excelTd}>
-                          <Label className={styles.srOnly} htmlFor={`grid-scheme-type-${product.id}`}>
-                            Sale scheme deal type
-                          </Label>
-                          <Select
-                            id={`grid-scheme-type-${product.id}`}
-                            className={styles.excelSelect}
-                            value={product.schemeType ?? 'FIXED_UNITS'}
-                            onChange={(e) => {
-                              const val = e.target.value as SchemeType;
-                              handleProductChange(product.id, 'schemeType', val);
-                              if (val === 'PERCENTAGE') {
-                                handleProductChange(product.id, 'scheme', null);
-                              } else {
-                                handleProductChange(
-                                  product.id,
-                                  'schemePercentage',
-                                  null
-                                );
-                              }
-                            }}
-                            disabled={isLoading}
-                          >
-                            <option value="FIXED_UNITS">Free units</option>
-                            <option value="PERCENTAGE">Percentage</option>
-                          </Select>
-                        </TableCell>
-                        <TableCell className={styles.excelTd}>
-                          <Label
-                            className={styles.srOnly}
-                            htmlFor={`grid-sale-scheme-${product.id}`}
-                          >
-                            Sale scheme (e.g. 10+2 or 10%; required when deal
-                            type is Percentage)
-                          </Label>
-                          <Input
-                            id={`grid-sale-scheme-${product.id}`}
-                            type="text"
-                            className={styles.excelInputNarrow}
-                            placeholder="e.g. 10+2"
-                            value={
-                              gridSchemeDrafts[product.id]?.sale ??
-                              ((product.schemeType ?? 'FIXED_UNITS') ===
-                              'PERCENTAGE'
-                                ? product.schemePercentage != null
-                                  ? `${product.schemePercentage}%`
-                                  : ''
-                                : product.schemePayFor != null ||
-                                  product.schemeFree != null
-                                ? `${product.schemePayFor ?? 0}+${
-                                    product.schemeFree ?? 0
-                                  }`
-                                : '')
-                            }
-                            required={
-                              (product.schemeType ?? 'FIXED_UNITS') ===
-                              'PERCENTAGE'
-                            }
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              setGridSchemeDrafts((prev) => ({
-                                ...prev,
-                                [product.id]: {
-                                  ...prev[product.id],
-                                  sale: v,
-                                },
-                              }));
-                            }}
-                            onBlur={() => {
-                              const raw = (
-                                gridSchemeDrafts[product.id]?.sale ?? ''
-                              ).trim();
-                              setGridSchemeDrafts((prev) => {
-                                const next = { ...prev };
-                                const cur = next[product.id];
-                                if (cur) {
-                                  const { sale: _, ...rest } = cur;
-                                  if (Object.keys(rest).length) {
-                                    next[product.id] = rest;
-                                  } else {
-                                    delete next[product.id];
-                                  }
-                                }
-                                return next;
-                              });
-                              if (raw === '') {
-                                handleProductChange(
-                                  product.id,
-                                  'schemePayFor',
-                                  null
-                                );
-                                handleProductChange(
-                                  product.id,
-                                  'schemeFree',
-                                  null
-                                );
-                                handleProductChange(
-                                  product.id,
-                                  'schemePercentage',
-                                  null
-                                );
-                                return;
-                              }
-                              if (raw.endsWith('%')) {
-                                const num = parseFloat(raw.slice(0, -1));
-                                if (!isNaN(num) && num > 0 && num <= 100) {
-                                  handleProductChange(
-                                    product.id,
-                                    'schemeType',
-                                    'PERCENTAGE'
-                                  );
-                                  handleProductChange(
-                                    product.id,
-                                    'schemePercentage',
-                                    num
-                                  );
-                                  handleProductChange(
-                                    product.id,
-                                    'schemePayFor',
-                                    null
-                                  );
-                                  handleProductChange(
-                                    product.id,
-                                    'schemeFree',
-                                    null
-                                  );
-                                }
-                                return;
-                              }
-                              const plusIdx = raw.indexOf('+');
-                              if (plusIdx >= 0) {
-                                const left = parseInt(
-                                  raw.slice(0, plusIdx).trim(),
-                                  10
-                                );
-                                const right = parseInt(
-                                  raw.slice(plusIdx + 1).trim(),
-                                  10
-                                );
-                                if (
-                                  !isNaN(left) &&
-                                  !isNaN(right) &&
-                                  left >= 0 &&
-                                  right >= 0
-                                ) {
-                                  handleProductChange(
-                                    product.id,
-                                    'schemeType',
-                                    'FIXED_UNITS'
-                                  );
-                                  handleProductChange(
-                                    product.id,
-                                    'schemePayFor',
-                                    left
-                                  );
-                                  handleProductChange(
-                                    product.id,
-                                    'schemeFree',
-                                    right
-                                  );
-                                  handleProductChange(
-                                    product.id,
-                                    'schemePercentage',
-                                    null
-                                  );
-                                }
-                              }
-                            }}
-                            disabled={isLoading}
-                          />
-                        </TableCell>
-                        <TableCell className={styles.excelTd}>
-                          <Input
-                            type="number"
-                            className={styles.excelInputNarrow}
-                            placeholder="—"
-                            step="0.01"
-                            min={0}
-                            max={100}
-                            value={
-                              product.saleAdditionalDiscount === null ||
-                              product.saleAdditionalDiscount === undefined
-                                ? ''
-                                : product.saleAdditionalDiscount
-                            }
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              if (v === '') {
-                                handleProductChange(
-                                  product.id,
-                                  'saleAdditionalDiscount',
-                                  null
-                                );
-                              } else {
-                                const n = parseFloat(v);
-                                if (!isNaN(n) && n >= 0 && n <= 100) {
-                                  handleProductChange(
-                                    product.id,
-                                    'saleAdditionalDiscount',
-                                    n
-                                  );
-                                }
-                              }
-                            }}
-                            disabled={isLoading}
-                          />
-                        </TableCell>
-                        <TableCell className={styles.excelTd}>
-                          <Label
-                            className={styles.srOnly}
-                            htmlFor={`grid-purchase-scheme-type-${product.id}`}
-                          >
-                            Purchase scheme deal type
-                          </Label>
-                          <Select
-                            id={`grid-purchase-scheme-type-${product.id}`}
-                            className={styles.excelSelect}
-                            value={product.purchaseSchemeType ?? 'FIXED_UNITS'}
-                            onChange={(e) => {
-                              const val = e.target
-                                .value as PurchaseSchemeInputType;
-                              if (val === 'PERCENTAGE') {
-                                handleApplyPurchasePatch(product.id, {
-                                  purchaseSchemeType: 'PERCENTAGE',
-                                  purchaseSchemePercentage:
-                                    product.purchaseSchemePercentage ?? null,
-                                  ...clearPurchaseSchemePatch(product),
-                                });
-                              } else if (val === 'FREE_QUANTITY') {
-                                const billable =
-                                  billableCountForPurchaseFreeQty(product);
-                                handleApplyPurchasePatch(product.id, {
-                                  purchaseSchemeType: 'FREE_QUANTITY',
-                                  purchaseSchemePayFor: null,
-                                  purchaseSchemeFree: null,
-                                  purchaseSchemePercentage: null,
-                                  purchaseSchemeFreeQty: null,
-                                  ...(product.purchaseSchemeFreeQty != null
-                                    ? { count: billable }
-                                    : {}),
-                                });
-                              } else {
-                                const billable =
-                                  billableCountForPurchaseFreeQty(product);
-                                handleApplyPurchasePatch(product.id, {
-                                  purchaseSchemeType: 'FIXED_UNITS',
-                                  purchaseSchemePercentage: null,
-                                  purchaseSchemeFreeQty: null,
-                                  ...(product.purchaseSchemeFreeQty != null
-                                    ? { count: billable }
-                                    : {}),
-                                });
-                              }
-                            }}
-                            disabled={isLoading}
-                          >
-                            <option value="FIXED_UNITS">Deal ratio</option>
-                            <option value="FREE_QUANTITY">Free quantity</option>
-                            <option value="PERCENTAGE">Percentage</option>
-                          </Select>
-                        </TableCell>
-                        <TableCell className={styles.excelTd}>
-                          <Input
-                            type="text"
-                            className={styles.excelInputNarrow}
-                            placeholder={
-                              (product.purchaseSchemeType ?? 'FIXED_UNITS') ===
-                              'FREE_QUANTITY'
-                                ? (Number(product.count) || 0) > 0
-                                  ? 'e.g. 60'
-                                  : 'e.g. 60 or 0 + 60'
-                                : 'e.g. 10 + 2 or 4 + 1'
-                            }
-                            value={
-                              gridSchemeDrafts[product.id]?.purchase ??
-                              ((product.purchaseSchemeType ?? 'FIXED_UNITS') ===
-                              'PERCENTAGE'
-                                ? product.purchaseSchemePercentage != null
-                                  ? `${product.purchaseSchemePercentage}%`
-                                  : ''
-                                : formatPurchaseSchemeDealForDisplay(product))
-                            }
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              setGridSchemeDrafts((prev) => ({
-                                ...prev,
-                                [product.id]: {
-                                  ...prev[product.id],
-                                  purchase: v,
-                                },
-                              }));
-                            }}
-                            onBlur={() => {
-                              const raw = (
-                                gridSchemeDrafts[product.id]?.purchase ?? ''
-                              ).trim();
-                              setGridSchemeDrafts((prev) => {
-                                const next = { ...prev };
-                                const cur = next[product.id];
-                                if (cur) {
-                                  const { purchase: _, ...rest } = cur;
-                                  if (Object.keys(rest).length) {
-                                    next[product.id] = rest;
-                                  } else {
-                                    delete next[product.id];
-                                  }
-                                }
-                                return next;
-                              });
-                              if (raw === '') {
-                                handleApplyPurchasePatch(
-                                  product.id,
-                                  clearPurchaseSchemePatch(product)
-                                );
-                                return;
-                              }
-                              if (
-                                (product.purchaseSchemeType ?? 'FIXED_UNITS') ===
-                                'FREE_QUANTITY'
-                              ) {
-                                const patch = applyPurchaseFreeQuantityFromRaw(
-                                  product,
-                                  raw
-                                );
-                                if (patch) {
-                                  handleApplyPurchasePatch(product.id, patch);
-                                }
-                                return;
-                              }
-                              const parsed = parsePurchaseSchemeDraft(raw);
-                              if (!parsed) return;
-                              handleApplyPurchasePatch(product.id, {
-                                ...parsed,
-                                purchaseSchemeFreeQty: null,
-                              });
-                            }}
-                            disabled={isLoading}
-                          />
-                        </TableCell>
-                        <TableCell className={styles.excelTd}>
-                          <Input
-                            type="number"
-                            className={styles.excelInputNarrow}
-                            placeholder="—"
-                            step="0.01"
-                            min={0}
-                            max={100}
-                            value={
-                              product.purchaseAdditionalDiscount === null ||
-                              product.purchaseAdditionalDiscount === undefined
-                                ? ''
-                                : product.purchaseAdditionalDiscount
-                            }
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              if (v === '') {
-                                handleProductChange(
-                                  product.id,
-                                  'purchaseAdditionalDiscount',
-                                  null
-                                );
-                              } else {
-                                const n = parseFloat(v);
-                                if (!isNaN(n) && n >= 0 && n <= 100) {
-                                  handleProductChange(
-                                    product.id,
-                                    'purchaseAdditionalDiscount',
-                                    n
-                                  );
-                                }
-                              }
-                            }}
-                            disabled={isLoading}
-                          />
-                        </TableCell>
-                        <TableCell className={styles.excelTd}>
-                          <Label
-                            className={styles.srOnly}
-                            htmlFor={`grid-item-type-${product.id}`}
-                          >
-                            Item type
-                          </Label>
-                          <Select
-                            id={`grid-item-type-${product.id}`}
-                            className={styles.excelSelect}
-                            value={product.itemType ?? 'NORMAL'}
-                            onChange={(e) => {
-                              const val = e.target.value as ItemType | '';
-                              const itemType =
-                                val === '' ? 'NORMAL' : (val as ItemType);
-                              handleProductChange(
-                                product.id,
-                                'itemType',
-                                itemType
-                              );
-                              if (itemType !== 'DEGREE') {
-                                handleProductChange(
-                                  product.id,
-                                  'itemTypeDegree',
-                                  undefined
-                                );
-                              }
-                            }}
-                            disabled={isLoading}
-                          >
-                            <option value="NORMAL">Normal</option>
-                            <option value="COSTLY">Costly</option>
-                            <option value="DEGREE">Temp / °</option>
-                          </Select>
-                        </TableCell>
-                        <TableCell className={styles.excelTd}>
-                          {product.itemType === 'DEGREE' ? (
-                            <Input
-                              id={`grid-item-degree-${product.id}`}
-                              aria-label="Temperature or degree value"
-                              type="number"
-                              className={styles.excelInputNarrow}
-                              placeholder="°"
-                              min={1}
-                              step={1}
-                              value={
-                                product.itemTypeDegree != null
-                                  ? product.itemTypeDegree
-                                  : ''
-                              }
-                              required
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                if (val === '') {
-                                  handleProductChange(
-                                    product.id,
-                                    'itemTypeDegree',
-                                    undefined
-                                  );
-                                } else {
-                                  const num = parseInt(val, 10);
-                                  if (
-                                    !isNaN(num) &&
-                                    num > 0 &&
-                                    Number.isInteger(num)
-                                  ) {
-                                    handleProductChange(
-                                      product.id,
-                                      'itemTypeDegree',
-                                      num
-                                    );
-                                  }
-                                }
-                              }}
-                              disabled={isLoading}
-                            />
-                          ) : (
-                            <Text as="span" className={styles.excelCellDash}>—</Text>
-                          )}
-                        </TableCell>
-                        <TableCell className={styles.excelTd}>
-                          <Label
-                            className={styles.srOnly}
-                            htmlFor={`grid-discount-applicable-${product.id}`}
-                          >
-                            Discount applicable
-                          </Label>
-                          <Select
-                            id={`grid-discount-applicable-${product.id}`}
-                            className={styles.excelSelect}
-                            value={product.discountApplicable ?? ''}
-                            onChange={(e) => {
-                              const val = e.target.value as DiscountApplicable | '';
-                              handleProductChange(
-                                product.id,
-                                'discountApplicable',
-                                val === ''
-                                  ? undefined
-                                  : (val as DiscountApplicable)
-                              );
-                            }}
-                            disabled={isLoading}
-                          >
-                            <option value="">—</option>
-                            <option value="DISCOUNT">Discount</option>
-                            <option value="SCHEME">Scheme</option>
-                            <option value="DISCOUNT_AND_SCHEME">Both</option>
-                          </Select>
-                        </TableCell>
-                          </>
-                        )}
-                        {billingMode === 'REGULAR' && (
-                          <>
-                            <TableCell className={styles.excelTd}>
-                              <Input
-                                type="text"
-                                inputMode="decimal"
-                                className={styles.excelInputNarrow}
-                                placeholder="CGST"
-                                value={product.cgst || ''}
-                                onChange={(e) =>
-                                  handleProductChange(
-                                    product.id,
-                                    'cgst',
-                                    e.target.value
-                                  )
-                                }
-                                disabled={isLoading}
-                              />
-                            </TableCell>
-                            <TableCell className={styles.excelTd}>
-                              <Input
-                                type="text"
-                                inputMode="decimal"
-                                className={styles.excelInputNarrow}
-                                placeholder="SGST"
-                                value={product.sgst || ''}
-                                onChange={(e) =>
-                                  handleProductChange(
-                                    product.id,
-                                    'sgst',
-                                    e.target.value
-                                  )
-                                }
-                                disabled={isLoading}
-                              />
-                            </TableCell>
-                          </>
-                        )}
-                        <TableCell className={styles.excelTd}>
+                  <Box className={styles.productsHeaderRight}>
+                    {products.length > 0 && (
+                      <Box className={styles.viewToggleWrap}>
+                        <Text as="span" className={styles.viewToggleLabel}>
+                          View:
+                        </Text>
+                        <Box
+                          className={styles.viewToggleButtons}
+                          role="group"
+                          aria-label="Product view mode"
+                        >
                           <Button
                             type="button"
-                            className={styles.excelRemoveBtn}
-                            onClick={() => handleRemoveProduct(product.id)}
-                            disabled={isLoading}
-                            aria-label="Remove product"
+                            className={`${styles.viewToggleBtn} ${
+                              productViewMode === 'list' ? styles.viewToggleBtnActive : ''
+                            }`}
+                            onClick={() => {
+                              setProductViewMode('list');
+                              localStorage.setItem('product-registration-view-mode', 'list');
+                            }}
+                            title="List view"
+                            aria-pressed={productViewMode === 'list'}
                           >
-                            ×
+                            <Text as="span" aria-hidden>
+                              ☰
+                            </Text>{' '}
+                            List
                           </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                <Text className={styles.gridViewFootnote}>
-                  Use the fill row above to copy the same value into every row
-                  (only columns you type in are updated). Packaging is optional
-                  in grid view (defaults to 1× on save). Columns marked * match
-                  required fields.
-                  {isSimplePricing
-                    ? ' Customer price is set on the Menu; sell price here is optional reference only. Use list view for custom reminders.'
-                    : ' Use list view for rate tiers, description, and reminders.'}
-                </Text>
-              </Box>
-            ) : (
-              <Box className={styles.productsList}>
-                {products.map((product, index) => (
-                  <ProductAccordion
-                    key={product.id}
-                    product={product}
-                    companyField={companyField}
-                    sellDirectField={sellDirectField}
-                    schemaFields={verticalRegistrationFields}
-                    packagingUnits={packagingUnits}
-                    billingMode={billingMode}
-                    simplePricing={isSimplePricing}
-                    index={index}
-                    onToggle={() => handleToggleProduct(product.id)}
-                    onRemove={() => handleRemoveProduct(product.id)}
-                    onChange={handleProductChange}
-                    onVerticalFieldChange={applyVerticalFieldChange}
-                    onApplyPurchasePatch={handleApplyPurchasePatch}
-                    onIntegerChange={handleIntegerChange}
-                    onDecimalChange={handleDecimalChange}
-                    onCustomRemindersChange={(reminders) =>
-                      handleProductChange(
-                        product.id,
-                        'customReminders',
-                        reminders
-                      )
-                    }
-                    isLoading={isLoading}
-                    isoToLocalDateTime={isoToLocalDateTime}
-                    localDateTimeToIso={localDateTimeToIso}
-                  />
-                ))}
-              </Box>
-            )}
-              </>
-            )}
-          </Box>
+                          <Button
+                            type="button"
+                            className={`${styles.viewToggleBtn} ${
+                              productViewMode === 'grid' ? styles.viewToggleBtnActive : ''
+                            }`}
+                            onClick={() => {
+                              setProductViewMode('grid');
+                              localStorage.setItem('product-registration-view-mode', 'grid');
+                            }}
+                            title="Grid view"
+                            aria-pressed={productViewMode === 'grid'}
+                          >
+                            <Text as="span" aria-hidden>
+                              ⊞
+                            </Text>{' '}
+                            Grid
+                          </Button>
+                        </Box>
+                      </Box>
+                    )}
+                    <Button
+                      type="button"
+                      className={styles.addProductBtn}
+                      onClick={handleAddProduct}
+                      disabled={isLoading || !registrationSchemaReady}
+                      title={
+                        registrationSchemaReady
+                          ? undefined
+                          : 'Waiting for shop product schema to load'
+                      }
+                    >
+                      + Add Product
+                    </Button>
+                  </Box>
+                </Box>
 
-          {products.length > 0 && (
-            <>
-              <Box className={styles.paymentBottomSlot}>
-                <PaymentMethodSplit
-                  context="purchase"
-                  title="Payment to vendor"
-                  intro="Pick how this invoice was settled. Any amount left on credit posts to Credit balances under what you owe this vendor."
-                  total={vendorInvoiceTotalNum}
-                  value={{
-                    method: vendorPaymentMethod,
-                    split: vendorPaymentSplit,
-                  }}
-                  onChange={(next) => {
-                    setVendorPaymentMethod(next.method);
-                    setVendorPaymentSplit(next.split);
-                  }}
-                  disabled={isLoading}
-                />
-                {vendorPaymentMethod &&
-                vendorInvoiceTotalNum > 0 &&
-                isCreditMethod(vendorPaymentMethod) ? (
-                  <Text
-                    className={styles.vendorPaymentSummaryFoot}
-                    aria-live="polite"
-                  >
-                    ₹{vendorCreditLedgerOutstandingNum.toFixed(2)} will be
-                    tracked in <Text as="span" weight="bold">Credit balances</Text> (settle later
-                    in partial payments).
-                  </Text>
-                ) : null}
+                {!registrationSchemaReady ? (
+                  <Box className={styles.schemaLoadingState} role="status" aria-live="polite">
+                    {schemaLoadError ? (
+                      <>
+                        <Text className={styles.schemaLoadingTitle}>
+                          Could not load product fields
+                        </Text>
+                        <Text className={styles.schemaLoadingHint}>{schemaLoadError}</Text>
+                      </>
+                    ) : (
+                      <>
+                        <Spinner size="md" aria-hidden />
+                        <Text className={styles.schemaLoadingTitle}>Loading product fields…</Text>
+                        <Text className={styles.schemaLoadingHint}>
+                          Vertical columns come from your shop schema only — no fields are shown
+                          until loading finishes.
+                        </Text>
+                      </>
+                    )}
+                  </Box>
+                ) : (
+                  <>
+                    {products.length > 0 && (
+                      <Text className={styles.keyboardNavHint}>
+                        <Text as="span" className={styles.keyboardNavHintLabel}>
+                          Keyboard:
+                        </Text>{' '}
+                        <Text as="kbd" className={styles.kbdInline}>
+                          Enter
+                        </Text>{' '}
+                        next field ·{' '}
+                        <Text as="kbd" className={styles.kbdInline}>
+                          ↑
+                        </Text>
+                        <Text as="kbd" className={styles.kbdInline}>
+                          ↓
+                        </Text>{' '}
+                        {productViewMode === 'grid' ? 'same column' : 'previous / next'}
+                        {' · '}
+                        <Text as="kbd" className={styles.kbdInline}>
+                          Shift
+                        </Text>
+                        +
+                        <Text as="kbd" className={styles.kbdInline}>
+                          Enter
+                        </Text>{' '}
+                        back
+                      </Text>
+                    )}
+
+                    {products.length === 0 ? (
+                      <Box className={styles.emptyState}>
+                        <Text>
+                          No products added yet. Click &quot;Add Product&quot; to get started.
+                        </Text>
+                      </Box>
+                    ) : productViewMode === 'grid' ? (
+                      <Box
+                        className={styles.excelTableWrap}
+                        {...{ 'data-keyboard-nav': KEYBOARD_NAV_GRID }}
+                        onKeyDownCapture={(e: React.KeyboardEvent<HTMLElement>) => {
+                          if (shouldSkipNestedFormKeyboardNav(document.activeElement)) {
+                            return;
+                          }
+                          runFormKeyboardNavigation(e, e.currentTarget, 'grid');
+                        }}
+                      >
+                        <Table
+                          key={schemaModeForBilling(billingMode)}
+                          className={styles.excelTable}
+                        >
+                          <TableHead>
+                            <TableRow>
+                              <TableHeaderCell className={styles.excelTh}>#</TableHeaderCell>
+                              <TableHeaderCell className={styles.excelTh}>Barcode</TableHeaderCell>
+                              <VerticalRegistrationGridCompanyHeader field={companyField} />
+                              <TableHeaderCell className={styles.excelTh}>
+                                Product *
+                              </TableHeaderCell>
+                              <VerticalRegistrationGridHeaders
+                                fields={verticalRegistrationFields}
+                              />
+                              <TableHeaderCell className={styles.excelTh}>Count *</TableHeaderCell>
+                              <TableHeaderCell className={styles.excelTh}>
+                                Packaging
+                              </TableHeaderCell>
+                              <TableHeaderCell className={styles.excelTh}>
+                                Location *
+                              </TableHeaderCell>
+                              {sellDirectField && (
+                                <TableHeaderCell className={styles.excelTh}>
+                                  {fieldLabel(sellDirectField)} *
+                                </TableHeaderCell>
+                              )}
+                              {billingMode !== 'BASIC' && (
+                                <TableHeaderCell className={styles.excelTh}>HSN</TableHeaderCell>
+                              )}
+                              {isSimplePricing ? (
+                                <>
+                                  <TableHeaderCell className={styles.excelTh}>
+                                    Rate *
+                                  </TableHeaderCell>
+                                  <TableHeaderCell className={styles.excelTh}>
+                                    Sell price
+                                  </TableHeaderCell>
+                                </>
+                              ) : (
+                                <>
+                                  <TableHeaderCell className={styles.excelTh}>
+                                    PTS *
+                                  </TableHeaderCell>
+                                  <TableHeaderCell className={styles.excelTh}>
+                                    PTR *
+                                  </TableHeaderCell>
+                                  <TableHeaderCell className={styles.excelTh}>
+                                    MRP *
+                                  </TableHeaderCell>
+                                  <TableHeaderCell className={styles.excelTh}>
+                                    Sale deal type
+                                  </TableHeaderCell>
+                                  <TableHeaderCell
+                                    className={styles.excelTh}
+                                    title="When deal type is Percentage, scheme % is required."
+                                  >
+                                    Sale scheme
+                                  </TableHeaderCell>
+                                  <TableHeaderCell className={styles.excelTh}>
+                                    Sale disc %
+                                  </TableHeaderCell>
+                                  <TableHeaderCell className={styles.excelTh}>
+                                    Purchase deal type
+                                  </TableHeaderCell>
+                                  <TableHeaderCell className={styles.excelTh}>
+                                    Purchase scheme
+                                  </TableHeaderCell>
+                                  <TableHeaderCell className={styles.excelTh}>
+                                    Purchase disc %
+                                  </TableHeaderCell>
+                                  <TableHeaderCell className={styles.excelTh}>
+                                    Item type
+                                  </TableHeaderCell>
+                                  <TableHeaderCell
+                                    className={styles.excelTh}
+                                    title="Required when item type is Temperature for the item"
+                                  >
+                                    ° *
+                                  </TableHeaderCell>
+                                  <TableHeaderCell className={styles.excelTh}>
+                                    Disc appl.
+                                  </TableHeaderCell>
+                                </>
+                              )}
+                              {billingMode === 'REGULAR' && (
+                                <>
+                                  <TableHeaderCell className={styles.excelTh}>
+                                    CGST %
+                                  </TableHeaderCell>
+                                  <TableHeaderCell className={styles.excelTh}>
+                                    SGST %
+                                  </TableHeaderCell>
+                                </>
+                              )}
+                              <TableHeaderCell className={styles.excelTh}>Actions</TableHeaderCell>
+                            </TableRow>
+                            <GridBulkFillRow
+                              bulk={gridBulkFill}
+                              billingMode={billingMode}
+                              simplePricing={isSimplePricing}
+                              companyField={companyField}
+                              sellDirectField={sellDirectField}
+                              schemaFields={verticalRegistrationFields}
+                              isLoading={isLoading}
+                              onBulkChange={handleGridBulkFillChange}
+                              onVerticalBulkChange={handleVerticalBulkChange}
+                              onApply={handleApplyGridBulkFill}
+                            />
+                          </TableHead>
+                          <TableBody>
+                            {products.map((product, idx) => (
+                              <TableRow key={product.id} className={styles.excelTr}>
+                                <TableCell className={styles.excelTd}>{idx + 1}</TableCell>
+                                <TableCell className={styles.excelTd}>
+                                  <Input
+                                    type="text"
+                                    className={styles.excelInput}
+                                    placeholder="Barcode"
+                                    value={product.barcode}
+                                    onChange={(e) =>
+                                      handleProductChange(product.id, 'barcode', e.target.value)
+                                    }
+                                    disabled={isLoading}
+                                  />
+                                </TableCell>
+                                <VerticalRegistrationGridCompanyCell
+                                  field={companyField}
+                                  product={product}
+                                  productId={product.id}
+                                  disabled={isLoading}
+                                  onFieldChange={(field, value) =>
+                                    applyVerticalFieldChange(product.id, field, value)
+                                  }
+                                />
+                                <TableCell className={styles.excelTd}>
+                                  <Input
+                                    type="text"
+                                    className={styles.excelInput}
+                                    placeholder="Product name"
+                                    value={product.name}
+                                    onChange={(e) =>
+                                      handleProductChange(product.id, 'name', e.target.value)
+                                    }
+                                    disabled={isLoading}
+                                    required
+                                  />
+                                </TableCell>
+                                <VerticalRegistrationGridCells
+                                  fields={verticalRegistrationFields}
+                                  product={product}
+                                  productId={product.id}
+                                  disabled={isLoading}
+                                  onFieldChange={(field, value) =>
+                                    applyVerticalFieldChange(product.id, field, value)
+                                  }
+                                />
+                                <TableCell className={styles.excelTd}>
+                                  <Input
+                                    type="text"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    className={styles.excelInputNarrow}
+                                    placeholder="0"
+                                    value={product.count === 0 ? '' : product.count}
+                                    onChange={(e) =>
+                                      handleIntegerChange(product.id, 'count', e.target.value)
+                                    }
+                                    disabled={isLoading}
+                                    required
+                                  />
+                                </TableCell>
+                                <TableCell className={styles.excelTd}>
+                                  <PackagingUnitInput
+                                    label=""
+                                    compact
+                                    baseUnit={product.baseUnit ?? ''}
+                                    factor={packagingFactorForDisplay(
+                                      product.unitsPerPack ?? product.conversionFactor,
+                                    )}
+                                    packagingUnits={packagingUnits}
+                                    onChange={(uqc, f) => {
+                                      const def = packagingUnits.find((u) => u.uqc === uqc);
+                                      const upp = packagingFactorToUnitsPerPack(f, def);
+                                      handleProductChange(product.id, 'baseUnit', uqc);
+                                      handleProductChange(product.id, 'unitsPerPack', upp);
+                                      handleProductChange(product.id, 'conversionFactor', upp);
+                                    }}
+                                    disabled={isLoading}
+                                  />
+                                </TableCell>
+                                <TableCell className={styles.excelTd}>
+                                  <Input
+                                    type="text"
+                                    className={styles.excelInput}
+                                    placeholder="Location"
+                                    value={product.location}
+                                    onChange={(e) =>
+                                      handleProductChange(product.id, 'location', e.target.value)
+                                    }
+                                    disabled={isLoading}
+                                    required
+                                  />
+                                </TableCell>
+                                {sellDirectField && (
+                                  <TableCell className={styles.excelTd}>
+                                    <Select
+                                      className={styles.excelInput}
+                                      value={
+                                        getVerticalFieldValue(product, sellDirectField) || 'no'
+                                      }
+                                      onChange={(e) =>
+                                        applyVerticalFieldChange(
+                                          product.id,
+                                          sellDirectField,
+                                          e.target.value,
+                                        )
+                                      }
+                                      disabled={isLoading}
+                                      required
+                                    >
+                                      <option value="no">No</option>
+                                      <option value="yes">Yes</option>
+                                    </Select>
+                                  </TableCell>
+                                )}
+                                {billingMode !== 'BASIC' && (
+                                  <>
+                                    <TableCell className={styles.excelTd}>
+                                      <Input
+                                        type="text"
+                                        className={styles.excelInput}
+                                        placeholder="HSN"
+                                        value={product.hsn || ''}
+                                        onChange={(e) =>
+                                          handleProductChange(product.id, 'hsn', e.target.value)
+                                        }
+                                        disabled={isLoading}
+                                      />
+                                    </TableCell>
+                                  </>
+                                )}
+                                {isSimplePricing ? (
+                                  <>
+                                    <TableCell className={styles.excelTd}>
+                                      <Input
+                                        type="text"
+                                        inputMode="decimal"
+                                        pattern="[0-9]*\.?[0-9]*"
+                                        className={styles.excelInputNarrow}
+                                        placeholder="Rate"
+                                        value={product.costPrice === 0 ? '' : product.costPrice}
+                                        onChange={(e) =>
+                                          handleDecimalChange(
+                                            product.id,
+                                            'costPrice',
+                                            e.target.value,
+                                          )
+                                        }
+                                        disabled={isLoading}
+                                        required
+                                      />
+                                    </TableCell>
+                                    <TableCell className={styles.excelTd}>
+                                      <Input
+                                        type="text"
+                                        inputMode="decimal"
+                                        pattern="[0-9]*\.?[0-9]*"
+                                        className={styles.excelInputNarrow}
+                                        placeholder="Optional"
+                                        value={
+                                          product.sellingPrice === 0 || product.sellingPrice == null
+                                            ? ''
+                                            : product.sellingPrice
+                                        }
+                                        onChange={(e) =>
+                                          handleDecimalChange(
+                                            product.id,
+                                            'sellingPrice',
+                                            e.target.value,
+                                          )
+                                        }
+                                        disabled={isLoading}
+                                      />
+                                    </TableCell>
+                                  </>
+                                ) : (
+                                  <>
+                                    <TableCell className={styles.excelTd}>
+                                      <Input
+                                        type="text"
+                                        inputMode="decimal"
+                                        pattern="[0-9]*\.?[0-9]*"
+                                        className={styles.excelInputNarrow}
+                                        placeholder="PTS"
+                                        value={product.costPrice === 0 ? '' : product.costPrice}
+                                        onChange={(e) =>
+                                          handleDecimalChange(
+                                            product.id,
+                                            'costPrice',
+                                            e.target.value,
+                                          )
+                                        }
+                                        disabled={isLoading}
+                                        required
+                                      />
+                                    </TableCell>
+                                    <TableCell className={styles.excelTd}>
+                                      <Input
+                                        type="text"
+                                        inputMode="decimal"
+                                        pattern="[0-9]*\.?[0-9]*"
+                                        className={styles.excelInputNarrow}
+                                        placeholder="PTR"
+                                        value={
+                                          product.priceToRetail === 0 ? '' : product.priceToRetail
+                                        }
+                                        onChange={(e) =>
+                                          handleDecimalChange(
+                                            product.id,
+                                            'priceToRetail',
+                                            e.target.value,
+                                          )
+                                        }
+                                        disabled={isLoading}
+                                        required
+                                      />
+                                    </TableCell>
+                                    <TableCell className={styles.excelTd}>
+                                      <Input
+                                        type="text"
+                                        inputMode="decimal"
+                                        pattern="[0-9]*\.?[0-9]*"
+                                        className={styles.excelInputNarrow}
+                                        placeholder="MRP"
+                                        value={
+                                          product.maximumRetailPrice === 0
+                                            ? ''
+                                            : product.maximumRetailPrice
+                                        }
+                                        onChange={(e) =>
+                                          handleDecimalChange(
+                                            product.id,
+                                            'maximumRetailPrice',
+                                            e.target.value,
+                                          )
+                                        }
+                                        disabled={isLoading}
+                                        required
+                                      />
+                                    </TableCell>
+                                    <TableCell className={styles.excelTd}>
+                                      <Label
+                                        className={styles.srOnly}
+                                        htmlFor={`grid-scheme-type-${product.id}`}
+                                      >
+                                        Sale scheme deal type
+                                      </Label>
+                                      <Select
+                                        id={`grid-scheme-type-${product.id}`}
+                                        className={styles.excelSelect}
+                                        value={product.schemeType ?? 'FIXED_UNITS'}
+                                        onChange={(e) => {
+                                          const val = e.target.value as SchemeType;
+                                          handleProductChange(product.id, 'schemeType', val);
+                                          if (val === 'PERCENTAGE') {
+                                            handleProductChange(product.id, 'scheme', null);
+                                          } else {
+                                            handleProductChange(
+                                              product.id,
+                                              'schemePercentage',
+                                              null,
+                                            );
+                                          }
+                                        }}
+                                        disabled={isLoading}
+                                      >
+                                        <option value="FIXED_UNITS">Free units</option>
+                                        <option value="PERCENTAGE">Percentage</option>
+                                      </Select>
+                                    </TableCell>
+                                    <TableCell className={styles.excelTd}>
+                                      <Label
+                                        className={styles.srOnly}
+                                        htmlFor={`grid-sale-scheme-${product.id}`}
+                                      >
+                                        Sale scheme (e.g. 10+2 or 10%; required when deal type is
+                                        Percentage)
+                                      </Label>
+                                      <Input
+                                        id={`grid-sale-scheme-${product.id}`}
+                                        type="text"
+                                        className={styles.excelInputNarrow}
+                                        placeholder="e.g. 10+2"
+                                        value={
+                                          gridSchemeDrafts[product.id]?.sale ??
+                                          ((product.schemeType ?? 'FIXED_UNITS') === 'PERCENTAGE'
+                                            ? product.schemePercentage != null
+                                              ? `${product.schemePercentage}%`
+                                              : ''
+                                            : product.schemePayFor != null ||
+                                              product.schemeFree != null
+                                            ? `${product.schemePayFor ?? 0}+${
+                                                product.schemeFree ?? 0
+                                              }`
+                                            : '')
+                                        }
+                                        required={
+                                          (product.schemeType ?? 'FIXED_UNITS') === 'PERCENTAGE'
+                                        }
+                                        onChange={(e) => {
+                                          const v = e.target.value;
+                                          setGridSchemeDrafts((prev) => ({
+                                            ...prev,
+                                            [product.id]: {
+                                              ...prev[product.id],
+                                              sale: v,
+                                            },
+                                          }));
+                                        }}
+                                        onBlur={() => {
+                                          const raw = (
+                                            gridSchemeDrafts[product.id]?.sale ?? ''
+                                          ).trim();
+                                          setGridSchemeDrafts((prev) => {
+                                            const next = { ...prev };
+                                            const cur = next[product.id];
+                                            if (cur) {
+                                              const { sale: _, ...rest } = cur;
+                                              if (Object.keys(rest).length) {
+                                                next[product.id] = rest;
+                                              } else {
+                                                delete next[product.id];
+                                              }
+                                            }
+                                            return next;
+                                          });
+                                          if (raw === '') {
+                                            handleProductChange(product.id, 'schemePayFor', null);
+                                            handleProductChange(product.id, 'schemeFree', null);
+                                            handleProductChange(
+                                              product.id,
+                                              'schemePercentage',
+                                              null,
+                                            );
+                                            return;
+                                          }
+                                          if (raw.endsWith('%')) {
+                                            const num = parseFloat(raw.slice(0, -1));
+                                            if (!isNaN(num) && num > 0 && num <= 100) {
+                                              handleProductChange(
+                                                product.id,
+                                                'schemeType',
+                                                'PERCENTAGE',
+                                              );
+                                              handleProductChange(
+                                                product.id,
+                                                'schemePercentage',
+                                                num,
+                                              );
+                                              handleProductChange(product.id, 'schemePayFor', null);
+                                              handleProductChange(product.id, 'schemeFree', null);
+                                            }
+                                            return;
+                                          }
+                                          const plusIdx = raw.indexOf('+');
+                                          if (plusIdx >= 0) {
+                                            const left = parseInt(raw.slice(0, plusIdx).trim(), 10);
+                                            const right = parseInt(
+                                              raw.slice(plusIdx + 1).trim(),
+                                              10,
+                                            );
+                                            if (
+                                              !isNaN(left) &&
+                                              !isNaN(right) &&
+                                              left >= 0 &&
+                                              right >= 0
+                                            ) {
+                                              handleProductChange(
+                                                product.id,
+                                                'schemeType',
+                                                'FIXED_UNITS',
+                                              );
+                                              handleProductChange(product.id, 'schemePayFor', left);
+                                              handleProductChange(product.id, 'schemeFree', right);
+                                              handleProductChange(
+                                                product.id,
+                                                'schemePercentage',
+                                                null,
+                                              );
+                                            }
+                                          }
+                                        }}
+                                        disabled={isLoading}
+                                      />
+                                    </TableCell>
+                                    <TableCell className={styles.excelTd}>
+                                      <Input
+                                        type="number"
+                                        className={styles.excelInputNarrow}
+                                        placeholder="—"
+                                        step="0.01"
+                                        min={0}
+                                        max={100}
+                                        value={
+                                          product.saleAdditionalDiscount === null ||
+                                          product.saleAdditionalDiscount === undefined
+                                            ? ''
+                                            : product.saleAdditionalDiscount
+                                        }
+                                        onChange={(e) => {
+                                          const v = e.target.value;
+                                          if (v === '') {
+                                            handleProductChange(
+                                              product.id,
+                                              'saleAdditionalDiscount',
+                                              null,
+                                            );
+                                          } else {
+                                            const n = parseFloat(v);
+                                            if (!isNaN(n) && n >= 0 && n <= 100) {
+                                              handleProductChange(
+                                                product.id,
+                                                'saleAdditionalDiscount',
+                                                n,
+                                              );
+                                            }
+                                          }
+                                        }}
+                                        disabled={isLoading}
+                                      />
+                                    </TableCell>
+                                    <TableCell className={styles.excelTd}>
+                                      <Label
+                                        className={styles.srOnly}
+                                        htmlFor={`grid-purchase-scheme-type-${product.id}`}
+                                      >
+                                        Purchase scheme deal type
+                                      </Label>
+                                      <Select
+                                        id={`grid-purchase-scheme-type-${product.id}`}
+                                        className={styles.excelSelect}
+                                        value={product.purchaseSchemeType ?? 'FIXED_UNITS'}
+                                        onChange={(e) => {
+                                          const val = e.target.value as PurchaseSchemeInputType;
+                                          if (val === 'PERCENTAGE') {
+                                            handleApplyPurchasePatch(product.id, {
+                                              purchaseSchemeType: 'PERCENTAGE',
+                                              purchaseSchemePercentage:
+                                                product.purchaseSchemePercentage ?? null,
+                                              ...clearPurchaseSchemePatch(product),
+                                            });
+                                          } else if (val === 'FREE_QUANTITY') {
+                                            const billable =
+                                              billableCountForPurchaseFreeQty(product);
+                                            handleApplyPurchasePatch(product.id, {
+                                              purchaseSchemeType: 'FREE_QUANTITY',
+                                              purchaseSchemePayFor: null,
+                                              purchaseSchemeFree: null,
+                                              purchaseSchemePercentage: null,
+                                              purchaseSchemeFreeQty: null,
+                                              ...(product.purchaseSchemeFreeQty != null
+                                                ? { count: billable }
+                                                : {}),
+                                            });
+                                          } else {
+                                            const billable =
+                                              billableCountForPurchaseFreeQty(product);
+                                            handleApplyPurchasePatch(product.id, {
+                                              purchaseSchemeType: 'FIXED_UNITS',
+                                              purchaseSchemePercentage: null,
+                                              purchaseSchemeFreeQty: null,
+                                              ...(product.purchaseSchemeFreeQty != null
+                                                ? { count: billable }
+                                                : {}),
+                                            });
+                                          }
+                                        }}
+                                        disabled={isLoading}
+                                      >
+                                        <option value="FIXED_UNITS">Deal ratio</option>
+                                        <option value="FREE_QUANTITY">Free quantity</option>
+                                        <option value="PERCENTAGE">Percentage</option>
+                                      </Select>
+                                    </TableCell>
+                                    <TableCell className={styles.excelTd}>
+                                      <Input
+                                        type="text"
+                                        className={styles.excelInputNarrow}
+                                        placeholder={
+                                          (product.purchaseSchemeType ?? 'FIXED_UNITS') ===
+                                          'FREE_QUANTITY'
+                                            ? (Number(product.count) || 0) > 0
+                                              ? 'e.g. 60'
+                                              : 'e.g. 60 or 0 + 60'
+                                            : 'e.g. 10 + 2 or 4 + 1'
+                                        }
+                                        value={
+                                          gridSchemeDrafts[product.id]?.purchase ??
+                                          ((product.purchaseSchemeType ?? 'FIXED_UNITS') ===
+                                          'PERCENTAGE'
+                                            ? product.purchaseSchemePercentage != null
+                                              ? `${product.purchaseSchemePercentage}%`
+                                              : ''
+                                            : formatPurchaseSchemeDealForDisplay(product))
+                                        }
+                                        onChange={(e) => {
+                                          const v = e.target.value;
+                                          setGridSchemeDrafts((prev) => ({
+                                            ...prev,
+                                            [product.id]: {
+                                              ...prev[product.id],
+                                              purchase: v,
+                                            },
+                                          }));
+                                        }}
+                                        onBlur={() => {
+                                          const raw = (
+                                            gridSchemeDrafts[product.id]?.purchase ?? ''
+                                          ).trim();
+                                          setGridSchemeDrafts((prev) => {
+                                            const next = { ...prev };
+                                            const cur = next[product.id];
+                                            if (cur) {
+                                              const { purchase: _, ...rest } = cur;
+                                              if (Object.keys(rest).length) {
+                                                next[product.id] = rest;
+                                              } else {
+                                                delete next[product.id];
+                                              }
+                                            }
+                                            return next;
+                                          });
+                                          if (raw === '') {
+                                            handleApplyPurchasePatch(
+                                              product.id,
+                                              clearPurchaseSchemePatch(product),
+                                            );
+                                            return;
+                                          }
+                                          if (
+                                            (product.purchaseSchemeType ?? 'FIXED_UNITS') ===
+                                            'FREE_QUANTITY'
+                                          ) {
+                                            const patch = applyPurchaseFreeQuantityFromRaw(
+                                              product,
+                                              raw,
+                                            );
+                                            if (patch) {
+                                              handleApplyPurchasePatch(product.id, patch);
+                                            }
+                                            return;
+                                          }
+                                          const parsed = parsePurchaseSchemeDraft(raw);
+                                          if (!parsed) return;
+                                          handleApplyPurchasePatch(product.id, {
+                                            ...parsed,
+                                            purchaseSchemeFreeQty: null,
+                                          });
+                                        }}
+                                        disabled={isLoading}
+                                      />
+                                    </TableCell>
+                                    <TableCell className={styles.excelTd}>
+                                      <Input
+                                        type="number"
+                                        className={styles.excelInputNarrow}
+                                        placeholder="—"
+                                        step="0.01"
+                                        min={0}
+                                        max={100}
+                                        value={
+                                          product.purchaseAdditionalDiscount === null ||
+                                          product.purchaseAdditionalDiscount === undefined
+                                            ? ''
+                                            : product.purchaseAdditionalDiscount
+                                        }
+                                        onChange={(e) => {
+                                          const v = e.target.value;
+                                          if (v === '') {
+                                            handleProductChange(
+                                              product.id,
+                                              'purchaseAdditionalDiscount',
+                                              null,
+                                            );
+                                          } else {
+                                            const n = parseFloat(v);
+                                            if (!isNaN(n) && n >= 0 && n <= 100) {
+                                              handleProductChange(
+                                                product.id,
+                                                'purchaseAdditionalDiscount',
+                                                n,
+                                              );
+                                            }
+                                          }
+                                        }}
+                                        disabled={isLoading}
+                                      />
+                                    </TableCell>
+                                    <TableCell className={styles.excelTd}>
+                                      <Label
+                                        className={styles.srOnly}
+                                        htmlFor={`grid-item-type-${product.id}`}
+                                      >
+                                        Item type
+                                      </Label>
+                                      <Select
+                                        id={`grid-item-type-${product.id}`}
+                                        className={styles.excelSelect}
+                                        value={product.itemType ?? 'NORMAL'}
+                                        onChange={(e) => {
+                                          const val = e.target.value as ItemType | '';
+                                          const itemType =
+                                            val === '' ? 'NORMAL' : (val as ItemType);
+                                          handleProductChange(product.id, 'itemType', itemType);
+                                          if (itemType !== 'DEGREE') {
+                                            handleProductChange(
+                                              product.id,
+                                              'itemTypeDegree',
+                                              undefined,
+                                            );
+                                          }
+                                        }}
+                                        disabled={isLoading}
+                                      >
+                                        <option value="NORMAL">Normal</option>
+                                        <option value="COSTLY">Costly</option>
+                                        <option value="DEGREE">Temp / °</option>
+                                      </Select>
+                                    </TableCell>
+                                    <TableCell className={styles.excelTd}>
+                                      {product.itemType === 'DEGREE' ? (
+                                        <Input
+                                          id={`grid-item-degree-${product.id}`}
+                                          aria-label="Temperature or degree value"
+                                          type="number"
+                                          className={styles.excelInputNarrow}
+                                          placeholder="°"
+                                          min={1}
+                                          step={1}
+                                          value={
+                                            product.itemTypeDegree != null
+                                              ? product.itemTypeDegree
+                                              : ''
+                                          }
+                                          required
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            if (val === '') {
+                                              handleProductChange(
+                                                product.id,
+                                                'itemTypeDegree',
+                                                undefined,
+                                              );
+                                            } else {
+                                              const num = parseInt(val, 10);
+                                              if (!isNaN(num) && num > 0 && Number.isInteger(num)) {
+                                                handleProductChange(
+                                                  product.id,
+                                                  'itemTypeDegree',
+                                                  num,
+                                                );
+                                              }
+                                            }
+                                          }}
+                                          disabled={isLoading}
+                                        />
+                                      ) : (
+                                        <Text as="span" className={styles.excelCellDash}>
+                                          —
+                                        </Text>
+                                      )}
+                                    </TableCell>
+                                    <TableCell className={styles.excelTd}>
+                                      <Label
+                                        className={styles.srOnly}
+                                        htmlFor={`grid-discount-applicable-${product.id}`}
+                                      >
+                                        Discount applicable
+                                      </Label>
+                                      <Select
+                                        id={`grid-discount-applicable-${product.id}`}
+                                        className={styles.excelSelect}
+                                        value={product.discountApplicable ?? ''}
+                                        onChange={(e) => {
+                                          const val = e.target.value as DiscountApplicable | '';
+                                          handleProductChange(
+                                            product.id,
+                                            'discountApplicable',
+                                            val === '' ? undefined : (val as DiscountApplicable),
+                                          );
+                                        }}
+                                        disabled={isLoading}
+                                      >
+                                        <option value="">—</option>
+                                        <option value="DISCOUNT">Discount</option>
+                                        <option value="SCHEME">Scheme</option>
+                                        <option value="DISCOUNT_AND_SCHEME">Both</option>
+                                      </Select>
+                                    </TableCell>
+                                  </>
+                                )}
+                                {billingMode === 'REGULAR' && (
+                                  <>
+                                    <TableCell className={styles.excelTd}>
+                                      <Input
+                                        type="text"
+                                        inputMode="decimal"
+                                        className={styles.excelInputNarrow}
+                                        placeholder="CGST"
+                                        value={product.cgst || ''}
+                                        onChange={(e) =>
+                                          handleProductChange(product.id, 'cgst', e.target.value)
+                                        }
+                                        disabled={isLoading}
+                                      />
+                                    </TableCell>
+                                    <TableCell className={styles.excelTd}>
+                                      <Input
+                                        type="text"
+                                        inputMode="decimal"
+                                        className={styles.excelInputNarrow}
+                                        placeholder="SGST"
+                                        value={product.sgst || ''}
+                                        onChange={(e) =>
+                                          handleProductChange(product.id, 'sgst', e.target.value)
+                                        }
+                                        disabled={isLoading}
+                                      />
+                                    </TableCell>
+                                  </>
+                                )}
+                                <TableCell className={styles.excelTd}>
+                                  <Button
+                                    type="button"
+                                    className={styles.excelRemoveBtn}
+                                    onClick={() => handleRemoveProduct(product.id)}
+                                    disabled={isLoading}
+                                    aria-label="Remove product"
+                                  >
+                                    ×
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                        <Text className={styles.gridViewFootnote}>
+                          Use the fill row above to copy the same value into every row (only columns
+                          you type in are updated). Packaging is optional in grid view (defaults to
+                          1× on save). Columns marked * match required fields.
+                          {isSimplePricing
+                            ? ' Customer price is set on the Menu; sell price here is optional reference only. Use list view for custom reminders.'
+                            : ' Use list view for rate tiers, description, and reminders.'}
+                        </Text>
+                      </Box>
+                    ) : (
+                      <Box className={styles.productsList}>
+                        {products.map((product, index) => (
+                          <ProductAccordion
+                            key={product.id}
+                            product={product}
+                            companyField={companyField}
+                            sellDirectField={sellDirectField}
+                            schemaFields={verticalRegistrationFields}
+                            packagingUnits={packagingUnits}
+                            billingMode={billingMode}
+                            simplePricing={isSimplePricing}
+                            index={index}
+                            onToggle={() => handleToggleProduct(product.id)}
+                            onRemove={() => handleRemoveProduct(product.id)}
+                            onChange={handleProductChange}
+                            onVerticalFieldChange={applyVerticalFieldChange}
+                            onApplyPurchasePatch={handleApplyPurchasePatch}
+                            onIntegerChange={handleIntegerChange}
+                            onDecimalChange={handleDecimalChange}
+                            onCustomRemindersChange={(reminders) =>
+                              handleProductChange(product.id, 'customReminders', reminders)
+                            }
+                            isLoading={isLoading}
+                            isoToLocalDateTime={isoToLocalDateTime}
+                            localDateTimeToIso={localDateTimeToIso}
+                          />
+                        ))}
+                      </Box>
+                    )}
+                  </>
+                )}
               </Box>
-              <Box className={styles.formActions}>
-                <Button
-                  type="button"
-                  className={styles.cancelBtn}
-                  onClick={handleCancel}
-                  disabled={isLoading}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  className={styles.submitBtn}
-                  onClick={() => void handleSubmit()}
-                  disabled={isLoading || !vendorPaymentMethod}
-                  title={
-                    !vendorPaymentMethod
-                      ? 'Select a payment method to continue'
-                      : undefined
-                  }
-                >
-                  {isLoading
-                    ? `Registering ${products.length} Product(s)...`
-                    : `Register ${products.length} Product(s)`}
-                </Button>
-              </Box>
-            </>
-          )}
-        </Stack>
+
+              {products.length > 0 && (
+                <>
+                  <Box className={styles.paymentBottomSlot}>
+                    <PaymentMethodSplit
+                      context="purchase"
+                      title="Payment to vendor"
+                      intro="Pick how this invoice was settled. Any amount left on credit posts to Credit balances under what you owe this vendor."
+                      total={vendorInvoiceTotalNum}
+                      value={{
+                        method: vendorPaymentMethod,
+                        split: vendorPaymentSplit,
+                      }}
+                      onChange={(next) => {
+                        setVendorPaymentMethod(next.method);
+                        setVendorPaymentSplit(next.split);
+                      }}
+                      disabled={isLoading}
+                    />
+                    {vendorPaymentMethod &&
+                    vendorInvoiceTotalNum > 0 &&
+                    isCreditMethod(vendorPaymentMethod) ? (
+                      <Text className={styles.vendorPaymentSummaryFoot} aria-live="polite">
+                        ₹{vendorCreditLedgerOutstandingNum.toFixed(2)} will be tracked in{' '}
+                        <Text as="span" weight="bold">
+                          Credit balances
+                        </Text>{' '}
+                        (settle later in partial payments).
+                      </Text>
+                    ) : null}
+                  </Box>
+                  <Box className={styles.formActions}>
+                    <Button
+                      type="button"
+                      className={styles.cancelBtn}
+                      onClick={handleCancel}
+                      disabled={isLoading}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      className={styles.submitBtn}
+                      onClick={() => void handleSubmit()}
+                      disabled={isLoading || !vendorPaymentMethod}
+                      title={
+                        !vendorPaymentMethod ? 'Select a payment method to continue' : undefined
+                      }
+                    >
+                      {isLoading
+                        ? `Registering ${products.length} Product(s)...`
+                        : `Register ${products.length} Product(s)`}
+                    </Button>
+                  </Box>
+                </>
+              )}
+            </Stack>
           </Stack>
         </CardBody>
       </Card>
@@ -4310,222 +4055,216 @@ export function ProductRegistrationPage() {
           onClose={isCreatingVendor ? undefined : handleCloseVendorModal}
         />
         <Modal.Body>
-              <Box className={styles.formGroup}>
-                <Label htmlFor="vendorName" className={styles.label}>
-                  Vendor Name *
-                </Label>
-                <Input
-                  type="text"
-                  id="vendorName"
-                  className={styles.input}
-                  placeholder="Enter vendor name"
-                  value={vendorFormData.name}
-                  onChange={(e) =>
-                    setVendorFormData((prev) => ({
-                      ...prev,
-                      name: e.target.value,
-                    }))
-                  }
+          <Box className={styles.formGroup}>
+            <Label htmlFor="vendorName" className={styles.label}>
+              Vendor Name *
+            </Label>
+            <Input
+              type="text"
+              id="vendorName"
+              className={styles.input}
+              placeholder="Enter vendor name"
+              value={vendorFormData.name}
+              onChange={(e) =>
+                setVendorFormData((prev) => ({
+                  ...prev,
+                  name: e.target.value,
+                }))
+              }
+              disabled={isCreatingVendor}
+              required
+            />
+          </Box>
+          <Box className={styles.formGroup}>
+            <Label htmlFor="vendorContactPhone" className={styles.label}>
+              Contact Phone *
+            </Label>
+            <Input
+              type="tel"
+              id="vendorContactPhone"
+              className={styles.input}
+              placeholder="Enter contact phone"
+              value={vendorFormData.contactPhone}
+              onChange={(e) =>
+                setVendorFormData((prev) => ({
+                  ...prev,
+                  contactPhone: e.target.value,
+                }))
+              }
+              disabled={isCreatingVendor}
+              required
+            />
+          </Box>
+          <Box className={styles.formGroup}>
+            <Label htmlFor="vendorContactEmail" className={styles.label}>
+              Contact Email
+            </Label>
+            <Input
+              type="email"
+              id="vendorContactEmail"
+              className={styles.input}
+              placeholder="Enter contact email"
+              value={vendorFormData.contactEmail}
+              onChange={(e) =>
+                setVendorFormData((prev) => ({
+                  ...prev,
+                  contactEmail: e.target.value,
+                }))
+              }
+              disabled={isCreatingVendor}
+            />
+          </Box>
+          <Box className={styles.formGroup}>
+            <Label className={styles.label}>Link to registered user</Label>
+            <Text
+              className={styles.helperText}
+              style={{ marginBottom: 8, fontSize: 13, color: '#666' }}
+            >
+              If this vendor is a registered user, search by their email to link the vendor record
+              to their account.
+            </Text>
+            <Box style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <Button
+                type="button"
+                className={styles.cancelBtn}
+                onClick={handleSearchUserForLink}
+                disabled={
+                  isCreatingVendor || isSearchingUser || !vendorFormData.contactEmail?.trim()
+                }
+              >
+                {isSearchingUser ? 'Checking...' : 'Check'}
+              </Button>
+              {linkedUser && (
+                <Button
+                  type="button"
+                  className={styles.clearBtn}
+                  onClick={handleUnlinkUser}
                   disabled={isCreatingVendor}
-                  required
-                />
-              </Box>
-              <Box className={styles.formGroup}>
-                <Label htmlFor="vendorContactPhone" className={styles.label}>
-                  Contact Phone *
-                </Label>
-                <Input
-                  type="tel"
-                  id="vendorContactPhone"
-                  className={styles.input}
-                  placeholder="Enter contact phone"
-                  value={vendorFormData.contactPhone}
-                  onChange={(e) =>
-                    setVendorFormData((prev) => ({
-                      ...prev,
-                      contactPhone: e.target.value,
-                    }))
-                  }
-                  disabled={isCreatingVendor}
-                  required
-                />
-              </Box>
-              <Box className={styles.formGroup}>
-                <Label htmlFor="vendorContactEmail" className={styles.label}>
-                  Contact Email
-                </Label>
-                <Input
-                  type="email"
-                  id="vendorContactEmail"
-                  className={styles.input}
-                  placeholder="Enter contact email"
-                  value={vendorFormData.contactEmail}
-                  onChange={(e) =>
-                    setVendorFormData((prev) => ({
-                      ...prev,
-                      contactEmail: e.target.value,
-                    }))
-                  }
-                  disabled={isCreatingVendor}
-                />
-              </Box>
-              <Box className={styles.formGroup}>
-                <Label className={styles.label}>Link to registered user</Label>
-                <Text
-                  className={styles.helperText}
-                  style={{ marginBottom: 8, fontSize: 13, color: '#666' }}
                 >
-                  If this vendor is a registered user, search by their email to
-                  link the vendor record to their account.
-                </Text>
-                <Box style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <Button
-                    type="button"
-                    className={styles.cancelBtn}
-                    onClick={handleSearchUserForLink}
-                    disabled={
-                      isCreatingVendor ||
-                      isSearchingUser ||
-                      !vendorFormData.contactEmail?.trim()
-                    }
-                  >
-                    {isSearchingUser ? 'Checking...' : 'Check'}
-                  </Button>
-                  {linkedUser && (
-                    <Button
-                      type="button"
-                      className={styles.clearBtn}
-                      onClick={handleUnlinkUser}
-                      disabled={isCreatingVendor}
-                    >
-                      Unlink
-                    </Button>
-                  )}
-                </Box>
-                {userSearchMessage && (
-                  <Text
-                    style={{
-                      marginTop: 8,
-                      fontSize: 13,
-                      color: linkedUser ? '#16a34a' : '#666',
-                    }}
-                  >
-                    {userSearchMessage}
-                  </Text>
-                )}
-              </Box>
-              <Box className={styles.formGroup}>
-                <Label htmlFor="vendorAddress" className={styles.label}>
-                  Address
-                </Label>
-                <Input
-                  type="text"
-                  id="vendorAddress"
-                  className={styles.input}
-                  placeholder="Enter address"
-                  value={vendorFormData.address}
-                  onChange={(e) =>
-                    setVendorFormData((prev) => ({
-                      ...prev,
-                      address: e.target.value,
-                    }))
-                  }
-                  disabled={isCreatingVendor}
-                />
-              </Box>
-              <Box className={styles.formGroup}>
-                <Label htmlFor="vendorGstinUin" className={styles.label}>
-                  GSTIN / UIN
-                </Label>
-                <Input
-                  type="text"
-                  id="vendorGstinUin"
-                  className={styles.input}
-                  placeholder="Enter GSTIN / UIN number"
-                  value={vendorFormData.gstinUin ?? ''}
-                  onChange={(e) =>
-                    setVendorFormData((prev) => ({
-                      ...prev,
-                      gstinUin: e.target.value,
-                    }))
-                  }
-                  disabled={isCreatingVendor}
-                />
-              </Box>
-              <Box className={styles.formGroup}>
-                <Label htmlFor="vendorBusinessType" className={styles.label}>
-                  Business Type *
-                </Label>
-                <Select
-                  id="vendorBusinessType"
-                  className={styles.input}
-                  value={
-                    showCustomBusinessType
-                      ? 'OTHER'
-                      : vendorFormData.businessType
-                  }
-                  onChange={(e) => {
-                    if (e.target.value === 'OTHER') {
-                      setShowCustomBusinessType(true);
-                      setCustomBusinessType('');
-                    } else {
-                      setShowCustomBusinessType(false);
-                      setCustomBusinessType('');
-                      setVendorFormData((prev) => ({
-                        ...prev,
-                        businessType: e.target.value as VendorBusinessType,
-                      }));
-                    }
-                  }}
-                  disabled={isCreatingVendor}
-                  required
-                >
-                  <option value="WHOLESALE">Wholesale</option>
-                  <option value="RETAIL">Retail</option>
-                  <option value="MANUFACTURER">Manufacturer</option>
-                  <option value="DISTRIBUTOR">Distributor</option>
-                  <option value="C&F">C&F</option>
-                  <option value="OTHER">Other</option>
-                </Select>
-              </Box>
-              {showCustomBusinessType && (
-                <Box className={styles.formGroup}>
-                  <Label htmlFor="customBusinessType" className={styles.label}>
-                    Custom Business Type *
-                  </Label>
-                  <Input
-                    type="text"
-                    id="customBusinessType"
-                    className={styles.input}
-                    placeholder="Enter custom business type"
-                    value={customBusinessType}
-                    onChange={(e) => setCustomBusinessType(e.target.value)}
-                    disabled={isCreatingVendor}
-                    required
-                  />
-                </Box>
+                  Unlink
+                </Button>
               )}
+            </Box>
+            {userSearchMessage && (
+              <Text
+                style={{
+                  marginTop: 8,
+                  fontSize: 13,
+                  color: linkedUser ? '#16a34a' : '#666',
+                }}
+              >
+                {userSearchMessage}
+              </Text>
+            )}
+          </Box>
+          <Box className={styles.formGroup}>
+            <Label htmlFor="vendorAddress" className={styles.label}>
+              Address
+            </Label>
+            <Input
+              type="text"
+              id="vendorAddress"
+              className={styles.input}
+              placeholder="Enter address"
+              value={vendorFormData.address}
+              onChange={(e) =>
+                setVendorFormData((prev) => ({
+                  ...prev,
+                  address: e.target.value,
+                }))
+              }
+              disabled={isCreatingVendor}
+            />
+          </Box>
+          <Box className={styles.formGroup}>
+            <Label htmlFor="vendorGstinUin" className={styles.label}>
+              GSTIN / UIN
+            </Label>
+            <Input
+              type="text"
+              id="vendorGstinUin"
+              className={styles.input}
+              placeholder="Enter GSTIN / UIN number"
+              value={vendorFormData.gstinUin ?? ''}
+              onChange={(e) =>
+                setVendorFormData((prev) => ({
+                  ...prev,
+                  gstinUin: e.target.value,
+                }))
+              }
+              disabled={isCreatingVendor}
+            />
+          </Box>
+          <Box className={styles.formGroup}>
+            <Label htmlFor="vendorBusinessType" className={styles.label}>
+              Business Type *
+            </Label>
+            <Select
+              id="vendorBusinessType"
+              className={styles.input}
+              value={showCustomBusinessType ? 'OTHER' : vendorFormData.businessType}
+              onChange={(e) => {
+                if (e.target.value === 'OTHER') {
+                  setShowCustomBusinessType(true);
+                  setCustomBusinessType('');
+                } else {
+                  setShowCustomBusinessType(false);
+                  setCustomBusinessType('');
+                  setVendorFormData((prev) => ({
+                    ...prev,
+                    businessType: e.target.value as VendorBusinessType,
+                  }));
+                }
+              }}
+              disabled={isCreatingVendor}
+              required
+            >
+              <option value="WHOLESALE">Wholesale</option>
+              <option value="RETAIL">Retail</option>
+              <option value="MANUFACTURER">Manufacturer</option>
+              <option value="DISTRIBUTOR">Distributor</option>
+              <option value="C&F">C&F</option>
+              <option value="OTHER">Other</option>
+            </Select>
+          </Box>
+          {showCustomBusinessType && (
+            <Box className={styles.formGroup}>
+              <Label htmlFor="customBusinessType" className={styles.label}>
+                Custom Business Type *
+              </Label>
+              <Input
+                type="text"
+                id="customBusinessType"
+                className={styles.input}
+                placeholder="Enter custom business type"
+                value={customBusinessType}
+                onChange={(e) => setCustomBusinessType(e.target.value)}
+                disabled={isCreatingVendor}
+                required
+              />
+            </Box>
+          )}
         </Modal.Body>
         <Modal.Footer>
-              <Button
-                type="button"
-                variant="outline"
-                className={styles.cancelBtn}
-                onClick={handleCloseVendorModal}
-                disabled={isCreatingVendor}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                variant="solid"
-                className={styles.submitBtn}
-                onClick={handleCreateVendor}
-                disabled={isCreatingVendor}
-                loading={isCreatingVendor}
-              >
-                {isCreatingVendor ? 'Creating...' : 'Create Vendor'}
-              </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className={styles.cancelBtn}
+            onClick={handleCloseVendorModal}
+            disabled={isCreatingVendor}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="solid"
+            className={styles.submitBtn}
+            onClick={handleCreateVendor}
+            disabled={isCreatingVendor}
+            loading={isCreatingVendor}
+          >
+            {isCreatingVendor ? 'Creating...' : 'Create Vendor'}
+          </Button>
         </Modal.Footer>
       </Modal>
 
@@ -4538,93 +4277,96 @@ export function ProductRegistrationPage() {
       >
         <Modal.Header title="Scan QR Code to Upload Invoice" />
         <Modal.Body>
+          <Box
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '20px',
+              padding: '20px',
+            }}
+          >
+            {uploadUrl && (
               <Box
                 style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '20px',
                   padding: '20px',
+                  backgroundColor: '#fff',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
                 }}
               >
-                {uploadUrl && (
-                  <Box
-                    style={{
-                      padding: '20px',
-                      backgroundColor: '#fff',
-                      borderRadius: '8px',
-                      display: 'flex',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <QRCodeSVG value={uploadUrl} size={256} />
-                  </Box>
-                )}
-                <Box style={{ textAlign: 'center' }}>
-                  <Text style={{ marginBottom: '12px', fontWeight: 500 }}>
-                    Scan this QR code with your mobile device to upload one or
-                    more invoice photos (multi-page bills).
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: '0.9rem',
-                      color: 'var(--text-secondary)',
-                      marginBottom: '8px',
-                    }}
-                  >
-                    Status: <Text as="span" weight="bold">{uploadStatus || 'PENDING'}</Text>
-                  </Text>
-                  {isPolling && (
-                    <Box
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                        marginTop: '12px',
-                      }}
-                    >
-                      <Spinner size="sm" />
-                      <Text as="span" style={{ fontSize: '0.9rem' }}>
-                        Waiting for upload...
-                      </Text>
-                    </Box>
-                  )}
-                  {uploadStatus === 'UPLOADING' && (
-                    <Text
-                      style={{
-                        fontSize: '0.85rem',
-                        color: 'var(--text-secondary)',
-                        marginTop: '8px',
-                      }}
-                    >
-                      Invoice photo(s) are being uploaded...
-                    </Text>
-                  )}
-                  {uploadStatus === 'PROCESSING' && (
-                    <Text
-                      style={{
-                        fontSize: '0.85rem',
-                        color: 'var(--text-secondary)',
-                        marginTop: '8px',
-                      }}
-                    >
-                      Processing invoice...
-                    </Text>
-                  )}
-                </Box>
+                <QRCodeSVG value={uploadUrl} size={256} />
               </Box>
+            )}
+            <Box style={{ textAlign: 'center' }}>
+              <Text style={{ marginBottom: '12px', fontWeight: 500 }}>
+                Scan this QR code with your mobile device to upload one or more invoice photos
+                (multi-page bills).
+              </Text>
+              <Text
+                style={{
+                  fontSize: '0.9rem',
+                  color: 'var(--text-secondary)',
+                  marginBottom: '8px',
+                }}
+              >
+                Status:{' '}
+                <Text as="span" weight="bold">
+                  {uploadStatus || 'PENDING'}
+                </Text>
+              </Text>
+              {isPolling && (
+                <Box
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    marginTop: '12px',
+                  }}
+                >
+                  <Spinner size="sm" />
+                  <Text as="span" style={{ fontSize: '0.9rem' }}>
+                    Waiting for upload...
+                  </Text>
+                </Box>
+              )}
+              {uploadStatus === 'UPLOADING' && (
+                <Text
+                  style={{
+                    fontSize: '0.85rem',
+                    color: 'var(--text-secondary)',
+                    marginTop: '8px',
+                  }}
+                >
+                  Invoice photo(s) are being uploaded...
+                </Text>
+              )}
+              {uploadStatus === 'PROCESSING' && (
+                <Text
+                  style={{
+                    fontSize: '0.85rem',
+                    color: 'var(--text-secondary)',
+                    marginTop: '8px',
+                  }}
+                >
+                  Processing invoice...
+                </Text>
+              )}
+            </Box>
+          </Box>
         </Modal.Body>
         <Modal.Footer>
-              <Button
-                type="button"
-                variant="outline"
-                className={styles.cancelBtn}
-                onClick={handleCloseQrModal}
-              >
-                Cancel
-              </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className={styles.cancelBtn}
+            onClick={handleCloseQrModal}
+          >
+            Cancel
+          </Button>
         </Modal.Footer>
       </Modal>
     </Stack>
@@ -4641,7 +4383,7 @@ interface GridBulkFillRowProps {
   isLoading: boolean;
   onBulkChange: (
     field: keyof GridBulkFillDraft,
-    value: GridBulkFillDraft[keyof GridBulkFillDraft]
+    value: GridBulkFillDraft[keyof GridBulkFillDraft],
   ) => void;
   onVerticalBulkChange: (key: string, value: string) => void;
   onApply: () => void;
@@ -4662,7 +4404,9 @@ function GridBulkFillRow({
   return (
     <TableRow className={styles.excelBulkRow}>
       <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <Text as="span" className={styles.excelBulkLabel}>Fill all</Text>
+        <Text as="span" className={styles.excelBulkLabel}>
+          Fill all
+        </Text>
         <Button
           type="button"
           className={styles.excelBulkApplyBtn}
@@ -4674,10 +4418,7 @@ function GridBulkFillRow({
         </Button>
       </TableHeaderCell>
       <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <Text as="span"
-          className={styles.excelBulkDisabled}
-          title="Barcode must be set per row"
-        >
+        <Text as="span" className={styles.excelBulkDisabled} title="Barcode must be set per row">
           —
         </Text>
       </TableHeaderCell>
@@ -4688,9 +4429,7 @@ function GridBulkFillRow({
             className={styles.excelInput}
             placeholder="Company"
             value={bulk.verticalBulk?.[companyField.key] ?? bulk.companyName ?? ''}
-            onChange={(e) =>
-              onVerticalBulkChange(companyField.key, e.target.value)
-            }
+            onChange={(e) => onVerticalBulkChange(companyField.key, e.target.value)}
             disabled={isLoading}
           />
         </TableHeaderCell>
@@ -4709,9 +4448,7 @@ function GridBulkFillRow({
         <TableHeaderCell key={field.key} className={`${styles.excelTh} ${styles.excelBulkTh}`}>
           <Input
             type={field.type === 'date' ? 'date' : 'text'}
-            className={
-              field.type === 'date' ? styles.excelInputDate : styles.excelInput
-            }
+            className={field.type === 'date' ? styles.excelInputDate : styles.excelInput}
             placeholder={field.label ?? field.key}
             value={bulk.verticalBulk?.[field.key] ?? ''}
             onChange={(e) => onVerticalBulkChange(field.key, e.target.value)}
@@ -4756,9 +4493,7 @@ function GridBulkFillRow({
           <Select
             className={styles.excelInput}
             value={bulk.verticalBulk?.[sellDirectField.key] ?? ''}
-            onChange={(e) =>
-              onVerticalBulkChange(sellDirectField.key, e.target.value)
-            }
+            onChange={(e) => onVerticalBulkChange(sellDirectField.key, e.target.value)}
             disabled={isLoading}
           >
             <option value="">—</option>
@@ -4769,10 +4504,7 @@ function GridBulkFillRow({
       )}
       {billingMode !== 'BASIC' && (
         <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-          <Text as="span"
-            className={styles.excelBulkDisabled}
-            title="HSN must be set per row"
-          >
+          <Text as="span" className={styles.excelBulkDisabled} title="HSN must be set per row">
             —
           </Text>
         </TableHeaderCell>
@@ -4804,156 +4536,133 @@ function GridBulkFillRow({
         </>
       ) : (
         <>
-      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <Text as="span"
-          className={styles.excelBulkDisabled}
-          title="PTS must be set per row"
-        >
-          —
-        </Text>
-      </TableHeaderCell>
-      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <Text as="span"
-          className={styles.excelBulkDisabled}
-          title="PTR must be set per row"
-        >
-          —
-        </Text>
-      </TableHeaderCell>
-      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <Text as="span"
-          className={styles.excelBulkDisabled}
-          title="MRP must be set per row"
-        >
-          —
-        </Text>
-      </TableHeaderCell>
-      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <Select
-          className={styles.excelSelect}
-          value={bulk.schemeType ?? ''}
-          onChange={(e) =>
-            onBulkChange('schemeType', e.target.value as SchemeType | '')
-          }
-          disabled={isLoading}
-        >
-          <option value="">—</option>
-          <option value="FIXED_UNITS">Free units</option>
-          <option value="PERCENTAGE">Percentage</option>
-        </Select>
-      </TableHeaderCell>
-      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <Input
-          type="text"
-          className={styles.excelInputNarrow}
-          placeholder="e.g. 10+2"
-          value={bulk.saleScheme ?? ''}
-          onChange={(e) => onBulkChange('saleScheme', e.target.value)}
-          disabled={isLoading}
-        />
-      </TableHeaderCell>
-      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <Input
-          type="number"
-          className={styles.excelInputNarrow}
-          placeholder="—"
-          step="0.01"
-          min={0}
-          max={100}
-          value={bulk.saleAdditionalDiscount ?? ''}
-          onChange={(e) =>
-            onBulkChange('saleAdditionalDiscount', e.target.value)
-          }
-          disabled={isLoading}
-        />
-      </TableHeaderCell>
-      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <Select
-          className={styles.excelSelect}
-          value={bulk.purchaseSchemeType ?? ''}
-          onChange={(e) =>
-            onBulkChange(
-              'purchaseSchemeType',
-              e.target.value as SchemeType | ''
-            )
-          }
-          disabled={isLoading}
-        >
-          <option value="">—</option>
-          <option value="FIXED_UNITS">Free units</option>
-          <option value="PERCENTAGE">Percentage</option>
-        </Select>
-      </TableHeaderCell>
-      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <Input
-          type="text"
-          className={styles.excelInputNarrow}
-          placeholder="e.g. 10+2"
-          value={bulk.purchaseScheme ?? ''}
-          onChange={(e) => onBulkChange('purchaseScheme', e.target.value)}
-          disabled={isLoading}
-        />
-      </TableHeaderCell>
-      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <Input
-          type="number"
-          className={styles.excelInputNarrow}
-          placeholder="—"
-          step="0.01"
-          min={0}
-          max={100}
-          value={bulk.purchaseAdditionalDiscount ?? ''}
-          onChange={(e) =>
-            onBulkChange('purchaseAdditionalDiscount', e.target.value)
-          }
-          disabled={isLoading}
-        />
-      </TableHeaderCell>
-      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <Select
-          className={styles.excelSelect}
-          value={bulk.itemType ?? ''}
-          onChange={(e) =>
-            onBulkChange('itemType', e.target.value as ItemType | '')
-          }
-          disabled={isLoading}
-        >
-          <option value="">—</option>
-          <option value="NORMAL">Normal</option>
-          <option value="COSTLY">Costly</option>
-          <option value="DEGREE">Temp / °</option>
-        </Select>
-      </TableHeaderCell>
-      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <Input
-          type="number"
-          className={styles.excelInputNarrow}
-          placeholder="°"
-          min={1}
-          step={1}
-          value={bulk.itemTypeDegree ?? ''}
-          onChange={(e) => onBulkChange('itemTypeDegree', e.target.value)}
-          disabled={isLoading}
-        />
-      </TableHeaderCell>
-      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <Select
-          className={styles.excelSelect}
-          value={bulk.discountApplicable ?? ''}
-          onChange={(e) =>
-            onBulkChange(
-              'discountApplicable',
-              e.target.value as DiscountApplicable | ''
-            )
-          }
-          disabled={isLoading}
-        >
-          <option value="">—</option>
-          <option value="DISCOUNT">Discount</option>
-          <option value="SCHEME">Scheme</option>
-          <option value="DISCOUNT_AND_SCHEME">Both</option>
-        </Select>
-      </TableHeaderCell>
+          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+            <Text as="span" className={styles.excelBulkDisabled} title="PTS must be set per row">
+              —
+            </Text>
+          </TableHeaderCell>
+          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+            <Text as="span" className={styles.excelBulkDisabled} title="PTR must be set per row">
+              —
+            </Text>
+          </TableHeaderCell>
+          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+            <Text as="span" className={styles.excelBulkDisabled} title="MRP must be set per row">
+              —
+            </Text>
+          </TableHeaderCell>
+          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+            <Select
+              className={styles.excelSelect}
+              value={bulk.schemeType ?? ''}
+              onChange={(e) => onBulkChange('schemeType', e.target.value as SchemeType | '')}
+              disabled={isLoading}
+            >
+              <option value="">—</option>
+              <option value="FIXED_UNITS">Free units</option>
+              <option value="PERCENTAGE">Percentage</option>
+            </Select>
+          </TableHeaderCell>
+          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+            <Input
+              type="text"
+              className={styles.excelInputNarrow}
+              placeholder="e.g. 10+2"
+              value={bulk.saleScheme ?? ''}
+              onChange={(e) => onBulkChange('saleScheme', e.target.value)}
+              disabled={isLoading}
+            />
+          </TableHeaderCell>
+          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+            <Input
+              type="number"
+              className={styles.excelInputNarrow}
+              placeholder="—"
+              step="0.01"
+              min={0}
+              max={100}
+              value={bulk.saleAdditionalDiscount ?? ''}
+              onChange={(e) => onBulkChange('saleAdditionalDiscount', e.target.value)}
+              disabled={isLoading}
+            />
+          </TableHeaderCell>
+          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+            <Select
+              className={styles.excelSelect}
+              value={bulk.purchaseSchemeType ?? ''}
+              onChange={(e) =>
+                onBulkChange('purchaseSchemeType', e.target.value as SchemeType | '')
+              }
+              disabled={isLoading}
+            >
+              <option value="">—</option>
+              <option value="FIXED_UNITS">Free units</option>
+              <option value="PERCENTAGE">Percentage</option>
+            </Select>
+          </TableHeaderCell>
+          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+            <Input
+              type="text"
+              className={styles.excelInputNarrow}
+              placeholder="e.g. 10+2"
+              value={bulk.purchaseScheme ?? ''}
+              onChange={(e) => onBulkChange('purchaseScheme', e.target.value)}
+              disabled={isLoading}
+            />
+          </TableHeaderCell>
+          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+            <Input
+              type="number"
+              className={styles.excelInputNarrow}
+              placeholder="—"
+              step="0.01"
+              min={0}
+              max={100}
+              value={bulk.purchaseAdditionalDiscount ?? ''}
+              onChange={(e) => onBulkChange('purchaseAdditionalDiscount', e.target.value)}
+              disabled={isLoading}
+            />
+          </TableHeaderCell>
+          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+            <Select
+              className={styles.excelSelect}
+              value={bulk.itemType ?? ''}
+              onChange={(e) => onBulkChange('itemType', e.target.value as ItemType | '')}
+              disabled={isLoading}
+            >
+              <option value="">—</option>
+              <option value="NORMAL">Normal</option>
+              <option value="COSTLY">Costly</option>
+              <option value="DEGREE">Temp / °</option>
+            </Select>
+          </TableHeaderCell>
+          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+            <Input
+              type="number"
+              className={styles.excelInputNarrow}
+              placeholder="°"
+              min={1}
+              step={1}
+              value={bulk.itemTypeDegree ?? ''}
+              onChange={(e) => onBulkChange('itemTypeDegree', e.target.value)}
+              disabled={isLoading}
+            />
+          </TableHeaderCell>
+          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+            <Select
+              className={styles.excelSelect}
+              value={bulk.discountApplicable ?? ''}
+              onChange={(e) =>
+                onBulkChange('discountApplicable', e.target.value as DiscountApplicable | '')
+              }
+              disabled={isLoading}
+            >
+              <option value="">—</option>
+              <option value="DISCOUNT">Discount</option>
+              <option value="SCHEME">Scheme</option>
+              <option value="DISCOUNT_AND_SCHEME">Both</option>
+            </Select>
+          </TableHeaderCell>
         </>
       )}
       {billingMode === 'REGULAR' && (
@@ -4993,10 +4702,7 @@ function FormRowSpacer() {
       <Text as="span" className={styles.label} style={{ visibility: 'hidden' }}>
         .
       </Text>
-      <Text as="span"
-        className={styles.input}
-        style={{ visibility: 'hidden', display: 'block' }}
-      >
+      <Text as="span" className={styles.input} style={{ visibility: 'hidden', display: 'block' }}>
         .
       </Text>
     </Box>
@@ -5018,17 +4724,10 @@ interface ProductAccordionProps {
   onChange: (
     productId: string,
     field: keyof ProductFormData,
-    value: ProductFormData[keyof ProductFormData]
+    value: ProductFormData[keyof ProductFormData],
   ) => void;
-  onVerticalFieldChange: (
-    productId: string,
-    field: VerticalSchemaFieldDef,
-    value: string
-  ) => void;
-  onApplyPurchasePatch: (
-    productId: string,
-    patch: Partial<ProductFormData>
-  ) => void;
+  onVerticalFieldChange: (productId: string, field: VerticalSchemaFieldDef, value: string) => void;
+  onApplyPurchasePatch: (productId: string, patch: Partial<ProductFormData>) => void;
   onIntegerChange: (productId: string, field: string, value: string) => void;
   onDecimalChange: (productId: string, field: string, value: string) => void;
   onCustomRemindersChange: (reminders: CustomReminderInput[]) => void;
@@ -5059,9 +4758,7 @@ function ProductAccordion({
   localDateTimeToIso,
 }: ProductAccordionProps) {
   const productTitle = product.name || `Product ${index + 1}`;
-  const showExpiryReminder = schemaFields.some(
-    (field) => field.key === 'expiryDate'
-  );
+  const showExpiryReminder = schemaFields.some((field) => field.key === 'expiryDate');
 
   const formatSchemeFixed = (p: ProductFormData): string => {
     if (p.schemePayFor != null || p.schemeFree != null) {
@@ -5076,18 +4773,11 @@ function ProductAccordion({
   const [schemeFixedDraft, setSchemeFixedDraft] = useState('');
   const [schemeFixedFocused, setSchemeFixedFocused] = useState(false);
   const [purchaseSchemeFixedDraft, setPurchaseSchemeFixedDraft] = useState('');
-  const [purchaseSchemeFixedFocused, setPurchaseSchemeFixedFocused] =
-    useState(false);
+  const [purchaseSchemeFixedFocused, setPurchaseSchemeFixedFocused] = useState(false);
 
   useEffect(() => {
     if (!schemeFixedFocused) setSchemeFixedDraft(formatSchemeFixed(product));
-  }, [
-    product.id,
-    product.schemePayFor,
-    product.schemeFree,
-    product.scheme,
-    schemeFixedFocused,
-  ]);
+  }, [product.id, product.schemePayFor, product.schemeFree, product.scheme, schemeFixedFocused]);
 
   useEffect(() => {
     if (!purchaseSchemeFixedFocused)
@@ -5169,15 +4859,14 @@ function ProductAccordion({
     }
   };
 
-  const purchaseSchemeType =
-    product.purchaseSchemeType ?? 'FIXED_UNITS';
+  const purchaseSchemeType = product.purchaseSchemeType ?? 'FIXED_UNITS';
 
   const baseUqc = product.baseUnit?.trim()
     ? resolvePackagingUqc(product.baseUnit, packagingUnits)
     : '';
   const packagingUnitDef = packagingUnits.find((u) => u.uqc === baseUqc);
   const packagingFactor = packagingFactorForDisplay(
-    product.unitsPerPack ?? product.conversionFactor
+    product.unitsPerPack ?? product.conversionFactor,
   );
   const packagingHint = packagingUnitDef
     ? `${packagingUnitDef.registrationHint}${
@@ -5214,13 +4903,10 @@ function ProductAccordion({
         ? `${billable} paid + ${product.purchaseSchemeFreeQty} free`
         : `0 paid + ${product.purchaseSchemeFreeQty} free`;
     }
-    if (
-      product.purchaseSchemePayFor != null ||
-      product.purchaseSchemeFree != null
-    ) {
+    if (product.purchaseSchemePayFor != null || product.purchaseSchemeFree != null) {
       return formatPurchaseSchemeRatioDisplay(
         product.purchaseSchemePayFor,
-        product.purchaseSchemeFree
+        product.purchaseSchemeFree,
       );
     }
     return null;
@@ -5284,9 +4970,7 @@ function ProductAccordion({
                 className={styles.input}
                 placeholder="0"
                 value={product.count === 0 ? '' : product.count}
-                onChange={(e) =>
-                  onIntegerChange(product.id, 'count', e.target.value)
-                }
+                onChange={(e) => onIntegerChange(product.id, 'count', e.target.value)}
                 required
                 disabled={isLoading}
               />
@@ -5304,9 +4988,7 @@ function ProductAccordion({
                 className={styles.input}
                 placeholder="Enter barcode (optional)"
                 value={product.barcode}
-                onChange={(e) =>
-                  onChange(product.id, 'barcode', e.target.value)
-                }
+                onChange={(e) => onChange(product.id, 'barcode', e.target.value)}
                 disabled={isLoading}
               />
             </Box>
@@ -5314,9 +4996,7 @@ function ProductAccordion({
               <VerticalSchemaFieldInput
                 field={companyField}
                 value={getVerticalFieldValue(product, companyField)}
-                onChange={(value) =>
-                  onVerticalFieldChange(product.id, companyField, value)
-                }
+                onChange={(value) => onVerticalFieldChange(product.id, companyField, value)}
                 disabled={isLoading}
                 idPrefix={`acc-${product.id}`}
                 inputClassName={styles.input}
@@ -5331,10 +5011,7 @@ function ProductAccordion({
             <Box className={styles.formRow}>
               {packagingInput}
               <Box className={styles.formGroup}>
-                <Label
-                  htmlFor={`location-${product.id}`}
-                  className={styles.label}
-                >
+                <Label htmlFor={`location-${product.id}`} className={styles.label}>
                   Inventory Location *
                 </Label>
                 <Input
@@ -5343,9 +5020,7 @@ function ProductAccordion({
                   className={styles.input}
                   placeholder="Enter inventory location"
                   value={product.location}
-                  onChange={(e) =>
-                    onChange(product.id, 'location', e.target.value)
-                  }
+                  onChange={(e) => onChange(product.id, 'location', e.target.value)}
                   required
                   disabled={isLoading}
                 />
@@ -5357,9 +5032,7 @@ function ProductAccordion({
             <VerticalInventoryFields
               fields={schemaFields}
               product={product}
-              onFieldChange={(field, value) =>
-                onVerticalFieldChange(product.id, field, value)
-              }
+              onFieldChange={(field, value) => onVerticalFieldChange(product.id, field, value)}
               disabled={isLoading}
               idPrefix={`acc-${product.id}`}
               inputClassName={styles.input}
@@ -5371,10 +5044,7 @@ function ProductAccordion({
             <Box className={styles.formRow}>
               {!companyField ? (
                 <Box className={styles.formGroup}>
-                  <Label
-                    htmlFor={`location-${product.id}`}
-                    className={styles.label}
-                  >
+                  <Label htmlFor={`location-${product.id}`} className={styles.label}>
                     Inventory Location *
                   </Label>
                   <Input
@@ -5383,9 +5053,7 @@ function ProductAccordion({
                     className={styles.input}
                     placeholder="Enter inventory location"
                     value={product.location}
-                    onChange={(e) =>
-                      onChange(product.id, 'location', e.target.value)
-                    }
+                    onChange={(e) => onChange(product.id, 'location', e.target.value)}
                     required
                     disabled={isLoading}
                   />
@@ -5415,446 +5083,402 @@ function ProductAccordion({
           )}
 
           {!simplePricing && (
-          <>
-          <Box className={styles.formRow}>
-            <Box className={styles.formGroup}>
-              <Label
-                htmlFor={`schemeType-${product.id}`}
-                className={styles.label}
-              >
-                Sale scheme/deal type
-              </Label>
-              <Select
-                id={`schemeType-${product.id}`}
-                className={styles.input}
-                value={product.schemeType ?? 'FIXED_UNITS'}
-                onChange={(e) => {
-                  const val = e.target.value as SchemeType;
-                  onChange(product.id, 'schemeType', val);
-                  if (val === 'PERCENTAGE') {
-                    onChange(product.id, 'scheme', null);
-                  } else {
-                    onChange(product.id, 'schemePercentage', null);
-                  }
-                }}
-                disabled={isLoading}
-              >
-                <option value="FIXED_UNITS">Free units</option>
-                <option value="PERCENTAGE">Percentage</option>
-              </Select>
-            </Box>
-            {(product.schemeType ?? 'FIXED_UNITS') === 'FIXED_UNITS' ? (
-              <Box className={styles.formGroup}>
-                <Label
-                  htmlFor={`scheme-fixed-${product.id}`}
-                  className={styles.label}
-                >
-                  Pay + free (e.g. 10 + 2)
-                </Label>
-                <Input
-                  type="text"
-                  id={`scheme-fixed-${product.id}`}
-                  className={styles.input}
-                  placeholder="Optional, e.g. 10 + 2"
-                  value={schemeFixedDraft}
-                  onChange={(e) => setSchemeFixedDraft(e.target.value)}
-                  onFocus={() => setSchemeFixedFocused(true)}
-                  onBlur={() => {
-                    setSchemeFixedFocused(false);
-                    commitSchemeFixed();
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.currentTarget.blur();
-                    }
-                  }}
-                  disabled={isLoading}
-                />
-              </Box>
-            ) : (
-              <Box className={styles.formGroup}>
-                <Label
-                  htmlFor={`schemePercentage-${product.id}`}
-                  className={styles.label}
-                >
-                  Sale Scheme/Deal % *
-                </Label>
-                <Input
-                  type="number"
-                  id={`schemePercentage-${product.id}`}
-                  className={styles.input}
-                  placeholder="e.g. 10 for 10%"
-                  min={0.01}
-                  max={100}
-                  step={0.01}
-                  value={
-                    product.schemePercentage != null
-                      ? product.schemePercentage
-                      : ''
-                  }
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === '') {
-                      onChange(product.id, 'schemePercentage', null);
-                    } else {
-                      const num = parseFloat(val);
-                      if (!isNaN(num) && num > 0 && num <= 100) {
-                        onChange(product.id, 'schemePercentage', num);
+            <>
+              <Box className={styles.formRow}>
+                <Box className={styles.formGroup}>
+                  <Label htmlFor={`schemeType-${product.id}`} className={styles.label}>
+                    Sale scheme/deal type
+                  </Label>
+                  <Select
+                    id={`schemeType-${product.id}`}
+                    className={styles.input}
+                    value={product.schemeType ?? 'FIXED_UNITS'}
+                    onChange={(e) => {
+                      const val = e.target.value as SchemeType;
+                      onChange(product.id, 'schemeType', val);
+                      if (val === 'PERCENTAGE') {
+                        onChange(product.id, 'scheme', null);
+                      } else {
+                        onChange(product.id, 'schemePercentage', null);
                       }
-                    }
-                  }}
-                  disabled={isLoading}
-                />
+                    }}
+                    disabled={isLoading}
+                  >
+                    <option value="FIXED_UNITS">Free units</option>
+                    <option value="PERCENTAGE">Percentage</option>
+                  </Select>
+                </Box>
+                {(product.schemeType ?? 'FIXED_UNITS') === 'FIXED_UNITS' ? (
+                  <Box className={styles.formGroup}>
+                    <Label htmlFor={`scheme-fixed-${product.id}`} className={styles.label}>
+                      Pay + free (e.g. 10 + 2)
+                    </Label>
+                    <Input
+                      type="text"
+                      id={`scheme-fixed-${product.id}`}
+                      className={styles.input}
+                      placeholder="Optional, e.g. 10 + 2"
+                      value={schemeFixedDraft}
+                      onChange={(e) => setSchemeFixedDraft(e.target.value)}
+                      onFocus={() => setSchemeFixedFocused(true)}
+                      onBlur={() => {
+                        setSchemeFixedFocused(false);
+                        commitSchemeFixed();
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.currentTarget.blur();
+                        }
+                      }}
+                      disabled={isLoading}
+                    />
+                  </Box>
+                ) : (
+                  <Box className={styles.formGroup}>
+                    <Label htmlFor={`schemePercentage-${product.id}`} className={styles.label}>
+                      Sale Scheme/Deal % *
+                    </Label>
+                    <Input
+                      type="number"
+                      id={`schemePercentage-${product.id}`}
+                      className={styles.input}
+                      placeholder="e.g. 10 for 10%"
+                      min={0.01}
+                      max={100}
+                      step={0.01}
+                      value={product.schemePercentage != null ? product.schemePercentage : ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '') {
+                          onChange(product.id, 'schemePercentage', null);
+                        } else {
+                          const num = parseFloat(val);
+                          if (!isNaN(num) && num > 0 && num <= 100) {
+                            onChange(product.id, 'schemePercentage', num);
+                          }
+                        }
+                      }}
+                      disabled={isLoading}
+                    />
+                  </Box>
+                )}
               </Box>
-            )}
-          </Box>
 
-          <Box className={styles.formRow}>
-            <Box className={styles.formGroup}>
-              <Label
-                htmlFor={`saleAdditionalDiscount-${product.id}`}
-                className={styles.label}
-              >
-                Sale add. discount (%)
-              </Label>
-              <Input
-                type="number"
-                id={`saleAdditionalDiscount-${product.id}`}
-                className={styles.input}
-                placeholder="Enter discount percentage"
-                step="0.01"
-                min="0"
-                max="100"
-                value={
-                  product.saleAdditionalDiscount === null ||
-                  product.saleAdditionalDiscount === undefined
-                    ? ''
-                    : product.saleAdditionalDiscount
-                }
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (value === '') {
-                    onChange(product.id, 'saleAdditionalDiscount', null);
-                  } else {
-                    const numValue = parseFloat(value);
-                    if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
-                      onChange(product.id, 'saleAdditionalDiscount', numValue);
+              <Box className={styles.formRow}>
+                <Box className={styles.formGroup}>
+                  <Label htmlFor={`saleAdditionalDiscount-${product.id}`} className={styles.label}>
+                    Sale add. discount (%)
+                  </Label>
+                  <Input
+                    type="number"
+                    id={`saleAdditionalDiscount-${product.id}`}
+                    className={styles.input}
+                    placeholder="Enter discount percentage"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value={
+                      product.saleAdditionalDiscount === null ||
+                      product.saleAdditionalDiscount === undefined
+                        ? ''
+                        : product.saleAdditionalDiscount
                     }
-                  }
-                }}
-                disabled={isLoading}
-              />
-            </Box>
-            <Box className={styles.formGroup} aria-hidden="true">
-              <Text as="span" className={styles.label} style={{ visibility: 'hidden' }}>
-                .
-              </Text>
-              <Text as="span"
-                className={styles.input}
-                style={{ visibility: 'hidden', display: 'block' }}
-              >
-                .
-              </Text>
-            </Box>
-          </Box>
-
-          {/* Purchase (from vendor) - for comparison at sale */}
-          <Box className={styles.formRow}>
-            <Box className={styles.formGroup}>
-              <Label
-                htmlFor={`purchaseSchemeType-${product.id}`}
-                className={styles.label}
-              >
-                Purchase scheme/deal type
-              </Label>
-              <Select
-                id={`purchaseSchemeType-${product.id}`}
-                className={styles.input}
-                value={product.purchaseSchemeType ?? 'FIXED_UNITS'}
-                onChange={(e) => {
-                  const val = e.target.value as PurchaseSchemeInputType;
-                  if (val === 'PERCENTAGE') {
-                    onApplyPurchasePatch(product.id, {
-                      purchaseSchemeType: 'PERCENTAGE',
-                      purchaseSchemePercentage:
-                        product.purchaseSchemePercentage ?? null,
-                      ...clearPurchaseSchemePatch(product),
-                    });
-                  } else if (val === 'FREE_QUANTITY') {
-                    const billable = billableCountForPurchaseFreeQty(product);
-                    onApplyPurchasePatch(product.id, {
-                      purchaseSchemeType: 'FREE_QUANTITY',
-                      purchaseSchemePayFor: null,
-                      purchaseSchemeFree: null,
-                      purchaseSchemePercentage: null,
-                      purchaseSchemeFreeQty: null,
-                      ...(product.purchaseSchemeFreeQty != null
-                        ? { count: billable }
-                        : {}),
-                    });
-                  } else {
-                    const billable = billableCountForPurchaseFreeQty(product);
-                    onApplyPurchasePatch(product.id, {
-                      purchaseSchemeType: 'FIXED_UNITS',
-                      purchaseSchemePercentage: null,
-                      purchaseSchemeFreeQty: null,
-                      ...(product.purchaseSchemeFreeQty != null
-                        ? { count: billable }
-                        : {}),
-                    });
-                  }
-                }}
-                disabled={isLoading}
-              >
-                <option value="FIXED_UNITS">Deal ratio</option>
-                <option value="FREE_QUANTITY">Free quantity</option>
-                <option value="PERCENTAGE">Percentage</option>
-              </Select>
-            </Box>
-            {purchaseSchemeType === 'PERCENTAGE' ? (
-              <Box className={styles.formGroup}>
-                <Label
-                  htmlFor={`purchaseSchemePercentage-${product.id}`}
-                  className={styles.label}
-                >
-                  Purchase scheme %
-                </Label>
-                <Input
-                  type="number"
-                  id={`purchaseSchemePercentage-${product.id}`}
-                  className={styles.input}
-                  placeholder="From vendor"
-                  min={0}
-                  max={100}
-                  step={0.01}
-                  value={
-                    product.purchaseSchemePercentage != null
-                      ? product.purchaseSchemePercentage
-                      : ''
-                  }
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === '') {
-                      onChange(product.id, 'purchaseSchemePercentage', null);
-                    } else {
-                      const num = parseFloat(val);
-                      if (!isNaN(num) && num >= 0 && num <= 100) {
-                        onChange(product.id, 'purchaseSchemePercentage', num);
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '') {
+                        onChange(product.id, 'saleAdditionalDiscount', null);
+                      } else {
+                        const numValue = parseFloat(value);
+                        if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
+                          onChange(product.id, 'saleAdditionalDiscount', numValue);
+                        }
                       }
-                    }
-                  }}
-                  disabled={isLoading}
-                />
+                    }}
+                    disabled={isLoading}
+                  />
+                </Box>
+                <Box className={styles.formGroup} aria-hidden="true">
+                  <Text as="span" className={styles.label} style={{ visibility: 'hidden' }}>
+                    .
+                  </Text>
+                  <Text
+                    as="span"
+                    className={styles.input}
+                    style={{ visibility: 'hidden', display: 'block' }}
+                  >
+                    .
+                  </Text>
+                </Box>
               </Box>
-            ) : (
-              <Box className={styles.formGroup}>
-                <Label
-                  htmlFor={`purchase-scheme-fixed-${product.id}`}
-                  className={styles.label}
-                >
-                  {purchaseSchemeType === 'FREE_QUANTITY'
-                    ? 'Free quantity (e.g. 60 on 540 paid)'
-                    : 'Purchase scheme/deal'}
-                </Label>
-                <Input
-                  type="text"
-                  id={`purchase-scheme-fixed-${product.id}`}
-                  className={styles.input}
-                  placeholder={
-                    purchaseSchemeType === 'FREE_QUANTITY'
-                      ? (Number(product.count) || 0) > 0
-                        ? 'e.g. 60'
-                        : 'e.g. 60 or 0 + 60'
-                      : 'e.g. 10 + 2 or 4 + 1'
-                  }
-                  value={purchaseSchemeFixedDraft}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setPurchaseSchemeFixedDraft(v);
-                    if (purchaseSchemeType !== 'FREE_QUANTITY') {
-                      const parsed = parsePurchaseSchemeDraft(v);
-                      if (
-                        parsed?.purchaseSchemeType === 'FIXED_UNITS' &&
-                        v.includes('+')
-                      ) {
+
+              {/* Purchase (from vendor) - for comparison at sale */}
+              <Box className={styles.formRow}>
+                <Box className={styles.formGroup}>
+                  <Label htmlFor={`purchaseSchemeType-${product.id}`} className={styles.label}>
+                    Purchase scheme/deal type
+                  </Label>
+                  <Select
+                    id={`purchaseSchemeType-${product.id}`}
+                    className={styles.input}
+                    value={product.purchaseSchemeType ?? 'FIXED_UNITS'}
+                    onChange={(e) => {
+                      const val = e.target.value as PurchaseSchemeInputType;
+                      if (val === 'PERCENTAGE') {
                         onApplyPurchasePatch(product.id, {
-                          ...parsed,
+                          purchaseSchemeType: 'PERCENTAGE',
+                          purchaseSchemePercentage: product.purchaseSchemePercentage ?? null,
+                          ...clearPurchaseSchemePatch(product),
+                        });
+                      } else if (val === 'FREE_QUANTITY') {
+                        const billable = billableCountForPurchaseFreeQty(product);
+                        onApplyPurchasePatch(product.id, {
+                          purchaseSchemeType: 'FREE_QUANTITY',
+                          purchaseSchemePayFor: null,
+                          purchaseSchemeFree: null,
+                          purchaseSchemePercentage: null,
                           purchaseSchemeFreeQty: null,
+                          ...(product.purchaseSchemeFreeQty != null ? { count: billable } : {}),
+                        });
+                      } else {
+                        const billable = billableCountForPurchaseFreeQty(product);
+                        onApplyPurchasePatch(product.id, {
+                          purchaseSchemeType: 'FIXED_UNITS',
+                          purchaseSchemePercentage: null,
+                          purchaseSchemeFreeQty: null,
+                          ...(product.purchaseSchemeFreeQty != null ? { count: billable } : {}),
                         });
                       }
-                    }
-                  }}
-                  onFocus={() => setPurchaseSchemeFixedFocused(true)}
-                  onBlur={() => {
-                    setPurchaseSchemeFixedFocused(false);
-                    commitPurchaseSchemeFixed();
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.currentTarget.blur();
-                    }
-                  }}
-                  disabled={isLoading}
-                />
-                {purchaseSchemePaidFreeHint ? (
-                  <Text as="span"
-                    className={styles.label}
-                    style={{ fontWeight: 400, marginTop: '0.25rem' }}
+                    }}
+                    disabled={isLoading}
                   >
-                    {purchaseSchemePaidFreeHint}
-                  </Text>
-                ) : null}
+                    <option value="FIXED_UNITS">Deal ratio</option>
+                    <option value="FREE_QUANTITY">Free quantity</option>
+                    <option value="PERCENTAGE">Percentage</option>
+                  </Select>
+                </Box>
+                {purchaseSchemeType === 'PERCENTAGE' ? (
+                  <Box className={styles.formGroup}>
+                    <Label
+                      htmlFor={`purchaseSchemePercentage-${product.id}`}
+                      className={styles.label}
+                    >
+                      Purchase scheme %
+                    </Label>
+                    <Input
+                      type="number"
+                      id={`purchaseSchemePercentage-${product.id}`}
+                      className={styles.input}
+                      placeholder="From vendor"
+                      min={0}
+                      max={100}
+                      step={0.01}
+                      value={
+                        product.purchaseSchemePercentage != null
+                          ? product.purchaseSchemePercentage
+                          : ''
+                      }
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '') {
+                          onChange(product.id, 'purchaseSchemePercentage', null);
+                        } else {
+                          const num = parseFloat(val);
+                          if (!isNaN(num) && num >= 0 && num <= 100) {
+                            onChange(product.id, 'purchaseSchemePercentage', num);
+                          }
+                        }
+                      }}
+                      disabled={isLoading}
+                    />
+                  </Box>
+                ) : (
+                  <Box className={styles.formGroup}>
+                    <Label htmlFor={`purchase-scheme-fixed-${product.id}`} className={styles.label}>
+                      {purchaseSchemeType === 'FREE_QUANTITY'
+                        ? 'Free quantity (e.g. 60 on 540 paid)'
+                        : 'Purchase scheme/deal'}
+                    </Label>
+                    <Input
+                      type="text"
+                      id={`purchase-scheme-fixed-${product.id}`}
+                      className={styles.input}
+                      placeholder={
+                        purchaseSchemeType === 'FREE_QUANTITY'
+                          ? (Number(product.count) || 0) > 0
+                            ? 'e.g. 60'
+                            : 'e.g. 60 or 0 + 60'
+                          : 'e.g. 10 + 2 or 4 + 1'
+                      }
+                      value={purchaseSchemeFixedDraft}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setPurchaseSchemeFixedDraft(v);
+                        if (purchaseSchemeType !== 'FREE_QUANTITY') {
+                          const parsed = parsePurchaseSchemeDraft(v);
+                          if (parsed?.purchaseSchemeType === 'FIXED_UNITS' && v.includes('+')) {
+                            onApplyPurchasePatch(product.id, {
+                              ...parsed,
+                              purchaseSchemeFreeQty: null,
+                            });
+                          }
+                        }
+                      }}
+                      onFocus={() => setPurchaseSchemeFixedFocused(true)}
+                      onBlur={() => {
+                        setPurchaseSchemeFixedFocused(false);
+                        commitPurchaseSchemeFixed();
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.currentTarget.blur();
+                        }
+                      }}
+                      disabled={isLoading}
+                    />
+                    {purchaseSchemePaidFreeHint ? (
+                      <Text
+                        as="span"
+                        className={styles.label}
+                        style={{ fontWeight: 400, marginTop: '0.25rem' }}
+                      >
+                        {purchaseSchemePaidFreeHint}
+                      </Text>
+                    ) : null}
+                  </Box>
+                )}
               </Box>
-            )}
-          </Box>
 
-          <Box className={styles.formRow}>
-            <Box className={styles.formGroup}>
-              <Label
-                htmlFor={`purchaseAdditionalDiscount-${product.id}`}
-                className={styles.label}
-              >
-                Purchase add. discount (%)
-              </Label>
-              <Input
-                type="number"
-                id={`purchaseAdditionalDiscount-${product.id}`}
-                className={styles.input}
-                placeholder="From vendor"
-                step="0.01"
-                min="0"
-                max="100"
-                value={
-                  product.purchaseAdditionalDiscount === null ||
-                  product.purchaseAdditionalDiscount === undefined
-                    ? ''
-                    : product.purchaseAdditionalDiscount
-                }
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (value === '') {
-                    onChange(product.id, 'purchaseAdditionalDiscount', null);
-                  } else {
-                    const numValue = parseFloat(value);
-                    if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
+              <Box className={styles.formRow}>
+                <Box className={styles.formGroup}>
+                  <Label
+                    htmlFor={`purchaseAdditionalDiscount-${product.id}`}
+                    className={styles.label}
+                  >
+                    Purchase add. discount (%)
+                  </Label>
+                  <Input
+                    type="number"
+                    id={`purchaseAdditionalDiscount-${product.id}`}
+                    className={styles.input}
+                    placeholder="From vendor"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value={
+                      product.purchaseAdditionalDiscount === null ||
+                      product.purchaseAdditionalDiscount === undefined
+                        ? ''
+                        : product.purchaseAdditionalDiscount
+                    }
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '') {
+                        onChange(product.id, 'purchaseAdditionalDiscount', null);
+                      } else {
+                        const numValue = parseFloat(value);
+                        if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
+                          onChange(product.id, 'purchaseAdditionalDiscount', numValue);
+                        }
+                      }
+                    }}
+                    disabled={isLoading}
+                  />
+                </Box>
+                <Box className={styles.formGroup}>
+                  <Label htmlFor={`itemType-${product.id}`} className={styles.label}>
+                    Item Type
+                  </Label>
+                  <Select
+                    id={`itemType-${product.id}`}
+                    className={styles.input}
+                    value={product.itemType ?? 'NORMAL'}
+                    onChange={(e) => {
+                      const val = e.target.value as ItemType | '';
+                      const itemType = val === '' ? 'NORMAL' : (val as ItemType);
+                      onChange(product.id, 'itemType', itemType);
+                      if (itemType !== 'DEGREE') {
+                        onChange(product.id, 'itemTypeDegree', undefined);
+                      }
+                    }}
+                    disabled={isLoading}
+                  >
+                    <option value="NORMAL">Normal</option>
+                    <option value="COSTLY">Costly</option>
+                    <option value="DEGREE">Temperature for the item</option>
+                  </Select>
+                </Box>
+              </Box>
+
+              <Box className={styles.formRow}>
+                {product.itemType === 'DEGREE' ? (
+                  <Box className={styles.formGroup}>
+                    <Label htmlFor={`itemTypeDegree-${product.id}`} className={styles.label}>
+                      Temperature / Degree *
+                    </Label>
+                    <Input
+                      type="number"
+                      id={`itemTypeDegree-${product.id}`}
+                      className={styles.input}
+                      placeholder="e.g. 8, 24"
+                      min={1}
+                      step={1}
+                      value={product.itemTypeDegree != null ? product.itemTypeDegree : ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '') {
+                          onChange(product.id, 'itemTypeDegree', undefined);
+                        } else {
+                          const num = parseInt(val, 10);
+                          if (!isNaN(num) && num > 0 && Number.isInteger(num)) {
+                            onChange(product.id, 'itemTypeDegree', num);
+                          }
+                        }
+                      }}
+                      disabled={isLoading}
+                    />
+                  </Box>
+                ) : (
+                  <Box className={styles.formGroup} aria-hidden="true">
+                    <Text as="span" className={styles.label} style={{ visibility: 'hidden' }}>
+                      .
+                    </Text>
+                    <Text
+                      as="span"
+                      className={styles.input}
+                      style={{ visibility: 'hidden', display: 'block' }}
+                    >
+                      .
+                    </Text>
+                  </Box>
+                )}
+                <Box className={styles.formGroup}>
+                  <Label htmlFor={`discountApplicable-${product.id}`} className={styles.label}>
+                    Discount applicable
+                  </Label>
+                  <Select
+                    id={`discountApplicable-${product.id}`}
+                    className={styles.input}
+                    value={product.discountApplicable ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value as DiscountApplicable | '';
                       onChange(
                         product.id,
-                        'purchaseAdditionalDiscount',
-                        numValue
+                        'discountApplicable',
+                        val === '' ? undefined : (val as DiscountApplicable),
                       );
-                    }
-                  }
-                }}
-                disabled={isLoading}
-              />
-            </Box>
-            <Box className={styles.formGroup}>
-              <Label
-                htmlFor={`itemType-${product.id}`}
-                className={styles.label}
-              >
-                Item Type
-              </Label>
-              <Select
-                id={`itemType-${product.id}`}
-                className={styles.input}
-                value={product.itemType ?? 'NORMAL'}
-                onChange={(e) => {
-                  const val = e.target.value as ItemType | '';
-                  const itemType = val === '' ? 'NORMAL' : (val as ItemType);
-                  onChange(product.id, 'itemType', itemType);
-                  if (itemType !== 'DEGREE') {
-                    onChange(product.id, 'itemTypeDegree', undefined);
-                  }
-                }}
-                disabled={isLoading}
-              >
-                <option value="NORMAL">Normal</option>
-                <option value="COSTLY">Costly</option>
-                <option value="DEGREE">Temperature for the item</option>
-              </Select>
-            </Box>
-          </Box>
-
-          <Box className={styles.formRow}>
-            {product.itemType === 'DEGREE' ? (
-              <Box className={styles.formGroup}>
-                <Label
-                  htmlFor={`itemTypeDegree-${product.id}`}
-                  className={styles.label}
-                >
-                  Temperature / Degree *
-                </Label>
-                <Input
-                  type="number"
-                  id={`itemTypeDegree-${product.id}`}
-                  className={styles.input}
-                  placeholder="e.g. 8, 24"
-                  min={1}
-                  step={1}
-                  value={
-                    product.itemTypeDegree != null
-                      ? product.itemTypeDegree
-                      : ''
-                  }
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === '') {
-                      onChange(product.id, 'itemTypeDegree', undefined);
-                    } else {
-                      const num = parseInt(val, 10);
-                      if (!isNaN(num) && num > 0 && Number.isInteger(num)) {
-                        onChange(product.id, 'itemTypeDegree', num);
-                      }
-                    }
-                  }}
-                  disabled={isLoading}
-                />
+                    }}
+                    disabled={isLoading}
+                  >
+                    <option value="">— Select —</option>
+                    <option value="DISCOUNT">Discount applicable</option>
+                    <option value="SCHEME">Scheme/Deal applicable</option>
+                    <option value="DISCOUNT_AND_SCHEME">
+                      Both discount and scheme/deal applicable
+                    </option>
+                  </Select>
+                </Box>
               </Box>
-            ) : (
-              <Box className={styles.formGroup} aria-hidden="true">
-                <Text as="span" className={styles.label} style={{ visibility: 'hidden' }}>
-                  .
-                </Text>
-                <Text as="span"
-                  className={styles.input}
-                  style={{ visibility: 'hidden', display: 'block' }}
-                >
-                  .
-                </Text>
-              </Box>
-            )}
-            <Box className={styles.formGroup}>
-              <Label
-                htmlFor={`discountApplicable-${product.id}`}
-                className={styles.label}
-              >
-                Discount applicable
-              </Label>
-              <Select
-                id={`discountApplicable-${product.id}`}
-                className={styles.input}
-                value={product.discountApplicable ?? ''}
-                onChange={(e) => {
-                  const val = e.target.value as DiscountApplicable | '';
-                  onChange(
-                    product.id,
-                    'discountApplicable',
-                    val === '' ? undefined : (val as DiscountApplicable)
-                  );
-                }}
-                disabled={isLoading}
-              >
-                <option value="">— Select —</option>
-                <option value="DISCOUNT">Discount applicable</option>
-                <option value="SCHEME">Scheme/Deal applicable</option>
-                <option value="DISCOUNT_AND_SCHEME">
-                  Both discount and scheme/deal applicable
-                </option>
-              </Select>
-            </Box>
-          </Box>
-          </>
+            </>
           )}
 
           {simplePricing ? (
@@ -5871,18 +5495,13 @@ function ProductAccordion({
                   className={styles.input}
                   placeholder="0.00"
                   value={product.costPrice === 0 ? '' : product.costPrice}
-                  onChange={(e) =>
-                    onDecimalChange(product.id, 'costPrice', e.target.value)
-                  }
+                  onChange={(e) => onDecimalChange(product.id, 'costPrice', e.target.value)}
                   required
                   disabled={isLoading}
                 />
               </Box>
               <Box className={styles.formGroup}>
-                <Label
-                  htmlFor={`sellingPrice-${product.id}`}
-                  className={styles.label}
-                >
+                <Label htmlFor={`sellingPrice-${product.id}`} className={styles.label}>
                   Sell price (optional)
                 </Label>
                 <Input
@@ -5897,96 +5516,73 @@ function ProductAccordion({
                       ? ''
                       : product.sellingPrice
                   }
-                  onChange={(e) =>
-                    onDecimalChange(product.id, 'sellingPrice', e.target.value)
-                  }
+                  onChange={(e) => onDecimalChange(product.id, 'sellingPrice', e.target.value)}
                   disabled={isLoading}
                 />
               </Box>
             </Box>
           ) : (
-          <>
-          <Box className={styles.formRow}>
-            <Box className={styles.formGroup}>
-              <Label
-                htmlFor={`priceToRetail-${product.id}`}
-                className={styles.label}
-              >
-                Price to Retailer (PTR) *
-              </Label>
-              <Input
-                type="text"
-                inputMode="decimal"
-                pattern="[0-9]*\.?[0-9]*"
-                id={`priceToRetail-${product.id}`}
-                className={styles.input}
-                placeholder="0.00"
-                value={product.priceToRetail === 0 ? '' : product.priceToRetail}
-                onChange={(e) =>
-                  onDecimalChange(product.id, 'priceToRetail', e.target.value)
-                }
-                required
-                disabled={isLoading}
-              />
-            </Box>
-            <Box className={styles.formGroup}>
-              <Label
-                htmlFor={`costPrice-${product.id}`}
-                className={styles.label}
-              >
-                Price from stockist (PTS) *
-              </Label>
-              <Input
-                type="text"
-                inputMode="decimal"
-                pattern="[0-9]*\.?[0-9]*"
-                id={`costPrice-${product.id}`}
-                className={styles.input}
-                placeholder="0.00"
-                value={product.costPrice === 0 ? '' : product.costPrice}
-                onChange={(e) =>
-                  onDecimalChange(product.id, 'costPrice', e.target.value)
-                }
-                required
-                disabled={isLoading}
-              />
-            </Box>
-          </Box>
+            <>
+              <Box className={styles.formRow}>
+                <Box className={styles.formGroup}>
+                  <Label htmlFor={`priceToRetail-${product.id}`} className={styles.label}>
+                    Price to Retailer (PTR) *
+                  </Label>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
+                    id={`priceToRetail-${product.id}`}
+                    className={styles.input}
+                    placeholder="0.00"
+                    value={product.priceToRetail === 0 ? '' : product.priceToRetail}
+                    onChange={(e) => onDecimalChange(product.id, 'priceToRetail', e.target.value)}
+                    required
+                    disabled={isLoading}
+                  />
+                </Box>
+                <Box className={styles.formGroup}>
+                  <Label htmlFor={`costPrice-${product.id}`} className={styles.label}>
+                    Price from stockist (PTS) *
+                  </Label>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
+                    id={`costPrice-${product.id}`}
+                    className={styles.input}
+                    placeholder="0.00"
+                    value={product.costPrice === 0 ? '' : product.costPrice}
+                    onChange={(e) => onDecimalChange(product.id, 'costPrice', e.target.value)}
+                    required
+                    disabled={isLoading}
+                  />
+                </Box>
+              </Box>
 
-          <Box className={styles.formRow}>
-            <Box className={styles.formGroup}>
-              <Label
-                htmlFor={`maximumRetailPrice-${product.id}`}
-                className={styles.label}
-              >
-                MRP *
-              </Label>
-              <Input
-                type="text"
-                inputMode="decimal"
-                pattern="[0-9]*\.?[0-9]*"
-                id={`maximumRetailPrice-${product.id}`}
-                className={styles.input}
-                placeholder="0.00"
-                value={
-                  product.maximumRetailPrice === 0
-                    ? ''
-                    : product.maximumRetailPrice
-                }
-                onChange={(e) =>
-                  onDecimalChange(
-                    product.id,
-                    'maximumRetailPrice',
-                    e.target.value
-                  )
-                }
-                required
-                disabled={isLoading}
-              />
-            </Box>
-            <FormRowSpacer />
-          </Box>
-          </>
+              <Box className={styles.formRow}>
+                <Box className={styles.formGroup}>
+                  <Label htmlFor={`maximumRetailPrice-${product.id}`} className={styles.label}>
+                    MRP *
+                  </Label>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
+                    id={`maximumRetailPrice-${product.id}`}
+                    className={styles.input}
+                    placeholder="0.00"
+                    value={product.maximumRetailPrice === 0 ? '' : product.maximumRetailPrice}
+                    onChange={(e) =>
+                      onDecimalChange(product.id, 'maximumRetailPrice', e.target.value)
+                    }
+                    required
+                    disabled={isLoading}
+                  />
+                </Box>
+                <FormRowSpacer />
+              </Box>
+            </>
           )}
 
           {billingMode === 'REGULAR' && (
@@ -6028,115 +5624,103 @@ function ProductAccordion({
 
           {/* Rates (optional) - custom pricing tiers */}
           {!simplePricing && (
-          <>
-          <Box className={styles.ratesSection}>
-            <Box className={styles.ratesHeader}>
-              <Label className={styles.label}>Rates (optional)</Label>
-              <Button
-                type="button"
-                onClick={() =>
-                  onChange(product.id, 'rates', [
-                    ...(product.rates ?? []),
-                    { name: '', price: 0 },
-                  ])
-                }
-                className={styles.addRateBtn}
-                disabled={isLoading}
-              >
-                + Add rate
-              </Button>
-            </Box>
-            <Text as="span" className={styles.unitHint}>
-              Custom rate tiers (e.g. Rate-A, Rate-B). Default rate selects
-              which price to use for sales.
-            </Text>
-            {(product.rates ?? []).map((rate, i) => (
-              <Box key={i} className={styles.rateRow}>
-                <Input
-                  type="text"
-                  value={rate.name}
-                  onChange={(e) => {
-                    const next = [...(product.rates ?? [])];
-                    next[i] = { ...next[i], name: e.target.value };
-                    onChange(product.id, 'rates', next);
-                  }}
-                  className={styles.rateNameInput}
-                  placeholder="Rate name"
-                  disabled={isLoading}
-                />
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={rate.price || ''}
-                  onChange={(e) => {
-                    const next = [...(product.rates ?? [])];
-                    next[i] = {
-                      ...next[i],
-                      price: parseFloat(e.target.value) || 0,
-                    };
-                    onChange(product.id, 'rates', next);
-                  }}
-                  className={styles.ratePriceInput}
-                  placeholder="Price"
-                  disabled={isLoading}
-                />
-                <Button
-                  type="button"
-                  onClick={() => {
-                    const next = (product.rates ?? []).filter(
-                      (_, j) => j !== i
-                    );
-                    onChange(product.id, 'rates', next);
-                  }}
-                  className={styles.removeRateBtn}
-                  aria-label="Remove rate"
+            <>
+              <Box className={styles.ratesSection}>
+                <Box className={styles.ratesHeader}>
+                  <Label className={styles.label}>Rates (optional)</Label>
+                  <Button
+                    type="button"
+                    onClick={() =>
+                      onChange(product.id, 'rates', [
+                        ...(product.rates ?? []),
+                        { name: '', price: 0 },
+                      ])
+                    }
+                    className={styles.addRateBtn}
+                    disabled={isLoading}
+                  >
+                    + Add rate
+                  </Button>
+                </Box>
+                <Text as="span" className={styles.unitHint}>
+                  Custom rate tiers (e.g. Rate-A, Rate-B). Default rate selects which price to use
+                  for sales.
+                </Text>
+                {(product.rates ?? []).map((rate, i) => (
+                  <Box key={i} className={styles.rateRow}>
+                    <Input
+                      type="text"
+                      value={rate.name}
+                      onChange={(e) => {
+                        const next = [...(product.rates ?? [])];
+                        next[i] = { ...next[i], name: e.target.value };
+                        onChange(product.id, 'rates', next);
+                      }}
+                      className={styles.rateNameInput}
+                      placeholder="Rate name"
+                      disabled={isLoading}
+                    />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={rate.price || ''}
+                      onChange={(e) => {
+                        const next = [...(product.rates ?? [])];
+                        next[i] = {
+                          ...next[i],
+                          price: parseFloat(e.target.value) || 0,
+                        };
+                        onChange(product.id, 'rates', next);
+                      }}
+                      className={styles.ratePriceInput}
+                      placeholder="Price"
+                      disabled={isLoading}
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        const next = (product.rates ?? []).filter((_, j) => j !== i);
+                        onChange(product.id, 'rates', next);
+                      }}
+                      className={styles.removeRateBtn}
+                      aria-label="Remove rate"
+                      disabled={isLoading}
+                    >
+                      ×
+                    </Button>
+                  </Box>
+                ))}
+              </Box>
+              <Box className={styles.formGroup}>
+                <Label htmlFor={`defaultRate-${product.id}`} className={styles.label}>
+                  Default rate (optional)
+                </Label>
+                <Select
+                  id={`defaultRate-${product.id}`}
+                  value={product.defaultRate ?? ''}
+                  onChange={(e) => onChange(product.id, 'defaultRate', e.target.value)}
+                  className={styles.input}
                   disabled={isLoading}
                 >
-                  ×
-                </Button>
+                  <option value="">— None —</option>
+                  <option value="priceToRetail">priceToRetail (PTR)</option>
+                  <option value="maximumRetailPrice">maximumRetailPrice (MRP)</option>
+                  <option value="costPrice">costPrice (PTS)</option>
+                  {(product.rates ?? [])
+                    .filter((r) => r.name.trim())
+                    .map((r) => (
+                      <option key={r.name} value={r.name}>
+                        {r.name}
+                      </option>
+                    ))}
+                </Select>
               </Box>
-            ))}
-          </Box>
-          <Box className={styles.formGroup}>
-            <Label
-              htmlFor={`defaultRate-${product.id}`}
-              className={styles.label}
-            >
-              Default rate (optional)
-            </Label>
-            <Select
-              id={`defaultRate-${product.id}`}
-              value={product.defaultRate ?? ''}
-              onChange={(e) =>
-                onChange(product.id, 'defaultRate', e.target.value)
-              }
-              className={styles.input}
-              disabled={isLoading}
-            >
-              <option value="">— None —</option>
-              <option value="priceToRetail">priceToRetail (PTR)</option>
-              <option value="maximumRetailPrice">
-                maximumRetailPrice (MRP)
-              </option>
-              <option value="costPrice">costPrice (PTS)</option>
-              {(product.rates ?? [])
-                .filter((r) => r.name.trim())
-                .map((r) => (
-                  <option key={r.name} value={r.name}>
-                    {r.name}
-                  </option>
-                ))}
-            </Select>
-          </Box>
-          </>
+            </>
           )}
 
           <Box className={styles.formGroup}>
-            <Label
-              htmlFor={`description-${product.id}`}
-              className={styles.label}
-            >
+            <Label htmlFor={`description-${product.id}`} className={styles.label}>
               Description
             </Label>
             <Textarea
@@ -6144,9 +5728,7 @@ function ProductAccordion({
               className={styles.textarea}
               placeholder="Enter product description (optional)"
               value={product.description || ''}
-              onChange={(e) =>
-                onChange(product.id, 'description', e.target.value)
-              }
+              onChange={(e) => onChange(product.id, 'description', e.target.value)}
               disabled={isLoading}
               rows={3}
             />
@@ -6154,44 +5736,38 @@ function ProductAccordion({
 
           {/* Reminders — custom for all verticals; expiry-linked when schema has expiryDate */}
           <Box className={styles.reminderSection}>
-            <Text variant="heading4" className={styles.subsectionTitle}>Reminders</Text>
+            <Text variant="heading4" className={styles.subsectionTitle}>
+              Reminders
+            </Text>
             {showExpiryReminder && (
-            <>
-            <Box className={styles.formRow}>
-              <Box className={styles.formGroup}>
-                <Label
-                  htmlFor={`reminderAt-${product.id}`}
-                  className={styles.label}
-                >
-                  Expiry Reminder Date & Time (Optional)
-                </Label>
-                <Input
-                  type="datetime-local"
-                  id={`reminderAt-${product.id}`}
-                  className={styles.input}
-                  value={
-                    product.reminderAt
-                      ? isoToLocalDateTime(product.reminderAt)
-                      : ''
-                  }
-                  onChange={(e) => {
-                    const dateValue = e.target.value;
-                    if (dateValue) {
-                      const isoDate = localDateTimeToIso(dateValue);
-                      onChange(product.id, 'reminderAt', isoDate);
-                    } else {
-                      onChange(product.id, 'reminderAt', undefined);
-                    }
-                  }}
-                  disabled={isLoading}
-                />
-                <Text className={styles.helperText}>
-                  Set a reminder date to be notified before this inventory item
-                  expires
-                </Text>
-              </Box>
-            </Box>
-            </>
+              <>
+                <Box className={styles.formRow}>
+                  <Box className={styles.formGroup}>
+                    <Label htmlFor={`reminderAt-${product.id}`} className={styles.label}>
+                      Expiry Reminder Date & Time (Optional)
+                    </Label>
+                    <Input
+                      type="datetime-local"
+                      id={`reminderAt-${product.id}`}
+                      className={styles.input}
+                      value={product.reminderAt ? isoToLocalDateTime(product.reminderAt) : ''}
+                      onChange={(e) => {
+                        const dateValue = e.target.value;
+                        if (dateValue) {
+                          const isoDate = localDateTimeToIso(dateValue);
+                          onChange(product.id, 'reminderAt', isoDate);
+                        } else {
+                          onChange(product.id, 'reminderAt', undefined);
+                        }
+                      }}
+                      disabled={isLoading}
+                    />
+                    <Text className={styles.helperText}>
+                      Set a reminder date to be notified before this inventory item expires
+                    </Text>
+                  </Box>
+                </Box>
+              </>
             )}
 
             <CustomRemindersSection
@@ -6205,9 +5781,7 @@ function ProductAccordion({
             <VerticalSchemaFieldInput
               field={sellDirectField}
               value={getVerticalFieldValue(product, sellDirectField) || 'no'}
-              onChange={(value) =>
-                onVerticalFieldChange(product.id, sellDirectField, value)
-              }
+              onChange={(value) => onVerticalFieldChange(product.id, sellDirectField, value)}
               disabled={isLoading}
               idPrefix={`acc-${product.id}`}
               inputClassName={styles.input}

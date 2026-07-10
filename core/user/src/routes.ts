@@ -12,22 +12,30 @@ export const vendorsRoutes: RouteModule = {
 
 export const invitationsRoutes: RouteModule = {
   path: 'invitations',
-  children: [{ path: '', file: 'routes/invitations.tsx', lazy: () => import('./routes/invitations') }],
+  children: [
+    { path: '', file: 'routes/invitations.tsx', lazy: () => import('./routes/invitations') },
+  ],
 };
 
 export const myInvitationsRoutes: RouteModule = {
   path: 'my-invitations',
-  children: [{ path: '', file: 'routes/my-invitations.tsx', lazy: () => import('./routes/my-invitations') }],
+  children: [
+    { path: '', file: 'routes/my-invitations.tsx', lazy: () => import('./routes/my-invitations') },
+  ],
 };
 
 export const shopUsersRoutes: RouteModule = {
   path: 'shop-users',
-  children: [{ path: '', file: 'routes/shop-users.tsx', lazy: () => import('./routes/shop-users') }],
+  children: [
+    { path: '', file: 'routes/shop-users.tsx', lazy: () => import('./routes/shop-users') },
+  ],
 };
 
 export const accessControlRoutes: RouteModule = {
   path: 'access-control',
-  children: [{ path: '', file: 'routes/access-control.tsx', lazy: () => import('./routes/access-control') }],
+  children: [
+    { path: '', file: 'routes/access-control.tsx', lazy: () => import('./routes/access-control') },
+  ],
 };
 
 export const shopsRoutes: RouteModule = {
@@ -42,12 +50,20 @@ export const profileRoutes: RouteModule = {
 
 export const joinRequestsRoutes: RouteModule = {
   path: 'join-requests',
-  children: [{ path: '', file: 'routes/join-requests.tsx', lazy: () => import('./routes/join-requests') }],
+  children: [
+    { path: '', file: 'routes/join-requests.tsx', lazy: () => import('./routes/join-requests') },
+  ],
 };
 
 export const whatsAppMarketingRoutes: RouteModule = {
   path: 'whatsapp-marketing',
-  children: [{ path: '', file: 'routes/whatsapp-marketing.tsx', lazy: () => import('./routes/whatsapp-marketing') }],
+  children: [
+    {
+      path: '',
+      file: 'routes/whatsapp-marketing.tsx',
+      lazy: () => import('./routes/whatsapp-marketing'),
+    },
+  ],
 };
 
 export const userDashboardRoutes: RouteModule[] = [

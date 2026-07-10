@@ -26,9 +26,7 @@ export function buildPlanFeatures(plan: PlanResponse): string[] {
   }
 
   if (plan.billingLimit != null) {
-    features.push(
-      `Billing cap ₹${(plan.billingLimit / 100000).toFixed(1)}L/month`
-    );
+    features.push(`Billing cap ₹${(plan.billingLimit / 100000).toFixed(1)}L/month`);
   }
 
   if (plan.billCountLimit != null) {
@@ -84,26 +82,19 @@ export function PlanGrid({
       {sortedPlans.map((plan, idx) => {
         const features = buildPlanFeatures(plan);
         const highlight =
-          plan.planName === 'Silver' ||
-          idx === 2 ||
-          plan.planName === 'Gold' ||
-          idx === 3;
+          plan.planName === 'Silver' || idx === 2 || plan.planName === 'Gold' || idx === 3;
         const isCurrent = currentPlanId != null && plan.id === currentPlanId;
 
         return (
           <Box
             as="article"
             key={plan.id}
-            className={`${styles.card} ${
-              highlight ? styles.cardHighlight : ''
-            } ${isCurrent ? styles.cardCurrent : ''}`}
+            className={`${styles.card} ${highlight ? styles.cardHighlight : ''} ${
+              isCurrent ? styles.cardCurrent : ''
+            }`}
           >
-            {highlight ? (
-              <Badge className={styles.badge}>Most Popular</Badge>
-            ) : null}
-            {isCurrent ? (
-              <Badge className={styles.currentBadge}>Current</Badge>
-            ) : null}
+            {highlight ? <Badge className={styles.badge}>Most Popular</Badge> : null}
+            {isCurrent ? <Badge className={styles.currentBadge}>Current</Badge> : null}
 
             <Stack gap="sm" className={styles.cardHeader}>
               {showTrialBadge && !EXTRA_PLANS.includes(plan.planName) ? (
@@ -126,14 +117,11 @@ export function PlanGrid({
                   {plan.planName === EXTRA_USER_PLAN ? '/user/year' : '/year'}
                 </Text>
               </Box>
-              {!EXTRA_PLANS.includes(plan.planName) &&
-                plan.price != null &&
-                plan.price > 0 && (
-                  <Text className={styles.oneTimePrice}>
-                    One-time ₹{plan.price?.toLocaleString('en-IN')} if taking
-                    support
-                  </Text>
-                )}
+              {!EXTRA_PLANS.includes(plan.planName) && plan.price != null && plan.price > 0 && (
+                <Text className={styles.oneTimePrice}>
+                  One-time ₹{plan.price?.toLocaleString('en-IN')} if taking support
+                </Text>
+              )}
             </Stack>
 
             <Box as="ul" className={styles.featuresList}>
@@ -151,9 +139,7 @@ export function PlanGrid({
               <Button
                 type="button"
                 variant={highlight ? 'solid' : 'outline'}
-                className={`${styles.ctaButton} ${
-                  highlight ? styles.ctaPrimary : styles.ctaGhost
-                }`}
+                className={`${styles.ctaButton} ${highlight ? styles.ctaPrimary : styles.ctaGhost}`}
                 onClick={() => onSelectPlan(plan)}
                 disabled={isCurrent}
               >

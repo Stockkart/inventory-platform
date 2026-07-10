@@ -18,8 +18,7 @@ import styles from './LoginForm.module.css';
 export function LoginForm() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, isAuthenticated, isLoading, error, clearError } =
-    useAuthStore();
+  const { login, isAuthenticated, isLoading, error, clearError } = useAuthStore();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -60,15 +59,12 @@ export function LoginForm() {
       const from = (location.state as { from?: string })?.from || '/dashboard';
       navigate(from, { replace: true });
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Login failed. Please try again.';
+      const errorMessage = err instanceof Error ? err.message : 'Login failed. Please try again.';
       setLocalError(errorMessage);
     }
   };
 
-  const handleGoogleSuccess = async (
-    credentialResponse: CredentialResponse
-  ) => {
+  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
     try {
       setLocalError(null);
       clearError();
@@ -77,17 +73,14 @@ export function LoginForm() {
           idToken: credentialResponse.credential,
           loginType: 'google',
         });
-        const from =
-          (location.state as { from?: string })?.from || '/dashboard';
+        const from = (location.state as { from?: string })?.from || '/dashboard';
         navigate(from, { replace: true });
       } else {
         setLocalError('Google login failed. No credential received.');
       }
     } catch (err) {
       const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'Google login failed. Please try again.';
+        err instanceof Error ? err.message : 'Google login failed. Please try again.';
       setLocalError(errorMessage);
     }
   };

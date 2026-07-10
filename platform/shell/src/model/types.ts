@@ -57,7 +57,6 @@ export interface DashboardData {
   salesTrend: SalesTrend;
 }
 
-
 /** YouTube tutorial resource returned by {@code GET /api/v1/resources}. */
 export interface TutorialResourceResponse {
   id: string;

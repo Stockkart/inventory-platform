@@ -176,10 +176,7 @@
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease,
-    color 0.15s ease;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
 
 .expandControl:hover {

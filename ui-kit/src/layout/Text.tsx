@@ -26,8 +26,7 @@ type TextOwnProps = {
   className?: string;
 };
 
-export type TextProps = TextOwnProps &
-  Omit<ComponentPropsWithoutRef<'span'>, keyof TextOwnProps>;
+export type TextProps = TextOwnProps & Omit<ComponentPropsWithoutRef<'span'>, keyof TextOwnProps>;
 
 export const Text = forwardRef<HTMLElement, TextProps>(function Text(
   {
@@ -41,7 +40,7 @@ export const Text = forwardRef<HTMLElement, TextProps>(function Text(
     className,
     ...rest
   },
-  ref
+  ref,
 ) {
   const Component = as ?? variantElement[variant];
 
@@ -55,7 +54,7 @@ export const Text = forwardRef<HTMLElement, TextProps>(function Text(
         weight && styles[`weight-${weight}`],
         align && styles[`align-${align}`],
         truncate && styles.truncate,
-        className
+        className,
       )}
       {...rest}
     >

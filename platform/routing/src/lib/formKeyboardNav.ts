@@ -39,9 +39,7 @@ function baseSkipRules(el: HTMLElement, opts: { skipDialogs: boolean }): boolean
  * Dashboard `<main>`: skip when focus is inside a dialog so we don’t mix modal
  * fields with the rest of the page. Dialogs should use `FormKeyboardNavScope`.
  */
-export function shouldSkipGlobalMainKeyboardNav(
-  focused: Element | null
-): boolean {
+export function shouldSkipGlobalMainKeyboardNav(focused: Element | null): boolean {
   if (!focused || !(focused instanceof HTMLElement)) return true;
   return baseSkipRules(focused, { skipDialogs: true });
 }
@@ -50,9 +48,7 @@ export function shouldSkipGlobalMainKeyboardNav(
  * `FormKeyboardNavScope` and Excel grids: same as global except dialog is
  * **not** skipped so Enter/↑/↓ work inside `EditModal` and similar.
  */
-export function shouldSkipNestedFormKeyboardNav(
-  focused: Element | null
-): boolean {
+export function shouldSkipNestedFormKeyboardNav(focused: Element | null): boolean {
   if (!focused || !(focused instanceof HTMLElement)) return true;
   return baseSkipRules(focused, { skipDialogs: false });
 }
@@ -69,17 +65,14 @@ export function shouldSkipContainerKeyboardNav(focused: Element | null): boolean
 export function runFormKeyboardNavigation(
   e: ReactKeyboardEvent<HTMLElement> | KeyboardEvent,
   container: HTMLElement,
-  mode: 'list' | 'grid'
+  mode: 'list' | 'grid',
 ): void {
   const active = document.activeElement as HTMLElement | null;
   if (!active || !container.contains(active)) return;
 
-  const focusableSelector =
-    mode === 'grid' ? GRID_FOCUSABLE_SELECTOR : LIST_FOCUSABLE_SELECTOR;
+  const focusableSelector = mode === 'grid' ? GRID_FOCUSABLE_SELECTOR : LIST_FOCUSABLE_SELECTOR;
 
-  const list = Array.from(
-    container.querySelectorAll<HTMLElement>(focusableSelector)
-  );
+  const list = Array.from(container.querySelectorAll<HTMLElement>(focusableSelector));
   const idx = list.indexOf(active);
   if (idx < 0) return;
 
@@ -116,8 +109,7 @@ export function runFormKeyboardNavigation(
     const tbody = container.querySelector('tbody');
     const firstRow = tbody?.querySelector('tr');
     if (!tbody || !firstRow) return;
-    const fieldsPerRow = firstRow.querySelectorAll('input, select, button')
-      .length;
+    const fieldsPerRow = firstRow.querySelectorAll('input, select, button').length;
     const numRows = tbody.querySelectorAll('tr').length;
     const col = idx % fieldsPerRow;
     const row = Math.floor(idx / fieldsPerRow);
@@ -138,8 +130,7 @@ export function runFormKeyboardNavigation(
     const tbody = container.querySelector('tbody');
     const firstRow = tbody?.querySelector('tr');
     if (!tbody || !firstRow) return;
-    const fieldsPerRow = firstRow.querySelectorAll('input, select, button')
-      .length;
+    const fieldsPerRow = firstRow.querySelectorAll('input, select, button').length;
     const col = idx % fieldsPerRow;
     const row = Math.floor(idx / fieldsPerRow);
     if (row <= 0) return;

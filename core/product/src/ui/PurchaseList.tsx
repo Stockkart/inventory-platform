@@ -37,12 +37,8 @@ function applySaleFilters(rows: Purchase[], applied: HistoryFilters): Purchase[]
     .filter(isSaleStatus)
     .filter((p) => isDateInRange(p.soldAt, applied.dateFrom, applied.dateTo))
     .filter((p) => matchesRegexField(applied.invoiceNo, p.invoiceNo))
-    .filter((p) =>
-      matchesRegexField(applied.customer, p.customerName, p.customerPhone)
-    )
-    .sort(
-      (a, b) => new Date(b.soldAt).getTime() - new Date(a.soldAt).getTime()
-    );
+    .filter((p) => matchesRegexField(applied.customer, p.customerName, p.customerPhone))
+    .sort((a, b) => new Date(b.soldAt).getTime() - new Date(a.soldAt).getTime());
 }
 
 export function PurchaseList({ filters }: PurchaseListProps) {
@@ -90,8 +86,7 @@ export function PurchaseList({ filters }: PurchaseListProps) {
         setTotal(response.total);
       }
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to load purchases';
+      const message = err instanceof Error ? err.message : 'Failed to load purchases';
       notifyError(message);
       setError(message);
     } finally {
@@ -137,9 +132,7 @@ export function PurchaseList({ filters }: PurchaseListProps) {
       />
 
       {purchases.length === 0 && !isLoading ? (
-        <EmptyState
-          title={filtering ? 'No sales match these filters.' : 'No sales found.'}
-        />
+        <EmptyState title={filtering ? 'No sales match these filters.' : 'No sales found.'} />
       ) : (
         <Stack gap="md" className={recordStyles.list}>
           {purchases.map((purchase) => (

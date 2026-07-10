@@ -79,10 +79,7 @@ export function ShopsPage() {
 
   return (
     <Stack gap="md" className={styles.container}>
-      <PageHeader
-        title="Your Shops"
-        description="Switch between your shops or add a new one"
-      />
+      <PageHeader title="Your Shops" description="Switch between your shops or add a new one" />
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
@@ -134,12 +131,7 @@ export function ShopsPage() {
           })}
         </Grid>
 
-        <Button
-          type="button"
-          variant="outline"
-          className={styles.addBtn}
-          onClick={handleAddShop}
-        >
+        <Button type="button" variant="outline" className={styles.addBtn} onClick={handleAddShop}>
           + Add another shop
         </Button>
       </Stack>

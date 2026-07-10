@@ -132,7 +132,7 @@ export default function RequestJoinShopPage() {
       });
 
       notifySuccess(
-        `Request sent successfully! You requested to join "${response.shopName}". The shop owner will review your request.`
+        `Request sent successfully! You requested to join "${response.shopName}". The shop owner will review your request.`,
       );
 
       setOwnerEmail('');
@@ -186,11 +186,7 @@ export default function RequestJoinShopPage() {
   return (
     <Stack className={styles.container} gap="lg">
       <Stack className={styles.header} gap="xs">
-        <Button
-          variant="ghost"
-          className={styles.backButton}
-          onClick={handleBack}
-        >
+        <Button variant="ghost" className={styles.backButton} onClick={handleBack}>
           ← Back
         </Button>
         <Text variant="heading1" className={styles.title}>
@@ -248,11 +244,7 @@ export default function RequestJoinShopPage() {
         </FormField>
 
         {ownerShops.length > 0 ? (
-          <FormField
-            label="Select Shop *"
-            id="shopSelect"
-            hint="Select the shop you want to join."
-          >
+          <FormField label="Select Shop *" id="shopSelect" hint="Select the shop you want to join.">
             <Select
               id="shopSelect"
               className={styles.select}
@@ -315,12 +307,7 @@ export default function RequestJoinShopPage() {
             variant="solid"
             className={styles.submitButton}
             onClick={() => void handleSubmit()}
-            disabled={
-              isLoading ||
-              !ownerEmail.trim() ||
-              !selectedShopId ||
-              ownerShops.length === 0
-            }
+            disabled={isLoading || !ownerEmail.trim() || !selectedShopId || ownerShops.length === 0}
             loading={isLoading}
           >
             {isLoading ? 'Sending Request...' : 'Send Request'}
@@ -329,11 +316,7 @@ export default function RequestJoinShopPage() {
       </Stack>
 
       <Box className={styles.footer}>
-        <Button
-          variant="ghost"
-          className={styles.logoutButton}
-          onClick={() => void handleLogout()}
-        >
+        <Button variant="ghost" className={styles.logoutButton} onClick={() => void handleLogout()}>
           Logout
         </Button>
       </Box>

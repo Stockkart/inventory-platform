@@ -6,7 +6,7 @@ import { SESSION_SHOP_ENDPOINTS } from './endpoints';
 export const shopCapabilitiesApi = {
   get: async (): Promise<ShopUiCapabilities> => {
     const response = await apiClient.get<ApiResponse<ShopUiCapabilities>>(
-      SESSION_SHOP_ENDPOINTS.ME_CAPABILITIES
+      SESSION_SHOP_ENDPOINTS.ME_CAPABILITIES,
     );
     return response.data;
   },

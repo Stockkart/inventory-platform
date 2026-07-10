@@ -1,12 +1,5 @@
 import { Box, Stack, Text } from '@inventory-platform/ui-kit';
-import {
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import styles from './analytics.module.css';
 
 interface ProfitGroupData {
@@ -24,7 +17,17 @@ interface ProfitByGroupPieChartProps {
   groupBy: 'product' | 'lotId' | 'businessType';
 }
 
-const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00ff00', '#0088fe', '#00c49f', '#ffbb28', '#ff8042'];
+const COLORS = [
+  '#8884d8',
+  '#82ca9d',
+  '#ffc658',
+  '#ff7300',
+  '#00ff00',
+  '#0088fe',
+  '#00c49f',
+  '#ffbb28',
+  '#ff8042',
+];
 
 export function ProfitByGroupPieChart({ data, groupBy }: ProfitByGroupPieChartProps) {
   const chartData = data
@@ -97,12 +100,15 @@ export function ProfitByGroupPieChart({ data, groupBy }: ProfitByGroupPieChartPr
               formatter={(
                 value: number | undefined,
                 name: string | undefined,
-                props: { payload?: { fullName?: string; margin?: number } }
+                props: { payload?: { fullName?: string; margin?: number } },
               ) => {
                 if (value === undefined) return '';
                 const formattedValue = formatCurrency(value);
                 const margin = props?.payload?.margin || 0;
-                return [`${formattedValue} (${margin.toFixed(2)}% margin)`, props?.payload?.fullName || name || ''];
+                return [
+                  `${formattedValue} (${margin.toFixed(2)}% margin)`,
+                  props?.payload?.fullName || name || '',
+                ];
               }}
               contentStyle={{
                 backgroundColor: 'white',

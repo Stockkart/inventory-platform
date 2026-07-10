@@ -1,11 +1,5 @@
 import { useState } from 'react';
-import {
-  Box,
-  Checkbox,
-  Inline,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { Box, Checkbox, Inline, Stack, Text } from '@inventory-platform/ui-kit';
 import {
   BarChart,
   Bar,
@@ -39,7 +33,8 @@ export function TopProductsChart({ data }: TopProductsChartProps) {
   const chartData = data
     .slice(0, 10)
     .map((item) => ({
-      name: item.productName.length > 15 ? item.productName.substring(0, 15) + '...' : item.productName,
+      name:
+        item.productName.length > 15 ? item.productName.substring(0, 15) + '...' : item.productName,
       revenue: item.totalRevenue,
       quantity: item.totalQuantitySold,
       sales: item.numberOfSales,
@@ -78,7 +73,14 @@ export function TopProductsChart({ data }: TopProductsChartProps) {
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 50 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} tick={{ fontSize: 11 }} stroke="#6b7280" />
+            <XAxis
+              dataKey="name"
+              angle={-45}
+              textAnchor="end"
+              height={60}
+              tick={{ fontSize: 11 }}
+              stroke="#6b7280"
+            />
             {showRevenue && <YAxis yAxisId="left" stroke="#8884d8" />}
             {showQuantity && <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />}
             <Tooltip

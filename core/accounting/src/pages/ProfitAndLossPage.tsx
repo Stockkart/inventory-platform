@@ -143,8 +143,16 @@ export function ProfitAndLossPage() {
             </Card>
           </Grid>
 
-          <ReportSection title="Revenue" rows={data.revenueLines} emptyLabel="No revenue in period" />
-          <ReportSection title="Expenses" rows={data.expenseLines} emptyLabel="No expenses in period" />
+          <ReportSection
+            title="Revenue"
+            rows={data.revenueLines}
+            emptyLabel="No revenue in period"
+          />
+          <ReportSection
+            title="Expenses"
+            rows={data.expenseLines}
+            emptyLabel="No expenses in period"
+          />
 
           <Inline gap="xs" align="center">
             <Text variant="caption" color="secondary">

@@ -15,13 +15,7 @@ export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   children?: ReactNode;
 }
 
-export function Select({
-  hasError,
-  className,
-  children,
-  options,
-  ...rest
-}: SelectProps) {
+export function Select({ hasError, className, children, options, ...rest }: SelectProps) {
   return (
     <select
       className={cn(styles.control, hasError && styles.controlError, className)}

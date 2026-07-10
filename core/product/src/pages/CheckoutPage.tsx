@@ -56,15 +56,7 @@ function InfoField({ label, value }: { label: string; value: ReactNode }) {
   );
 }
 
-function SummaryRow({
-  label,
-  value,
-  total,
-}: {
-  label: string;
-  value: string;
-  total?: boolean;
-}) {
+function SummaryRow({ label, value, total }: { label: string; value: string; total?: boolean }) {
   if (total) {
     return (
       <Inline justify="between" width="full" className={styles.summaryRowTotal}>
@@ -92,11 +84,10 @@ export function CheckoutPage() {
   const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
   const fetchCapabilities = useShopCapabilitiesStore((s) => s.fetchCapabilities);
   const shopCapabilities = useShopCapabilitiesStore((s) =>
-    activeShopId ? s.byShopId[activeShopId] : undefined
+    activeShopId ? s.byShopId[activeShopId] : undefined,
   );
   const sellPath = useResolvedSellPath(shopCapabilities ?? null);
-  const showTokenOnReceipt =
-    shopCapabilities?.features?.tokenOnReceipt === true;
+  const showTokenOnReceipt = shopCapabilities?.features?.tokenOnReceipt === true;
 
   useEffect(() => {
     void fetchCapabilities();
@@ -170,11 +161,7 @@ export function CheckoutPage() {
   }, [loadCart]);
 
   const grandTotalNum = roundMoney(checkoutData?.grandTotal ?? 0);
-  const paymentValidation = validatePaymentSplit(
-    paymentMethod,
-    paymentSplit,
-    grandTotalNum
-  );
+  const paymentValidation = validatePaymentSplit(paymentMethod, paymentSplit, grandTotalNum);
   const canSubmitPayment = paymentValidation.ok && grandTotalNum > 0;
 
   if (isLoading) {
@@ -240,9 +227,7 @@ export function CheckoutPage() {
         // explicit split above.
         ...(paymentSplit.creditAmount > 0
           ? {
-              creditPaidAmount: roundMoney(
-                paymentSplit.cashAmount + paymentSplit.onlineAmount
-              ),
+              creditPaidAmount: roundMoney(paymentSplit.cashAmount + paymentSplit.onlineAmount),
             }
           : {}),
       };
@@ -267,8 +252,7 @@ export function CheckoutPage() {
         setShowSuccess(false);
       }, 3000);
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to process payment';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to process payment';
       notifyError(errorMessage);
       setIsProcessingPayment(false);
     }
@@ -300,16 +284,14 @@ export function CheckoutPage() {
 
       navigate(sellPath);
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to update cart status';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update cart status';
       notifyError(errorMessage);
       setIsUpdating(false);
     }
   };
 
   // Get SGST and CGST percentages from items if available, otherwise calculate from amounts
-  const billingMode =
-    checkoutData.billingMode === 'BASIC' ? 'BASIC' : 'REGULAR';
+  const billingMode = checkoutData.billingMode === 'BASIC' ? 'BASIC' : 'REGULAR';
   const firstItem = checkoutData.items[0];
   const sgstPercentage = firstItem?.sgst
     ? parseFloat(firstItem.sgst).toFixed(1)
@@ -338,24 +320,16 @@ export function CheckoutPage() {
     creditAmount: checkoutData.creditAmount ?? undefined,
   });
 
-  const statusBadgeVariant =
-    checkoutData.status === 'COMPLETED' ? 'success' : 'warning';
+  const statusBadgeVariant = checkoutData.status === 'COMPLETED' ? 'success' : 'warning';
 
   const invoiceSubtitle = `Invoice #${checkoutData.invoiceNo}${
-    showTokenOnReceipt && checkoutData.tokenNo != null
-      ? ` · Token #${checkoutData.tokenNo}`
-      : ''
+    showTokenOnReceipt && checkoutData.tokenNo != null ? ` · Token #${checkoutData.tokenNo}` : ''
   }`;
 
   // Show success overlay
   if (showSuccess) {
     return (
-      <Box
-        className={styles.successOverlay}
-        display="flex"
-        align="center"
-        justify="center"
-      >
+      <Box className={styles.successOverlay} display="flex" align="center" justify="center">
         <Card className={styles.successContainer}>
           <CardBody>
             <Stack gap="md" align="center">
@@ -369,29 +343,15 @@ export function CheckoutPage() {
                   ✓
                 </Text>
               </Box>
-              <Text
-                variant="title"
-                weight="bold"
-                align="center"
-                className={styles.successTitle}
-              >
+              <Text variant="title" weight="bold" align="center" className={styles.successTitle}>
                 Order Successful!
               </Text>
               {showTokenOnReceipt && checkoutData?.tokenNo != null && (
-                <Text
-                  variant="heading3"
-                  weight="bold"
-                  align="center"
-                  className={styles.tokenNo}
-                >
+                <Text variant="heading3" weight="bold" align="center" className={styles.tokenNo}>
                   Token #{checkoutData.tokenNo}
                 </Text>
               )}
-              <Text
-                color="secondary"
-                align="center"
-                className={styles.successMessage}
-              >
+              <Text color="secondary" align="center" className={styles.successMessage}>
                 Your payment has been processed successfully.
               </Text>
             </Stack>
@@ -441,39 +401,23 @@ export function CheckoutPage() {
               <Grid columns={2} gap="md" className={styles.infoGrid}>
                 <InfoField label="Billing Mode" value={billingMode} />
                 {checkoutData.customerName ? (
-                  <InfoField
-                    label="Customer Name"
-                    value={checkoutData.customerName}
-                  />
+                  <InfoField label="Customer Name" value={checkoutData.customerName} />
                 ) : null}
                 {checkoutData.customerPhone ? (
-                  <InfoField
-                    label="Customer Phone"
-                    value={checkoutData.customerPhone}
-                  />
+                  <InfoField label="Customer Phone" value={checkoutData.customerPhone} />
                 ) : null}
                 <InfoField
                   label="Address"
                   value={checkoutData.customerAddress || 'Not specified'}
                 />
-                {checkoutData.customerGstin &&
-                checkoutData.customerGstin.trim() ? (
-                  <InfoField
-                    label="Customer GSTIN"
-                    value={checkoutData.customerGstin}
-                  />
+                {checkoutData.customerGstin && checkoutData.customerGstin.trim() ? (
+                  <InfoField label="Customer GSTIN" value={checkoutData.customerGstin} />
                 ) : null}
                 {checkoutData.customerDlNo && checkoutData.customerDlNo.trim() ? (
-                  <InfoField
-                    label="Customer DL No"
-                    value={checkoutData.customerDlNo}
-                  />
+                  <InfoField label="Customer DL No" value={checkoutData.customerDlNo} />
                 ) : null}
                 {checkoutData.customerPan && checkoutData.customerPan.trim() ? (
-                  <InfoField
-                    label="Customer PAN"
-                    value={checkoutData.customerPan}
-                  />
+                  <InfoField label="Customer PAN" value={checkoutData.customerPan} />
                 ) : null}
                 <InfoField
                   label="Payment Method"
@@ -513,27 +457,20 @@ export function CheckoutPage() {
                       <TableHeaderCell>Discount</TableHeaderCell>
                       <TableHeaderCell>Additional Discount</TableHeaderCell>
                       <TableHeaderCell>Scheme/Deal</TableHeaderCell>
-                      {billingMode === 'REGULAR' ? (
-                        <TableHeaderCell>CGST%</TableHeaderCell>
-                      ) : null}
-                      {billingMode === 'REGULAR' ? (
-                        <TableHeaderCell>SGST%</TableHeaderCell>
-                      ) : null}
+                      {billingMode === 'REGULAR' ? <TableHeaderCell>CGST%</TableHeaderCell> : null}
+                      {billingMode === 'REGULAR' ? <TableHeaderCell>SGST%</TableHeaderCell> : null}
                       <TableHeaderCell>Total</TableHeaderCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {checkoutData.items.map((item, index: number) => {
                       const discountAmount =
-                        (item.maximumRetailPrice - item.priceToRetail) *
-                        item.quantity;
+                        (item.maximumRetailPrice - item.priceToRetail) * item.quantity;
                       return (
                         <TableRow key={index}>
                           <TableCell>{item.name}</TableCell>
                           <TableCell>{item.quantity}</TableCell>
-                          <TableCell>
-                            ₹{item.maximumRetailPrice.toFixed(2)}
-                          </TableCell>
+                          <TableCell>₹{item.maximumRetailPrice.toFixed(2)}</TableCell>
                           <TableCell>₹{item.priceToRetail.toFixed(2)}</TableCell>
                           <TableCell>₹{discountAmount.toFixed(2)}</TableCell>
                           <TableCell>
@@ -544,9 +481,7 @@ export function CheckoutPage() {
                           </TableCell>
                           <TableCell>
                             {item.schemePayFor != null || item.schemeFree != null
-                              ? `${item.schemePayFor ?? '—'} + ${
-                                  item.schemeFree ?? '—'
-                                }`
+                              ? `${item.schemePayFor ?? '—'} + ${item.schemeFree ?? '—'}`
                               : '—'}
                           </TableCell>
                           {billingMode === 'REGULAR' ? (
@@ -581,19 +516,14 @@ export function CheckoutPage() {
                 Summary
               </Text>
               <Stack gap="sm">
-                <SummaryRow
-                  label="Subtotal:"
-                  value={`₹${checkoutData.subTotal.toFixed(2)}`}
-                />
-                {checkoutData.sgstAmount !== undefined &&
-                checkoutData.sgstAmount > 0 ? (
+                <SummaryRow label="Subtotal:" value={`₹${checkoutData.subTotal.toFixed(2)}`} />
+                {checkoutData.sgstAmount !== undefined && checkoutData.sgstAmount > 0 ? (
                   <SummaryRow
                     label={`SGST (${sgstPercentage}%):`}
                     value={`₹${checkoutData.sgstAmount.toFixed(2)}`}
                   />
                 ) : null}
-                {checkoutData.cgstAmount !== undefined &&
-                checkoutData.cgstAmount > 0 ? (
+                {checkoutData.cgstAmount !== undefined && checkoutData.cgstAmount > 0 ? (
                   <SummaryRow
                     label={`CGST (${cgstPercentage}%):`}
                     value={`₹${checkoutData.cgstAmount.toFixed(2)}`}
@@ -602,10 +532,7 @@ export function CheckoutPage() {
                 {((checkoutData.taxTotal ?? 0) !== 0 ||
                   (checkoutData.sgstAmount ?? 0) !== 0 ||
                   (checkoutData.cgstAmount ?? 0) !== 0) && (
-                  <SummaryRow
-                    label="Tax:"
-                    value={`₹${checkoutData.taxTotal.toFixed(2)}`}
-                  />
+                  <SummaryRow label="Tax:" value={`₹${checkoutData.taxTotal.toFixed(2)}`} />
                 )}
                 {checkoutData.saleAdditionalDiscountTotal !== 0 &&
                 checkoutData.saleAdditionalDiscountTotal != null ? (
@@ -618,9 +545,7 @@ export function CheckoutPage() {
                     value={
                       checkoutData.saleAdditionalDiscountTotal > 0
                         ? `-₹${checkoutData.saleAdditionalDiscountTotal.toFixed(2)}`
-                        : `+₹${Math.abs(
-                            checkoutData.saleAdditionalDiscountTotal
-                          ).toFixed(2)}`
+                        : `+₹${Math.abs(checkoutData.saleAdditionalDiscountTotal).toFixed(2)}`
                     }
                   />
                 ) : null}
@@ -685,14 +610,8 @@ export function CheckoutPage() {
                   disabled={isProcessingPayment || isUpdating}
                 />
 
-                {paymentMethod &&
-                isCreditMethod(paymentMethod) &&
-                paymentSplit.creditAmount > 0 ? (
-                  <Text
-                    variant="caption"
-                    color="secondary"
-                    className={styles.splitSellFoot}
-                  >
+                {paymentMethod && isCreditMethod(paymentMethod) && paymentSplit.creditAmount > 0 ? (
+                  <Text variant="caption" color="secondary" className={styles.splitSellFoot}>
                     <Link to="/dashboard/credit">
                       <Text as="span" className={styles.splitSellLink}>
                         Credit balances
@@ -710,9 +629,7 @@ export function CheckoutPage() {
                   variant="solid"
                   fullWidth
                   onClick={handlePayment}
-                  disabled={
-                    isProcessingPayment || isUpdating || !canSubmitPayment
-                  }
+                  disabled={isProcessingPayment || isUpdating || !canSubmitPayment}
                   loading={isProcessingPayment}
                   leftIcon={
                     !isProcessingPayment ? (

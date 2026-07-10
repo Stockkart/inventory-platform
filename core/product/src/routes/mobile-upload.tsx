@@ -2,15 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router';
 import { uploadApi } from '@inventory-platform/product/api';
 import type { UploadStatus } from '@inventory-platform/product/types';
-import {
-  Box,
-  Button,
-  Input,
-  Label,
-  Spinner,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { Box, Button, Input, Label, Spinner, Stack, Text } from '@inventory-platform/ui-kit';
 import styles from './mobile-upload.module.css';
 
 const MAX_INVOICE_IMAGES = 20;
@@ -57,32 +49,28 @@ export default function MobileUploadPage() {
           setError(null);
         } else if (response.status === 'EXPIRED') {
           setError(
-            response.errorMessage ||
-              'Upload token has expired. Please scan the QR code again.'
+            response.errorMessage || 'Upload token has expired. Please scan the QR code again.',
           );
           setIsValid(false);
         } else if (response.status === 'FAILED') {
           setError(
             response.errorMessage ||
-              'Upload token is invalid or has failed. Please scan the QR code again.'
+              'Upload token is invalid or has failed. Please scan the QR code again.',
           );
           setIsValid(false);
         } else if (response.status === 'COMPLETED') {
           setError(
-            'This upload token has already been used. Please scan the QR code again for a new upload.'
+            'This upload token has already been used. Please scan the QR code again for a new upload.',
           );
           setIsValid(false);
         } else {
           setError(
-            'This upload token is currently in use. Please wait for it to complete or scan a new QR code.'
+            'This upload token is currently in use. Please wait for it to complete or scan a new QR code.',
           );
           setIsValid(false);
         }
       } catch (err) {
-        const errorMessage =
-          err instanceof Error
-            ? err.message
-            : 'Failed to validate upload token';
+        const errorMessage = err instanceof Error ? err.message : 'Failed to validate upload token';
         setError(errorMessage);
         setIsValid(false);
         setTokenStatus(null);
@@ -98,7 +86,7 @@ export default function MobileUploadPage() {
     file: File,
     maxWidth = 1920,
     maxHeight = 1920,
-    quality = 0.8
+    quality = 0.8,
   ): Promise<File> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -131,11 +119,11 @@ export default function MobileUploadPage() {
                 new File([blob], file.name, {
                   type: file.type,
                   lastModified: Date.now(),
-                })
+                }),
               );
             },
             file.type,
-            quality
+            quality,
           );
         };
         img.onerror = () => reject(new Error('Failed to load image'));
@@ -206,15 +194,13 @@ export default function MobileUploadPage() {
         setUploadProgress(
           selectedFiles.length === 1
             ? 'Compressing...'
-            : `Compressing ${i + 1} of ${selectedFiles.length}...`
+            : `Compressing ${i + 1} of ${selectedFiles.length}...`,
         );
         compressed.push(await compressImage(selectedFiles[i]));
       }
 
       setUploadProgress(
-        selectedFiles.length === 1
-          ? 'Uploading...'
-          : `Uploading ${selectedFiles.length} images...`
+        selectedFiles.length === 1 ? 'Uploading...' : `Uploading ${selectedFiles.length} images...`,
       );
       await uploadApi.uploadImages(token, compressed);
       setUploadSuccess(true);
@@ -224,9 +210,7 @@ export default function MobileUploadPage() {
       }
     } catch (err) {
       const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'Failed to upload image(s). Please try again.';
+        err instanceof Error ? err.message : 'Failed to upload image(s). Please try again.';
       setError(errorMessage);
     } finally {
       setIsUploading(false);
@@ -281,9 +265,7 @@ export default function MobileUploadPage() {
             <Text as="h1" variant="heading1">
               Upload Unavailable
             </Text>
-            <Text className={styles.errorMessage}>
-              {error || getStatusMessage()}
-            </Text>
+            <Text className={styles.errorMessage}>{error || getStatusMessage()}</Text>
             {tokenStatus && (
               <Text className={styles.statusInfo}>
                 Status: <Text as="strong">{tokenStatus}</Text>
@@ -305,9 +287,7 @@ export default function MobileUploadPage() {
           <Text as="h1" variant="heading1">
             📄 Upload Invoice
           </Text>
-          <Text className={styles.subtitle}>
-            Add one or more photos (multi-page invoice)
-          </Text>
+          <Text className={styles.subtitle}>Add one or more photos (multi-page invoice)</Text>
         </Box>
 
         {uploadSuccess && (
@@ -317,15 +297,12 @@ export default function MobileUploadPage() {
             </Text>
             <Text>Uploaded successfully! Processing on desktop...</Text>
             <Text className={styles.successSubtext}>
-              You can close this page. The desktop app will receive all parsed
-              items.
+              You can close this page. The desktop app will receive all parsed items.
             </Text>
           </Box>
         )}
 
-        {error && !uploadSuccess && (
-          <Text className={styles.errorMessage}>{error}</Text>
-        )}
+        {error && !uploadSuccess && <Text className={styles.errorMessage}>{error}</Text>}
 
         {!uploadSuccess && (
           <Box className={styles.uploadSection}>
@@ -348,11 +325,7 @@ export default function MobileUploadPage() {
                 </Text>
                 <Box as="ul" className={styles.fileList}>
                   {selectedFiles.map((file, index) => (
-                    <Box
-                      as="li"
-                      key={`${file.name}-${index}`}
-                      className={styles.fileListItem}
-                    >
+                    <Box as="li" key={`${file.name}-${index}`} className={styles.fileListItem}>
                       <Text as="span" className={styles.fileName}>
                         {file.name}
                       </Text>
@@ -406,9 +379,7 @@ export default function MobileUploadPage() {
                           📤
                         </Text>{' '}
                         Upload{' '}
-                        {selectedFiles.length > 1
-                          ? `${selectedFiles.length} pages`
-                          : 'invoice'}
+                        {selectedFiles.length > 1 ? `${selectedFiles.length} pages` : 'invoice'}
                       </>
                     )}
                   </Button>

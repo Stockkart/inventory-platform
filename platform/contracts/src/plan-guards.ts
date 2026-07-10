@@ -7,6 +7,6 @@ export const PLAN_EXPIRY_ALLOWED_PATHS = [
 
 export function isPlanExpiryAllowedPath(pathname: string): boolean {
   return PLAN_EXPIRY_ALLOWED_PATHS.some(
-    (allowed) => pathname === allowed || pathname.startsWith(`${allowed}/`)
+    (allowed) => pathname === allowed || pathname.startsWith(`${allowed}/`),
   );
 }

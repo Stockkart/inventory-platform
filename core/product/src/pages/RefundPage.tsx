@@ -1,7 +1,12 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLocation } from 'react-router';
 import { refundsApi } from '@inventory-platform/product/api';
-import type { CheckoutItemResponse, Purchase, RefundItem, SearchPurchasesParams } from '@inventory-platform/product/types';
+import type {
+  CheckoutItemResponse,
+  Purchase,
+  RefundItem,
+  SearchPurchasesParams,
+} from '@inventory-platform/product/types';
 import type { CustomerResponse } from '@inventory-platform/user/types';
 import type { PaymentMethod, PaymentSplit } from '@inventory-platform/contracts';
 import { inventoryLotIdFromSellableRef, lineSellableRef } from '@inventory-platform/product/types';
@@ -93,7 +98,7 @@ function refundLineKey(line: CheckoutItemResponse, index: number): string {
  */
 function estimateCustomerRefundLine(
   returnQty: number,
-  line: CheckoutItemResponse
+  line: CheckoutItemResponse,
 ): { total: number; title: string } | null {
   if (returnQty <= 0) return null;
   const unit = Number(line.priceToRetail);
@@ -101,7 +106,9 @@ function estimateCustomerRefundLine(
   const total = roundMoney2(unit * returnQty);
 
   const parts = [
-    `Refund ${formatCurrency(total)} (${formatCurrency(unit)} × ${returnQty}); matches processed return.`,
+    `Refund ${formatCurrency(total)} (${formatCurrency(
+      unit,
+    )} × ${returnQty}); matches processed return.`,
   ];
 
   const cg = parseGstPct(line.cgst);
@@ -112,7 +119,9 @@ function estimateCustomerRefundLine(
     const cgst = roundMoney2((taxable * cg) / 100);
     const sgst = roundMoney2((taxable * sg) / 100);
     parts.push(
-      `If SP includes GST — taxable ${formatCurrency(taxable)}, CGST ${formatCurrency(cgst)}, SGST ${formatCurrency(sgst)}`
+      `If SP includes GST — taxable ${formatCurrency(taxable)}, CGST ${formatCurrency(
+        cgst,
+      )}, SGST ${formatCurrency(sgst)}`,
     );
   }
 
@@ -148,12 +157,12 @@ function DetailLine({ label, value }: { label: string; value: string }) {
 }
 
 export function RefundPage() {
-  const { enabled, loading: guardLoading } =
-    useCapabilityFeatureGuard('customerReturn');
+  const { enabled, loading: guardLoading } = useCapabilityFeatureGuard('customerReturn');
   const location = useLocation();
-  const state = location.state as
-    | { prefillCustomer?: CustomerResponse; prefillTab?: 'process' | 'history' }
-    | null;
+  const state = location.state as {
+    prefillCustomer?: CustomerResponse;
+    prefillTab?: 'process' | 'history';
+  } | null;
   const [activeTab, setActiveTab] = useState<'process' | 'history'>('process');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -178,20 +187,15 @@ export function RefundPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
-  const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(
-    null
-  );
+  const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
   const [refundItems, setRefundItems] = useState<
     Record<string, { quantity: number; maxQuantity: number }>
   >({});
 
   // Refresh refund history when a refund is processed (used by RefundHistoryList)
-  const [refundHistoryRefreshTrigger, setRefundHistoryRefreshTrigger] =
-    useState(0);
+  const [refundHistoryRefreshTrigger, setRefundHistoryRefreshTrigger] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
-  const [paymentSplit, setPaymentSplit] = useState<PaymentSplit>(() =>
-    emptyPaymentSplit()
-  );
+  const [paymentSplit, setPaymentSplit] = useState<PaymentSplit>(() => emptyPaymentSplit());
 
   useEffect(() => {
     if (!state?.prefillCustomer) return;
@@ -211,10 +215,7 @@ export function RefundPage() {
     setSuccess(null);
   }, [state]);
 
-  const handleSearchChange = (
-    field: keyof SearchPurchasesParams,
-    value: string
-  ) => {
+  const handleSearchChange = (field: keyof SearchPurchasesParams, value: string) => {
     setSearchParams((prev) => ({ ...prev, [field]: value }));
     setError(null);
   };
@@ -223,7 +224,7 @@ export function RefundPage() {
     appliedSearch.customerEmail?.trim() ||
       appliedSearch.customerPhone?.trim() ||
       appliedSearch.customerName?.trim() ||
-      appliedSearch.invoiceNo?.trim()
+      appliedSearch.invoiceNo?.trim(),
   );
 
   const loadPurchases = useCallback(async () => {
@@ -240,9 +241,7 @@ export function RefundPage() {
       setTotalItems(response.total);
     } catch (err) {
       const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'Failed to load purchases. Please try again.';
+        err instanceof Error ? err.message : 'Failed to load purchases. Please try again.';
       notifyError(errorMessage);
       setPurchases([]);
       setTotalPages(0);
@@ -345,8 +344,7 @@ export function RefundPage() {
 
     Object.entries(refundItems).forEach(([lineKey, item]) => {
       if (item.quantity > 0) {
-        const inventoryId =
-          inventoryLotIdFromSellableRef(lineKey) ?? lineKey;
+        const inventoryId = inventoryLotIdFromSellableRef(lineKey) ?? lineKey;
         itemsToRefund.push({
           inventoryId,
           quantity: item.quantity,
@@ -391,8 +389,8 @@ export function RefundPage() {
 
       notifySuccess(
         `Return processed successfully! Return Amount: ${formatCurrency(
-          response.refundAmount
-        )}. Credit note: ${response.creditNoteNo ?? response.refundId}`
+          response.refundAmount,
+        )}. Credit note: ${response.creditNoteNo ?? response.refundId}`,
       );
 
       // Reset form and refresh lists
@@ -404,9 +402,7 @@ export function RefundPage() {
       void loadPurchases();
     } catch (err) {
       const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'Failed to process return. Please try again.';
+        err instanceof Error ? err.message : 'Failed to process return. Please try again.';
       notifyError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -443,13 +439,8 @@ export function RefundPage() {
   }, [selectedPurchase, refundItems]);
 
   const returnTotalNum = roundMoney(estimatedRefund.grandTotal);
-  const refundPaymentValidation = validatePaymentSplit(
-    paymentMethod,
-    paymentSplit,
-    returnTotalNum
-  );
-  const canProcessReturn =
-    returnTotalNum > 0 && refundPaymentValidation.ok && !isLoading;
+  const refundPaymentValidation = validatePaymentSplit(paymentMethod, paymentSplit, returnTotalNum);
+  const canProcessReturn = returnTotalNum > 0 && refundPaymentValidation.ok && !isLoading;
 
   if (guardLoading || !enabled) {
     return null;
@@ -501,8 +492,7 @@ export function RefundPage() {
                   Search purchase
                 </Text>
                 <Text color="secondary">
-                  Recent sales load automatically. Use the fields below to narrow
-                  the list.
+                  Recent sales load automatically. Use the fields below to narrow the list.
                 </Text>
                 <Stack gap="sm">
                   <Grid columns={3} gap="sm" className={styles.searchGrid}>
@@ -512,9 +502,7 @@ export function RefundPage() {
                         type="text"
                         placeholder="Enter customer name"
                         value={searchParams.customerName || ''}
-                        onChange={(e) =>
-                          handleSearchChange('customerName', e.target.value)
-                        }
+                        onChange={(e) => handleSearchChange('customerName', e.target.value)}
                         disabled={isLoading}
                       />
                     </FormField>
@@ -524,9 +512,7 @@ export function RefundPage() {
                         type="text"
                         placeholder="Enter customer phone"
                         value={searchParams.customerPhone || ''}
-                        onChange={(e) =>
-                          handleSearchChange('customerPhone', e.target.value)
-                        }
+                        onChange={(e) => handleSearchChange('customerPhone', e.target.value)}
                         disabled={isLoading}
                       />
                     </FormField>
@@ -536,9 +522,7 @@ export function RefundPage() {
                         type="email"
                         placeholder="Enter customer email"
                         value={searchParams.customerEmail || ''}
-                        onChange={(e) =>
-                          handleSearchChange('customerEmail', e.target.value)
-                        }
+                        onChange={(e) => handleSearchChange('customerEmail', e.target.value)}
                         disabled={isLoading}
                       />
                     </FormField>
@@ -549,9 +533,7 @@ export function RefundPage() {
                       type="text"
                       placeholder="Enter invoice number"
                       value={searchParams.invoiceNo || ''}
-                      onChange={(e) =>
-                        handleSearchChange('invoiceNo', e.target.value)
-                      }
+                      onChange={(e) => handleSearchChange('invoiceNo', e.target.value)}
                       disabled={isLoading}
                     />
                   </FormField>
@@ -586,23 +568,16 @@ export function RefundPage() {
                   <CenteredLoader label="Loading purchases…" />
                 ) : purchases.length === 0 ? (
                   <EmptyState
-                    title={
-                      hasActiveSearch
-                        ? 'No sales matched your search'
-                        : 'No sales yet'
-                    }
+                    title={hasActiveSearch ? 'No sales matched your search' : 'No sales yet'}
                     description={
-                      hasActiveSearch
-                        ? 'Try different criteria or clear the search.'
-                        : undefined
+                      hasActiveSearch ? 'Try different criteria or clear the search.' : undefined
                     }
                   />
                 ) : (
                   <>
                     <Stack gap="md">
                       {purchases.map((purchase) => {
-                        const isSelected =
-                          selectedPurchase?.purchaseId === purchase.purchaseId;
+                        const isSelected = selectedPurchase?.purchaseId === purchase.purchaseId;
                         return (
                           <Card
                             key={purchase.purchaseId}
@@ -622,14 +597,8 @@ export function RefundPage() {
                             <CardBody>
                               <Stack gap="md">
                                 <Inline justify="between" align="start" gap="md">
-                                  <DetailLine
-                                    label="Invoice No"
-                                    value={purchase.invoiceNo}
-                                  />
-                                  <DetailLine
-                                    label="Date"
-                                    value={formatDate(purchase.soldAt)}
-                                  />
+                                  <DetailLine label="Invoice No" value={purchase.invoiceNo} />
+                                  <DetailLine label="Date" value={formatDate(purchase.soldAt)} />
                                 </Inline>
                                 <Grid columns={2} gap="sm">
                                   <DetailLine
@@ -644,17 +613,11 @@ export function RefundPage() {
                                     label="Total"
                                     value={formatCurrency(purchase.grandTotal)}
                                   />
-                                  <DetailLine
-                                    label="Payment"
-                                    value={purchase.paymentMethod}
-                                  />
+                                  <DetailLine label="Payment" value={purchase.paymentMethod} />
                                 </Grid>
 
                                 {isSelected && selectedPurchase ? (
-                                  <Stack
-                                    gap="md"
-                                    className={styles.refundSection}
-                                  >
+                                  <Stack gap="md" className={styles.refundSection}>
                                     <Text variant="heading3" weight="semibold">
                                       Select Items to Return
                                     </Text>
@@ -665,15 +628,11 @@ export function RefundPage() {
                                       />
                                       <DetailLine
                                         label="Customer"
-                                        value={
-                                          selectedPurchase.customerName || 'N/A'
-                                        }
+                                        value={selectedPurchase.customerName || 'N/A'}
                                       />
                                       <DetailLine
                                         label="Date"
-                                        value={formatDate(
-                                          selectedPurchase.soldAt
-                                        )}
+                                        value={formatDate(selectedPurchase.soldAt)}
                                       />
                                     </Grid>
 
@@ -681,155 +640,98 @@ export function RefundPage() {
                                       <Table>
                                         <TableHead>
                                           <TableRow>
-                                            <TableHeaderCell>
-                                              Item Name
-                                            </TableHeaderCell>
+                                            <TableHeaderCell>Item Name</TableHeaderCell>
                                             <TableHeaderCell>MRP</TableHeaderCell>
-                                            <TableHeaderCell>
-                                              Selling Price
-                                            </TableHeaderCell>
-                                            <TableHeaderCell>
-                                              Purchased Qty
-                                            </TableHeaderCell>
-                                            <TableHeaderCell>
-                                              GST rates
-                                            </TableHeaderCell>
-                                            <TableHeaderCell
-                                              className={styles.numericCol}
-                                            >
+                                            <TableHeaderCell>Selling Price</TableHeaderCell>
+                                            <TableHeaderCell>Purchased Qty</TableHeaderCell>
+                                            <TableHeaderCell>GST rates</TableHeaderCell>
+                                            <TableHeaderCell className={styles.numericCol}>
                                               Est. credit
                                             </TableHeaderCell>
-                                            <TableHeaderCell>
-                                              Return Qty
-                                            </TableHeaderCell>
+                                            <TableHeaderCell>Return Qty</TableHeaderCell>
                                           </TableRow>
                                         </TableHead>
                                         <TableBody>
-                                          {selectedPurchase.items.map(
-                                            (item, index) => {
-                                              const lineKey = refundLineKey(
-                                                item,
-                                                index
-                                              );
-                                              const refundItem =
-                                                refundItems[lineKey];
-                                              const rq =
-                                                refundItem?.quantity ?? 0;
-                                              const lineEst =
-                                                rq > 0
-                                                  ? estimateCustomerRefundLine(
-                                                      rq,
-                                                      item
-                                                    )
-                                                  : null;
-                                              return (
-                                                <TableRow key={lineKey}>
-                                                  <TableCell>{item.name}</TableCell>
-                                                  <TableCell>
-                                                    {formatCurrency(
-                                                      item.maximumRetailPrice
-                                                    )}
-                                                  </TableCell>
-                                                  <TableCell>
-                                                    {formatCurrency(
-                                                      item.priceToRetail
-                                                    )}
-                                                  </TableCell>
-                                                  <TableCell>
-                                                    {item.quantity}
-                                                  </TableCell>
-                                                  <TableCell>
-                                                    {formatGstRatesLabelForSaleLine(
-                                                      item
-                                                    )}
-                                                  </TableCell>
-                                                  <TableCell
-                                                    className={styles.numericCol}
-                                                    title={lineEst?.title}
-                                                  >
-                                                    {lineEst != null
-                                                      ? formatCurrency(
-                                                          lineEst.total
-                                                        )
-                                                      : '—'}
-                                                  </TableCell>
-                                                  <TableCell>
-                                                    <Input
-                                                      type="number"
-                                                      min={0}
-                                                      max={item.quantity}
-                                                      value={
-                                                        refundItem?.quantity || 0
-                                                      }
-                                                      onChange={(e) =>
-                                                        handleRefundQuantityChange(
-                                                          lineKey,
-                                                          e.target.value
-                                                        )
-                                                      }
-                                                      className={
-                                                        styles.quantityInput
-                                                      }
-                                                      disabled={isLoading}
-                                                      aria-label={`Return quantity for ${item.name}`}
-                                                    />
-                                                  </TableCell>
-                                                </TableRow>
-                                              );
-                                            }
-                                          )}
+                                          {selectedPurchase.items.map((item, index) => {
+                                            const lineKey = refundLineKey(item, index);
+                                            const refundItem = refundItems[lineKey];
+                                            const rq = refundItem?.quantity ?? 0;
+                                            const lineEst =
+                                              rq > 0 ? estimateCustomerRefundLine(rq, item) : null;
+                                            return (
+                                              <TableRow key={lineKey}>
+                                                <TableCell>{item.name}</TableCell>
+                                                <TableCell>
+                                                  {formatCurrency(item.maximumRetailPrice)}
+                                                </TableCell>
+                                                <TableCell>
+                                                  {formatCurrency(item.priceToRetail)}
+                                                </TableCell>
+                                                <TableCell>{item.quantity}</TableCell>
+                                                <TableCell>
+                                                  {formatGstRatesLabelForSaleLine(item)}
+                                                </TableCell>
+                                                <TableCell
+                                                  className={styles.numericCol}
+                                                  title={lineEst?.title}
+                                                >
+                                                  {lineEst != null
+                                                    ? formatCurrency(lineEst.total)
+                                                    : '—'}
+                                                </TableCell>
+                                                <TableCell>
+                                                  <Input
+                                                    type="number"
+                                                    min={0}
+                                                    max={item.quantity}
+                                                    value={refundItem?.quantity || 0}
+                                                    onChange={(e) =>
+                                                      handleRefundQuantityChange(
+                                                        lineKey,
+                                                        e.target.value,
+                                                      )
+                                                    }
+                                                    className={styles.quantityInput}
+                                                    disabled={isLoading}
+                                                    aria-label={`Return quantity for ${item.name}`}
+                                                  />
+                                                </TableCell>
+                                              </TableRow>
+                                            );
+                                          })}
                                         </TableBody>
                                       </Table>
                                     </Box>
 
                                     <Box className={styles.refundSummary}>
-                                      <Inline
-                                        justify="between"
-                                        align="center"
-                                      >
-                                        <Text>
-                                          Estimated return amount:
-                                        </Text>
+                                      <Inline justify="between" align="center">
+                                        <Text>Estimated return amount:</Text>
                                         <Text weight="semibold" variant="title">
-                                          {formatCurrency(
-                                            estimatedRefund.grandTotal
-                                          )}
+                                          {formatCurrency(estimatedRefund.grandTotal)}
                                         </Text>
                                       </Inline>
                                     </Box>
 
                                     {estimatedRefund.linesWithQty > 0 ? (
-                                      <Stack
-                                        gap="xs"
-                                        className={styles.returnEstimateBanner}
-                                      >
+                                      <Stack gap="xs" className={styles.returnEstimateBanner}>
                                         <Text weight="semibold">
                                           Estimated credit total:{' '}
-                                          {formatCurrency(
-                                            estimatedRefund.grandTotal
-                                          )}
+                                          {formatCurrency(estimatedRefund.grandTotal)}
                                         </Text>
                                         <Text
                                           variant="caption"
                                           color="secondary"
-                                          className={
-                                            styles.returnEstimateMuted
-                                          }
+                                          className={styles.returnEstimateMuted}
                                         >
-                                          Same as server: selling price × return
-                                          qty per line. Hover “Est. credit” for a
-                                          notional GST split when rates apply.
-                                          Final amount is set when you process the
-                                          return.
+                                          Same as server: selling price × return qty per line. Hover
+                                          “Est. credit” for a notional GST split when rates apply.
+                                          Final amount is set when you process the return.
                                         </Text>
                                       </Stack>
                                     ) : null}
 
                                     {estimatedRefund.linesWithQty > 0 ? (
-                                      <Stack
-                                        gap="sm"
-                                        className={styles.returnPaymentSection}
-                                      >
+                                      <Stack gap="sm" className={styles.returnPaymentSection}>
                                         <PaymentMethodSplit
                                           context="sale"
                                           title="How are you refunding?"
@@ -853,12 +755,8 @@ export function RefundPage() {
                                             color="secondary"
                                             className={styles.returnPaymentHint}
                                           >
-                                            ₹
-                                            {paymentSplit.creditAmount.toFixed(
-                                              2
-                                            )}{' '}
-                                            reduces customer credit (they owe you
-                                            less).
+                                            ₹{paymentSplit.creditAmount.toFixed(2)} reduces customer
+                                            credit (they owe you less).
                                           </Text>
                                         ) : null}
                                       </Stack>
@@ -871,9 +769,7 @@ export function RefundPage() {
                                       disabled={!canProcessReturn}
                                       onClick={() => void handleProcessRefund()}
                                     >
-                                      {isLoading
-                                        ? 'Processing...'
-                                        : 'Process Return'}
+                                      {isLoading ? 'Processing...' : 'Process Return'}
                                     </Button>
                                   </Stack>
                                 ) : null}
@@ -906,9 +802,7 @@ export function RefundPage() {
               <Text variant="heading3" weight="semibold">
                 Return History
               </Text>
-              <RefundHistoryList
-                refreshTrigger={refundHistoryRefreshTrigger}
-              />
+              <RefundHistoryList refreshTrigger={refundHistoryRefreshTrigger} />
             </Stack>
           </CardBody>
         </Card>

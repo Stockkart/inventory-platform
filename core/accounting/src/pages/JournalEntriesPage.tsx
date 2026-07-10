@@ -44,7 +44,7 @@ const SOURCE_OPTIONS: readonly SelectOptionDef[] = [
 ];
 
 function statusVariant(
-  status: JournalEntryResponse['status']
+  status: JournalEntryResponse['status'],
 ): 'success' | 'warning' | 'danger' | 'neutral' {
   if (status === 'POSTED') return 'success';
   if (status === 'REVERSED') return 'warning';
@@ -82,10 +82,7 @@ export function JournalEntriesPage() {
           title="Journal Entries"
           description="Every business event creates a balanced journal entry. Filter, drill in, or post a manual entry."
           actions={
-            <Button
-              variant="solid"
-              onClick={() => navigate('/dashboard/accounting/journal/new')}
-            >
+            <Button variant="solid" onClick={() => navigate('/dashboard/accounting/journal/new')}>
               Manual entry
             </Button>
           }
@@ -169,10 +166,7 @@ export function JournalEntriesPage() {
               {isLoading ? (
                 <TableLoadingRow colSpan={7} label="Loading journal entries…" />
               ) : entries.length === 0 ? (
-                <TableEmptyRow
-                  colSpan={7}
-                  message="No journal entries match your filters."
-                />
+                <TableEmptyRow colSpan={7} message="No journal entries match your filters." />
               ) : (
                 entries.map((entry) => (
                   <TableRow key={entry.id}>
@@ -182,9 +176,7 @@ export function JournalEntriesPage() {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() =>
-                          navigate(`/dashboard/accounting/journal/${entry.id}`)
-                        }
+                        onClick={() => navigate(`/dashboard/accounting/journal/${entry.id}`)}
                       >
                         {entry.entryNo}
                       </Button>
@@ -204,9 +196,7 @@ export function JournalEntriesPage() {
                       {formatMoney(entry.totalCredit)}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={statusVariant(entry.status)}>
-                        {entry.status}
-                      </Badge>
+                      <Badge variant={statusVariant(entry.status)}>{entry.status}</Badge>
                     </TableCell>
                   </TableRow>
                 ))

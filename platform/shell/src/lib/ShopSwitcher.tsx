@@ -75,9 +75,7 @@ export function ShopSwitcher() {
               key={s.shopId}
               type="button"
               variant="ghost"
-              className={`${styles.shopItem} ${
-                s.shopId === activeShopId ? styles.active : ''
-              }`}
+              className={`${styles.shopItem} ${s.shopId === activeShopId ? styles.active : ''}`}
               onClick={() => handleSelect(s)}
               disabled={isLoading}
             >

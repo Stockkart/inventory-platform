@@ -61,8 +61,8 @@ export function CreditManualChargeForm({ submitting, onSubmit }: Props) {
         Create your first credit balance
       </Text>
       <Text className={styles.manualChargeIntro}>
-        No parties in the ledger yet. Add a charge to open a customer or vendor account. After
-        that, pick the party in the sidebar — you won&apos;t need to enter ids again.
+        No parties in the ledger yet. Add a charge to open a customer or vendor account. After that,
+        pick the party in the sidebar — you won&apos;t need to enter ids again.
       </Text>
       <Box as="form" className={styles.manualChargeForm} onSubmit={handleSubmit}>
         <Box className={styles.manualRow}>
@@ -77,7 +77,12 @@ export function CreditManualChargeForm({ submitting, onSubmit }: Props) {
                 disabled={submitting}
               />
             </FormField>
-            <FormField label="Party id" id="manual-party-id" required className={styles.compactField}>
+            <FormField
+              label="Party id"
+              id="manual-party-id"
+              required
+              className={styles.compactField}
+            >
               <Input
                 id="manual-party-id"
                 type="text"
@@ -180,7 +185,12 @@ export function CreditManualChargeForm({ submitting, onSubmit }: Props) {
             />
           </Box>
         </Box>
-        <Button type="submit" variant="solid" className={styles.primarySubmit} disabled={submitting}>
+        <Button
+          type="submit"
+          variant="solid"
+          className={styles.primarySubmit}
+          disabled={submitting}
+        >
           {submitting ? 'Saving…' : 'Add charge & open ledger'}
         </Button>
       </Box>

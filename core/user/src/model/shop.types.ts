@@ -111,4 +111,3 @@ export interface ProcessJoinRequestResponse {
   reviewedAt: string;
   message: string;
 }
-

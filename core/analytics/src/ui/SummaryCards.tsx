@@ -1,10 +1,4 @@
-import {
-  Card,
-  CardBody,
-  Grid,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { Card, CardBody, Grid, Stack, Text } from '@inventory-platform/ui-kit';
 import styles from './analytics.module.css';
 
 interface SummaryCardsProps {
@@ -19,15 +13,7 @@ interface SummaryCardsProps {
   };
 }
 
-function MetricCard({
-  label,
-  value,
-  period,
-}: {
-  label: string;
-  value: string;
-  period: string;
-}) {
+function MetricCard({ label, value, period }: { label: string; value: string; period: string }) {
   return (
     <Card>
       <CardBody>

@@ -20,7 +20,11 @@ import {
 } from '@inventory-platform/ui-kit';
 import { vendorsApi } from '../api/vendors.api';
 import { VendorEditForm } from '../ui';
-import type { VendorResponse, CreateVendorDto, UpdateVendorDto } from '@inventory-platform/user/types';
+import type {
+  VendorResponse,
+  CreateVendorDto,
+  UpdateVendorDto,
+} from '@inventory-platform/user/types';
 import styles from './vendors.module.css';
 
 export function meta() {
@@ -138,9 +142,7 @@ export function VendorsPage() {
       void load();
       handleCloseCreate();
     } catch (err) {
-      setSaveError(
-        err instanceof Error ? err.message : 'Failed to create vendor'
-      );
+      setSaveError(err instanceof Error ? err.message : 'Failed to create vendor');
     } finally {
       setSaving(false);
     }
@@ -155,9 +157,7 @@ export function VendorsPage() {
       void load();
       handleCloseEdit();
     } catch (err) {
-      setSaveError(
-        err instanceof Error ? err.message : 'Failed to update vendor'
-      );
+      setSaveError(err instanceof Error ? err.message : 'Failed to update vendor');
     } finally {
       setSaving(false);
     }

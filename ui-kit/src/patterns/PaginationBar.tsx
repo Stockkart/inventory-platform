@@ -46,16 +46,13 @@ export function PaginationBar({
   className,
   'aria-label': ariaLabel = 'Pagination',
 }: PaginationBarProps) {
-  const safeTotalPages =
-    totalPages !== undefined ? Math.max(1, totalPages) : undefined;
+  const safeTotalPages = totalPages !== undefined ? Math.max(1, totalPages) : undefined;
 
   const d = disabled === true;
   const prevIsDisabled = prevDisabled ?? (d || page <= 0);
   const nextIsDisabled =
     nextDisabled ??
-    (d ||
-      (safeTotalPages !== undefined &&
-        (safeTotalPages <= 1 || page >= safeTotalPages - 1)));
+    (d || (safeTotalPages !== undefined && (safeTotalPages <= 1 || page >= safeTotalPages - 1)));
 
   const middle: ReactNode =
     middleContent ??
@@ -76,14 +73,8 @@ export function PaginationBar({
     (pageSizeOptions?.length ?? 0) > 0;
 
   return (
-    <nav
-      className={cn(styles.wrapper, className)}
-      aria-label={ariaLabel}
-    >
-      <Inline
-        className={cn(styles.bar, compact && styles.barCompact)}
-        justify="end"
-      >
+    <nav className={cn(styles.wrapper, className)} aria-label={ariaLabel}>
+      <Inline className={cn(styles.bar, compact && styles.barCompact)} justify="end">
         <Button
           variant="outline"
           size="sm"
@@ -129,12 +120,7 @@ export interface EmptyStateProps {
   className?: string;
 }
 
-export function EmptyState({
-  title,
-  description,
-  action,
-  className,
-}: EmptyStateProps) {
+export function EmptyState({ title, description, action, className }: EmptyStateProps) {
   return (
     <Stack className={cn(styles.emptyState, className)} align="center">
       <Text variant="title">{title}</Text>
@@ -151,12 +137,7 @@ export interface PageHeaderProps {
   className?: string;
 }
 
-export function PageHeader({
-  title,
-  description,
-  actions,
-  className,
-}: PageHeaderProps) {
+export function PageHeader({ title, description, actions, className }: PageHeaderProps) {
   return (
     <div className={cn(styles.pageHeader, className)}>
       <Stack gap="xs">
@@ -221,13 +202,7 @@ export function SearchInput({
         disabled={disabled}
         className={styles.searchInput}
       />
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        disabled={disabled}
-        onClick={onSearch}
-      >
+      <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={onSearch}>
         {searchLabel}
       </Button>
     </Inline>

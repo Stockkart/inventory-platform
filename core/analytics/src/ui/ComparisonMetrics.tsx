@@ -1,12 +1,4 @@
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Grid,
-  Inline,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { Card, CardBody, CardHeader, Grid, Inline, Stack, Text } from '@inventory-platform/ui-kit';
 import styles from './analytics.module.css';
 
 interface ComparisonMetricsProps {
@@ -121,8 +113,8 @@ export function ComparisonMetrics({ data }: ComparisonMetricsProps) {
                       metric.changePercent > 0
                         ? styles.changeUp
                         : metric.changePercent < 0
-                          ? styles.changeDown
-                          : undefined
+                        ? styles.changeDown
+                        : undefined
                     }
                   >
                     {metric.label === 'Purchases'

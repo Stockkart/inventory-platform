@@ -22,7 +22,10 @@
     }
   },
   "nx": {
-    "tags": ["type:plugin", "scope:registry"]
+    "tags": [
+      "type:plugin",
+      "scope:registry"
+    ]
   },
   "dependencies": {
     "@inventory-platform/accounting": "workspace:*",

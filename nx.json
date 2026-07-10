@@ -6,10 +6,7 @@
     }
   },
   "namedInputs": {
-    "default": [
-      "{projectRoot}/**/*",
-      "sharedGlobals"
-    ],
+    "default": ["{projectRoot}/**/*", "sharedGlobals"],
     "production": [
       "default",
       "!{projectRoot}/.eslintrc.json",
@@ -20,7 +17,10 @@
     ],
     "sharedGlobals": [
       "{workspaceRoot}/.github/workflows/ci.yml",
-      "{workspaceRoot}/.github/workflows/eslint.yml"
+      "{workspaceRoot}/.github/workflows/eslint.yml",
+      "{workspaceRoot}/.github/workflows/format.yml",
+      "{workspaceRoot}/.prettierrc",
+      "{workspaceRoot}/.prettierignore"
     ]
   },
   "plugins": [

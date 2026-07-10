@@ -1,13 +1,25 @@
 import { apiClient } from '@inventory-platform/api-client';
 import type { ApiResponse } from '@inventory-platform/contracts';
-import type { RegisterShopDto, RegisterShopResponse, RequestJoinShopDto, RequestJoinShopResponse, JoinRequest, JoinRequestsResponse, OwnerShopSummary, ProcessJoinRequestDto, ProcessJoinRequestResponse, ShopDetailResponse, UpdateShopDto } from '@inventory-platform/user/types';
+import type {
+  RegisterShopDto,
+  RegisterShopResponse,
+  RequestJoinShopDto,
+  RequestJoinShopResponse,
+  JoinRequest,
+  JoinRequestsResponse,
+  OwnerShopSummary,
+  ProcessJoinRequestDto,
+  ProcessJoinRequestResponse,
+  ShopDetailResponse,
+  UpdateShopDto,
+} from '@inventory-platform/user/types';
 import { SHOP_ENDPOINTS } from './endpoints';
 
 export const shopsApi = {
   register: async (data: RegisterShopDto): Promise<RegisterShopResponse> => {
     const response = await apiClient.post<{ success: boolean; data: RegisterShopResponse }>(
       SHOP_ENDPOINTS.REGISTER,
-      data
+      data,
     );
     return response.data;
   },
@@ -15,7 +27,7 @@ export const shopsApi = {
   getShopsByOwnerEmail: async (email: string): Promise<OwnerShopSummary[]> => {
     const response = await apiClient.get<ApiResponse<{ data: OwnerShopSummary[] }>>(
       SHOP_ENDPOINTS.BY_OWNER_EMAIL,
-      { email }
+      { email },
     );
     return response.data.data;
   },
@@ -23,7 +35,7 @@ export const shopsApi = {
   requestToJoin: async (data: RequestJoinShopDto): Promise<RequestJoinShopResponse> => {
     const response = await apiClient.post<ApiResponse<RequestJoinShopResponse>>(
       SHOP_ENDPOINTS.JOIN_REQUEST,
-      data
+      data,
     );
     return response.data;
   },
@@ -32,32 +44,32 @@ export const shopsApi = {
     const params = shopId ? { shopId } : undefined;
     const response = await apiClient.get<ApiResponse<JoinRequestsResponse>>(
       SHOP_ENDPOINTS.JOIN_REQUESTS,
-      params as Record<string, string>
+      params as Record<string, string>,
     );
     return response.data.data;
   },
 
   processJoinRequest: async (
     requestId: string,
-    data: ProcessJoinRequestDto
+    data: ProcessJoinRequestDto,
   ): Promise<ProcessJoinRequestResponse> => {
     const response = await apiClient.post<ApiResponse<ProcessJoinRequestResponse>>(
       SHOP_ENDPOINTS.PROCESS_JOIN_REQUEST(requestId),
-      data
+      data,
     );
     return response.data;
   },
 
   getActiveShop: async (): Promise<ShopDetailResponse> => {
     const response = await apiClient.get<ApiResponse<ShopDetailResponse>>(
-      SHOP_ENDPOINTS.ACTIVE_SHOP
+      SHOP_ENDPOINTS.ACTIVE_SHOP,
     );
     return response.data;
   },
 
   getShop: async (shopId: string): Promise<ShopDetailResponse> => {
     const response = await apiClient.get<ApiResponse<ShopDetailResponse>>(
-      SHOP_ENDPOINTS.BY_ID(shopId)
+      SHOP_ENDPOINTS.BY_ID(shopId),
     );
     return response.data;
   },
@@ -65,18 +77,15 @@ export const shopsApi = {
   updateActiveShop: async (data: UpdateShopDto): Promise<ShopDetailResponse> => {
     const response = await apiClient.patch<ApiResponse<ShopDetailResponse>>(
       SHOP_ENDPOINTS.ACTIVE_SHOP,
-      data
+      data,
     );
     return response.data;
   },
 
-  updateShop: async (
-    shopId: string,
-    data: UpdateShopDto
-  ): Promise<ShopDetailResponse> => {
+  updateShop: async (shopId: string, data: UpdateShopDto): Promise<ShopDetailResponse> => {
     const response = await apiClient.patch<ApiResponse<ShopDetailResponse>>(
       SHOP_ENDPOINTS.BY_ID(shopId),
-      data
+      data,
     );
     return response.data;
   },

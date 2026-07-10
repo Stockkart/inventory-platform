@@ -36,9 +36,7 @@ export function ShopProfileForm({
       <FormField
         label="Secondary address"
         value={location.secondaryAddress ?? ''}
-        onChange={(v) =>
-          onLocationChange({ ...location, secondaryAddress: v || undefined })
-        }
+        onChange={(v) => onLocationChange({ ...location, secondaryAddress: v || undefined })}
         placeholder="Secondary address"
         disabled={disabled}
       />

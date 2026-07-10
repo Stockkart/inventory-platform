@@ -52,12 +52,12 @@
   border: 1px solid var(--border-color);
   backdrop-filter: blur(6px);
   transition: all 0.25s ease;
-  box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
 }
 
 .featureCard:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   border-color: var(--border-hover);
 }
 
@@ -102,13 +102,12 @@
     grid-template-columns: 1fr;
     gap: 1.5rem;
   }
-  
+
   .title {
     font-size: 2rem;
   }
-  
+
   .featureCard {
     padding: 1.5rem;
   }
 }
-

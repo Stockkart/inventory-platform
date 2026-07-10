@@ -2,14 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuthStore } from '@inventory-platform/session';
 import type { ShopMembership } from '@inventory-platform/session/types';
-import {
-  Badge,
-  Box,
-  Button,
-  Inline,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { Badge, Box, Button, Inline, Stack, Text } from '@inventory-platform/ui-kit';
 import styles from './UserMenuShopSection.module.css';
 
 export interface UserMenuShopSectionProps {
@@ -24,9 +17,7 @@ export function UserMenuShopSection({ onClose }: UserMenuShopSectionProps) {
   const shops = user?.shops ?? [];
   const activeShopId = user?.shopId ?? null;
   const activeShopName =
-    shop?.name ??
-    shops.find((s) => s.shopId === activeShopId)?.shopName ??
-    'Current shop';
+    shop?.name ?? shops.find((s) => s.shopId === activeShopId)?.shopName ?? 'Current shop';
 
   const otherShops = shops.filter((s) => s.shopId !== activeShopId);
 
@@ -108,12 +99,7 @@ export function UserMenuShopSection({ onClose }: UserMenuShopSectionProps) {
       )}
 
       <Inline className={styles.actions} gap="none">
-        <Button
-          type="button"
-          variant="ghost"
-          className={styles.actionBtn}
-          onClick={goToShops}
-        >
+        <Button type="button" variant="ghost" className={styles.actionBtn} onClick={goToShops}>
           Manage shops
         </Button>
         <Button

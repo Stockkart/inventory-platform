@@ -87,23 +87,13 @@ function applyRefundFilters(rows: Refund[], applied: HistoryFilters): Refund[] {
     .filter((r) => isDateInRange(r.createdAt, applied.dateFrom, applied.dateTo))
     .filter((r) => matchesRegexField(applied.invoiceNo, r.invoiceNo))
     .filter((r) =>
-      matchesRegexField(
-        applied.customer,
-        r.customerName,
-        r.customerPhone,
-        r.customerEmail
-      )
+      matchesRegexField(applied.customer, r.customerName, r.customerPhone, r.customerEmail),
     );
 }
 
-export function RefundHistoryList({
-  refreshTrigger,
-  filters,
-}: RefundHistoryListProps) {
+export function RefundHistoryList({ refreshTrigger, filters }: RefundHistoryListProps) {
   const applied = filters;
-  const filtering =
-    applied != null &&
-    hasActiveHistoryFilters(applied, 'customerReturnHistory');
+  const filtering = applied != null && hasActiveHistoryFilters(applied, 'customerReturnHistory');
 
   const [refunds, setRefunds] = useState<Refund[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -139,9 +129,7 @@ export function RefundHistoryList({
       }
     } catch (err) {
       notifyError(
-        err instanceof Error
-          ? err.message
-          : 'Failed to load return history. Please try again.'
+        err instanceof Error ? err.message : 'Failed to load return history. Please try again.',
       );
       setRefunds([]);
     } finally {
@@ -171,11 +159,7 @@ export function RefundHistoryList({
   if (refunds.length === 0) {
     return (
       <Stack className={recordStyles.container}>
-        <EmptyState
-          title={
-            filtering ? 'No returns match these filters.' : 'No returns found.'
-          }
-        />
+        <EmptyState title={filtering ? 'No returns match these filters.' : 'No returns found.'} />
       </Stack>
     );
   }
@@ -200,27 +184,16 @@ export function RefundHistoryList({
                   align="start"
                   gap="md"
                 >
-                  <DetailLine
-                    label="Credit note"
-                    value={refund.creditNoteNo ?? refund.refundId}
-                  />
+                  <DetailLine label="Credit note" value={refund.creditNoteNo ?? refund.refundId} />
                   <DetailLine label="Date" value={formatDate(refund.createdAt)} />
                 </Inline>
                 <Grid columns={2} gap="sm" className={recordStyles.recordDetails}>
                   <DetailLine label="Invoice No" value={refund.invoiceNo} />
                   <DetailLine label="Customer" value={refund.customerName} />
                   <DetailLine label="Phone" value={refund.customerPhone} />
-                  <DetailLine
-                    label="Items Returned"
-                    value={String(refund.totalItemsRefunded)}
-                  />
-                  <DetailLine
-                    label="Return Amount"
-                    value={formatCurrency(refund.refundAmount)}
-                  />
-                  {refund.reason ? (
-                    <DetailLine label="Reason" value={refund.reason} />
-                  ) : null}
+                  <DetailLine label="Items Returned" value={String(refund.totalItemsRefunded)} />
+                  <DetailLine label="Return Amount" value={formatCurrency(refund.refundAmount)} />
+                  {refund.reason ? <DetailLine label="Reason" value={refund.reason} /> : null}
                 </Grid>
                 {refund.refundedItems && refund.refundedItems.length > 0 ? (
                   <Stack gap="sm" className={recordStyles.breakdownWrap}>
@@ -246,9 +219,7 @@ export function RefundHistoryList({
                           {refund.refundedItems.map((row, idx) => (
                             <TableRow key={`${row.inventoryId}-${idx}`}>
                               <TableCell>
-                                {row.name?.trim()
-                                  ? row.name
-                                  : row.inventoryId ?? '—'}
+                                {row.name?.trim() ? row.name : row.inventoryId ?? '—'}
                               </TableCell>
                               <TableCell>{row.quantity}</TableCell>
                               <TableCell>{moneyOrDash(row.priceToRetail)}</TableCell>
@@ -265,8 +236,7 @@ export function RefundHistoryList({
                     color="secondary"
                     className={recordStyles.breakdownLegacyNote}
                   >
-                    No line-by-line breakdown saved for this return (often older
-                    records).
+                    No line-by-line breakdown saved for this return (often older records).
                   </Text>
                 )}
               </Stack>

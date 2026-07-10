@@ -16,7 +16,10 @@
     }
   },
   "nx": {
-    "tags": ["type:core", "scope:notifications"]
+    "tags": [
+      "type:core",
+      "scope:notifications"
+    ]
   },
   "dependencies": {
     "@inventory-platform/query": "workspace:*"

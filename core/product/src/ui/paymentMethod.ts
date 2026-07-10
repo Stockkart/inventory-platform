@@ -38,7 +38,13 @@ const TENDER_META: Record<Tender, { label: string; icon: string }> = {
 export const PAYMENT_METHOD_META: Record<PaymentMethod, PaymentMethodMeta> = {
   CASH: { label: 'Cash', short: 'Cash', icon: '💵', tenders: ['CASH'] },
   ONLINE: { label: 'Online', short: 'Online', icon: '💳', tenders: ['ONLINE'] },
-  CREDIT: { label: 'Credit', short: 'Credit', icon: '📒', tenders: ['CREDIT'], creditTender: 'CREDIT' },
+  CREDIT: {
+    label: 'Credit',
+    short: 'Credit',
+    icon: '📒',
+    tenders: ['CREDIT'],
+    creditTender: 'CREDIT',
+  },
   CASH_ONLINE: {
     label: 'Cash + Online',
     short: 'Cash+Online',
@@ -73,10 +79,7 @@ export function isCreditMethod(method: PaymentMethod): boolean {
 
 /** Type guard: narrow an unknown string to one of the 6 canonical methods. */
 export function isPaymentMethod(value: unknown): value is PaymentMethod {
-  return (
-    typeof value === 'string' &&
-    (PAYMENT_METHODS as readonly string[]).includes(value)
-  );
+  return typeof value === 'string' && (PAYMENT_METHODS as readonly string[]).includes(value);
 }
 
 /** Two-decimal money rounding used for all split arithmetic on the client. */
@@ -110,10 +113,7 @@ export function emptyPaymentSplit(): PaymentSplit {
  *   - CREDIT_CASH   → full credit, no cash (caller fills in any deposit)
  * Single-tender methods put the whole total in the one bucket.
  */
-export function defaultPaymentSplit(
-  method: PaymentMethod,
-  total: number
-): PaymentSplit {
+export function defaultPaymentSplit(method: PaymentMethod, total: number): PaymentSplit {
   const t = roundMoney(total);
   switch (method) {
     case 'CASH':
@@ -163,7 +163,7 @@ export interface PaymentSplitValidation {
 export function validatePaymentSplit(
   method: PaymentMethod | null | undefined,
   split: PaymentSplit,
-  total: number
+  total: number,
 ): PaymentSplitValidation {
   if (method == null) {
     return {
@@ -260,7 +260,9 @@ export function formatPaymentMethod(method: PaymentMethod | string | null | unde
 /**
  * Short label without icon, useful in tight UIs (chips, table cells).
  */
-export function formatPaymentMethodShort(method: PaymentMethod | string | null | undefined): string {
+export function formatPaymentMethodShort(
+  method: PaymentMethod | string | null | undefined,
+): string {
   if (!method) return '—';
   if (isPaymentMethod(method)) return PAYMENT_METHOD_META[method].short;
   return method;
@@ -270,9 +272,7 @@ export function formatPaymentMethodShort(method: PaymentMethod | string | null |
  * Compact split breakdown like "₹600 Credit · ₹400 Cash". Returns an empty
  * string when the row has no per-tender amounts (e.g. legacy data).
  */
-export function formatPaymentSplit(
-  split: Partial<PaymentSplit> | null | undefined
-): string {
+export function formatPaymentSplit(split: Partial<PaymentSplit> | null | undefined): string {
   if (!split) return '';
   const parts: string[] = [];
   if (split.cashAmount && split.cashAmount > 0) {

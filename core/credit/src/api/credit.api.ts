@@ -1,5 +1,10 @@
 import { apiClient } from '@inventory-platform/api-client';
-import type { CreateCreditEntryDto, CreditAccountResponse, CreditEntriesPageResponse, CreditEntryResponse } from '@inventory-platform/credit/types';
+import type {
+  CreateCreditEntryDto,
+  CreditAccountResponse,
+  CreditEntriesPageResponse,
+  CreditEntryResponse,
+} from '@inventory-platform/credit/types';
 import { CREDIT_ENDPOINTS } from './endpoints';
 
 function unwrapApiData<T>(raw: unknown): T | undefined {
@@ -14,8 +19,8 @@ function asNum(v: unknown): number {
   return typeof v === 'number' && Number.isFinite(v)
     ? v
     : typeof v === 'string' && v.trim() !== '' && Number.isFinite(Number(v))
-      ? Number(v)
-      : 0;
+    ? Number(v)
+    : 0;
 }
 
 function normalizeEntry(e: CreditEntryResponse): CreditEntryResponse {
@@ -49,11 +54,7 @@ export const creditApi = {
       : [];
   },
 
-  entries: async (
-    accountId: string,
-    page = 0,
-    size = 20
-  ): Promise<CreditEntriesPageResponse> => {
+  entries: async (accountId: string, page = 0, size = 20): Promise<CreditEntriesPageResponse> => {
     const raw = await apiClient.get<unknown>(CREDIT_ENDPOINTS.ENTRIES(accountId), {
       page: String(page),
       size: String(size),

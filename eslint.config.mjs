@@ -1,4 +1,5 @@
 import nx from '@nx/eslint-plugin';
+import eslintConfigPrettier from 'eslint-config-prettier';
 
 const bannedNativeHtmlTags = [
   'div',
@@ -74,17 +75,11 @@ export default [
         'error',
         {
           enforceBuildableLibDependency: true,
-          allow: [
-            '^.*/eslint(\\.base)?\\.config\\.[cm]?[jt]s$',
-          ],
+          allow: ['^.*/eslint(\\.base)?\\.config\\.[cm]?[jt]s$'],
           depConstraints: [
             {
               sourceTag: 'type:app',
-              onlyDependOnLibsWithTags: [
-                'type:app',
-                'type:platform',
-                'type:plugin',
-              ],
+              onlyDependOnLibsWithTags: ['type:app', 'type:platform', 'type:plugin'],
             },
             {
               sourceTag: 'type:platform',
@@ -101,11 +96,7 @@ export default [
             },
             {
               sourceTag: 'type:core',
-              onlyDependOnLibsWithTags: [
-                'type:platform',
-                'type:core',
-                'type:ui-kit',
-              ],
+              onlyDependOnLibsWithTags: ['type:platform', 'type:core', 'type:ui-kit'],
             },
             {
               sourceTag: 'type:plugin',
@@ -138,7 +129,11 @@ export default [
         {
           patterns: [
             {
-              group: ['@inventory-platform/*/api', '@inventory-platform/*/ui', '@inventory-platform/*/pages/*'],
+              group: [
+                '@inventory-platform/*/api',
+                '@inventory-platform/*/ui',
+                '@inventory-platform/*/pages/*',
+              ],
               message:
                 'App shell must compose routes only — import from @inventory-platform/plugin-registry/routes, @inventory-platform/shell, @inventory-platform/query, or @inventory-platform/session.',
             },
@@ -169,4 +164,5 @@ export default [
       'no-restricted-syntax': ['error', ...bannedNativeHtmlSyntaxRules],
     },
   },
+  eslintConfigPrettier,
 ];

@@ -14,7 +14,7 @@ export type DashboardNavRow = DashboardMenuItem & { groupLabel: string };
 
 export function mergeNavContributions(
   contributions: NavContribution[],
-  groupOrder: string[]
+  groupOrder: string[],
 ): DashboardMenuGroup[] {
   const byId = new Map<string, DashboardMenuGroup>();
 
@@ -55,9 +55,7 @@ export function mergeNavContributions(
   return ordered;
 }
 
-export function getDashboardNavRows(
-  groups: DashboardMenuGroup[]
-): DashboardNavRow[] {
+export function getDashboardNavRows(groups: DashboardMenuGroup[]): DashboardNavRow[] {
   const rows: DashboardNavRow[] = [];
   for (const group of groups) {
     for (const item of group.items) {

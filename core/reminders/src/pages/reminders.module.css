@@ -577,8 +577,7 @@
   color: var(--text-primary);
   font-size: 0.78rem;
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease,
-    transform 0.05s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
 }
 
 .snoozeChip:hover:not(:disabled) {

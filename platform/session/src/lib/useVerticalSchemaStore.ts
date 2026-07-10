@@ -16,15 +16,12 @@ interface VerticalSchemaState {
   fetchVerticalSchema: (
     verticalId: string,
     mode?: SchemaDisplayMode,
-    version?: string
+    version?: string,
   ) => Promise<VerticalSchemaResponse | null>;
   clear: () => void;
 }
 
-const shopSchemaInFlight = new Map<
-  string,
-  Promise<ShopSchemaResponse | null>
->();
+const shopSchemaInFlight = new Map<string, Promise<ShopSchemaResponse | null>>();
 
 function resolveActiveShopId(): string | null {
   return apiClient.getShopId();
@@ -32,7 +29,7 @@ function resolveActiveShopId(): string | null {
 
 export function shopSchemaCacheKey(
   shopId: string | null | undefined,
-  mode: SchemaDisplayMode
+  mode: SchemaDisplayMode,
 ): string {
   return `shop:${shopId ?? '_'}:${mode}`;
 }
@@ -41,18 +38,11 @@ function shopKey(shopId: string, mode: SchemaDisplayMode): string {
   return shopSchemaCacheKey(shopId, mode);
 }
 
-function verticalKey(
-  verticalId: string,
-  mode: SchemaDisplayMode,
-  version?: string
-): string {
+function verticalKey(verticalId: string, mode: SchemaDisplayMode, version?: string): string {
   return `vertical:${verticalId}:${version ?? 'active'}:${mode}`;
 }
 
-function normalizeShopSchema(
-  schema: ShopSchemaResponse,
-  shopId: string
-): ShopSchemaResponse {
+function normalizeShopSchema(schema: ShopSchemaResponse, shopId: string): ShopSchemaResponse {
   return {
     ...schema,
     shopId: schema.shopId ?? shopId,
@@ -103,8 +93,7 @@ export const useVerticalSchemaStore = create<VerticalSchemaState>((set, get) => 
         });
         return schema;
       } catch (err) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to load shop schema';
+        const message = err instanceof Error ? err.message : 'Failed to load shop schema';
         set((state) => {
           const loadingKeys = new Set(state.loadingKeys);
           loadingKeys.delete(key);
@@ -148,8 +137,7 @@ export const useVerticalSchemaStore = create<VerticalSchemaState>((set, get) => 
       });
       return schema;
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to load vertical schema';
+      const message = err instanceof Error ? err.message : 'Failed to load vertical schema';
       set((state) => {
         const loadingKeys = new Set(state.loadingKeys);
         loadingKeys.delete(key);

@@ -30,9 +30,7 @@ export const useShopAccessStore = create<ShopAccessState>((set, get) => ({
     }
     set({ loading: true, error: null });
     try {
-      const response = await apiClient.get<ApiResponse<ShopAccess>>(
-        '/shops/me/access'
-      );
+      const response = await apiClient.get<ApiResponse<ShopAccess>>('/shops/me/access');
       const access = response.data;
       set((state) => ({
         byShopId: { ...state.byShopId, [shopId]: access },
@@ -40,8 +38,7 @@ export const useShopAccessStore = create<ShopAccessState>((set, get) => ({
       }));
       return access;
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to load shop access';
+      const message = err instanceof Error ? err.message : 'Failed to load shop access';
       set({ loading: false, error: message });
       return null;
     }

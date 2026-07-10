@@ -16,7 +16,7 @@ export function inventorySellableRef(lotId: string): string {
 }
 
 export function parseSellableRef(
-  encoded: string | null | undefined
+  encoded: string | null | undefined,
 ): { kind: string; id: string } | null {
   if (!encoded?.trim()) return null;
   const sep = encoded.indexOf(':');
@@ -27,16 +27,12 @@ export function parseSellableRef(
   };
 }
 
-export function menuItemIdFromSellableRef(
-  encoded: string | null | undefined
-): string | null {
+export function menuItemIdFromSellableRef(encoded: string | null | undefined): string | null {
   const parsed = parseSellableRef(encoded);
   return parsed?.kind === SELLABLE_KIND_MENU ? parsed.id : null;
 }
 
-export function inventoryLotIdFromSellableRef(
-  encoded: string | null | undefined
-): string | null {
+export function inventoryLotIdFromSellableRef(encoded: string | null | undefined): string | null {
   const parsed = parseSellableRef(encoded);
   return parsed?.kind === SELLABLE_KIND_INVENTORY ? parsed.id : null;
 }

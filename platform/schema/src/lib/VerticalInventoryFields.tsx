@@ -1,10 +1,7 @@
 import type { VerticalSchemaFieldDef } from '@inventory-platform/schema/types';
 import { FormRow, Stack } from '@inventory-platform/ui-kit';
 import { VerticalSchemaFieldInput } from './VerticalSchemaFieldInput';
-import {
-  getVerticalFieldValue,
-  type VerticalFieldProduct,
-} from './verticalSchemaUtils';
+import { getVerticalFieldValue, type VerticalFieldProduct } from './verticalSchemaUtils';
 
 export interface VerticalInventoryFieldsProps {
   fields: VerticalSchemaFieldDef[];

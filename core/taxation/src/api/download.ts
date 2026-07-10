@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 function authHeaders(): Record<string, string> {
   const headers: Record<string, string> = {};
@@ -18,7 +17,7 @@ function authHeaders(): Record<string, string> {
 export async function downloadTaxationBlob(
   path: string,
   query: Record<string, string>,
-  defaultFilename: string
+  defaultFilename: string,
 ): Promise<{ blob: Blob; filename: string }> {
   const qs = new URLSearchParams(query).toString();
   const response = await axios.get(`${API_BASE_URL}${path}?${qs}`, {

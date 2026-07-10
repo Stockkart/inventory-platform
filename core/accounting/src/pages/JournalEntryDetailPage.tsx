@@ -24,7 +24,7 @@ import { formatDateTime, formatDate, formatMoney } from '../model/format';
 import styles from '../ui/accounting.module.css';
 
 function statusVariant(
-  status: 'POSTED' | 'REVERSED' | 'VOID'
+  status: 'POSTED' | 'REVERSED' | 'VOID',
 ): 'success' | 'warning' | 'danger' | 'neutral' {
   if (status === 'POSTED') return 'success';
   if (status === 'REVERSED') return 'warning';
@@ -50,7 +50,7 @@ export function JournalEntryDetailPage() {
   async function reverse() {
     if (!entry) return;
     const reason = window.prompt(
-      'Reason for reversal (optional). The original entry will be marked REVERSED and a mirroring reversal entry will be posted.'
+      'Reason for reversal (optional). The original entry will be marked REVERSED and a mirroring reversal entry will be posted.',
     );
     if (reason == null) return;
     reverseMutation.mutate({ id: entry.id, body: { reason } });
@@ -90,10 +90,7 @@ export function JournalEntryDetailPage() {
           {isLoading || !entry ? (
             <Table>
               <TableBody>
-                <TableLoadingRow
-                  colSpan={2}
-                  label={isLoading ? 'Loading…' : 'Entry not found'}
-                />
+                <TableLoadingRow colSpan={2} label={isLoading ? 'Loading…' : 'Entry not found'} />
               </TableBody>
             </Table>
           ) : (
@@ -176,9 +173,7 @@ export function JournalEntryDetailPage() {
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() =>
-                            navigate(`/dashboard/accounting/ledger/${l.accountId}`)
-                          }
+                          onClick={() => navigate(`/dashboard/accounting/ledger/${l.accountId}`)}
                         >
                           {l.accountCode} · {l.accountName}
                         </Button>

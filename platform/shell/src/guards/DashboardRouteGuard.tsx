@@ -20,15 +20,14 @@ export type DashboardRouteGuardState = {
 export function useDashboardRouteGuard(): DashboardRouteGuardState {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, isLoading, user, token, fetchCurrentUser } =
-    useAuthStore();
+  const { isAuthenticated, isLoading, user, token, fetchCurrentUser } = useAuthStore();
   const fetchPlanStatus = usePlanStatusStore((s) => s.fetchPlanStatus);
   const planStatusLoading = usePlanStatusStore((s) => s.loading);
   const planStatus = usePlanStatusStore((s) =>
-    user?.shopId ? s.byShopId[user.shopId] : undefined
+    user?.shopId ? s.byShopId[user.shopId] : undefined,
   );
   const shopAccess = useShopAccessStore((s) =>
-    user?.shopId ? s.byShopId[user.shopId] : undefined
+    user?.shopId ? s.byShopId[user.shopId] : undefined,
   );
   const accessLoading = useShopAccessStore((s) => s.loading);
   const fetchAccess = useShopAccessStore((s) => s.fetchAccess);
@@ -52,13 +51,7 @@ export function useDashboardRouteGuard(): DashboardRouteGuardState {
     void fetchPlanStatus({ force: true });
     void fetchAccess({ force: true });
     void fetchShopSchema();
-  }, [
-    isAuthenticated,
-    user?.shopId,
-    fetchPlanStatus,
-    fetchAccess,
-    fetchShopSchema,
-  ]);
+  }, [isAuthenticated, user?.shopId, fetchPlanStatus, fetchAccess, fetchShopSchema]);
 
   useEffect(() => {
     if (!isAuthenticated || !user?.shopId || accessLoading || !shopAccess) {
@@ -67,14 +60,7 @@ export function useDashboardRouteGuard(): DashboardRouteGuardState {
     if (!canAccessDashboardPath(location.pathname, shopAccess)) {
       navigate('/dashboard', { replace: true });
     }
-  }, [
-    isAuthenticated,
-    user?.shopId,
-    accessLoading,
-    shopAccess,
-    location.pathname,
-    navigate,
-  ]);
+  }, [isAuthenticated, user?.shopId, accessLoading, shopAccess, location.pathname, navigate]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -119,24 +105,13 @@ export function useDashboardRouteGuard(): DashboardRouteGuardState {
     };
 
     void checkAuth();
-  }, [
-    isAuthenticated,
-    isLoading,
-    user,
-    token,
-    navigate,
-    fetchCurrentUser,
-    location.pathname,
-  ]);
+  }, [isAuthenticated, isLoading, user, token, navigate, fetchCurrentUser, location.pathname]);
 
   useEffect(() => {
     if (!isAuthenticated || !user?.shopId || planStatusLoading) {
       return;
     }
-    if (
-      planStatus?.planExpired &&
-      !isPlanExpiryAllowedPath(location.pathname)
-    ) {
+    if (planStatus?.planExpired && !isPlanExpiryAllowedPath(location.pathname)) {
       navigate('/dashboard/plan-status', { replace: true });
     }
   }, [
@@ -155,9 +130,7 @@ export function useDashboardRouteGuard(): DashboardRouteGuardState {
   ) {
     return {
       isReady: false,
-      blockingContent: (
-        <CenteredLoader fill minHeight="100vh" label="Loading…" />
-      ),
+      blockingContent: <CenteredLoader fill minHeight="100vh" label="Loading…" />,
     };
   }
 

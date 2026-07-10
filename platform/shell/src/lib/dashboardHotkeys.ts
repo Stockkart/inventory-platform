@@ -28,10 +28,7 @@ export function getShortcutHelpRows(modLabel: string): ShortcutHelpRow[] {
   return [
     {
       action: 'Open quick navigation',
-      alternatives: [
-        [modLabel, h.quickNavToggleModKey.toUpperCase()],
-        [h.quickNavOpenSlash],
-      ],
+      alternatives: [[modLabel, h.quickNavToggleModKey.toUpperCase()], [h.quickNavOpenSlash]],
     },
     {
       action: 'Toggle sidebar',
@@ -76,11 +73,7 @@ export function isModLetter(e: KeyboardEvent, letter: string): boolean {
 
 export function isQuickNavSlash(e: KeyboardEvent): boolean {
   const mod = e.metaKey || e.ctrlKey;
-  return (
-    !mod &&
-    !e.altKey &&
-    e.key === DASHBOARD_HOTKEY.quickNavOpenSlash
-  );
+  return !mod && !e.altKey && e.key === DASHBOARD_HOTKEY.quickNavOpenSlash;
 }
 
 export function isShortcutsHelp(e: KeyboardEvent): boolean {
@@ -95,9 +88,7 @@ export function isScanSellHidePurchaseKey(e: KeyboardEvent): boolean {
 }
 
 /** Skip tilde shortcut when typing in a text-like field. */
-export function shouldSkipScanSellHidePurchaseKey(
-  activeElement: Element | null
-): boolean {
+export function shouldSkipScanSellHidePurchaseKey(activeElement: Element | null): boolean {
   if (!activeElement || !(activeElement instanceof HTMLElement)) {
     return false;
   }

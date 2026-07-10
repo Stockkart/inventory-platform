@@ -21,18 +21,16 @@ import {
 } from '@inventory-platform/ui-kit';
 import { accountingApi } from '../api/accounting.api';
 import { useNotify } from '@inventory-platform/session';
-import type { AccountType, TrialBalanceResponse, TrialBalanceRow } from '@inventory-platform/accounting/types';
+import type {
+  AccountType,
+  TrialBalanceResponse,
+  TrialBalanceRow,
+} from '@inventory-platform/accounting/types';
 import { AccountingTabs } from '../ui/AccountingTabs';
 import { formatDate, formatMoney, todayLocalDate } from '../model/format';
 import styles from '../ui/accounting.module.css';
 
-const GROUP_ORDER: AccountType[] = [
-  'ASSET',
-  'LIABILITY',
-  'EQUITY',
-  'REVENUE',
-  'EXPENSE',
-];
+const GROUP_ORDER: AccountType[] = ['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE'];
 
 const GROUP_LABEL: Record<AccountType, string> = {
   ASSET: 'Assets',
@@ -93,8 +91,7 @@ export function TrialBalancePage() {
     return { dr, cr };
   }
 
-  const isBalanced =
-    !!data && Math.abs(data.totalDebit - data.totalCredit) < 0.005;
+  const isBalanced = !!data && Math.abs(data.totalDebit - data.totalCredit) < 0.005;
 
   return (
     <Stack gap="md" className={styles.page}>
@@ -108,11 +105,7 @@ export function TrialBalancePage() {
           <Text variant="label" color="secondary">
             As of
           </Text>
-          <Input
-            type="date"
-            value={asOf}
-            onChange={(e) => setAsOf(e.target.value)}
-          />
+          <Input type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} />
           {data ? (
             <Text variant="caption" color="secondary">
               · {formatDate(data.asOf)}

@@ -14,7 +14,7 @@ function loadRazorpayScript(): Promise<void> {
   }
   scriptPromise = new Promise((resolve, reject) => {
     const existing = document.querySelector<HTMLScriptElement>(
-      `script[src="${RAZORPAY_SCRIPT_URL}"]`
+      `script[src="${RAZORPAY_SCRIPT_URL}"]`,
     );
     if (existing) {
       existing.addEventListener('load', () => resolve());

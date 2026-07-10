@@ -10,8 +10,7 @@ const USER_JOURNEY = `${CORE}/user/src/journey`;
 const PLAN_MARKETING = `${CORE}/plan/src/marketing`;
 
 const PUBLIC_ROUTE_MANIFEST: Array<
-  | { kind: 'index'; file: string }
-  | { kind: 'route'; path: string; file: string }
+  { kind: 'index'; file: string } | { kind: 'route'; path: string; file: string }
 > = [
   { kind: 'index', file: `${PLAN_MARKETING}/landing.tsx` },
   { kind: 'route', path: 'favicon.ico', file: './routes/favicon.tsx' },
@@ -69,9 +68,9 @@ export function publicRoutes(): RouteConfigEntry[] {
     return route(entry.path, entry.file);
   });
 
-  const mobileUpload = composeDashboardRouteEntries([
-    MOBILE_UPLOAD_REGISTRATION,
-  ]).map((entry) => route(entry.path, entry.file));
+  const mobileUpload = composeDashboardRouteEntries([MOBILE_UPLOAD_REGISTRATION]).map((entry) =>
+    route(entry.path, entry.file),
+  );
 
   return [...utilityRoutes, ...mobileUpload];
 }

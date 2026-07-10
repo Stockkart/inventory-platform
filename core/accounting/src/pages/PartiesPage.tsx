@@ -105,7 +105,7 @@ export function PartiesPage({ partyType }: PartiesPageProps) {
     return rows.filter(
       (p) =>
         (p.partyDisplayName ?? '').toLowerCase().includes(q) ||
-        p.partyRefId.toLowerCase().includes(q)
+        p.partyRefId.toLowerCase().includes(q),
     );
   }, [data, search]);
 
@@ -127,18 +127,10 @@ export function PartiesPage({ partyType }: PartiesPageProps) {
             className={styles.acctSearch}
           />
           <FormFieldRow label="From">
-            <Input
-              type="date"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-            />
+            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
           </FormFieldRow>
           <FormFieldRow label="To">
-            <Input
-              type="date"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-            />
+            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
           </FormFieldRow>
           <Button
             type="button"
@@ -196,14 +188,10 @@ export function PartiesPage({ partyType }: PartiesPageProps) {
           <Table>
             <TableHead>
               <TableRow>
-                <TableHeaderCell>
-                  {partyType === 'VENDOR' ? 'Vendor' : 'Customer'}
-                </TableHeaderCell>
+                <TableHeaderCell>{partyType === 'VENDOR' ? 'Vendor' : 'Customer'}</TableHeaderCell>
                 <TableHeaderCell className={styles.right}>Debit</TableHeaderCell>
                 <TableHeaderCell className={styles.right}>Credit</TableHeaderCell>
-                <TableHeaderCell className={styles.right}>
-                  {copy.balanceCol}
-                </TableHeaderCell>
+                <TableHeaderCell className={styles.right}>{copy.balanceCol}</TableHeaderCell>
                 <TableHeaderCell>Last activity</TableHeaderCell>
                 <TableHeaderCell className={styles.right}>Txns</TableHeaderCell>
               </TableRow>
@@ -261,13 +249,7 @@ export function PartiesPage({ partyType }: PartiesPageProps) {
   );
 }
 
-function FormFieldRow({
-  label,
-  children,
-}: {
-  label: string;
-  children: ReactNode;
-}) {
+function FormFieldRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <Inline gap="sm" align="center">
       <Text variant="label" color="secondary">

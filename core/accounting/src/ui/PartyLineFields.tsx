@@ -2,13 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { customersApi } from '@inventory-platform/user/customers';
 import { vendorsApi } from '@inventory-platform/user/vendors';
 import type { AccountingPartyType } from '@inventory-platform/accounting/types';
-import {
-  SearchInput,
-  Select,
-  type SelectOptionDef,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { SearchInput, Select, type SelectOptionDef, Stack, Text } from '@inventory-platform/ui-kit';
 import { isCreditorsAccount, isDebtorsAccount } from '../model/accountingConstants';
 import styles from './accounting.module.css';
 
@@ -40,8 +34,8 @@ export function PartyLineFields({
   const kind = isDebtorsAccount(accountCode)
     ? 'CUSTOMER'
     : isCreditorsAccount(accountCode)
-      ? 'VENDOR'
-      : null;
+    ? 'VENDOR'
+    : null;
 
   useEffect(() => {
     if (!kind) return;
@@ -56,7 +50,7 @@ export function PartyLineFields({
               (res.data ?? []).map((c) => ({
                 id: c.customerId,
                 label: c.name + (c.phone ? ` · ${c.phone}` : ''),
-              }))
+              })),
             );
           }
         } else {
@@ -66,7 +60,7 @@ export function PartyLineFields({
               (res.data ?? []).map((v) => ({
                 id: v.vendorId,
                 label: v.name || v.companyName,
-              }))
+              })),
             );
           }
         }
@@ -83,19 +77,12 @@ export function PartyLineFields({
   }, [kind, query]);
 
   const selectOptions = useMemo<SelectOptionDef[]>(() => {
-    const placeholder = loading
-      ? 'Loading…'
-      : kind === 'CUSTOMER'
-        ? '— Customer —'
-        : '— Vendor —';
+    const placeholder = loading ? 'Loading…' : kind === 'CUSTOMER' ? '— Customer —' : '— Vendor —';
     const base: SelectOptionDef[] = [{ value: '', label: placeholder }];
     if (partyRefId && partyDisplayName && !options.some((o) => o.id === partyRefId)) {
       base.push({ value: partyRefId, label: partyDisplayName });
     }
-    return [
-      ...base,
-      ...options.map((o) => ({ value: o.id, label: o.label })),
-    ];
+    return [...base, ...options.map((o) => ({ value: o.id, label: o.label }))];
   }, [kind, loading, options, partyDisplayName, partyRefId]);
 
   if (!kind) return null;

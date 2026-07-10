@@ -1,14 +1,9 @@
 import { useMemo, useState } from 'react';
-import type { AccountResponse, CreateJournalLineRequest } from '@inventory-platform/accounting/types';
-import {
-  Box,
-  Button,
-  IconButton,
-  Inline,
-  Input,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import type {
+  AccountResponse,
+  CreateJournalLineRequest,
+} from '@inventory-platform/accounting/types';
+import { Box, Button, IconButton, Inline, Input, Stack, Text } from '@inventory-platform/ui-kit';
 import { AccountPicker } from './AccountPicker';
 import { PartyLineFields } from './PartyLineFields';
 import {
@@ -17,11 +12,7 @@ import {
   emptyLine,
   parseAmount,
 } from '../model/journalEntryFormUtils';
-import {
-  JOURNAL_TEMPLATES,
-  type JournalTemplateId,
-  getTemplate,
-} from '../model/journalTemplates';
+import { JOURNAL_TEMPLATES, type JournalTemplateId, getTemplate } from '../model/journalTemplates';
 import { needsPartyOnLine } from '../model/accountingConstants';
 import { formatMoney } from '../model/format';
 import styles from './accounting.module.css';
@@ -78,7 +69,7 @@ export function JournalEntryEditor({
   onValidationError,
 }: JournalEntryEditorProps) {
   const [activeTemplate, setActiveTemplate] = useState<JournalTemplateId | null>(
-    initialTemplateId ?? null
+    initialTemplateId ?? null,
   );
 
   const { totalDebit, totalCredit, balanced } = useMemo(() => {
@@ -136,34 +127,30 @@ export function JournalEntryEditor({
     <Stack gap="md">
       {showTemplates ? (
         <Inline gap="sm" className={styles.templateBar}>
-            {JOURNAL_TEMPLATES.filter((t) => t.id !== 'BLANK').map((t) => (
-              <Button
-                key={t.id}
-                type="button"
-                size="sm"
-                variant="ghost"
-                className={
-                  activeTemplate === t.id ? styles.templateChipActive : styles.templateChip
-                }
-                onClick={() => applyTemplate(t.id)}
-                disabled={disabled || accountsLoading}
-                title={t.description}
-              >
-                {t.label}
-              </Button>
-            ))}
+          {JOURNAL_TEMPLATES.filter((t) => t.id !== 'BLANK').map((t) => (
             <Button
+              key={t.id}
               type="button"
               size="sm"
               variant="ghost"
-              className={
-                activeTemplate === 'BLANK' ? styles.templateChipActive : styles.templateChip
-              }
-              onClick={() => applyTemplate('BLANK')}
+              className={activeTemplate === t.id ? styles.templateChipActive : styles.templateChip}
+              onClick={() => applyTemplate(t.id)}
               disabled={disabled || accountsLoading}
+              title={t.description}
             >
-              Blank
+              {t.label}
             </Button>
+          ))}
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className={activeTemplate === 'BLANK' ? styles.templateChipActive : styles.templateChip}
+            onClick={() => applyTemplate('BLANK')}
+            disabled={disabled || accountsLoading}
+          >
+            Blank
+          </Button>
         </Inline>
       ) : null}
 

@@ -26,8 +26,7 @@ type BoxOwnProps = {
   style?: CSSProperties;
 };
 
-export type BoxProps = BoxOwnProps &
-  Omit<ComponentPropsWithoutRef<'div'>, keyof BoxOwnProps>;
+export type BoxProps = BoxOwnProps & Omit<ComponentPropsWithoutRef<'div'>, keyof BoxOwnProps>;
 
 export const Box = forwardRef<HTMLElement, BoxProps>(function Box(
   {
@@ -52,7 +51,7 @@ export const Box = forwardRef<HTMLElement, BoxProps>(function Box(
     style,
     ...rest
   },
-  ref
+  ref,
 ) {
   return (
     <Component
@@ -75,7 +74,7 @@ export const Box = forwardRef<HTMLElement, BoxProps>(function Box(
         rounded && styles[`rounded-${rounded}`],
         overflow && styles[`overflow-${overflow}`],
         position && styles[`position-${position}`],
-        className
+        className,
       )}
       {...rest}
     >

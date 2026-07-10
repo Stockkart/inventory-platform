@@ -2,15 +2,7 @@ import { useState } from 'react';
 import { shopsApi } from '../api/shops.api';
 import type { JoinRequest, UserRole } from '@inventory-platform/user/types';
 import { RoleBadge } from './RoleBadge';
-import {
-  Alert,
-  Box,
-  Button,
-  Card,
-  Inline,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { Alert, Box, Button, Card, Inline, Stack, Text } from '@inventory-platform/ui-kit';
 import styles from './JoinRequestCard.module.css';
 import { useNotify } from '@inventory-platform/session';
 
@@ -87,10 +79,7 @@ export function JoinRequestCard({
           </Stack>
           <RoleBadge role={joinRequest.requestedRole as UserRole} />
         </Inline>
-        <Box
-          as="span"
-          className={`${styles.status} ${getStatusColor(joinRequest.status)}`}
-        >
+        <Box as="span" className={`${styles.status} ${getStatusColor(joinRequest.status)}`}>
           {joinRequest.status}
         </Box>
       </Stack>
@@ -98,9 +87,7 @@ export function JoinRequestCard({
       <Stack className={styles.details} gap="sm">
         <DetailRow label="Shop:" value={joinRequest.shopName} />
         <DetailRow label="Requested Role:" value={joinRequest.requestedRole} />
-        {joinRequest.message ? (
-          <DetailRow label="Message:" value={joinRequest.message} />
-        ) : null}
+        {joinRequest.message ? <DetailRow label="Message:" value={joinRequest.message} /> : null}
         <DetailRow
           label="Requested:"
           value={new Date(joinRequest.createdAt).toLocaleDateString()}

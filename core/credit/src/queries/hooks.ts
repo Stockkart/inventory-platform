@@ -5,12 +5,17 @@ import {
   type UseMutationOptions,
   type UseQueryOptions,
 } from '@tanstack/react-query';
-import type { CreateCreditEntryDto, CreditAccountResponse, CreditEntriesPageResponse, CreditEntryResponse } from '@inventory-platform/credit/types';
+import type {
+  CreateCreditEntryDto,
+  CreditAccountResponse,
+  CreditEntriesPageResponse,
+  CreditEntryResponse,
+} from '@inventory-platform/credit/types';
 import { creditApi } from '../api/credit.api';
 import { creditKeys } from './keys';
 
 export function useCreditAccountsQuery(
-  options?: Omit<UseQueryOptions<CreditAccountResponse[]>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<CreditAccountResponse[]>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: creditKeys.accounts(),
@@ -23,7 +28,7 @@ export function useCreditEntriesQuery(
   accountId: string | null | undefined,
   page = 0,
   size = 30,
-  options?: Omit<UseQueryOptions<CreditEntriesPageResponse>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<CreditEntriesPageResponse>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: creditKeys.entries(accountId ?? '', page, size),
@@ -34,7 +39,7 @@ export function useCreditEntriesQuery(
 }
 
 export function useChargeMutation(
-  options?: UseMutationOptions<CreditEntryResponse, Error, CreateCreditEntryDto>
+  options?: UseMutationOptions<CreditEntryResponse, Error, CreateCreditEntryDto>,
 ) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -48,7 +53,7 @@ export function useChargeMutation(
 }
 
 export function useSettlementMutation(
-  options?: UseMutationOptions<CreditEntryResponse, Error, CreateCreditEntryDto>
+  options?: UseMutationOptions<CreditEntryResponse, Error, CreateCreditEntryDto>,
 ) {
   const queryClient = useQueryClient();
   return useMutation({

@@ -5,19 +5,26 @@ import {
   type UseMutationOptions,
   type UseQueryOptions,
 } from '@tanstack/react-query';
-import type { CreateReminderDto, Reminder, ReminderDetail, ReminderDetailListResponse, UpdateReminderDto } from '@inventory-platform/reminders/types';
-import type { InventoryExpiryBuckets, InventoryItem, PaginationInventoryResponse } from '@inventory-platform/product/types';
+import type {
+  CreateReminderDto,
+  Reminder,
+  ReminderDetail,
+  ReminderDetailListResponse,
+  UpdateReminderDto,
+} from '@inventory-platform/reminders/types';
+import type {
+  InventoryExpiryBuckets,
+  InventoryItem,
+  PaginationInventoryResponse,
+} from '@inventory-platform/product/types';
 import { inventoryAlertApi } from '../api/inventory-alert.api';
-import {
-  remindersApi,
-  type ExpiryBucketsParams,
-} from '../api/reminders.api';
+import { remindersApi, type ExpiryBucketsParams } from '../api/reminders.api';
 import { remindersKeys } from './keys';
 
 export function useReminderDetailsQuery(
   page: number,
   size: number,
-  options?: Omit<UseQueryOptions<ReminderDetailListResponse>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<ReminderDetailListResponse>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: remindersKeys.reminderDetails(page, size),
@@ -28,7 +35,7 @@ export function useReminderDetailsQuery(
 
 export function useReminderDetailQuery(
   id: string | undefined,
-  options?: Omit<UseQueryOptions<ReminderDetail>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<ReminderDetail>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: remindersKeys.reminderDetail(id ?? ''),
@@ -40,7 +47,7 @@ export function useReminderDetailQuery(
 
 export function useExpiryBucketsQuery(
   params: ExpiryBucketsParams,
-  options?: Omit<UseQueryOptions<InventoryExpiryBuckets>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<InventoryExpiryBuckets>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: remindersKeys.expiryBuckets(params),
@@ -52,7 +59,7 @@ export function useExpiryBucketsQuery(
 export function useLowStockAlertsQuery(
   page: number,
   size: number,
-  options?: Omit<UseQueryOptions<PaginationInventoryResponse>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<PaginationInventoryResponse>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: remindersKeys.lowStock(page, size),
@@ -63,7 +70,7 @@ export function useLowStockAlertsQuery(
 
 export function useInventoryItemQuery(
   id: string | null | undefined,
-  options?: Omit<UseQueryOptions<InventoryItem>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<InventoryItem>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: remindersKeys.inventoryItem(id ?? ''),
@@ -74,7 +81,7 @@ export function useInventoryItemQuery(
 }
 
 export function useCreateReminderMutation(
-  options?: UseMutationOptions<Reminder, Error, CreateReminderDto>
+  options?: UseMutationOptions<Reminder, Error, CreateReminderDto>,
 ) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -88,11 +95,7 @@ export function useCreateReminderMutation(
 }
 
 export function useUpdateReminderMutation(
-  options?: UseMutationOptions<
-    Reminder,
-    Error,
-    { id: string; data: UpdateReminderDto }
-  >
+  options?: UseMutationOptions<Reminder, Error, { id: string; data: UpdateReminderDto }>,
 ) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -105,9 +108,7 @@ export function useUpdateReminderMutation(
   });
 }
 
-export function useDeleteReminderMutation(
-  options?: UseMutationOptions<number, Error, string>
-) {
+export function useDeleteReminderMutation(options?: UseMutationOptions<number, Error, string>) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id) => remindersApi.delete(id),
@@ -120,7 +121,7 @@ export function useDeleteReminderMutation(
 }
 
 export function useSnoozeReminderMutation(
-  options?: UseMutationOptions<Reminder, Error, { id: string; snoozeDays: number }>
+  options?: UseMutationOptions<Reminder, Error, { id: string; snoozeDays: number }>,
 ) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -134,11 +135,7 @@ export function useSnoozeReminderMutation(
 }
 
 export function useUpdateThresholdMutation(
-  options?: UseMutationOptions<
-    void,
-    Error,
-    { inventoryId: string; thresholdCount: number }
-  >
+  options?: UseMutationOptions<void, Error, { inventoryId: string; thresholdCount: number }>,
 ) {
   const queryClient = useQueryClient();
   return useMutation({

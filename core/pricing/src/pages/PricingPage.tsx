@@ -101,12 +101,7 @@ export function PricingPage() {
           className={styles.searchInput}
         />
         {searchInput ? (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleClear}
-            disabled={isLoading}
-          >
+          <Button type="button" variant="outline" onClick={handleClear} disabled={isLoading}>
             Clear
           </Button>
         ) : null}
@@ -116,9 +111,7 @@ export function PricingPage() {
 
       <Inline gap="md" className={styles.resultsMeta}>
         <Text color="secondary" variant="caption">
-          {isLoading
-            ? 'Loading…'
-            : `${totalItems} item${totalItems === 1 ? '' : 's'} found`}
+          {isLoading ? 'Loading…' : `${totalItems} item${totalItems === 1 ? '' : 's'} found`}
         </Text>
         {itemsWithoutPricing.length > 0 && itemsWithPricing.length > 0 ? (
           <Text color="secondary" variant="caption">
@@ -145,11 +138,7 @@ export function PricingPage() {
           ) : inventory.length === 0 ? (
             <TableEmptyRow
               colSpan={7}
-              message={
-                query
-                  ? 'No inventory matches your search.'
-                  : 'No inventory found.'
-              }
+              message={query ? 'No inventory matches your search.' : 'No inventory found.'}
             />
           ) : (
             inventory.map((item) => (

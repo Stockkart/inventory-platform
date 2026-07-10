@@ -2,14 +2,7 @@ import { useState } from 'react';
 import { invitationsApi } from '../api/invitations.api';
 import { useNotify } from '@inventory-platform/session';
 import type { UserRole } from '@inventory-platform/user/types';
-import {
-  Alert,
-  Button,
-  FormField,
-  Select,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { Alert, Button, FormField, Select, Stack, Text } from '@inventory-platform/ui-kit';
 import styles from './InviteForm.module.css';
 const { error: notifyError, success: notifySuccess } = useNotify;
 
@@ -65,8 +58,7 @@ export function InviteForm({ shopId, onInviteSent, onError }: InviteFormProps) {
         onInviteSent();
       }
     } catch (err: any) {
-      const errorMessage =
-        err?.message || 'Failed to send invitation. Please try again.';
+      const errorMessage = err?.message || 'Failed to send invitation. Please try again.';
       notifyError(errorMessage);
       if (onError) {
         onError(errorMessage);

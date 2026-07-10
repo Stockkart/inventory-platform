@@ -1,5 +1,9 @@
 import { useState } from 'react';
-import type { CreateReminderDto, UpdateReminderDto, Reminder } from '@inventory-platform/reminders/types';
+import type {
+  CreateReminderDto,
+  UpdateReminderDto,
+  Reminder,
+} from '@inventory-platform/reminders/types';
 import styles from './ReminderForm.module.css';
 import { useNotify } from '@inventory-platform/session';
 import {
@@ -40,9 +44,7 @@ export function ReminderForm({
     reminderAt: reminder?.reminderAt
       ? new Date(reminder.reminderAt).toISOString().slice(0, 16)
       : '',
-    endDate: reminder?.expiryDate
-      ? new Date(reminder.expiryDate).toISOString().slice(0, 16)
-      : '',
+    endDate: reminder?.expiryDate ? new Date(reminder.expiryDate).toISOString().slice(0, 16) : '',
     notes: reminder?.notes || '',
     status: reminder?.status || 'PENDING',
   });
@@ -68,9 +70,7 @@ export function ReminderForm({
 
     try {
       const reminderAtISO = new Date(formData.reminderAt).toISOString();
-      const endDateISO = formData.endDate
-        ? new Date(formData.endDate).toISOString()
-        : undefined;
+      const endDateISO = formData.endDate ? new Date(formData.endDate).toISOString() : undefined;
 
       if (isEditMode && reminder) {
         const updateData: UpdateReminderDto = {
@@ -91,8 +91,7 @@ export function ReminderForm({
         await onSubmit(createData);
       }
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to save reminder';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save reminder';
       notifyError(errorMessage);
     }
   };
@@ -177,11 +176,7 @@ export function ReminderForm({
           onClick={() => void handleSubmit()}
           disabled={isLoading || !formData.reminderAt}
         >
-          {isLoading
-            ? 'Saving...'
-            : isEditMode
-              ? 'Update Reminder'
-              : 'Create Reminder'}
+          {isLoading ? 'Saving...' : isEditMode ? 'Update Reminder' : 'Create Reminder'}
         </Button>
       </Inline>
     </Stack>

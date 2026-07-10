@@ -26,11 +26,31 @@ import type { CustomerResponse } from '@inventory-platform/user/types';
 import styles from './whatsapp-marketing.module.css';
 
 const MOCK_TEMPLATES = [
-  { id: 'welcome', name: 'Welcome Message', body: 'Hi {{name}}, welcome to our store! We\'re glad to have you.' },
-  { id: 'order-update', name: 'Order Update', body: 'Hi {{name}}, your order has been shipped. Track it here: {{link}}' },
-  { id: 'promo', name: 'Special Offer', body: 'Hi {{name}}, exclusive offer just for you! Get 20% off on your next purchase.' },
-  { id: 'reminder', name: 'Payment Reminder', body: 'Hi {{name}}, this is a friendly reminder about your pending payment.' },
-  { id: 'feedback', name: 'Feedback Request', body: 'Hi {{name}}, how was your experience? We\'d love to hear from you!' },
+  {
+    id: 'welcome',
+    name: 'Welcome Message',
+    body: "Hi {{name}}, welcome to our store! We're glad to have you.",
+  },
+  {
+    id: 'order-update',
+    name: 'Order Update',
+    body: 'Hi {{name}}, your order has been shipped. Track it here: {{link}}',
+  },
+  {
+    id: 'promo',
+    name: 'Special Offer',
+    body: 'Hi {{name}}, exclusive offer just for you! Get 20% off on your next purchase.',
+  },
+  {
+    id: 'reminder',
+    name: 'Payment Reminder',
+    body: 'Hi {{name}}, this is a friendly reminder about your pending payment.',
+  },
+  {
+    id: 'feedback',
+    name: 'Feedback Request',
+    body: "Hi {{name}}, how was your experience? We'd love to hear from you!",
+  },
 ];
 
 export function meta() {
@@ -133,7 +153,9 @@ export function WhatsAppMarketingPage() {
     const template = templates.find((t) => t.id === selectedTemplateId);
     if (!template) return;
     alert(
-      `Preview: Would send "${template.name}" to ${count} customer${count !== 1 ? 's' : ''}.\n\nBackend integration coming soon.`
+      `Preview: Would send "${template.name}" to ${count} customer${
+        count !== 1 ? 's' : ''
+      }.\n\nBackend integration coming soon.`,
     );
   };
 
@@ -223,9 +245,7 @@ export function WhatsAppMarketingPage() {
 
             <Inline gap="sm" className={styles.selectAllRow} justify="between">
               <Button type="button" variant="ghost" size="sm" onClick={selectAll}>
-                {selectedCustomerIds.size === customers.length
-                  ? 'Deselect all'
-                  : 'Select all'}
+                {selectedCustomerIds.size === customers.length ? 'Deselect all' : 'Select all'}
               </Button>
               <Text color="secondary" className={styles.selectedCount}>
                 {selectedCustomerIds.size} selected
@@ -255,11 +275,14 @@ export function WhatsAppMarketingPage() {
                       checked={isSelected}
                       onChange={() => toggleCustomer(c.customerId)}
                       disabled={!hasValidPhone}
-                      title={
-                        !hasValidPhone ? 'No phone number – cannot send WhatsApp' : ''
-                      }
+                      title={!hasValidPhone ? 'No phone number – cannot send WhatsApp' : ''}
                       label={
-                        <Inline gap="sm" className={styles.customerInfo} justify="between" width="full">
+                        <Inline
+                          gap="sm"
+                          className={styles.customerInfo}
+                          justify="between"
+                          width="full"
+                        >
                           <Stack gap="xs">
                             <Text weight="semibold" className={styles.customerName}>
                               {c.name ?? '—'}

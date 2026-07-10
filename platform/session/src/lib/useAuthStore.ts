@@ -8,7 +8,9 @@ import { useVerticalSchemaStore } from './useVerticalSchemaStore';
 import { usePlanStatusStore } from './usePlanStatusStore';
 import { useShopAccessStore } from './useShopAccessStore';
 
-function deriveShopFromUser(user: { shopId: string | null; shops?: Array<{ shopId: string; shopName: string }> } | null): { name?: string } | null {
+function deriveShopFromUser(
+  user: { shopId: string | null; shops?: Array<{ shopId: string; shopName: string }> } | null,
+): { name?: string } | null {
   if (!user?.shopId || !user.shops?.length) return null;
   const active = user.shops.find((s) => s.shopId === user.shopId);
   return active ? { name: active.shopName } : null;
@@ -44,8 +46,7 @@ export const useAuthStore = create<AuthState>()(
             error: null,
           });
         } catch (error: unknown) {
-          const errorMessage =
-            error instanceof Error ? error.message : 'Login failed';
+          const errorMessage = error instanceof Error ? error.message : 'Login failed';
           set({
             isLoading: false,
             error: errorMessage,
@@ -67,8 +68,7 @@ export const useAuthStore = create<AuthState>()(
             error: null,
           });
         } catch (error: unknown) {
-          const errorMessage =
-            error instanceof Error ? error.message : 'Signup failed';
+          const errorMessage = error instanceof Error ? error.message : 'Signup failed';
           set({
             isLoading: false,
             error: errorMessage,
@@ -124,8 +124,7 @@ export const useAuthStore = create<AuthState>()(
             error: null,
           });
         } catch (error: unknown) {
-          const errorMessage =
-            error instanceof Error ? error.message : 'Failed to fetch user';
+          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch user';
           set({
             isLoading: false,
             error: errorMessage,
@@ -155,8 +154,7 @@ export const useAuthStore = create<AuthState>()(
             error: null,
           });
         } catch (error: unknown) {
-          const errorMessage =
-            error instanceof Error ? error.message : 'Failed to switch shop';
+          const errorMessage = error instanceof Error ? error.message : 'Failed to switch shop';
           set({ isLoading: false, error: errorMessage });
           throw error;
         }
@@ -179,6 +177,6 @@ export const useAuthStore = create<AuthState>()(
           apiClient.setShopId(state.user.shopId);
         }
       },
-    }
-  )
+    },
+  ),
 );

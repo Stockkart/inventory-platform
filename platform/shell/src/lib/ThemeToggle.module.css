@@ -1,8 +1,8 @@
 .toggle {
-  background: transparent;        /* no box */
-  border: none;                   /* no border */
-  color: var(--text-primary);     /* icon color based on theme */
-  padding: 0;                     /* no extra padding */
+  background: transparent; /* no box */
+  border: none; /* no border */
+  color: var(--text-primary); /* icon color based on theme */
+  padding: 0; /* no extra padding */
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -29,4 +29,3 @@
 .toggle:focus {
   outline: none;
 }
-

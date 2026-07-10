@@ -2,7 +2,13 @@ import type { RouteModule } from '@inventory-platform/routing';
 
 export const productRegistrationRoutes: RouteModule = {
   path: 'product-registration',
-  children: [{ path: '', file: 'routes/product-registration.tsx', lazy: () => import('./routes/product-registration') }],
+  children: [
+    {
+      path: '',
+      file: 'routes/product-registration.tsx',
+      lazy: () => import('./routes/product-registration'),
+    },
+  ],
 };
 
 export const importRoutes: RouteModule = {
@@ -12,17 +18,31 @@ export const importRoutes: RouteModule = {
 
 export const productSearchRoutes: RouteModule = {
   path: 'product-search',
-  children: [{ path: '', file: 'routes/product-search.tsx', lazy: () => import('./routes/product-search') }],
+  children: [
+    { path: '', file: 'routes/product-search.tsx', lazy: () => import('./routes/product-search') },
+  ],
 };
 
 export const stockCorrectionsRoutes: RouteModule = {
   path: 'stock-corrections',
-  children: [{ path: '', file: 'routes/stock-corrections.tsx', lazy: () => import('./routes/stock-corrections') }],
+  children: [
+    {
+      path: '',
+      file: 'routes/stock-corrections.tsx',
+      lazy: () => import('./routes/stock-corrections'),
+    },
+  ],
 };
 
 export const vendorInvoicesRoutes: RouteModule = {
   path: 'vendor-invoices',
-  children: [{ path: '', file: 'routes/vendor-invoices.tsx', lazy: () => import('./routes/vendor-invoices') }],
+  children: [
+    {
+      path: '',
+      file: 'routes/vendor-invoices.tsx',
+      lazy: () => import('./routes/vendor-invoices'),
+    },
+  ],
 };
 
 export const scanSellRoutes: RouteModule = {
@@ -47,12 +67,16 @@ export const refundRoutes: RouteModule = {
 
 export const vendorReturnRoutes: RouteModule = {
   path: 'vendor-return',
-  children: [{ path: '', file: 'routes/vendor-return.tsx', lazy: () => import('./routes/vendor-return') }],
+  children: [
+    { path: '', file: 'routes/vendor-return.tsx', lazy: () => import('./routes/vendor-return') },
+  ],
 };
 
 export const mobileUploadRoutes: RouteModule = {
   path: 'm/upload',
-  children: [{ path: '', file: 'routes/mobile-upload.tsx', lazy: () => import('./routes/mobile-upload') }],
+  children: [
+    { path: '', file: 'routes/mobile-upload.tsx', lazy: () => import('./routes/mobile-upload') },
+  ],
 };
 
 export const productDashboardRoutes: RouteModule[] = [

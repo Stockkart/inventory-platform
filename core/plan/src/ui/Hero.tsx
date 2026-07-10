@@ -58,9 +58,7 @@ export function Hero() {
         {backgrounds.map((src, index) => (
           <Box
             key={index}
-            className={`${styles.bgImage} ${
-              index === currentIndex ? styles.bgImageActive : ''
-            }`}
+            className={`${styles.bgImage} ${index === currentIndex ? styles.bgImageActive : ''}`}
             style={{ backgroundImage: `url(${src})` }}
           />
         ))}
@@ -77,9 +75,7 @@ export function Hero() {
           </Text>
         </Text>
         <Stack gap="none" className={styles.description}>
-          <Text>
-            Everything you need to manage your inventory efficiently and scale
-          </Text>
+          <Text>Everything you need to manage your inventory efficiently and scale</Text>
           <Text>your business operations</Text>
         </Stack>
         <Inline gap="md" className={styles.ctaButtons}>

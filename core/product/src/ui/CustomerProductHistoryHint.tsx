@@ -1,13 +1,9 @@
 import { useState } from 'react';
-import type { CustomerProductHistoryGroup, CustomerProductHistoryResponse } from '@inventory-platform/product/types';
-import {
-  Badge,
-  Box,
-  Button,
-  Inline,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import type {
+  CustomerProductHistoryGroup,
+  CustomerProductHistoryResponse,
+} from '@inventory-platform/product/types';
+import { Badge, Box, Button, Inline, Stack, Text } from '@inventory-platform/ui-kit';
 import styles from './CustomerProductHistoryHint.module.css';
 
 const dateFormatter = new Intl.DateTimeFormat('en-IN', {
@@ -50,17 +46,11 @@ function HistoryEntryRow({
   variant?: 'primary' | 'prior';
 }) {
   const date = entry.soldAt ? dateFormatter.format(new Date(entry.soldAt)) : '—';
-  const qtyAtRate = formatQtyAtRate(
-    entry.quantity,
-    Number(entry.priceToRetail) || 0
-  );
+  const qtyAtRate = formatQtyAtRate(entry.quantity, Number(entry.priceToRetail) || 0);
   const invoice = entry.invoiceNo?.trim();
 
   return (
-    <Inline
-      gap="xs"
-      className={variant === 'primary' ? styles.entryRow : styles.entryRowPrior}
-    >
+    <Inline gap="xs" className={variant === 'primary' ? styles.entryRow : styles.entryRowPrior}>
       <Text variant="caption" className={styles.entryDate}>
         {date}
       </Text>
@@ -117,8 +107,7 @@ export function CustomerProductHistoryHint({
   }
 
   const prior = group.history.slice(1);
-  const priorLabel =
-    prior.length === 1 ? '1 earlier' : `${prior.length} earlier`;
+  const priorLabel = prior.length === 1 ? '1 earlier' : `${prior.length} earlier`;
 
   return (
     <Box className={`${styles.hint} ${styles.hintHasHistory}`}>

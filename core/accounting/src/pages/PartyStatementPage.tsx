@@ -113,11 +113,7 @@ export function PartyStatementPage({ partyType }: PartyStatementPageProps) {
             partyType === 'VENDOR' ? 'Sundry Creditors' : 'Sundry Debtors'
           } for this party.`}
           actions={
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => navigate(titles.backHref)}
-            >
+            <Button type="button" variant="ghost" onClick={() => navigate(titles.backHref)}>
               ← {titles.back}
             </Button>
           }
@@ -172,8 +168,8 @@ export function PartyStatementPage({ partyType }: PartyStatementPageProps) {
                 {formatMoney(data?.openingBalance ?? 0)}
               </Text>
               <Text variant="caption" color="secondary">
-                {partyType === 'VENDOR' ? 'Payable to vendor' : 'Receivable from customer'}{' '}
-                before {from || 'first entry'}
+                {partyType === 'VENDOR' ? 'Payable to vendor' : 'Receivable from customer'} before{' '}
+                {from || 'first entry'}
               </Text>
             </Stack>
           </CardBody>
@@ -237,9 +233,7 @@ export function PartyStatementPage({ partyType }: PartyStatementPageProps) {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() =>
-                          navigate(`/dashboard/accounting/ledger/${e.accountId}`)
-                        }
+                        onClick={() => navigate(`/dashboard/accounting/ledger/${e.accountId}`)}
                       >
                         {e.accountCode} · {e.accountName}
                       </Button>

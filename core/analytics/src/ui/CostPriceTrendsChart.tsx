@@ -1,11 +1,5 @@
 import { useState } from 'react';
-import {
-  Box,
-  Checkbox,
-  Inline,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { Box, Checkbox, Inline, Stack, Text } from '@inventory-platform/ui-kit';
 import {
   LineChart,
   Line,

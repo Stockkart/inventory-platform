@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router';
-import type { CreateReminderDto, Reminder, ReminderInventorySummary, ReminderType, UpdateReminderDto } from '@inventory-platform/reminders/types';
+import type {
+  CreateReminderDto,
+  Reminder,
+  ReminderInventorySummary,
+  ReminderType,
+  UpdateReminderDto,
+} from '@inventory-platform/reminders/types';
 import { InventoryAlertDetails } from '@inventory-platform/product';
 import {
   Badge,
@@ -44,15 +50,10 @@ export function RemindersPage() {
   const [typeFilter, setTypeFilter] = useState<'all' | ReminderType>('all');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
-  const [deletingReminderId, setDeletingReminderId] = useState<string | null>(
-    null
-  );
-  const [snoozingReminderId, setSnoozingReminderId] = useState<string | null>(
-    null
-  );
+  const [deletingReminderId, setDeletingReminderId] = useState<string | null>(null);
+  const [snoozingReminderId, setSnoozingReminderId] = useState<string | null>(null);
   const [customSnoozeDays, setCustomSnoozeDays] = useState<number | ''>('');
-  const [selectedInventory, setSelectedInventory] =
-    useState<ReminderInventorySummary | null>(null);
+  const [selectedInventory, setSelectedInventory] = useState<ReminderInventorySummary | null>(null);
   const { error: notifyError } = useNotify;
 
   const listQuery = useReminderDetailsQuery(page, size, {
@@ -63,34 +64,28 @@ export function RemindersPage() {
   });
   const { data: expiryBuckets } = useExpiryBucketsQuery(
     { expiringSoonDays: 30 },
-    { enabled: !fromNotification }
+    { enabled: !fromNotification },
   );
 
   const reminders = focusReminderId
     ? focusQuery.data
       ? [focusQuery.data]
       : []
-    : (listQuery.data?.data ?? []);
-  const totalPages = focusReminderId
-    ? 1
-    : (listQuery.data?.meta.totalPages ?? 1);
+    : listQuery.data?.data ?? [];
+  const totalPages = focusReminderId ? 1 : listQuery.data?.meta.totalPages ?? 1;
   const isLoading = focusReminderId ? focusQuery.isLoading : listQuery.isLoading;
 
   const createMutation = useCreateReminderMutation({
-    onError: (err) =>
-      notifyError(err instanceof Error ? err.message : 'Failed to create reminder'),
+    onError: (err) => notifyError(err instanceof Error ? err.message : 'Failed to create reminder'),
   });
   const updateMutation = useUpdateReminderMutation({
-    onError: (err) =>
-      notifyError(err instanceof Error ? err.message : 'Failed to update reminder'),
+    onError: (err) => notifyError(err instanceof Error ? err.message : 'Failed to update reminder'),
   });
   const deleteMutation = useDeleteReminderMutation({
-    onError: (err) =>
-      notifyError(err instanceof Error ? err.message : 'Failed to delete reminder'),
+    onError: (err) => notifyError(err instanceof Error ? err.message : 'Failed to delete reminder'),
   });
   const snoozeMutation = useSnoozeReminderMutation({
-    onError: (err) =>
-      notifyError(err instanceof Error ? err.message : 'Failed to snooze reminder'),
+    onError: (err) => notifyError(err instanceof Error ? err.message : 'Failed to snooze reminder'),
   });
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
@@ -147,7 +142,7 @@ export function RemindersPage() {
         const typeMatch = typeFilter === 'all' || reminder.type === typeFilter;
         return statusMatch && typeMatch;
       }),
-    [reminders, filter, typeFilter]
+    [reminders, filter, typeFilter],
   );
 
   const getDaysUntilReminder = (reminderAt: string): number => {
@@ -336,36 +331,23 @@ export function RemindersPage() {
                 const priority = getPriority(daysLeft);
 
                 return (
-                  <Box
-                    key={reminder.id}
-                    className={`${styles.reminderCard} ${styles[priority]}`}
-                  >
+                  <Box key={reminder.id} className={`${styles.reminderCard} ${styles[priority]}`}>
                     <Box className={styles.reminderIcon}>
                       {reminder.type === 'EXPIRY' ? '📅' : '🔔'}
                     </Box>
                     <Stack gap="sm" className={styles.reminderInfo}>
-                      <Inline
-                        justify="between"
-                        align="start"
-                        className={styles.reminderHeader}
-                      >
+                      <Inline justify="between" align="start" className={styles.reminderHeader}>
                         <Text variant="heading3" weight="semibold" className={styles.reminderTitle}>
-                          {reminder.type === 'EXPIRY'
-                            ? 'Expiry Reminder'
-                            : 'Custom Reminder'}
+                          {reminder.type === 'EXPIRY' ? 'Expiry Reminder' : 'Custom Reminder'}
                         </Text>
                         <Inline gap="sm" className={styles.badges}>
-                          <Badge
-                            className={`${styles.statusBadge} ${styles[reminder.status]}`}
-                          >
+                          <Badge className={`${styles.statusBadge} ${styles[reminder.status]}`}>
                             {reminder.status}
                           </Badge>
                           {reminder.type ? (
                             <Badge className={styles.typeBadge}>{reminder.type}</Badge>
                           ) : null}
-                          <Badge
-                            className={`${styles.priorityBadge} ${styles[priority]}`}
-                          >
+                          <Badge className={`${styles.priorityBadge} ${styles[priority]}`}>
                             {priority}
                           </Badge>
                         </Inline>
@@ -419,10 +401,8 @@ export function RemindersPage() {
                           {daysLeft < 0
                             ? `${Math.abs(daysLeft)} days overdue`
                             : daysLeft === 0
-                              ? 'Due today'
-                              : `${daysLeft} ${
-                                  daysLeft === 1 ? 'day' : 'days'
-                                } left`}
+                            ? 'Due today'
+                            : `${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left`}
                         </Text>
                       </Stack>
                     </Stack>
@@ -449,13 +429,9 @@ export function RemindersPage() {
                             <FormField
                               label="Custom days"
                               type="number"
-                              value={
-                                customSnoozeDays === '' ? '' : String(customSnoozeDays)
-                              }
+                              value={customSnoozeDays === '' ? '' : String(customSnoozeDays)}
                               onChange={(value) =>
-                                setCustomSnoozeDays(
-                                  value === '' ? '' : Number(value)
-                                )
+                                setCustomSnoozeDays(value === '' ? '' : Number(value))
                               }
                             />
                             <Button
@@ -469,15 +445,10 @@ export function RemindersPage() {
                               }
                               onClick={() =>
                                 customSnoozeDays !== '' &&
-                                void handleSnooze(
-                                  reminder.id,
-                                  Number(customSnoozeDays)
-                                )
+                                void handleSnooze(reminder.id, Number(customSnoozeDays))
                               }
                             >
-                              {snoozingReminderId === reminder.id
-                                ? 'Snoozing…'
-                                : 'Snooze'}
+                              {snoozingReminderId === reminder.id ? 'Snoozing…' : 'Snooze'}
                             </Button>
                             <Button
                               type="button"
@@ -493,9 +464,7 @@ export function RemindersPage() {
                               type="button"
                               size="sm"
                               variant="ghost"
-                              onClick={() =>
-                                setSelectedInventory(reminder.inventory)
-                              }
+                              onClick={() => setSelectedInventory(reminder.inventory)}
                             >
                               View Details
                             </Button>
@@ -526,9 +495,7 @@ export function RemindersPage() {
                               type="button"
                               size="sm"
                               variant="ghost"
-                              onClick={() =>
-                                setSelectedInventory(reminder.inventory)
-                              }
+                              onClick={() => setSelectedInventory(reminder.inventory)}
                             >
                               View Details
                             </Button>

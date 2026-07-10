@@ -2,8 +2,7 @@ import axios, { AxiosInstance, AxiosError } from 'axios';
 import { EventSourcePolyfill } from 'event-source-polyfill';
 import { ApiError } from './ApiError';
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 if (import.meta.env.DEV) {
   console.log('API Base URL:', API_BASE_URL);
@@ -38,9 +37,7 @@ class ApiClient {
     this.axiosInstance.interceptors.request.use(
       (config) => {
         const currentToken =
-          typeof window !== 'undefined'
-            ? localStorage.getItem('auth_token')
-            : this.token;
+          typeof window !== 'undefined' ? localStorage.getItem('auth_token') : this.token;
 
         if (currentToken) {
           this.token = currentToken;
@@ -48,16 +45,14 @@ class ApiClient {
         }
 
         const currentShopId =
-          typeof window !== 'undefined'
-            ? localStorage.getItem(X_SHOP_ID_KEY)
-            : this.shopId;
+          typeof window !== 'undefined' ? localStorage.getItem(X_SHOP_ID_KEY) : this.shopId;
         if (currentShopId) {
           config.headers['X-Shop-Id'] = currentShopId;
         }
 
         return config;
       },
-      (error) => Promise.reject(error)
+      (error) => Promise.reject(error),
     );
 
     this.axiosInstance.interceptors.response.use(
@@ -98,7 +93,7 @@ class ApiClient {
         }
 
         throw new ApiError(error.message || 'Unexpected error');
-      }
+      },
     );
   }
 
@@ -169,10 +164,7 @@ class ApiClient {
   }
 
   createSseConnection(path: string): EventSource {
-    const token =
-      typeof window !== 'undefined'
-        ? localStorage.getItem('auth_token')
-        : this.token;
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : this.token;
 
     const url = `${this.baseURL}${path}`;
 

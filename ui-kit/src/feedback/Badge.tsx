@@ -10,9 +10,7 @@ export interface BadgeProps {
 }
 
 export function Badge({ children, variant = 'neutral', className }: BadgeProps) {
-  return (
-    <span className={cn(styles.badge, styles[variant], className)}>{children}</span>
-  );
+  return <span className={cn(styles.badge, styles[variant], className)}>{children}</span>;
 }
 
 export interface TagProps {

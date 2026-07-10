@@ -1,13 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { authApi } from '@inventory-platform/session/api';
-import {
-  Alert,
-  Button,
-  FormField,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { Alert, Button, FormField, Stack, Text } from '@inventory-platform/ui-kit';
 import styles from './LoginForm.module.css';
 
 export function ForgotPasswordForm() {
@@ -31,9 +25,7 @@ export function ForgotPasswordForm() {
       setSuccess(response.message);
     } catch (err) {
       const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'Something went wrong. Please try again.';
+        err instanceof Error ? err.message : 'Something went wrong. Please try again.';
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -47,8 +39,7 @@ export function ForgotPasswordForm() {
           Forgot Password
         </Text>
         <Text color="secondary" className={styles.subtitle}>
-          Enter your email and we&apos;ll send you a link to reset your
-          password
+          Enter your email and we&apos;ll send you a link to reset your password
         </Text>
       </Stack>
 

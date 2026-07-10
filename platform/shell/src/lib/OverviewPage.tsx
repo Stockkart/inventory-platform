@@ -75,10 +75,7 @@ function MetricCard({ icon, label, value, subtext, change }: MetricCardProps) {
               {label}
             </Text>
             {change !== undefined && change !== 0 ? (
-              <Text
-                variant="caption"
-                className={change > 0 ? styles.changeUp : styles.changeDown}
-              >
+              <Text variant="caption" className={change > 0 ? styles.changeUp : styles.changeDown}>
                 {change > 0 ? '↑' : '↓'} {Math.abs(change).toFixed(1)}%
               </Text>
             ) : null}
@@ -138,7 +135,7 @@ export function OverviewPage() {
   const navigate = useNavigate();
   const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
   const shopCapabilities = useShopCapabilitiesStore((s) =>
-    activeShopId ? s.byShopId[activeShopId] : undefined
+    activeShopId ? s.byShopId[activeShopId] : undefined,
   );
   const sellPath = useResolvedSellPath(shopCapabilities ?? null);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
@@ -154,8 +151,7 @@ export function OverviewPage() {
         const data = await dashboardApi.getDashboard();
         setDashboardData(data);
       } catch (err: unknown) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to load dashboard data';
+        const message = err instanceof Error ? err.message : 'Failed to load dashboard data';
         setError(message);
         notifyError(message);
         console.error('Error fetching dashboard data:', err);
@@ -168,14 +164,7 @@ export function OverviewPage() {
   }, [notifyError]);
 
   if (loading) {
-    return (
-      <CenteredLoader
-        label="Loading dashboard…"
-        size="lg"
-        fill
-        className={styles.centered}
-      />
-    );
+    return <CenteredLoader label="Loading dashboard…" size="lg" fill className={styles.centered} />;
   }
 
   if (error) {

@@ -1,14 +1,6 @@
 import { FormKeyboardNavScope } from '@inventory-platform/routing';
 import { Box } from '@inventory-platform/ui-kit';
-import {
-  Header,
-  Hero,
-  Stats,
-  Features,
-  Pricing,
-  CTA,
-  Footer,
-} from '../ui';
+import { Header, Hero, Stats, Features, Pricing, CTA, Footer } from '../ui';
 import styles from './landing.module.css';
 
 export function meta() {

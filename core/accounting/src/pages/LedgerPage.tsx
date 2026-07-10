@@ -35,13 +35,7 @@ import { AccountingTabs } from '../ui/AccountingTabs';
 import { formatDate, formatMoney } from '../model/format';
 import styles from '../ui/accounting.module.css';
 
-const TYPE_ORDER: AccountType[] = [
-  'ASSET',
-  'LIABILITY',
-  'EQUITY',
-  'REVENUE',
-  'EXPENSE',
-];
+const TYPE_ORDER: AccountType[] = ['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE'];
 
 const TYPE_LABEL: Record<AccountType, string> = {
   ASSET: 'Assets',
@@ -136,10 +130,7 @@ export function LedgerPage() {
   const grouped = useMemo(() => {
     const q = search.trim().toLowerCase();
     const filtered = q
-      ? accounts.filter(
-          (a) =>
-            a.code.toLowerCase().includes(q) || a.name.toLowerCase().includes(q)
-        )
+      ? accounts.filter((a) => a.code.toLowerCase().includes(q) || a.name.toLowerCase().includes(q))
       : accounts;
     const byType: Record<AccountType, AccountResponse[]> = {
       ASSET: [],
@@ -205,11 +196,7 @@ export function LedgerPage() {
                     if (rows.length === 0) return null;
                     return (
                       <Stack key={t} gap="xs" className={styles.acctGroup}>
-                        <Text
-                          variant="label"
-                          weight="semibold"
-                          className={styles.acctGroupHead}
-                        >
+                        <Text variant="label" weight="semibold" className={styles.acctGroupHead}>
                           {TYPE_LABEL[t]}
                         </Text>
                         {rows.map((account) => {
@@ -239,9 +226,7 @@ export function LedgerPage() {
                               <Text
                                 as="span"
                                 className={
-                                  hasActivity
-                                    ? styles.acctItemBalance
-                                    : styles.acctItemBalanceMuted
+                                  hasActivity ? styles.acctItemBalance : styles.acctItemBalanceMuted
                                 }
                               >
                                 {hasActivity ? formatMoney(net) : '—'}
@@ -281,8 +266,7 @@ export function LedgerPage() {
                       {selected.code} · {selected.name}
                     </Text>
                     <Text color="secondary" variant="caption">
-                      {TYPE_LABEL[selected.type]} · Normal balance{' '}
-                      {selected.normalBalance}
+                      {TYPE_LABEL[selected.type]} · Normal balance {selected.normalBalance}
                       {selectedBalance
                         ? ` · Closing ${formatMoney(netBalance(selectedBalance))}`
                         : ''}
@@ -331,9 +315,7 @@ export function LedgerPage() {
                   </Inline>
                 </Stack>
               ) : (
-                <Text color="secondary">
-                  Pick an account from the list to view its ledger.
-                </Text>
+                <Text color="secondary">Pick an account from the list to view its ledger.</Text>
               )}
             </CardBody>
           </Card>
@@ -358,10 +340,7 @@ export function LedgerPage() {
                     {loading ? (
                       <TableLoadingRow colSpan={8} label="Loading ledger…" />
                     ) : (data?.entries.length ?? 0) === 0 ? (
-                      <TableEmptyRow
-                        colSpan={8}
-                        message="No postings in this range."
-                      />
+                      <TableEmptyRow colSpan={8} message="No postings in this range." />
                     ) : (
                       (data?.entries ?? []).map((row) => (
                         <TableRow key={row.id}>
@@ -372,26 +351,20 @@ export function LedgerPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() =>
-                                navigate(
-                                  `/dashboard/accounting/journal/${row.journalEntryId}`
-                                )
+                                navigate(`/dashboard/accounting/journal/${row.journalEntryId}`)
                               }
                             >
                               {row.journalEntryNo}
                             </Button>
                           </TableCell>
                           <TableCell>
-                            <Badge className={styles.sourcePill}>
-                              {row.sourceType}
-                            </Badge>
+                            <Badge className={styles.sourcePill}>{row.sourceType}</Badge>
                           </TableCell>
                           <TableCell>
                             <Text color="secondary" variant="caption">
                               {row.partyType
                                 ? `${row.partyType}${
-                                    row.partyDisplayName
-                                      ? ` · ${row.partyDisplayName}`
-                                      : ''
+                                    row.partyDisplayName ? ` · ${row.partyDisplayName}` : ''
                                   }`
                                 : '—'}
                             </Text>

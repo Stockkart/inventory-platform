@@ -1,12 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { AccountResponse } from '@inventory-platform/accounting/types';
-import {
-  SearchInput,
-  Select,
-  type SelectOptionDef,
-  Stack,
-  Text,
-} from '@inventory-platform/ui-kit';
+import { SearchInput, Select, type SelectOptionDef, Stack, Text } from '@inventory-platform/ui-kit';
 import styles from './accounting.module.css';
 
 type Props = {
@@ -22,7 +16,7 @@ export function AccountPicker({ accounts, value, onChange, disabled, id }: Props
 
   const active = useMemo(
     () => accounts.filter((a) => a.active).sort((a, b) => a.code.localeCompare(b.code)),
-    [accounts]
+    [accounts],
   );
 
   const filtered = useMemo(() => {
@@ -32,7 +26,7 @@ export function AccountPicker({ accounts, value, onChange, disabled, id }: Props
       (a) =>
         a.code.toLowerCase().includes(q) ||
         a.name.toLowerCase().includes(q) ||
-        a.type.toLowerCase().includes(q)
+        a.type.toLowerCase().includes(q),
     );
   }, [active, query]);
 
@@ -44,7 +38,7 @@ export function AccountPicker({ accounts, value, onChange, disabled, id }: Props
         label: `${a.code} · ${a.name}`,
       })),
     ],
-    [filtered]
+    [filtered],
   );
 
   const selected = active.find((a) => a.code === value);

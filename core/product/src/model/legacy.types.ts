@@ -27,8 +27,7 @@ export interface CreateProductDto {
   description?: string;
 }
 
-export interface UpdateProductDto
-  extends Partial<Omit<CreateProductDto, 'name' | 'sku'>> {
+export interface UpdateProductDto extends Partial<Omit<CreateProductDto, 'name' | 'sku'>> {
   name?: string;
   sku?: string;
 }
@@ -160,4 +159,3 @@ export interface CreateOrderDto {
   paymentMethod: string;
   customerName?: string;
 }
-

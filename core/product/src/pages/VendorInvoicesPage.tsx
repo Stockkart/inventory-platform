@@ -1,11 +1,10 @@
-import {
-  Fragment,
-  useCallback,
-  useEffect,
-  useState,
-} from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import { inventoryApi } from '../api/inventory.api';
-import type { InventoryItem, VendorPurchaseInvoiceDetail, VendorPurchaseInvoiceSummary } from '@inventory-platform/product/types';
+import type {
+  InventoryItem,
+  VendorPurchaseInvoiceDetail,
+  VendorPurchaseInvoiceSummary,
+} from '@inventory-platform/product/types';
 import styles from './vendor-invoices.module.css';
 import {
   Alert,
@@ -89,9 +88,7 @@ function readInventoryIdentity(item: InventoryItem): string | null {
   return null;
 }
 
-function vendorDisplay(row: {
-  vendorName?: string | null;
-}): string {
+function vendorDisplay(row: { vendorName?: string | null }): string {
   const n = row.vendorName?.trim();
   if (n) return n;
   return 'Unknown vendor';
@@ -131,9 +128,7 @@ function InvoiceExpansionPanel({
 }) {
   const content = (
     <>
-      {rowBusy && !detail ? (
-        <CenteredLoader label="Loading details…" size="sm" />
-      ) : null}
+      {rowBusy && !detail ? <CenteredLoader label="Loading details…" size="sm" /> : null}
       {err ? <Alert variant="danger">{err}</Alert> : null}
       {detail ? (
         <VendorInvoiceExpandedBody
@@ -170,14 +165,11 @@ export type VendorInvoicesPageProps = {
 
 const FILTER_FETCH_SIZE = 100;
 
-export function VendorInvoicesPage({
-  embedded = false,
-  filters,
-}: VendorInvoicesPageProps) {
+export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoicesPageProps) {
   const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
   const fetchCapabilities = useShopCapabilitiesStore((s) => s.fetchCapabilities);
   const shopCapabilities = useShopCapabilitiesStore((s) =>
-    activeShopId ? s.byShopId[activeShopId] : undefined
+    activeShopId ? s.byShopId[activeShopId] : undefined,
   );
   const vendorReturnEnabled = isVendorReturnEnabled(shopCapabilities);
 
@@ -185,8 +177,7 @@ export function VendorInvoicesPage({
   const [size] = useState(20);
   const [searchInput, setSearchInput] = useState('');
   const [listQuery, setListQuery] = useState('');
-  const filtering =
-    filters != null && hasActiveHistoryFilters(filters, 'purchaseHistory');
+  const filtering = filters != null && hasActiveHistoryFilters(filters, 'purchaseHistory');
   const [filterPage, setFilterPage] = useState(1);
   const embeddedPageSize = 20;
   const [loading, setLoading] = useState(true);
@@ -194,14 +185,10 @@ export function VendorInvoicesPage({
   const [totalPages, setTotalPages] = useState(0);
   const [invoices, setInvoices] = useState<VendorPurchaseInvoiceSummary[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [detailsById, setDetailsById] = useState<
-    Record<string, VendorPurchaseInvoiceDetail>
-  >({});
+  const [detailsById, setDetailsById] = useState<Record<string, VendorPurchaseInvoiceDetail>>({});
   const [fetchingId, setFetchingId] = useState<string | null>(null);
   const [rowError, setRowError] = useState<Record<string, string>>({});
-  const [inventoryById, setInventoryById] = useState<Record<string, InventoryItem>>(
-    {}
-  );
+  const [inventoryById, setInventoryById] = useState<Record<string, InventoryItem>>({});
   const [inventoryLoadingByInvoice, setInventoryLoadingByInvoice] = useState<
     Record<string, boolean>
   >({});
@@ -222,21 +209,13 @@ export function VendorInvoicesPage({
     try {
       if (filtering && filters) {
         const q = buildVendorInvoiceSearchQuery(filters);
-        const res = await inventoryApi.listVendorPurchaseInvoices(
-          0,
-          FILTER_FETCH_SIZE,
-          q
-        );
+        const res = await inventoryApi.listVendorPurchaseInvoices(0, FILTER_FETCH_SIZE, q);
         let rows = res.invoices ?? [];
         rows = rows.filter((inv) =>
-          isDateInRange(inv.invoiceDate, filters.dateFrom, filters.dateTo)
+          isDateInRange(inv.invoiceDate, filters.dateFrom, filters.dateTo),
         );
-        rows = rows.filter((inv) =>
-          matchesRegexField(filters.invoiceNo, inv.invoiceNo)
-        );
-        rows = rows.filter((inv) =>
-          matchesRegexField(filters.vendor, vendorDisplay(inv))
-        );
+        rows = rows.filter((inv) => matchesRegexField(filters.invoiceNo, inv.invoiceNo));
+        rows = rows.filter((inv) => matchesRegexField(filters.vendor, vendorDisplay(inv)));
         const paged = paginateLocal(rows, filterPage, embeddedPageSize);
         setFilteredTotal(paged.total);
         setInvoices(paged.slice);
@@ -246,7 +225,7 @@ export function VendorInvoicesPage({
         const res = await inventoryApi.listVendorPurchaseInvoices(
           page,
           embeddedPageSize,
-          listQuery || undefined
+          listQuery || undefined,
         );
         setInvoices(res.invoices ?? []);
         setTotalPages(res.page?.totalPages ?? 0);
@@ -256,7 +235,7 @@ export function VendorInvoicesPage({
         const res = await inventoryApi.listVendorPurchaseInvoices(
           page,
           size,
-          listQuery || undefined
+          listQuery || undefined,
         );
         setInvoices(res.invoices ?? []);
         setTotalPages(res.page?.totalPages ?? 0);
@@ -264,9 +243,7 @@ export function VendorInvoicesPage({
         setFilteredTotal(0);
       }
     } catch (e) {
-      setError(
-        e instanceof Error ? e.message : 'Failed to load vendor invoices'
-      );
+      setError(e instanceof Error ? e.message : 'Failed to load vendor invoices');
       setInvoices([]);
       setTotalPages(0);
       setTotalItems(0);
@@ -303,21 +280,19 @@ export function VendorInvoicesPage({
     async (
       invoiceId: string,
       detail: VendorPurchaseInvoiceDetail,
-      options?: { bypassCache?: boolean }
+      options?: { bypassCache?: boolean },
     ) => {
       const ids = Array.from(
         new Set(
           (detail.lines ?? [])
             .map((line) => line.inventoryId)
-            .filter((id): id is string => Boolean(id))
-        )
+            .filter((id): id is string => Boolean(id)),
+        ),
       );
       if (ids.length === 0) return;
 
       const bypass = options?.bypassCache === true;
-      const idsToFetch = bypass
-        ? ids
-        : ids.filter((id) => !inventoryById[id]);
+      const idsToFetch = bypass ? ids : ids.filter((id) => !inventoryById[id]);
       if (idsToFetch.length === 0) return;
 
       setInventoryLoadingByInvoice((prev) => ({ ...prev, [invoiceId]: true }));
@@ -366,7 +341,7 @@ export function VendorInvoicesPage({
       }
       setInventoryLoadingByInvoice((prev) => ({ ...prev, [invoiceId]: false }));
     },
-    [inventoryById]
+    [inventoryById],
   );
 
   const toggleExpanded = async (inv: VendorPurchaseInvoiceSummary) => {
@@ -397,8 +372,7 @@ export function VendorInvoicesPage({
       setDetailsById((prev) => ({ ...prev, [id]: d }));
       void hydrateInventoryForInvoice(id, d);
     } catch (e) {
-      const msg =
-        e instanceof Error ? e.message : 'Failed to load invoice details';
+      const msg = e instanceof Error ? e.message : 'Failed to load invoice details';
       setRowError((prev) => ({ ...prev, [id]: msg }));
     } finally {
       setFetchingId(null);
@@ -444,15 +418,8 @@ export function VendorInvoicesPage({
                       <DetailLine label="Invoice" value={inv.invoiceNo} />
                       {inv.synthetic ? <Badge variant="info">Auto</Badge> : null}
                     </Inline>
-                    <Inline
-                      className={recordStyles.recordActions}
-                      gap="sm"
-                      align="center"
-                    >
-                      <DetailLine
-                        label="Date"
-                        value={formatDateShort(inv.invoiceDate)}
-                      />
+                    <Inline className={recordStyles.recordActions} gap="sm" align="center">
+                      <DetailLine label="Date" value={formatDateShort(inv.invoiceDate)} />
                       <Button
                         type="button"
                         size="sm"
@@ -464,17 +431,10 @@ export function VendorInvoicesPage({
                       </Button>
                     </Inline>
                   </Inline>
-                  <Grid
-                    columns={2}
-                    gap="sm"
-                    className={recordStyles.recordDetails}
-                  >
+                  <Grid columns={2} gap="sm" className={recordStyles.recordDetails}>
                     <DetailLine label="Vendor" value={vendorDisplay(inv)} />
                     <DetailLine label="Lines" value={String(inv.lineCount)} />
-                    <DetailLine
-                      label="Total"
-                      value={formatMoney(inv.invoiceTotal)}
-                    />
+                    <DetailLine label="Total" value={formatMoney(inv.invoiceTotal)} />
                   </Grid>
                   {isOpen ? (
                     <InvoiceExpansionPanel
@@ -531,11 +491,7 @@ export function VendorInvoicesPage({
               return (
                 <Fragment key={inv.id}>
                   <TableRow
-                    className={
-                      isOpen
-                        ? `${styles.dataRow} ${styles.dataRowOpen}`
-                        : styles.dataRow
-                    }
+                    className={isOpen ? `${styles.dataRow} ${styles.dataRowOpen}` : styles.dataRow}
                   >
                     <TableCell className={styles.cellInvoice}>
                       <Inline gap="xs" align="center">
@@ -543,20 +499,14 @@ export function VendorInvoicesPage({
                         {inv.synthetic ? <Badge variant="info">Auto</Badge> : null}
                       </Inline>
                     </TableCell>
-                    <TableCell className={styles.cellStrong}>
-                      {vendorDisplay(inv)}
-                    </TableCell>
+                    <TableCell className={styles.cellStrong}>{vendorDisplay(inv)}</TableCell>
                     <TableCell className={styles.cellMuted}>
                       {formatDateShort(inv.invoiceDate)}
                     </TableCell>
-                    <TableCell
-                      className={`${styles.numericCol} ${styles.cellMuted}`}
-                    >
+                    <TableCell className={`${styles.numericCol} ${styles.cellMuted}`}>
                       {inv.lineCount}
                     </TableCell>
-                    <TableCell
-                      className={`${styles.numericCol} ${styles.cellMoney}`}
-                    >
+                    <TableCell className={`${styles.numericCol} ${styles.cellMoney}`}>
                       {formatMoney(inv.invoiceTotal)}
                     </TableCell>
                     <TableCell className={styles.actionCell}>
@@ -611,10 +561,7 @@ export function VendorInvoicesPage({
   return (
     <Stack gap="md" className={embedded ? recordStyles.container : styles.page}>
       {!embedded ? (
-        <PageHeader
-          title="Vendor purchase invoices"
-          description={pageDescription}
-        />
+        <PageHeader title="Vendor purchase invoices" description={pageDescription} />
       ) : null}
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
@@ -634,19 +581,14 @@ export function VendorInvoicesPage({
                     className={styles.searchField}
                   />
                   {listQuery ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={clearSearch}
-                    >
+                    <Button type="button" variant="outline" size="sm" onClick={clearSearch}>
                       Clear
                     </Button>
                   ) : null}
                 </Inline>
                 <Text variant="caption" color="secondary" className={styles.searchHint}>
-                  Same pattern is tried against invoice number, vendor name, and each
-                  line&apos;s product name and barcode (case-insensitive). Examples:{' '}
+                  Same pattern is tried against invoice number, vendor name, and each line&apos;s
+                  product name and barcode (case-insensitive). Examples:{' '}
                   <Text as="span" className={styles.mono}>
                     paracetamol|dolo
                   </Text>
@@ -665,17 +607,13 @@ export function VendorInvoicesPage({
 
             {loading ? (
               <CenteredLoader
-                label={
-                  embedded ? 'Loading purchase history…' : 'Loading invoices…'
-                }
+                label={embedded ? 'Loading purchase history…' : 'Loading invoices…'}
               />
             ) : invoices.length === 0 ? (
               embedded ? (
                 <EmptyState
                   title={
-                    filtering
-                      ? 'No purchases match these filters.'
-                      : 'No vendor invoices yet.'
+                    filtering ? 'No purchases match these filters.' : 'No vendor invoices yet.'
                   }
                 />
               ) : (

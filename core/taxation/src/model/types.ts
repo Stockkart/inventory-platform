@@ -495,4 +495,3 @@ export interface Gstr3bReportResponse {
   section5?: Gstr3bSection5Dto;
   section61?: Gstr3bSection61Dto;
 }
-

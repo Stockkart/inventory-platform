@@ -32,10 +32,7 @@ function generateRouteFileAliases(routesDir: string, aliasPrefix: string): Recor
     fs
       .readdirSync(routesDir)
       .filter((file) => file.endsWith('.tsx'))
-      .map((file) => [
-        `${aliasPrefix}/${file.replace(/\.tsx$/, '')}`,
-        path.join(routesDir, file),
-      ])
+      .map((file) => [`${aliasPrefix}/${file.replace(/\.tsx$/, '')}`, path.join(routesDir, file)]),
   );
 }
 
@@ -63,27 +60,25 @@ export function generateInventoryWorkspaceAliases({
 }: WorkspaceAliasConfig): Record<string, string> {
   const core = (domain: string, ...segments: string[]) =>
     path.resolve(workspaceRoot, 'core', domain, ...segments);
-  const platform = (...segments: string[]) =>
-    path.resolve(workspaceRoot, 'platform', ...segments);
-  const plugins = (...segments: string[]) =>
-    path.resolve(workspaceRoot, 'plugins', ...segments);
+  const platform = (...segments: string[]) => path.resolve(workspaceRoot, 'platform', ...segments);
+  const plugins = (...segments: string[]) => path.resolve(workspaceRoot, 'plugins', ...segments);
 
   const routeAliases = Object.assign(
     {},
     ...routeAliasPackages(workspaceRoot).map(({ aliasPrefix, routesDir }) =>
-      generateRouteFileAliases(routesDir, aliasPrefix)
-    )
+      generateRouteFileAliases(routesDir, aliasPrefix),
+    ),
   );
 
   return {
     ...routeAliases,
     '@inventory-platform/ui-kit/form-styles': path.resolve(
       workspaceRoot,
-      'ui-kit/src/form-styles.ts'
+      'ui-kit/src/form-styles.ts',
     ),
     '@inventory-platform/ui-kit/theme/tokens.css': path.resolve(
       workspaceRoot,
-      'ui-kit/src/theme/tokens.css'
+      'ui-kit/src/theme/tokens.css',
     ),
     '@inventory-platform/ui-kit': path.resolve(workspaceRoot, 'ui-kit/src/index.ts'),
     '@inventory-platform/session/api': platform('session/src/api/index.ts'),
@@ -120,10 +115,7 @@ export function generateInventoryWorkspaceAliases({
     '@inventory-platform/taxation/nav': core('taxation', 'src/nav.ts'),
     '@inventory-platform/user/nav': core('user', 'src/nav.ts'),
     '@inventory-platform/user/journey/auth': core('user', 'src/journey/auth/index.ts'),
-    '@inventory-platform/user/journey/onboarding': core(
-      'user',
-      'src/journey/onboarding/index.ts'
-    ),
+    '@inventory-platform/user/journey/onboarding': core('user', 'src/journey/onboarding/index.ts'),
     '@inventory-platform/analytics': core('analytics', 'src/index.ts'),
     '@inventory-platform/accounting': core('accounting', 'src/index.ts'),
     '@inventory-platform/credit': core('credit', 'src/index.ts'),
@@ -138,11 +130,11 @@ export function generateInventoryWorkspaceAliases({
     '@inventory-platform/product/api': core('product', 'src/api/index.ts'),
     '@inventory-platform/product/pages/product-search.module.css': core(
       'product',
-      'src/pages/product-search.module.css'
+      'src/pages/product-search.module.css',
     ),
     '@inventory-platform/product/pages/scan-sell.module.css': core(
       'product',
-      'src/pages/scan-sell.module.css'
+      'src/pages/scan-sell.module.css',
     ),
     '@inventory-platform/product': core('product', 'src/index.ts'),
     '@inventory-platform/plugin-registry/routes': plugins('registry/src/routes/index.ts'),

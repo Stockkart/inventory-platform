@@ -1,12 +1,17 @@
 import { apiClient } from '@inventory-platform/api-client';
 import type { ApiResponse } from '@inventory-platform/contracts';
-import type { CreateRefundDto, RefundResponse, GetRefundsParams, GetRefundsResponse, SearchPurchasesParams, SearchPurchasesResponse } from '@inventory-platform/product/types';
+import type {
+  CreateRefundDto,
+  RefundResponse,
+  GetRefundsParams,
+  GetRefundsResponse,
+  SearchPurchasesParams,
+  SearchPurchasesResponse,
+} from '@inventory-platform/product/types';
 import { PURCHASE_ENDPOINTS, REFUND_ENDPOINTS } from './endpoints';
 
 export const refundsApi = {
-  searchPurchases: async (
-    params: SearchPurchasesParams
-  ): Promise<SearchPurchasesResponse> => {
+  searchPurchases: async (params: SearchPurchasesParams): Promise<SearchPurchasesResponse> => {
     const queryParams: Record<string, string> = {};
     if (params.customerEmail) {
       queryParams.customerEmail = params.customerEmail;
@@ -29,16 +34,13 @@ export const refundsApi = {
 
     const response = await apiClient.get<ApiResponse<SearchPurchasesResponse>>(
       PURCHASE_ENDPOINTS.SEARCH,
-      queryParams
+      queryParams,
     );
     return response.data;
   },
 
   create: async (data: CreateRefundDto): Promise<RefundResponse> => {
-    const response = await apiClient.post<ApiResponse<RefundResponse>>(
-      REFUND_ENDPOINTS.BASE,
-      data
-    );
+    const response = await apiClient.post<ApiResponse<RefundResponse>>(REFUND_ENDPOINTS.BASE, data);
     return response.data;
   },
 
@@ -65,7 +67,7 @@ export const refundsApi = {
 
     const response = await apiClient.get<ApiResponse<GetRefundsResponse>>(
       REFUND_ENDPOINTS.BASE,
-      queryParams
+      queryParams,
     );
     return response.data;
   },

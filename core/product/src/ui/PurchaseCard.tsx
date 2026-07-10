@@ -23,13 +23,7 @@ interface PurchaseCardProps {
   purchase: Purchase;
 }
 
-function DetailRow({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <Inline className={styles.detailRow} justify="between" align="start" gap="md">
       <Text className={styles.label} variant="caption" weight="semibold">
@@ -52,12 +46,7 @@ function PriceRow({
   rowClassName?: string;
 }) {
   return (
-    <Inline
-      className={rowClassName ?? styles.priceRow}
-      justify="between"
-      align="center"
-      gap="md"
-    >
+    <Inline className={rowClassName ?? styles.priceRow} justify="between" align="center" gap="md">
       <Text className={styles.priceLabel}>{label}</Text>
       <Text className={valueClassName ?? styles.priceValue}>{value}</Text>
     </Inline>
@@ -85,10 +74,10 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
     purchase.status.toUpperCase() === 'COMPLETED'
       ? 'success'
       : purchase.status.toUpperCase() === 'PENDING'
-        ? 'warning'
-        : purchase.status.toUpperCase() === 'CANCELLED'
-          ? 'danger'
-          : 'neutral';
+      ? 'warning'
+      : purchase.status.toUpperCase() === 'CANCELLED'
+      ? 'danger'
+      : 'neutral';
 
   const paymentSplitLine = formatPaymentSplit({
     cashAmount: purchase.cashAmount ?? undefined,
@@ -101,12 +90,7 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
       <CardBody>
         <Stack gap="md">
           <Box className={styles.header}>
-            <Inline
-              className={styles.topRow}
-              justify="between"
-              align="start"
-              gap="md"
-            >
+            <Inline className={styles.topRow} justify="between" align="start" gap="md">
               <Stack gap="xs" className={styles.invoiceInfo}>
                 <Text variant="heading3" weight="semibold" className={styles.invoiceNo}>
                   {purchase.invoiceNo}
@@ -115,8 +99,7 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
                   ID: {purchase.invoiceId}
                 </Text>
                 <Text variant="caption" color="muted" className={styles.invoiceId}>
-                  Billing Mode:{' '}
-                  {purchase.billingMode === 'BASIC' ? 'BASIC' : 'REGULAR'}
+                  Billing Mode: {purchase.billingMode === 'BASIC' ? 'BASIC' : 'REGULAR'}
                 </Text>
               </Stack>
               <Inline className={styles.headerActions} gap="sm" align="center">
@@ -150,9 +133,7 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
                 <Text variant="heading4" weight="semibold" className={styles.itemsTitle}>
                   Items
                 </Text>
-                <Text className={styles.expandIcon}>
-                  {isItemsExpanded ? '▼' : '▲'}
-                </Text>
+                <Text className={styles.expandIcon}>{isItemsExpanded ? '▼' : '▲'}</Text>
               </Button>
               {isItemsExpanded ? (
                 <Stack gap="sm" className={styles.itemsList}>
@@ -186,12 +167,7 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
                             {item.costTotal != null ? (
                               <>Cost: ₹{item.costTotal.toFixed(2)}</>
                             ) : null}
-                            {item.profit != null ? (
-                              <>
-                                {' '}
-                                | Profit: ₹{item.profit.toFixed(2)}
-                              </>
-                            ) : null}
+                            {item.profit != null ? <> | Profit: ₹{item.profit.toFixed(2)}</> : null}
                             {item.marginPercent != null ? (
                               <> | Margin: {item.marginPercent.toFixed(1)}%</>
                             ) : null}
@@ -213,23 +189,14 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
                 className={styles.expandButton}
                 onClick={() => setIsPriceExpanded(!isPriceExpanded)}
                 aria-expanded={isPriceExpanded}
-                aria-label={
-                  isPriceExpanded
-                    ? 'Collapse price details'
-                    : 'Expand price details'
-                }
+                aria-label={isPriceExpanded ? 'Collapse price details' : 'Expand price details'}
               >
                 <Text className={styles.priceLabel}>Price Details</Text>
-                <Text className={styles.expandIcon}>
-                  {isPriceExpanded ? '▼' : '▲'}
-                </Text>
+                <Text className={styles.expandIcon}>{isPriceExpanded ? '▼' : '▲'}</Text>
               </Button>
               {isPriceExpanded ? (
                 <Stack gap="xs">
-                  <PriceRow
-                    label="Subtotal:"
-                    value={`₹${purchase.subTotal.toFixed(2)}`}
-                  />
+                  <PriceRow label="Subtotal:" value={`₹${purchase.subTotal.toFixed(2)}`} />
                   {purchase.discountTotal > 0 ? (
                     <PriceRow
                       label="Discount:"
@@ -238,10 +205,7 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
                     />
                   ) : null}
                   {purchase.taxTotal > 0 ? (
-                    <PriceRow
-                      label="Tax:"
-                      value={`₹${purchase.taxTotal.toFixed(2)}`}
-                    />
+                    <PriceRow label="Tax:" value={`₹${purchase.taxTotal.toFixed(2)}`} />
                   ) : null}
                   <PriceRow
                     label="Grand Total:"
@@ -257,10 +221,7 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
                     <>
                       <Divider className={styles.marginDivider} />
                       {purchase.totalCost != null ? (
-                        <PriceRow
-                          label="Total Cost:"
-                          value={`₹${purchase.totalCost.toFixed(2)}`}
-                        />
+                        <PriceRow label="Total Cost:" value={`₹${purchase.totalCost.toFixed(2)}`} />
                       ) : null}
                       {purchase.revenueBeforeTax != null ? (
                         <PriceRow
@@ -275,16 +236,10 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
                         />
                       ) : null}
                       {purchase.totalProfit != null ? (
-                        <PriceRow
-                          label="Profit:"
-                          value={`₹${purchase.totalProfit.toFixed(2)}`}
-                        />
+                        <PriceRow label="Profit:" value={`₹${purchase.totalProfit.toFixed(2)}`} />
                       ) : null}
                       {purchase.marginPercent != null ? (
-                        <PriceRow
-                          label="Margin:"
-                          value={`${purchase.marginPercent.toFixed(1)}%`}
-                        />
+                        <PriceRow label="Margin:" value={`${purchase.marginPercent.toFixed(1)}%`} />
                       ) : null}
                     </>
                   ) : null}

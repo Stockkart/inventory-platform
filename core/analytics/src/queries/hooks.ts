@@ -1,5 +1,11 @@
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import type { CustomerAnalytics, InventoryAnalytics, ProfitAnalytics, SalesAnalytics, VendorAnalytics } from '@inventory-platform/analytics/types';
+import type {
+  CustomerAnalytics,
+  InventoryAnalytics,
+  ProfitAnalytics,
+  SalesAnalytics,
+  VendorAnalytics,
+} from '@inventory-platform/analytics/types';
 import type { InventoryExpiryBuckets } from '@inventory-platform/product/types';
 import {
   analyticsApi,
@@ -14,7 +20,7 @@ import { analyticsKeys } from './keys';
 
 export function useSalesAnalyticsQuery(
   params: SalesAnalyticsParams,
-  options?: Omit<UseQueryOptions<SalesAnalytics>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<SalesAnalytics>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: analyticsKeys.sales(params),
@@ -26,7 +32,7 @@ export function useSalesAnalyticsQuery(
 
 export function useProfitAnalyticsQuery(
   params: ProfitAnalyticsParams,
-  options?: Omit<UseQueryOptions<ProfitAnalytics>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<ProfitAnalytics>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: analyticsKeys.profit(params),
@@ -38,7 +44,7 @@ export function useProfitAnalyticsQuery(
 
 export function useInventoryAnalyticsQuery(
   params: InventoryAnalyticsParams,
-  options?: Omit<UseQueryOptions<InventoryAnalytics>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<InventoryAnalytics>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: analyticsKeys.inventory(params),
@@ -49,7 +55,7 @@ export function useInventoryAnalyticsQuery(
 
 export function useVendorAnalyticsQuery(
   params: VendorAnalyticsParams,
-  options?: Omit<UseQueryOptions<VendorAnalytics>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<VendorAnalytics>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: analyticsKeys.vendors(params),
@@ -61,7 +67,7 @@ export function useVendorAnalyticsQuery(
 
 export function useCustomerAnalyticsQuery(
   params: CustomerAnalyticsParams,
-  options?: Omit<UseQueryOptions<CustomerAnalytics>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<CustomerAnalytics>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: analyticsKeys.customers(params),
@@ -73,7 +79,7 @@ export function useCustomerAnalyticsQuery(
 
 export function useExpiryBucketsQuery(
   params: ExpiryBucketsParams,
-  options?: Omit<UseQueryOptions<InventoryExpiryBuckets>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<InventoryExpiryBuckets>, 'queryKey' | 'queryFn'>,
 ) {
   return useQuery({
     queryKey: analyticsKeys.expiryBuckets(params),

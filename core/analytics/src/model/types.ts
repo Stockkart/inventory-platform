@@ -160,7 +160,6 @@ export interface ProfitAnalytics {
   };
 }
 
-
 // Vendor Analytics types
 export interface VendorStockAnalytics {
   vendorId: string;
@@ -349,4 +348,3 @@ export interface InventoryAnalytics {
     includeAll: boolean;
   };
 }
-

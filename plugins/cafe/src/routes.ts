@@ -12,11 +12,9 @@ export const menuAdminRoutes: RouteModule = {
 
 export const manualStockRoutes: RouteModule = {
   path: 'manual-stock',
-  children: [{ path: '', file: 'routes/manual-stock.tsx', lazy: () => import('./routes/manual-stock') }],
+  children: [
+    { path: '', file: 'routes/manual-stock.tsx', lazy: () => import('./routes/manual-stock') },
+  ],
 };
 
-export const cafeRoutes: RouteModule[] = [
-  menuSellRoutes,
-  menuAdminRoutes,
-  manualStockRoutes,
-];
+export const cafeRoutes: RouteModule[] = [menuSellRoutes, menuAdminRoutes, manualStockRoutes];

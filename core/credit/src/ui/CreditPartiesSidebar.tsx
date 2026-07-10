@@ -33,7 +33,7 @@ export function CreditPartiesSidebar({
         (a) =>
           (a.partyDisplayName && a.partyDisplayName.toLowerCase().includes(q)) ||
           (a.partyType && a.partyType.toLowerCase().includes(q)) ||
-          (a.partyId && a.partyId.toLowerCase().includes(q))
+          (a.partyId && a.partyId.toLowerCase().includes(q)),
       )
       .sort(accountSort)
       .slice(0, 14);
@@ -50,9 +50,9 @@ export function CreditPartiesSidebar({
         Outstanding
       </Text>
       <Text className={styles.sidebarHint}>
-        <strong>Customer</strong> rows are money <em>to collect</em>.{' '}
-        <strong>Vendor</strong> rows are money <em>you must pay</em>. Search finds anyone to view
-        past ledger entries, including fully settled parties.
+        <strong>Customer</strong> rows are money <em>to collect</em>. <strong>Vendor</strong> rows
+        are money <em>you must pay</em>. Search finds anyone to view past ledger entries, including
+        fully settled parties.
       </Text>
 
       <Box className={styles.partySearchWrap}>
@@ -115,8 +115,8 @@ export function CreditPartiesSidebar({
             In your favour
           </Text>
           <Text className={styles.sidebarHint}>
-            Often from a <strong>return on credit</strong> when you had little or no payable left
-            — the supplier owes you (vendor credit) or the customer paid ahead.
+            Often from a <strong>return on credit</strong> when you had little or no payable left —
+            the supplier owes you (vendor credit) or the customer paid ahead.
           </Text>
           <CreditAccountList
             accounts={favourAccounts}

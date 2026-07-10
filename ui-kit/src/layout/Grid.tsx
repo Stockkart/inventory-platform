@@ -11,13 +11,7 @@ export interface GridProps {
   width?: 'full';
 }
 
-export function Grid({
-  children,
-  className,
-  columns = 1,
-  gap = 'md',
-  width,
-}: GridProps) {
+export function Grid({ children, className, columns = 1, gap = 'md', width }: GridProps) {
   return (
     <div
       className={cn(
@@ -25,7 +19,7 @@ export function Grid({
         styles[`cols-${columns}`],
         styles[`gap-${gap}`],
         width === 'full' && styles['w-full'],
-        className
+        className,
       )}
     >
       {children}

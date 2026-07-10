@@ -31,7 +31,7 @@ export const usePlanStatusStore = create<PlanStatusState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const response = await apiClient.get<ApiResponse<ShopPlanStatusResponse>>(
-        '/plans/shop/status'
+        '/plans/shop/status',
       );
       const status = response.data;
       set((state) => ({
@@ -40,8 +40,7 @@ export const usePlanStatusStore = create<PlanStatusState>((set, get) => ({
       }));
       return status;
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to load plan status';
+      const message = err instanceof Error ? err.message : 'Failed to load plan status';
       set({ loading: false, error: message });
       return null;
     }

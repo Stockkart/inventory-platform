@@ -100,7 +100,7 @@
 
 .secondaryBtn {
   background: transparent;
-  color: #ffffff; 
+  color: #ffffff;
   border: 0.2px solid rgba(255, 255, 255, 0.35);
   padding: 0.875rem 2rem;
   border-radius: 8px;
@@ -123,24 +123,23 @@
   .hero {
     padding: 2rem 1rem;
   }
-  
+
   .title {
     font-size: 2.5rem;
   }
-  
+
   .description {
     font-size: 1rem;
   }
-  
+
   .ctaButtons {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .primaryBtn,
   .secondaryBtn {
     width: 100%;
     justify-content: center;
   }
 }
-

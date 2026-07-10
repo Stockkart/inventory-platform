@@ -2,7 +2,14 @@
   "name": "@inventory-platform/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,mjs,cjs,json,css,md,html,yml,yaml}": "prettier --write"
+  },
   "private": true,
   "dependencies": {
     "@react-oauth/google": "^0.12.2",
@@ -51,9 +58,11 @@
     "eslint-plugin-jsx-a11y": "6.10.1",
     "eslint-plugin-react": "7.35.0",
     "eslint-plugin-react-hooks": "5.0.0",
+    "husky": "^9.1.7",
     "jiti": "2.4.2",
     "jsdom": "~22.1.0",
     "jsonc-eslint-parser": "^2.1.0",
+    "lint-staged": "^17.0.8",
     "nx": "22.1.2",
     "prettier": "^2.6.2",
     "storybook": "^10.4.6",

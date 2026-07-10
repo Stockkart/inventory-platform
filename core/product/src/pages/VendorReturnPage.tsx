@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router';
 import { inventoryApi } from '@inventory-platform/product/api';
-import type { InventoryItem, VendorPurchaseInvoiceDetail, VendorPurchaseInvoiceSummary } from '@inventory-platform/product/types';
+import type {
+  InventoryItem,
+  VendorPurchaseInvoiceDetail,
+  VendorPurchaseInvoiceSummary,
+} from '@inventory-platform/product/types';
 import type { VendorResponse } from '@inventory-platform/user/types';
 import type { PaymentMethod, PaymentSplit } from '@inventory-platform/contracts';
 import {
@@ -89,7 +93,7 @@ function getDisplayToBaseFactor(inv: InventoryItem | undefined): number {
  */
 function maxReturnableBaseUnits(
   inv: InventoryItem | undefined,
-  lineCount: number | null | undefined
+  lineCount: number | null | undefined,
 ): number {
   if (!inv) {
     return typeof lineCount === 'number' && lineCount > 0 ? lineCount : 0;
@@ -98,14 +102,8 @@ function maxReturnableBaseUnits(
   const factor = getDisplayToBaseFactor(inv);
 
   let fromSellCount: number | null = null;
-  if (
-    typeof inv.currentCount === 'number' &&
-    Number.isFinite(inv.currentCount)
-  ) {
-    fromSellCount = Math.max(
-      0,
-      Math.round(Number(inv.currentCount) * factor)
-    );
+  if (typeof inv.currentCount === 'number' && Number.isFinite(inv.currentCount)) {
+    fromSellCount = Math.max(0, Math.round(Number(inv.currentCount) * factor));
   }
 
   let fromStoredBase: number | null = null;
@@ -132,7 +130,7 @@ function maxReturnableBaseUnits(
  */
 function maxReturnableSellUnits(
   inv: InventoryItem | undefined,
-  lineCount: number | null | undefined
+  lineCount: number | null | undefined,
 ): number {
   const maxBase = maxReturnableBaseUnits(inv, lineCount);
   if (maxBase <= 0) {
@@ -140,11 +138,7 @@ function maxReturnableSellUnits(
   }
   const factor = Math.max(1, getDisplayToBaseFactor(inv));
   const maxByBase = Math.floor(maxBase / factor);
-  if (
-    inv &&
-    typeof inv.currentCount === 'number' &&
-    Number.isFinite(inv.currentCount)
-  ) {
+  if (inv && typeof inv.currentCount === 'number' && Number.isFinite(inv.currentCount)) {
     const sellCap = Math.max(0, Math.floor(Number(inv.currentCount)));
     return Math.min(sellCap, maxByBase);
   }
@@ -154,18 +148,13 @@ function maxReturnableSellUnits(
 /** Convert sell-unit qty to canonical base qty for POST /vendor-purchase-returns. */
 function sellUnitsToBaseQuantity(inv: InventoryItem | undefined, sellQty: number): number {
   const factor = getDisplayToBaseFactor(inv);
-  const f =
-    typeof factor === 'number' && factor > 0 && Number.isFinite(factor) ? factor : 1;
+  const f = typeof factor === 'number' && factor > 0 && Number.isFinite(factor) ? factor : 1;
   return Math.round(sellQty * f);
 }
 
 /** On-hand qty in selling units (floor); matches the shelf figure used to cap returns. */
 function currentSellQtyOnHand(inv: InventoryItem | undefined): number | null {
-  if (
-    !inv ||
-    typeof inv.currentCount !== 'number' ||
-    !Number.isFinite(inv.currentCount)
-  ) {
+  if (!inv || typeof inv.currentCount !== 'number' || !Number.isFinite(inv.currentCount)) {
     return null;
   }
   return Math.max(0, Math.floor(Number(inv.currentCount)));
@@ -207,19 +196,14 @@ const roundMoney2 = (n: number) => Math.round(n * 100) / 100;
 function estimateDebitNoteLine(
   sellQtyReturned: number,
   unitCost: number | null | undefined,
-  invRow: InventoryItem | undefined
+  invRow: InventoryItem | undefined,
 ): {
   taxable: number;
   cgst: number;
   sgst: number;
   total: number;
 } | null {
-  if (
-    sellQtyReturned <= 0 ||
-    unitCost == null ||
-    !Number.isFinite(unitCost) ||
-    unitCost < 0
-  ) {
+  if (sellQtyReturned <= 0 || unitCost == null || !Number.isFinite(unitCost) || unitCost < 0) {
     return null;
   }
   const taxable = roundMoney2(sellQtyReturned * unitCost);
@@ -252,20 +236,16 @@ function readInventoryIdentity(item: InventoryItem): string | null {
 function applySummaryFilters(
   rows: VendorPurchaseInvoiceSummary[],
   invoiceNo: string,
-  vendorName: string
+  vendorName: string,
 ): VendorPurchaseInvoiceSummary[] {
   const invL = invoiceNo.trim().toLowerCase();
   const venL = vendorName.trim().toLowerCase();
   let out = rows;
   if (invL) {
-    out = out.filter((r) =>
-      (r.invoiceNo || '').toLowerCase().includes(invL)
-    );
+    out = out.filter((r) => (r.invoiceNo || '').toLowerCase().includes(invL));
   }
   if (venL) {
-    out = out.filter((r) =>
-      (r.vendorName || '').toLowerCase().includes(venL)
-    );
+    out = out.filter((r) => (r.vendorName || '').toLowerCase().includes(venL));
   }
   return out;
 }
@@ -274,7 +254,7 @@ function applySummaryFilters(
 function buildInvoiceSearchPattern(
   invoiceNo: string,
   vendorName: string,
-  productOrBarcode: string
+  productOrBarcode: string,
 ): string {
   const inv = invoiceNo.trim();
   const prod = productOrBarcode.trim();
@@ -298,8 +278,7 @@ function DetailLine({ label, value }: { label: string; value: string }) {
 }
 
 export function VendorReturnPage() {
-  const { enabled, loading: guardLoading } =
-    useCapabilityFeatureGuard('vendorReturn');
+  const { enabled, loading: guardLoading } = useCapabilityFeatureGuard('vendorReturn');
   const location = useLocation();
   const state = location.state as { prefillVendor?: VendorResponse } | null;
 
@@ -320,21 +299,13 @@ export function VendorReturnPage() {
   const [totalItems, setTotalItems] = useState(0);
 
   const [invoices, setInvoices] = useState<VendorPurchaseInvoiceSummary[]>([]);
-  const [selected, setSelected] = useState<VendorPurchaseInvoiceSummary | null>(
-    null
-  );
+  const [selected, setSelected] = useState<VendorPurchaseInvoiceSummary | null>(null);
   const [detail, setDetail] = useState<VendorPurchaseInvoiceDetail | null>(null);
-  const [inventoryById, setInventoryById] = useState<
-    Record<string, InventoryItem>
-  >({});
-  const [qtyByInventoryId, setQtyByInventoryId] = useState<
-    Record<string, string>
-  >({});
+  const [inventoryById, setInventoryById] = useState<Record<string, InventoryItem>>({});
+  const [qtyByInventoryId, setQtyByInventoryId] = useState<Record<string, string>>({});
   const [reason, setReason] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
-  const [paymentSplit, setPaymentSplit] = useState<PaymentSplit>(() =>
-    emptyPaymentSplit()
-  );
+  const [paymentSplit, setPaymentSplit] = useState<PaymentSplit>(() => emptyPaymentSplit());
   const [detailBusy, setDetailBusy] = useState(false);
   const [hydrateBusy, setHydrateBusy] = useState(false);
 
@@ -361,10 +332,8 @@ export function VendorReturnPage() {
     async (d: VendorPurchaseInvoiceDetail, options?: { bypassCache?: boolean }) => {
       const ids = Array.from(
         new Set(
-          (d.lines ?? [])
-            .map((line) => line.inventoryId)
-            .filter((id): id is string => Boolean(id))
-        )
+          (d.lines ?? []).map((line) => line.inventoryId).filter((id): id is string => Boolean(id)),
+        ),
       );
       if (ids.length === 0) return;
 
@@ -392,7 +361,7 @@ export function VendorReturnPage() {
         setHydrateBusy(false);
       }
     },
-    [inventoryById, notifyError]
+    [inventoryById, notifyError],
   );
 
   const loadInvoices = useCallback(async () => {
@@ -407,33 +376,24 @@ export function VendorReturnPage() {
         ? await inventoryApi.listVendorPurchaseInvoices(
             page,
             pageSize,
-            buildInvoiceSearchPattern(inv, ven, prod)
+            buildInvoiceSearchPattern(inv, ven, prod),
           )
         : await inventoryApi.listVendorPurchaseInvoices(page, pageSize);
       const rows = hasFilter
         ? applySummaryFilters(response.invoices ?? [], inv, ven)
-        : (response.invoices ?? []);
+        : response.invoices ?? [];
       setInvoices(rows);
       setTotalPages(response.page?.totalPages ?? 0);
       setTotalItems(response.page?.totalItems ?? 0);
     } catch (err) {
-      notifyError(
-        err instanceof Error ? err.message : 'Failed to load purchase invoices.'
-      );
+      notifyError(err instanceof Error ? err.message : 'Failed to load purchase invoices.');
       setInvoices([]);
       setTotalPages(0);
       setTotalItems(0);
     } finally {
       setSearchLoading(false);
     }
-  }, [
-    appliedInvoiceNo,
-    appliedProductOrBarcode,
-    appliedVendorName,
-    notifyError,
-    page,
-    pageSize,
-  ]);
+  }, [appliedInvoiceNo, appliedProductOrBarcode, appliedVendorName, notifyError, page, pageSize]);
 
   useEffect(() => {
     if (activeTab !== 'process') return;
@@ -464,9 +424,7 @@ export function VendorReturnPage() {
   };
 
   const hasActiveSearch = Boolean(
-    appliedInvoiceNo.trim() ||
-      appliedVendorName.trim() ||
-      appliedProductOrBarcode.trim()
+    appliedInvoiceNo.trim() || appliedVendorName.trim() || appliedProductOrBarcode.trim(),
   );
 
   const selectInvoice = async (inv: VendorPurchaseInvoiceSummary) => {
@@ -482,9 +440,7 @@ export function VendorReturnPage() {
       setDetail(d);
       void hydrateInventoryForDetail(d);
     } catch (err) {
-      notifyError(
-        err instanceof Error ? err.message : 'Failed to load invoice details.'
-      );
+      notifyError(err instanceof Error ? err.message : 'Failed to load invoice details.');
     } finally {
       setDetailBusy(false);
     }
@@ -492,7 +448,7 @@ export function VendorReturnPage() {
 
   const stockLines = useMemo(
     () => (detail?.lines ?? []).filter((l) => l.inventoryId != null),
-    [detail]
+    [detail],
   );
 
   const returnDebitNoteEstimate = useMemo(() => {
@@ -522,13 +478,10 @@ export function VendorReturnPage() {
   const vendorRefundPaymentValidation = validatePaymentSplit(
     paymentMethod,
     paymentSplit,
-    returnTotalNum
+    returnTotalNum,
   );
   const canRecordReturn =
-    returnTotalNum > 0 &&
-    vendorRefundPaymentValidation.ok &&
-    !returnRecording &&
-    !detailBusy;
+    returnTotalNum > 0 && vendorRefundPaymentValidation.ok && !returnRecording && !detailBusy;
 
   const submitReturn = async () => {
     if (!detail) {
@@ -555,14 +508,14 @@ export function VendorReturnPage() {
       }
       if (n > maxSell) {
         notifyError(
-          `Return qty for “${line.name}” cannot exceed ${maxSell} selling units (on-hand cap).`
+          `Return qty for “${line.name}” cannot exceed ${maxSell} selling units (on-hand cap).`,
         );
         return;
       }
       const baseQty = sellUnitsToBaseQuantity(invRow, n);
       if (baseQty <= 0 || baseQty > maxBase) {
         notifyError(
-          `Return qty for “${line.name}” is too large for current stock—try reducing the amount.`
+          `Return qty for “${line.name}” is too large for current stock—try reducing the amount.`,
         );
         return;
       }
@@ -570,9 +523,7 @@ export function VendorReturnPage() {
     }
 
     if (items.length === 0) {
-      notifyError(
-        'Enter a return quantity for at least one line.'
-      );
+      notifyError('Enter a return quantity for at least one line.');
       return;
     }
 
@@ -582,16 +533,10 @@ export function VendorReturnPage() {
       return;
     }
     if (!paymentMethod) {
-      notifyError(
-        'Choose how the supplier is refunding you (cash, online, credit, or mixed).'
-      );
+      notifyError('Choose how the supplier is refunding you (cash, online, credit, or mixed).');
       return;
     }
-    const payCheck = validatePaymentSplit(
-      paymentMethod,
-      paymentSplit,
-      returnTotal
-    );
+    const payCheck = validatePaymentSplit(paymentMethod, paymentSplit, returnTotal);
     if (!payCheck.ok) {
       notifyError(payCheck.message ?? 'Invalid return payment split.');
       return;
@@ -609,22 +554,21 @@ export function VendorReturnPage() {
         creditAmount: paymentSplit.creditAmount,
       });
       success(
-        `Return recorded. Supplier credit note: ${res.supplierCreditNoteNo}. Amount: ${formatMoney(res.returnAmount)}`
+        `Return recorded. Supplier credit note: ${res.supplierCreditNoteNo}. Amount: ${formatMoney(
+          res.returnAmount,
+        )}`,
       );
       setHistoryRefreshTrigger((t) => t + 1);
       resetSelection();
       void loadInvoices();
     } catch (err) {
-      notifyError(
-        err instanceof Error ? err.message : 'Failed to record vendor return.'
-      );
+      notifyError(err instanceof Error ? err.message : 'Failed to record vendor return.');
     } finally {
       setReturnRecording(false);
     }
   };
 
-  const vendorHint =
-    hydrateBusy || detailBusy ? 'Loading invoice…' : null;
+  const vendorHint = hydrateBusy || detailBusy ? 'Loading invoice…' : null;
 
   const handleTabChange = (tab: 'process' | 'history') => {
     setActiveTab(tab);
@@ -690,57 +634,53 @@ export function VendorReturnPage() {
                   Search purchase invoice
                 </Text>
                 <Text variant="caption" color="secondary" className={styles.hint}>
-                  Recent supplier purchase invoices load automatically. Narrow the list with
-                  search (same Java regex rules as History → Purchase history). When invoice
-                  number is set, product/barcode is omitted from the server search.
+                  Recent supplier purchase invoices load automatically. Narrow the list with search
+                  (same Java regex rules as History → Purchase history). When invoice number is set,
+                  product/barcode is omitted from the server search.
                 </Text>
                 <Stack gap="md">
                   <FormRow>
-                      <FormField
-                        label="Vendor name"
-                        id="vendorName"
-                        value={vendorName}
-                        onChange={setVendorName}
-                        placeholder="Supplier name"
-                        disabled={searchLoading}
-                      />
-                      <FormField
-                        label="Invoice number"
-                        id="invoiceNo"
-                        value={invoiceNo}
-                        onChange={setInvoiceNo}
-                        placeholder="Purchase invoice no."
-                        disabled={searchLoading}
-                      />
-                      <FormField
-                        label="Product / barcode"
-                        id="productHint"
-                        value={productOrBarcode}
-                        onChange={setProductOrBarcode}
-                        placeholder="Matches line names or barcode"
-                        disabled={searchLoading}
-                      />
-                    </FormRow>
-                    <Inline gap="sm">
+                    <FormField
+                      label="Vendor name"
+                      id="vendorName"
+                      value={vendorName}
+                      onChange={setVendorName}
+                      placeholder="Supplier name"
+                      disabled={searchLoading}
+                    />
+                    <FormField
+                      label="Invoice number"
+                      id="invoiceNo"
+                      value={invoiceNo}
+                      onChange={setInvoiceNo}
+                      placeholder="Purchase invoice no."
+                      disabled={searchLoading}
+                    />
+                    <FormField
+                      label="Product / barcode"
+                      id="productHint"
+                      value={productOrBarcode}
+                      onChange={setProductOrBarcode}
+                      placeholder="Matches line names or barcode"
+                      disabled={searchLoading}
+                    />
+                  </FormRow>
+                  <Inline gap="sm">
+                    <Button type="button" disabled={searchLoading} onClick={handleSearch}>
+                      {searchLoading ? 'Searching…' : 'Search invoices'}
+                    </Button>
+                    {hasActiveSearch ? (
                       <Button
                         type="button"
+                        variant="outline"
                         disabled={searchLoading}
-                        onClick={handleSearch}
+                        onClick={clearSearch}
                       >
-                        {searchLoading ? 'Searching…' : 'Search invoices'}
+                        Clear
                       </Button>
-                      {hasActiveSearch ? (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          disabled={searchLoading}
-                          onClick={clearSearch}
-                        >
-                          Clear
-                        </Button>
-                      ) : null}
-                    </Inline>
-                  </Stack>
+                    ) : null}
+                  </Inline>
+                </Stack>
               </Stack>
 
               {vendorHint ? (
@@ -771,7 +711,7 @@ export function VendorReturnPage() {
                           <Card
                             className={cn(
                               styles.purchaseCard,
-                              selected?.id === inv.id && styles.selectedPurchase
+                              selected?.id === inv.id && styles.selectedPurchase,
                             )}
                             onClick={() => void selectInvoice(inv)}
                             role="button"
@@ -784,10 +724,7 @@ export function VendorReturnPage() {
                             }}
                           >
                             <CardBody>
-                              <Inline
-                                justify="between"
-                                className={styles.purchaseHeader}
-                              >
+                              <Inline justify="between" className={styles.purchaseHeader}>
                                 <Inline gap="xs">
                                   <Text variant="caption" weight="semibold">
                                     Invoice:
@@ -808,23 +745,10 @@ export function VendorReturnPage() {
                                   </Text>
                                 </Inline>
                               </Inline>
-                              <Grid
-                                columns={2}
-                                gap="sm"
-                                className={styles.purchaseDetails}
-                              >
-                                <DetailLine
-                                  label="Vendor"
-                                  value={inv.vendorName?.trim() || '—'}
-                                />
-                                <DetailLine
-                                  label="Lines"
-                                  value={String(inv.lineCount)}
-                                />
-                                <DetailLine
-                                  label="Total"
-                                  value={formatMoney(inv.invoiceTotal)}
-                                />
+                              <Grid columns={2} gap="sm" className={styles.purchaseDetails}>
+                                <DetailLine label="Vendor" value={inv.vendorName?.trim() || '—'} />
+                                <DetailLine label="Lines" value={String(inv.lineCount)} />
+                                <DetailLine label="Total" value={formatMoney(inv.invoiceTotal)} />
                               </Grid>
                             </CardBody>
                           </Card>
@@ -836,15 +760,8 @@ export function VendorReturnPage() {
                                   <Text variant="heading3" weight="semibold">
                                     Select items to return
                                   </Text>
-                                  <Grid
-                                    columns={3}
-                                    gap="sm"
-                                    className={styles.purchaseInfo}
-                                  >
-                                    <DetailLine
-                                      label="Invoice"
-                                      value={detail.invoiceNo}
-                                    />
+                                  <Grid columns={3} gap="sm" className={styles.purchaseInfo}>
+                                    <DetailLine label="Invoice" value={detail.invoiceNo} />
                                     <DetailLine
                                       label="Vendor"
                                       value={detail.vendorName?.trim() || '—'}
@@ -856,7 +773,11 @@ export function VendorReturnPage() {
                                   </Grid>
 
                                   {stockLines.length === 0 ? (
-                                    <Text variant="caption" color="secondary" className={styles.hint}>
+                                    <Text
+                                      variant="caption"
+                                      color="secondary"
+                                      className={styles.hint}
+                                    >
                                       No inventoried lines on this bill.
                                     </Text>
                                   ) : (
@@ -866,7 +787,11 @@ export function VendorReturnPage() {
                                           Loading shelf stock and pricing for this invoice…
                                         </Alert>
                                       ) : (
-                                        <Text variant="caption" color="secondary" className={styles.hint}>
+                                        <Text
+                                          variant="caption"
+                                          color="secondary"
+                                          className={styles.hint}
+                                        >
                                           Quantities use the same{' '}
                                           <Text as="span" weight="semibold">
                                             selling unit
@@ -894,9 +819,7 @@ export function VendorReturnPage() {
                                             <TableHeaderCell>Qty on bill</TableHeaderCell>
                                             <TableHeaderCell>Current qty</TableHeaderCell>
                                             <TableHeaderCell>GST rates</TableHeaderCell>
-                                            <TableHeaderCell
-                                              className={styles.numericCell}
-                                            >
+                                            <TableHeaderCell className={styles.numericCell}>
                                               Est. debit note
                                             </TableHeaderCell>
                                             <TableHeaderCell>Return qty</TableHeaderCell>
@@ -908,11 +831,9 @@ export function VendorReturnPage() {
                                             const invRow = inventoryById[id];
                                             const maxSell = maxReturnableSellUnits(
                                               invRow,
-                                              line.count
+                                              line.count,
                                             );
-                                            const rqRaw = (
-                                              qtyByInventoryId[id] ?? ''
-                                            ).trim();
+                                            const rqRaw = (qtyByInventoryId[id] ?? '').trim();
                                             const rqParsed = Number.parseInt(rqRaw, 10);
                                             const rq =
                                               rqRaw !== '' &&
@@ -921,25 +842,22 @@ export function VendorReturnPage() {
                                                 ? rqParsed
                                                 : 0;
                                             const unitCostRaw = Number(
-                                              line.costPrice ?? invRow?.costPrice
+                                              line.costPrice ?? invRow?.costPrice,
                                             );
                                             const debitEst =
                                               rq > 0 &&
                                               Number.isFinite(unitCostRaw) &&
                                               unitCostRaw >= 0
-                                                ? estimateDebitNoteLine(
-                                                    rq,
-                                                    unitCostRaw,
-                                                    invRow
-                                                  )
+                                                ? estimateDebitNoteLine(rq, unitCostRaw, invRow)
                                                 : null;
                                             const debitTitle =
                                               debitEst != null
                                                 ? [
                                                     `Taxable ${formatMoney(debitEst.taxable)}`,
-                                                    debitEst.cgst > 0 ||
-                                                    debitEst.sgst > 0
-                                                      ? `CGST ${formatMoney(debitEst.cgst)}, SGST ${formatMoney(debitEst.sgst)}`
+                                                    debitEst.cgst > 0 || debitEst.sgst > 0
+                                                      ? `CGST ${formatMoney(
+                                                          debitEst.cgst,
+                                                        )}, SGST ${formatMoney(debitEst.sgst)}`
                                                       : 'No GST on row',
                                                     `Total ${formatMoney(debitEst.total)}`,
                                                   ].join(' · ')
@@ -951,17 +869,13 @@ export function VendorReturnPage() {
                                                   {formatMoney(invRow?.maximumRetailPrice)}
                                                 </TableCell>
                                                 <TableCell>
-                                                  {formatMoney(
-                                                    line.costPrice ?? invRow?.costPrice
-                                                  )}
+                                                  {formatMoney(line.costPrice ?? invRow?.costPrice)}
                                                 </TableCell>
                                                 <TableCell>{line.count ?? '—'}</TableCell>
                                                 <TableCell>
                                                   {formatCurrentSellQtyDisplay(invRow)}
                                                 </TableCell>
-                                                <TableCell>
-                                                  {formatGstRatesLabel(invRow)}
-                                                </TableCell>
+                                                <TableCell>{formatGstRatesLabel(invRow)}</TableCell>
                                                 <TableCell
                                                   className={styles.numericCell}
                                                   title={debitTitle}
@@ -984,9 +898,7 @@ export function VendorReturnPage() {
                                                         : undefined
                                                     }
                                                     disabled={
-                                                      returnRecording ||
-                                                      detailBusy ||
-                                                      maxSell <= 0
+                                                      returnRecording || detailBusy || maxSell <= 0
                                                     }
                                                     value={qtyByInventoryId[id] ?? ''}
                                                     onChange={(ev) => {
@@ -1035,8 +947,8 @@ export function VendorReturnPage() {
                                             color="secondary"
                                             className={styles.returnEstimateMuted}
                                           >
-                                            Per-line breakdown on hover · final amount set when
-                                            you record the return.
+                                            Per-line breakdown on hover · final amount set when you
+                                            record the return.
                                           </Text>
                                         </Alert>
                                       ) : null}
@@ -1055,10 +967,7 @@ export function VendorReturnPage() {
                                   />
 
                                   {returnDebitNoteEstimate.linesWithQty > 0 ? (
-                                    <Stack
-                                      gap="sm"
-                                      className={styles.returnPaymentSection}
-                                    >
+                                    <Stack gap="sm" className={styles.returnPaymentSection}>
                                       <PaymentMethodSplit
                                         context="purchase"
                                         title="How are you receiving the refund?"
@@ -1095,9 +1004,7 @@ export function VendorReturnPage() {
                                     disabled={!canRecordReturn || stockLines.length === 0}
                                     onClick={() => void submitReturn()}
                                   >
-                                    {returnRecording
-                                      ? 'Recording…'
-                                      : 'Record return to supplier'}
+                                    {returnRecording ? 'Recording…' : 'Record return to supplier'}
                                   </Button>
                                 </Stack>
                               </CardBody>

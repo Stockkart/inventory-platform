@@ -22,11 +22,7 @@ export function joinRoutePath(modulePath: string, childPath?: string): string {
   return `${modulePath}/${childPath}`;
 }
 
-function flattenModule(
-  root: string,
-  mod: RouteModule,
-  entries: ComposedRouteEntry[]
-): void {
+function flattenModule(root: string, mod: RouteModule, entries: ComposedRouteEntry[]): void {
   for (const child of mod.children ?? []) {
     entries.push({
       path: joinRoutePath(mod.path, child.path),
@@ -42,7 +38,7 @@ function flattenNestedChildren(
   root: string,
   parentPath: string,
   node: LazyRouteModule,
-  entries: ComposedRouteEntry[]
+  entries: ComposedRouteEntry[],
 ): void {
   for (const child of node.children ?? []) {
     entries.push({
@@ -56,9 +52,7 @@ function flattenNestedChildren(
 }
 
 /** Flatten domain `RouteModule` trees into path + file entries for the app shell. */
-export function flattenRouteModules(
-  registration: RoutePackageRegistration
-): ComposedRouteEntry[] {
+export function flattenRouteModules(registration: RoutePackageRegistration): ComposedRouteEntry[] {
   const { root, modules } = registration;
   const list = Array.isArray(modules) ? modules : [modules];
   const entries: ComposedRouteEntry[] = [];
@@ -69,7 +63,7 @@ export function flattenRouteModules(
 }
 
 export function composeDashboardRouteEntries(
-  registrations: RoutePackageRegistration[]
+  registrations: RoutePackageRegistration[],
 ): ComposedRouteEntry[] {
   return registrations.flatMap(flattenRouteModules);
 }
