@@ -1,8 +1,7 @@
 import { FormKeyboardNavScope } from '@inventory-platform/routing';
-import { Box } from '@inventory-platform/ui-kit';
+import { Box, Stack } from '@inventory-platform/ui-kit';
 import { JourneyHeader } from '../../ui/JourneyHeader';
 import { LoginForm } from '../forms/LoginForm';
-import styles from './login.module.css';
 
 export function meta() {
   return [
@@ -13,13 +12,22 @@ export function meta() {
 
 export default function LoginPage() {
   return (
-    <Box className={styles.page}>
+    <Stack style={{ minHeight: '100vh', paddingTop: '73px' }} bg="canvas">
       <JourneyHeader />
-      <Box as="main" className={styles.main}>
-        <FormKeyboardNavScope className={styles.container}>
-          <LoginForm />
+      <Box
+        as="main"
+        display="flex"
+        align="center"
+        justify="center"
+        padding="lg"
+        style={{ flex: 1 }}
+      >
+        <FormKeyboardNavScope>
+          <Stack width="full" maxWidth="sm">
+            <LoginForm />
+          </Stack>
         </FormKeyboardNavScope>
       </Box>
-    </Box>
+    </Stack>
   );
 }

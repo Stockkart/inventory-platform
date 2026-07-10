@@ -9,7 +9,6 @@ import { JournalEntryEditor } from '../ui/JournalEntryEditor';
 import { emptyLine } from '../model/journalEntryFormUtils';
 import { getTemplate, type JournalTemplateId } from '../model/journalTemplates';
 import { todayLocalDate } from '../model/format';
-import styles from '../ui/accounting.module.css';
 
 function parseTemplateParam(raw: string | null): JournalTemplateId | undefined {
   if (!raw) return undefined;
@@ -76,7 +75,7 @@ export function ManualJournalEntryPage() {
   }, [notifyError]);
 
   return (
-    <Stack gap="md" className={styles.page}>
+    <Stack gap="md">
       <Stack gap="md">
         <AccountingTabs />
         <PageHeader title="Manual Journal Entry" description="Posts with source MANUAL." />

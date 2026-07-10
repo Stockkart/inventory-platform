@@ -24,6 +24,7 @@ import type { ProfitAndLossResponse } from '@inventory-platform/accounting/types
 import { AccountingTabs } from '../ui/AccountingTabs';
 import { formatDate, formatMoney, todayLocalDate } from '../model/format';
 import styles from '../ui/accounting.module.css';
+import { numColBoldStyle, numColStyle } from '../ui/tabNav';
 
 function monthStart(d = new Date()): string {
   const y = d.getFullYear();
@@ -65,14 +66,14 @@ export function ProfitAndLossPage() {
   }, [data]);
 
   return (
-    <Stack gap="md" className={styles.page}>
+    <Stack gap="md">
       <Stack gap="md">
         <AccountingTabs />
         <PageHeader
           title="Profit & Loss"
           description="Revenue and expense accounts for the selected period (turnover, not closing balances)."
         />
-        <Inline gap="sm" className={styles.toolbar}>
+        <Inline gap="sm">
           <Text variant="label" color="secondary">
             From
           </Text>
@@ -104,7 +105,7 @@ export function ProfitAndLossPage() {
         </Card>
       ) : (
         <Stack gap="md">
-          <Grid gap="md" className={styles.kpiRow}>
+          <Grid gap="md">
             <Card>
               <CardBody>
                 <Stack gap="xs">
@@ -200,7 +201,7 @@ function ReportSection({
                 <TableRow>
                   <TableHeaderCell>Code</TableHeaderCell>
                   <TableHeaderCell>Account</TableHeaderCell>
-                  <TableHeaderCell className={styles.right}>Amount</TableHeaderCell>
+                  <TableHeaderCell style={numColStyle}>Amount</TableHeaderCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -208,16 +209,12 @@ function ReportSection({
                   <TableRow key={r.accountId}>
                     <TableCell>{r.accountCode}</TableCell>
                     <TableCell>{r.accountName}</TableCell>
-                    <TableCell className={`${styles.right} ${styles.number}`}>
-                      {formatMoney(r.amount)}
-                    </TableCell>
+                    <TableCell style={numColBoldStyle}>{formatMoney(r.amount)}</TableCell>
                   </TableRow>
                 ))}
                 <TableRow className={styles.subTotalRow}>
                   <TableCell colSpan={2}>Subtotal</TableCell>
-                  <TableCell className={`${styles.right} ${styles.number}`}>
-                    {formatMoney(total)}
-                  </TableCell>
+                  <TableCell style={numColBoldStyle}>{formatMoney(total)}</TableCell>
                 </TableRow>
               </TableBody>
             </Table>

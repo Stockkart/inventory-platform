@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuthStore } from '@inventory-platform/session';
-import { Box, Button, Card, CardBody, Stack, Text } from '@inventory-platform/ui-kit';
-import styles from './shop-selection.module.css';
+import { Button, Card, CardBody, Grid, Stack, Text } from '@inventory-platform/ui-kit';
 
 export function meta() {
   return [
@@ -107,21 +106,25 @@ export default function ShopSelectionPage() {
   ];
 
   return (
-    <Stack className={styles.container} gap="lg">
-      <Stack className={styles.header} gap="xs">
-        <Text variant="heading1" className={styles.title}>
-          Get Started
-        </Text>
-        <Text color="secondary" className={styles.subtitle}>
+    <Stack
+      gap="lg"
+      width="full"
+      maxWidth="lg"
+      mx="auto"
+      padding="xl"
+      style={{ minHeight: '100vh', justifyContent: 'center' }}
+    >
+      <Stack gap="xs" align="center">
+        <Text variant="heading1">Get Started</Text>
+        <Text color="secondary" align="center">
           Choose how you&apos;d like to get started with StockKart
         </Text>
       </Stack>
 
-      <Box className={styles.options}>
+      <Grid columns={3} gap="md" width="full">
         {options.map(({ key, icon, title, description }) => (
           <Card
             key={key}
-            className={`${styles.optionCard} ${selectedOption === key ? styles.selected : ''}`}
             onClick={() => handleOptionSelect(key)}
             role="button"
             tabIndex={0}
@@ -131,33 +134,40 @@ export default function ShopSelectionPage() {
                 handleOptionSelect(key);
               }
             }}
+            style={
+              selectedOption === key
+                ? { borderColor: '#3b82f6', background: 'rgba(59, 130, 246, 0.08)' }
+                : undefined
+            }
           >
             <CardBody>
-              <Box className={styles.iconWrapper}>{icon}</Box>
-              <Text variant="heading2" className={styles.optionTitle}>
-                {title}
-              </Text>
-              <Text color="secondary" className={styles.optionDescription}>
-                {description}
-              </Text>
+              <Stack gap="md" align="center">
+                <Text>{icon}</Text>
+                <Text variant="heading2" weight="semibold" align="center">
+                  {title}
+                </Text>
+                <Text color="secondary" align="center">
+                  {description}
+                </Text>
+              </Stack>
             </CardBody>
           </Card>
         ))}
-      </Box>
+      </Grid>
 
       {selectedOption ? (
-        <Box className={styles.actions}>
-          <Button variant="solid" className={styles.continueButton} onClick={handleContinue}>
+        <Stack align="center">
+          <Button variant="solid" onClick={handleContinue}>
             Continue
           </Button>
-        </Box>
+        </Stack>
       ) : null}
 
-      <Box className={styles.footer}>
-        <Button variant="ghost" className={styles.logoutButton} onClick={() => void handleLogout()}>
+      <Stack align="center">
+        <Button variant="ghost" onClick={() => void handleLogout()}>
           Logout
         </Button>
-      </Box>
+      </Stack>
     </Stack>
   );
 }

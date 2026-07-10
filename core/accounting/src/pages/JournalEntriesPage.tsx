@@ -26,8 +26,8 @@ import { useNotify } from '@inventory-platform/session';
 import type { JournalEntryResponse, JournalSource } from '@inventory-platform/accounting/types';
 import { useJournalsQuery } from '../queries/hooks';
 import { AccountingTabs } from '../ui/AccountingTabs';
+import { numColBoldStyle, numColStyle } from '../ui/tabNav';
 import { formatDate, formatMoney } from '../model/format';
-import styles from '../ui/accounting.module.css';
 
 const SOURCE_OPTIONS: readonly SelectOptionDef[] = [
   { value: '', label: 'All sources' },
@@ -76,7 +76,7 @@ export function JournalEntriesPage() {
   const entries = useMemo<JournalEntryResponse[]>(() => data?.entries ?? [], [data]);
 
   return (
-    <Stack gap="md" className={styles.page}>
+    <Stack gap="md">
       <Stack gap="md">
         <PageHeader
           title="Journal Entries"
@@ -88,7 +88,7 @@ export function JournalEntriesPage() {
           }
         />
         <AccountingTabs />
-        <Inline gap="sm" className={styles.toolbar}>
+        <Inline gap="sm">
           <Inline gap="sm" align="center">
             <Text variant="label" color="secondary">
               Source
@@ -157,8 +157,8 @@ export function JournalEntriesPage() {
                 <TableHeaderCell>Entry #</TableHeaderCell>
                 <TableHeaderCell>Source</TableHeaderCell>
                 <TableHeaderCell>Narration</TableHeaderCell>
-                <TableHeaderCell className={styles.right}>Debit</TableHeaderCell>
-                <TableHeaderCell className={styles.right}>Credit</TableHeaderCell>
+                <TableHeaderCell style={numColStyle}>Debit</TableHeaderCell>
+                <TableHeaderCell style={numColStyle}>Credit</TableHeaderCell>
                 <TableHeaderCell>Status</TableHeaderCell>
               </TableRow>
             </TableHead>
@@ -182,19 +182,15 @@ export function JournalEntriesPage() {
                       </Button>
                     </TableCell>
                     <TableCell>
-                      <Badge className={styles.sourcePill}>{entry.sourceType}</Badge>
+                      <Badge variant="info">{entry.sourceType}</Badge>
                     </TableCell>
                     <TableCell>
                       <Text color="secondary" variant="caption">
                         {entry.narration ?? '—'}
                       </Text>
                     </TableCell>
-                    <TableCell className={`${styles.right} ${styles.number}`}>
-                      {formatMoney(entry.totalDebit)}
-                    </TableCell>
-                    <TableCell className={`${styles.right} ${styles.number}`}>
-                      {formatMoney(entry.totalCredit)}
-                    </TableCell>
+                    <TableCell style={numColBoldStyle}>{formatMoney(entry.totalDebit)}</TableCell>
+                    <TableCell style={numColBoldStyle}>{formatMoney(entry.totalCredit)}</TableCell>
                     <TableCell>
                       <Badge variant={statusVariant(entry.status)}>{entry.status}</Badge>
                     </TableCell>

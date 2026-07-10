@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { inventoryApi } from '../api/inventory.api';
 import type { VendorPurchaseReturnSummary } from '@inventory-platform/product/types';
 import { useNotify } from '@inventory-platform/session';
-import recordStyles from './HistoryRecordList.module.css';
 import {
   Box,
   Card,
@@ -29,6 +28,21 @@ import {
   paginateLocal,
   matchesRegexField,
 } from './historyFilters';
+
+const recordHeaderStyle = {
+  paddingBottom: '0.75rem',
+  borderBottom: '1px solid var(--border-color)',
+} as const;
+
+const breakdownWrapStyle = {
+  paddingTop: '1rem',
+  borderTop: '1px solid var(--border-color)',
+} as const;
+
+const breakdownLegacyStyle = {
+  paddingTop: '1rem',
+  borderTop: '1px dashed var(--border-color)',
+} as const;
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('en-IN', {
@@ -160,14 +174,14 @@ export function VendorReturnHistoryList({ refreshTrigger, filters }: VendorRetur
 
   if (isLoading && returns.length === 0) {
     return (
-      <Stack className={recordStyles.container}>
+      <Stack width="full">
         <CenteredLoader label="Loading supplier return history…" />
       </Stack>
     );
   }
 
   return (
-    <Stack gap="md" className={recordStyles.container}>
+    <Stack gap="md" width="full">
       <HistoryListSummary
         page={page}
         limit={limit}
@@ -184,24 +198,19 @@ export function VendorReturnHistoryList({ refreshTrigger, filters }: VendorRetur
         />
       ) : (
         <>
-          <Stack gap="md" className={recordStyles.list}>
+          <Stack gap="md">
             {returns.map((r) => (
-              <Card key={r.returnId} className={recordStyles.recordCard}>
+              <Card key={r.returnId}>
                 <CardBody>
                   <Stack gap="md">
-                    <Inline
-                      className={recordStyles.recordHeader}
-                      justify="between"
-                      align="start"
-                      gap="md"
-                    >
+                    <Inline justify="between" align="start" gap="md" style={recordHeaderStyle}>
                       <DetailLine
                         label="Credit note"
                         value={r.supplierCreditNoteNo ?? r.returnId}
                       />
                       <DetailLine label="Date" value={formatDate(r.createdAt)} />
                     </Inline>
-                    <Grid columns={2} gap="sm" className={recordStyles.recordDetails}>
+                    <Grid columns={2} gap="sm">
                       <DetailLine label="Purchase invoice" value={r.invoiceNo ?? '—'} />
                       <DetailLine label="Vendor" value={r.vendorName ?? '—'} />
                       <DetailLine label="Lines returned" value={String(r.totalLinesReturned)} />
@@ -209,17 +218,17 @@ export function VendorReturnHistoryList({ refreshTrigger, filters }: VendorRetur
                       {r.reason ? <DetailLine label="Reason" value={r.reason} /> : null}
                     </Grid>
                     {(r.lines?.length ?? 0) > 0 ? (
-                      <Stack gap="sm" className={recordStyles.breakdownWrap}>
+                      <Stack gap="sm" style={breakdownWrapStyle}>
                         <Text
                           variant="caption"
                           color="secondary"
                           weight="semibold"
-                          className={recordStyles.breakdownTitle}
+                          style={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}
                         >
                           Line breakdown
                         </Text>
-                        <Box className={recordStyles.breakdownScroll}>
-                          <Table className={recordStyles.breakdownTable}>
+                        <Box overflow="auto">
+                          <Table style={{ minWidth: '320px' }}>
                             <TableHead>
                               <TableRow>
                                 <TableHeaderCell>Product</TableHeaderCell>
@@ -254,11 +263,7 @@ export function VendorReturnHistoryList({ refreshTrigger, filters }: VendorRetur
                         </Box>
                       </Stack>
                     ) : (
-                      <Text
-                        variant="caption"
-                        color="secondary"
-                        className={recordStyles.breakdownLegacyNote}
-                      >
+                      <Text variant="caption" color="secondary" style={breakdownLegacyStyle}>
                         No saved line breakdown for this debit note (often older returns).
                       </Text>
                     )}

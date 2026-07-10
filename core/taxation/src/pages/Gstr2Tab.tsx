@@ -18,7 +18,7 @@ import { triggerBlobDownload } from '../api/download';
 import { gstr2Api } from '../api/gstr2.api';
 import { useGstr2ReportQuery } from '../queries/hooks';
 import { formatCurrency, formatDate, getDefaultPeriod, GstrReportHeader, GstrSubTabs } from '../ui';
-import styles from '../ui/gstr.module.css';
+import { numColStyle } from '../ui/tabNav';
 
 const TABS = [
   { id: 'b2b', label: 'B2B (Registered)' },
@@ -38,7 +38,7 @@ type Gstr2SectionId = (typeof TABS)[number]['id'];
 
 function EmptySection({ message }: { message: string }) {
   return (
-    <Box className={styles.emptyState}>
+    <Box padding="lg">
       <Text color="secondary" align="center">
         {message}
       </Text>
@@ -128,12 +128,12 @@ export function Gstr2Tab() {
                           <TableHeaderCell>Supplier GSTIN</TableHeaderCell>
                           <TableHeaderCell>Invoice No</TableHeaderCell>
                           <TableHeaderCell>Date</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>Invoice Value</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>Invoice Value</TableHeaderCell>
                           <TableHeaderCell>Place of Supply</TableHeaderCell>
                           <TableHeaderCell>Rate %</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>Taxable Value</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>CGST</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>SGST</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>Taxable Value</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>CGST</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>SGST</TableHeaderCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -142,18 +142,18 @@ export function Gstr2Tab() {
                             <TableCell>{row.supplierGstin || '—'}</TableCell>
                             <TableCell>{row.invoiceNo || '—'}</TableCell>
                             <TableCell>{formatDate(row.invoiceDate ?? '')}</TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.invoiceValue)}
                             </TableCell>
                             <TableCell>{row.placeOfSupply || '—'}</TableCell>
                             <TableCell>{row.rate ?? '—'}%</TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.taxableValue)}
                             </TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.centralTaxPaid)}
                             </TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.stateUtTaxPaid)}
                             </TableCell>
                           </TableRow>
@@ -176,12 +176,12 @@ export function Gstr2Tab() {
                           <TableHeaderCell>Supplier Name</TableHeaderCell>
                           <TableHeaderCell>Invoice No</TableHeaderCell>
                           <TableHeaderCell>Date</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>Invoice Value</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>Invoice Value</TableHeaderCell>
                           <TableHeaderCell>Place of Supply</TableHeaderCell>
                           <TableHeaderCell>Rate %</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>Taxable Value</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>CGST</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>SGST</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>Taxable Value</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>CGST</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>SGST</TableHeaderCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -190,18 +190,18 @@ export function Gstr2Tab() {
                             <TableCell>{row.supplierName || '—'}</TableCell>
                             <TableCell>{row.invoiceNo || '—'}</TableCell>
                             <TableCell>{formatDate(row.invoiceDate ?? '')}</TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.invoiceValue)}
                             </TableCell>
                             <TableCell>{row.placeOfSupply || '—'}</TableCell>
                             <TableCell>{row.rate ?? '—'}%</TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.taxableValue)}
                             </TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.centralTaxPaid)}
                             </TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.stateUtTaxPaid)}
                             </TableCell>
                           </TableRow>
@@ -223,11 +223,11 @@ export function Gstr2Tab() {
                         <TableRow>
                           <TableHeaderCell>Invoice No</TableHeaderCell>
                           <TableHeaderCell>Date</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>Invoice Value</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>Invoice Value</TableHeaderCell>
                           <TableHeaderCell>Place of Supply</TableHeaderCell>
                           <TableHeaderCell>Rate %</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>Taxable Value</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>IGST</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>Taxable Value</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>IGST</TableHeaderCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -235,15 +235,15 @@ export function Gstr2Tab() {
                           <TableRow key={i}>
                             <TableCell>{row.invoiceNo || '—'}</TableCell>
                             <TableCell>{formatDate(row.invoiceDate ?? '')}</TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.invoiceValue)}
                             </TableCell>
                             <TableCell>{row.placeOfSupply || '—'}</TableCell>
                             <TableCell>{row.rate ?? '—'}%</TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.taxableValue)}
                             </TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.integratedTaxPaid)}
                             </TableCell>
                           </TableRow>
@@ -266,10 +266,10 @@ export function Gstr2Tab() {
                           <TableHeaderCell>Port</TableHeaderCell>
                           <TableHeaderCell>Bill of Entry No</TableHeaderCell>
                           <TableHeaderCell>Date</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>Bill Value</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>Bill Value</TableHeaderCell>
                           <TableHeaderCell>Rate %</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>Taxable Value</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>IGST</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>Taxable Value</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>IGST</TableHeaderCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -278,14 +278,14 @@ export function Gstr2Tab() {
                             <TableCell>{row.portCode || '—'}</TableCell>
                             <TableCell>{row.billOfEntryNo || '—'}</TableCell>
                             <TableCell>{formatDate(row.billOfEntryDate ?? '')}</TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.billOfEntryValue)}
                             </TableCell>
                             <TableCell>{row.rate ?? '—'}%</TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.taxableValue)}
                             </TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.integratedTaxPaid)}
                             </TableCell>
                           </TableRow>
@@ -309,11 +309,11 @@ export function Gstr2Tab() {
                           <TableHeaderCell>Note No</TableHeaderCell>
                           <TableHeaderCell>Note date</TableHeaderCell>
                           <TableHeaderCell>Original invoice</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>Note Value</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>Note Value</TableHeaderCell>
                           <TableHeaderCell>Rate %</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>Taxable Value</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>CGST</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>SGST</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>Taxable Value</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>CGST</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>SGST</TableHeaderCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -326,17 +326,17 @@ export function Gstr2Tab() {
                               {(row.invoiceNo || '—') +
                                 (row.invoiceDate ? ` (${formatDate(row.invoiceDate)})` : '')}
                             </TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.noteValue)}
                             </TableCell>
                             <TableCell>{row.rate ?? '—'}%</TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.taxableValue)}
                             </TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.centralTaxPaid)}
                             </TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.stateUtTaxPaid)}
                             </TableCell>
                           </TableRow>
@@ -359,9 +359,9 @@ export function Gstr2Tab() {
                           <TableHeaderCell>Note No</TableHeaderCell>
                           <TableHeaderCell>Note date</TableHeaderCell>
                           <TableHeaderCell>Original invoice</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>Note Value</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>Note Value</TableHeaderCell>
                           <TableHeaderCell>Rate %</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>Taxable Value</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>Taxable Value</TableHeaderCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -373,11 +373,11 @@ export function Gstr2Tab() {
                               {(row.invoiceNo || '—') +
                                 (row.invoiceDate ? ` (${formatDate(row.invoiceDate)})` : '')}
                             </TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.noteValue)}
                             </TableCell>
                             <TableCell>{row.rate ?? '—'}%</TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.taxableValue)}
                             </TableCell>
                           </TableRow>
@@ -399,10 +399,8 @@ export function Gstr2Tab() {
                         <TableRow>
                           <TableHeaderCell>Place of Supply</TableHeaderCell>
                           <TableHeaderCell>Rate %</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>
-                            Gross Advance Paid
-                          </TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>Cess</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>Gross Advance Paid</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>Cess</TableHeaderCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -410,10 +408,10 @@ export function Gstr2Tab() {
                           <TableRow key={i}>
                             <TableCell>{row.placeOfSupply || '—'}</TableCell>
                             <TableCell>{row.rate ?? '—'}%</TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.grossAdvancePaid)}
                             </TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.cessAmount)}
                             </TableCell>
                           </TableRow>
@@ -435,10 +433,8 @@ export function Gstr2Tab() {
                         <TableRow>
                           <TableHeaderCell>Place of Supply</TableHeaderCell>
                           <TableHeaderCell>Rate %</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>
-                            Advance to Adjust
-                          </TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>Cess Adjusted</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>Advance to Adjust</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>Cess Adjusted</TableHeaderCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -446,10 +442,10 @@ export function Gstr2Tab() {
                           <TableRow key={i}>
                             <TableCell>{row.placeOfSupply || '—'}</TableCell>
                             <TableCell>{row.rate ?? '—'}%</TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.grossAdvanceToBeAdjusted)}
                             </TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.cessAdjusted)}
                             </TableCell>
                           </TableRow>
@@ -470,26 +466,26 @@ export function Gstr2Tab() {
                       <TableHead>
                         <TableRow>
                           <TableHeaderCell>Description</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>Composition</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>Nil Rated</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>Exempted</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>Non-GST</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>Composition</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>Nil Rated</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>Exempted</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>Non-GST</TableHeaderCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
                         {exempData.map((row, i) => (
                           <TableRow key={i}>
                             <TableCell>{row.description || '—'}</TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.compositionTaxablePerson)}
                             </TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.nilRatedSupplies)}
                             </TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.exemptedOtherThanNilOrNonGst)}
                             </TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.nonGstSupplies)}
                             </TableCell>
                           </TableRow>
@@ -511,10 +507,10 @@ export function Gstr2Tab() {
                         <TableRow>
                           <TableHeaderCell>Description</TableHeaderCell>
                           <TableHeaderCell>Add/Reduce</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>IGST</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>CGST</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>SGST</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>Cess</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>IGST</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>CGST</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>SGST</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>Cess</TableHeaderCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -522,16 +518,16 @@ export function Gstr2Tab() {
                           <TableRow key={i}>
                             <TableCell>{row.description || '—'}</TableCell>
                             <TableCell>{row.toBeAddedOrReduced || '—'}</TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.itcIntegratedTaxAmount)}
                             </TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.itcCentralTaxAmount)}
                             </TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.itcStateUtTaxAmount)}
                             </TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.itcCessAmount)}
                             </TableCell>
                           </TableRow>
@@ -554,12 +550,12 @@ export function Gstr2Tab() {
                           <TableHeaderCell>HSN</TableHeaderCell>
                           <TableHeaderCell>Description</TableHeaderCell>
                           <TableHeaderCell>UQC</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>Qty</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>Total Value</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>Qty</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>Total Value</TableHeaderCell>
                           <TableHeaderCell>Rate %</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>Taxable Value</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>CGST</TableHeaderCell>
-                          <TableHeaderCell className={styles.numCol}>SGST</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>Taxable Value</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>CGST</TableHeaderCell>
+                          <TableHeaderCell style={numColStyle}>SGST</TableHeaderCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -568,20 +564,18 @@ export function Gstr2Tab() {
                             <TableCell>{row.hsn || '—'}</TableCell>
                             <TableCell>{row.description || '—'}</TableCell>
                             <TableCell>{row.uqc || '—'}</TableCell>
-                            <TableCell className={styles.numCol}>
-                              {row.totalQuantity ?? '—'}
-                            </TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>{row.totalQuantity ?? '—'}</TableCell>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.totalValue)}
                             </TableCell>
                             <TableCell>{row.rate ?? '—'}%</TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.taxableValue)}
                             </TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.centralTaxAmount)}
                             </TableCell>
-                            <TableCell className={styles.numCol}>
+                            <TableCell style={numColStyle}>
                               {formatCurrency(row.stateUtTaxAmount)}
                             </TableCell>
                           </TableRow>

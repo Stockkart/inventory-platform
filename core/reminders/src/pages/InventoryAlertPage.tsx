@@ -5,6 +5,8 @@ import { InventoryAlertDetails } from '@inventory-platform/product';
 import {
   Box,
   Button,
+  Card,
+  CardBody,
   CenteredLoader,
   FormField,
   Inline,
@@ -23,7 +25,17 @@ import {
   useLowStockAlertsQuery,
   useUpdateThresholdMutation,
 } from '../queries/hooks';
-import styles from './inventory-alert.module.css';
+
+const alertBorderColor = {
+  critical: '#ef4444',
+  warning: '#fbbf24',
+} as const;
+
+const stockFillGradient = {
+  critical: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+  warning: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+  default: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)',
+} as const;
 
 export function InventoryAlertPage() {
   const location = useLocation();
@@ -84,7 +96,7 @@ export function InventoryAlertPage() {
   const productLabel = thresholdModal.item?.name ?? thresholdModal.item?.barcode ?? 'Unknown';
 
   return (
-    <Stack gap="md">
+    <Stack gap="md" width="full" maxWidth="xl" mx="auto">
       <PageHeader
         title="Inventory Low Alert"
         description="Monitor products with low stock levels"
@@ -99,71 +111,94 @@ export function InventoryAlertPage() {
       {isLoading ? (
         <CenteredLoader label="Loading low stock alerts…" />
       ) : alerts.length === 0 ? (
-        <Stack align="center" justify="center" className={styles.emptyState}>
+        <Stack align="center" justify="center" style={{ minHeight: '14rem' }}>
           <Text color="secondary">No low stock alerts right now.</Text>
         </Stack>
       ) : (
-        <Stack gap="md" className={styles.alertsList}>
+        <Stack gap="md">
           {alerts.map((alert: LowStockAlertRow) => (
-            <Box key={alert.id} className={`${styles.alertCard} ${styles[alert.status]}`}>
-              <Box className={styles.alertIcon}>{alert.status === 'critical' ? '🔴' : '🟡'}</Box>
+            <Card
+              key={alert.id}
+              style={{
+                borderWidth: 2,
+                borderColor: alertBorderColor[alert.status as keyof typeof alertBorderColor],
+                background:
+                  alert.status === 'critical'
+                    ? 'rgba(239, 68, 68, 0.1)'
+                    : 'rgba(251, 191, 36, 0.1)',
+              }}
+            >
+              <CardBody>
+                <Inline gap="lg" align="center" flexWrap>
+                  <Text variant="heading2">{alert.status === 'critical' ? '🔴' : '🟡'}</Text>
 
-              <Stack gap="sm" className={styles.alertInfo}>
-                <Text variant="heading3" weight="semibold" className={styles.alertProduct}>
-                  {alert.product}
-                </Text>
+                  <Stack gap="sm" style={{ flex: 1, minWidth: '12rem' }}>
+                    <Text variant="heading3" weight="semibold">
+                      {alert.product}
+                    </Text>
 
-                <Inline gap="md" className={styles.alertDetails}>
-                  <Text variant="caption">
-                    Current Stock:{' '}
-                    <Text as="span" weight="semibold">
-                      {alert.current}
-                    </Text>
-                  </Text>
-                  <Text variant="caption">
-                    Threshold:{' '}
-                    <Text as="span" weight="semibold">
-                      {alert.threshold}
-                    </Text>
-                  </Text>
+                    <Inline gap="md" flexWrap>
+                      <Text variant="caption">
+                        Current Stock:{' '}
+                        <Text as="span" weight="semibold">
+                          {alert.current}
+                        </Text>
+                      </Text>
+                      <Text variant="caption">
+                        Threshold:{' '}
+                        <Text as="span" weight="semibold">
+                          {alert.threshold}
+                        </Text>
+                      </Text>
+                    </Inline>
+
+                    <Box
+                      rounded="sm"
+                      overflow="hidden"
+                      style={{ height: 8, background: 'var(--sk-color-bg-canvas, #f8fafc)' }}
+                    >
+                      <Box
+                        style={{
+                          height: '100%',
+                          width: `${Math.min((alert.current / alert.threshold) * 100, 100)}%`,
+                          background:
+                            stockFillGradient[alert.status as keyof typeof stockFillGradient] ??
+                            stockFillGradient.default,
+                          borderRadius: 4,
+                          transition: 'width 0.3s ease',
+                        }}
+                      />
+                    </Box>
+                  </Stack>
+
+                  <Inline gap="sm" flexWrap>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openInventoryDetails(alert.raw)}
+                      disabled={detailLoading}
+                    >
+                      View Details
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="solid"
+                      onClick={() =>
+                        setThresholdModal({
+                          open: true,
+                          item: alert.raw,
+                          threshold: alert.raw?.thresholdCount ?? alert.threshold ?? 10,
+                        })
+                      }
+                    >
+                      Configure Threshold
+                    </Button>
+                  </Inline>
                 </Inline>
-
-                <Box className={styles.stockBar}>
-                  <Box
-                    className={styles.stockFill}
-                    style={{
-                      width: `${Math.min((alert.current / alert.threshold) * 100, 100)}%`,
-                    }}
-                  />
-                </Box>
-              </Stack>
-
-              <Inline gap="sm" className={styles.alertActions}>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => openInventoryDetails(alert.raw)}
-                  disabled={detailLoading}
-                >
-                  View Details
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="solid"
-                  onClick={() =>
-                    setThresholdModal({
-                      open: true,
-                      item: alert.raw,
-                      threshold: alert.raw?.thresholdCount ?? alert.threshold ?? 10,
-                    })
-                  }
-                >
-                  Configure Threshold
-                </Button>
-              </Inline>
-            </Box>
+              </CardBody>
+            </Card>
           ))}
         </Stack>
       )}

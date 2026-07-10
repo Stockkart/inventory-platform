@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router';
 import { pricingApi } from '../api/pricing.api';
 import { useNotify } from '@inventory-platform/session';
@@ -19,7 +19,6 @@ import {
   Text,
   type SelectOptionDef,
 } from '@inventory-platform/ui-kit';
-import styles from './price-edit.module.css';
 
 export function meta() {
   return [
@@ -51,6 +50,14 @@ interface LocationState {
   productName?: string | null;
   rates?: PricingRate[] | null;
   defaultRate?: string | null;
+}
+
+function PageShell({ children }: { children: ReactNode }) {
+  return (
+    <Stack gap="md" width="full" maxWidth="sm" mx="auto">
+      {children}
+    </Stack>
+  );
 }
 
 export function PriceEditPage() {
@@ -206,51 +213,53 @@ export function PriceEditPage() {
 
   if (!pricingId) {
     return (
-      <Stack gap="md" className={styles.page}>
+      <PageShell>
         <PageHeader title="Edit Price" />
         <Alert variant="danger">No pricing ID provided.</Alert>
-        <Button
-          type="button"
-          variant="ghost"
-          className={styles.backLink}
-          onClick={() => navigate('/dashboard/pricing')}
-        >
+        <Button type="button" variant="ghost" onClick={() => navigate('/dashboard/pricing')}>
           ← Back to Pricing
         </Button>
-      </Stack>
+      </PageShell>
     );
   }
 
   if (loading) {
     return (
-      <Stack gap="md" className={styles.page}>
+      <PageShell>
         <PageHeader title="Edit Price" />
         <Card>
           <CardBody>
             <CenteredLoader label="Loading pricing…" />
           </CardBody>
         </Card>
-      </Stack>
+      </PageShell>
     );
   }
 
   return (
-    <Stack gap="md" className={styles.page}>
+    <PageShell>
       <PageHeader
         title="Edit Price"
         description={state?.productName ? `Product: ${state.productName}` : undefined}
       />
 
-      <Text color="secondary" variant="caption" className={styles.pricingIdLabel}>
+      <Text color="secondary" variant="caption">
         Pricing ID:{' '}
-        <Text as="span" className={styles.pricingId}>
+        <Text
+          as="span"
+          style={{
+            fontFamily: 'ui-monospace, monospace',
+            fontSize: '0.9em',
+            padding: '0.1rem 0.3rem',
+          }}
+        >
           {pricingId}
         </Text>
       </Text>
 
       <Card>
         <CardBody>
-          <Stack gap="md" className={styles.form}>
+          <Stack gap="md">
             {error ? <Alert variant="danger">{error}</Alert> : null}
 
             <FormField label="Price to Retailer (PTR)" htmlFor="priceToRetail">
@@ -277,32 +286,26 @@ export function PriceEditPage() {
               />
             </FormField>
 
-            <Stack gap="sm" className={styles.ratesSection}>
-              <Inline justify="between" align="center" className={styles.ratesHeader}>
+            <Stack gap="sm">
+              <Inline justify="between" align="center" flexWrap>
                 <Text variant="label" weight="medium">
                   Rates
                 </Text>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className={styles.addRateBtn}
-                  onClick={addRate}
-                >
+                <Button type="button" variant="outline" size="sm" onClick={addRate}>
                   + Add rate
                 </Button>
               </Inline>
-              <Text variant="caption" color="secondary" className={styles.ratesHint}>
+              <Text variant="caption" color="secondary">
                 Sending rates replaces the entire list. Include all rates you want to keep; any
                 omitted will be removed.
               </Text>
               {rates.map((rate, i) => (
-                <Inline key={i} gap="sm" align="center" className={styles.rateRow}>
+                <Inline key={i} gap="sm" align="center">
                   <Input
                     type="text"
                     value={rate.name}
                     onChange={(e) => updateRate(i, 'name', e.target.value)}
-                    className={styles.rateNameInput}
+                    style={{ flex: 1 }}
                     placeholder="Rate name"
                   />
                   <Input
@@ -311,15 +314,10 @@ export function PriceEditPage() {
                     min="0"
                     value={rate.price || ''}
                     onChange={(e) => updateRate(i, 'price', e.target.value)}
-                    className={styles.ratePriceInput}
+                    style={{ width: '6rem' }}
                     placeholder="Price"
                   />
-                  <IconButton
-                    type="button"
-                    className={styles.removeRateBtn}
-                    onClick={() => removeRate(i)}
-                    label="Remove rate"
-                  >
+                  <IconButton type="button" onClick={() => removeRate(i)} label="Remove rate">
                     ×
                   </IconButton>
                 </Inline>
@@ -339,32 +337,26 @@ export function PriceEditPage() {
               />
             </FormField>
 
-            <Text variant="caption" color="secondary" className={styles.hint}>
+            <Text variant="caption" color="secondary">
               At least one field is required. When changing rates, always send the full list.
             </Text>
 
-            <Inline gap="md" className={styles.formActions}>
+            <Inline gap="md">
               <Button
                 type="button"
                 variant="solid"
-                className={styles.submitBtn}
                 disabled={saving}
                 onClick={() => void handleSubmit()}
               >
                 {saving ? 'Saving...' : 'Save'}
               </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                className={styles.backLink}
-                onClick={() => navigate('/dashboard/pricing')}
-              >
+              <Button type="button" variant="ghost" onClick={() => navigate('/dashboard/pricing')}>
                 Cancel
               </Button>
             </Inline>
           </Stack>
         </CardBody>
       </Card>
-    </Stack>
+    </PageShell>
   );
 }

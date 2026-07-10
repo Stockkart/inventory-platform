@@ -16,7 +16,9 @@ import {
   TableRow,
   Text,
 } from '@inventory-platform/ui-kit';
-import styles from './vendor-invoice-expanded.module.css';
+
+const mutedCellStyle = { color: 'var(--text-secondary)', fontSize: '0.8125rem' };
+const moneyCellStyle = { fontVariantNumeric: 'tabular-nums' as const, fontWeight: 500 };
 
 function formatMoney(n: number | null | undefined): string {
   if (n == null || Number.isNaN(n)) return '—';
@@ -94,8 +96,14 @@ export function VendorInvoiceExpandedBody({
   );
 
   return (
-    <Stack gap="md" className={styles.expandedInner}>
-      <Inline className={styles.expandedHeader} justify="between" align="start" gap="md">
+    <Stack gap="md" padding="xs">
+      <Inline
+        justify="between"
+        align="start"
+        gap="md"
+        padding="sm"
+        style={{ borderBottom: '1px solid var(--border-color)' }}
+      >
         <Stack gap="xs">
           <Inline gap="sm" align="center">
             <Text variant="heading3" weight="bold">
@@ -111,18 +119,18 @@ export function VendorInvoiceExpandedBody({
           ) : null}
         </Stack>
         {detail.legacyLotId ? (
-          <Text variant="caption" color="secondary" className={styles.legacyHint}>
+          <Text variant="caption" color="secondary" align="right">
             Legacy reference:{' '}
-            <Text as="span" className={styles.mono}>
+            <Text as="span" style={{ fontSize: '0.8125rem', wordBreak: 'break-all' }}>
               {detail.legacyLotId}
             </Text>
           </Text>
         ) : null}
       </Inline>
 
-      <Grid columns={3} gap="sm" className={styles.amountGrid}>
+      <Grid columns={3} gap="sm">
         {totals.map(({ label, value }) => (
-          <Stack key={label} gap="xs" className={styles.amountItem}>
+          <Stack key={label} gap="xs" padding="sm" border rounded="md" bg="surface">
             <Text variant="caption" color="secondary" weight="semibold">
               {label}
             </Text>
@@ -131,14 +139,19 @@ export function VendorInvoiceExpandedBody({
         ))}
       </Grid>
 
-      <Stack gap="sm" className={styles.linesSection}>
-        <Text variant="caption" color="secondary" weight="bold" className={styles.linesHeading}>
+      <Stack gap="sm">
+        <Text
+          variant="caption"
+          color="secondary"
+          weight="bold"
+          style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}
+        >
           Products on this invoice
         </Text>
         {inventoryLoading ? <CenteredLoader label="Loading inventory details…" size="sm" /> : null}
         {inventoryWarning ? <Alert variant="warning">{inventoryWarning}</Alert> : null}
-        <Box className={styles.linesTableWrap}>
-          <Table className={styles.linesTable}>
+        <Box border rounded="md" overflow="auto">
+          <Table style={{ minWidth: '1050px', fontSize: '0.875rem' }}>
             <TableHead>
               <TableRow>
                 <TableHeaderCell>#</TableHeaderCell>
@@ -163,28 +176,28 @@ export function VendorInvoiceExpandedBody({
                     : undefined;
                 return (
                   <TableRow key={`${line.lineIndex}-${line.inventoryId ?? ''}`}>
-                    <TableCell className={styles.linesNum}>{line.lineIndex + 1}</TableCell>
+                    <TableCell style={{ width: '2.25rem', color: 'var(--text-secondary)' }}>
+                      {line.lineIndex + 1}
+                    </TableCell>
                     <TableCell>{line.name}</TableCell>
-                    <TableCell className={styles.linesMuted}>{inv?.companyName ?? '—'}</TableCell>
-                    <TableCell className={styles.linesMuted}>
+                    <TableCell style={mutedCellStyle}>{inv?.companyName ?? '—'}</TableCell>
+                    <TableCell style={mutedCellStyle}>
                       {line.barcode ?? inv?.barcode ?? '—'}
                     </TableCell>
-                    <TableCell className={styles.linesMuted}>{inv?.batchNo ?? '—'}</TableCell>
-                    <TableCell className={styles.linesMuted}>
+                    <TableCell style={mutedCellStyle}>{inv?.batchNo ?? '—'}</TableCell>
+                    <TableCell style={mutedCellStyle}>
                       {formatCompactDate(inv?.expiryDate)}
                     </TableCell>
                     <TableCell>{line.count ?? '—'}</TableCell>
-                    <TableCell className={styles.linesMoney}>
+                    <TableCell style={moneyCellStyle}>
                       {formatMoney(line.costPrice ?? inv?.costPrice)}
                     </TableCell>
-                    <TableCell className={styles.linesMoney}>
+                    <TableCell style={moneyCellStyle}>
                       {formatMoney(inv?.maximumRetailPrice)}
                     </TableCell>
-                    <TableCell className={styles.linesMoney}>
-                      {formatMoney(inv?.priceToRetail)}
-                    </TableCell>
-                    <TableCell className={styles.linesMuted}>{formatGst(inv)}</TableCell>
-                    <TableCell className={styles.linesMoney}>{inv?.currentCount ?? '—'}</TableCell>
+                    <TableCell style={moneyCellStyle}>{formatMoney(inv?.priceToRetail)}</TableCell>
+                    <TableCell style={mutedCellStyle}>{formatGst(inv)}</TableCell>
+                    <TableCell style={moneyCellStyle}>{inv?.currentCount ?? '—'}</TableCell>
                   </TableRow>
                 );
               })}

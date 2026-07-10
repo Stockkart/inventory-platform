@@ -24,8 +24,8 @@ import { accountingApi } from '../api/accounting.api';
 import { useNotify } from '@inventory-platform/session';
 import type { PartySummariesResponse } from '@inventory-platform/accounting/types';
 import { AccountingTabs } from '../ui/AccountingTabs';
+import { numColBoldStyle, numColStyle } from '../ui/tabNav';
 import { formatDate, formatMoney } from '../model/format';
-import styles from '../ui/accounting.module.css';
 
 /** Subsidiary ledgers exist for vendors and customers; SHOP entries don't get a per-party view. */
 export type SubsidiaryPartyType = 'VENDOR' | 'CUSTOMER';
@@ -113,18 +113,17 @@ export function PartiesPage({ partyType }: PartiesPageProps) {
     `/dashboard/accounting/${partyType.toLowerCase()}s/${encodeURIComponent(refId)}`;
 
   return (
-    <Stack gap="md" className={styles.page}>
+    <Stack gap="md">
       <Stack gap="md">
         <PageHeader title={copy.title} description={copy.subtitle} />
         <AccountingTabs />
-        <Inline gap="sm" className={styles.toolbar}>
+        <Inline gap="sm">
           <SearchInput
             value={searchInput}
             onChange={setSearchInput}
             onSearch={handleSearch}
             showSearchButton
             placeholder={`Search ${partyType === 'VENDOR' ? 'vendors' : 'customers'}…`}
-            className={styles.acctSearch}
           />
           <FormFieldRow label="From">
             <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
@@ -147,7 +146,7 @@ export function PartiesPage({ partyType }: PartiesPageProps) {
         </Inline>
       </Stack>
 
-      <Grid columns={2} gap="md" className={styles.kpiRow}>
+      <Grid columns={2} gap="md">
         <Card>
           <CardBody>
             <Stack gap="xs">
@@ -189,11 +188,11 @@ export function PartiesPage({ partyType }: PartiesPageProps) {
             <TableHead>
               <TableRow>
                 <TableHeaderCell>{partyType === 'VENDOR' ? 'Vendor' : 'Customer'}</TableHeaderCell>
-                <TableHeaderCell className={styles.right}>Debit</TableHeaderCell>
-                <TableHeaderCell className={styles.right}>Credit</TableHeaderCell>
-                <TableHeaderCell className={styles.right}>{copy.balanceCol}</TableHeaderCell>
+                <TableHeaderCell style={numColStyle}>Debit</TableHeaderCell>
+                <TableHeaderCell style={numColStyle}>Credit</TableHeaderCell>
+                <TableHeaderCell style={numColStyle}>{copy.balanceCol}</TableHeaderCell>
                 <TableHeaderCell>Last activity</TableHeaderCell>
-                <TableHeaderCell className={styles.right}>Txns</TableHeaderCell>
+                <TableHeaderCell style={numColStyle}>Txns</TableHeaderCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -221,23 +220,19 @@ export function PartiesPage({ partyType }: PartiesPageProps) {
                         {p.partyDisplayName || `Party ${p.partyRefId}`}
                       </Button>
                     </TableCell>
-                    <TableCell className={`${styles.right} ${styles.number}`}>
+                    <TableCell style={numColBoldStyle}>
                       {p.debitTurnover ? formatMoney(p.debitTurnover) : '—'}
                     </TableCell>
-                    <TableCell className={`${styles.right} ${styles.number}`}>
+                    <TableCell style={numColBoldStyle}>
                       {p.creditTurnover ? formatMoney(p.creditTurnover) : '—'}
                     </TableCell>
-                    <TableCell className={`${styles.right} ${styles.number}`}>
-                      {formatMoney(p.balance)}
-                    </TableCell>
+                    <TableCell style={numColBoldStyle}>{formatMoney(p.balance)}</TableCell>
                     <TableCell>
                       <Text color="secondary" variant="caption">
                         {formatDate(p.lastTxnDate)}
                       </Text>
                     </TableCell>
-                    <TableCell className={`${styles.right} ${styles.number}`}>
-                      {p.txnCount}
-                    </TableCell>
+                    <TableCell style={numColBoldStyle}>{p.txnCount}</TableCell>
                   </TableRow>
                 ))
               )}

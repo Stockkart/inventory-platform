@@ -50,9 +50,6 @@
       "@inventory-platform/pricing": ["../../core/pricing/src/index.ts"],
       "@inventory-platform/pricing/routes/*": ["../../core/pricing/src/routes/*"],
       "@inventory-platform/product/api": ["../../core/product/src/api/index.ts"],
-      "@inventory-platform/product/pages/product-search.module.css": [
-        "../../core/product/src/pages/product-search.module.css"
-      ],
       "@inventory-platform/product": ["../../core/product/src/index.ts"],
       "@inventory-platform/product/routes/*": ["../../core/product/src/routes/*"],
       "@inventory-platform/query": ["../../platform/query/src/index.ts"],

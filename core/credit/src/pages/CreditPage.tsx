@@ -21,9 +21,14 @@ import { CreditPartiesSidebar } from '../ui/CreditPartiesSidebar';
 import { CreditEntriesTimeline } from '../ui/CreditEntriesTimeline';
 import { CreditManualChargeForm } from '../ui/CreditManualChargeForm';
 import { CreditPartyActions } from '../ui/CreditPartyActions';
-import styles from '../ui/credit.module.css';
 
 const BALANCE_EPS = 0.0001;
+
+const creditGridStyle = {
+  gridTemplateColumns: 'minmax(0, 20rem) 1fr',
+  gap: '1rem',
+  alignItems: 'start',
+} as const;
 
 export function CreditPage() {
   const { error: notifyError, success: notifySuccess } = useNotify;
@@ -101,8 +106,8 @@ export function CreditPage() {
           </CardBody>
         </Card>
       ) : (
-        <Box display="grid" className={styles.grid}>
-          <Card className={styles.panel}>
+        <Box display="grid" style={creditGridStyle}>
+          <Card>
             <CardBody>
               <CreditPartiesSidebar
                 allAccounts={accounts}
@@ -121,7 +126,7 @@ export function CreditPage() {
             </CardBody>
           </Card>
 
-          <Card className={styles.panel}>
+          <Card>
             <CardBody>
               {!accounts.length ? (
                 <Stack gap="md">

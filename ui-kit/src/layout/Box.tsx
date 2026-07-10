@@ -18,6 +18,9 @@ type BoxOwnProps = {
   justify?: 'start' | 'center' | 'end' | 'between';
   width?: 'full';
   height?: 'full';
+  /** Constrains width; pair with mx="auto" for centered page shells. */
+  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
+  mx?: 'auto';
   bg?: 'canvas' | 'surface' | 'elevated' | 'muted';
   border?: boolean;
   rounded?: 'sm' | 'md' | 'lg';
@@ -43,6 +46,8 @@ export const Box = forwardRef<HTMLElement, BoxProps>(function Box(
     justify,
     width,
     height,
+    maxWidth,
+    mx,
     bg,
     border,
     rounded,
@@ -69,6 +74,8 @@ export const Box = forwardRef<HTMLElement, BoxProps>(function Box(
         justify && styles[`justify-${justify}`],
         width === 'full' && styles['w-full'],
         height === 'full' && styles['h-full'],
+        maxWidth && styles[`max-w-${maxWidth}`],
+        mx === 'auto' && styles['mx-auto'],
         bg && styles[`bg-${bg}`],
         border && styles['border-default'],
         rounded && styles[`rounded-${rounded}`],

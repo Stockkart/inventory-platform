@@ -1,9 +1,8 @@
 import { useMemo, useState } from 'react';
 import type { CreditAccountResponse } from '@inventory-platform/credit/types';
-import { Box, Button, Input, Text } from '@inventory-platform/ui-kit';
+import { Box, Button, Input, Stack, Text } from '@inventory-platform/ui-kit';
 import { CreditAccountList } from './CreditAccountList';
 import { accountSort, presentCreditBalance } from '../model/credit-utils';
-import styles from './credit.module.css';
 
 type Props = {
   allAccounts: CreditAccountResponse[];
@@ -11,7 +10,6 @@ type Props = {
   favourAccounts: CreditAccountResponse[];
   selectedId: string | null;
   onSelect: (id: string) => void;
-  /** Message when the “Due now” list has no rows (depends on shop-wide empty vs none due). */
   pendingListEmptyMessage: string;
 };
 
@@ -45,22 +43,27 @@ export function CreditPartiesSidebar({
   }
 
   return (
-    <Box className={styles.partiesSidebar}>
-      <Text variant="title" className={styles.partiesSidebarTitle}>
+    <Stack gap="md">
+      <Text variant="title" weight="semibold">
         Outstanding
       </Text>
-      <Text className={styles.sidebarHint}>
-        <strong>Customer</strong> rows are money <em>to collect</em>. <strong>Vendor</strong> rows
-        are money <em>you must pay</em>. Search finds anyone to view past ledger entries, including
+      <Text variant="caption" color="secondary">
+        <Text as="span" weight="semibold">
+          Customer
+        </Text>{' '}
+        rows are money to collect.{' '}
+        <Text as="span" weight="semibold">
+          Vendor
+        </Text>{' '}
+        rows are money you must pay. Search finds anyone to view past ledger entries, including
         fully settled parties.
       </Text>
 
-      <Box className={styles.partySearchWrap}>
+      <Box position="relative">
         <Input
           id="credit-party-search"
           type="search"
           aria-label="Search any party"
-          className={styles.partySearchInput}
           placeholder="Search any party…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -68,7 +71,16 @@ export function CreditPartiesSidebar({
         />
         {q ? (
           searchMatches.length > 0 ? (
-            <Box as="ul" className={styles.searchResults} role="listbox">
+            <Box
+              as="ul"
+              role="listbox"
+              margin="sm"
+              border
+              rounded="md"
+              bg="elevated"
+              overflow="auto"
+              style={{ listStyle: 'none', padding: 0, maxHeight: '16rem' }}
+            >
               {searchMatches.map((a) => {
                 const pr = presentCreditBalance(a);
                 return (
@@ -76,30 +88,32 @@ export function CreditPartiesSidebar({
                     <Button
                       type="button"
                       variant="ghost"
-                      className={styles.searchResultBtn}
                       role="option"
                       aria-selected={selectedId === a.id}
                       onClick={() => pickParty(a.id)}
+                      style={{ width: '100%', textAlign: 'left', borderRadius: 0 }}
                     >
-                      <Box as="span" className={styles.searchResultName}>
-                        {a.partyDisplayName}
-                      </Box>
-                      <Box as="span" className={styles.searchResultMeta}>
-                        {a.partyType === 'CUSTOMER' ? 'Customer' : 'Vendor'} ·{' '}
-                        {pr.tone === 'settled' ? 'Settled' : `${pr.headline} ${pr.amountLine}`}
-                      </Box>
+                      <Stack gap="none">
+                        <Text weight="semibold">{a.partyDisplayName}</Text>
+                        <Text variant="caption" color="secondary">
+                          {a.partyType === 'CUSTOMER' ? 'Customer' : 'Vendor'} ·{' '}
+                          {pr.tone === 'settled' ? 'Settled' : `${pr.headline} ${pr.amountLine}`}
+                        </Text>
+                      </Stack>
                     </Button>
                   </Box>
                 );
               })}
             </Box>
           ) : (
-            <Text className={styles.searchEmpty}>No party matches.</Text>
+            <Text variant="caption" color="secondary">
+              No party matches.
+            </Text>
           )
         ) : null}
       </Box>
 
-      <Text variant="heading3" className={styles.sidebarSubheading}>
+      <Text variant="heading3" weight="semibold">
         Still open
       </Text>
       <CreditAccountList
@@ -111,12 +125,12 @@ export function CreditPartiesSidebar({
 
       {favourAccounts.length > 0 ? (
         <>
-          <Text variant="heading3" className={styles.sidebarSubheading}>
+          <Text variant="heading3" weight="semibold">
             In your favour
           </Text>
-          <Text className={styles.sidebarHint}>
-            Often from a <strong>return on credit</strong> when you had little or no payable left —
-            the supplier owes you (vendor credit) or the customer paid ahead.
+          <Text variant="caption" color="secondary">
+            Often from a return on credit when you had little or no payable left — the supplier owes
+            you (vendor credit) or the customer paid ahead.
           </Text>
           <CreditAccountList
             accounts={favourAccounts}
@@ -126,6 +140,6 @@ export function CreditPartiesSidebar({
           />
         </>
       ) : null}
-    </Box>
+    </Stack>
   );
 }

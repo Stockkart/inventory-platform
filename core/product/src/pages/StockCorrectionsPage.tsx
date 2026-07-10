@@ -31,7 +31,19 @@ import {
   TableRow,
   Text,
 } from '@inventory-platform/ui-kit';
-import styles from './stock-corrections.module.css';
+
+const impactGainStyle = { fontWeight: 600 as const, color: '#047857' };
+const impactLossStyle = { fontWeight: 600 as const, color: '#b91c1c' };
+const estPartialStyle = {
+  fontWeight: 500 as const,
+  color: 'var(--text-secondary)',
+  fontSize: '0.8125rem',
+};
+const historyCaptionStyle = {
+  fontSize: '0.8125rem',
+  color: 'var(--text-secondary)',
+  marginBottom: '0.5rem',
+};
 
 export function meta() {
   return [
@@ -183,15 +195,17 @@ function summarizeApprovedNetImpact(
   return { total: sum, partial };
 }
 
-function qtyDeltaClassName(display: string): string | undefined {
-  if (display.startsWith('+')) return styles.deltaPositive;
-  if (display.startsWith('-')) return styles.deltaNegative;
+function qtyDeltaStyle(display: string): { fontWeight: 600; color: string } | undefined {
+  if (display.startsWith('+')) return { fontWeight: 600, color: '#047857' };
+  if (display.startsWith('-')) return { fontWeight: 600, color: '#b45309' };
   return undefined;
 }
 
-function impactClassName(kind: 'neutral' | 'loss' | 'gain' | 'na'): string | undefined {
-  if (kind === 'loss') return styles.impactLoss;
-  if (kind === 'gain') return styles.impactGain;
+function impactStyle(
+  kind: 'neutral' | 'loss' | 'gain' | 'na',
+): { fontWeight: 600; color: string } | undefined {
+  if (kind === 'loss') return impactLossStyle;
+  if (kind === 'gain') return impactGainStyle;
   return undefined;
 }
 
@@ -437,7 +451,7 @@ export function StockCorrectionsPage() {
   };
 
   return (
-    <Stack gap="md" className={styles.page}>
+    <Stack gap="md" maxWidth="xl" mx="auto">
       <PageHeader
         title="Correct stock / price"
         description="Search invoices by product, barcode, invoice no, or vendor name; propose quantity corrections and approve lines; and review correction history."
@@ -446,53 +460,62 @@ export function StockCorrectionsPage() {
       {error ? <Alert variant="danger">{error}</Alert> : null}
       {success ? <Alert variant="success">{success}</Alert> : null}
 
-      <Box as="nav" aria-label="Stock corrections" className={styles.tabBar}>
-        <Inline gap="none">
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            role="tab"
-            aria-selected={activeTab === 'workbench'}
-            className={activeTab === 'workbench' ? styles.tabActive : styles.tab}
-            onClick={() => {
-              if (activeTab !== 'workbench') setExpandedHistoryId(null);
-              setActiveTab('workbench');
-            }}
-          >
-            Workbench
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            role="tab"
-            aria-selected={activeTab === 'history'}
-            className={activeTab === 'history' ? styles.tabActive : styles.tab}
-            onClick={() => {
-              if (activeTab !== 'history') setExpandedHistoryId(null);
-              setActiveTab('history');
-            }}
-          >
-            History
-          </Button>
-        </Inline>
-      </Box>
+      <Inline gap="none" style={{ borderBottom: '1px solid var(--border-color)' }}>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          role="tab"
+          aria-selected={activeTab === 'workbench'}
+          style={{
+            marginBottom: -1,
+            whiteSpace: 'nowrap',
+            borderBottom: activeTab === 'workbench' ? '2px solid #3b82f6' : '2px solid transparent',
+            borderRadius: 0,
+          }}
+          onClick={() => {
+            if (activeTab !== 'workbench') setExpandedHistoryId(null);
+            setActiveTab('workbench');
+          }}
+        >
+          Workbench
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          role="tab"
+          aria-selected={activeTab === 'history'}
+          style={{
+            marginBottom: -1,
+            whiteSpace: 'nowrap',
+            borderBottom: activeTab === 'history' ? '2px solid #3b82f6' : '2px solid transparent',
+            borderRadius: 0,
+          }}
+          onClick={() => {
+            if (activeTab !== 'history') setExpandedHistoryId(null);
+            setActiveTab('history');
+          }}
+        >
+          History
+        </Button>
+      </Inline>
 
       {activeTab === 'workbench' ? (
         <>
           <Card>
             <CardBody>
               <Stack gap="md">
-                <SearchInput
-                  value={query}
-                  onChange={setQuery}
-                  onSearch={searchInvoices}
-                  showSearchButton
-                  placeholder="Product, barcode, invoice no, or vendor"
-                  className={styles.searchField}
-                />
-                <Box className={styles.tableScroll}>
+                <Box width="full" style={{ flex: 1, minWidth: '200px' }}>
+                  <SearchInput
+                    value={query}
+                    onChange={setQuery}
+                    onSearch={searchInvoices}
+                    showSearchButton
+                    placeholder="Product, barcode, invoice no, or vendor"
+                  />
+                </Box>
+                <Box overflow="auto">
                   <Table>
                     <TableHead>
                       <TableRow>
@@ -556,7 +579,7 @@ export function StockCorrectionsPage() {
                       {' · '}
                       {correctionInvoiceSubtitle(selectedInvoice)}
                     </Text>
-                    <Box className={styles.tableScroll}>
+                    <Box overflow="auto">
                       <Table>
                         <TableHead>
                           <TableRow>
@@ -595,7 +618,7 @@ export function StockCorrectionsPage() {
                                 <TableCell>{row.currentCount ?? '-'}</TableCell>
                                 <TableCell>
                                   <Input
-                                    className={styles.inputSmall}
+                                    style={{ width: '100px' }}
                                     value={row.requestedCount}
                                     onChange={(e) =>
                                       setDraftQtyByInventoryId((prev) => ({
@@ -610,7 +633,7 @@ export function StockCorrectionsPage() {
                                   <Text
                                     as="span"
                                     weight="semibold"
-                                    className={qtyDeltaClassName(row.qtyDeltaDisplay)}
+                                    style={qtyDeltaStyle(row.qtyDeltaDisplay)}
                                   >
                                     {row.qtyDeltaDisplay}
                                   </Text>
@@ -619,7 +642,7 @@ export function StockCorrectionsPage() {
                                   <Text
                                     as="span"
                                     weight="semibold"
-                                    className={impactClassName(row.impact.kind)}
+                                    style={impactStyle(row.impact.kind)}
                                   >
                                     {row.impact.text}
                                   </Text>
@@ -666,7 +689,7 @@ export function StockCorrectionsPage() {
                   <EmptyState title="No pending corrections." />
                 ) : (
                   pending.map((c) => (
-                    <Box key={c.id} className={styles.block}>
+                    <Box key={c.id} border rounded="md" padding="sm">
                       <Stack gap="sm">
                         <Text color="secondary" variant="caption">
                           <Text as="span" weight="semibold">
@@ -677,7 +700,7 @@ export function StockCorrectionsPage() {
                           {' · '}
                           {dt(c.createdAt)}
                         </Text>
-                        <Box className={styles.tableScroll}>
+                        <Box overflow="auto">
                           <Table>
                             <TableHead>
                               <TableRow>
@@ -749,7 +772,7 @@ export function StockCorrectionsPage() {
               <Text variant="heading3" weight="semibold">
                 Correction history
               </Text>
-              <Text variant="caption" color="secondary" className={styles.historyDetailCaption}>
+              <Text variant="caption" color="secondary" style={historyCaptionStyle}>
                 Net impact sums{' '}
                 <Text as="span" weight="semibold">
                   approved
@@ -769,7 +792,7 @@ export function StockCorrectionsPage() {
               ) : history.length === 0 ? (
                 <EmptyState title="No correction history yet." />
               ) : (
-                <Box className={styles.tableScroll}>
+                <Box overflow="auto">
                   <Table>
                     <TableHead>
                       <TableRow>
@@ -799,7 +822,7 @@ export function StockCorrectionsPage() {
                                   type="button"
                                   size="sm"
                                   variant="ghost"
-                                  className={styles.detailToggle}
+                                  style={{ fontSize: '0.8125rem' }}
                                   onClick={() => setExpandedHistoryId(open ? null : c.id)}
                                   aria-expanded={open}
                                 >
@@ -811,14 +834,14 @@ export function StockCorrectionsPage() {
                               <TableCell>{c.status}</TableCell>
                               <TableCell>{c.lines.length}</TableCell>
                               <TableCell>{approvedCount}</TableCell>
-                              <TableCell className={styles.netCell}>
+                              <TableCell style={{ fontWeight: 600 }}>
                                 {approvedCount === 0 ? (
                                   '—'
                                 ) : netTotal == null ? (
                                   <Inline gap="none" align="center">
                                     <Text as="span">—</Text>
                                     {netPartial ? (
-                                      <Text as="span" className={styles.estPartial}>
+                                      <Text as="span" style={estPartialStyle}>
                                         {' '}
                                         *
                                       </Text>
@@ -829,18 +852,18 @@ export function StockCorrectionsPage() {
                                     <Text
                                       as="span"
                                       weight="semibold"
-                                      className={
+                                      style={
                                         netTotal > 0
-                                          ? styles.impactGain
+                                          ? impactGainStyle
                                           : netTotal < 0
-                                          ? styles.impactLoss
+                                          ? impactLossStyle
                                           : undefined
                                       }
                                     >
                                       {money(netTotal)}
                                     </Text>
                                     {netPartial ? (
-                                      <Text as="span" className={styles.estPartial}>
+                                      <Text as="span" style={estPartialStyle}>
                                         {' '}
                                         *
                                       </Text>
@@ -852,12 +875,18 @@ export function StockCorrectionsPage() {
                             </TableRow>
                             {open ? (
                               <TableRow>
-                                <TableCell colSpan={8} className={styles.detailCell}>
+                                <TableCell
+                                  colSpan={8}
+                                  style={{
+                                    padding: '0.75rem 0.5rem',
+                                    borderTop: '1px dashed var(--border-color)',
+                                  }}
+                                >
                                   <Stack gap="sm">
                                     <Text
                                       variant="caption"
                                       color="secondary"
-                                      className={styles.historyDetailCaption}
+                                      style={historyCaptionStyle}
                                     >
                                       Line breakdown: change vs quantity before correction. Impact
                                       uses the same rules as Workbench (loss at cost, gain at
@@ -872,7 +901,7 @@ export function StockCorrectionsPage() {
                                         </>
                                       ) : null}
                                     </Text>
-                                    <Box className={styles.tableScroll}>
+                                    <Box overflow="auto">
                                       <Table>
                                         <TableHead>
                                           <TableRow>
@@ -926,7 +955,7 @@ export function StockCorrectionsPage() {
                                                 <TableCell>
                                                   {line.productName ?? '—'}{' '}
                                                   {inv?.batchNo ? (
-                                                    <Text as="span" className={styles.estPartial}>
+                                                    <Text as="span" style={estPartialStyle}>
                                                       · batch {inv.batchNo}
                                                     </Text>
                                                   ) : null}
@@ -939,7 +968,7 @@ export function StockCorrectionsPage() {
                                                   <Text
                                                     as="span"
                                                     weight="semibold"
-                                                    className={qtyDeltaClassName(qtyDisplay)}
+                                                    style={qtyDeltaStyle(qtyDisplay)}
                                                   >
                                                     {qtyDisplay}
                                                   </Text>
@@ -948,12 +977,17 @@ export function StockCorrectionsPage() {
                                                   <Text
                                                     as="span"
                                                     weight="semibold"
-                                                    className={impactClassName(impactUi.kind)}
+                                                    style={impactStyle(impactUi.kind)}
                                                   >
                                                     {impactUi.text}
                                                   </Text>
                                                 </TableCell>
-                                                <TableCell className={styles.lineStatusMuted}>
+                                                <TableCell
+                                                  style={{
+                                                    color: 'var(--text-secondary)',
+                                                    fontSize: '0.8125rem',
+                                                  }}
+                                                >
                                                   {line.status}
                                                   {statusHint}
                                                   {line.rejectionReason &&

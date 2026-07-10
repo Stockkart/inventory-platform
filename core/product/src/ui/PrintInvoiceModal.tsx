@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { cartApi } from '../api/cart.api';
 import {
+  Box,
   Button,
   Inline,
   Modal,
@@ -9,7 +10,6 @@ import {
   Stack,
   Text,
 } from '@inventory-platform/ui-kit';
-import styles from './PrintInvoiceModal.module.css';
 
 export type PrinterType = 'NORMAL' | 'DOT_MATRIX';
 
@@ -64,57 +64,46 @@ export function PrintInvoiceModal({
       <Modal.Header title="Print Invoice" onClose={handleClose} />
       <Modal.Body>
         <Stack gap="md">
-          <Text color="secondary" className={styles.prompt}>
-            Select printer type for this invoice:
-          </Text>
-          <RadioGroup
-            name="printerType"
-            value={printerType}
-            onChange={(value) => {
-              if (!isGenerating) {
-                setPrinterType(value as PrinterType);
-              }
-            }}
-            className={isGenerating ? styles.disabledOptions : styles.printerOptions}
-            options={[
-              {
-                value: 'NORMAL',
-                label: (
-                  <Stack gap="xs">
-                    <Text weight="semibold" className={styles.optionLabel}>
-                      Normal
-                    </Text>
-                    <Text variant="caption" color="secondary" className={styles.optionHint}>
-                      Standard A4, laser/inkjet
-                    </Text>
-                  </Stack>
-                ),
-              },
-              {
-                value: 'DOT_MATRIX',
-                label: (
-                  <Stack gap="xs">
-                    <Text weight="semibold" className={styles.optionLabel}>
-                      Dot Matrix
-                    </Text>
-                    <Text variant="caption" color="secondary" className={styles.optionHint}>
-                      Thermal / dot matrix compatible
-                    </Text>
-                  </Stack>
-                ),
-              },
-            ]}
-          />
+          <Text color="secondary">Select printer type for this invoice:</Text>
+          <Box style={isGenerating ? { opacity: 0.6, pointerEvents: 'none' } : undefined}>
+            <RadioGroup
+              name="printerType"
+              value={printerType}
+              onChange={(value) => {
+                if (!isGenerating) {
+                  setPrinterType(value as PrinterType);
+                }
+              }}
+              options={[
+                {
+                  value: 'NORMAL',
+                  label: (
+                    <Stack gap="xs">
+                      <Text weight="semibold">Normal</Text>
+                      <Text variant="caption" color="secondary">
+                        Standard A4, laser/inkjet
+                      </Text>
+                    </Stack>
+                  ),
+                },
+                {
+                  value: 'DOT_MATRIX',
+                  label: (
+                    <Stack gap="xs">
+                      <Text weight="semibold">Dot Matrix</Text>
+                      <Text variant="caption" color="secondary">
+                        Thermal / dot matrix compatible
+                      </Text>
+                    </Stack>
+                  ),
+                },
+              ]}
+            />
+          </Box>
         </Stack>
       </Modal.Body>
       <Modal.Footer>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onClose}
-          disabled={isGenerating}
-          className={styles.cancelBtn}
-        >
+        <Button type="button" variant="outline" onClick={onClose} disabled={isGenerating}>
           Cancel
         </Button>
         <Button
@@ -122,11 +111,10 @@ export function PrintInvoiceModal({
           variant="solid"
           onClick={() => void handleGenerate()}
           disabled={isGenerating}
-          className={styles.generateBtn}
         >
           {isGenerating ? (
             <Inline gap="sm" align="center">
-              <Spinner size="sm" className={styles.spinner} />
+              <Spinner size="sm" />
               Generating…
             </Inline>
           ) : (

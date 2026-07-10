@@ -1,61 +1,4 @@
-.page {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-.infoGrid {
-  width: 100%;
-}
-
-.tableContainer {
-  width: 100%;
-}
-
-.itemsTable {
-  min-width: 700px;
-}
-
-.summaryRow {
-  padding: 0.75rem 0;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.summaryRowTotal {
-  padding: 1rem 0;
-  margin-top: 0.5rem;
-  border-top: 2px solid var(--border-color);
-}
-
-.summaryDivider {
-  margin-top: 0.5rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--border-color);
-}
-
-.splitSellFoot {
-  line-height: 1.45;
-}
-
-.splitSellLink {
-  color: #047857;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.splitSellLink:hover {
-  text-decoration: underline;
-}
-
-[data-theme='dark'] .splitSellLink {
-  color: #6ee7b7;
-}
-
-.actionsSection {
-  padding: 1rem 0;
-}
-
-/* Success overlay */
+/* Success overlay animations — irreducible chrome */
 .successOverlay {
   position: fixed;
   inset: 0;
@@ -141,19 +84,5 @@
   100% {
     transform: scale(1);
     opacity: 1;
-  }
-}
-
-@media (max-width: 768px) {
-  .page {
-    padding: 1rem;
-  }
-
-  .infoGrid {
-    grid-template-columns: 1fr !important;
-  }
-
-  .successContainer {
-    width: 90%;
   }
 }

@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { AccountResponse } from '@inventory-platform/accounting/types';
 import { SearchInput, Select, type SelectOptionDef, Stack, Text } from '@inventory-platform/ui-kit';
-import styles from './accounting.module.css';
 
 type Props = {
   accounts: AccountResponse[];
@@ -44,12 +43,11 @@ export function AccountPicker({ accounts, value, onChange, disabled, id }: Props
   const selected = active.find((a) => a.code === value);
 
   return (
-    <Stack gap="xs" className={styles.accountPicker}>
+    <Stack gap="xs">
       <SearchInput
         value={query}
         onChange={setQuery}
         placeholder="Filter accounts…"
-        className={styles.accountPickerSearch}
         disabled={disabled}
       />
       <Select
@@ -58,10 +56,9 @@ export function AccountPicker({ accounts, value, onChange, disabled, id }: Props
         options={options}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
-        className={styles.accountPickerSelect}
       />
       {selected ? (
-        <Text variant="caption" color="secondary" className={styles.accountPickerHint}>
+        <Text variant="caption" color="secondary">
           {selected.type} · {selected.normalBalance}
         </Text>
       ) : null}

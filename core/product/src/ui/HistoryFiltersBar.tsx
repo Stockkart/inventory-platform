@@ -1,8 +1,16 @@
 import { useState } from 'react';
 import type { HistoryFilters, HistoryTab } from './historyFilters';
 import { showCustomerFilter, showVendorFilter, validateHistoryFilters } from './historyFilters';
-import { Alert, Box, Button, FormField, Inline, Input, Text } from '@inventory-platform/ui-kit';
-import styles from './HistoryFiltersBar.module.css';
+import {
+  Alert,
+  Box,
+  Button,
+  FormField,
+  Inline,
+  Input,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 
 type HistoryFiltersBarProps = {
   filters: HistoryFilters;
@@ -53,56 +61,76 @@ export function HistoryFiltersBar({
   };
 
   return (
-    <Box className={styles.bar} aria-label="History filters">
-      <Inline className={styles.row} gap="sm" align="end">
-        <FormField label="From" id="history-date-from" className={styles.field}>
-          <Input
-            id="history-date-from"
-            type="date"
-            value={filters.dateFrom}
-            onChange={(e) => set({ dateFrom: e.target.value })}
-          />
-        </FormField>
-        <FormField label="To" id="history-date-to" className={styles.field}>
-          <Input
-            id="history-date-to"
-            type="date"
-            value={filters.dateTo}
-            onChange={(e) => set({ dateTo: e.target.value })}
-          />
-        </FormField>
-        <FormField label="Invoice no." id="history-invoice" className={styles.field}>
-          <Input
-            id="history-invoice"
-            type="text"
-            value={filters.invoiceNo}
-            onChange={(e) => set({ invoiceNo: e.target.value })}
-            placeholder="e.g. INV-001"
-          />
-        </FormField>
-        {showCustomer ? (
-          <FormField label="Customer" id="history-customer" className={styles.field}>
+    <Stack
+      gap="sm"
+      width="full"
+      padding="none"
+      style={{
+        marginBottom: '1.5rem',
+        paddingBottom: '1.25rem',
+        borderBottom: '1px solid var(--border-color)',
+      }}
+      aria-label="History filters"
+    >
+      <Inline gap="sm" align="end" flexWrap>
+        <Box style={{ minWidth: '130px', flex: '1 1 130px', maxWidth: '200px' }}>
+          <FormField label="From" id="history-date-from">
             <Input
-              id="history-customer"
-              type="text"
-              value={filters.customer}
-              onChange={(e) => set({ customer: e.target.value })}
-              placeholder="Name or phone"
+              id="history-date-from"
+              type="date"
+              value={filters.dateFrom}
+              onChange={(e) => set({ dateFrom: e.target.value })}
             />
           </FormField>
+        </Box>
+        <Box style={{ minWidth: '130px', flex: '1 1 130px', maxWidth: '200px' }}>
+          <FormField label="To" id="history-date-to">
+            <Input
+              id="history-date-to"
+              type="date"
+              value={filters.dateTo}
+              onChange={(e) => set({ dateTo: e.target.value })}
+            />
+          </FormField>
+        </Box>
+        <Box style={{ minWidth: '130px', flex: '1 1 130px', maxWidth: '200px' }}>
+          <FormField label="Invoice no." id="history-invoice">
+            <Input
+              id="history-invoice"
+              type="text"
+              value={filters.invoiceNo}
+              onChange={(e) => set({ invoiceNo: e.target.value })}
+              placeholder="e.g. INV-001"
+            />
+          </FormField>
+        </Box>
+        {showCustomer ? (
+          <Box style={{ minWidth: '130px', flex: '1 1 130px', maxWidth: '200px' }}>
+            <FormField label="Customer" id="history-customer">
+              <Input
+                id="history-customer"
+                type="text"
+                value={filters.customer}
+                onChange={(e) => set({ customer: e.target.value })}
+                placeholder="Name or phone"
+              />
+            </FormField>
+          </Box>
         ) : null}
         {showVendor ? (
-          <FormField label="Vendor" id="history-vendor" className={styles.field}>
-            <Input
-              id="history-vendor"
-              type="text"
-              value={filters.vendor}
-              onChange={(e) => set({ vendor: e.target.value })}
-              placeholder="Vendor name"
-            />
-          </FormField>
+          <Box style={{ minWidth: '130px', flex: '1 1 130px', maxWidth: '200px' }}>
+            <FormField label="Vendor" id="history-vendor">
+              <Input
+                id="history-vendor"
+                type="text"
+                value={filters.vendor}
+                onChange={(e) => set({ vendor: e.target.value })}
+                placeholder="Vendor name"
+              />
+            </FormField>
+          </Box>
         ) : null}
-        <Inline className={styles.actions} gap="sm">
+        <Inline gap="sm" style={{ flex: '0 0 auto' }}>
           <Button type="button" variant="solid" size="sm" onClick={handleApply}>
             Apply
           </Button>
@@ -114,9 +142,9 @@ export function HistoryFiltersBar({
         </Inline>
       </Inline>
       {regexError ? <Alert variant="danger">{regexError}</Alert> : null}
-      <Text variant="caption" color="secondary" className={styles.hint}>
+      <Text variant="caption" color="secondary">
         {TAB_HINTS[activeTab]}
       </Text>
-    </Box>
+    </Stack>
   );
 }

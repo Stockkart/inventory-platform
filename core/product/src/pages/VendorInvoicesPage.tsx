@@ -5,7 +5,6 @@ import type {
   VendorPurchaseInvoiceDetail,
   VendorPurchaseInvoiceSummary,
 } from '@inventory-platform/product/types';
-import styles from './vendor-invoices.module.css';
 import {
   Alert,
   Badge,
@@ -32,7 +31,6 @@ import {
 import { isVendorReturnEnabled } from '@inventory-platform/routing';
 import {
   HistoryListSummary,
-  historyRecordListStyles,
   hasActiveHistoryFilters,
   isDateInRange,
   buildVendorInvoiceSearchQuery,
@@ -43,7 +41,17 @@ import {
 import type { HistoryFilters } from '../ui';
 import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/session';
 
-const recordStyles = historyRecordListStyles;
+const recordHeaderStyle = {
+  paddingBottom: '0.75rem',
+  borderBottom: '1px solid var(--border-color)',
+} as const;
+
+const breakdownWrapStyle = {
+  paddingTop: '1rem',
+  borderTop: '1px solid var(--border-color)',
+} as const;
+
+const numericCellStyle = { textAlign: 'right' as const, whiteSpace: 'nowrap' as const };
 
 export function meta() {
   return [
@@ -143,16 +151,18 @@ function InvoiceExpansionPanel({
 
   if (panelId) {
     return (
-      <Card id={panelId} className={styles.panel}>
+      <Card id={panelId}>
         <CardBody>
-          <Stack gap="sm">{content}</Stack>
+          <Box bg="muted" padding="md" rounded="md">
+            <Stack gap="sm">{content}</Stack>
+          </Box>
         </CardBody>
       </Card>
     );
   }
 
   return (
-    <Stack gap="sm" className={recordStyles.breakdownWrap}>
+    <Stack gap="sm" style={breakdownWrapStyle}>
       {content}
     </Stack>
   );
@@ -397,7 +407,7 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
         filtered={filtering}
         label="purchases"
       />
-      <Stack gap="md" className={recordStyles.list}>
+      <Stack gap="md">
         {invoices.map((inv) => {
           const isOpen = expandedId === inv.id;
           const detail = detailsById[inv.id];
@@ -405,20 +415,15 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
           const err = rowError[inv.id];
 
           return (
-            <Card key={inv.id} className={recordStyles.recordCard}>
+            <Card key={inv.id}>
               <CardBody>
                 <Stack gap="md">
-                  <Inline
-                    className={recordStyles.recordHeader}
-                    justify="between"
-                    align="start"
-                    gap="md"
-                  >
+                  <Inline justify="between" align="start" gap="md" style={recordHeaderStyle}>
                     <Inline gap="xs" align="center">
                       <DetailLine label="Invoice" value={inv.invoiceNo} />
                       {inv.synthetic ? <Badge variant="info">Auto</Badge> : null}
                     </Inline>
-                    <Inline className={recordStyles.recordActions} gap="sm" align="center">
+                    <Inline gap="sm" align="center" style={{ flexShrink: 0 }}>
                       <DetailLine label="Date" value={formatDateShort(inv.invoiceDate)} />
                       <Button
                         type="button"
@@ -431,7 +436,7 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
                       </Button>
                     </Inline>
                   </Inline>
-                  <Grid columns={2} gap="sm" className={recordStyles.recordDetails}>
+                  <Grid columns={2} gap="sm">
                     <DetailLine label="Vendor" value={vendorDisplay(inv)} />
                     <DetailLine label="Lines" value={String(inv.lineCount)} />
                     <DetailLine label="Total" value={formatMoney(inv.invoiceTotal)} />
@@ -467,85 +472,84 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
 
   const renderStandaloneTable = () => (
     <Stack gap="md">
-      <Box className={styles.tableScroll}>
-        <Table className={styles.sheet}>
-          <TableHead>
-            <TableRow>
-              <TableHeaderCell>Invoice</TableHeaderCell>
-              <TableHeaderCell>Vendor</TableHeaderCell>
-              <TableHeaderCell>Date</TableHeaderCell>
-              <TableHeaderCell className={styles.numericCol}>Lines</TableHeaderCell>
-              <TableHeaderCell className={styles.numericCol}>Total</TableHeaderCell>
-              <TableHeaderCell className={styles.actionCol}>Actions</TableHeaderCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {invoices.map((inv) => {
-              const isOpen = expandedId === inv.id;
-              const detail = detailsById[inv.id];
-              const rowBusy = fetchingId === inv.id;
-              const err = rowError[inv.id];
-              const triggerId = `invoice-trigger-${inv.id}`;
-              const panelId = `invoice-panel-${inv.id}`;
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableHeaderCell>Invoice</TableHeaderCell>
+            <TableHeaderCell>Vendor</TableHeaderCell>
+            <TableHeaderCell>Date</TableHeaderCell>
+            <TableHeaderCell style={numericCellStyle}>Lines</TableHeaderCell>
+            <TableHeaderCell style={numericCellStyle}>Total</TableHeaderCell>
+            <TableHeaderCell style={{ width: '6.5rem', textAlign: 'right' }}>
+              Actions
+            </TableHeaderCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {invoices.map((inv) => {
+            const isOpen = expandedId === inv.id;
+            const detail = detailsById[inv.id];
+            const rowBusy = fetchingId === inv.id;
+            const err = rowError[inv.id];
+            const triggerId = `invoice-trigger-${inv.id}`;
+            const panelId = `invoice-panel-${inv.id}`;
 
-              return (
-                <Fragment key={inv.id}>
-                  <TableRow
-                    className={isOpen ? `${styles.dataRow} ${styles.dataRowOpen}` : styles.dataRow}
-                  >
-                    <TableCell className={styles.cellInvoice}>
-                      <Inline gap="xs" align="center">
-                        <Text weight="medium">{inv.invoiceNo}</Text>
-                        {inv.synthetic ? <Badge variant="info">Auto</Badge> : null}
-                      </Inline>
-                    </TableCell>
-                    <TableCell className={styles.cellStrong}>{vendorDisplay(inv)}</TableCell>
-                    <TableCell className={styles.cellMuted}>
-                      {formatDateShort(inv.invoiceDate)}
-                    </TableCell>
-                    <TableCell className={`${styles.numericCol} ${styles.cellMuted}`}>
-                      {inv.lineCount}
-                    </TableCell>
-                    <TableCell className={`${styles.numericCol} ${styles.cellMoney}`}>
-                      {formatMoney(inv.invoiceTotal)}
-                    </TableCell>
-                    <TableCell className={styles.actionCell}>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className={styles.expandControl}
-                        onClick={() => toggleExpanded(inv)}
-                        aria-expanded={isOpen}
-                        aria-controls={panelId}
-                        id={triggerId}
-                      >
-                        {isOpen ? 'Hide' : 'View'}
-                      </Button>
+            return (
+              <Fragment key={inv.id}>
+                <TableRow>
+                  <TableCell>
+                    <Inline gap="xs" align="center">
+                      <Text weight="medium">{inv.invoiceNo}</Text>
+                      {inv.synthetic ? <Badge variant="info">Auto</Badge> : null}
+                    </Inline>
+                  </TableCell>
+                  <TableCell>
+                    <Text weight="semibold">{vendorDisplay(inv)}</Text>
+                  </TableCell>
+                  <TableCell>
+                    <Text color="secondary">{formatDateShort(inv.invoiceDate)}</Text>
+                  </TableCell>
+                  <TableCell style={numericCellStyle}>
+                    <Text color="secondary">{inv.lineCount}</Text>
+                  </TableCell>
+                  <TableCell style={numericCellStyle}>
+                    <Text weight="semibold">{formatMoney(inv.invoiceTotal)}</Text>
+                  </TableCell>
+                  <TableCell style={{ textAlign: 'right' }}>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => toggleExpanded(inv)}
+                      aria-expanded={isOpen}
+                      aria-controls={panelId}
+                      id={triggerId}
+                    >
+                      {isOpen ? 'Hide' : 'View'}
+                    </Button>
+                  </TableCell>
+                </TableRow>
+                {isOpen ? (
+                  <TableRow>
+                    <TableCell colSpan={6} style={{ padding: 0 }}>
+                      <InvoiceExpansionPanel
+                        inv={inv}
+                        detail={detail}
+                        rowBusy={rowBusy}
+                        err={err}
+                        inventoryById={inventoryById}
+                        inventoryLoadingByInvoice={inventoryLoadingByInvoice}
+                        inventoryWarningByInvoice={inventoryWarningByInvoice}
+                        panelId={panelId}
+                      />
                     </TableCell>
                   </TableRow>
-                  {isOpen ? (
-                    <TableRow className={styles.detailRow}>
-                      <TableCell colSpan={6} className={styles.detailCell}>
-                        <InvoiceExpansionPanel
-                          inv={inv}
-                          detail={detail}
-                          rowBusy={rowBusy}
-                          err={err}
-                          inventoryById={inventoryById}
-                          inventoryLoadingByInvoice={inventoryLoadingByInvoice}
-                          inventoryWarningByInvoice={inventoryWarningByInvoice}
-                          panelId={panelId}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ) : null}
-                </Fragment>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </Box>
+                ) : null}
+              </Fragment>
+            );
+          })}
+        </TableBody>
+      </Table>
       <PaginationBar
         page={filtering ? filterPage - 1 : page}
         totalPages={totalPages}
@@ -559,45 +563,63 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
   );
 
   return (
-    <Stack gap="md" className={embedded ? recordStyles.container : styles.page}>
+    <Stack
+      gap="md"
+      width="full"
+      maxWidth={embedded ? undefined : 'xl'}
+      mx={embedded ? undefined : 'auto'}
+    >
       {!embedded ? (
         <PageHeader title="Vendor purchase invoices" description={pageDescription} />
       ) : null}
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
-      <Card className={embedded ? undefined : styles.surface}>
+      <Card>
         <CardBody>
           <Stack gap="md">
             {!embedded ? (
-              <Stack gap="sm" className={styles.searchBar}>
-                <Inline gap="sm" className={styles.searchToolbar}>
-                  <SearchInput
-                    value={searchInput}
-                    onChange={setSearchInput}
-                    onSearch={runSearch}
-                    showSearchButton
-                    placeholder="Product, barcode, invoice no, or vendor"
-                    className={styles.searchField}
-                  />
+              <Stack
+                gap="sm"
+                style={{ paddingBottom: '0.25rem', borderBottom: '1px solid var(--border-color)' }}
+              >
+                <Inline gap="sm" flexWrap>
+                  <Box width="full" style={{ flex: 1, minWidth: '200px' }}>
+                    <SearchInput
+                      value={searchInput}
+                      onChange={setSearchInput}
+                      onSearch={runSearch}
+                      showSearchButton
+                      placeholder="Product, barcode, invoice no, or vendor"
+                    />
+                  </Box>
                   {listQuery ? (
                     <Button type="button" variant="outline" size="sm" onClick={clearSearch}>
                       Clear
                     </Button>
                   ) : null}
                 </Inline>
-                <Text variant="caption" color="secondary" className={styles.searchHint}>
+                <Text variant="caption" color="secondary" style={{ lineHeight: 1.45 }}>
                   Same pattern is tried against invoice number, vendor name, and each line&apos;s
                   product name and barcode (case-insensitive). Examples:{' '}
-                  <Text as="span" className={styles.mono}>
+                  <Text
+                    as="span"
+                    style={{ fontFamily: 'ui-monospace, monospace', fontSize: '0.875em' }}
+                  >
                     paracetamol|dolo
                   </Text>
                   ,{' '}
-                  <Text as="span" className={styles.mono}>
+                  <Text
+                    as="span"
+                    style={{ fontFamily: 'ui-monospace, monospace', fontSize: '0.875em' }}
+                  >
                     INV-712
                   </Text>
                   ,{' '}
-                  <Text as="span" className={styles.mono}>
+                  <Text
+                    as="span"
+                    style={{ fontFamily: 'ui-monospace, monospace', fontSize: '0.875em' }}
+                  >
                     ^HIMP
                   </Text>
                   . Invalid patterns return an error from the server.

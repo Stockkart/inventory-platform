@@ -1,5 +1,4 @@
-import { Box, Button, Inline } from '@inventory-platform/ui-kit';
-import styles from './taxes.module.css';
+import { NavTabBar, NavTabButton } from './tabNav';
 
 export const TAX_TABS = [
   { id: 'gstr1', label: 'GSTR-1' },
@@ -16,24 +15,15 @@ export interface TaxTabsProps {
 
 export function TaxTabs({ activeTab, onTabChange }: TaxTabsProps) {
   return (
-    <Box as="nav" aria-label="Tax sections" className={styles.tabBar}>
-      <Inline gap="none">
-        {TAX_TABS.map((tab) => {
-          const active = activeTab === tab.id;
-          return (
-            <Button
-              key={tab.id}
-              type="button"
-              size="sm"
-              variant="ghost"
-              className={active ? styles.tabLinkActive : styles.tabLink}
-              onClick={() => onTabChange(tab.id)}
-            >
-              {tab.label}
-            </Button>
-          );
-        })}
-      </Inline>
-    </Box>
+    <NavTabBar ariaLabel="Tax sections">
+      {TAX_TABS.map((tab) => (
+        <NavTabButton
+          key={tab.id}
+          active={activeTab === tab.id}
+          label={tab.label}
+          onClick={() => onTabChange(tab.id)}
+        />
+      ))}
+    </NavTabBar>
   );
 }

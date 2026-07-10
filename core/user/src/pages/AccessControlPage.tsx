@@ -17,6 +17,7 @@ import {
   CenteredLoader,
   Checkbox,
   FormField,
+  Grid,
   Inline,
   PageHeader,
   Select,
@@ -31,7 +32,6 @@ import {
   Text,
   VisuallyHidden,
 } from '@inventory-platform/ui-kit';
-import styles from './access-control.module.css';
 
 const MODULE_COLUMNS: {
   key: keyof MemberModulePermissions;
@@ -125,7 +125,7 @@ export function AccessControlPage() {
 
   if (!shopId) {
     return (
-      <Stack gap="md" className={styles.container}>
+      <Stack gap="md" width="full" maxWidth="xl" mx="auto">
         <Alert variant="danger">Select a shop to manage access.</Alert>
       </Stack>
     );
@@ -133,7 +133,7 @@ export function AccessControlPage() {
 
   if (!shopAccess?.canManageAccess) {
     return (
-      <Stack gap="md" className={styles.container}>
+      <Stack gap="md" width="full" maxWidth="xl" mx="auto">
         <Alert variant="danger">Only the shop owner can manage access settings.</Alert>
       </Stack>
     );
@@ -212,207 +212,212 @@ export function AccessControlPage() {
       : MODULE_COLUMNS;
 
   return (
-    <Stack gap="md" className={styles.container}>
+    <Stack gap="md" width="full" maxWidth="xl" mx="auto">
       <PageHeader
         title="Access control"
         description="Choose which modules each team member can open. Cashiers start with limited access; you can grant Accounting, Analytics, Taxes, and more as needed."
       />
 
-      <Card className={styles.card}>
+      <Card>
         <CardBody>
-          <Text variant="title" weight="semibold" className={styles.cardTitle}>
-            Product search editing
-          </Text>
-          <Text color="secondary" className={styles.cardHint}>
-            <Text as="span" weight="semibold">
-              Full edit
-            </Text>{' '}
-            uses the{' '}
-            <Text as="span" weight="semibold">
-              Edit
-            </Text>{' '}
-            column in the module table below.{' '}
-            <Text as="span" weight="semibold">
-              Permission-based
-            </Text>{' '}
-            uses the field checkboxes above — no separate Edit toggle needed.
-          </Text>
-          <Inline gap="sm" className={styles.policyRow}>
-            <Select
-              className={styles.select}
-              value={editMode}
-              disabled={policySaving}
-              onChange={(e) => void handlePolicyChange(e.target.value as ProductSearchEditMode)}
-              options={EDIT_MODE_OPTIONS.map((opt) => ({
-                value: opt.value,
-                label: opt.label,
-              }))}
-            />
-          </Inline>
+          <Stack gap="md">
+            <Text variant="title" weight="semibold">
+              Product search editing
+            </Text>
+            <Text color="secondary">
+              <Text as="span" weight="semibold">
+                Full edit
+              </Text>{' '}
+              uses the{' '}
+              <Text as="span" weight="semibold">
+                Edit
+              </Text>{' '}
+              column in the module table below.{' '}
+              <Text as="span" weight="semibold">
+                Permission-based
+              </Text>{' '}
+              uses the field checkboxes above — no separate Edit toggle needed.
+            </Text>
+            <Inline gap="sm" flexWrap>
+              <Select
+                value={editMode}
+                disabled={policySaving}
+                onChange={(e) => void handlePolicyChange(e.target.value as ProductSearchEditMode)}
+                options={EDIT_MODE_OPTIONS.map((opt) => ({
+                  value: opt.value,
+                  label: opt.label,
+                }))}
+              />
+            </Inline>
+          </Stack>
         </CardBody>
       </Card>
 
       {editMode === 'PERMISSION_BASED' ? (
-        <Card className={styles.card}>
+        <Card>
           <CardBody>
-            <Text variant="title" weight="semibold" className={styles.cardTitle}>
-              Product search field access
-            </Text>
-            <Text color="secondary" className={styles.cardHint}>
-              Choose which fields each member can edit in product search. Checking any field enables
-              edit for that member (only those fields are editable).
-            </Text>
-            {loading ? (
-              <CenteredLoader label="Loading…" />
-            ) : editableMembers.length === 0 ? (
-              <Text color="secondary">No team members to configure.</Text>
-            ) : (
-              <Stack gap="md">
-                <Inline gap="sm" className={styles.policyRow} align="end">
-                  <FormField label="Member" id="field-member">
-                    <Select
-                      id="field-member"
-                      className={styles.select}
-                      value={fieldMemberId}
-                      onChange={(e) => setFieldMemberId(e.target.value)}
-                      options={editableMembers.map((m) => ({
-                        value: m.userId,
-                        label: `${m.name || m.email} (${m.role})`,
-                      }))}
-                    />
-                  </FormField>
-                  {selectedFieldMember ? (
-                    <Button
-                      type="button"
-                      variant="solid"
-                      size="sm"
-                      className={styles.saveBtn}
-                      disabled={savingUserId === selectedFieldMember.userId}
-                      onClick={() => void saveMember(selectedFieldMember)}
-                    >
-                      {savingUserId === selectedFieldMember.userId ? 'Saving…' : 'Save fields'}
-                    </Button>
-                  ) : null}
-                </Inline>
-                {selectedFieldMember ? (
-                  <Inline gap="sm" className={styles.fieldGrid} flexWrap>
-                    {CORE_PRODUCT_SEARCH_FIELDS.map((field) => (
-                      <Checkbox
-                        key={field.key}
-                        className={styles.fieldChip}
-                        label={field.label}
-                        checked={(draftFields[selectedFieldMember.userId] ?? []).includes(
-                          field.key,
-                        )}
-                        onChange={(e) =>
-                          toggleFieldDraft(selectedFieldMember.userId, field.key, e.target.checked)
-                        }
+            <Stack gap="md">
+              <Text variant="title" weight="semibold">
+                Product search field access
+              </Text>
+              <Text color="secondary">
+                Choose which fields each member can edit in product search. Checking any field
+                enables edit for that member (only those fields are editable).
+              </Text>
+              {loading ? (
+                <CenteredLoader label="Loading…" />
+              ) : editableMembers.length === 0 ? (
+                <Text color="secondary">No team members to configure.</Text>
+              ) : (
+                <Stack gap="md">
+                  <Inline gap="sm" flexWrap align="end">
+                    <FormField label="Member" id="field-member">
+                      <Select
+                        id="field-member"
+                        value={fieldMemberId}
+                        onChange={(e) => setFieldMemberId(e.target.value)}
+                        options={editableMembers.map((m) => ({
+                          value: m.userId,
+                          label: `${m.name || m.email} (${m.role})`,
+                        }))}
                       />
-                    ))}
+                    </FormField>
+                    {selectedFieldMember ? (
+                      <Button
+                        type="button"
+                        variant="solid"
+                        size="sm"
+                        disabled={savingUserId === selectedFieldMember.userId}
+                        onClick={() => void saveMember(selectedFieldMember)}
+                      >
+                        {savingUserId === selectedFieldMember.userId ? 'Saving…' : 'Save fields'}
+                      </Button>
+                    ) : null}
                   </Inline>
-                ) : null}
-              </Stack>
-            )}
+                  {selectedFieldMember ? (
+                    <Grid columns={3} gap="sm" width="full">
+                      {CORE_PRODUCT_SEARCH_FIELDS.map((field) => (
+                        <Checkbox
+                          key={field.key}
+                          label={field.label}
+                          checked={(draftFields[selectedFieldMember.userId] ?? []).includes(
+                            field.key,
+                          )}
+                          onChange={(e) =>
+                            toggleFieldDraft(
+                              selectedFieldMember.userId,
+                              field.key,
+                              e.target.checked,
+                            )
+                          }
+                        />
+                      ))}
+                    </Grid>
+                  ) : null}
+                </Stack>
+              )}
+            </Stack>
           </CardBody>
         </Card>
       ) : null}
 
-      <Card className={styles.card}>
+      <Card>
         <CardBody>
-          <Text variant="title" weight="semibold" className={styles.cardTitle}>
-            Team module access
-          </Text>
-          <Text color="secondary" className={styles.cardHint}>
-            Toggle modules for each member, then click Save on their row. The shop owner always has
-            full access. Stock corrections: any member can create pending corrections; only
-            owner/manager can approve.
-          </Text>
+          <Stack gap="md">
+            <Text variant="title" weight="semibold">
+              Team module access
+            </Text>
+            <Text color="secondary">
+              Toggle modules for each member, then click Save on their row. The shop owner always
+              has full access. Stock corrections: any member can create pending corrections; only
+              owner/manager can approve.
+            </Text>
 
-          {loading ? (
-            <CenteredLoader label="Loading team access…" />
-          ) : !admin?.members.length ? (
-            <Text color="secondary">No team members found.</Text>
-          ) : (
-            <Table className={styles.table}>
-              <TableHead>
-                <TableRow>
-                  <TableHeaderCell>Member</TableHeaderCell>
-                  {moduleColumns.map((col) => (
-                    <TableHeaderCell key={col.key} className={styles.toggleCell}>
-                      <Text title={col.label}>{col.short}</Text>
-                    </TableHeaderCell>
-                  ))}
-                  <TableHeaderCell />
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {admin.members.map((member) => {
-                  const isOwner = member.relationship === 'OWNER';
-                  const draft = draftModules[member.userId];
-                  return (
-                    <TableRow key={member.userId}>
-                      <TableCell className={styles.userCell}>
-                        <Text weight="semibold" className={styles.userName}>
-                          {member.name || member.email}
-                        </Text>
-                        <Text color="secondary" variant="caption" className={styles.userMeta}>
-                          {member.role}
-                          {isOwner ? (
-                            <>
-                              {' '}
-                              ·{' '}
-                              <Badge variant="info" className={styles.ownerBadge}>
-                                Owner
-                              </Badge>
-                            </>
-                          ) : null}
-                        </Text>
-                      </TableCell>
-                      {moduleColumns.map((col) => (
-                        <TableCell key={col.key} className={styles.toggleCell}>
-                          <Switch
-                            className={styles.toggle}
-                            label={
-                              <VisuallyHidden>
-                                {`${col.label} for ${member.name || member.email}`}
-                              </VisuallyHidden>
-                            }
-                            checked={Boolean(draft?.[col.key])}
-                            disabled={isOwner || savingUserId === member.userId}
-                            onChange={(e) =>
-                              setModuleDraft(member.userId, col.key, e.target.checked)
-                            }
-                          />
+            {loading ? (
+              <CenteredLoader label="Loading team access…" />
+            ) : !admin?.members.length ? (
+              <Text color="secondary">No team members found.</Text>
+            ) : (
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableHeaderCell>Member</TableHeaderCell>
+                    {moduleColumns.map((col) => (
+                      <TableHeaderCell key={col.key} style={{ textAlign: 'center' }}>
+                        <Text title={col.label}>{col.short}</Text>
+                      </TableHeaderCell>
+                    ))}
+                    <TableHeaderCell />
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {admin.members.map((member) => {
+                    const isOwner = member.relationship === 'OWNER';
+                    const draft = draftModules[member.userId];
+                    return (
+                      <TableRow key={member.userId}>
+                        <TableCell style={{ minWidth: '11.25rem' }}>
+                          <Stack gap="xs">
+                            <Text weight="semibold">{member.name || member.email}</Text>
+                            <Inline gap="xs" align="center">
+                              <Text color="secondary" variant="caption">
+                                {member.role}
+                              </Text>
+                              {isOwner ? (
+                                <>
+                                  <Text color="secondary" variant="caption">
+                                    ·
+                                  </Text>
+                                  <Badge variant="info">Owner</Badge>
+                                </>
+                              ) : null}
+                            </Inline>
+                          </Stack>
                         </TableCell>
-                      ))}
-                      <TableCell>
-                        {isOwner ? (
-                          <Text color="secondary" variant="caption" className={styles.userMeta}>
-                            —
-                          </Text>
-                        ) : (
-                          <Button
-                            type="button"
-                            variant="solid"
-                            size="sm"
-                            className={styles.saveBtn}
-                            disabled={savingUserId === member.userId}
-                            onClick={() => void saveMember(member)}
-                          >
-                            {savingUserId === member.userId ? 'Saving…' : 'Save'}
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
-          <Text color="secondary" variant="caption" className={styles.saveHint}>
-            Invitations and shop user management remain owner/manager only. Cashiers cannot see
-            Payment &amp; Plan unless you enable Plan here.
-          </Text>
+                        {moduleColumns.map((col) => (
+                          <TableCell key={col.key} style={{ textAlign: 'center' }}>
+                            <Switch
+                              label={
+                                <VisuallyHidden>
+                                  {`${col.label} for ${member.name || member.email}`}
+                                </VisuallyHidden>
+                              }
+                              checked={Boolean(draft?.[col.key])}
+                              disabled={isOwner || savingUserId === member.userId}
+                              onChange={(e) =>
+                                setModuleDraft(member.userId, col.key, e.target.checked)
+                              }
+                            />
+                          </TableCell>
+                        ))}
+                        <TableCell>
+                          {isOwner ? (
+                            <Text color="secondary" variant="caption">
+                              —
+                            </Text>
+                          ) : (
+                            <Button
+                              type="button"
+                              variant="solid"
+                              size="sm"
+                              disabled={savingUserId === member.userId}
+                              onClick={() => void saveMember(member)}
+                            >
+                              {savingUserId === member.userId ? 'Saving…' : 'Save'}
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+            <Text color="secondary" variant="caption">
+              Invitations and shop user management remain owner/manager only. Cashiers cannot see
+              Payment &amp; Plan unless you enable Plan here.
+            </Text>
+          </Stack>
         </CardBody>
       </Card>
     </Stack>

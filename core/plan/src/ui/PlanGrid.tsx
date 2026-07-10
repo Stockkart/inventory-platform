@@ -1,6 +1,14 @@
 import type { PlanResponse } from '@inventory-platform/plan/types';
-import { Badge, Box, Button, Stack, Text } from '@inventory-platform/ui-kit';
-import styles from './PlanGrid.module.css';
+import {
+  Badge,
+  Box,
+  Button,
+  Card,
+  CardBody,
+  Inline,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 
 const EXTRA_USER_PLAN = 'Extra User Plan';
 const EXTRA_SHOP_PLAN = 'Extra Shop Plan';
@@ -78,7 +86,12 @@ export function PlanGrid({
   });
 
   return (
-    <Box className={styles.grid}>
+    <Box
+      display="grid"
+      gap="lg"
+      width="full"
+      style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}
+    >
       {sortedPlans.map((plan, idx) => {
         const features = buildPlanFeatures(plan);
         const highlight =
@@ -86,67 +99,82 @@ export function PlanGrid({
         const isCurrent = currentPlanId != null && plan.id === currentPlanId;
 
         return (
-          <Box
-            as="article"
+          <Card
             key={plan.id}
-            className={`${styles.card} ${highlight ? styles.cardHighlight : ''} ${
-              isCurrent ? styles.cardCurrent : ''
-            }`}
+            style={{
+              borderColor: isCurrent ? '#22c55e' : highlight ? '#2563eb' : undefined,
+              background: isCurrent ? 'rgba(34, 197, 94, 0.05)' : undefined,
+            }}
           >
-            {highlight ? <Badge className={styles.badge}>Most Popular</Badge> : null}
-            {isCurrent ? <Badge className={styles.currentBadge}>Current</Badge> : null}
+            <CardBody>
+              <Box position="relative">
+                {highlight ? (
+                  <Box
+                    position="absolute"
+                    style={{ top: '-1.75rem', left: '50%', transform: 'translateX(-50%)' }}
+                  >
+                    <Badge variant="info">Most Popular</Badge>
+                  </Box>
+                ) : null}
+                {isCurrent ? (
+                  <Box position="absolute" style={{ top: '-1.75rem', right: '1rem' }}>
+                    <Badge variant="success">Current</Badge>
+                  </Box>
+                ) : null}
 
-            <Stack gap="sm" className={styles.cardHeader}>
-              {showTrialBadge && !EXTRA_PLANS.includes(plan.planName) ? (
-                <Badge className={styles.trialBadge}>Free 30-day trial</Badge>
-              ) : null}
-              <Text as="h3" variant="heading3" className={styles.planName}>
-                {plan.planName}
-              </Text>
-              {!EXTRA_PLANS.includes(plan.planName) ? (
-                <Text className={styles.planDescription}>
-                  {plan.bestFor || 'For your business'}
-                </Text>
-              ) : null}
+                <Stack gap="md" style={{ minHeight: '320px' }} justify="between">
+                  <Stack gap="sm">
+                    {showTrialBadge && !EXTRA_PLANS.includes(plan.planName) ? (
+                      <Badge variant="success">Free 30-day trial</Badge>
+                    ) : null}
+                    <Text variant="heading3" weight="semibold">
+                      {plan.planName}
+                    </Text>
+                    {!EXTRA_PLANS.includes(plan.planName) ? (
+                      <Text color="secondary">{plan.bestFor || 'For your business'}</Text>
+                    ) : null}
 
-              <Box className={styles.priceRow}>
-                <Text as="span" className={styles.price}>
-                  ₹{(plan.arcPrice ?? plan.price)?.toLocaleString('en-IN') ?? 0}
-                </Text>
-                <Text as="span" className={styles.priceSuffix}>
-                  {plan.planName === EXTRA_USER_PLAN ? '/user/year' : '/year'}
-                </Text>
+                    <Inline gap="xs" align="end">
+                      <Text variant="heading1" weight="bold">
+                        ₹{(plan.arcPrice ?? plan.price)?.toLocaleString('en-IN') ?? 0}
+                      </Text>
+                      <Text color="secondary">
+                        {plan.planName === EXTRA_USER_PLAN ? '/user/year' : '/year'}
+                      </Text>
+                    </Inline>
+                    {!EXTRA_PLANS.includes(plan.planName) &&
+                      plan.price != null &&
+                      plan.price > 0 && (
+                        <Text variant="caption" color="secondary">
+                          One-time ₹{plan.price?.toLocaleString('en-IN')} if taking support
+                        </Text>
+                      )}
+
+                    <Stack gap="sm">
+                      {features.map((feature) => (
+                        <Inline key={feature} gap="sm" align="start">
+                          <Text color="success">✓</Text>
+                          <Text color="secondary">{feature}</Text>
+                        </Inline>
+                      ))}
+                    </Stack>
+                  </Stack>
+
+                  {onSelectPlan ? (
+                    <Button
+                      type="button"
+                      variant={highlight ? 'solid' : 'outline'}
+                      fullWidth
+                      onClick={() => onSelectPlan(plan)}
+                      disabled={isCurrent}
+                    >
+                      {isCurrent ? 'Current Plan' : ctaLabel}
+                    </Button>
+                  ) : null}
+                </Stack>
               </Box>
-              {!EXTRA_PLANS.includes(plan.planName) && plan.price != null && plan.price > 0 && (
-                <Text className={styles.oneTimePrice}>
-                  One-time ₹{plan.price?.toLocaleString('en-IN')} if taking support
-                </Text>
-              )}
-            </Stack>
-
-            <Box as="ul" className={styles.featuresList}>
-              {features.map((feature) => (
-                <Box as="li" key={feature} className={styles.featureItem}>
-                  <Text as="span" className={styles.checkIcon}>
-                    ✓
-                  </Text>
-                  <Text as="span">{feature}</Text>
-                </Box>
-              ))}
-            </Box>
-
-            {onSelectPlan ? (
-              <Button
-                type="button"
-                variant={highlight ? 'solid' : 'outline'}
-                className={`${styles.ctaButton} ${highlight ? styles.ctaPrimary : styles.ctaGhost}`}
-                onClick={() => onSelectPlan(plan)}
-                disabled={isCurrent}
-              >
-                {isCurrent ? 'Current Plan' : ctaLabel}
-              </Button>
-            ) : null}
-          </Box>
+            </CardBody>
+          </Card>
         );
       })}
     </Box>

@@ -1,19 +1,20 @@
-import { Link } from 'react-router';
-import { Box, Inline, Link as UiLink, ThemeToggle } from '@inventory-platform/ui-kit';
+import { Link, useNavigate } from 'react-router';
+import { Box, Button, Inline, Link as UiLink, ThemeToggle } from '@inventory-platform/ui-kit';
 import { useAuthStore } from '@inventory-platform/session';
 import styles from './JourneyHeader.module.css';
 
 export function JourneyHeader() {
+  const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
 
   return (
-    <Box as="header" className={styles.header}>
-      <Inline className={styles.container} justify="between" width="full">
-        <Link to="/" className={styles.logo}>
+    <Box as="header" className={styles.header} bg="elevated" padding="sm" width="full">
+      <Inline maxWidth="xl" mx="auto" justify="between" width="full" padding="sm" gap="md">
+        <Link to="/">
           <img src="/assets/logo/STOCKKART-3x.png" alt="StockKart" className={styles.logoImg} />
         </Link>
 
-        <Box as="nav" className={styles.nav}>
+        <Box as="nav" display="flex" gap="lg" align="center" justify="center">
           <UiLink href="/#features" className={styles.navLink}>
             Features
           </UiLink>
@@ -25,20 +26,25 @@ export function JourneyHeader() {
           </UiLink>
         </Box>
 
-        <Inline className={styles.actions} gap="sm">
+        <Inline gap="sm" align="center">
           <ThemeToggle />
           {isAuthenticated ? (
-            <Link to="/dashboard" className={styles.getStartedBtn}>
+            <Button variant="solid" size="sm" onClick={() => navigate('/dashboard')}>
               Dashboard
-            </Link>
+            </Button>
           ) : (
             <>
-              <Link to="/login" className={styles.signInBtn}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={styles.signInBtn}
+                onClick={() => navigate('/login')}
+              >
                 Sign In
-              </Link>
-              <Link to="/signup" className={styles.getStartedBtn}>
+              </Button>
+              <Button variant="solid" size="sm" onClick={() => navigate('/signup')}>
                 Get Started
-              </Link>
+              </Button>
             </>
           )}
         </Inline>

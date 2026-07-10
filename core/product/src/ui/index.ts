@@ -26,7 +26,6 @@ export {
 } from './historyFilters';
 export type { HistoryFilters, HistoryTab } from './historyFilters';
 export { HistoryListSummary } from './HistoryListSummary';
-export { historyRecordListStyles } from './historyRecordListStyles';
 export { SaleHistoryCard } from './SaleHistoryCard';
 export { PrintInvoiceModal } from './PrintInvoiceModal';
 export { InventoryAlertDetails } from './InventoryAlertDetails';

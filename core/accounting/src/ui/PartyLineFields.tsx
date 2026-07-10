@@ -4,7 +4,6 @@ import { vendorsApi } from '@inventory-platform/user/vendors';
 import type { AccountingPartyType } from '@inventory-platform/accounting/types';
 import { SearchInput, Select, type SelectOptionDef, Stack, Text } from '@inventory-platform/ui-kit';
 import { isCreditorsAccount, isDebtorsAccount } from '../model/accountingConstants';
-import styles from './accounting.module.css';
 
 type Props = {
   accountCode: string;
@@ -88,12 +87,11 @@ export function PartyLineFields({
   if (!kind) return null;
 
   return (
-    <Stack gap="xs" className={styles.partyFields}>
+    <Stack gap="xs">
       <SearchInput
         value={query}
         onChange={setQuery}
         placeholder={kind === 'CUSTOMER' ? 'Search customer…' : 'Search vendor…'}
-        className={styles.partySearch}
         disabled={disabled}
       />
       <Select
@@ -111,7 +109,7 @@ export function PartyLineFields({
         disabled={disabled || loading}
       />
       {partyType && partyType !== kind ? (
-        <Text variant="caption" color="secondary" className={styles.accountPickerHint}>
+        <Text variant="caption" color="secondary">
           Party type will update for this account.
         </Text>
       ) : null}

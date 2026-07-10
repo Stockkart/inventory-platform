@@ -1,5 +1,4 @@
-import { Box, Button, Inline } from '@inventory-platform/ui-kit';
-import styles from './analytics.module.css';
+import { NavTabBar, NavTabButton } from './tabNav';
 
 export type AnalyticsTabId = 'sales' | 'profit' | 'inventory' | 'vendors' | 'customers';
 
@@ -18,24 +17,15 @@ interface AnalyticsTabsProps {
 
 export function AnalyticsTabs({ activeTab, onTabChange }: AnalyticsTabsProps) {
   return (
-    <Box as="nav" aria-label="Analytics sections" className={styles.tabBar}>
-      <Inline gap="none">
-        {TABS.map((tab) => {
-          const active = activeTab === tab.id;
-          return (
-            <Button
-              key={tab.id}
-              type="button"
-              size="sm"
-              variant="ghost"
-              className={active ? styles.tabLinkActive : styles.tabLink}
-              onClick={() => onTabChange(tab.id)}
-            >
-              {tab.label}
-            </Button>
-          );
-        })}
-      </Inline>
-    </Box>
+    <NavTabBar ariaLabel="Analytics sections">
+      {TABS.map((tab) => (
+        <NavTabButton
+          key={tab.id}
+          active={activeTab === tab.id}
+          label={tab.label}
+          onClick={() => onTabChange(tab.id)}
+        />
+      ))}
+    </NavTabBar>
   );
 }

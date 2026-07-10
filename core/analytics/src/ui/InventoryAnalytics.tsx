@@ -23,7 +23,6 @@ import {
 import { useExpiryBucketsQuery, useInventoryAnalyticsQuery } from '../queries/hooks';
 import { AnalyticsCollapsibleSection } from './AnalyticsCollapsibleSection';
 import { AnalyticsMetricCard } from './AnalyticsMetricCard';
-import styles from './analytics.module.css';
 
 export function InventoryAnalytics() {
   const [localFilters, setLocalFilters] = useState<{
@@ -228,9 +227,9 @@ export function InventoryAnalytics() {
 
   return (
     <Stack gap="md">
-      <Card className={styles.filters}>
+      <Card>
         <CardBody>
-          <Inline gap="md" className={styles.filterRow}>
+          <Inline gap="md">
             <FormField label="Low Stock Threshold (%)" htmlFor="lowStockThreshold">
               <Input
                 id="lowStockThreshold"
@@ -289,7 +288,7 @@ export function InventoryAnalytics() {
       {inventoryData && !isLoading ? (
         <>
           {expiryBuckets ? (
-            <Grid className={styles.summaryGrid}>
+            <Grid columns={4} gap="md">
               <AnalyticsMetricCard
                 label="Expired (extension index)"
                 value={String(expiryBuckets.expired)}
@@ -305,7 +304,7 @@ export function InventoryAnalytics() {
             </Grid>
           ) : null}
 
-          <Grid className={styles.summaryGrid}>
+          <Grid columns={4} gap="md">
             <AnalyticsMetricCard
               label="Total Products"
               value={String(inventoryData.summary.totalProducts)}

@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
-  Box,
   Button,
   Card,
   CardBody,
   CardHeader,
   CenteredLoader,
+  Grid,
   Inline,
   PageHeader,
   Stack,
@@ -15,7 +15,6 @@ import {
 import { shopsApi } from '../api/shops.api';
 import { ShopProfileForm } from '../ui';
 import type { Location as LocationType } from '@inventory-platform/user/types';
-import styles from './profile.module.css';
 
 export function meta() {
   return [
@@ -42,6 +41,17 @@ function formatAddress(location: LocationType) {
   ]
     .filter(Boolean)
     .join(' · ');
+}
+
+function ProfileField({ label, value }: { label: string; value: string }) {
+  return (
+    <Stack gap="xs">
+      <Text variant="label" color="secondary">
+        {label}
+      </Text>
+      <Text>{value}</Text>
+    </Stack>
+  );
 }
 
 export function ProfilePage() {
@@ -145,7 +155,7 @@ export function ProfilePage() {
 
   if (loading) {
     return (
-      <Stack gap="md" className={styles.container}>
+      <Stack gap="md" width="full" maxWidth="sm" mx="auto">
         <CenteredLoader label="Loading profile…" />
       </Stack>
     );
@@ -153,126 +163,78 @@ export function ProfilePage() {
 
   if (error || !shop) {
     return (
-      <Stack gap="md" className={styles.container}>
+      <Stack gap="md" width="full" maxWidth="sm" mx="auto">
         <Alert variant="danger">{error ?? 'Shop not found'}</Alert>
       </Stack>
     );
   }
 
   return (
-    <Stack gap="md" className={styles.container}>
+    <Stack gap="md" width="full" maxWidth="sm" mx="auto">
       <PageHeader title="Shop Profile" description="View and edit your active shop information" />
 
       {!editing ? (
-        <Card className={styles.card}>
-          <CardHeader className={styles.cardHeader}>
-            <Text variant="title" weight="semibold" className={styles.cardTitle}>
-              {shop.name}
-            </Text>
-            <Button type="button" variant="outline" size="sm" onClick={handleStartEdit}>
-              Edit
-            </Button>
+        <Card>
+          <CardHeader>
+            <Inline justify="between" gap="md" width="full">
+              <Text variant="title" weight="semibold">
+                {shop.name}
+              </Text>
+              <Button type="button" variant="outline" size="sm" onClick={handleStartEdit}>
+                Edit
+              </Button>
+            </Inline>
           </CardHeader>
           <CardBody>
-            <Stack gap="md" className={styles.dl}>
-              <Stack gap="xs" className={styles.field}>
-                <Text variant="label" color="secondary" className={styles.dt}>
-                  Shop Name
-                </Text>
-                <Text className={styles.dd}>{shop.name}</Text>
-              </Stack>
+            <Stack gap="md">
+              <ProfileField label="Shop Name" value={shop.name} />
 
-              <Box display="grid" className={styles.row2}>
+              <Grid columns={2} gap="md" width="full">
                 {shop.contactEmail ? (
-                  <Stack gap="xs">
-                    <Text variant="label" color="secondary" className={styles.dt}>
-                      Email
-                    </Text>
-                    <Text className={styles.dd}>{shop.contactEmail}</Text>
-                  </Stack>
+                  <ProfileField label="Email" value={shop.contactEmail} />
                 ) : null}
-
                 {shop.contactPhone ? (
-                  <Stack gap="xs">
-                    <Text variant="label" color="secondary" className={styles.dt}>
-                      Phone
-                    </Text>
-                    <Text className={styles.dd}>{shop.contactPhone}</Text>
-                  </Stack>
+                  <ProfileField label="Phone" value={shop.contactPhone} />
                 ) : null}
-              </Box>
+              </Grid>
 
-              <Box display="grid" className={styles.row2}>
-                {shop.gstinNo ? (
-                  <Stack gap="xs">
-                    <Text variant="label" color="secondary" className={styles.dt}>
-                      GSTIN
-                    </Text>
-                    <Text className={styles.dd}>{shop.gstinNo}</Text>
-                  </Stack>
-                ) : null}
+              <Grid columns={2} gap="md" width="full">
+                {shop.gstinNo ? <ProfileField label="GSTIN" value={shop.gstinNo} /> : null}
+                {shop.panNo ? <ProfileField label="PAN" value={shop.panNo} /> : null}
+              </Grid>
 
-                {shop.panNo ? (
-                  <Stack gap="xs">
-                    <Text variant="label" color="secondary" className={styles.dt}>
-                      PAN
-                    </Text>
-                    <Text className={styles.dd}>{shop.panNo}</Text>
-                  </Stack>
-                ) : null}
-              </Box>
-
-              {shop.dlNo ? (
-                <Stack gap="xs" className={styles.field}>
-                  <Text variant="label" color="secondary" className={styles.dt}>
-                    DL No
-                  </Text>
-                  <Text className={styles.dd}>{shop.dlNo}</Text>
-                </Stack>
-              ) : null}
-
-              {shop.tagline ? (
-                <Stack gap="xs" className={styles.field}>
-                  <Text variant="label" color="secondary" className={styles.dt}>
-                    Tagline
-                  </Text>
-                  <Text className={styles.dd}>{shop.tagline}</Text>
-                </Stack>
-              ) : null}
-
+              {shop.dlNo ? <ProfileField label="DL No" value={shop.dlNo} /> : null}
+              {shop.tagline ? <ProfileField label="Tagline" value={shop.tagline} /> : null}
               {shop.location ? (
-                <Stack gap="xs" className={styles.field}>
-                  <Text variant="label" color="secondary" className={styles.dt}>
-                    Address
-                  </Text>
-                  <Text className={styles.dd}>{formatAddress(shop.location)}</Text>
-                </Stack>
+                <ProfileField label="Address" value={formatAddress(shop.location)} />
               ) : null}
             </Stack>
           </CardBody>
         </Card>
       ) : (
-        <Card className={styles.card}>
+        <Card>
           <CardBody>
-            <Text variant="title" weight="semibold" className={styles.cardTitle}>
-              Edit shop
-            </Text>
-            {saveError ? <Alert variant="danger">{saveError}</Alert> : null}
-            <ShopProfileForm
-              tagline={editTagline}
-              onTaglineChange={setEditTagline}
-              location={editLocation}
-              onLocationChange={setEditLocation}
-              disabled={saving}
-            />
-            <Inline gap="sm" className={styles.actions} justify="end">
-              <Button type="button" variant="outline" onClick={handleCancelEdit}>
-                Cancel
-              </Button>
-              <Button type="button" variant="solid" onClick={handleSave} disabled={saving}>
-                {saving ? 'Saving…' : 'Save'}
-              </Button>
-            </Inline>
+            <Stack gap="md">
+              <Text variant="title" weight="semibold">
+                Edit shop
+              </Text>
+              {saveError ? <Alert variant="danger">{saveError}</Alert> : null}
+              <ShopProfileForm
+                tagline={editTagline}
+                onTaglineChange={setEditTagline}
+                location={editLocation}
+                onLocationChange={setEditLocation}
+                disabled={saving}
+              />
+              <Inline gap="sm" justify="end">
+                <Button type="button" variant="outline" onClick={handleCancelEdit}>
+                  Cancel
+                </Button>
+                <Button type="button" variant="solid" onClick={handleSave} disabled={saving}>
+                  {saving ? 'Saving…' : 'Save'}
+                </Button>
+              </Inline>
+            </Stack>
           </CardBody>
         </Card>
       )}

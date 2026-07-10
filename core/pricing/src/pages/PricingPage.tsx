@@ -4,6 +4,7 @@ import { inventoryApi } from '@inventory-platform/product/api';
 import type { InventoryItem } from '@inventory-platform/product/types';
 import {
   Alert,
+  Box,
   Button,
   Inline,
   PageHeader,
@@ -20,7 +21,6 @@ import {
   TableRow,
   Text,
 } from '@inventory-platform/ui-kit';
-import styles from './pricing.module.css';
 
 export function meta() {
   return [
@@ -32,6 +32,8 @@ export function meta() {
 function formatMoney(value: number | null | undefined) {
   return value != null ? `₹${value.toFixed(2)}` : '—';
 }
+
+const numColStyle = { textAlign: 'right' as const, fontVariantNumeric: 'tabular-nums' as const };
 
 export function PricingPage() {
   const navigate = useNavigate();
@@ -90,16 +92,17 @@ export function PricingPage() {
         description="Search inventory and update pricing (table shows effective selling price)"
       />
 
-      <Inline gap="sm" className={styles.searchRow}>
-        <SearchInput
-          value={searchInput}
-          onChange={setSearchInput}
-          onSearch={handleSearch}
-          showSearchButton
-          placeholder="Search by name, company, or barcode…"
-          disabled={isLoading}
-          className={styles.searchInput}
-        />
+      <Inline gap="sm" flexWrap align="stretch" width="full">
+        <Box style={{ flex: 1, minWidth: 'min(100%, 280px)' }}>
+          <SearchInput
+            value={searchInput}
+            onChange={setSearchInput}
+            onSearch={handleSearch}
+            showSearchButton
+            placeholder="Search by name, company, or barcode…"
+            disabled={isLoading}
+          />
+        </Box>
         {searchInput ? (
           <Button type="button" variant="outline" onClick={handleClear} disabled={isLoading}>
             Clear
@@ -109,7 +112,7 @@ export function PricingPage() {
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
-      <Inline gap="md" className={styles.resultsMeta}>
+      <Inline gap="md" flexWrap align="center">
         <Text color="secondary" variant="caption">
           {isLoading ? 'Loading…' : `${totalItems} item${totalItems === 1 ? '' : 's'} found`}
         </Text>
@@ -126,10 +129,10 @@ export function PricingPage() {
             <TableHeaderCell>Product</TableHeaderCell>
             <TableHeaderCell>Company</TableHeaderCell>
             <TableHeaderCell>Barcode</TableHeaderCell>
-            <TableHeaderCell className={styles.numCol}>Selling</TableHeaderCell>
-            <TableHeaderCell className={styles.numCol}>MRP</TableHeaderCell>
+            <TableHeaderCell style={numColStyle}>Selling</TableHeaderCell>
+            <TableHeaderCell style={numColStyle}>MRP</TableHeaderCell>
             <TableHeaderCell>Location</TableHeaderCell>
-            <TableHeaderCell className={styles.actionsCol}>Actions</TableHeaderCell>
+            <TableHeaderCell style={{ whiteSpace: 'nowrap' }}>Actions</TableHeaderCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -144,20 +147,18 @@ export function PricingPage() {
             inventory.map((item) => (
               <TableRow key={item.id}>
                 <TableCell>
-                  <Text weight="medium" className={styles.productName}>
-                    {item.name || '—'}
-                  </Text>
+                  <Text weight="medium">{item.name || '—'}</Text>
                 </TableCell>
                 <TableCell>{item.companyName || '—'}</TableCell>
-                <TableCell className={styles.mono}>{item.barcode || '—'}</TableCell>
-                <TableCell className={styles.numCol}>
+                <TableCell style={{ fontFamily: 'ui-monospace, monospace', fontSize: '0.9em' }}>
+                  {item.barcode || '—'}
+                </TableCell>
+                <TableCell style={numColStyle}>
                   {formatMoney(item.sellingPrice ?? item.priceToRetail)}
                 </TableCell>
-                <TableCell className={styles.numCol}>
-                  {formatMoney(item.maximumRetailPrice)}
-                </TableCell>
+                <TableCell style={numColStyle}>{formatMoney(item.maximumRetailPrice)}</TableCell>
                 <TableCell>{item.location || '—'}</TableCell>
-                <TableCell className={styles.actionsCol}>
+                <TableCell style={{ whiteSpace: 'nowrap' }}>
                   {item.pricingId ? (
                     <Button
                       type="button"

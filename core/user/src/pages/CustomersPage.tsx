@@ -27,8 +27,6 @@ import type {
   CreateCustomerDto,
   UpdateCustomerDto,
 } from '@inventory-platform/user/types';
-import styles from './customers.module.css';
-
 export function meta() {
   return [
     { title: 'Customers - StockKart' },
@@ -205,7 +203,9 @@ export function CustomersPage() {
             <TableHeaderCell>Address</TableHeaderCell>
             <TableHeaderCell>GSTIN</TableHeaderCell>
             <TableHeaderCell>DL No</TableHeaderCell>
-            <TableHeaderCell className={styles.actionsCol}>Actions</TableHeaderCell>
+            <TableHeaderCell style={{ whiteSpace: 'nowrap', minWidth: '14rem' }}>
+              Actions
+            </TableHeaderCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -226,7 +226,7 @@ export function CustomersPage() {
                 <TableCell>{customer.gstin ?? '—'}</TableCell>
                 <TableCell>{customer.dlNo ?? '—'}</TableCell>
                 <TableCell>
-                  <Inline gap="sm" className={styles.rowActions}>
+                  <Inline gap="sm" flexWrap>
                     <Button
                       type="button"
                       size="sm"

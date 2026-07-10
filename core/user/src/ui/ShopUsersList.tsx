@@ -3,16 +3,17 @@ import { invitationsApi } from '../api/invitations.api';
 import type { ShopUser, UserRole } from '@inventory-platform/user/types';
 import { RoleBadge } from './RoleBadge';
 import {
-  Box,
+  Badge,
   Button,
   Card,
+  CardBody,
   CenteredLoader,
   EmptyState,
+  Grid,
   Inline,
   Stack,
   Text,
 } from '@inventory-platform/ui-kit';
-import styles from './ShopUsersList.module.css';
 import { useNotify } from '@inventory-platform/session';
 
 interface ShopUsersListProps {
@@ -27,43 +28,46 @@ interface ShopUserCardProps {
 
 function ShopUserCard({ user, showUserId = false }: ShopUserCardProps) {
   return (
-    <Card className={styles.card}>
-      <Box className={styles.header}>
-        <Box className={styles.userInfo}>
-          <Text weight="semibold" className={styles.userName}>
-            {user.name}
-          </Text>
-          <Text color="secondary" className={styles.userEmail}>
-            {user.email}
-          </Text>
-        </Box>
-        <RoleBadge role={user.role as UserRole} />
-      </Box>
-      <Stack className={styles.details} gap="xs">
-        {showUserId ? (
-          <Inline className={styles.detailRow}>
-            <Text className={styles.label}>User ID:</Text>
-            <Text className={styles.value}>{user.userId}</Text>
+    <Card>
+      <CardBody>
+        <Stack gap="md">
+          <Inline justify="between" align="start" gap="sm" flexWrap width="full">
+            <Stack gap="xs">
+              <Text weight="semibold">{user.name}</Text>
+              <Text color="secondary" variant="caption">
+                {user.email}
+              </Text>
+            </Stack>
+            <RoleBadge role={user.role as UserRole} />
           </Inline>
-        ) : null}
-        <Inline className={styles.detailRow}>
-          <Text className={styles.label}>Joined:</Text>
-          <Text className={styles.value}>
-            {user.joinedAt ? new Date(user.joinedAt).toLocaleDateString() : 'N/A'}
-          </Text>
-        </Inline>
-        <Inline className={styles.detailRow}>
-          <Text className={styles.label}>Status:</Text>
-          <Box
-            as="span"
-            className={`${styles.status} ${
-              user.active ? styles.statusActive : styles.statusInactive
-            }`}
-          >
-            {user.active ? 'Active' : 'Inactive'}
-          </Box>
-        </Inline>
-      </Stack>
+          <Stack gap="xs">
+            {showUserId ? (
+              <Inline justify="between" gap="sm" width="full">
+                <Text color="secondary" variant="caption">
+                  User ID:
+                </Text>
+                <Text variant="caption">{user.userId}</Text>
+              </Inline>
+            ) : null}
+            <Inline justify="between" gap="sm" width="full">
+              <Text color="secondary" variant="caption">
+                Joined:
+              </Text>
+              <Text variant="caption">
+                {user.joinedAt ? new Date(user.joinedAt).toLocaleDateString() : 'N/A'}
+              </Text>
+            </Inline>
+            <Inline justify="between" gap="sm" width="full" align="center">
+              <Text color="secondary" variant="caption">
+                Status:
+              </Text>
+              <Badge variant={user.active ? 'success' : 'neutral'}>
+                {user.active ? 'Active' : 'Inactive'}
+              </Badge>
+            </Inline>
+          </Stack>
+        </Stack>
+      </CardBody>
     </Card>
   );
 }
@@ -80,15 +84,15 @@ function UserSection({ title, users, showUserId = false }: UserSectionProps) {
   }
 
   return (
-    <Stack className={styles.section} gap="md">
-      <Text variant="heading3" weight="semibold" className={styles.sectionTitle}>
+    <Stack gap="md" width="full">
+      <Text variant="heading3" weight="semibold">
         {title}
       </Text>
-      <Box className={styles.grid}>
+      <Grid columns={3} gap="md" width="full">
         {users.map((user) => (
           <ShopUserCard key={user.userId} user={user} showUserId={showUserId} />
         ))}
-      </Box>
+      </Grid>
     </Stack>
   );
 }
@@ -111,53 +115,39 @@ export function ShopUsersList({ shopId, onUserChange }: ShopUsersListProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [shopId]);
+  }, [shopId, notifyError]);
 
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
 
   if (isLoading) {
-    return (
-      <Box className={styles.container}>
-        <CenteredLoader label="Loading users..." className={styles.loading} />
-      </Box>
-    );
+    return <CenteredLoader label="Loading users..." />;
   }
 
   if (error) {
     return (
-      <Box className={styles.container}>
-        <Stack className={styles.error} gap="md" align="center">
-          <Text color="danger">{error}</Text>
-          <Button className={styles.retryButton} onClick={fetchUsers}>
-            Retry
-          </Button>
-        </Stack>
-      </Box>
+      <Stack gap="md" align="center">
+        <Text color="danger">{error}</Text>
+        <Button onClick={fetchUsers}>Retry</Button>
+      </Stack>
     );
   }
 
   if (users.length === 0) {
-    return (
-      <Box className={styles.container}>
-        <EmptyState title="No users found for this shop" className={styles.empty} />
-      </Box>
-    );
+    return <EmptyState title="No users found for this shop" />;
   }
 
-  // Handle null relationship - if relationship is null but role is OWNER, treat as owner
   const owners = users.filter(
     (u) => u.relationship === 'OWNER' || (u.relationship === null && u.role === 'OWNER'),
   );
   const invited = users.filter((u) => u.relationship === 'INVITED');
-  // Get users that don't match owner or invited (fallback for any edge cases)
   const otherUsers = users.filter((u) => !owners.includes(u) && !invited.includes(u));
   const active = users.filter((u) => u.active);
   const inactive = users.filter((u) => !u.active);
 
   return (
-    <Stack className={styles.container} gap="md">
+    <Stack gap="lg" width="full">
       <UserSection title={`Owners (${owners.length})`} users={owners} />
       <UserSection title={`Invited Users (${invited.length})`} users={invited} />
       <UserSection title={`Users (${otherUsers.length})`} users={otherUsers} />

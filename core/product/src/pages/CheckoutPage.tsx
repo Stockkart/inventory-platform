@@ -59,7 +59,15 @@ function InfoField({ label, value }: { label: string; value: ReactNode }) {
 function SummaryRow({ label, value, total }: { label: string; value: string; total?: boolean }) {
   if (total) {
     return (
-      <Inline justify="between" width="full" className={styles.summaryRowTotal}>
+      <Inline
+        justify="between"
+        width="full"
+        style={{
+          padding: '1rem 0',
+          marginTop: '0.5rem',
+          borderTop: '2px solid var(--border-color)',
+        }}
+      >
         <Text variant="title" weight="bold">
           {label}
         </Text>
@@ -71,7 +79,11 @@ function SummaryRow({ label, value, total }: { label: string; value: string; tot
   }
 
   return (
-    <Inline justify="between" width="full" className={styles.summaryRow}>
+    <Inline
+      justify="between"
+      width="full"
+      style={{ padding: '0.75rem 0', borderBottom: '1px solid var(--border-color)' }}
+    >
       <Text color="secondary">{label}</Text>
       <Text color="secondary">{value}</Text>
     </Inline>
@@ -166,7 +178,7 @@ export function CheckoutPage() {
 
   if (isLoading) {
     return (
-      <Stack gap="md" className={styles.page}>
+      <Stack gap="md" maxWidth="xl" mx="auto" padding="lg">
         <Card>
           <CardBody>
             <CenteredLoader label="Please wait while we load your cart data." />
@@ -178,7 +190,7 @@ export function CheckoutPage() {
 
   if (!checkoutData) {
     return (
-      <Stack gap="md" className={styles.page}>
+      <Stack gap="md" maxWidth="xl" mx="auto" padding="lg">
         <EmptyState
           title="No checkout data found"
           description="Please start a new transaction from the sell page."
@@ -362,7 +374,7 @@ export function CheckoutPage() {
   }
 
   return (
-    <Stack gap="md" className={styles.page}>
+    <Stack gap="md" maxWidth="xl" mx="auto" padding="lg">
       <PageHeader title="Checkout" description={invoiceSubtitle} />
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
@@ -398,7 +410,7 @@ export function CheckoutPage() {
                 </Inline>
               </Inline>
 
-              <Grid columns={2} gap="md" className={styles.infoGrid}>
+              <Grid columns={2} gap="md" width="full">
                 <InfoField label="Billing Mode" value={billingMode} />
                 {checkoutData.customerName ? (
                   <InfoField label="Customer Name" value={checkoutData.customerName} />
@@ -446,8 +458,8 @@ export function CheckoutPage() {
               <Text variant="heading3" weight="semibold">
                 Items
               </Text>
-              <Box overflow="auto" className={styles.tableContainer}>
-                <Table className={styles.itemsTable}>
+              <Box overflow="auto" width="full">
+                <Table style={{ minWidth: '700px' }}>
                   <TableHead>
                     <TableRow>
                       <TableHeaderCell>Product Name</TableHeaderCell>
@@ -559,7 +571,13 @@ export function CheckoutPage() {
                   checkoutData.totalProfit != null ||
                   checkoutData.marginPercent != null) && (
                   <>
-                    <Box className={styles.summaryDivider} />
+                    <Box
+                      style={{
+                        marginTop: '0.5rem',
+                        paddingTop: '0.75rem',
+                        borderTop: '1px solid var(--border-color)',
+                      }}
+                    />
                     <SummaryRow
                       label="Total Cost:"
                       value={`₹${(checkoutData.totalCost ?? 0).toFixed(2)}`}
@@ -611,9 +629,12 @@ export function CheckoutPage() {
                 />
 
                 {paymentMethod && isCreditMethod(paymentMethod) && paymentSplit.creditAmount > 0 ? (
-                  <Text variant="caption" color="secondary" className={styles.splitSellFoot}>
+                  <Text variant="caption" color="secondary" style={{ lineHeight: 1.45 }}>
                     <Link to="/dashboard/credit">
-                      <Text as="span" className={styles.splitSellLink}>
+                      <Text
+                        as="span"
+                        style={{ color: '#047857', fontWeight: 600, textDecoration: 'none' }}
+                      >
                         Credit balances
                       </Text>
                     </Link>{' '}
@@ -646,7 +667,7 @@ export function CheckoutPage() {
           </Card>
         )}
 
-        <Inline justify="center" width="full" className={styles.actionsSection}>
+        <Inline justify="center" width="full" padding="md">
           <Button
             variant="outline"
             onClick={handleGoBack}

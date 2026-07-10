@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { refundsApi } from '@inventory-platform/product/api';
 import type { Refund } from '@inventory-platform/product/types';
 import { useNotify } from '@inventory-platform/session';
-import recordStyles from './HistoryRecordList.module.css';
 import {
   Box,
   Card,
@@ -29,6 +28,21 @@ import {
   paginateLocal,
   matchesRegexField,
 } from './historyFilters';
+
+const recordHeaderStyle = {
+  paddingBottom: '0.75rem',
+  borderBottom: '1px solid var(--border-color)',
+} as const;
+
+const breakdownWrapStyle = {
+  paddingTop: '1rem',
+  borderTop: '1px solid var(--border-color)',
+} as const;
+
+const breakdownLegacyStyle = {
+  paddingTop: '1rem',
+  borderTop: '1px dashed var(--border-color)',
+} as const;
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('en-IN', {
@@ -150,7 +164,7 @@ export function RefundHistoryList({ refreshTrigger, filters }: RefundHistoryList
 
   if (isLoading && refunds.length === 0) {
     return (
-      <Stack className={recordStyles.container}>
+      <Stack width="full">
         <CenteredLoader label="Loading return history…" />
       </Stack>
     );
@@ -158,14 +172,14 @@ export function RefundHistoryList({ refreshTrigger, filters }: RefundHistoryList
 
   if (refunds.length === 0) {
     return (
-      <Stack className={recordStyles.container}>
+      <Stack width="full">
         <EmptyState title={filtering ? 'No returns match these filters.' : 'No returns found.'} />
       </Stack>
     );
   }
 
   return (
-    <Stack gap="md" className={recordStyles.container}>
+    <Stack gap="md" width="full">
       <HistoryListSummary
         page={page}
         limit={limit}
@@ -173,21 +187,16 @@ export function RefundHistoryList({ refreshTrigger, filters }: RefundHistoryList
         filtered={filtering}
         label="returns"
       />
-      <Stack gap="md" className={recordStyles.list}>
+      <Stack gap="md">
         {refunds.map((refund) => (
-          <Card key={refund.refundId} className={recordStyles.recordCard}>
+          <Card key={refund.refundId}>
             <CardBody>
               <Stack gap="md">
-                <Inline
-                  className={recordStyles.recordHeader}
-                  justify="between"
-                  align="start"
-                  gap="md"
-                >
+                <Inline justify="between" align="start" gap="md" style={recordHeaderStyle}>
                   <DetailLine label="Credit note" value={refund.creditNoteNo ?? refund.refundId} />
                   <DetailLine label="Date" value={formatDate(refund.createdAt)} />
                 </Inline>
-                <Grid columns={2} gap="sm" className={recordStyles.recordDetails}>
+                <Grid columns={2} gap="sm">
                   <DetailLine label="Invoice No" value={refund.invoiceNo} />
                   <DetailLine label="Customer" value={refund.customerName} />
                   <DetailLine label="Phone" value={refund.customerPhone} />
@@ -196,17 +205,17 @@ export function RefundHistoryList({ refreshTrigger, filters }: RefundHistoryList
                   {refund.reason ? <DetailLine label="Reason" value={refund.reason} /> : null}
                 </Grid>
                 {refund.refundedItems && refund.refundedItems.length > 0 ? (
-                  <Stack gap="sm" className={recordStyles.breakdownWrap}>
+                  <Stack gap="sm" style={breakdownWrapStyle}>
                     <Text
                       variant="caption"
                       color="secondary"
                       weight="semibold"
-                      className={recordStyles.breakdownTitle}
+                      style={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}
                     >
                       Returned items
                     </Text>
-                    <Box className={recordStyles.breakdownScroll}>
-                      <Table className={recordStyles.breakdownTable}>
+                    <Box overflow="auto">
+                      <Table style={{ minWidth: '320px' }}>
                         <TableHead>
                           <TableRow>
                             <TableHeaderCell>Product</TableHeaderCell>
@@ -231,11 +240,7 @@ export function RefundHistoryList({ refreshTrigger, filters }: RefundHistoryList
                     </Box>
                   </Stack>
                 ) : (
-                  <Text
-                    variant="caption"
-                    color="secondary"
-                    className={recordStyles.breakdownLegacyNote}
-                  >
+                  <Text variant="caption" color="secondary" style={breakdownLegacyStyle}>
                     No line-by-line breakdown saved for this return (often older records).
                   </Text>
                 )}

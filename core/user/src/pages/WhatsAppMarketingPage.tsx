@@ -10,8 +10,8 @@ import {
   Checkbox,
   EditModal,
   EmptyState,
-  Box,
   FormField,
+  Grid,
   Inline,
   Input,
   PageHeader,
@@ -23,7 +23,6 @@ import {
   Textarea,
 } from '@inventory-platform/ui-kit';
 import type { CustomerResponse } from '@inventory-platform/user/types';
-import styles from './whatsapp-marketing.module.css';
 
 const MOCK_TEMPLATES = [
   {
@@ -163,164 +162,153 @@ export function WhatsAppMarketingPage() {
   const hasPhone = (c: CustomerResponse) => c.phone && c.phone.trim().length > 0;
 
   return (
-    <Stack gap="md" className={styles.container}>
+    <Stack gap="md" width="full" maxWidth="xl" mx="auto">
       <PageHeader
         title="WhatsApp Marketing"
         description="Select a template and customers to send WhatsApp messages"
       />
 
-      <Box display="grid" className={styles.grid}>
-        <Card className={styles.section}>
+      <Grid columns={2} gap="md" width="full">
+        <Card>
           <CardBody>
-            <Text variant="title" weight="semibold" className={styles.sectionTitle}>
-              Message Template
-            </Text>
-            <Inline gap="sm" className={styles.templateRow}>
-              <Select
-                className={styles.select}
-                value={selectedTemplateId}
-                onChange={(e) => setSelectedTemplateId(e.target.value)}
-                options={templates.map((t) => ({
-                  value: t.id,
-                  label: t.name,
-                }))}
-              />
+            <Stack gap="md">
+              <Text variant="title" weight="semibold">
+                Message Template
+              </Text>
+              <Inline gap="sm" width="full">
+                <Select
+                  value={selectedTemplateId}
+                  onChange={(e) => setSelectedTemplateId(e.target.value)}
+                  options={templates.map((t) => ({
+                    value: t.id,
+                    label: t.name,
+                  }))}
+                />
+                <Button type="button" variant="outline" onClick={() => setCreateModalOpen(true)}>
+                  Create template
+                </Button>
+              </Inline>
+
+              {selectedTemplate ? (
+                <Stack gap="sm">
+                  <Text variant="label" color="secondary">
+                    Preview
+                  </Text>
+                  <Card>
+                    <CardBody>
+                      <Text style={{ whiteSpace: 'pre-wrap' }}>{selectedTemplate.body}</Text>
+                      <Text color="secondary" variant="caption">
+                        Variables like {'{{name}}'} will be replaced per customer.
+                      </Text>
+                    </CardBody>
+                  </Card>
+                </Stack>
+              ) : null}
+
               <Button
                 type="button"
-                variant="outline"
-                className={styles.createBtn}
-                onClick={() => setCreateModalOpen(true)}
+                variant="solid"
+                style={{ width: '100%' }}
+                onClick={handleSendPreview}
+                disabled={selectedCustomerIds.size === 0}
+                title={
+                  selectedCustomerIds.size === 0
+                    ? 'Select at least one customer'
+                    : 'Preview (no backend)'
+                }
               >
-                Create template
+                Send to {selectedCustomerIds.size} customer
+                {selectedCustomerIds.size !== 1 ? 's' : ''}
               </Button>
-            </Inline>
-
-            {selectedTemplate ? (
-              <Stack gap="sm" className={styles.preview}>
-                <Text variant="label" color="secondary" className={styles.previewLabel}>
-                  Preview
-                </Text>
-                <Card className={styles.previewBubble}>
-                  <CardBody>
-                    <Text className={styles.previewText}>{selectedTemplate.body}</Text>
-                    <Text color="secondary" variant="caption" className={styles.previewHint}>
-                      Variables like {'{{name}}'} will be replaced per customer.
-                    </Text>
-                  </CardBody>
-                </Card>
-              </Stack>
-            ) : null}
-
-            <Button
-              type="button"
-              variant="solid"
-              className={styles.sendBtn}
-              onClick={handleSendPreview}
-              disabled={selectedCustomerIds.size === 0}
-              title={
-                selectedCustomerIds.size === 0
-                  ? 'Select at least one customer'
-                  : 'Preview (no backend)'
-              }
-            >
-              Send to {selectedCustomerIds.size} customer
-              {selectedCustomerIds.size !== 1 ? 's' : ''}
-            </Button>
-          </CardBody>
-        </Card>
-
-        <Card className={styles.section}>
-          <CardBody>
-            <Text variant="title" weight="semibold" className={styles.sectionTitle}>
-              Select Recipients
-            </Text>
-            <SearchInput
-              value={searchInput}
-              onChange={setSearchInput}
-              onSearch={handleSearch}
-              showSearchButton
-              placeholder="Search by name, phone, email…"
-              className={styles.searchRow}
-            />
-
-            <Inline gap="sm" className={styles.selectAllRow} justify="between">
-              <Button type="button" variant="ghost" size="sm" onClick={selectAll}>
-                {selectedCustomerIds.size === customers.length ? 'Deselect all' : 'Select all'}
-              </Button>
-              <Text color="secondary" className={styles.selectedCount}>
-                {selectedCustomerIds.size} selected
-              </Text>
-            </Inline>
-
-            {error ? <Alert variant="danger">{error}</Alert> : null}
-
-            <Stack gap="none" className={styles.customerList}>
-              {loading ? (
-                <CenteredLoader label="Loading customers…" />
-              ) : customers.length === 0 ? (
-                <EmptyState
-                  title="No customers found"
-                  description="Add customers from the Customer page."
-                />
-              ) : (
-                customers.map((c) => {
-                  const hasValidPhone = hasPhone(c);
-                  const isSelected = selectedCustomerIds.has(c.customerId);
-                  return (
-                    <Checkbox
-                      key={c.customerId}
-                      className={`${styles.customerRow} ${
-                        !hasValidPhone ? styles.customerRowNoPhone : ''
-                      }`}
-                      checked={isSelected}
-                      onChange={() => toggleCustomer(c.customerId)}
-                      disabled={!hasValidPhone}
-                      title={!hasValidPhone ? 'No phone number – cannot send WhatsApp' : ''}
-                      label={
-                        <Inline
-                          gap="sm"
-                          className={styles.customerInfo}
-                          justify="between"
-                          width="full"
-                        >
-                          <Stack gap="xs">
-                            <Text weight="semibold" className={styles.customerName}>
-                              {c.name ?? '—'}
-                            </Text>
-                            <Text color="secondary" className={styles.customerContact}>
-                              {c.phone ?? '—'} {c.email ? ` • ${c.email}` : ''}
-                            </Text>
-                          </Stack>
-                          {!hasValidPhone ? (
-                            <Badge variant="warning" className={styles.noPhoneBadge}>
-                              No phone
-                            </Badge>
-                          ) : null}
-                        </Inline>
-                      }
-                    />
-                  );
-                })
-              )}
             </Stack>
-
-            <PaginationBar
-              page={page}
-              prevDisabled={page === 0}
-              nextDisabled={customers.length < limit}
-              disabled={loading}
-              onPageChange={setPage}
-              pageSize={limit}
-              pageSizeOptions={[20, 50, 100]}
-              onPageSizeChange={(n) => {
-                setPage(0);
-                setLimit(n);
-              }}
-              aria-label="Marketing customer picker pages"
-            />
           </CardBody>
         </Card>
-      </Box>
+
+        <Card>
+          <CardBody>
+            <Stack gap="md">
+              <Text variant="title" weight="semibold">
+                Select Recipients
+              </Text>
+              <SearchInput
+                value={searchInput}
+                onChange={setSearchInput}
+                onSearch={handleSearch}
+                showSearchButton
+                placeholder="Search by name, phone, email…"
+              />
+
+              <Inline gap="sm" justify="between" width="full">
+                <Button type="button" variant="ghost" size="sm" onClick={selectAll}>
+                  {selectedCustomerIds.size === customers.length ? 'Deselect all' : 'Select all'}
+                </Button>
+                <Text color="secondary">{selectedCustomerIds.size} selected</Text>
+              </Inline>
+
+              {error ? <Alert variant="danger">{error}</Alert> : null}
+
+              <Stack
+                gap="none"
+                width="full"
+                border
+                rounded="md"
+                overflow="auto"
+                style={{ maxHeight: '22.5rem' }}
+              >
+                {loading ? (
+                  <CenteredLoader label="Loading customers…" />
+                ) : customers.length === 0 ? (
+                  <EmptyState
+                    title="No customers found"
+                    description="Add customers from the Customer page."
+                  />
+                ) : (
+                  customers.map((c) => {
+                    const hasValidPhone = hasPhone(c);
+                    const isSelected = selectedCustomerIds.has(c.customerId);
+                    return (
+                      <Checkbox
+                        key={c.customerId}
+                        style={!hasValidPhone ? { opacity: 0.7 } : undefined}
+                        checked={isSelected}
+                        onChange={() => toggleCustomer(c.customerId)}
+                        disabled={!hasValidPhone}
+                        title={!hasValidPhone ? 'No phone number – cannot send WhatsApp' : ''}
+                        label={
+                          <Inline gap="sm" justify="between" width="full">
+                            <Stack gap="xs">
+                              <Text weight="semibold">{c.name ?? '—'}</Text>
+                              <Text color="secondary" variant="caption">
+                                {c.phone ?? '—'} {c.email ? ` • ${c.email}` : ''}
+                              </Text>
+                            </Stack>
+                            {!hasValidPhone ? <Badge variant="warning">No phone</Badge> : null}
+                          </Inline>
+                        }
+                      />
+                    );
+                  })
+                )}
+              </Stack>
+
+              <PaginationBar
+                page={page}
+                prevDisabled={page === 0}
+                nextDisabled={customers.length < limit}
+                disabled={loading}
+                onPageChange={setPage}
+                pageSize={limit}
+                pageSizeOptions={[20, 50, 100]}
+                onPageSizeChange={(n) => {
+                  setPage(0);
+                  setLimit(n);
+                }}
+                aria-label="Marketing customer picker pages"
+              />
+            </Stack>
+          </CardBody>
+        </Card>
+      </Grid>
 
       {createModalOpen ? (
         <EditModal
@@ -332,7 +320,7 @@ export function WhatsAppMarketingPage() {
           onSave={handleCreateTemplate}
           saveLabel="Create"
         >
-          <Stack gap="md" className={styles.form}>
+          <Stack gap="md">
             <FormField label="Template name" id="tpl-name">
               <Input
                 id="tpl-name"

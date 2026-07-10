@@ -25,7 +25,6 @@ import {
 } from '@inventory-platform/ui-kit';
 import { InventoryAlertDetails, ProductSearchCard, normalizedBillingMode } from '../ui';
 import { sortInventoryByExpirySoonest } from '@inventory-platform/schema';
-import styles from './product-search.module.css';
 import {
   useAuthStore,
   useNotify,
@@ -348,17 +347,18 @@ export function ProductSearchPage() {
         description="Search by product name, barcode, or batch number"
       />
 
-      <Inline gap="sm" className={styles.toolbar}>
-        <SearchInput
-          value={searchQuery}
-          onChange={setSearchQuery}
-          onSearch={() => void handleSearch()}
-          showSearchButton
-          placeholder="Name, barcode, or batch number"
-          disabled={isLoading}
-          searchLabel={isLoading ? 'Searching…' : 'Search'}
-          className={styles.searchField}
-        />
+      <Inline gap="sm" flexWrap>
+        <Box width="full" style={{ flex: 1, minWidth: '12rem' }}>
+          <SearchInput
+            value={searchQuery}
+            onChange={setSearchQuery}
+            onSearch={() => void handleSearch()}
+            showSearchButton
+            placeholder="Name, barcode, or batch number"
+            disabled={isLoading}
+            searchLabel={isLoading ? 'Searching…' : 'Search'}
+          />
+        </Box>
         {hasActiveSearch ? (
           <Button
             type="button"
@@ -407,7 +407,12 @@ export function ProductSearchPage() {
               />
             ) : (
               <>
-                <Box className={styles.productsGrid}>
+                <Box
+                  display="grid"
+                  gap="lg"
+                  width="full"
+                  style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
+                >
                   {filteredInventory.map((item) => {
                     const inventoryId = resolveInventoryDocumentId(item);
                     return (

@@ -16,7 +16,6 @@ import { AccountingTabs } from '../ui/AccountingTabs';
 import { JournalEntryEditor } from '../ui/JournalEntryEditor';
 import { emptyLine } from '../model/journalEntryFormUtils';
 import { todayLocalDate, formatDate } from '../model/format';
-import styles from '../ui/accounting.module.css';
 
 export function OpeningBalanceWizardPage() {
   const navigate = useNavigate();
@@ -58,7 +57,7 @@ export function OpeningBalanceWizardPage() {
   const locked = Boolean(existing);
 
   return (
-    <Stack gap="md" className={styles.page}>
+    <Stack gap="md">
       <Stack gap="md">
         <AccountingTabs />
         <PageHeader

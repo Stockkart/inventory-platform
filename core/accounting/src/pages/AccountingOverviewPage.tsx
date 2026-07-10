@@ -30,6 +30,7 @@ import { ACCOUNT_CODES } from '../model/accountingConstants';
 import { JOURNAL_TEMPLATES } from '../model/journalTemplates';
 import { formatDate, formatMoney } from '../model/format';
 import styles from '../ui/accounting.module.css';
+import { numColBoldStyle, numColStyle } from '../ui/tabNav';
 
 const CODES = ACCOUNT_CODES;
 
@@ -152,7 +153,7 @@ export function AccountingOverviewPage() {
   ];
 
   return (
-    <Stack gap="md" className={styles.page}>
+    <Stack gap="md">
       <Stack gap="md">
         <AccountingTabs />
         <PageHeader
@@ -181,7 +182,7 @@ export function AccountingOverviewPage() {
         />
       </Stack>
 
-      <Grid gap="md" className={styles.kpiRow}>
+      <Grid gap="md">
         <KpiCard label="Cash in Hand" value={cash} loading={loading} />
         <KpiCard label="Bank" value={bank} loading={loading} />
         <KpiCard label="Inventory (Cost)" value={inventory} loading={loading} />
@@ -218,7 +219,7 @@ export function AccountingOverviewPage() {
       <Card>
         <CardBody>
           <Stack gap="sm">
-            <Inline align="center" className={styles.header}>
+            <Inline align="center" justify="between" flexWrap>
               <Text variant="title" weight="bold">
                 Recent Journal Entries
               </Text>
@@ -226,7 +227,6 @@ export function AccountingOverviewPage() {
                 type="button"
                 variant="ghost"
                 size="sm"
-                className={styles.tabLink}
                 onClick={() => navigate('/dashboard/accounting/journal')}
               >
                 View all
@@ -239,8 +239,8 @@ export function AccountingOverviewPage() {
                   <TableHeaderCell>Entry #</TableHeaderCell>
                   <TableHeaderCell>Source</TableHeaderCell>
                   <TableHeaderCell>Narration</TableHeaderCell>
-                  <TableHeaderCell className={styles.right}>Debit</TableHeaderCell>
-                  <TableHeaderCell className={styles.right}>Credit</TableHeaderCell>
+                  <TableHeaderCell style={numColStyle}>Debit</TableHeaderCell>
+                  <TableHeaderCell style={numColStyle}>Credit</TableHeaderCell>
                   <TableHeaderCell>Status</TableHeaderCell>
                 </TableRow>
               </TableHead>
@@ -267,19 +267,15 @@ export function AccountingOverviewPage() {
                         </Button>
                       </TableCell>
                       <TableCell>
-                        <Badge className={styles.sourcePill}>{e.sourceType}</Badge>
+                        <Badge variant="info">{e.sourceType}</Badge>
                       </TableCell>
                       <TableCell>
                         <Text color="secondary" variant="caption">
                           {e.narration ?? '—'}
                         </Text>
                       </TableCell>
-                      <TableCell className={`${styles.right} ${styles.number}`}>
-                        {formatMoney(e.totalDebit)}
-                      </TableCell>
-                      <TableCell className={`${styles.right} ${styles.number}`}>
-                        {formatMoney(e.totalCredit)}
-                      </TableCell>
+                      <TableCell style={numColBoldStyle}>{formatMoney(e.totalDebit)}</TableCell>
+                      <TableCell style={numColBoldStyle}>{formatMoney(e.totalCredit)}</TableCell>
                       <TableCell>
                         <Badge variant={statusVariant(e.status)}>{e.status}</Badge>
                       </TableCell>

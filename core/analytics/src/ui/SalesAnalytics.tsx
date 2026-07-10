@@ -107,9 +107,9 @@ export function SalesAnalytics() {
 
   return (
     <Stack gap="md">
-      <Card className={styles.filters}>
+      <Card>
         <CardBody>
-          <Inline gap="md" className={styles.filterRow}>
+          <Inline gap="md">
             <FormField label="Start Date" htmlFor="startDate">
               <Input
                 id="startDate"
@@ -210,7 +210,7 @@ export function SalesAnalytics() {
         <>
           <SummaryCards data={data} />
           {data.periodComparison ? <ComparisonMetrics data={data} /> : null}
-          <Stack gap="md" className={styles.barChartsGrid}>
+          <Stack gap="md">
             {data.timeSeries && data.timeSeries.length > 0 ? (
               <Card className={styles.chartCard}>
                 <CardBody>
@@ -240,7 +240,7 @@ export function SalesAnalytics() {
             </Card>
           </Stack>
 
-          <Stack gap="md" className={styles.pieChartsGrid}>
+          <Stack gap="md">
             <Card className={styles.chartCard}>
               <CardBody>
                 <SalesByGroupPieChart

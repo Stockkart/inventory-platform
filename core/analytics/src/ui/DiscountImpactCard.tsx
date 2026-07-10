@@ -1,5 +1,4 @@
 import { Card, CardBody, CardHeader, Grid, Stack, Text } from '@inventory-platform/ui-kit';
-import styles from './analytics.module.css';
 
 interface DiscountImpact {
   totalDiscountGiven: number;
@@ -53,7 +52,7 @@ export function DiscountImpactCard({ data }: DiscountImpactCardProps) {
         </Text>
       </CardHeader>
       <CardBody>
-        <Grid className={styles.discountGrid}>
+        <Grid columns={3} gap="md">
           <DiscountItem
             label="Total Discount Given"
             value={formatCurrency(data.totalDiscountGiven)}

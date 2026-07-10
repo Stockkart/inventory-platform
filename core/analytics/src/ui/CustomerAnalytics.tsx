@@ -22,7 +22,6 @@ import {
 import { useCustomerAnalyticsQuery } from '../queries/hooks';
 import { AnalyticsCollapsibleSection } from './AnalyticsCollapsibleSection';
 import { AnalyticsMetricCard } from './AnalyticsMetricCard';
-import styles from './analytics.module.css';
 
 export function CustomerAnalytics() {
   const [localFilters, setLocalFilters] = useState<{
@@ -166,9 +165,9 @@ export function CustomerAnalytics() {
 
   return (
     <Stack gap="md">
-      <Card className={styles.filters}>
+      <Card>
         <CardBody>
-          <Inline gap="md" className={styles.filterRow}>
+          <Inline gap="md">
             <FormField label="Start Date" htmlFor="customerStartDate">
               <Input
                 id="customerStartDate"
@@ -237,7 +236,7 @@ export function CustomerAnalytics() {
 
       {customerData && !isLoading ? (
         <>
-          <Grid className={styles.summaryGrid}>
+          <Grid columns={4} gap="md">
             <AnalyticsMetricCard
               label="Total Customers"
               value={String(customerData.summary.totalCustomers)}

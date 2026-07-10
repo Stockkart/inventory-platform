@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { invitationsApi } from '../api/invitations.api';
 import type { Invitation } from '@inventory-platform/user/types';
 import { InvitationCard } from './InvitationCard';
-import { Box, Button, CenteredLoader, EmptyState, Stack, Text } from '@inventory-platform/ui-kit';
-import styles from './InvitationList.module.css';
+import { Button, CenteredLoader, EmptyState, Grid, Stack, Text } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 
 interface InvitationListProps {
@@ -31,11 +30,11 @@ function InvitationSection({
   }
 
   return (
-    <Stack className={styles.section} gap="md">
-      <Text variant="heading3" weight="semibold" className={styles.sectionTitle}>
+    <Stack gap="md" width="full">
+      <Text variant="heading3" weight="semibold">
         {title}
       </Text>
-      <Box className={styles.grid}>
+      <Grid columns={3} gap="md" width="full">
         {invitations.map((invitation) => (
           <InvitationCard
             key={invitation.invitationId}
@@ -44,7 +43,7 @@ function InvitationSection({
             onAccept={onAccept}
           />
         ))}
-      </Box>
+      </Grid>
     </Stack>
   );
 }
@@ -81,7 +80,7 @@ export function InvitationList({
     } finally {
       setIsLoading(false);
     }
-  }, [shopId, showMyInvitations]);
+  }, [shopId, showMyInvitations, notifyError]);
 
   useEffect(() => {
     fetchInvitations();
@@ -95,35 +94,22 @@ export function InvitationList({
   };
 
   if (isLoading) {
-    return (
-      <Box className={styles.container}>
-        <CenteredLoader label="Loading invitations..." className={styles.loading} />
-      </Box>
-    );
+    return <CenteredLoader label="Loading invitations..." />;
   }
 
   if (error) {
     return (
-      <Box className={styles.container}>
-        <Stack className={styles.error} gap="md" align="center">
-          <Text color="danger">{error}</Text>
-          <Button className={styles.retryButton} onClick={fetchInvitations}>
-            Retry
-          </Button>
-        </Stack>
-      </Box>
+      <Stack gap="md" align="center">
+        <Text color="danger">{error}</Text>
+        <Button onClick={fetchInvitations}>Retry</Button>
+      </Stack>
     );
   }
 
   if (invitations.length === 0) {
-    return (
-      <Box className={styles.container}>
-        <EmptyState title="No invitations found" className={styles.empty} />
-      </Box>
-    );
+    return <EmptyState title="No invitations found" />;
   }
 
-  // Group invitations by status
   const pending = invitations.filter(
     (inv) => inv.status === 'PENDING' && new Date(inv.expiresAt) >= new Date(),
   );
@@ -136,7 +122,7 @@ export function InvitationList({
   const rejected = invitations.filter((inv) => inv.status === 'REJECTED');
 
   return (
-    <Stack className={styles.container} gap="md">
+    <Stack gap="lg" width="full">
       <InvitationSection
         title={`Pending (${pending.length})`}
         invitations={pending}

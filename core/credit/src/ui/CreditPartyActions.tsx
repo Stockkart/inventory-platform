@@ -5,36 +5,31 @@ import type {
   CreditSettlementPaymentMethod,
 } from '@inventory-platform/credit/types';
 import {
+  Badge,
   Box,
   Button,
   FormField,
+  Grid,
   Inline,
   Input,
   Select,
+  Stack,
   type SelectOptionDef,
   Text,
 } from '@inventory-platform/ui-kit';
+import { creditActionCopy, presentCreditBalance, todayLocalDate } from '../model/credit-utils';
 import {
-  creditActionCopy,
-  presentCreditBalance,
-  todayLocalDate,
-  type CreditBalanceTone,
-} from '../model/credit-utils';
-import styles from './credit.module.css';
+  accountBalToneStyle,
+  actionTabStyle,
+  contextBalBlockStyle,
+  contextBalLabelStyle,
+} from './creditStyles';
 
 type Props = {
   account: CreditAccountResponse;
   submitting: boolean;
   onSubmitCharge: (body: CreateCreditEntryDto) => Promise<void>;
   onSubmitSettlement: (body: CreateCreditEntryDto) => Promise<void>;
-};
-
-const CONTEXT_TONE: Record<CreditBalanceTone, string> = {
-  collect: styles.contextBalCollect,
-  pay: styles.contextBalPay,
-  advance_customer: styles.contextBalAdvIn,
-  advance_vendor: styles.contextBalAdvOut,
-  settled: styles.contextBalSettled,
 };
 
 const PAYMENT_METHOD_OPTIONS: SelectOptionDef[] = [
@@ -119,50 +114,76 @@ export function CreditPartyActions({
       : 'Money you need to pay suppliers';
 
   return (
-    <Box className={styles.partyActions}>
-      <Box className={styles.partyContext} aria-live="polite">
-        <Box className={styles.partyContextTop}>
-          <Box
-            as="span"
-            className={`${styles.partyContextBadge} ${
-              account.partyType === 'VENDOR'
-                ? styles.partyContextBadgeVendor
-                : styles.partyContextBadgeCustomer
-            }`}
-          >
+    <Stack gap="md">
+      <Stack
+        gap="sm"
+        padding="md"
+        rounded="lg"
+        border
+        aria-live="polite"
+        style={{
+          borderColor: 'color-mix(in srgb, var(--sk-color-border-default) 85%, #2563eb 15%)',
+          background:
+            'color-mix(in srgb, var(--sk-color-bg-elevated) 92%, rgba(37, 99, 235, 0.06))',
+        }}
+      >
+        <Inline justify="between" align="start" flexWrap>
+          <Badge variant={account.partyType === 'VENDOR' ? 'info' : 'success'}>
             {partyKindLabel}
-          </Box>
-          <Text className={styles.partyContextSub}>{sub}</Text>
-        </Box>
-        <Box className={styles.partyContextMain}>
-          <Box as="span" className={styles.partyContextName}>
-            {account.partyDisplayName}
-          </Box>
+          </Badge>
+          <Text
+            variant="caption"
+            color="secondary"
+            align="right"
+            style={{ flex: 1, minWidth: '8rem' }}
+          >
+            {sub}
+          </Text>
+        </Inline>
+        <Stack gap="xs">
+          <Text weight="bold">{account.partyDisplayName}</Text>
           {account.partyPhone ? (
-            <Box as="span" className={styles.partyContextPhone}>
+            <Text variant="caption" color="secondary">
               {account.partyPhone}
-            </Box>
+            </Text>
           ) : null}
-        </Box>
-        <Box className={`${styles.partyContextBalBlock} ${CONTEXT_TONE[bal.tone]}`}>
-          <Box as="span" className={styles.partyContextBalLabel}>
+        </Stack>
+        <Inline
+          justify="between"
+          align="end"
+          flexWrap
+          padding="sm"
+          rounded="md"
+          border
+          style={contextBalBlockStyle[bal.tone]}
+        >
+          <Text weight="bold" style={contextBalLabelStyle[bal.tone]}>
             {bal.headline}
-          </Box>
+          </Text>
           {bal.tone !== 'settled' ? (
-            <Box as="span" className={styles.partyContextBalAmt}>
+            <Text weight="bold" style={accountBalToneStyle[bal.tone]}>
               {bal.amountLine}
-            </Box>
+            </Text>
           ) : null}
-        </Box>
-      </Box>
+        </Inline>
+      </Stack>
 
-      <Inline className={styles.actionTabs} role="tablist" aria-label="Entry type" gap="none">
+      <Inline
+        role="tablist"
+        aria-label="Entry type"
+        gap="none"
+        padding="xs"
+        rounded="md"
+        style={{
+          background: 'color-mix(in srgb, var(--sk-color-border-default) 35%, transparent)',
+        }}
+      >
         <Button
           type="button"
           variant="ghost"
           role="tab"
           aria-selected={mode === 'charge'}
-          className={mode === 'charge' ? styles.actionTabActive : styles.actionTab}
+          style={actionTabStyle(mode === 'charge')}
           onClick={() => setMode('charge')}
           disabled={submitting}
         >
@@ -173,7 +194,7 @@ export function CreditPartyActions({
           variant="ghost"
           role="tab"
           aria-selected={mode === 'settlement'}
-          className={mode === 'settlement' ? styles.actionTabActive : styles.actionTab}
+          style={actionTabStyle(mode === 'settlement')}
           onClick={() => setMode('settlement')}
           disabled={submitting}
         >
@@ -181,126 +202,109 @@ export function CreditPartyActions({
         </Button>
       </Inline>
 
-      <Text className={styles.modeHint}>
+      <Text variant="caption" color="secondary">
         {mode === 'charge' ? copy.hintIncrease : copy.hintReduce}
       </Text>
 
-      <Box as="form" className={styles.compactForm} onSubmit={handleSubmit}>
-        <FormField
-          label="Amount (₹)"
-          id="credit-party-amount"
-          required
-          className={styles.compactField}
-        >
-          <Input
-            id="credit-party-amount"
-            type="text"
-            inputMode="decimal"
-            autoComplete="off"
-            className={styles.amountInput}
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="0.00"
-            disabled={submitting}
-            required
-          />
-        </FormField>
-
-        <FormField label="Date" id="credit-party-txn-date" required className={styles.compactField}>
-          <Input
-            id="credit-party-txn-date"
-            type="date"
-            className={styles.compactInput}
-            value={txnDate}
-            onChange={(e) => setTxnDate(e.target.value)}
-            disabled={submitting}
-            required
-          />
-        </FormField>
-
-        {mode === 'settlement' ? (
-          <>
-            <FormField
-              label="Payment method"
-              id="credit-party-method"
+      <Box as="form" onSubmit={handleSubmit}>
+        <Stack gap="md">
+          <FormField label="Amount (₹)" id="credit-party-amount" required>
+            <Input
+              id="credit-party-amount"
+              type="text"
+              inputMode="decimal"
+              autoComplete="off"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0.00"
+              disabled={submitting}
               required
-              className={styles.compactField}
-            >
-              <Select
-                id="credit-party-method"
-                className={styles.compactInput}
-                options={PAYMENT_METHOD_OPTIONS}
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value as CreditSettlementPaymentMethod)}
-                disabled={submitting}
-                required
-              />
-            </FormField>
-            <FormField
-              label="Reference (optional)"
-              id="credit-party-bank-ref"
-              className={styles.compactField}
-            >
-              <Input
-                id="credit-party-bank-ref"
-                type="text"
-                className={styles.compactInput}
-                value={bankRef}
-                onChange={(e) => setBankRef(e.target.value)}
-                placeholder="UTR, cheque no., etc."
-                disabled={submitting}
-              />
-            </FormField>
-          </>
-        ) : null}
+              style={{ fontSize: '1.15rem', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}
+            />
+          </FormField>
 
-        <FormField label="Note (optional)" id="credit-party-note" className={styles.compactField}>
-          <Input
-            id="credit-party-note"
-            type="text"
-            className={styles.compactInput}
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="e.g. Invoice ref, UPI ref…"
-            disabled={submitting}
-          />
-        </FormField>
-
-        <Box as="details" className={styles.advancedDetails}>
-          <Box as="summary" className={styles.advancedSummary}>
-            Reference (optional)
-          </Box>
-          <Box className={styles.advancedFields}>
+          <FormField label="Date" id="credit-party-txn-date" required>
             <Input
-              aria-label="Reference type"
+              id="credit-party-txn-date"
+              type="date"
+              value={txnDate}
+              onChange={(e) => setTxnDate(e.target.value)}
+              disabled={submitting}
+              required
+            />
+          </FormField>
+
+          {mode === 'settlement' ? (
+            <>
+              <FormField label="Payment method" id="credit-party-method" required>
+                <Select
+                  id="credit-party-method"
+                  options={PAYMENT_METHOD_OPTIONS}
+                  value={paymentMethod}
+                  onChange={(e) =>
+                    setPaymentMethod(e.target.value as CreditSettlementPaymentMethod)
+                  }
+                  disabled={submitting}
+                  required
+                />
+              </FormField>
+              <FormField label="Reference (optional)" id="credit-party-bank-ref">
+                <Input
+                  id="credit-party-bank-ref"
+                  type="text"
+                  value={bankRef}
+                  onChange={(e) => setBankRef(e.target.value)}
+                  placeholder="UTR, cheque no., etc."
+                  disabled={submitting}
+                />
+              </FormField>
+            </>
+          ) : null}
+
+          <FormField label="Note (optional)" id="credit-party-note">
+            <Input
+              id="credit-party-note"
               type="text"
-              className={styles.compactInput}
-              value={referenceType}
-              onChange={(e) => setReferenceType(e.target.value)}
-              placeholder="Reference type"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="e.g. Invoice ref, UPI ref…"
               disabled={submitting}
             />
-            <Input
-              aria-label="Reference id"
-              type="text"
-              className={styles.compactInput}
-              value={referenceId}
-              onChange={(e) => setReferenceId(e.target.value)}
-              placeholder="Reference id"
-              disabled={submitting}
-            />
-          </Box>
-        </Box>
+          </FormField>
 
-        <Button
-          type="submit"
-          variant="solid"
-          className={styles.primarySubmit}
-          disabled={submitting}
-        >
-          {submitting ? 'Saving…' : mode === 'charge' ? copy.submitIncrease : copy.submitReduce}
-        </Button>
+          <Box as="details">
+            <Box as="summary">
+              <Text variant="caption" weight="semibold" color="secondary">
+                Reference (optional)
+              </Text>
+            </Box>
+            <Box padding="sm">
+              <Grid columns={2} gap="sm">
+                <Input
+                  aria-label="Reference type"
+                  type="text"
+                  value={referenceType}
+                  onChange={(e) => setReferenceType(e.target.value)}
+                  placeholder="Reference type"
+                  disabled={submitting}
+                />
+                <Input
+                  aria-label="Reference id"
+                  type="text"
+                  value={referenceId}
+                  onChange={(e) => setReferenceId(e.target.value)}
+                  placeholder="Reference id"
+                  disabled={submitting}
+                />
+              </Grid>
+            </Box>
+          </Box>
+
+          <Button type="submit" variant="solid" disabled={submitting}>
+            {submitting ? 'Saving…' : mode === 'charge' ? copy.submitIncrease : copy.submitReduce}
+          </Button>
+        </Stack>
       </Box>
-    </Box>
+    </Stack>
   );
 }

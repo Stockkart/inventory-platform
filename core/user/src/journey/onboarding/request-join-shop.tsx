@@ -5,8 +5,9 @@ import { shopsApi } from '@inventory-platform/user/shops';
 import type { UserRole, OwnerShopSummary } from '@inventory-platform/user/types';
 import {
   Alert,
-  Box,
   Button,
+  Card,
+  CardBody,
   FormField,
   Inline,
   Input,
@@ -15,7 +16,6 @@ import {
   Text,
   Textarea,
 } from '@inventory-platform/ui-kit';
-import styles from './request-join-shop.module.css';
 import { useNotify } from '@inventory-platform/session';
 
 const AVAILABLE_ROLES: UserRole[] = ['ADMIN', 'MANAGER', 'CASHIER'];
@@ -184,142 +184,137 @@ export default function RequestJoinShopPage() {
   ];
 
   return (
-    <Stack className={styles.container} gap="lg">
-      <Stack className={styles.header} gap="xs">
-        <Button variant="ghost" className={styles.backButton} onClick={handleBack}>
+    <Stack
+      gap="lg"
+      width="full"
+      maxWidth="sm"
+      mx="auto"
+      padding="lg"
+      style={{ minHeight: '100vh' }}
+    >
+      <Stack gap="xs">
+        <Button variant="ghost" onClick={handleBack}>
           ← Back
         </Button>
-        <Text variant="heading1" className={styles.title}>
-          Request to Join a Shop
-        </Text>
-        <Text color="secondary" className={styles.subtitle}>
+        <Text variant="heading1">Request to Join a Shop</Text>
+        <Text color="secondary">
           Enter the shop owner&apos;s email address to send a join request
         </Text>
       </Stack>
 
-      {error ? (
-        <Alert variant="danger" className={styles.errorMessage}>
-          {error}
-        </Alert>
-      ) : null}
+      {error ? <Alert variant="danger">{error}</Alert> : null}
+      {success ? <Alert variant="success">{success}</Alert> : null}
 
-      {success ? (
-        <Alert variant="success" className={styles.successMessage}>
-          {success}
-        </Alert>
-      ) : null}
-
-      <Stack className={styles.form} gap="md">
-        <FormField
-          label="Shop Owner Email *"
-          id="ownerEmail"
-          hint="Enter the email address of the shop owner and click Find shops."
-        >
-          <Inline className={styles.emailRow} gap="sm">
-            <Input
+      <Card>
+        <CardBody>
+          <Stack gap="md" width="full">
+            <FormField
+              label="Shop Owner Email *"
               id="ownerEmail"
-              type="email"
-              className={styles.input}
-              placeholder="owner@example.com"
-              value={ownerEmail}
-              onChange={(e) => {
-                setOwnerEmail(e.target.value);
-                setOwnerShops([]);
-                setSelectedShopId('');
-                if (error) setError(null);
-              }}
-              disabled={isLoading}
-              required
-            />
-            <Button
-              variant="outline"
-              className={styles.findShopsButton}
-              onClick={() => void handleFindShops()}
-              disabled={isLoading || isFindingShops || !ownerEmail.trim()}
-              loading={isFindingShops}
+              hint="Enter the email address of the shop owner and click Find shops."
             >
-              {isFindingShops ? 'Finding...' : 'Find shops'}
-            </Button>
-          </Inline>
-        </FormField>
+              <Inline gap="sm" width="full" align="stretch">
+                <Input
+                  id="ownerEmail"
+                  type="email"
+                  placeholder="owner@example.com"
+                  value={ownerEmail}
+                  onChange={(e) => {
+                    setOwnerEmail(e.target.value);
+                    setOwnerShops([]);
+                    setSelectedShopId('');
+                    if (error) setError(null);
+                  }}
+                  disabled={isLoading}
+                  required
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => void handleFindShops()}
+                  disabled={isLoading || isFindingShops || !ownerEmail.trim()}
+                  loading={isFindingShops}
+                >
+                  {isFindingShops ? 'Finding...' : 'Find shops'}
+                </Button>
+              </Inline>
+            </FormField>
 
-        {ownerShops.length > 0 ? (
-          <FormField label="Select Shop *" id="shopSelect" hint="Select the shop you want to join.">
-            <Select
-              id="shopSelect"
-              className={styles.select}
-              options={shopOptions}
-              value={selectedShopId}
-              onChange={(e) => {
-                setSelectedShopId(e.target.value);
-                if (error) setError(null);
-              }}
-              disabled={isLoading}
-              required
-            />
-          </FormField>
-        ) : null}
+            {ownerShops.length > 0 ? (
+              <FormField
+                label="Select Shop *"
+                id="shopSelect"
+                hint="Select the shop you want to join."
+              >
+                <Select
+                  id="shopSelect"
+                  options={shopOptions}
+                  value={selectedShopId}
+                  onChange={(e) => {
+                    setSelectedShopId(e.target.value);
+                    if (error) setError(null);
+                  }}
+                  disabled={isLoading}
+                  required
+                />
+              </FormField>
+            ) : null}
 
-        <FormField
-          label="Requested Role *"
-          id="role"
-          hint="Select the role you would like to have in the shop."
-        >
-          <Select
-            id="role"
-            className={styles.select}
-            options={ROLE_OPTIONS}
-            value={role}
-            onChange={(e) => {
-              setRole(e.target.value as UserRole);
-              if (error) setError(null);
-            }}
-            disabled={isLoading}
-            required
-          />
-        </FormField>
+            <FormField
+              label="Requested Role *"
+              id="role"
+              hint="Select the role you would like to have in the shop."
+            >
+              <Select
+                id="role"
+                options={ROLE_OPTIONS}
+                value={role}
+                onChange={(e) => {
+                  setRole(e.target.value as UserRole);
+                  if (error) setError(null);
+                }}
+                disabled={isLoading}
+                required
+              />
+            </FormField>
 
-        <FormField label="Message (Optional)" id="message">
-          <Textarea
-            id="message"
-            className={styles.textarea}
-            placeholder="Add a message to the shop owner (optional)"
-            value={message}
-            onChange={(e) => {
-              setMessage(e.target.value);
-              if (error) setError(null);
-            }}
-            disabled={isLoading}
-            rows={4}
-          />
-        </FormField>
+            <FormField label="Message (Optional)" id="message">
+              <Textarea
+                id="message"
+                placeholder="Add a message to the shop owner (optional)"
+                value={message}
+                onChange={(e) => {
+                  setMessage(e.target.value);
+                  if (error) setError(null);
+                }}
+                disabled={isLoading}
+                rows={4}
+              />
+            </FormField>
 
-        <Inline className={styles.actions} gap="sm">
-          <Button
-            variant="ghost"
-            className={styles.cancelButton}
-            onClick={handleBack}
-            disabled={isLoading}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="solid"
-            className={styles.submitButton}
-            onClick={() => void handleSubmit()}
-            disabled={isLoading || !ownerEmail.trim() || !selectedShopId || ownerShops.length === 0}
-            loading={isLoading}
-          >
-            {isLoading ? 'Sending Request...' : 'Send Request'}
-          </Button>
-        </Inline>
-      </Stack>
+            <Inline gap="sm" justify="end" width="full">
+              <Button variant="ghost" onClick={handleBack} disabled={isLoading}>
+                Cancel
+              </Button>
+              <Button
+                variant="solid"
+                onClick={() => void handleSubmit()}
+                disabled={
+                  isLoading || !ownerEmail.trim() || !selectedShopId || ownerShops.length === 0
+                }
+                loading={isLoading}
+              >
+                {isLoading ? 'Sending Request...' : 'Send Request'}
+              </Button>
+            </Inline>
+          </Stack>
+        </CardBody>
+      </Card>
 
-      <Box className={styles.footer}>
-        <Button variant="ghost" className={styles.logoutButton} onClick={() => void handleLogout()}>
+      <Stack align="center">
+        <Button variant="ghost" onClick={() => void handleLogout()}>
           Logout
         </Button>
-      </Box>
+      </Stack>
     </Stack>
   );
 }

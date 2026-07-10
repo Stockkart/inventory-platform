@@ -25,8 +25,6 @@ import type {
   CreateVendorDto,
   UpdateVendorDto,
 } from '@inventory-platform/user/types';
-import styles from './vendors.module.css';
-
 export function meta() {
   return [
     { title: 'Vendors - StockKart' },
@@ -206,7 +204,9 @@ export function VendorsPage() {
             <TableHeaderCell>Email</TableHeaderCell>
             <TableHeaderCell>Business Type</TableHeaderCell>
             <TableHeaderCell>GSTIN</TableHeaderCell>
-            <TableHeaderCell className={styles.actionsCol}>Actions</TableHeaderCell>
+            <TableHeaderCell style={{ whiteSpace: 'nowrap', minWidth: '14rem' }}>
+              Actions
+            </TableHeaderCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -227,7 +227,7 @@ export function VendorsPage() {
                 <TableCell>{vendor.businessType ?? '—'}</TableCell>
                 <TableCell>{vendor.gstinUin ?? '—'}</TableCell>
                 <TableCell>
-                  <Inline gap="sm" className={styles.rowActions}>
+                  <Inline gap="sm" flexWrap>
                     <Button
                       type="button"
                       size="sm"

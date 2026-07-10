@@ -103,9 +103,9 @@ export function ProfitAnalytics() {
 
   return (
     <Stack gap="md">
-      <Card className={styles.filters}>
+      <Card>
         <CardBody>
-          <Inline gap="md" className={styles.filterRow}>
+          <Inline gap="md">
             <FormField label="Start Date" htmlFor="profitStartDate">
               <Input
                 id="profitStartDate"
@@ -202,7 +202,7 @@ export function ProfitAnalytics() {
           <ProfitSummaryCards data={profitData} />
           <DiscountImpactCard data={profitData.discountImpact} />
 
-          <Stack gap="md" className={styles.barChartsGrid}>
+          <Stack gap="md">
             {profitData.costPriceTrends && profitData.costPriceTrends.length > 0 ? (
               <Card className={styles.chartCard}>
                 <CardBody>
@@ -227,7 +227,7 @@ export function ProfitAnalytics() {
             </Card>
           </Stack>
 
-          <Stack gap="md" className={styles.pieChartsGrid}>
+          <Stack gap="md">
             <Card className={styles.chartCard}>
               <CardBody>
                 <ProfitByGroupPieChart data={profitData.profitByProduct} groupBy="product" />

@@ -123,7 +123,7 @@ export function ChartOfAccountsPage() {
   }
 
   return (
-    <Stack gap="md" className={styles.page}>
+    <Stack gap="md">
       <Stack gap="md">
         <PageHeader
           title="Chart of Accounts"
@@ -144,7 +144,7 @@ export function ChartOfAccountsPage() {
               <Text variant="heading3" weight="semibold">
                 New account
               </Text>
-              <Inline gap="sm" className={styles.toolbar}>
+              <Inline gap="sm">
                 <FormField
                   label="Code"
                   value={draft.code}

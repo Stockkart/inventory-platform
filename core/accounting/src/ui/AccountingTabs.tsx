@@ -1,6 +1,5 @@
 import { useLocation, useNavigate } from 'react-router';
-import { Box, Button, Inline } from '@inventory-platform/ui-kit';
-import styles from './accounting.module.css';
+import { NavTabBar, NavTabButton } from './tabNav';
 
 const TABS: ReadonlyArray<{ to: string; label: string; end?: boolean }> = [
   { to: '/dashboard/accounting', label: 'Overview', end: true },
@@ -27,24 +26,15 @@ export function AccountingTabs() {
   const { pathname } = useLocation();
 
   return (
-    <Box as="nav" aria-label="Accounting sections" className={styles.tabBar}>
-      <Inline gap="none">
-        {TABS.map((tab) => {
-          const active = isTabActive(pathname, tab.to, tab.end);
-          return (
-            <Button
-              key={tab.to}
-              type="button"
-              size="sm"
-              variant="ghost"
-              className={active ? styles.tabLinkActive : styles.tabLink}
-              onClick={() => navigate(tab.to)}
-            >
-              {tab.label}
-            </Button>
-          );
-        })}
-      </Inline>
-    </Box>
+    <NavTabBar ariaLabel="Accounting sections">
+      {TABS.map((tab) => (
+        <NavTabButton
+          key={tab.to}
+          active={isTabActive(pathname, tab.to, tab.end)}
+          label={tab.label}
+          onClick={() => navigate(tab.to)}
+        />
+      ))}
+    </NavTabBar>
   );
 }

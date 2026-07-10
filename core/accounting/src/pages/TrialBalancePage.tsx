@@ -29,6 +29,7 @@ import type {
 import { AccountingTabs } from '../ui/AccountingTabs';
 import { formatDate, formatMoney, todayLocalDate } from '../model/format';
 import styles from '../ui/accounting.module.css';
+import { numColBoldStyle, numColStyle } from '../ui/tabNav';
 
 const GROUP_ORDER: AccountType[] = ['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE'];
 
@@ -94,14 +95,14 @@ export function TrialBalancePage() {
   const isBalanced = !!data && Math.abs(data.totalDebit - data.totalCredit) < 0.005;
 
   return (
-    <Stack gap="md" className={styles.page}>
+    <Stack gap="md">
       <Stack gap="md">
         <AccountingTabs />
         <PageHeader
           title="Trial Balance"
           description="Closing balances as of a date. Total Debit must equal Total Credit — if they don't, no entry can be unbalanced."
         />
-        <Inline gap="sm" className={styles.toolbar}>
+        <Inline gap="sm">
           <Text variant="label" color="secondary">
             As of
           </Text>
@@ -138,10 +139,10 @@ export function TrialBalancePage() {
                   <TableRow>
                     <TableHeaderCell>Code</TableHeaderCell>
                     <TableHeaderCell>Account</TableHeaderCell>
-                    <TableHeaderCell className={styles.right}>Debit Turnover</TableHeaderCell>
-                    <TableHeaderCell className={styles.right}>Credit Turnover</TableHeaderCell>
-                    <TableHeaderCell className={styles.right}>Debit Balance</TableHeaderCell>
-                    <TableHeaderCell className={styles.right}>Credit Balance</TableHeaderCell>
+                    <TableHeaderCell style={numColStyle}>Debit Turnover</TableHeaderCell>
+                    <TableHeaderCell style={numColStyle}>Credit Turnover</TableHeaderCell>
+                    <TableHeaderCell style={numColStyle}>Debit Balance</TableHeaderCell>
+                    <TableHeaderCell style={numColStyle}>Credit Balance</TableHeaderCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -160,15 +161,11 @@ export function TrialBalancePage() {
                     );
                   })}
                   <TableRow className={styles.grandTotalRow}>
-                    <TableCell colSpan={4} className={styles.right}>
+                    <TableCell colSpan={4} style={numColStyle}>
                       Grand Totals
                     </TableCell>
-                    <TableCell className={`${styles.right} ${styles.number}`}>
-                      {formatMoney(data.totalDebit)}
-                    </TableCell>
-                    <TableCell className={`${styles.right} ${styles.number}`}>
-                      {formatMoney(data.totalCredit)}
-                    </TableCell>
+                    <TableCell style={numColBoldStyle}>{formatMoney(data.totalDebit)}</TableCell>
+                    <TableCell style={numColBoldStyle}>{formatMoney(data.totalCredit)}</TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
@@ -226,26 +223,22 @@ function RowsForType({
               {r.accountName}
             </Button>
           </TableCell>
-          <TableCell className={`${styles.right} ${styles.number}`}>
-            {formatMoney(r.debitTurnover)}
-          </TableCell>
-          <TableCell className={`${styles.right} ${styles.number}`}>
-            {formatMoney(r.creditTurnover)}
-          </TableCell>
-          <TableCell className={`${styles.right} ${styles.number}`}>
+          <TableCell style={numColBoldStyle}>{formatMoney(r.debitTurnover)}</TableCell>
+          <TableCell style={numColBoldStyle}>{formatMoney(r.creditTurnover)}</TableCell>
+          <TableCell style={numColBoldStyle}>
             {r.debitBalance ? formatMoney(r.debitBalance) : ''}
           </TableCell>
-          <TableCell className={`${styles.right} ${styles.number}`}>
+          <TableCell style={numColBoldStyle}>
             {r.creditBalance ? formatMoney(r.creditBalance) : ''}
           </TableCell>
         </TableRow>
       ))}
       <TableRow className={styles.subTotalRow}>
-        <TableCell colSpan={4} className={styles.right}>
+        <TableCell colSpan={4} style={numColStyle}>
           {GROUP_LABEL[type]} subtotal
         </TableCell>
-        <TableCell className={`${styles.right} ${styles.number}`}>{formatMoney(subDr)}</TableCell>
-        <TableCell className={`${styles.right} ${styles.number}`}>{formatMoney(subCr)}</TableCell>
+        <TableCell style={numColBoldStyle}>{formatMoney(subDr)}</TableCell>
+        <TableCell style={numColBoldStyle}>{formatMoney(subCr)}</TableCell>
       </TableRow>
     </>
   );

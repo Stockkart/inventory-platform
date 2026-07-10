@@ -1,143 +1,160 @@
 import { useState } from 'react';
 import {
-  Box,
   Button,
+  Card,
+  CardBody,
   FormField,
+  FormRow,
+  Grid,
+  Inline,
   Input,
   PageHeader,
   RadioGroup,
   Stack,
   Text,
 } from '@inventory-platform/ui-kit';
-import styles from './payment-billing.module.css';
 
 export function PaymentBillingPage() {
   const [paymentMethod, setPaymentMethod] = useState('card');
 
   return (
-    <Stack gap="md" className={styles.page}>
+    <Stack gap="md" width="full" maxWidth="xl" mx="auto">
       <PageHeader title="Payment & Billing" description="Process payments and manage invoices" />
 
-      <Box className={styles.container}>
-        <Box className={styles.paymentSection}>
-          <Text as="h3" variant="heading3" className={styles.sectionTitle}>
-            Payment Method
-          </Text>
-          <RadioGroup
-            name="payment"
-            value={paymentMethod}
-            onChange={setPaymentMethod}
-            className={styles.paymentMethods}
-            options={[
-              {
-                value: 'card',
-                label: (
-                  <Box className={styles.paymentCard}>
-                    <Text as="span" className={styles.cardIcon} role="img" aria-label="Credit card">
-                      💳
-                    </Text>
-                    <Text as="span">Credit/Debit Card</Text>
-                  </Box>
-                ),
-              },
-              {
-                value: 'cash',
-                label: (
-                  <Box className={styles.paymentCard}>
-                    <Text as="span" className={styles.cardIcon} role="img" aria-label="Cash">
-                      💵
-                    </Text>
-                    <Text as="span">Cash</Text>
-                  </Box>
-                ),
-              },
-              {
-                value: 'mobile',
-                label: (
-                  <Box className={styles.paymentCard}>
-                    <Text
-                      as="span"
-                      className={styles.cardIcon}
-                      role="img"
-                      aria-label="Mobile payment"
-                    >
-                      📱
-                    </Text>
-                    <Text as="span">Mobile Payment</Text>
-                  </Box>
-                ),
-              },
-            ]}
-          />
-          <Box className={styles.cardForm}>
-            <FormField label="Card Number">
-              <Input placeholder="1234 5678 9012 3456" />
-            </FormField>
-            <Box className={styles.formRow}>
-              <FormField label="Expiry Date">
-                <Input placeholder="MM/YY" />
-              </FormField>
-              <FormField label="CVV">
-                <Input placeholder="123" />
-              </FormField>
-            </Box>
-          </Box>
-        </Box>
+      <Grid columns={2} gap="md" width="full">
+        <Card>
+          <CardBody>
+            <Stack gap="md">
+              <Text variant="heading3" weight="semibold">
+                Payment Method
+              </Text>
+              <RadioGroup
+                name="payment"
+                value={paymentMethod}
+                onChange={setPaymentMethod}
+                options={[
+                  {
+                    value: 'card',
+                    label: (
+                      <Inline gap="md">
+                        <Text role="img" aria-label="Credit card">
+                          💳
+                        </Text>
+                        <Text>Credit/Debit Card</Text>
+                      </Inline>
+                    ),
+                  },
+                  {
+                    value: 'cash',
+                    label: (
+                      <Inline gap="md">
+                        <Text role="img" aria-label="Cash">
+                          💵
+                        </Text>
+                        <Text>Cash</Text>
+                      </Inline>
+                    ),
+                  },
+                  {
+                    value: 'mobile',
+                    label: (
+                      <Inline gap="md">
+                        <Text role="img" aria-label="Mobile payment">
+                          📱
+                        </Text>
+                        <Text>Mobile Payment</Text>
+                      </Inline>
+                    ),
+                  },
+                ]}
+              />
+              <Stack gap="sm">
+                <FormField label="Card Number">
+                  <Input placeholder="1234 5678 9012 3456" />
+                </FormField>
+                <FormRow>
+                  <FormField label="Expiry Date">
+                    <Input placeholder="MM/YY" />
+                  </FormField>
+                  <FormField label="CVV">
+                    <Input placeholder="123" />
+                  </FormField>
+                </FormRow>
+              </Stack>
+            </Stack>
+          </CardBody>
+        </Card>
 
-        <Box className={styles.invoiceSection}>
-          <Text as="h3" variant="heading3" className={styles.sectionTitle}>
-            Invoice Details
-          </Text>
-          <Stack gap="sm" className={styles.invoiceInfo}>
-            <Box className={styles.infoRow}>
-              <Text as="span">Invoice #</Text>
-              <Text as="span">INV-2025-001</Text>
-            </Box>
-            <Box className={styles.infoRow}>
-              <Text as="span">Date</Text>
-              <Text as="span">{new Date().toLocaleDateString()}</Text>
-            </Box>
-            <Box className={styles.infoRow}>
-              <Text as="span">Customer</Text>
-              <Text as="span">Walk-in Customer</Text>
-            </Box>
-          </Stack>
+        <Card>
+          <CardBody>
+            <Stack gap="md">
+              <Text variant="heading3" weight="semibold">
+                Invoice Details
+              </Text>
+              <Stack gap="sm">
+                <Inline justify="between" width="full">
+                  <Text color="secondary">Invoice #</Text>
+                  <Text>INV-2025-001</Text>
+                </Inline>
+                <Inline justify="between" width="full">
+                  <Text color="secondary">Date</Text>
+                  <Text>{new Date().toLocaleDateString()}</Text>
+                </Inline>
+                <Inline justify="between" width="full">
+                  <Text color="secondary">Customer</Text>
+                  <Text>Walk-in Customer</Text>
+                </Inline>
+              </Stack>
 
-          <Box className={styles.invoiceItems}>
-            <Box className={styles.invoiceHeader}>
-              <Text as="span">Item</Text>
-              <Text as="span">Qty</Text>
-              <Text as="span">Price</Text>
-              <Text as="span">Total</Text>
-            </Box>
-            <Box className={styles.invoiceItem}>
-              <Text as="span">Product Name</Text>
-              <Text as="span">2</Text>
-              <Text as="span">$99.99</Text>
-              <Text as="span">$199.98</Text>
-            </Box>
-          </Box>
+              <Stack gap="xs">
+                <Grid columns={4} gap="sm" width="full">
+                  <Text weight="semibold" color="secondary" variant="caption">
+                    Item
+                  </Text>
+                  <Text weight="semibold" color="secondary" variant="caption">
+                    Qty
+                  </Text>
+                  <Text weight="semibold" color="secondary" variant="caption">
+                    Price
+                  </Text>
+                  <Text weight="semibold" color="secondary" variant="caption">
+                    Total
+                  </Text>
+                </Grid>
+                <Grid columns={4} gap="sm" width="full">
+                  <Text>Product Name</Text>
+                  <Text>2</Text>
+                  <Text>$99.99</Text>
+                  <Text>$199.98</Text>
+                </Grid>
+              </Stack>
 
-          <Stack gap="sm" className={styles.invoiceTotal}>
-            <Box className={styles.totalRow}>
-              <Text as="span">Subtotal</Text>
-              <Text as="span">$199.98</Text>
-            </Box>
-            <Box className={styles.totalRow}>
-              <Text as="span">Tax (8%)</Text>
-              <Text as="span">$16.00</Text>
-            </Box>
-            <Box className={styles.totalRowFinal}>
-              <Text as="span">Total</Text>
-              <Text as="span">$215.98</Text>
-            </Box>
-          </Stack>
+              <Stack gap="sm">
+                <Inline justify="between" width="full">
+                  <Text color="secondary">Subtotal</Text>
+                  <Text color="secondary">$199.98</Text>
+                </Inline>
+                <Inline justify="between" width="full">
+                  <Text color="secondary">Tax (8%)</Text>
+                  <Text color="secondary">$16.00</Text>
+                </Inline>
+                <Inline justify="between" width="full">
+                  <Text variant="title" weight="bold">
+                    Total
+                  </Text>
+                  <Text variant="title" weight="bold">
+                    $215.98
+                  </Text>
+                </Inline>
+              </Stack>
 
-          <Button variant="solid" className={styles.processBtn}>
-            Process Payment
-          </Button>
-        </Box>
-      </Box>
+              <Button variant="solid" fullWidth>
+                Process Payment
+              </Button>
+            </Stack>
+          </CardBody>
+        </Card>
+      </Grid>
     </Stack>
   );
 }

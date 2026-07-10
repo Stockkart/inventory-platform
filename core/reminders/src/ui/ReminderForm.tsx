@@ -4,7 +4,6 @@ import type {
   UpdateReminderDto,
   Reminder,
 } from '@inventory-platform/reminders/types';
-import styles from './ReminderForm.module.css';
 import { useNotify } from '@inventory-platform/session';
 import {
   Alert,
@@ -102,12 +101,8 @@ export function ReminderForm({
   const statusId = 'status';
 
   return (
-    <Stack gap="md" className={styles.form}>
-      {error ? (
-        <Alert variant="danger" className={styles.errorMessage}>
-          {error}
-        </Alert>
-      ) : null}
+    <Stack gap="md">
+      {error ? <Alert variant="danger">{error}</Alert> : null}
 
       <FormField label="Reminder Date & Time" htmlFor={reminderAtId} required>
         <Input
@@ -157,22 +152,15 @@ export function ReminderForm({
         </FormField>
       ) : null}
 
-      <Inline gap="sm" className={styles.formActions}>
+      <Inline gap="sm" flexWrap>
         {onCancel ? (
-          <Button
-            type="button"
-            variant="outline"
-            className={styles.cancelButton}
-            onClick={onCancel}
-            disabled={isLoading}
-          >
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
             Cancel
           </Button>
         ) : null}
         <Button
           type="button"
           variant="solid"
-          className={styles.submitButton}
           onClick={() => void handleSubmit()}
           disabled={isLoading || !formData.reminderAt}
         >

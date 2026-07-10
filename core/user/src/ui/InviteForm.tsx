@@ -3,7 +3,6 @@ import { invitationsApi } from '../api/invitations.api';
 import { useNotify } from '@inventory-platform/session';
 import type { UserRole } from '@inventory-platform/user/types';
 import { Alert, Button, FormField, Select, Stack, Text } from '@inventory-platform/ui-kit';
-import styles from './InviteForm.module.css';
 const { error: notifyError, success: notifySuccess } = useNotify;
 
 interface InviteFormProps {
@@ -69,29 +68,18 @@ export function InviteForm({ shopId, onInviteSent, onError }: InviteFormProps) {
   };
 
   return (
-    <Stack className={styles.formContainer} gap="md">
-      <Stack className={styles.header} gap="xs">
-        <Text variant="title" className={styles.title}>
+    <Stack gap="md" width="full">
+      <Stack gap="xs">
+        <Text variant="title" weight="semibold">
           Send Invitation
         </Text>
-        <Text color="secondary" className={styles.subtitle}>
-          Invite a user to join your shop
-        </Text>
+        <Text color="secondary">Invite a user to join your shop</Text>
       </Stack>
 
-      {error ? (
-        <Alert variant="danger" className={styles.errorMessage}>
-          {error}
-        </Alert>
-      ) : null}
+      {error ? <Alert variant="danger">{error}</Alert> : null}
+      {success ? <Alert variant="success">{success}</Alert> : null}
 
-      {success ? (
-        <Alert variant="success" className={styles.successMessage}>
-          {success}
-        </Alert>
-      ) : null}
-
-      <Stack className={styles.form} gap="md">
+      <Stack gap="md" width="full">
         <FormField
           label="Email Address"
           id="inviteeEmail"
@@ -110,7 +98,6 @@ export function InviteForm({ shopId, onInviteSent, onError }: InviteFormProps) {
         <FormField label="Role" id="role" required>
           <Select
             id="role"
-            className={styles.select}
             options={ROLE_OPTIONS}
             value={role}
             onChange={(e) => {
@@ -122,12 +109,7 @@ export function InviteForm({ shopId, onInviteSent, onError }: InviteFormProps) {
           />
         </FormField>
 
-        <Button
-          variant="solid"
-          className={styles.submitButton}
-          onClick={handleSubmit}
-          disabled={isLoading || !inviteeEmail.trim()}
-        >
+        <Button variant="solid" onClick={handleSubmit} disabled={isLoading || !inviteeEmail.trim()}>
           {isLoading ? 'Sending...' : 'Send Invitation'}
         </Button>
       </Stack>

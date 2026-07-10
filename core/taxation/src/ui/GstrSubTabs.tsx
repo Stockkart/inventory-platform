@@ -1,5 +1,4 @@
-import { Box, Button, Inline } from '@inventory-platform/ui-kit';
-import styles from './gstr.module.css';
+import { NavTabBar, NavTabButton } from './tabNav';
 
 export interface GstrSubTabDef<T extends string> {
   id: T;
@@ -20,24 +19,15 @@ export function GstrSubTabs<T extends string>({
   ariaLabel = 'GSTR report sections',
 }: GstrSubTabsProps<T>) {
   return (
-    <Box as="nav" aria-label={ariaLabel} className={styles.subTabBar}>
-      <Inline gap="none">
-        {tabs.map((tab) => {
-          const active = activeTab === tab.id;
-          return (
-            <Button
-              key={tab.id}
-              type="button"
-              size="sm"
-              variant="ghost"
-              className={active ? styles.subTabLinkActive : styles.subTabLink}
-              onClick={() => onTabChange(tab.id)}
-            >
-              {tab.label}
-            </Button>
-          );
-        })}
-      </Inline>
-    </Box>
+    <NavTabBar ariaLabel={ariaLabel}>
+      {tabs.map((tab) => (
+        <NavTabButton
+          key={tab.id}
+          active={activeTab === tab.id}
+          label={tab.label}
+          onClick={() => onTabChange(tab.id)}
+        />
+      ))}
+    </NavTabBar>
   );
 }

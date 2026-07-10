@@ -42,8 +42,14 @@ import {
   roundMoney,
   validatePaymentSplit,
 } from '../ui';
-import styles from './refund.module.css';
 import { useNotify } from '@inventory-platform/session';
+
+const numericCellStyle = {
+  textAlign: 'right' as const,
+  fontVariantNumeric: 'tabular-nums' as const,
+  whiteSpace: 'nowrap' as const,
+};
+const selectedCardStyle = { borderColor: '#3b82f6', boxShadow: '0 0 0 3px var(--focus-ring)' };
 
 export function meta() {
   return [
@@ -458,27 +464,30 @@ export function RefundPage() {
         description="Process customer sale returns and view return history"
       />
 
-      <Box as="nav" aria-label="Return sections" className={styles.tabBar}>
-        <Inline gap="none">
-          {processTabs.map((tab) => {
-            const active = activeTab === tab.id;
-            return (
-              <Button
-                key={tab.id}
-                type="button"
-                size="sm"
-                variant="ghost"
-                role="tab"
-                aria-selected={active}
-                className={active ? styles.tabActive : styles.tab}
-                onClick={() => handleTabChange(tab.id)}
-              >
-                {tab.label}
-              </Button>
-            );
-          })}
-        </Inline>
-      </Box>
+      <Inline gap="none" style={{ borderBottom: '1px solid var(--border-color)' }}>
+        {processTabs.map((tab) => {
+          const active = activeTab === tab.id;
+          return (
+            <Button
+              key={tab.id}
+              type="button"
+              size="sm"
+              variant="ghost"
+              role="tab"
+              aria-selected={active}
+              style={{
+                marginBottom: -1,
+                whiteSpace: 'nowrap',
+                borderBottom: active ? '2px solid #3b82f6' : '2px solid transparent',
+                borderRadius: 0,
+              }}
+              onClick={() => handleTabChange(tab.id)}
+            >
+              {tab.label}
+            </Button>
+          );
+        })}
+      </Inline>
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
       {success ? <Alert variant="success">{success}</Alert> : null}
@@ -495,7 +504,7 @@ export function RefundPage() {
                   Recent sales load automatically. Use the fields below to narrow the list.
                 </Text>
                 <Stack gap="sm">
-                  <Grid columns={3} gap="sm" className={styles.searchGrid}>
+                  <Grid columns={3} gap="sm">
                     <FormField label="Customer Name" id="customerName">
                       <Input
                         id="customerName"
@@ -581,9 +590,10 @@ export function RefundPage() {
                         return (
                           <Card
                             key={purchase.purchaseId}
-                            className={`${styles.selectableCard} ${
-                              isSelected ? styles.selectedCard : ''
-                            }`}
+                            style={{
+                              cursor: 'pointer',
+                              ...(isSelected ? selectedCardStyle : {}),
+                            }}
                             role="button"
                             tabIndex={0}
                             onClick={() => handleSelectPurchase(purchase)}
@@ -617,7 +627,16 @@ export function RefundPage() {
                                 </Grid>
 
                                 {isSelected && selectedPurchase ? (
-                                  <Stack gap="md" className={styles.refundSection}>
+                                  <Stack
+                                    gap="md"
+                                    style={{
+                                      marginTop: '1rem',
+                                      padding: '1.5rem',
+                                      borderTop: '1px solid var(--border-color)',
+                                      background: 'var(--bg-card)',
+                                      borderRadius: '8px',
+                                    }}
+                                  >
                                     <Text variant="heading3" weight="semibold">
                                       Select Items to Return
                                     </Text>
@@ -636,7 +655,7 @@ export function RefundPage() {
                                       />
                                     </Grid>
 
-                                    <Box className={styles.tableScroll}>
+                                    <Box overflow="auto">
                                       <Table>
                                         <TableHead>
                                           <TableRow>
@@ -645,7 +664,7 @@ export function RefundPage() {
                                             <TableHeaderCell>Selling Price</TableHeaderCell>
                                             <TableHeaderCell>Purchased Qty</TableHeaderCell>
                                             <TableHeaderCell>GST rates</TableHeaderCell>
-                                            <TableHeaderCell className={styles.numericCol}>
+                                            <TableHeaderCell style={numericCellStyle}>
                                               Est. credit
                                             </TableHeaderCell>
                                             <TableHeaderCell>Return Qty</TableHeaderCell>
@@ -672,7 +691,7 @@ export function RefundPage() {
                                                   {formatGstRatesLabelForSaleLine(item)}
                                                 </TableCell>
                                                 <TableCell
-                                                  className={styles.numericCol}
+                                                  style={numericCellStyle}
                                                   title={lineEst?.title}
                                                 >
                                                   {lineEst != null
@@ -691,7 +710,7 @@ export function RefundPage() {
                                                         e.target.value,
                                                       )
                                                     }
-                                                    className={styles.quantityInput}
+                                                    style={{ width: '5rem', textAlign: 'center' }}
                                                     disabled={isLoading}
                                                     aria-label={`Return quantity for ${item.name}`}
                                                   />
@@ -703,7 +722,12 @@ export function RefundPage() {
                                       </Table>
                                     </Box>
 
-                                    <Box className={styles.refundSummary}>
+                                    <Box
+                                      padding="md"
+                                      bg="surface"
+                                      rounded="md"
+                                      style={{ background: 'var(--bg-primary)' }}
+                                    >
                                       <Inline justify="between" align="center">
                                         <Text>Estimated return amount:</Text>
                                         <Text weight="semibold" variant="title">
@@ -713,7 +737,15 @@ export function RefundPage() {
                                     </Box>
 
                                     {estimatedRefund.linesWithQty > 0 ? (
-                                      <Stack gap="xs" className={styles.returnEstimateBanner}>
+                                      <Stack
+                                        gap="xs"
+                                        padding="sm"
+                                        rounded="md"
+                                        border
+                                        style={{
+                                          background: 'var(--hover-bg, rgba(59, 130, 246, 0.06))',
+                                        }}
+                                      >
                                         <Text weight="semibold">
                                           Estimated credit total:{' '}
                                           {formatCurrency(estimatedRefund.grandTotal)}
@@ -721,7 +753,7 @@ export function RefundPage() {
                                         <Text
                                           variant="caption"
                                           color="secondary"
-                                          className={styles.returnEstimateMuted}
+                                          style={{ display: 'block', marginTop: '0.35rem' }}
                                         >
                                           Same as server: selling price × return qty per line. Hover
                                           “Est. credit” for a notional GST split when rates apply.
@@ -731,7 +763,13 @@ export function RefundPage() {
                                     ) : null}
 
                                     {estimatedRefund.linesWithQty > 0 ? (
-                                      <Stack gap="sm" className={styles.returnPaymentSection}>
+                                      <Stack
+                                        gap="sm"
+                                        style={{
+                                          paddingTop: '1rem',
+                                          borderTop: '1px solid var(--border-color, #e5e7eb)',
+                                        }}
+                                      >
                                         <PaymentMethodSplit
                                           context="sale"
                                           title="How are you refunding?"
@@ -753,7 +791,7 @@ export function RefundPage() {
                                           <Text
                                             variant="caption"
                                             color="secondary"
-                                            className={styles.returnPaymentHint}
+                                            style={{ marginTop: '0.25rem' }}
                                           >
                                             ₹{paymentSplit.creditAmount.toFixed(2)} reduces customer
                                             credit (they owe you less).

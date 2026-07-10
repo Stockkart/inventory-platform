@@ -128,10 +128,6 @@ export function generateInventoryWorkspaceAliases({
     '@inventory-platform/pricing/api': core('pricing', 'src/api/index.ts'),
     '@inventory-platform/pricing': core('pricing', 'src/index.ts'),
     '@inventory-platform/product/api': core('product', 'src/api/index.ts'),
-    '@inventory-platform/product/pages/product-search.module.css': core(
-      'product',
-      'src/pages/product-search.module.css',
-    ),
     '@inventory-platform/product/pages/scan-sell.module.css': core(
       'product',
       'src/pages/scan-sell.module.css',

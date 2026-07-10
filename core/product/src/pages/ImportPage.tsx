@@ -10,6 +10,7 @@ import type {
 import type { Vendor } from '@inventory-platform/user/types';
 import {
   Badge,
+  Box,
   Button,
   Card,
   CardBody,
@@ -32,7 +33,8 @@ import {
   type SelectOptionDef,
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
-import styles from './import.module.css';
+
+const hiddenFileInputStyle = { display: 'none' } as const;
 
 const BILLING_MODE_OPTIONS: readonly SelectOptionDef[] = [
   { value: 'REGULAR', label: 'REGULAR' },
@@ -244,7 +246,7 @@ export function ImportPage() {
     return editing ? (
       <Input
         type={numeric ? 'number' : 'text'}
-        className={styles.cellInput}
+        style={{ width: '100%', minWidth: '60px' }}
         value={display}
         autoFocus
         onBlur={() => setEditingCell(null)}
@@ -262,7 +264,13 @@ export function ImportPage() {
         type="button"
         variant="ghost"
         size="sm"
-        className={styles.cellValue}
+        style={{
+          display: 'block',
+          minHeight: '1.5em',
+          cursor: 'pointer',
+          padding: '0.15rem 0',
+          borderRadius: '4px',
+        }}
         onClick={() => setEditingCell({ rowIdx, field })}
         title="Click to edit"
       >
@@ -291,7 +299,7 @@ export function ImportPage() {
               id={fileInputId}
               type="file"
               accept=".xls,.xlsx"
-              className={styles.fileInput}
+              style={hiddenFileInputStyle}
               onChange={(e) => {
                 const f = e.target.files?.[0];
                 if (f) {
@@ -342,22 +350,24 @@ export function ImportPage() {
       {importTableItems.length > 0 ? (
         <Stack gap="md">
           <Card>
-            <CardHeader className={styles.tableHeader}>
-              <Text variant="heading3" weight="semibold">
-                Review ({importTableItems.length} items)
-              </Text>
-              {importTableItems.length > importTablePageSize ? (
-                <PaginationBar
-                  compact
-                  page={importTablePage}
-                  totalPages={Math.ceil(importTableItems.length / importTablePageSize)}
-                  totalItems={importTableItems.length}
-                  onPageChange={setImportTablePage}
-                  aria-label="Import preview pages"
-                />
-              ) : null}
+            <CardHeader>
+              <Inline justify="between" align="center" flexWrap gap="sm" width="full">
+                <Text variant="heading3" weight="semibold">
+                  Review ({importTableItems.length} items)
+                </Text>
+                {importTableItems.length > importTablePageSize ? (
+                  <PaginationBar
+                    compact
+                    page={importTablePage}
+                    totalPages={Math.ceil(importTableItems.length / importTablePageSize)}
+                    totalItems={importTableItems.length}
+                    onPageChange={setImportTablePage}
+                    aria-label="Import preview pages"
+                  />
+                ) : null}
+              </Inline>
             </CardHeader>
-            <CardBody className={styles.tableBody}>
+            <CardBody style={{ paddingTop: 0 }}>
               <Table>
                 <TableHead>
                   <TableRow>
@@ -365,14 +375,14 @@ export function ImportPage() {
                     <TableHeaderCell>Barcode</TableHeaderCell>
                     <TableHeaderCell>Name</TableHeaderCell>
                     <TableHeaderCell>Company</TableHeaderCell>
-                    <TableHeaderCell className={styles.numCol}>Count</TableHeaderCell>
-                    <TableHeaderCell className={styles.numCol}>MRP</TableHeaderCell>
-                    <TableHeaderCell className={styles.numCol}>Cost</TableHeaderCell>
-                    <TableHeaderCell className={styles.numCol}>Sales Price</TableHeaderCell>
+                    <TableHeaderCell style={{ textAlign: 'right' }}>Count</TableHeaderCell>
+                    <TableHeaderCell style={{ textAlign: 'right' }}>MRP</TableHeaderCell>
+                    <TableHeaderCell style={{ textAlign: 'right' }}>Cost</TableHeaderCell>
+                    <TableHeaderCell style={{ textAlign: 'right' }}>Sales Price</TableHeaderCell>
                     <TableHeaderCell>Batch</TableHeaderCell>
                     <TableHeaderCell>Expiry</TableHeaderCell>
-                    <TableHeaderCell className={styles.numCol}>Deal</TableHeaderCell>
-                    <TableHeaderCell className={styles.numCol}>Free</TableHeaderCell>
+                    <TableHeaderCell style={{ textAlign: 'right' }}>Deal</TableHeaderCell>
+                    <TableHeaderCell style={{ textAlign: 'right' }}>Free</TableHeaderCell>
                     <TableHeaderCell>Rec.Date</TableHeaderCell>
                   </TableRow>
                 </TableHead>
@@ -380,7 +390,12 @@ export function ImportPage() {
                   {visibleRows.map((row, idx) => {
                     const globalIdx = importTablePage * importTablePageSize + idx;
                     return (
-                      <TableRow key={row.id} className={idx % 2 === 1 ? styles.altRow : undefined}>
+                      <TableRow
+                        key={row.id}
+                        style={
+                          idx % 2 === 1 ? { background: 'var(--bg-muted, #fafbfc)' } : undefined
+                        }
+                      >
                         <TableCell>{globalIdx + 1}</TableCell>
                         <TableCell>
                           <EditableCell rowIdx={globalIdx} field="barcode" value={row.barcode} />
@@ -395,7 +410,7 @@ export function ImportPage() {
                             value={row.companyName}
                           />
                         </TableCell>
-                        <TableCell className={styles.numCol}>
+                        <TableCell style={{ textAlign: 'right' }}>
                           <EditableCell
                             rowIdx={globalIdx}
                             field="count"
@@ -403,7 +418,7 @@ export function ImportPage() {
                             numeric
                           />
                         </TableCell>
-                        <TableCell className={styles.numCol}>
+                        <TableCell style={{ textAlign: 'right' }}>
                           <EditableCell
                             rowIdx={globalIdx}
                             field="maximumRetailPrice"
@@ -411,7 +426,7 @@ export function ImportPage() {
                             numeric
                           />
                         </TableCell>
-                        <TableCell className={styles.numCol}>
+                        <TableCell style={{ textAlign: 'right' }}>
                           <EditableCell
                             rowIdx={globalIdx}
                             field="costPrice"
@@ -419,7 +434,7 @@ export function ImportPage() {
                             numeric
                           />
                         </TableCell>
-                        <TableCell className={styles.numCol}>
+                        <TableCell style={{ textAlign: 'right' }}>
                           <EditableCell
                             rowIdx={globalIdx}
                             field="priceToRetail"
@@ -437,7 +452,7 @@ export function ImportPage() {
                             value={row.expiryDate ? row.expiryDate.slice(0, 10) : null}
                           />
                         </TableCell>
-                        <TableCell className={styles.numCol}>
+                        <TableCell style={{ textAlign: 'right' }}>
                           <EditableCell
                             rowIdx={globalIdx}
                             field="schemePayFor"
@@ -445,7 +460,7 @@ export function ImportPage() {
                             numeric
                           />
                         </TableCell>
-                        <TableCell className={styles.numCol}>
+                        <TableCell style={{ textAlign: 'right' }}>
                           <EditableCell
                             rowIdx={globalIdx}
                             field="schemeFree"
@@ -474,34 +489,42 @@ export function ImportPage() {
                 <Text variant="heading3" weight="semibold">
                   Vendor
                 </Text>
-                <Inline gap="sm" className={styles.sharedRow}>
+                <Inline gap="sm" flexWrap>
                   <Select
                     value={billingMode}
                     options={BILLING_MODE_OPTIONS}
                     onChange={(e) => setBillingMode(e.target.value as BillingMode)}
                   />
-                  <SearchInput
-                    value={vendorSearchQuery}
-                    onChange={(value) => {
-                      setVendorSearchQuery(value);
-                      setShowVendorDropdown(false);
-                    }}
-                    onSearch={() => void handleVendorSearch()}
-                    showSearchButton
-                    placeholder="Search vendor"
-                    searchLabel="Search"
-                    className={styles.vendorSearch}
-                  />
+                  <Box width="full" style={{ flex: 1, minWidth: '12rem' }}>
+                    <SearchInput
+                      value={vendorSearchQuery}
+                      onChange={(value) => {
+                        setVendorSearchQuery(value);
+                        setShowVendorDropdown(false);
+                      }}
+                      onSearch={() => void handleVendorSearch()}
+                      showSearchButton
+                      placeholder="Search vendor"
+                      searchLabel="Search"
+                    />
+                  </Box>
                 </Inline>
                 {showVendorDropdown && vendorSearchResults.length > 0 ? (
-                  <Stack gap="none" className={styles.vendorList}>
+                  <Stack
+                    gap="none"
+                    border
+                    rounded="md"
+                    overflow="auto"
+                    style={{ maxHeight: '180px' }}
+                  >
                     {vendorSearchResults.map((v) => (
                       <Button
                         key={v.vendorId}
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className={styles.vendorListItem}
+                        fullWidth
+                        style={{ justifyContent: 'flex-start', borderRadius: 0 }}
                         onClick={() => handleSelectVendor(v)}
                       >
                         {v.name}

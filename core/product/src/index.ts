@@ -52,7 +52,6 @@ export {
   CustomerProductHistoryHint,
   useCustomerProductHistory,
   HistoryListSummary,
-  historyRecordListStyles,
   EMPTY_HISTORY_FILTERS,
   hasActiveHistoryFilters,
   isDateInRange,

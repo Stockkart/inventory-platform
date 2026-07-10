@@ -6,6 +6,8 @@ import {
   Alert,
   Box,
   Button,
+  Card,
+  CardBody,
   Checkbox,
   Divider,
   FormField,
@@ -13,7 +15,7 @@ import {
   Stack,
   Text,
 } from '@inventory-platform/ui-kit';
-import styles from './SignupForm.module.css';
+import styles from './LoginForm.module.css';
 
 export function SignupForm() {
   const navigate = useNavigate();
@@ -101,131 +103,116 @@ export function SignupForm() {
   const displayError = localError || error;
 
   return (
-    <Stack className={styles.formContainer} gap="md">
-      <Stack className={styles.header} gap="xs">
-        <Text variant="heading1" className={styles.title}>
-          Create Account
-        </Text>
-        <Text color="secondary" className={styles.subtitle}>
-          Get started with StockKart today
-        </Text>
-      </Stack>
+    <Card>
+      <CardBody>
+        <Stack gap="md" width="full">
+          <Stack gap="xs" align="center">
+            <Text variant="heading1">Create Account</Text>
+            <Text color="secondary">Get started with StockKart today</Text>
+          </Stack>
 
-      {displayError ? (
-        <Alert variant="danger" className={styles.errorMessage}>
-          {displayError}
-        </Alert>
-      ) : null}
+          {displayError ? <Alert variant="danger">{displayError}</Alert> : null}
 
-      <Stack className={styles.form} gap="md">
-        <FormField
-          label="Full Name"
-          id="name"
-          placeholder="Enter your full name"
-          value={formData.name}
-          onChange={(v) => {
-            setFormData({ ...formData, name: v });
-            clearErrors();
-          }}
-          required
-          disabled={isLoading}
-        />
+          <Stack gap="md" width="full">
+            <FormField
+              label="Full Name"
+              id="name"
+              placeholder="Enter your full name"
+              value={formData.name}
+              onChange={(v) => {
+                setFormData({ ...formData, name: v });
+                clearErrors();
+              }}
+              required
+              disabled={isLoading}
+            />
 
-        <FormField
-          label="Email"
-          id="email"
-          type="email"
-          placeholder="Enter your email"
-          value={formData.email}
-          onChange={(v) => {
-            setFormData({ ...formData, email: v });
-            clearErrors();
-          }}
-          required
-          disabled={isLoading}
-        />
+            <FormField
+              label="Email"
+              id="email"
+              type="email"
+              placeholder="Enter your email"
+              value={formData.email}
+              onChange={(v) => {
+                setFormData({ ...formData, email: v });
+                clearErrors();
+              }}
+              required
+              disabled={isLoading}
+            />
 
-        <FormField
-          label="Password"
-          id="password"
-          type="password"
-          placeholder="Create a password"
-          value={formData.password}
-          onChange={(v) => {
-            setFormData({ ...formData, password: v });
-            clearErrors();
-          }}
-          required
-          disabled={isLoading}
-        />
+            <FormField
+              label="Password"
+              id="password"
+              type="password"
+              placeholder="Create a password"
+              value={formData.password}
+              onChange={(v) => {
+                setFormData({ ...formData, password: v });
+                clearErrors();
+              }}
+              required
+              disabled={isLoading}
+            />
 
-        <FormField
-          label="Confirm Password"
-          id="confirmPassword"
-          type="password"
-          placeholder="Confirm your password"
-          value={formData.confirmPassword}
-          onChange={(v) => {
-            setFormData({ ...formData, confirmPassword: v });
-            clearErrors();
-          }}
-          required
-          disabled={isLoading}
-        />
+            <FormField
+              label="Confirm Password"
+              id="confirmPassword"
+              type="password"
+              placeholder="Confirm your password"
+              value={formData.confirmPassword}
+              onChange={(v) => {
+                setFormData({ ...formData, confirmPassword: v });
+                clearErrors();
+              }}
+              required
+              disabled={isLoading}
+            />
 
-        <Box className={styles.checkboxGroup}>
-          <Checkbox
-            required
-            label={
-              <>
-                I agree to the{' '}
-                <UiLink href="#terms" className={styles.termsLink}>
-                  Terms of Service
-                </UiLink>{' '}
-                and{' '}
-                <UiLink href="#privacy" className={styles.termsLink}>
-                  Privacy Policy
-                </UiLink>
-              </>
-            }
-          />
-        </Box>
+            <Checkbox
+              required
+              label={
+                <>
+                  I agree to the <UiLink href="#terms">Terms of Service</UiLink> and{' '}
+                  <UiLink href="#privacy">Privacy Policy</UiLink>
+                </>
+              }
+            />
 
-        <Button
-          variant="solid"
-          className={styles.submitButton}
-          onClick={() => void handleSubmit()}
-          disabled={isLoading}
-          loading={isLoading}
-        >
-          {isLoading ? 'Creating Account...' : 'Create Account'}
-        </Button>
-      </Stack>
+            <Button
+              variant="solid"
+              onClick={() => void handleSubmit()}
+              disabled={isLoading}
+              loading={isLoading}
+              fullWidth
+            >
+              {isLoading ? 'Creating Account...' : 'Create Account'}
+            </Button>
+          </Stack>
 
-      <Divider label="or" className={styles.divider} />
+          <Divider label="or" />
 
-      <Box className={styles.socialButtons}>
-        <GoogleLogin
-          onSuccess={handleGoogleSuccess}
-          onError={handleGoogleError}
-          useOneTap={false}
-          auto_select={false}
-          theme="outline"
-          size="large"
-          type="standard"
-          shape="pill"
-          ux_mode="popup"
-        />
-      </Box>
+          <Box className={styles.socialButtons}>
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+              useOneTap={false}
+              auto_select={false}
+              theme="outline"
+              size="large"
+              type="standard"
+              shape="pill"
+              ux_mode="popup"
+            />
+          </Box>
 
-      <Stack className={styles.footer} gap="xs">
-        <Text color="secondary" className={styles.footerText}>
-          Already have an account?{' '}
-          <Link to="/login" className={styles.link}>
-            Sign in
-          </Link>
-        </Text>
-      </Stack>
-    </Stack>
+          <Stack gap="xs" align="center">
+            <Text color="secondary">
+              Already have an account? <Link to="/login">Sign in</Link>
+            </Text>
+          </Stack>
+        </Stack>
+      </CardBody>
+    </Card>
   );
 }

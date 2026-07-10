@@ -19,7 +19,16 @@ import {
 } from '@inventory-platform/ui-kit';
 import { PrintInvoiceModal } from './PrintInvoiceModal';
 import { formatPaymentMethod, formatPaymentSplit } from './paymentMethod';
-import styles from './HistoryRecordList.module.css';
+
+const recordHeaderStyle = {
+  paddingBottom: '0.75rem',
+  borderBottom: '1px solid var(--border-color)',
+} as const;
+
+const breakdownWrapStyle = {
+  paddingTop: '1rem',
+  borderTop: '1px solid var(--border-color)',
+} as const;
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('en-IN', {
@@ -76,12 +85,12 @@ export function SaleHistoryCard({ purchase }: { purchase: Purchase }) {
 
   return (
     <>
-      <Card className={styles.recordCard}>
+      <Card>
         <CardBody>
           <Stack gap="md">
-            <Inline className={styles.recordHeader} justify="between" align="start" gap="md">
+            <Inline justify="between" align="start" gap="md" style={recordHeaderStyle}>
               <DetailLine label="Invoice" value={purchase.invoiceNo} />
-              <Inline className={styles.recordActions} gap="sm" align="center">
+              <Inline gap="sm" align="center" style={{ flexShrink: 0 }}>
                 <DetailLine label="Date" value={formatDate(purchase.soldAt)} />
                 {purchase.status === 'COMPLETED' ? (
                   <Button
@@ -107,7 +116,7 @@ export function SaleHistoryCard({ purchase }: { purchase: Purchase }) {
               </Inline>
             </Inline>
 
-            <Grid columns={2} gap="sm" className={styles.recordDetails}>
+            <Grid columns={2} gap="sm">
               <DetailLine label="Customer" value={purchase.customerName ?? '—'} />
               <DetailLine label="Phone" value={purchase.customerPhone ?? '—'} />
               <DetailLine label="Total" value={formatCurrency(purchase.grandTotal)} />
@@ -123,17 +132,17 @@ export function SaleHistoryCard({ purchase }: { purchase: Purchase }) {
             </Grid>
 
             {expanded && purchase.items.length > 0 ? (
-              <Stack gap="sm" className={styles.breakdownWrap}>
+              <Stack gap="sm" style={breakdownWrapStyle}>
                 <Text
                   variant="caption"
                   color="secondary"
                   weight="semibold"
-                  className={styles.breakdownTitle}
+                  style={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}
                 >
                   Line items
                 </Text>
-                <Box className={styles.breakdownScroll}>
-                  <Table className={styles.breakdownTable}>
+                <Box overflow="auto">
+                  <Table style={{ minWidth: '320px' }}>
                     <TableHead>
                       <TableRow>
                         <TableHeaderCell>Product</TableHeaderCell>

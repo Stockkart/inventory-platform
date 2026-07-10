@@ -1,7 +1,6 @@
 import type { BillingMode, InventoryItem } from '@inventory-platform/product/types';
 import { Badge, Button, Card, CardBody, Inline, Stack, Text } from '@inventory-platform/ui-kit';
 import { formatInventoryExpiryDate } from '@inventory-platform/schema';
-import styles from './product-search-card.module.css';
 
 export function normalizedBillingMode(item: InventoryItem): BillingMode {
   return item.billingMode === 'BASIC' ? 'BASIC' : 'REGULAR';
@@ -101,16 +100,14 @@ export function ProductSearchCard({
     item.scheme != null;
 
   return (
-    <Card className={styles.productCard}>
+    <Card>
       <CardBody>
         <Stack gap="xs">
           <Text variant="heading3" weight="semibold">
             {item.name || 'Unnamed Product'}
           </Text>
 
-          <Badge variant="info" className={styles.modeBadge}>
-            {normalizedBillingMode(item)}
-          </Badge>
+          <Badge variant="info">{normalizedBillingMode(item)}</Badge>
 
           {item.companyName ? (
             <Text variant="caption" color="muted">
@@ -128,7 +125,7 @@ export function ProductSearchCard({
             </Text>
           ) : null}
 
-          <Stack gap="xs" className={styles.productDetails}>
+          <Stack gap="xs" padding="sm" style={{ borderTop: '1px solid var(--border-color)' }}>
             <Stack gap="xs">
               <Text variant="caption" color="secondary">
                 Current: {item.currentCount}
@@ -138,20 +135,15 @@ export function ProductSearchCard({
               </Text>
             </Stack>
 
-            <Stack gap="xs" className={styles.priceInfo}>
-              <Text variant="caption" color="secondary" weight="semibold" className={styles.price}>
+            <Stack gap="xs">
+              <Text variant="caption" color="secondary" weight="semibold">
                 Selling Price: ₹{price != null ? price.toFixed(2) : '—'}
               </Text>
-              <Text variant="caption" color="secondary" weight="semibold" className={styles.price}>
+              <Text variant="caption" color="secondary" weight="semibold">
                 MRP: ₹{item.maximumRetailPrice != null ? item.maximumRetailPrice.toFixed(2) : '—'}
               </Text>
               {item.saleAdditionalDiscount != null ? (
-                <Text
-                  variant="caption"
-                  color="secondary"
-                  weight="semibold"
-                  className={styles.price}
-                >
+                <Text variant="caption" color="secondary" weight="semibold">
                   Additional Discount: {item.saleAdditionalDiscount.toFixed(2)}%
                 </Text>
               ) : null}
@@ -163,7 +155,7 @@ export function ProductSearchCard({
 
             {hasMeta ? (
               <>
-                <Inline gap="sm" className={styles.productMeta}>
+                <Inline gap="sm" flexWrap>
                   {typeLabel ? (
                     <Text variant="caption" color="secondary" weight="medium">
                       Type: {typeLabel}
@@ -190,12 +182,12 @@ export function ProductSearchCard({
           </Stack>
 
           {item.description ? (
-            <Text variant="caption" color="secondary" className={styles.description}>
+            <Text variant="caption" color="secondary" style={{ fontStyle: 'italic' }}>
               {item.description}
             </Text>
           ) : null}
 
-          <Inline gap="sm" className={styles.actionButtons}>
+          <Inline gap="sm" width="full">
             <Button
               type="button"
               variant="outline"
@@ -212,7 +204,6 @@ export function ProductSearchCard({
               variant="solid"
               size="sm"
               fullWidth
-              className={styles.addToSellBtn}
               onClick={() => onAddToSell(item)}
               disabled={isPageLoading || isAddingToCart || outOfStock || priceMissing}
               loading={isAddingToCart}

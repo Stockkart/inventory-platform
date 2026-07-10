@@ -16,7 +16,6 @@ import {
 import { useAuthStore } from '@inventory-platform/session';
 import { usersApi } from '@inventory-platform/session/api';
 import type { ShopMembership } from '@inventory-platform/session/types';
-import styles from './shops.module.css';
 
 export function meta() {
   return [
@@ -71,67 +70,64 @@ export function ShopsPage() {
 
   if (loading) {
     return (
-      <Stack gap="md" className={styles.container}>
+      <Stack gap="md" width="full" maxWidth="lg" mx="auto">
         <CenteredLoader label="Loading shops…" />
       </Stack>
     );
   }
 
   return (
-    <Stack gap="md" className={styles.container}>
+    <Stack gap="md" width="full" maxWidth="lg" mx="auto">
       <PageHeader title="Your Shops" description="Switch between your shops or add a new one" />
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
-      <Stack gap="lg" className={styles.content}>
-        <Grid className={styles.shopGrid}>
+      <Stack gap="lg" width="full">
+        <Grid columns={3} gap="md" width="full">
           {shops.map((s) => {
             const isActive = s.shopId === activeShopId;
             return (
               <Card
                 key={s.shopId}
-                className={`${styles.shopCard} ${isActive ? styles.active : ''}`}
+                style={
+                  isActive
+                    ? { borderColor: '#3b82f6', background: 'rgba(59, 130, 246, 0.05)' }
+                    : undefined
+                }
               >
                 <CardBody>
-                  <Inline gap="sm" className={styles.shopCardHeader}>
-                    <Text className={styles.shopIcon}>🏪</Text>
-                    <Text variant="title" weight="semibold" className={styles.shopName}>
-                      {s.shopName}
-                    </Text>
-                  </Inline>
-                  <Inline gap="sm" className={styles.shopMeta}>
-                    <Badge variant="info" className={styles.role}>
-                      {s.role}
-                    </Badge>
-                    {s.relationship ? (
-                      <Text color="secondary" className={styles.relationship}>
-                        {s.relationship}
+                  <Stack gap="md">
+                    <Inline gap="sm" align="start" width="full">
+                      <Text>🏪</Text>
+                      <Text variant="title" weight="semibold">
+                        {s.shopName}
                       </Text>
-                    ) : null}
-                  </Inline>
-                  {isActive ? (
-                    <Badge variant="info" className={styles.activeBadge}>
-                      Current shop
-                    </Badge>
-                  ) : (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className={styles.switchBtn}
-                      onClick={() => handleSwitch(s.shopId)}
-                      disabled={!!switchingId}
-                    >
-                      {switchingId === s.shopId ? 'Switching…' : 'Use this shop'}
-                    </Button>
-                  )}
+                    </Inline>
+                    <Inline gap="sm" align="center">
+                      <Badge variant="info">{s.role}</Badge>
+                      {s.relationship ? <Text color="secondary">{s.relationship}</Text> : null}
+                    </Inline>
+                    {isActive ? (
+                      <Badge variant="info">Current shop</Badge>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleSwitch(s.shopId)}
+                        disabled={!!switchingId}
+                      >
+                        {switchingId === s.shopId ? 'Switching…' : 'Use this shop'}
+                      </Button>
+                    )}
+                  </Stack>
                 </CardBody>
               </Card>
             );
           })}
         </Grid>
 
-        <Button type="button" variant="outline" className={styles.addBtn} onClick={handleAddShop}>
+        <Button type="button" variant="outline" onClick={handleAddShop}>
           + Add another shop
         </Button>
       </Stack>

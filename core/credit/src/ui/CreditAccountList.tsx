@@ -2,26 +2,14 @@ import type { CreditAccountResponse } from '@inventory-platform/credit/types';
 import { Box, Button, Text } from '@inventory-platform/ui-kit';
 import type { CreditBalanceTone } from '../model/credit-utils';
 import { presentCreditBalance } from '../model/credit-utils';
-import styles from './credit.module.css';
+import { accountBalHeadlineStyle, accountBalToneStyle, accountBtnStyle } from './creditStyles';
 
 type Props = {
   accounts: CreditAccountResponse[];
   selectedId: string | null;
   onSelect: (id: string) => void;
-  /** Shown when the filtered list is empty (e.g. no dues); not used for global empty shop state. */
   emptyMessage?: string;
 };
-
-function toneClass(tone: CreditBalanceTone): string {
-  const m: Record<CreditBalanceTone, string> = {
-    collect: styles.balCollect,
-    pay: styles.balPay,
-    advance_customer: styles.balAdvCustomer,
-    advance_vendor: styles.balAdvVendor,
-    settled: styles.balSettled,
-  };
-  return m[tone];
-}
 
 export function CreditAccountList({
   accounts,
@@ -30,38 +18,66 @@ export function CreditAccountList({
   emptyMessage = 'No credit accounts yet. Add a charge or settlement first.',
 }: Props) {
   if (!accounts.length) {
-    return <Text className={styles.empty}>{emptyMessage}</Text>;
+    return (
+      <Text color="secondary" variant="caption">
+        {emptyMessage}
+      </Text>
+    );
   }
 
   return (
-    <Box as="ul" className={styles.accountList}>
+    <Box
+      as="ul"
+      display="flex"
+      flexDirection="column"
+      gap="sm"
+      style={{ listStyle: 'none', margin: 0, padding: 0 }}
+    >
       {accounts.map((a) => {
         const active = a.id === selectedId;
         const pr = presentCreditBalance(a);
+        const tone = pr.tone as CreditBalanceTone;
         return (
           <Box as="li" key={a.id}>
             <Button
               type="button"
               variant="ghost"
-              className={`${styles.accountBtn} ${active ? styles.accountBtnActive : ''}`}
+              style={accountBtnStyle(active)}
               onClick={() => onSelect(a.id)}
             >
-              <Box as="span" className={styles.accountName}>
+              <Text as="span" weight="semibold">
                 {a.partyDisplayName}
-              </Box>
-              <Box as="span" className={styles.accountRole}>
+              </Text>
+              <Text as="span" variant="caption" color="secondary">
                 {a.partyType === 'CUSTOMER'
                   ? 'Customer — you collect from them'
                   : 'Vendor — you pay them'}
-              </Box>
-              <Box as="span" className={`${styles.accountBal} ${toneClass(pr.tone)}`}>
-                <Box as="span" className={styles.accountBalHeadline}>
+              </Text>
+              <Box
+                as="span"
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  alignItems: 'baseline',
+                  justifyContent: 'space-between',
+                  gap: '0.35rem 0.75rem',
+                  marginTop: '0.15rem',
+                  paddingTop: '0.35rem',
+                  borderTop: '1px dashed var(--sk-color-border-default)',
+                }}
+              >
+                <Text
+                  as="span"
+                  variant="caption"
+                  weight="bold"
+                  style={accountBalHeadlineStyle[tone]}
+                >
                   {pr.headline}
-                </Box>
+                </Text>
                 {pr.tone !== 'settled' ? (
-                  <Box as="span" className={styles.accountBalAmt}>
+                  <Text as="span" weight="bold" style={accountBalToneStyle[tone]}>
                     {pr.amountLine}
-                  </Box>
+                  </Text>
                 ) : null}
               </Box>
             </Button>

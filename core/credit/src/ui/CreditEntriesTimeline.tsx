@@ -1,7 +1,7 @@
 import type { CreditEntryResponse, CreditPartyType } from '@inventory-platform/credit/types';
-import { Box, Inline, Text } from '@inventory-platform/ui-kit';
+import { Box, Inline, Stack, Text } from '@inventory-platform/ui-kit';
 import { formatCreditLedgerEntry, formatMoney } from '../model/credit-utils';
-import styles from './credit.module.css';
+import { timelineReturnStyle } from './creditStyles';
 
 type Props = {
   entries: CreditEntryResponse[];
@@ -10,11 +10,15 @@ type Props = {
 
 export function CreditEntriesTimeline({ entries, partyType }: Props) {
   if (!entries.length) {
-    return <Text className={styles.empty}>No ledger entries for this party yet.</Text>;
+    return (
+      <Text color="secondary" variant="caption">
+        No ledger entries for this party yet.
+      </Text>
+    );
   }
 
   return (
-    <Box className={styles.timeline}>
+    <Stack gap="sm">
       {entries.map((e) => {
         const { title, subtitle } = formatCreditLedgerEntry(e, partyType);
         const isReturn =
@@ -23,32 +27,39 @@ export function CreditEntriesTimeline({ entries, partyType }: Props) {
         return (
           <Box
             key={e.id}
-            className={`${styles.timelineRow}${isReturn ? ` ${styles.timelineRowReturn}` : ''}`}
+            padding="sm"
+            rounded="md"
+            border
+            style={isReturn ? timelineReturnStyle : undefined}
           >
-            <Inline justify="between" className={styles.timelineHead}>
+            <Inline justify="between" gap="md">
               <Text weight="semibold">{title}</Text>
               <Text variant="caption">{new Date(e.createdAt).toLocaleString('en-IN')}</Text>
             </Inline>
-            <Box className={styles.timelineMeta}>{subtitle}</Box>
-            <Box className={styles.timelineMeta}>
+            <Text variant="caption" color="secondary">
+              {subtitle}
+            </Text>
+            <Text variant="caption" color="secondary">
               Amount: Rs {formatMoney(e.amount)} · Balance after: Rs {formatMoney(e.balanceAfter)}
-            </Box>
+            </Text>
             {e.entryType === 'SETTLEMENT' && e.paymentMethod ? (
-              <Box className={styles.timelineMeta}>
+              <Text variant="caption" color="secondary">
                 Paid via {e.paymentMethod}
                 {e.bankRef ? ` · ${e.bankRef}` : ''}
                 {e.txnDate ? ` · ${e.txnDate}` : ''}
-              </Box>
+              </Text>
             ) : null}
             {e.referenceType && e.referenceId ? (
-              <Box className={styles.timelineMeta}>
+              <Text variant="caption" color="secondary">
                 Ref: {e.referenceType} · {e.referenceId}
-              </Box>
+              </Text>
             ) : null}
-            <Box className={styles.timelineMeta}>{e.note?.trim() || '—'}</Box>
+            <Text variant="caption" color="secondary">
+              {e.note?.trim() || '—'}
+            </Text>
           </Box>
         );
       })}
-    </Box>
+    </Stack>
   );
 }

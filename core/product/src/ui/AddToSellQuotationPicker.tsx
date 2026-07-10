@@ -1,6 +1,5 @@
 import type { QuotationSummary } from '@inventory-platform/product/types';
 import { Button, Modal, Stack, Text } from '@inventory-platform/ui-kit';
-import styles from './AddToSellQuotationPicker.module.css';
 
 function formatMoney(n: number): string {
   return new Intl.NumberFormat('en-IN', {
@@ -43,27 +42,35 @@ export function AddToSellQuotationPicker({
             type="button"
             variant="outline"
             fullWidth
-            className={styles.newBtn}
+            style={{ borderStyle: 'dashed' }}
             onClick={onNewQuotation}
             disabled={isSubmitting}
           >
             + New quotation
           </Button>
 
-          <Stack gap="sm" className={styles.list} aria-label="Open quotations">
+          <Stack
+            gap="sm"
+            aria-label="Open quotations"
+            style={{ maxHeight: 'min(50vh, 320px)', overflowY: 'auto' }}
+          >
             {quotations.map((q) => (
               <Button
                 key={q.purchaseId}
                 type="button"
                 variant="outline"
-                className={styles.option}
                 onClick={() => onSelect(q.purchaseId)}
                 disabled={isSubmitting}
+                style={{
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  height: 'auto',
+                  padding: '0.65rem 0.75rem',
+                  textAlign: 'left',
+                }}
               >
-                <Text weight="semibold" className={styles.optionName}>
-                  {q.customerName}
-                </Text>
-                <Text variant="caption" color="muted" className={styles.optionMeta}>
+                <Text weight="semibold">{q.customerName}</Text>
+                <Text variant="caption" color="muted">
                   {q.itemCount} item{q.itemCount === 1 ? '' : 's'} ·{' '}
                   {formatMoney(Number(q.grandTotal) || 0)}
                   {q.customerPhone ? ` · ${q.customerPhone}` : ''}

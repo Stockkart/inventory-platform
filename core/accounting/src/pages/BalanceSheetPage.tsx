@@ -25,6 +25,7 @@ import type {
 import { AccountingTabs } from '../ui/AccountingTabs';
 import { formatDate, formatMoney, todayLocalDate } from '../model/format';
 import styles from '../ui/accounting.module.css';
+import { numColBoldStyle, numColStyle } from '../ui/tabNav';
 
 export function BalanceSheetPage() {
   const { error: notifyError } = useNotify;
@@ -53,14 +54,14 @@ export function BalanceSheetPage() {
   }, [asOf, notifyError]);
 
   return (
-    <Stack gap="md" className={styles.page}>
+    <Stack gap="md">
       <Stack gap="md">
         <AccountingTabs />
         <PageHeader
           title="Balance Sheet"
           description="Assets, liabilities, and equity as of the selected date (from trial balance)."
         />
-        <Inline gap="sm" className={styles.toolbar}>
+        <Inline gap="sm">
           <Text variant="label" color="secondary">
             As of
           </Text>
@@ -88,7 +89,7 @@ export function BalanceSheetPage() {
         </Card>
       ) : (
         <Stack gap="md">
-          <Grid gap="md" className={styles.kpiRow}>
+          <Grid gap="md">
             <Card>
               <CardBody>
                 <Stack gap="xs">
@@ -168,7 +169,7 @@ function BsSection({
                 <TableRow>
                   <TableHeaderCell>Code</TableHeaderCell>
                   <TableHeaderCell>Account</TableHeaderCell>
-                  <TableHeaderCell className={styles.right}>Balance</TableHeaderCell>
+                  <TableHeaderCell style={numColStyle}>Balance</TableHeaderCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -176,16 +177,12 @@ function BsSection({
                   <TableRow key={r.accountId}>
                     <TableCell>{r.accountCode}</TableCell>
                     <TableCell>{r.accountName}</TableCell>
-                    <TableCell className={`${styles.right} ${styles.number}`}>
-                      {formatMoney(r.amount)}
-                    </TableCell>
+                    <TableCell style={numColBoldStyle}>{formatMoney(r.amount)}</TableCell>
                   </TableRow>
                 ))}
                 <TableRow className={styles.subTotalRow}>
                   <TableCell colSpan={2}>Total {title.toLowerCase()}</TableCell>
-                  <TableCell className={`${styles.right} ${styles.number}`}>
-                    {formatMoney(total)}
-                  </TableCell>
+                  <TableCell style={numColBoldStyle}>{formatMoney(total)}</TableCell>
                 </TableRow>
               </TableBody>
             </Table>

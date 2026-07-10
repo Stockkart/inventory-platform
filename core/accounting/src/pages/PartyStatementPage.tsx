@@ -25,9 +25,9 @@ import { accountingApi } from '../api/accounting.api';
 import { useNotify } from '@inventory-platform/session';
 import type { PartyStatementResponse } from '@inventory-platform/accounting/types';
 import { AccountingTabs } from '../ui/AccountingTabs';
+import { numColBoldStyle, numColStyle } from '../ui/tabNav';
 import type { SubsidiaryPartyType } from './PartiesPage';
 import { formatDate, formatMoney } from '../model/format';
-import styles from '../ui/accounting.module.css';
 
 export interface PartyStatementPageProps {
   partyType: SubsidiaryPartyType;
@@ -83,7 +83,7 @@ export function PartyStatementPage({ partyType }: PartyStatementPageProps) {
 
   if (!partyRefId) {
     return (
-      <Stack gap="md" className={styles.page}>
+      <Stack gap="md">
         <Card>
           <CardBody>
             <Inline gap="xs" align="center">
@@ -104,7 +104,7 @@ export function PartyStatementPage({ partyType }: PartyStatementPageProps) {
   }
 
   return (
-    <Stack gap="md" className={styles.page}>
+    <Stack gap="md">
       <Stack gap="md">
         <AccountingTabs />
         <PageHeader
@@ -118,7 +118,7 @@ export function PartyStatementPage({ partyType }: PartyStatementPageProps) {
             </Button>
           }
         />
-        <Inline gap="sm" className={styles.toolbar}>
+        <Inline gap="sm">
           <Text variant="label" color="secondary">
             From
           </Text>
@@ -157,7 +157,7 @@ export function PartyStatementPage({ partyType }: PartyStatementPageProps) {
         </Inline>
       </Stack>
 
-      <Grid columns={2} gap="md" className={styles.kpiRow}>
+      <Grid columns={2} gap="md">
         <Card>
           <CardBody>
             <Stack gap="xs">
@@ -202,9 +202,9 @@ export function PartyStatementPage({ partyType }: PartyStatementPageProps) {
                 <TableHeaderCell>Account</TableHeaderCell>
                 <TableHeaderCell>Source</TableHeaderCell>
                 <TableHeaderCell>Narration</TableHeaderCell>
-                <TableHeaderCell className={styles.right}>Debit</TableHeaderCell>
-                <TableHeaderCell className={styles.right}>Credit</TableHeaderCell>
-                <TableHeaderCell className={styles.right}>Balance</TableHeaderCell>
+                <TableHeaderCell style={numColStyle}>Debit</TableHeaderCell>
+                <TableHeaderCell style={numColStyle}>Credit</TableHeaderCell>
+                <TableHeaderCell style={numColStyle}>Balance</TableHeaderCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -239,22 +239,20 @@ export function PartyStatementPage({ partyType }: PartyStatementPageProps) {
                       </Button>
                     </TableCell>
                     <TableCell>
-                      <Badge className={styles.sourcePill}>{e.sourceType}</Badge>
+                      <Badge variant="info">{e.sourceType}</Badge>
                     </TableCell>
                     <TableCell>
                       <Text color="secondary" variant="caption">
                         {e.narration ?? '—'}
                       </Text>
                     </TableCell>
-                    <TableCell className={`${styles.right} ${styles.number}`}>
+                    <TableCell style={numColBoldStyle}>
                       {e.debit ? formatMoney(e.debit) : ''}
                     </TableCell>
-                    <TableCell className={`${styles.right} ${styles.number}`}>
+                    <TableCell style={numColBoldStyle}>
                       {e.credit ? formatMoney(e.credit) : ''}
                     </TableCell>
-                    <TableCell className={`${styles.right} ${styles.number}`}>
-                      {formatMoney(e.balanceAfter)}
-                    </TableCell>
+                    <TableCell style={numColBoldStyle}>{formatMoney(e.balanceAfter)}</TableCell>
                   </TableRow>
                 ))
               )}

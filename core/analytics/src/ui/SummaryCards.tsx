@@ -1,5 +1,4 @@
 import { Card, CardBody, Grid, Stack, Text } from '@inventory-platform/ui-kit';
-import styles from './analytics.module.css';
 
 interface SummaryCardsProps {
   data: {
@@ -42,7 +41,7 @@ export function SummaryCards({ data }: SummaryCardsProps) {
   };
 
   return (
-    <Grid className={styles.summaryGrid}>
+    <Grid columns={4} gap="md">
       <MetricCard
         label="Total Revenue"
         value={formatCurrency(data.summary.totalRevenue)}

@@ -6,6 +6,8 @@ import {
   Alert,
   Box,
   Button,
+  Card,
+  CardBody,
   Checkbox,
   Divider,
   FormField,
@@ -99,95 +101,86 @@ export function LoginForm() {
   const displayError = localError || error;
 
   return (
-    <Stack className={styles.formContainer} gap="md">
-      <Stack className={styles.header} gap="xs">
-        <Text variant="heading1" className={styles.title}>
-          Welcome Back
-        </Text>
-        <Text color="secondary" className={styles.subtitle}>
-          Sign in to your StockKart account
-        </Text>
-      </Stack>
+    <Card>
+      <CardBody>
+        <Stack gap="md" width="full">
+          <Stack gap="xs" align="center">
+            <Text variant="heading1">Welcome Back</Text>
+            <Text color="secondary">Sign in to your StockKart account</Text>
+          </Stack>
 
-      {displayError ? (
-        <Alert variant="danger" className={styles.errorMessage}>
-          {displayError}
-        </Alert>
-      ) : null}
+          {displayError ? <Alert variant="danger">{displayError}</Alert> : null}
 
-      <Stack className={styles.form} gap="md">
-        <FormField
-          label="Email"
-          id="email"
-          type="email"
-          placeholder="Enter your email"
-          value={formData.email}
-          onChange={(v) => {
-            setFormData({ ...formData, email: v });
-            clearErrors();
-          }}
-          disabled={isLoading}
-        />
+          <Stack gap="md" width="full">
+            <FormField
+              label="Email"
+              id="email"
+              type="email"
+              placeholder="Enter your email"
+              value={formData.email}
+              onChange={(v) => {
+                setFormData({ ...formData, email: v });
+                clearErrors();
+              }}
+              disabled={isLoading}
+            />
 
-        <FormField
-          label="Password"
-          id="password"
-          type="password"
-          placeholder="Enter your password"
-          value={formData.password}
-          onChange={(v) => {
-            setFormData({ ...formData, password: v });
-            clearErrors();
-          }}
-          disabled={isLoading}
-        />
+            <FormField
+              label="Password"
+              id="password"
+              type="password"
+              placeholder="Enter your password"
+              value={formData.password}
+              onChange={(v) => {
+                setFormData({ ...formData, password: v });
+                clearErrors();
+              }}
+              disabled={isLoading}
+            />
 
-        <Inline className={styles.options} justify="between" width="full">
-          <Checkbox label="Remember me" />
-          <Link to="/forgot-password" className={styles.forgotLink}>
-            Forgot password?
-          </Link>
-        </Inline>
+            <Inline justify="between" width="full">
+              <Checkbox label="Remember me" />
+              <Link to="/forgot-password">Forgot password?</Link>
+            </Inline>
 
-        <Button
-          variant="solid"
-          className={styles.submitButton}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            void handleSubmit();
-          }}
-          disabled={isLoading}
-          loading={isLoading}
-        >
-          {isLoading ? 'Signing In...' : 'Sign In'}
-        </Button>
+            <Button
+              variant="solid"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                void handleSubmit();
+              }}
+              disabled={isLoading}
+              loading={isLoading}
+              fullWidth
+            >
+              {isLoading ? 'Signing In...' : 'Sign In'}
+            </Button>
 
-        <Divider label="or" className={styles.divider} />
+            <Divider label="or" />
 
-        <Box className={styles.socialButtons}>
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={handleGoogleError}
-            useOneTap={false}
-            auto_select={false}
-            theme="outline"
-            size="large"
-            type="standard"
-            shape="pill"
-            ux_mode="popup"
-          />
-        </Box>
-      </Stack>
+            <Box className={styles.socialButtons}>
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                useOneTap={false}
+                auto_select={false}
+                theme="outline"
+                size="large"
+                type="standard"
+                shape="pill"
+                ux_mode="popup"
+              />
+            </Box>
+          </Stack>
 
-      <Stack className={styles.footer} gap="xs">
-        <Text color="secondary" className={styles.footerText}>
-          Don&apos;t have an account?{' '}
-          <Link to="/signup" className={styles.link}>
-            Sign up
-          </Link>
-        </Text>
-      </Stack>
-    </Stack>
+          <Stack gap="xs" align="center">
+            <Text color="secondary">
+              Don&apos;t have an account? <Link to="/signup">Sign up</Link>
+            </Text>
+          </Stack>
+        </Stack>
+      </CardBody>
+    </Card>
   );
 }

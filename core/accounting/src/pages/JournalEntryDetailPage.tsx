@@ -22,6 +22,7 @@ import { useJournalQuery, useReverseJournalMutation } from '../queries/hooks';
 import { AccountingTabs } from '../ui/AccountingTabs';
 import { formatDateTime, formatDate, formatMoney } from '../model/format';
 import styles from '../ui/accounting.module.css';
+import { numColBoldStyle, numColStyle } from '../ui/tabNav';
 
 function statusVariant(
   status: 'POSTED' | 'REVERSED' | 'VOID',
@@ -57,7 +58,7 @@ export function JournalEntryDetailPage() {
   }
 
   return (
-    <Stack gap="md" className={styles.page}>
+    <Stack gap="md">
       <Stack gap="md">
         <AccountingTabs />
         <PageHeader
@@ -104,7 +105,7 @@ export function JournalEntryDetailPage() {
                     label="Source"
                     value={
                       <Inline gap="xs" align="center">
-                        <Badge className={styles.sourcePill}>{entry.sourceType}</Badge>
+                        <Badge variant="info">{entry.sourceType}</Badge>
                         {entry.sourceId ? (
                           <Text variant="caption" color="secondary">
                             {entry.sourceId}
@@ -161,8 +162,8 @@ export function JournalEntryDetailPage() {
                     <TableHeaderCell>Account</TableHeaderCell>
                     <TableHeaderCell>Party</TableHeaderCell>
                     <TableHeaderCell>Memo</TableHeaderCell>
-                    <TableHeaderCell className={styles.right}>Debit</TableHeaderCell>
-                    <TableHeaderCell className={styles.right}>Credit</TableHeaderCell>
+                    <TableHeaderCell style={numColStyle}>Debit</TableHeaderCell>
+                    <TableHeaderCell style={numColStyle}>Credit</TableHeaderCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -192,24 +193,20 @@ export function JournalEntryDetailPage() {
                           {l.memo ?? '—'}
                         </Text>
                       </TableCell>
-                      <TableCell className={`${styles.right} ${styles.number}`}>
+                      <TableCell style={numColBoldStyle}>
                         {l.debit ? formatMoney(l.debit) : ''}
                       </TableCell>
-                      <TableCell className={`${styles.right} ${styles.number}`}>
+                      <TableCell style={numColBoldStyle}>
                         {l.credit ? formatMoney(l.credit) : ''}
                       </TableCell>
                     </TableRow>
                   ))}
                   <TableRow className={styles.grandTotalRow}>
-                    <TableCell colSpan={3} className={styles.right}>
+                    <TableCell colSpan={3} style={numColStyle}>
                       Totals
                     </TableCell>
-                    <TableCell className={`${styles.right} ${styles.number}`}>
-                      {formatMoney(entry.totalDebit)}
-                    </TableCell>
-                    <TableCell className={`${styles.right} ${styles.number}`}>
-                      {formatMoney(entry.totalCredit)}
-                    </TableCell>
+                    <TableCell style={numColBoldStyle}>{formatMoney(entry.totalDebit)}</TableCell>
+                    <TableCell style={numColBoldStyle}>{formatMoney(entry.totalCredit)}</TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
@@ -224,7 +221,7 @@ export function JournalEntryDetailPage() {
 function MetaRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <TableRow>
-      <TableHeaderCell className={styles.metaLabel}>{label}</TableHeaderCell>
+      <TableHeaderCell style={{ width: '12rem' }}>{label}</TableHeaderCell>
       <TableCell>{value}</TableCell>
     </TableRow>
   );

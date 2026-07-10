@@ -1,5 +1,4 @@
 import { Box, Inline, Stack, Text } from '@inventory-platform/ui-kit';
-import styles from './gstr.module.css';
 
 export interface GstrSummaryItem {
   label: string;
@@ -14,14 +13,14 @@ export function GstrSummaryGrid({ items }: GstrSummaryGridProps) {
   if (items.length === 0) return null;
 
   return (
-    <Box className={styles.summary}>
+    <Box bg="muted" rounded="md" padding="md">
       <Inline gap="lg" flexWrap>
         {items.map((item) => (
-          <Stack key={item.label} gap="xs" className={styles.summaryItem}>
-            <Text variant="caption" color="secondary" className={styles.summaryLabel}>
+          <Stack key={item.label} gap="xs" style={{ minWidth: '120px' }}>
+            <Text variant="caption" color="secondary" weight="semibold">
               {item.label}
             </Text>
-            <Text weight="semibold" className={styles.summaryValue}>
+            <Text weight="semibold" style={{ fontVariantNumeric: 'tabular-nums' }}>
               {item.value}
             </Text>
           </Stack>

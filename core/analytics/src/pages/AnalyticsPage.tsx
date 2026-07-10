@@ -6,13 +6,12 @@ import { VendorAnalytics } from '../ui/VendorAnalytics';
 import { CustomerAnalytics } from '../ui/CustomerAnalytics';
 import { InventoryAnalytics } from '../ui/InventoryAnalytics';
 import { AnalyticsTabs, type AnalyticsTabId } from '../ui/AnalyticsTabs';
-import styles from '../ui/analytics.module.css';
 
 export function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState<AnalyticsTabId>('sales');
 
   return (
-    <Stack gap="md" className={styles.page}>
+    <Stack gap="md" width="full" maxWidth="xl" mx="auto">
       <PageHeader
         title="Analytics Dashboard"
         description="Comprehensive insights on sales and profit performance"

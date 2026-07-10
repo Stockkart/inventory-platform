@@ -34,6 +34,7 @@ import type {
 import { AccountingTabs } from '../ui/AccountingTabs';
 import { formatDate, formatMoney } from '../model/format';
 import styles from '../ui/accounting.module.css';
+import { numColBoldStyle, numColStyle } from '../ui/tabNav';
 
 const TYPE_ORDER: AccountType[] = ['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE'];
 
@@ -155,7 +156,7 @@ export function LedgerPage() {
   const selectedBalance = selected ? balances.get(selected.id) : undefined;
 
   return (
-    <Stack gap="md" className={styles.page}>
+    <Stack gap="md">
       <Stack gap="md">
         <PageHeader
           title="Ledger"
@@ -166,14 +167,13 @@ export function LedgerPage() {
 
       <Box display="grid" className={styles.ledgerLayout}>
         <Card className={styles.acctList}>
-          <CardBody className={styles.acctListBody}>
+          <CardBody>
             <Stack gap="md">
               <SearchInput
                 value={searchInput}
                 onChange={setSearchInput}
                 onSearch={() => setSearch(searchInput.trim())}
                 placeholder="Search accounts…"
-                className={styles.acctSearch}
               />
               {accountsLoading ? (
                 <CenteredLoader label="Loading accounts…" minHeight="8rem" />
@@ -195,8 +195,8 @@ export function LedgerPage() {
                     const rows = grouped[t];
                     if (rows.length === 0) return null;
                     return (
-                      <Stack key={t} gap="xs" className={styles.acctGroup}>
-                        <Text variant="label" weight="semibold" className={styles.acctGroupHead}>
+                      <Stack key={t} gap="xs">
+                        <Text variant="label" weight="semibold">
                           {TYPE_LABEL[t]}
                         </Text>
                         {rows.map((account) => {
@@ -237,7 +237,7 @@ export function LedgerPage() {
                       </Stack>
                     );
                   })}
-                  <Inline justify="between" className={styles.acctSummary}>
+                  <Inline justify="between">
                     <Text variant="caption" color="secondary">
                       {accounts.length} accounts
                     </Text>
@@ -272,7 +272,7 @@ export function LedgerPage() {
                         : ''}
                     </Text>
                   </Stack>
-                  <Inline gap="sm" className={styles.toolbar}>
+                  <Inline gap="sm">
                     <Inline gap="sm" align="center">
                       <Text variant="label" color="secondary">
                         From
@@ -331,9 +331,9 @@ export function LedgerPage() {
                       <TableHeaderCell>Source</TableHeaderCell>
                       <TableHeaderCell>Party</TableHeaderCell>
                       <TableHeaderCell>Narration</TableHeaderCell>
-                      <TableHeaderCell className={styles.right}>Debit</TableHeaderCell>
-                      <TableHeaderCell className={styles.right}>Credit</TableHeaderCell>
-                      <TableHeaderCell className={styles.right}>Balance</TableHeaderCell>
+                      <TableHeaderCell style={numColStyle}>Debit</TableHeaderCell>
+                      <TableHeaderCell style={numColStyle}>Credit</TableHeaderCell>
+                      <TableHeaderCell style={numColStyle}>Balance</TableHeaderCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -358,7 +358,7 @@ export function LedgerPage() {
                             </Button>
                           </TableCell>
                           <TableCell>
-                            <Badge className={styles.sourcePill}>{row.sourceType}</Badge>
+                            <Badge variant="info">{row.sourceType}</Badge>
                           </TableCell>
                           <TableCell>
                             <Text color="secondary" variant="caption">
@@ -374,13 +374,13 @@ export function LedgerPage() {
                               {row.narration ?? '—'}
                             </Text>
                           </TableCell>
-                          <TableCell className={`${styles.right} ${styles.number}`}>
+                          <TableCell style={numColBoldStyle}>
                             {row.debit ? formatMoney(row.debit) : '—'}
                           </TableCell>
-                          <TableCell className={`${styles.right} ${styles.number}`}>
+                          <TableCell style={numColBoldStyle}>
                             {row.credit ? formatMoney(row.credit) : '—'}
                           </TableCell>
-                          <TableCell className={`${styles.right} ${styles.number}`}>
+                          <TableCell style={numColBoldStyle}>
                             {formatMoney(row.balanceAfter)}
                           </TableCell>
                         </TableRow>

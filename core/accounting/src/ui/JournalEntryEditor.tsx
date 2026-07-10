@@ -154,7 +154,7 @@ export function JournalEntryEditor({
         </Inline>
       ) : null}
 
-      <Inline gap="sm" className={styles.toolbar}>
+      <Inline gap="sm" flexWrap>
         <Text variant="label" color="secondary">
           Date
         </Text>
@@ -172,7 +172,7 @@ export function JournalEntryEditor({
           value={narration}
           onChange={(e) => onNarrationChange(e.target.value)}
           placeholder="What is this entry about?"
-          className={styles.narrationInput}
+          style={{ flex: 1, minWidth: '14rem' }}
           disabled={disabled}
         />
       </Inline>
@@ -220,7 +220,7 @@ export function JournalEntryEditor({
             ) : null}
           </Box>
           <Input
-            className={styles.right}
+            style={{ textAlign: 'right' }}
             type="number"
             inputMode="decimal"
             min="0"
@@ -236,7 +236,7 @@ export function JournalEntryEditor({
             disabled={disabled}
           />
           <Input
-            className={styles.right}
+            style={{ textAlign: 'right' }}
             type="number"
             inputMode="decimal"
             min="0"
@@ -260,7 +260,6 @@ export function JournalEntryEditor({
           />
           <IconButton
             type="button"
-            className={styles.removeBtn}
             label="Remove line"
             onClick={() => removeLine(idx)}
             disabled={lines.length <= 2 || disabled}

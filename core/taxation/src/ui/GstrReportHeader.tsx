@@ -1,5 +1,4 @@
 import { Button, FormField, Inline, Input, Stack, Text } from '@inventory-platform/ui-kit';
-import styles from './gstr.module.css';
 
 export interface GstrDownloadAction {
   label: string;
@@ -33,8 +32,8 @@ export function GstrReportHeader({
   downloads = [],
 }: GstrReportHeaderProps) {
   return (
-    <Stack gap="md" className={styles.header}>
-      <Stack gap="xs" className={styles.headerText}>
+    <Inline gap="md" align="start" justify="between" flexWrap>
+      <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
         <Text variant="heading2">{title}</Text>
         <Text color="secondary">{description}</Text>
         {shopInfo ? (
@@ -43,7 +42,7 @@ export function GstrReportHeader({
           </Text>
         ) : null}
       </Stack>
-      <Inline gap="md" align="center" flexWrap className={styles.controls}>
+      <Inline gap="md" align="center" flexWrap style={{ flexShrink: 0 }}>
         <FormField label="Period" htmlFor={periodId}>
           <Input
             id={periodId}
@@ -71,6 +70,6 @@ export function GstrReportHeader({
           </Inline>
         ) : null}
       </Inline>
-    </Stack>
+    </Inline>
   );
 }

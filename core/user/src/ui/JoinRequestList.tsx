@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { shopsApi } from '../api/shops.api';
 import type { JoinRequest } from '@inventory-platform/user/types';
 import { JoinRequestCard } from './JoinRequestCard';
-import { Box, Button, CenteredLoader, EmptyState, Stack, Text } from '@inventory-platform/ui-kit';
-import styles from './JoinRequestList.module.css';
+import { Button, CenteredLoader, EmptyState, Stack, Text } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 
 interface JoinRequestListProps {
@@ -24,11 +23,11 @@ function JoinRequestSection({ title, requests, showActions, onProcess }: JoinReq
   }
 
   return (
-    <Stack className={styles.section} gap="md">
-      <Text variant="heading2" weight="semibold" className={styles.sectionTitle}>
+    <Stack gap="md" width="full">
+      <Text variant="heading2" weight="semibold">
         {title}
       </Text>
-      <Stack className={styles.list} gap="md">
+      <Stack gap="md" width="full">
         {requests.map((request) => (
           <JoinRequestCard
             key={request.requestId}
@@ -60,7 +59,7 @@ export function JoinRequestList({ shopId, onRequestChange }: JoinRequestListProp
     } finally {
       setIsLoading(false);
     }
-  }, [shopId]);
+  }, [shopId, notifyError]);
 
   useEffect(() => {
     fetchJoinRequests();
@@ -73,34 +72,25 @@ export function JoinRequestList({ shopId, onRequestChange }: JoinRequestListProp
     }
   };
 
-  // Group requests by status
   const pendingRequests = joinRequests.filter((r) => r.status === 'PENDING');
   const approvedRequests = joinRequests.filter((r) => r.status === 'APPROVED');
   const rejectedRequests = joinRequests.filter((r) => r.status === 'REJECTED');
 
   if (isLoading) {
-    return (
-      <Box className={styles.container}>
-        <CenteredLoader label="Loading join requests..." className={styles.loading} />
-      </Box>
-    );
+    return <CenteredLoader label="Loading join requests..." />;
   }
 
   if (error) {
     return (
-      <Box className={styles.container}>
-        <Stack className={styles.error} gap="md" align="center">
-          <Text color="danger">{error}</Text>
-          <Button className={styles.retryButton} onClick={fetchJoinRequests}>
-            Retry
-          </Button>
-        </Stack>
-      </Box>
+      <Stack gap="md" align="center">
+        <Text color="danger">{error}</Text>
+        <Button onClick={fetchJoinRequests}>Retry</Button>
+      </Stack>
     );
   }
 
   return (
-    <Stack className={styles.container} gap="md">
+    <Stack gap="lg" width="full">
       <JoinRequestSection
         title={`Pending Requests (${pendingRequests.length})`}
         requests={pendingRequests}
@@ -119,9 +109,7 @@ export function JoinRequestList({ shopId, onRequestChange }: JoinRequestListProp
         showActions={false}
         onProcess={handleRequestProcess}
       />
-      {joinRequests.length === 0 ? (
-        <EmptyState title="No join requests found." className={styles.emptyState} />
-      ) : null}
+      {joinRequests.length === 0 ? <EmptyState title="No join requests found." /> : null}
     </Stack>
   );
 }

@@ -1,5 +1,4 @@
 import { Card, CardBody, CardHeader, Grid, Inline, Stack, Text } from '@inventory-platform/ui-kit';
-import styles from './analytics.module.css';
 
 interface ComparisonMetricsProps {
   data: {
@@ -76,7 +75,7 @@ export function ComparisonMetrics({ data }: ComparisonMetricsProps) {
         </Text>
       </CardHeader>
       <CardBody>
-        <Grid className={styles.comparisonGrid}>
+        <Grid columns={3} gap="md">
           {metrics.map((metric) => (
             <Card key={metric.label}>
               <CardBody>
@@ -109,13 +108,14 @@ export function ComparisonMetrics({ data }: ComparisonMetricsProps) {
                   <Text
                     variant="caption"
                     weight="semibold"
-                    className={
-                      metric.changePercent > 0
-                        ? styles.changeUp
-                        : metric.changePercent < 0
-                        ? styles.changeDown
-                        : undefined
-                    }
+                    style={{
+                      color:
+                        metric.changePercent > 0
+                          ? '#10b981'
+                          : metric.changePercent < 0
+                          ? '#ef4444'
+                          : undefined,
+                    }}
                   >
                     {metric.label === 'Purchases'
                       ? `${metric.change >= 0 ? '+' : ''}${metric.change}`

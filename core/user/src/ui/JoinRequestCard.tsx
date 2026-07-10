@@ -1,9 +1,18 @@
 import { useState } from 'react';
 import { shopsApi } from '../api/shops.api';
 import type { JoinRequest, UserRole } from '@inventory-platform/user/types';
+import type { BadgeVariant } from '@inventory-platform/ui-kit';
 import { RoleBadge } from './RoleBadge';
-import { Alert, Box, Button, Card, Inline, Stack, Text } from '@inventory-platform/ui-kit';
-import styles from './JoinRequestCard.module.css';
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  CardBody,
+  Inline,
+  Stack,
+  Text,
+} from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 
 interface JoinRequestCardProps {
@@ -14,11 +23,26 @@ interface JoinRequestCardProps {
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <Inline className={styles.detailRow} align="start">
-      <Text className={styles.label}>{label}</Text>
-      <Text className={styles.value}>{value}</Text>
+    <Inline align="start" gap="sm" width="full">
+      <Text color="secondary" variant="caption" style={{ minWidth: '7.5rem' }}>
+        {label}
+      </Text>
+      <Text variant="caption">{value}</Text>
     </Inline>
   );
+}
+
+function statusVariant(status: string): BadgeVariant {
+  switch (status) {
+    case 'PENDING':
+      return 'warning';
+    case 'APPROVED':
+      return 'success';
+    case 'REJECTED':
+      return 'danger';
+    default:
+      return 'neutral';
+  }
 }
 
 export function JoinRequestCard({
@@ -50,82 +74,67 @@ export function JoinRequestCard({
     }
   };
 
-  const getStatusColor = (status: string): string => {
-    switch (status) {
-      case 'PENDING':
-        return styles.statusPending;
-      case 'APPROVED':
-        return styles.statusApproved;
-      case 'REJECTED':
-        return styles.statusRejected;
-      default:
-        return styles.statusDefault;
-    }
-  };
-
   const isPending = joinRequest.status === 'PENDING';
 
   return (
-    <Card className={styles.card}>
-      <Stack className={styles.header} gap="sm">
-        <Inline className={styles.topRow} align="start">
-          <Stack className={styles.userInfo} gap="xs">
-            <Text variant="heading3" weight="semibold" className={styles.userName}>
-              {joinRequest.userName}
-            </Text>
-            <Text color="secondary" className={styles.userEmail}>
-              {joinRequest.userEmail}
-            </Text>
+    <Card>
+      <CardBody>
+        <Stack gap="md">
+          <Stack gap="sm">
+            <Inline align="start" gap="sm" width="full">
+              <Stack gap="xs">
+                <Text variant="heading3" weight="semibold">
+                  {joinRequest.userName}
+                </Text>
+                <Text color="secondary" variant="caption">
+                  {joinRequest.userEmail}
+                </Text>
+              </Stack>
+              <RoleBadge role={joinRequest.requestedRole as UserRole} />
+            </Inline>
+            <Badge variant={statusVariant(joinRequest.status)}>{joinRequest.status}</Badge>
           </Stack>
-          <RoleBadge role={joinRequest.requestedRole as UserRole} />
-        </Inline>
-        <Box as="span" className={`${styles.status} ${getStatusColor(joinRequest.status)}`}>
-          {joinRequest.status}
-        </Box>
-      </Stack>
 
-      <Stack className={styles.details} gap="sm">
-        <DetailRow label="Shop:" value={joinRequest.shopName} />
-        <DetailRow label="Requested Role:" value={joinRequest.requestedRole} />
-        {joinRequest.message ? <DetailRow label="Message:" value={joinRequest.message} /> : null}
-        <DetailRow
-          label="Requested:"
-          value={new Date(joinRequest.createdAt).toLocaleDateString()}
-        />
-        {joinRequest.reviewedAt ? (
-          <DetailRow
-            label="Reviewed:"
-            value={new Date(joinRequest.reviewedAt).toLocaleDateString()}
-          />
-        ) : null}
-      </Stack>
+          <Stack gap="sm">
+            <DetailRow label="Shop:" value={joinRequest.shopName} />
+            <DetailRow label="Requested Role:" value={joinRequest.requestedRole} />
+            {joinRequest.message ? (
+              <DetailRow label="Message:" value={joinRequest.message} />
+            ) : null}
+            <DetailRow
+              label="Requested:"
+              value={new Date(joinRequest.createdAt).toLocaleDateString()}
+            />
+            {joinRequest.reviewedAt ? (
+              <DetailRow
+                label="Reviewed:"
+                value={new Date(joinRequest.reviewedAt).toLocaleDateString()}
+              />
+            ) : null}
+          </Stack>
 
-      {error ? (
-        <Alert variant="danger" className={styles.errorMessage}>
-          {error}
-        </Alert>
-      ) : null}
+          {error ? <Alert variant="danger">{error}</Alert> : null}
 
-      {showActions && isPending ? (
-        <Inline className={styles.actions} gap="sm" justify="end">
-          <Button
-            variant="outline"
-            className={styles.rejectButton}
-            onClick={() => handleProcess('REJECT')}
-            disabled={isProcessing}
-          >
-            {isProcessing ? 'Processing...' : 'Reject'}
-          </Button>
-          <Button
-            variant="solid"
-            className={styles.acceptButton}
-            onClick={() => handleProcess('ACCEPT')}
-            disabled={isProcessing}
-          >
-            {isProcessing ? 'Processing...' : 'Accept'}
-          </Button>
-        </Inline>
-      ) : null}
+          {showActions && isPending ? (
+            <Inline gap="sm" justify="end" width="full">
+              <Button
+                variant="outline"
+                onClick={() => handleProcess('REJECT')}
+                disabled={isProcessing}
+              >
+                {isProcessing ? 'Processing...' : 'Reject'}
+              </Button>
+              <Button
+                variant="solid"
+                onClick={() => handleProcess('ACCEPT')}
+                disabled={isProcessing}
+              >
+                {isProcessing ? 'Processing...' : 'Accept'}
+              </Button>
+            </Inline>
+          ) : null}
+        </Stack>
+      </CardBody>
     </Card>
   );
 }

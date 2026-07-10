@@ -8,7 +8,6 @@ import {
   TableRow,
   Text,
 } from '@inventory-platform/ui-kit';
-import styles from './analytics.module.css';
 
 interface LowMarginProduct {
   inventoryId: string;
@@ -28,9 +27,9 @@ interface LowMarginProductsTableProps {
   data: LowMarginProduct[];
 }
 
-function marginClass(margin: number) {
-  if (margin < 20) return styles.changeDown;
-  if (margin < 30) return styles.changeUp;
+function marginColor(margin: number): string | undefined {
+  if (margin < 20) return '#ef4444';
+  if (margin < 30) return '#10b981';
   return undefined;
 }
 
@@ -70,7 +69,14 @@ export function LowMarginProductsTable({ data }: LowMarginProductsTableProps) {
               <TableCell>{formatCurrency(product.totalCost)}</TableCell>
               <TableCell>{formatCurrency(product.grossProfit)}</TableCell>
               <TableCell>
-                <Text weight="semibold" className={marginClass(product.marginPercent)}>
+                <Text
+                  weight="semibold"
+                  style={
+                    marginColor(product.marginPercent)
+                      ? { color: marginColor(product.marginPercent) }
+                      : undefined
+                  }
+                >
                   {product.marginPercent.toFixed(2)}%
                 </Text>
               </TableCell>

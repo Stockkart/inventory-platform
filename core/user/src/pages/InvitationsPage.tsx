@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Alert, Card, CardBody, PageHeader, Stack, Text } from '@inventory-platform/ui-kit';
 import { useAuthStore } from '@inventory-platform/session';
 import { InvitationList, InviteForm } from '../ui';
-import styles from './invitations.module.css';
 
 export function InvitationsPage() {
   const { user } = useAuthStore();
@@ -12,7 +11,7 @@ export function InvitationsPage() {
 
   if (!shopId) {
     return (
-      <Stack gap="md" className={styles.container}>
+      <Stack gap="md" width="full" maxWidth="xl" mx="auto">
         <Alert variant="danger">You need to be part of a shop to manage invitations.</Alert>
       </Stack>
     );
@@ -20,32 +19,34 @@ export function InvitationsPage() {
 
   if (user?.role === 'CASHIER') {
     return (
-      <Stack gap="md" className={styles.container}>
+      <Stack gap="md" width="full" maxWidth="xl" mx="auto">
         <Alert variant="danger">You don&apos;t have permission to manage invitations.</Alert>
       </Stack>
     );
   }
 
   return (
-    <Stack gap="md" className={styles.container}>
+    <Stack gap="md" width="full" maxWidth="xl" mx="auto">
       <PageHeader
         title="Manage Invitations"
         description="Send invitations to users to join your shop and manage existing invitations"
       />
 
-      <Stack gap="lg" className={styles.content}>
-        <Card className={styles.section}>
+      <Stack gap="lg" width="full">
+        <Card>
           <CardBody>
             <InviteForm shopId={shopId} onInviteSent={() => setRefreshKey((prev) => prev + 1)} />
           </CardBody>
         </Card>
 
-        <Card className={styles.section}>
+        <Card>
           <CardBody>
-            <Text variant="title" weight="semibold" className={styles.sectionTitle}>
-              Shop Invitations
-            </Text>
-            <InvitationList key={refreshKey} shopId={shopId} />
+            <Stack gap="md" width="full">
+              <Text variant="title" weight="semibold">
+                Shop Invitations
+              </Text>
+              <InvitationList key={refreshKey} shopId={shopId} />
+            </Stack>
           </CardBody>
         </Card>
       </Stack>

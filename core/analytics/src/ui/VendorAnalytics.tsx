@@ -22,7 +22,6 @@ import {
 import { useVendorAnalyticsQuery } from '../queries/hooks';
 import { AnalyticsCollapsibleSection, riskLevelBadgeVariant } from './AnalyticsCollapsibleSection';
 import { AnalyticsMetricCard } from './AnalyticsMetricCard';
-import styles from './analytics.module.css';
 
 export function VendorAnalytics() {
   const [localFilters, setLocalFilters] = useState<{
@@ -115,9 +114,9 @@ export function VendorAnalytics() {
 
   return (
     <Stack gap="md">
-      <Card className={styles.filters}>
+      <Card>
         <CardBody>
-          <Inline gap="md" className={styles.filterRow}>
+          <Inline gap="md">
             <FormField label="Start Date" htmlFor="vendorStartDate">
               <Input
                 id="vendorStartDate"
@@ -168,7 +167,7 @@ export function VendorAnalytics() {
 
       {vendorData && !isLoading ? (
         <>
-          <Grid className={styles.summaryGrid}>
+          <Grid columns={4} gap="md">
             <AnalyticsMetricCard
               label="Total Vendors"
               value={String(vendorData.totalVendors)}
@@ -410,8 +409,8 @@ export function VendorAnalytics() {
                 <Text variant="heading4" weight="semibold">
                   Key Insights
                 </Text>
-                <Grid className={styles.insightsGrid}>
-                  <Stack gap="xs" className={styles.insightItem}>
+                <Grid columns={3} gap="md">
+                  <Stack gap="xs" bg="muted" padding="md" rounded="sm">
                     <Text variant="caption" color="secondary">
                       Top Vendor Revenue %
                     </Text>
@@ -419,7 +418,7 @@ export function VendorAnalytics() {
                       {formatPercentage(vendorData.topVendorRevenuePercentage)}
                     </Text>
                   </Stack>
-                  <Stack gap="xs" className={styles.insightItem}>
+                  <Stack gap="xs" bg="muted" padding="md" rounded="sm">
                     <Text variant="caption" color="secondary">
                       Top 3 Vendors Revenue %
                     </Text>
@@ -427,7 +426,7 @@ export function VendorAnalytics() {
                       {formatPercentage(vendorData.top3VendorRevenuePercentage)}
                     </Text>
                   </Stack>
-                  <Stack gap="xs" className={styles.insightItem}>
+                  <Stack gap="xs" bg="muted" padding="md" rounded="sm">
                     <Text variant="caption" color="secondary">
                       Most Dependent Vendor
                     </Text>

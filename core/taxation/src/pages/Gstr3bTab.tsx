@@ -17,7 +17,7 @@ import { triggerBlobDownload } from '../api/download';
 import { gstr3bApi } from '../api/gstr3b.api';
 import { useGstr3bReportQuery } from '../queries/hooks';
 import { formatCurrency, getDefaultPeriod, GstrReportHeader, GstrSummaryGrid } from '../ui';
-import styles from '../ui/gstr.module.css';
+import { numColStyle } from '../ui/tabNav';
 
 export function Gstr3bTab() {
   const [period, setPeriod] = useState(getDefaultPeriod);
@@ -119,18 +119,18 @@ export function Gstr3bTab() {
                     <TableHead>
                       <TableRow>
                         <TableHeaderCell>Place of Supply</TableHeaderCell>
-                        <TableHeaderCell className={styles.numCol}>Taxable Value</TableHeaderCell>
-                        <TableHeaderCell className={styles.numCol}>Integrated Tax</TableHeaderCell>
+                        <TableHeaderCell style={numColStyle}>Taxable Value</TableHeaderCell>
+                        <TableHeaderCell style={numColStyle}>Integrated Tax</TableHeaderCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {interState.map((row, i) => (
                         <TableRow key={i}>
                           <TableCell>{row.placeOfSupply || '—'}</TableCell>
-                          <TableCell className={styles.numCol}>
+                          <TableCell style={numColStyle}>
                             {formatCurrency(row.taxableValue)}
                           </TableCell>
-                          <TableCell className={styles.numCol}>
+                          <TableCell style={numColStyle}>
                             {formatCurrency(row.integratedTax)}
                           </TableCell>
                         </TableRow>
@@ -184,63 +184,55 @@ export function Gstr3bTab() {
                   <TableHead>
                     <TableRow>
                       <TableHeaderCell>Tax Type</TableHeaderCell>
-                      <TableHeaderCell className={styles.numCol}>Payable</TableHeaderCell>
-                      <TableHeaderCell className={styles.numCol}>Paid by ITC</TableHeaderCell>
-                      <TableHeaderCell className={styles.numCol}>Paid in Cash</TableHeaderCell>
+                      <TableHeaderCell style={numColStyle}>Payable</TableHeaderCell>
+                      <TableHeaderCell style={numColStyle}>Paid by ITC</TableHeaderCell>
+                      <TableHeaderCell style={numColStyle}>Paid in Cash</TableHeaderCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     <TableRow>
                       <TableCell>Integrated Tax</TableCell>
-                      <TableCell className={styles.numCol}>
-                        {formatCurrency(s61?.igstPayable)}
-                      </TableCell>
-                      <TableCell className={styles.numCol}>
+                      <TableCell style={numColStyle}>{formatCurrency(s61?.igstPayable)}</TableCell>
+                      <TableCell style={numColStyle}>
                         {formatCurrency(s61?.igstPaidByItc)}
                       </TableCell>
-                      <TableCell className={styles.numCol}>
+                      <TableCell style={numColStyle}>
                         {formatCurrency(s61?.igstPaidByCash)}
                       </TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell>Central Tax</TableCell>
-                      <TableCell className={styles.numCol}>
-                        {formatCurrency(s61?.cgstPayable)}
-                      </TableCell>
-                      <TableCell className={styles.numCol}>
+                      <TableCell style={numColStyle}>{formatCurrency(s61?.cgstPayable)}</TableCell>
+                      <TableCell style={numColStyle}>
                         {formatCurrency(
                           (s61?.cgstPaidByItcIgst ?? 0) +
                             (s61?.cgstPaidByItcCgst ?? 0) +
                             (s61?.cgstPaidByItcSgst ?? 0),
                         )}
                       </TableCell>
-                      <TableCell className={styles.numCol}>
+                      <TableCell style={numColStyle}>
                         {formatCurrency(s61?.cgstPaidByCash)}
                       </TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell>State/UT Tax</TableCell>
-                      <TableCell className={styles.numCol}>
-                        {formatCurrency(s61?.sgstPayable)}
-                      </TableCell>
-                      <TableCell className={styles.numCol}>
+                      <TableCell style={numColStyle}>{formatCurrency(s61?.sgstPayable)}</TableCell>
+                      <TableCell style={numColStyle}>
                         {formatCurrency(
                           (s61?.sgstPaidByItcIgst ?? 0) +
                             (s61?.sgstPaidByItcCgst ?? 0) +
                             (s61?.sgstPaidByItcSgst ?? 0),
                         )}
                       </TableCell>
-                      <TableCell className={styles.numCol}>
+                      <TableCell style={numColStyle}>
                         {formatCurrency(s61?.sgstPaidByCash)}
                       </TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell>Cess</TableCell>
-                      <TableCell className={styles.numCol}>
-                        {formatCurrency(s61?.cessPayable)}
-                      </TableCell>
-                      <TableCell className={styles.numCol}>—</TableCell>
-                      <TableCell className={styles.numCol}>—</TableCell>
+                      <TableCell style={numColStyle}>{formatCurrency(s61?.cessPayable)}</TableCell>
+                      <TableCell style={numColStyle}>—</TableCell>
+                      <TableCell style={numColStyle}>—</TableCell>
                     </TableRow>
                   </TableBody>
                 </Table>

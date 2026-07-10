@@ -15,7 +15,6 @@ import {
   Card,
   CardBody,
   CenteredLoader,
-  cn,
   EmptyState,
   FormField,
   FormRow,
@@ -43,7 +42,13 @@ import {
   validatePaymentSplit,
 } from '../ui';
 import { useNotify } from '@inventory-platform/session';
-import styles from './vendor-return.module.css';
+
+const numericCellStyle = {
+  textAlign: 'right' as const,
+  fontVariantNumeric: 'tabular-nums' as const,
+  whiteSpace: 'nowrap' as const,
+};
+const selectedCardStyle = { borderColor: '#3b82f6', boxShadow: '0 0 0 3px var(--focus-ring)' };
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -579,38 +584,46 @@ export function VendorReturnPage() {
   }
 
   return (
-    <Stack gap="md" className={styles.page}>
+    <Stack gap="md" maxWidth="xl" mx="auto">
       <PageHeader
         title="Return stock to supplier"
         description="Find a supplier purchase invoice, then enter how many selling units you are sending back—the same counting unit as stock on the shelf (like “Return to customer”). Credit notes appear in GSTR‑2 CDNR / CDNUR when applicable."
       />
 
-      <Box as="nav" aria-label="Return sections" className={styles.tabBar}>
-        <Inline gap="none">
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            role="tab"
-            aria-selected={activeTab === 'process'}
-            className={activeTab === 'process' ? styles.tabActive : styles.tab}
-            onClick={() => handleTabChange('process')}
-          >
-            Process return
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            role="tab"
-            aria-selected={activeTab === 'history'}
-            className={activeTab === 'history' ? styles.tabActive : styles.tab}
-            onClick={() => handleTabChange('history')}
-          >
-            Return history
-          </Button>
-        </Inline>
-      </Box>
+      <Inline gap="none" style={{ borderBottom: '1px solid var(--border-color)' }}>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          role="tab"
+          aria-selected={activeTab === 'process'}
+          style={{
+            marginBottom: -1,
+            whiteSpace: 'nowrap',
+            borderBottom: activeTab === 'process' ? '2px solid #3b82f6' : '2px solid transparent',
+            borderRadius: 0,
+          }}
+          onClick={() => handleTabChange('process')}
+        >
+          Process return
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          role="tab"
+          aria-selected={activeTab === 'history'}
+          style={{
+            marginBottom: -1,
+            whiteSpace: 'nowrap',
+            borderBottom: activeTab === 'history' ? '2px solid #3b82f6' : '2px solid transparent',
+            borderRadius: 0,
+          }}
+          onClick={() => handleTabChange('history')}
+        >
+          Return history
+        </Button>
+      </Inline>
 
       {activeTab === 'history' ? (
         <Card>
@@ -633,7 +646,7 @@ export function VendorReturnPage() {
                 <Text variant="heading3" weight="semibold">
                   Search purchase invoice
                 </Text>
-                <Text variant="caption" color="secondary" className={styles.hint}>
+                <Text variant="caption" color="secondary" style={{ lineHeight: 1.45 }}>
                   Recent supplier purchase invoices load automatically. Narrow the list with search
                   (same Java regex rules as History → Purchase history). When invoice number is set,
                   product/barcode is omitted from the server search.
@@ -705,14 +718,14 @@ export function VendorReturnPage() {
                   />
                 ) : (
                   <>
-                    <Stack gap="md" className={styles.purchasesList}>
+                    <Stack gap="md">
                       {invoices.map((inv) => (
                         <Stack key={inv.id} gap="sm">
                           <Card
-                            className={cn(
-                              styles.purchaseCard,
-                              selected?.id === inv.id && styles.selectedPurchase,
-                            )}
+                            style={{
+                              cursor: 'pointer',
+                              ...(selected?.id === inv.id ? selectedCardStyle : {}),
+                            }}
                             onClick={() => void selectInvoice(inv)}
                             role="button"
                             tabIndex={0}
@@ -724,7 +737,7 @@ export function VendorReturnPage() {
                             }}
                           >
                             <CardBody>
-                              <Inline justify="between" className={styles.purchaseHeader}>
+                              <Inline justify="between" style={{ marginBottom: '0.75rem' }}>
                                 <Inline gap="xs">
                                   <Text variant="caption" weight="semibold">
                                     Invoice:
@@ -745,7 +758,7 @@ export function VendorReturnPage() {
                                   </Text>
                                 </Inline>
                               </Inline>
-                              <Grid columns={2} gap="sm" className={styles.purchaseDetails}>
+                              <Grid columns={2} gap="sm">
                                 <DetailLine label="Vendor" value={inv.vendorName?.trim() || '—'} />
                                 <DetailLine label="Lines" value={String(inv.lineCount)} />
                                 <DetailLine label="Total" value={formatMoney(inv.invoiceTotal)} />
@@ -754,29 +767,31 @@ export function VendorReturnPage() {
                           </Card>
 
                           {selected?.id === inv.id && detail ? (
-                            <Card className={styles.returnSection}>
+                            <Card style={{ marginTop: '0.25rem' }}>
                               <CardBody>
                                 <Stack gap="md">
                                   <Text variant="heading3" weight="semibold">
                                     Select items to return
                                   </Text>
-                                  <Grid columns={3} gap="sm" className={styles.purchaseInfo}>
-                                    <DetailLine label="Invoice" value={detail.invoiceNo} />
-                                    <DetailLine
-                                      label="Vendor"
-                                      value={detail.vendorName?.trim() || '—'}
-                                    />
-                                    <DetailLine
-                                      label="Dated"
-                                      value={formatDate(detail.invoiceDate)}
-                                    />
-                                  </Grid>
+                                  <Box padding="md" bg="surface" rounded="md">
+                                    <Grid columns={3} gap="sm">
+                                      <DetailLine label="Invoice" value={detail.invoiceNo} />
+                                      <DetailLine
+                                        label="Vendor"
+                                        value={detail.vendorName?.trim() || '—'}
+                                      />
+                                      <DetailLine
+                                        label="Dated"
+                                        value={formatDate(detail.invoiceDate)}
+                                      />
+                                    </Grid>
+                                  </Box>
 
                                   {stockLines.length === 0 ? (
                                     <Text
                                       variant="caption"
                                       color="secondary"
-                                      className={styles.hint}
+                                      style={{ lineHeight: 1.45 }}
                                     >
                                       No inventoried lines on this bill.
                                     </Text>
@@ -790,7 +805,7 @@ export function VendorReturnPage() {
                                         <Text
                                           variant="caption"
                                           color="secondary"
-                                          className={styles.hint}
+                                          style={{ lineHeight: 1.45 }}
                                         >
                                           Quantities use the same{' '}
                                           <Text as="span" weight="semibold">
@@ -819,7 +834,7 @@ export function VendorReturnPage() {
                                             <TableHeaderCell>Qty on bill</TableHeaderCell>
                                             <TableHeaderCell>Current qty</TableHeaderCell>
                                             <TableHeaderCell>GST rates</TableHeaderCell>
-                                            <TableHeaderCell className={styles.numericCell}>
+                                            <TableHeaderCell style={numericCellStyle}>
                                               Est. debit note
                                             </TableHeaderCell>
                                             <TableHeaderCell>Return qty</TableHeaderCell>
@@ -877,7 +892,7 @@ export function VendorReturnPage() {
                                                 </TableCell>
                                                 <TableCell>{formatGstRatesLabel(invRow)}</TableCell>
                                                 <TableCell
-                                                  className={styles.numericCell}
+                                                  style={numericCellStyle}
                                                   title={debitTitle}
                                                 >
                                                   {debitEst != null
@@ -889,7 +904,7 @@ export function VendorReturnPage() {
                                                     type="number"
                                                     min={0}
                                                     max={maxSell > 0 ? maxSell : undefined}
-                                                    className={styles.quantityInput}
+                                                    style={{ width: '5rem', textAlign: 'center' }}
                                                     inputMode="numeric"
                                                     placeholder="0"
                                                     title={
@@ -933,24 +948,22 @@ export function VendorReturnPage() {
                                         </TableBody>
                                       </Table>
                                       {returnDebitNoteEstimate.linesWithQty > 0 ? (
-                                        <Alert
-                                          variant="info"
-                                          role="status"
-                                          className={styles.returnEstimateBanner}
-                                        >
-                                          <Text as="span" weight="semibold">
-                                            Estimated debit note total (incl. GST):
-                                          </Text>{' '}
-                                          {formatMoney(returnDebitNoteEstimate.grandTotal)}
-                                          <Text
-                                            variant="caption"
-                                            color="secondary"
-                                            className={styles.returnEstimateMuted}
-                                          >
-                                            Per-line breakdown on hover · final amount set when you
-                                            record the return.
-                                          </Text>
-                                        </Alert>
+                                        <Box style={{ marginTop: '0.5rem' }}>
+                                          <Alert variant="info" role="status">
+                                            <Text as="span" weight="semibold">
+                                              Estimated debit note total (incl. GST):
+                                            </Text>{' '}
+                                            {formatMoney(returnDebitNoteEstimate.grandTotal)}
+                                            <Text
+                                              variant="caption"
+                                              color="secondary"
+                                              style={{ display: 'block', marginTop: '0.35rem' }}
+                                            >
+                                              Per-line breakdown on hover · final amount set when
+                                              you record the return.
+                                            </Text>
+                                          </Alert>
+                                        </Box>
                                       ) : null}
                                     </Stack>
                                   )}
@@ -967,7 +980,14 @@ export function VendorReturnPage() {
                                   />
 
                                   {returnDebitNoteEstimate.linesWithQty > 0 ? (
-                                    <Stack gap="sm" className={styles.returnPaymentSection}>
+                                    <Stack
+                                      gap="sm"
+                                      style={{
+                                        marginTop: '0.5rem',
+                                        paddingTop: '1rem',
+                                        borderTop: '1px solid var(--border-color)',
+                                      }}
+                                    >
                                       <PaymentMethodSplit
                                         context="purchase"
                                         title="How are you receiving the refund?"
@@ -989,7 +1009,7 @@ export function VendorReturnPage() {
                                         <Text
                                           variant="caption"
                                           color="secondary"
-                                          className={styles.returnPaymentHint}
+                                          style={{ marginTop: '0.75rem' }}
                                         >
                                           ₹{paymentSplit.creditAmount.toFixed(2)} reduces vendor
                                           credit (you owe them less).
@@ -1000,7 +1020,7 @@ export function VendorReturnPage() {
 
                                   <Button
                                     type="button"
-                                    className={styles.recordBtn}
+                                    fullWidth
                                     disabled={!canRecordReturn || stockLines.length === 0}
                                     onClick={() => void submitReturn()}
                                   >

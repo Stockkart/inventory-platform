@@ -36,9 +36,24 @@ import {
   useSnoozeReminderMutation,
   useUpdateReminderMutation,
 } from '../queries/hooks';
-import styles from './reminders.module.css';
 
 const SNOOZE_OPTIONS = [1, 2, 3, 5, 7, 14, 30];
+
+const priorityBorderColor = {
+  high: '#ef4444',
+  medium: '#fbbf24',
+  low: '#3b82f6',
+} as const;
+
+function statusBadgeVariant(status: Reminder['status']) {
+  return status === 'COMPLETED' ? 'success' : 'warning';
+}
+
+function priorityBadgeVariant(priority: 'high' | 'medium' | 'low') {
+  if (priority === 'high') return 'danger';
+  if (priority === 'medium') return 'warning';
+  return 'info';
+}
 
 export function RemindersPage() {
   const location = useLocation();
@@ -181,7 +196,7 @@ export function RemindersPage() {
   const formModalOpen = !fromNotification && (showCreateForm || !!editingReminder);
 
   return (
-    <Stack gap="md" className={styles.page}>
+    <Stack gap="md" width="full" maxWidth="xl" mx="auto">
       <PageHeader
         title="Reminders"
         description={
@@ -205,7 +220,7 @@ export function RemindersPage() {
       />
 
       {!fromNotification && expiryBuckets ? (
-        <Grid className={styles.expiryBuckets}>
+        <Grid columns={4} gap="md">
           <Card>
             <CardBody>
               <Text variant="caption" color="secondary">
@@ -274,257 +289,279 @@ export function RemindersPage() {
         onConfirm={handleDeleteConfirm}
       />
 
-      <Stack gap="md" className={styles.remindersContainer}>
-        {!fromNotification && (
-          <Stack gap="md" className={styles.filters}>
-            <Inline gap="sm" className={styles.filterGroup}>
-              <Text variant="label" color="secondary">
-                Status:
-              </Text>
-              {(['all', 'PENDING', 'COMPLETED'] as const).map((value) => (
-                <Button
-                  key={value}
-                  type="button"
-                  size="sm"
-                  variant={filter === value ? 'solid' : 'outline'}
-                  onClick={() => setFilter(value)}
-                >
-                  {value === 'all' ? 'All' : value.charAt(0) + value.slice(1).toLowerCase()}
-                </Button>
-              ))}
-            </Inline>
-            <Inline gap="sm" className={styles.filterGroup}>
-              <Text variant="label" color="secondary">
-                Type:
-              </Text>
-              {(['all', 'EXPIRY', 'CUSTOM'] as const).map((value) => (
-                <Button
-                  key={value}
-                  type="button"
-                  size="sm"
-                  variant={typeFilter === value ? 'solid' : 'outline'}
-                  onClick={() => setTypeFilter(value)}
-                >
-                  {value === 'all' ? 'All' : value.charAt(0) + value.slice(1).toLowerCase()}
-                </Button>
-              ))}
-            </Inline>
-          </Stack>
-        )}
-
-        {isLoading ? (
-          <CenteredLoader label="Loading reminders…" />
-        ) : filteredReminders.length === 0 ? (
-          <Stack gap="md" align="center" className={styles.emptyState}>
-            <Text color="secondary">No reminders found.</Text>
-            {!showCreateForm && !fromNotification ? (
-              <Button variant="solid" onClick={() => setShowCreateForm(true)}>
-                Create your first reminder
-              </Button>
-            ) : null}
-          </Stack>
-        ) : (
-          <>
-            <Stack gap="md" className={styles.remindersList}>
-              {filteredReminders.map((reminder) => {
-                const daysLeft = getDaysUntilReminder(reminder.reminderAt);
-                const priority = getPriority(daysLeft);
-
-                return (
-                  <Box key={reminder.id} className={`${styles.reminderCard} ${styles[priority]}`}>
-                    <Box className={styles.reminderIcon}>
-                      {reminder.type === 'EXPIRY' ? '📅' : '🔔'}
-                    </Box>
-                    <Stack gap="sm" className={styles.reminderInfo}>
-                      <Inline justify="between" align="start" className={styles.reminderHeader}>
-                        <Text variant="heading3" weight="semibold" className={styles.reminderTitle}>
-                          {reminder.type === 'EXPIRY' ? 'Expiry Reminder' : 'Custom Reminder'}
-                        </Text>
-                        <Inline gap="sm" className={styles.badges}>
-                          <Badge className={`${styles.statusBadge} ${styles[reminder.status]}`}>
-                            {reminder.status}
-                          </Badge>
-                          {reminder.type ? (
-                            <Badge className={styles.typeBadge}>{reminder.type}</Badge>
-                          ) : null}
-                          <Badge className={`${styles.priorityBadge} ${styles[priority]}`}>
-                            {priority}
-                          </Badge>
-                        </Inline>
-                      </Inline>
-                      <Stack gap="sm" className={styles.reminderDetails}>
-                        <Text variant="caption">
-                          <Text as="span" weight="semibold">
-                            Reminder:
-                          </Text>{' '}
-                          {formatDate(reminder.reminderAt)}
-                        </Text>
-                        {reminder.expiryDate ? (
-                          <Text variant="caption">
-                            <Text as="span" weight="semibold">
-                              End Date:
-                            </Text>{' '}
-                            {formatDate(reminder.expiryDate)}
-                          </Text>
-                        ) : null}
-                        {reminder.notes ? (
-                          <Text variant="caption" className={styles.notes}>
-                            <Text as="span" weight="semibold">
-                              Notes:
-                            </Text>{' '}
-                            {reminder.notes}
-                          </Text>
-                        ) : null}
-                        {reminder.inventory ? (
-                          <Stack gap="xs" className={styles.inventoryBox}>
-                            <Text variant="caption">
-                              <Text as="span" weight="semibold">
-                                Product:
-                              </Text>{' '}
-                              {reminder.inventory.name ?? '—'}
-                            </Text>
-                            <Text variant="caption">
-                              <Text as="span" weight="semibold">
-                                Company:
-                              </Text>{' '}
-                              {reminder.inventory.companyName ?? '—'}
-                            </Text>
-                            <Text variant="caption">
-                              <Text as="span" weight="semibold">
-                                Location:
-                              </Text>{' '}
-                              {reminder.inventory.location ?? '—'}
-                            </Text>
-                          </Stack>
-                        ) : null}
-                        <Text variant="caption" weight="semibold" className={styles.daysLeft}>
-                          {daysLeft < 0
-                            ? `${Math.abs(daysLeft)} days overdue`
-                            : daysLeft === 0
-                            ? 'Due today'
-                            : `${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left`}
-                        </Text>
-                      </Stack>
-                    </Stack>
-
-                    <Box className={styles.reminderActions}>
-                      {fromNotification ? (
-                        <Stack gap="sm" className={styles.snoozeActions}>
-                          <Inline gap="sm" className={styles.snoozePresetRow}>
-                            {SNOOZE_OPTIONS.map((days) => (
-                              <Button
-                                key={days}
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                disabled={snoozingReminderId === reminder.id}
-                                onClick={() => void handleSnooze(reminder.id, days)}
-                              >
-                                {days}d
-                              </Button>
-                            ))}
-                          </Inline>
-
-                          <Inline gap="sm" className={styles.snoozeCustomRow}>
-                            <FormField
-                              label="Custom days"
-                              type="number"
-                              value={customSnoozeDays === '' ? '' : String(customSnoozeDays)}
-                              onChange={(value) =>
-                                setCustomSnoozeDays(value === '' ? '' : Number(value))
-                              }
-                            />
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="solid"
-                              disabled={
-                                snoozingReminderId === reminder.id ||
-                                customSnoozeDays === '' ||
-                                Number(customSnoozeDays) <= 0
-                              }
-                              onClick={() =>
-                                customSnoozeDays !== '' &&
-                                void handleSnooze(reminder.id, Number(customSnoozeDays))
-                              }
-                            >
-                              {snoozingReminderId === reminder.id ? 'Snoozing…' : 'Snooze'}
-                            </Button>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="danger"
-                              onClick={() => setDeletingReminderId(reminder.id)}
-                            >
-                              Delete
-                            </Button>
-                          </Inline>
-                          {reminder.inventory ? (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => setSelectedInventory(reminder.inventory)}
-                            >
-                              View Details
-                            </Button>
-                          ) : null}
-                        </Stack>
-                      ) : (
-                        <Stack gap="sm" className={styles.actionButtonsContainer}>
-                          <Inline gap="sm" className={styles.actionButtonsRow}>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setEditingReminder(reminder)}
-                            >
-                              Edit
-                            </Button>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="danger"
-                              onClick={() => setDeletingReminderId(reminder.id)}
-                            >
-                              Delete
-                            </Button>
-                          </Inline>
-                          {reminder.inventory ? (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => setSelectedInventory(reminder.inventory)}
-                            >
-                              View Details
-                            </Button>
-                          ) : null}
-                        </Stack>
-                      )}
-                    </Box>
-                  </Box>
-                );
-              })}
-            </Stack>
-            {!focusReminderId && (
-              <PaginationBar
-                page={page}
-                totalPages={Math.max(totalPages, 1)}
-                disabled={isLoading}
-                onPageChange={setPage}
-                pageSize={size}
-                pageSizeOptions={[5, 10, 20, 50]}
-                onPageSizeChange={(n) => {
-                  setPage(0);
-                  setSize(n);
-                }}
-                aria-label="Reminder pages"
-              />
+      <Card>
+        <CardBody>
+          <Stack gap="md">
+            {!fromNotification && (
+              <Stack gap="md" padding="md" border rounded="md">
+                <Inline gap="sm" align="center" flexWrap>
+                  <Text variant="label" color="secondary">
+                    Status:
+                  </Text>
+                  {(['all', 'PENDING', 'COMPLETED'] as const).map((value) => (
+                    <Button
+                      key={value}
+                      type="button"
+                      size="sm"
+                      variant={filter === value ? 'solid' : 'outline'}
+                      onClick={() => setFilter(value)}
+                    >
+                      {value === 'all' ? 'All' : value.charAt(0) + value.slice(1).toLowerCase()}
+                    </Button>
+                  ))}
+                </Inline>
+                <Inline gap="sm" align="center" flexWrap>
+                  <Text variant="label" color="secondary">
+                    Type:
+                  </Text>
+                  {(['all', 'EXPIRY', 'CUSTOM'] as const).map((value) => (
+                    <Button
+                      key={value}
+                      type="button"
+                      size="sm"
+                      variant={typeFilter === value ? 'solid' : 'outline'}
+                      onClick={() => setTypeFilter(value)}
+                    >
+                      {value === 'all' ? 'All' : value.charAt(0) + value.slice(1).toLowerCase()}
+                    </Button>
+                  ))}
+                </Inline>
+              </Stack>
             )}
-          </>
-        )}
-      </Stack>
+
+            {isLoading ? (
+              <CenteredLoader label="Loading reminders…" />
+            ) : filteredReminders.length === 0 ? (
+              <Stack gap="md" align="center" style={{ minHeight: '14rem' }}>
+                <Text color="secondary">No reminders found.</Text>
+                {!showCreateForm && !fromNotification ? (
+                  <Button variant="solid" onClick={() => setShowCreateForm(true)}>
+                    Create your first reminder
+                  </Button>
+                ) : null}
+              </Stack>
+            ) : (
+              <>
+                <Stack gap="md">
+                  {filteredReminders.map((reminder) => {
+                    const daysLeft = getDaysUntilReminder(reminder.reminderAt);
+                    const priority = getPriority(daysLeft);
+
+                    return (
+                      <Card
+                        key={reminder.id}
+                        style={{ borderLeft: `4px solid ${priorityBorderColor[priority]}` }}
+                      >
+                        <CardBody>
+                          <Inline gap="lg" align="start" flexWrap>
+                            <Text variant="heading2">
+                              {reminder.type === 'EXPIRY' ? '📅' : '🔔'}
+                            </Text>
+                            <Stack gap="sm" style={{ flex: 1, minWidth: '12rem' }}>
+                              <Inline justify="between" align="start" flexWrap>
+                                <Text variant="heading3" weight="semibold">
+                                  {reminder.type === 'EXPIRY'
+                                    ? 'Expiry Reminder'
+                                    : 'Custom Reminder'}
+                                </Text>
+                                <Inline gap="sm" flexWrap>
+                                  <Badge variant={statusBadgeVariant(reminder.status)}>
+                                    {reminder.status}
+                                  </Badge>
+                                  {reminder.type ? (
+                                    <Badge variant="info">{reminder.type}</Badge>
+                                  ) : null}
+                                  <Badge variant={priorityBadgeVariant(priority)}>{priority}</Badge>
+                                </Inline>
+                              </Inline>
+                              <Stack gap="sm">
+                                <Text variant="caption">
+                                  <Text as="span" weight="semibold">
+                                    Reminder:
+                                  </Text>{' '}
+                                  {formatDate(reminder.reminderAt)}
+                                </Text>
+                                {reminder.expiryDate ? (
+                                  <Text variant="caption">
+                                    <Text as="span" weight="semibold">
+                                      End Date:
+                                    </Text>{' '}
+                                    {formatDate(reminder.expiryDate)}
+                                  </Text>
+                                ) : null}
+                                {reminder.notes ? (
+                                  <Text variant="caption">
+                                    <Text as="span" weight="semibold">
+                                      Notes:
+                                    </Text>{' '}
+                                    {reminder.notes}
+                                  </Text>
+                                ) : null}
+                                {reminder.inventory ? (
+                                  <Box
+                                    padding="sm"
+                                    rounded="md"
+                                    style={{
+                                      background: 'rgba(59, 130, 246, 0.08)',
+                                      border: '1px solid rgba(59, 130, 246, 0.25)',
+                                    }}
+                                  >
+                                    <Grid columns={3} gap="sm">
+                                      <Text variant="caption">
+                                        <Text as="span" weight="semibold">
+                                          Product:
+                                        </Text>{' '}
+                                        {reminder.inventory.name ?? '—'}
+                                      </Text>
+                                      <Text variant="caption">
+                                        <Text as="span" weight="semibold">
+                                          Company:
+                                        </Text>{' '}
+                                        {reminder.inventory.companyName ?? '—'}
+                                      </Text>
+                                      <Text variant="caption">
+                                        <Text as="span" weight="semibold">
+                                          Location:
+                                        </Text>{' '}
+                                        {reminder.inventory.location ?? '—'}
+                                      </Text>
+                                    </Grid>
+                                  </Box>
+                                ) : null}
+                                <Text variant="caption" weight="semibold">
+                                  {daysLeft < 0
+                                    ? `${Math.abs(daysLeft)} days overdue`
+                                    : daysLeft === 0
+                                    ? 'Due today'
+                                    : `${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left`}
+                                </Text>
+                              </Stack>
+                            </Stack>
+
+                            <Stack gap="sm" style={{ minWidth: '12rem', alignSelf: 'stretch' }}>
+                              {fromNotification ? (
+                                <Stack gap="sm">
+                                  <Inline gap="sm" flexWrap>
+                                    {SNOOZE_OPTIONS.map((days) => (
+                                      <Button
+                                        key={days}
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={snoozingReminderId === reminder.id}
+                                        onClick={() => void handleSnooze(reminder.id, days)}
+                                      >
+                                        {days}d
+                                      </Button>
+                                    ))}
+                                  </Inline>
+
+                                  <Inline gap="sm" flexWrap align="end">
+                                    <FormField
+                                      label="Custom days"
+                                      type="number"
+                                      value={
+                                        customSnoozeDays === '' ? '' : String(customSnoozeDays)
+                                      }
+                                      onChange={(value) =>
+                                        setCustomSnoozeDays(value === '' ? '' : Number(value))
+                                      }
+                                    />
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="solid"
+                                      disabled={
+                                        snoozingReminderId === reminder.id ||
+                                        customSnoozeDays === '' ||
+                                        Number(customSnoozeDays) <= 0
+                                      }
+                                      onClick={() =>
+                                        customSnoozeDays !== '' &&
+                                        void handleSnooze(reminder.id, Number(customSnoozeDays))
+                                      }
+                                    >
+                                      {snoozingReminderId === reminder.id ? 'Snoozing…' : 'Snooze'}
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="danger"
+                                      onClick={() => setDeletingReminderId(reminder.id)}
+                                    >
+                                      Delete
+                                    </Button>
+                                  </Inline>
+                                  {reminder.inventory ? (
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => setSelectedInventory(reminder.inventory)}
+                                    >
+                                      View Details
+                                    </Button>
+                                  ) : null}
+                                </Stack>
+                              ) : (
+                                <Stack gap="sm" align="end">
+                                  <Inline gap="sm" flexWrap>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => setEditingReminder(reminder)}
+                                    >
+                                      Edit
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="danger"
+                                      onClick={() => setDeletingReminderId(reminder.id)}
+                                    >
+                                      Delete
+                                    </Button>
+                                  </Inline>
+                                  {reminder.inventory ? (
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => setSelectedInventory(reminder.inventory)}
+                                    >
+                                      View Details
+                                    </Button>
+                                  ) : null}
+                                </Stack>
+                              )}
+                            </Stack>
+                          </Inline>
+                        </CardBody>
+                      </Card>
+                    );
+                  })}
+                </Stack>
+                {!focusReminderId && (
+                  <PaginationBar
+                    page={page}
+                    totalPages={Math.max(totalPages, 1)}
+                    disabled={isLoading}
+                    onPageChange={setPage}
+                    pageSize={size}
+                    pageSizeOptions={[5, 10, 20, 50]}
+                    onPageSizeChange={(n) => {
+                      setPage(0);
+                      setSize(n);
+                    }}
+                    aria-label="Reminder pages"
+                  />
+                )}
+              </>
+            )}
+          </Stack>
+        </CardBody>
+      </Card>
       {selectedInventory && (
         <InventoryAlertDetails
           open={selectedInventory !== null}

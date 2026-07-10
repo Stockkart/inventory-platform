@@ -386,7 +386,6 @@ export default function OnboardingPage() {
         <FormField label="Business vertical *" id="verticalId" required>
           <Select
             id="verticalId"
-            className={styles.input}
             options={verticalOptions}
             value={formData.verticalId}
             onChange={(e) => {
@@ -403,11 +402,7 @@ export default function OnboardingPage() {
     if (step === 'businessDetails') {
       return (
         <>
-          <Text
-            color="secondary"
-            className={styles.subtitle}
-            style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}
-          >
+          <Text color="secondary" variant="caption">
             {verticalSchemaFields.some((f) => f.required)
               ? 'Fill required vertical fields below. Tax details are optional.'
               : 'Tax and compliance details are optional. You can skip or fill them later.'}
@@ -422,8 +417,6 @@ export default function OnboardingPage() {
                   onChange={(value: string) => setFormData({ ...formData, [field.key]: value })}
                   disabled={isLoading}
                   idPrefix="onboard-shop"
-                  inputClassName={styles.input}
-                  labelClassName={styles.label}
                 />
               ))}
             </FormRow>
@@ -471,14 +464,16 @@ export default function OnboardingPage() {
     if (step === 'shopType') {
       return (
         <FormField label="Shop Type *" id="shopType" required>
-          <Box className={styles.radioGroup} role="radiogroup" aria-label="Shop type">
+          <Stack gap="sm" width="full">
             {SHOP_TYPES.map(({ value, label }) => (
               <Button
-                variant="ghost"
+                variant="outline"
                 key={value}
-                className={`${styles.radioOption} ${
-                  formData.shopType === value ? styles.radioOptionSelected : ''
-                }`}
+                style={
+                  formData.shopType === value
+                    ? { borderColor: '#3b82f6', boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)' }
+                    : undefined
+                }
                 onClick={() => {
                   setFormData({ ...formData, shopType: value });
                   clearError();
@@ -486,13 +481,12 @@ export default function OnboardingPage() {
                 disabled={isLoading}
                 role="radio"
                 aria-checked={formData.shopType === value}
+                fullWidth
               >
-                <Text as="span" className={styles.radioLabel}>
-                  {label}
-                </Text>
+                {label}
               </Button>
             ))}
-          </Box>
+          </Stack>
         </FormField>
       );
     }
@@ -500,11 +494,7 @@ export default function OnboardingPage() {
     if (step === 'tagline') {
       return (
         <>
-          <Text
-            color="secondary"
-            className={styles.subtitle}
-            style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}
-          >
+          <Text color="secondary" variant="caption">
             Add a tagline for your shop. This field is optional.
           </Text>
           <FormField
@@ -554,89 +544,78 @@ export default function OnboardingPage() {
   };
 
   return (
-    <Box className={styles.onboardingContainer}>
-      <Stack className={styles.sidebar} gap="md">
-        <Stack className={styles.userInfo} gap="sm" align="center">
-          <Avatar name={userDisplayName} className={styles.userAvatar} />
-          <Text className={styles.userName}>{userDisplayName}</Text>
+    <Box className={styles.onboardingLayout}>
+      <Stack className={styles.sidebar} gap="md" bg="muted" padding="lg" border>
+        <Stack gap="sm" align="center">
+          <Avatar name={userDisplayName} />
+          <Text weight="medium">{userDisplayName}</Text>
         </Stack>
-        <Stack className={styles.sidebarContent} gap="md">
-          <Text variant="heading2" className={styles.sidebarTitle}>
+        <Stack gap="md">
+          <Text variant="heading2" weight="semibold">
             Onboarding: Shop Registration
           </Text>
-          <Stack className={styles.steps} gap="xs">
+          <Stack gap="xs">
             {STEPS.map((step, index) => (
               <Inline
                 key={step}
-                className={`${styles.step} ${index === currentStep ? styles.stepActive : ''} ${
-                  index < currentStep ? styles.stepCompleted : ''
-                }`}
                 gap="sm"
+                padding="sm"
+                rounded="md"
+                bg={index === currentStep ? 'surface' : undefined}
+                style={{ opacity: index <= currentStep ? 1 : 0.6 }}
               >
-                <Text as="span" className={styles.stepNumber}>
+                <Text as="span" weight="semibold">
                   {index < currentStep ? '✓' : index + 1}
                 </Text>
-                <Text as="span" className={styles.stepLabel}>
-                  {STEP_LABELS[step]}
-                </Text>
+                <Text as="span">{STEP_LABELS[step]}</Text>
               </Inline>
             ))}
           </Stack>
         </Stack>
-        <Inline className={styles.sidebarFooter} gap="sm">
-          <Button variant="ghost" onClick={() => void handleLogout()} className={styles.logoutBtn}>
+        <Inline gap="sm" justify="between" width="full">
+          <Button variant="ghost" onClick={() => void handleLogout()}>
             Logout
           </Button>
-          <IconButton label="Help" className={styles.helpBtn}>
-            ?
-          </IconButton>
+          <IconButton label="Help">?</IconButton>
         </Inline>
       </Stack>
 
-      <Stack className={styles.content} gap="md">
-        <Inline className={styles.contentHeader} justify="between" width="full">
-          <Button variant="ghost" onClick={handleBack} className={styles.backBtn}>
+      <Stack gap="md" width="full" align="center" justify="center" padding="lg" style={{ flex: 1 }}>
+        <Inline justify="between" width="full" maxWidth="md">
+          <Button variant="ghost" onClick={handleBack}>
             ← Back
           </Button>
-          <Box className={styles.logo}>
-            <Text as="span" className={styles.logoText}>
-              StockKart
-            </Text>
-          </Box>
+          <Text variant="title" weight="semibold">
+            StockKart
+          </Text>
         </Inline>
 
-        <Stack className={styles.formWrapper} gap="md">
-          <Text variant="heading1" className={styles.title}>
+        <Stack gap="md" width="full" maxWidth="md">
+          <Text variant="heading1" align="center">
             Verify your Contact Details
           </Text>
-          <Text color="secondary" className={styles.subtitle}>
+          <Text color="secondary" align="center">
             We require this to verify your identity. Your details will remain safe.
           </Text>
 
-          {error ? (
-            <Alert variant="danger" className={styles.errorMessage}>
-              {error}
-            </Alert>
-          ) : null}
+          {error ? <Alert variant="danger">{error}</Alert> : null}
 
-          <Stack className={styles.form} gap="md">
+          <Stack gap="md" width="full">
             {renderStepContent()}
 
-            <Box className={styles.formActions}>
-              <Button
-                variant="solid"
-                onClick={handleContinue}
-                className={styles.continueButton}
-                disabled={isLoading}
-                loading={isLoading}
-              >
-                {isLoading
-                  ? 'Registering...'
-                  : currentStep === STEPS.length - 1
-                  ? 'Complete'
-                  : 'Continue'}
-              </Button>
-            </Box>
+            <Button
+              variant="solid"
+              onClick={handleContinue}
+              disabled={isLoading}
+              loading={isLoading}
+              fullWidth
+            >
+              {isLoading
+                ? 'Registering...'
+                : currentStep === STEPS.length - 1
+                ? 'Complete'
+                : 'Continue'}
+            </Button>
           </Stack>
         </Stack>
       </Stack>

@@ -10,7 +10,6 @@ import {
 } from '@inventory-platform/ui-kit';
 import { SaleHistoryCard } from './SaleHistoryCard';
 import { HistoryListSummary } from './HistoryListSummary';
-import recordStyles from './HistoryRecordList.module.css';
 import { useNotify } from '@inventory-platform/session';
 import type { HistoryFilters } from './historyFilters';
 import {
@@ -107,7 +106,7 @@ export function PurchaseList({ filters }: PurchaseListProps) {
 
   if (isLoading && purchases.length === 0) {
     return (
-      <Stack className={recordStyles.container}>
+      <Stack width="full">
         <CenteredLoader label="Loading sale history…" />
       </Stack>
     );
@@ -115,14 +114,14 @@ export function PurchaseList({ filters }: PurchaseListProps) {
 
   if (error) {
     return (
-      <Stack className={recordStyles.container}>
+      <Stack width="full">
         <Alert variant="danger">{error}</Alert>
       </Stack>
     );
   }
 
   return (
-    <Stack gap="md" className={recordStyles.container}>
+    <Stack gap="md" width="full">
       <HistoryListSummary
         page={page}
         limit={limit}
@@ -134,7 +133,7 @@ export function PurchaseList({ filters }: PurchaseListProps) {
       {purchases.length === 0 && !isLoading ? (
         <EmptyState title={filtering ? 'No sales match these filters.' : 'No sales found.'} />
       ) : (
-        <Stack gap="md" className={recordStyles.list}>
+        <Stack gap="md">
           {purchases.map((purchase) => (
             <SaleHistoryCard key={purchase.purchaseId} purchase={purchase} />
           ))}

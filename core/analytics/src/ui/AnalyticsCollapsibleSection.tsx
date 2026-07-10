@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { Badge, Button, Card, CardBody, Inline, Text } from '@inventory-platform/ui-kit';
 import type { BadgeVariant } from '@inventory-platform/ui-kit';
-import styles from './analytics.module.css';
 
 interface AnalyticsCollapsibleSectionProps {
   title: string;
@@ -19,15 +18,21 @@ export function AnalyticsCollapsibleSection({
   children,
 }: AnalyticsCollapsibleSectionProps) {
   return (
-    <Card className={styles.accordionItem}>
+    <Card style={{ marginBottom: '1rem' }}>
       <Button
         type="button"
         variant="ghost"
-        className={styles.accordionHeader}
         onClick={onToggle}
         aria-expanded={expanded}
+        style={{
+          width: '100%',
+          justifyContent: 'stretch',
+          padding: '0.85rem 1.25rem',
+          borderRadius: 0,
+          textAlign: 'left',
+        }}
       >
-        <Inline align="center" justify="between" className={styles.accordionHeaderInner}>
+        <Inline align="center" justify="between" style={{ width: '100%' }}>
           <Inline gap="sm" align="center">
             <Text variant="heading4" weight="semibold">
               {title}
@@ -37,7 +42,10 @@ export function AnalyticsCollapsibleSection({
           <Text
             variant="caption"
             color="secondary"
-            className={expanded ? styles.accordionIconExpanded : styles.accordionIcon}
+            style={{
+              transition: 'transform 0.3s ease',
+              transform: expanded ? 'rotate(180deg)' : undefined,
+            }}
           >
             ▼
           </Text>
