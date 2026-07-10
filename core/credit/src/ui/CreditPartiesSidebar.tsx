@@ -79,7 +79,8 @@ export function CreditPartiesSidebar({
               rounded="md"
               bg="elevated"
               overflow="auto"
-              style={{ listStyle: 'none', padding: 0, maxHeight: '16rem' }}
+              padding="none"
+              style={{ listStyle: 'none', maxHeight: '16rem' }}
             >
               {searchMatches.map((a) => {
                 const pr = presentCreditBalance(a);
@@ -91,7 +92,9 @@ export function CreditPartiesSidebar({
                       role="option"
                       aria-selected={selectedId === a.id}
                       onClick={() => pickParty(a.id)}
-                      style={{ width: '100%', textAlign: 'left', borderRadius: 0 }}
+                      fullWidth
+                      align="start"
+                      style={{ borderRadius: 0 }}
                     >
                       <Stack gap="none">
                         <Text weight="semibold">{a.partyDisplayName}</Text>

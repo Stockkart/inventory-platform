@@ -40,6 +40,9 @@ import {
   DenseTableHeaderCell,
   DenseTableCell,
   denseTableClassNames,
+  cn,
+  productChrome,
+  shellChrome,
 } from '@inventory-platform/ui-kit';
 import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
 import { cartApi } from '../api/cart.api';
@@ -99,6 +102,7 @@ import {
   detailModalHeaderStyle,
   detailModalBodyStyle,
   detailModalSectionStyle,
+  detailModalSectionFlushStyle,
   detailCardStyle,
   detailPricingCardStyle,
   detailPriceValueStyle,
@@ -109,12 +113,18 @@ import {
   cafePickerSectionStyle,
   cafeOrderColumnStyle,
   cafeOrderPanelStyle,
+  cafeOrderHeaderStyle,
   cafeOrderListStyle,
   cafeOrderEmptyStyle,
   cafeAnalyticsStyle,
   cafeCheckoutBarInnerStyle,
+  cafeCheckoutTotalRowStyle,
   cafeCheckoutTotalValueStyle,
   cafeCheckoutPayBtnStyle,
+  cartLineFlushStyle,
+  lineTotalAmountStyle,
+  sectionDividerLgStyle,
+  microLabelStyle,
 } from '../ui/scanSellStyles';
 import { CafeSellCatalogPanel } from '../ui/CafeSellCatalogPanel';
 import { ScanSellMenuCartLine } from '../ui/ScanSellMenuCartLine';
@@ -327,7 +337,7 @@ function CartSellingPriceInput({
     <Input
       id={id}
       type="number"
-      style={itemSellingPriceInputStyle}
+      className={itemSellingPriceInputStyle}
       value={draft}
       min={0}
       step={0.01}
@@ -381,7 +391,7 @@ function CartAdditionalDiscountInput({
     <Input
       id={id}
       type="number"
-      style={itemAdditionalInputStyle}
+      className={itemAdditionalInputStyle}
       value={draft}
       placeholder="0"
       min={-100}
@@ -516,7 +526,7 @@ function CartSchemeInput({
     <Input
       id={id}
       type="text"
-      style={itemAdditionalInputStyle}
+      className={itemAdditionalInputStyle}
       value={draft}
       placeholder="0, 10, 10 + 1 (number = %)"
       disabled={disabled}
@@ -542,23 +552,14 @@ function CartSchemeInput({
 function SummaryRow({ label, value, total }: { label: string; value: string; total?: boolean }) {
   if (total) {
     return (
-      <Inline
-        justify="between"
-        width="full"
-        style={{
-          padding: '0.75rem 0',
-          marginTop: '0.5rem',
-          borderTop: '1px solid var(--border-color)',
-          fontSize: '1.25rem',
-        }}
-      >
+      <Inline justify="between" width="full" className={productChrome.summaryRowTotal}>
         <Text weight="bold">{label}</Text>
         <Text weight="bold">{value}</Text>
       </Inline>
     );
   }
   return (
-    <Inline justify="between" width="full" style={{ padding: '0.5rem 0' }}>
+    <Inline justify="between" width="full" className={productChrome.summaryRow}>
       <Text color="secondary">{label}</Text>
       <Text color="secondary">{value}</Text>
     </Inline>
@@ -580,13 +581,10 @@ function DetailField({
     <Inline
       gap="sm"
       align="start"
-      style={{
-        ...detailCardStyle,
-        ...(pricing ? detailPricingCardStyle : {}),
-      }}
+      className={cn(productChrome.detailCard, pricing && productChrome.detailCardPricing)}
     >
       <Text aria-hidden>{icon}</Text>
-      <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
+      <Stack gap="xs" flex="1" minWidth="0">
         <Text variant="caption" color="secondary" weight="semibold">
           {label}
         </Text>
@@ -638,7 +636,8 @@ function ProductSearchBlock({
     <Box
       position="relative"
       width="full"
-      style={{ ...searchRowStyle, ...rowStyle }}
+      className={searchRowStyle}
+      style={rowStyle}
       ref={searchWrapperRef}
       onFocusCapture={() => setSearchFocused(true)}
       onBlurCapture={(e) => {
@@ -651,15 +650,12 @@ function ProductSearchBlock({
         gap="sm"
         align="center"
         width="full"
-        style={{
-          ...searchInputWrapperStyle,
-          ...(searchFocused ? searchInputWrapperFocusedStyle : {}),
-        }}
+        className={cn(searchInputWrapperStyle, searchFocused && searchInputWrapperFocusedStyle)}
       >
         <Text aria-hidden>🔍</Text>
         <Input
           type="text"
-          style={searchInputStyle}
+          className={searchInputStyle}
           placeholder={placeholder}
           value={searchQuery}
           onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchQuery(e.currentTarget.value)}
@@ -682,15 +678,15 @@ function ProductSearchBlock({
       {showSearchDropdown ? (
         <SearchDropdown id="search-results-list" role="listbox">
           {isSearching ? (
-            <Box padding="md" style={{ textAlign: 'center' }}>
+            <Box padding="md" textAlign="center">
               <Text color="secondary">Searching…</Text>
             </Box>
           ) : searchResults.length === 0 ? (
-            <Box padding="md" style={{ textAlign: 'center' }}>
+            <Box padding="md" textAlign="center">
               <Text color="secondary">No products found</Text>
             </Box>
           ) : (
-            <Stack as="ul" gap="none" style={dropdownListStyle}>
+            <Stack as="ul" gap="none" className={dropdownListStyle}>
               {searchResults.map((item) => (
                 <SearchDropdownItem
                   key={item.id}
@@ -757,40 +753,35 @@ function CustomerSectionBlock({
   setCustomerPan: (v: string) => void;
 }) {
   return (
-    <Box
-      style={{
-        ...customerBlockStyle,
-        ...(idPrefix === 'cafe' ? customerBlockCafeStyle : {}),
-      }}
-    >
+    <Box className={cn(customerBlockStyle, idPrefix === 'cafe' && customerBlockCafeStyle)}>
       <Button
         type="button"
         variant="ghost"
-        style={customerToggleStyle}
+        className={customerToggleStyle}
         onClick={() => setCustomerSectionOpen((o) => !o)}
         aria-expanded={customerSectionOpen}
       >
         <Inline gap="sm" align="center" width="full">
           <Text weight="semibold">Customer</Text>
           {customerName || customerPhone ? (
-            <Text style={customerToggleValueStyle}>{customerName || customerPhone}</Text>
+            <Text className={customerToggleValueStyle}>{customerName || customerPhone}</Text>
           ) : (
-            <Text color="secondary" style={{ flex: 1 }}>
+            <Text color="secondary" flex="1">
               Optional
             </Text>
           )}
-          <Text style={customerToggleIconStyle}>{customerSectionOpen ? '▼' : '▶'}</Text>
+          <Text className={customerToggleIconStyle}>{customerSectionOpen ? '▼' : '▶'}</Text>
         </Inline>
       </Button>
       {customerSectionOpen ? (
-        <Stack gap="md" style={customerFormStyle}>
-          <Stack gap="sm" style={{ paddingTop: '0.75rem' }}>
+        <Stack gap="md" className={customerFormStyle}>
+          <Stack gap="sm" pt="sm">
             <FormField label="Phone" id={`${idPrefix}-customerPhone`}>
               <Inline gap="sm" width="full">
                 <Input
                   id={`${idPrefix}-customerPhone`}
                   type="tel"
-                  style={customerInputStyle}
+                  className={customerInputStyle}
                   placeholder="Phone"
                   value={customerPhone}
                   onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -802,7 +793,7 @@ function CustomerSectionBlock({
                 <IconButton
                   label="Search customer"
                   title="Search customer"
-                  style={sidebarSearchBtnStyle}
+                  className={sidebarSearchBtnStyle}
                   onClick={handleCustomerSearch}
                   disabled={isSearchingCustomer || !customerPhone.trim()}
                 >
@@ -814,7 +805,7 @@ function CustomerSectionBlock({
               <Input
                 id={`${idPrefix}-customerName`}
                 type="text"
-                style={customerInputStyle}
+                className={customerInputStyle}
                 placeholder="Name"
                 value={customerName}
                 onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -828,7 +819,7 @@ function CustomerSectionBlock({
                 <Input
                   id={`${idPrefix}-customerEmail`}
                   type="email"
-                  style={customerInputStyle}
+                  className={customerInputStyle}
                   placeholder="Email"
                   value={customerEmail}
                   onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -840,7 +831,7 @@ function CustomerSectionBlock({
                 <IconButton
                   label="Search customer by email"
                   title="Search customer by email"
-                  style={sidebarSearchBtnStyle}
+                  className={sidebarSearchBtnStyle}
                   onClick={handleCustomerSearchByEmail}
                   disabled={isSearchingCustomer || !customerEmail.trim()}
                 >
@@ -852,7 +843,7 @@ function CustomerSectionBlock({
               <Input
                 id={`${idPrefix}-customerAddress`}
                 type="text"
-                style={customerInputStyle}
+                className={customerInputStyle}
                 placeholder="Address"
                 value={customerAddress}
                 onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -864,13 +855,7 @@ function CustomerSectionBlock({
           </Stack>
           {idPrefix === 'sidebar' ? (
             <>
-              <Box
-                style={{
-                  marginTop: '1.5rem',
-                  paddingTop: '1.5rem',
-                  borderTop: '1px solid var(--border-color)',
-                }}
-              >
+              <Box className={sectionDividerLgStyle}>
                 <Checkbox
                   label="Is Retailer"
                   checked={isRetailer}
@@ -891,13 +876,13 @@ function CustomerSectionBlock({
                   border
                   rounded="md"
                   bg="surface"
-                  style={{ marginTop: '1rem', borderTop: '1px solid var(--border-color)' }}
+                  className={productChrome.sectionDivider}
                 >
                   <FormField label="GSTIN" id={`${idPrefix}-customerGstin`}>
                     <Input
                       id={`${idPrefix}-customerGstin`}
                       type="text"
-                      style={customerInputStyle}
+                      className={customerInputStyle}
                       placeholder="GSTIN"
                       value={customerGstin}
                       onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -909,7 +894,7 @@ function CustomerSectionBlock({
                     <Input
                       id={`${idPrefix}-customerDlNo`}
                       type="text"
-                      style={customerInputStyle}
+                      className={customerInputStyle}
                       placeholder="DL No"
                       value={customerDlNo}
                       onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -921,7 +906,7 @@ function CustomerSectionBlock({
                     <Input
                       id={`${idPrefix}-customerPan`}
                       type="text"
-                      style={customerInputStyle}
+                      className={customerInputStyle}
                       placeholder="PAN"
                       value={customerPan}
                       onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -2792,7 +2777,7 @@ export function ScanSellPage() {
   const renderCafeOrderLines = () => {
     if (isLoadingCart) {
       return (
-        <Text color="secondary" style={cafeOrderEmptyStyle}>
+        <Text color="secondary" className={cafeOrderEmptyStyle}>
           Loading order…
         </Text>
       );
@@ -2847,8 +2832,8 @@ export function ScanSellPage() {
   };
 
   const renderCafeCheckoutBar = () => (
-    <StickyBar fixed style={{ background: 'var(--bg-card)' }}>
-      <Inline style={cafeCheckoutBarInnerStyle} justify="between" align="center" width="full">
+    <StickyBar fixed className={productChrome.stickySurface}>
+      <Inline className={cafeCheckoutBarInnerStyle} justify="between" align="center" width="full">
         <Stack gap="xs">
           {isLoadingCart ? (
             <Text color="secondary">Loading…</Text>
@@ -2860,20 +2845,20 @@ export function ScanSellPage() {
                 (cartData?.cgstAmount ?? 0) !== 0) && (
                 <SummaryRow label="Tax" value={`₹${calculateTax().toFixed(2)}`} />
               )}
-              <Inline justify="between" width="full" style={{ fontSize: '1rem' }}>
+              <Inline justify="between" width="full" className={cafeCheckoutTotalRowStyle}>
                 <Text weight="bold">Total</Text>
-                <Text weight="bold" style={cafeCheckoutTotalValueStyle}>
+                <Text weight="bold" className={cafeCheckoutTotalValueStyle}>
                   ₹{calculateTotal().toFixed(2)}
                 </Text>
               </Inline>
             </>
           )}
         </Stack>
-        <Inline gap="sm" style={{ flexShrink: 0 }}>
+        <Inline gap="sm" flexShrink={0}>
           <Button
             type="button"
             variant="outline"
-            style={{ whiteSpace: 'nowrap' }}
+            className={shellChrome.nowrap}
             onClick={() => void handleClearCart()}
             disabled={isUpdatingCart || isLoadingCart}
           >
@@ -2882,7 +2867,7 @@ export function ScanSellPage() {
           <Button
             type="button"
             variant="solid"
-            style={cafeCheckoutPayBtnStyle}
+            className={cafeCheckoutPayBtnStyle}
             onClick={() => void handleProcessPayment()}
             disabled={
               (cartItems.length === 0 && menuCartLines.length === 0) ||
@@ -2931,16 +2916,16 @@ export function ScanSellPage() {
 
           {isCafeSell ? (
             <>
-              <Box style={{ flex: 1, minHeight: 0 }}>
-                <Inline style={cafeSellWorkspaceStyle} align="start" width="full">
-                  <Box display="flex" style={cafePickerColumnStyle}>
+              <Box flex="1" minHeight="0">
+                <Inline className={cafeSellWorkspaceStyle} align="start" width="full">
+                  <Box display="flex" className={cafePickerColumnStyle}>
                     <Stack
                       gap="md"
                       bg="elevated"
                       border
                       rounded="lg"
                       padding="md"
-                      style={cafePickerSectionStyle}
+                      className={cafePickerSectionStyle}
                     >
                       <ProductSearchBlock
                         searchQuery={searchQuery}
@@ -2970,7 +2955,7 @@ export function ScanSellPage() {
                     </Stack>
                   </Box>
 
-                  <Box as="aside" style={cafeOrderColumnStyle}>
+                  <Box as="aside" className={cafeOrderColumnStyle}>
                     <CustomerSectionBlock
                       idPrefix="cafe"
                       customerSectionOpen={customerSectionOpen}
@@ -2997,18 +2982,14 @@ export function ScanSellPage() {
                       setCustomerPan={setCustomerPan}
                     />
 
-                    <Card style={cafeOrderPanelStyle}>
+                    <Card className={cafeOrderPanelStyle}>
                       <CardBody>
                         <Inline
                           justify="between"
                           align="center"
                           width="full"
                           padding="sm"
-                          style={{
-                            borderBottom: '1px solid var(--border-color)',
-                            background: '#fff',
-                            flexShrink: 0,
-                          }}
+                          className={cafeOrderHeaderStyle}
                         >
                           <Text variant="heading3">Current order</Text>
                           <Badge variant="neutral">
@@ -3016,7 +2997,7 @@ export function ScanSellPage() {
                             {cafeOrderItemCount === 1 ? '' : 's'}
                           </Badge>
                         </Inline>
-                        <Stack gap="sm" style={cafeOrderListStyle}>
+                        <Stack gap="sm" className={cafeOrderListStyle}>
                           {renderCafeOrderLines()}
                         </Stack>
                       </CardBody>
@@ -3033,7 +3014,7 @@ export function ScanSellPage() {
                           border
                           rounded="md"
                           bg="surface"
-                          style={cafeAnalyticsStyle}
+                          className={cafeAnalyticsStyle}
                         >
                           <SummaryRow
                             label="Total Cost"
@@ -3074,7 +3055,7 @@ export function ScanSellPage() {
                     border
                     rounded="lg"
                     padding="lg"
-                    style={cartSectionStyle}
+                    className={cartSectionStyle}
                   >
                     <ProductSearchBlock
                       searchQuery={searchQuery}
@@ -3095,18 +3076,14 @@ export function ScanSellPage() {
                     />
 
                     {cartItems.length > 0 ? (
-                      <Inline
-                        gap="sm"
-                        align="center"
-                        style={{ marginBottom: '1rem', flexShrink: 0 }}
-                      >
+                      <Inline gap="sm" align="center" mb="md" flexShrink={0}>
                         <Text color="secondary">View:</Text>
                         <Inline gap="xs">
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
-                            style={cartViewMode === 'list' ? viewToggleActiveStyle : undefined}
+                            className={cartViewMode === 'list' ? viewToggleActiveStyle : undefined}
                             onClick={() => {
                               setCartViewMode('list');
                               localStorage.setItem('scan-sell-view-mode', 'list');
@@ -3120,7 +3097,7 @@ export function ScanSellPage() {
                             type="button"
                             variant="outline"
                             size="sm"
-                            style={cartViewMode === 'grid' ? viewToggleActiveStyle : undefined}
+                            className={cartViewMode === 'grid' ? viewToggleActiveStyle : undefined}
                             onClick={() => {
                               setCartViewMode('grid');
                               localStorage.setItem('scan-sell-view-mode', 'grid');
@@ -3134,7 +3111,7 @@ export function ScanSellPage() {
                       </Inline>
                     ) : null}
 
-                    <Box style={cartItemsStyle}>
+                    <Box className={cartItemsStyle}>
                       {isLoadingCart ? (
                         <CenteredLoader label="Loading cart..." />
                       ) : cartItems.length === 0 ? (
@@ -3302,7 +3279,10 @@ export function ScanSellPage() {
                                     <DenseTableCell>
                                       <Stack gap="xs">
                                         {!hidePurchaseDetailsInSell ? (
-                                          <Text variant="caption" style={{ fontSize: '0.72rem' }}>
+                                          <Text
+                                            variant="caption"
+                                            className={productChrome.microLabel}
+                                          >
                                             {(() => {
                                               const v = getPurchaseAdditionalDiscount(
                                                 cartItem.inventoryItem,
@@ -3311,7 +3291,7 @@ export function ScanSellPage() {
                                             })()}
                                           </Text>
                                         ) : null}
-                                        <Box style={{ fontWeight: 600 }}>
+                                        <Box className={productChrome.fontSemibold}>
                                           <CartAdditionalDiscountInput
                                             value={getEffectiveAdditionalDiscount(
                                               cartItem.inventoryItem.id,
@@ -3331,11 +3311,14 @@ export function ScanSellPage() {
                                     <DenseTableCell>
                                       <Stack gap="xs">
                                         {!hidePurchaseDetailsInSell ? (
-                                          <Text variant="caption" style={{ fontSize: '0.72rem' }}>
+                                          <Text
+                                            variant="caption"
+                                            className={productChrome.microLabel}
+                                          >
                                             {formatPurchaseSchemeLabel(cartItem.inventoryItem)}
                                           </Text>
                                         ) : null}
-                                        <Box style={{ fontWeight: 600 }}>
+                                        <Box className={productChrome.fontSemibold}>
                                           <CartSchemeInput
                                             schemeType={cartItem.schemeType ?? null}
                                             payFor={cartItem.schemePayFor ?? null}
@@ -3386,16 +3369,9 @@ export function ScanSellPage() {
                               ? cartItem.baseQuantity
                               : cartItem.quantity;
                             return (
-                              <Card
-                                key={cartItem.inventoryItem.id}
-                                style={{
-                                  padding: '0.85rem 0',
-                                  borderBottom: '1px solid var(--border-color)',
-                                  minWidth: 0,
-                                }}
-                              >
+                              <Card key={cartItem.inventoryItem.id} className={cartLineFlushStyle}>
                                 <CardBody>
-                                  <Stack gap="md" style={{ flex: 1, minWidth: 0 }}>
+                                  <Stack gap="md" flex="1" minWidth="0">
                                     <Stack gap="xs">
                                       <Inline
                                         gap="sm"
@@ -3453,7 +3429,7 @@ export function ScanSellPage() {
                                         bg="muted"
                                         border
                                         rounded="md"
-                                        style={itemEditFieldsStyle}
+                                        className={itemEditFieldsStyle}
                                       >
                                         <FormField
                                           label="Price"
@@ -3463,7 +3439,7 @@ export function ScanSellPage() {
                                             gap="sm"
                                             align="center"
                                             width="full"
-                                            style={itemPriceBlockStyle}
+                                            className={itemPriceBlockStyle}
                                           >
                                             <CartSellingPriceInput
                                               id={`price-${cartItem.inventoryItem.id}`}
@@ -3479,11 +3455,7 @@ export function ScanSellPage() {
                                             <Text
                                               variant="caption"
                                               color="secondary"
-                                              style={{
-                                                fontSize: '0.72rem',
-                                                letterSpacing: '0.02em',
-                                                textTransform: 'uppercase',
-                                              }}
+                                              className={microLabelStyle}
                                             >
                                               per {cartItem.unit}
                                             </Text>
@@ -3528,7 +3500,7 @@ export function ScanSellPage() {
                                               );
                                               return (
                                                 <Select
-                                                  style={itemRateSelectStyle}
+                                                  className={itemRateSelectStyle}
                                                   value={displayValue}
                                                   onChange={(e) => {
                                                     const sel = e.target.value;
@@ -3574,7 +3546,7 @@ export function ScanSellPage() {
                                           </Inline>
                                         </FormField>
                                         <Inline
-                                          style={itemSaleRowInlineStyle}
+                                          className={itemSaleRowInlineStyle}
                                           gap="md"
                                           align="start"
                                         >
@@ -3583,7 +3555,7 @@ export function ScanSellPage() {
                                               {!hidePurchaseDetailsInSell ? (
                                                 <Text
                                                   variant="caption"
-                                                  style={{ fontSize: '0.72rem' }}
+                                                  className={productChrome.microLabel}
                                                 >
                                                   {(() => {
                                                     const v = getPurchaseAdditionalDiscount(
@@ -3593,7 +3565,7 @@ export function ScanSellPage() {
                                                   })()}
                                                 </Text>
                                               ) : null}
-                                              <Box style={{ fontWeight: 600 }}>
+                                              <Box className={productChrome.fontSemibold}>
                                                 <CartAdditionalDiscountInput
                                                   value={getEffectiveAdditionalDiscount(
                                                     cartItem.inventoryItem.id,
@@ -3616,14 +3588,14 @@ export function ScanSellPage() {
                                               {!hidePurchaseDetailsInSell ? (
                                                 <Text
                                                   variant="caption"
-                                                  style={{ fontSize: '0.72rem' }}
+                                                  className={productChrome.microLabel}
                                                 >
                                                   {formatPurchaseSchemeLabel(
                                                     cartItem.inventoryItem,
                                                   )}
                                                 </Text>
                                               ) : null}
-                                              <Box style={{ fontWeight: 600 }}>
+                                              <Box className={productChrome.fontSemibold}>
                                                 <CartSchemeInput
                                                   schemeType={cartItem.schemeType ?? null}
                                                   payFor={cartItem.schemePayFor ?? null}
@@ -3650,7 +3622,7 @@ export function ScanSellPage() {
 
                                           <FormField label="Unit">
                                             <Select
-                                              style={itemUnitSelectStyle}
+                                              className={itemUnitSelectStyle}
                                               value={cartItem.unit}
                                               onChange={(e) =>
                                                 handleUnitChange(
@@ -3680,7 +3652,8 @@ export function ScanSellPage() {
                                       <Stack
                                         gap="sm"
                                         align="end"
-                                        style={{ flexShrink: 0, marginLeft: 'auto' }}
+                                        flexShrink={0}
+                                        className={productChrome.mlAuto}
                                       >
                                         <Inline gap="sm" align="center">
                                           <CartQtyStepper
@@ -3715,7 +3688,7 @@ export function ScanSellPage() {
                                             type="button"
                                             variant="ghost"
                                             size="sm"
-                                            style={{ flexShrink: 0 }}
+                                            flexShrink={0}
                                             onClick={() =>
                                               handleRemoveItem(cartItem.inventoryItem.id)
                                             }
@@ -3724,14 +3697,7 @@ export function ScanSellPage() {
                                             Remove
                                           </Button>
                                         </Inline>
-                                        <Text
-                                          weight="semibold"
-                                          style={{
-                                            marginTop: '0.35rem',
-                                            marginBottom: '0.2rem',
-                                            textAlign: 'center',
-                                          }}
-                                        >
+                                        <Text weight="semibold" className={lineTotalAmountStyle}>
                                           ₹{(cartItem.price * cartItem.quantity).toFixed(2)}
                                         </Text>
                                       </Stack>
@@ -3775,10 +3741,7 @@ export function ScanSellPage() {
                     setCustomerPan={setCustomerPan}
                   />
 
-                  <Stack
-                    gap="xs"
-                    style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}
-                  >
+                  <Stack gap="xs" className={productChrome.sectionDivider}>
                     {isLoadingCart ? (
                       <CenteredLoader label="Loading..." />
                     ) : (
@@ -3831,10 +3794,7 @@ export function ScanSellPage() {
                       cartData.revenueAfterTax != null ||
                       cartData.totalProfit != null ||
                       cartData.marginPercent != null) && (
-                      <Stack
-                        gap="xs"
-                        style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}
-                      >
+                      <Stack gap="xs" className={productChrome.sectionDivider}>
                         <SummaryRow
                           label="Total Cost"
                           value={`₹${(cartData.totalCost ?? 0).toFixed(2)}`}
@@ -3859,19 +3819,14 @@ export function ScanSellPage() {
                         )}
                       </Stack>
                     )}
-                  <Inline gap="sm" width="full" style={cartActionsStyle}>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      style={{ flex: 1 }}
-                      onClick={handleClearCart}
-                    >
+                  <Inline gap="sm" width="full" className={cartActionsStyle}>
+                    <Button type="button" variant="outline" flex="1" onClick={handleClearCart}>
                       Clear Cart
                     </Button>
                     <Button
                       type="button"
                       variant="solid"
-                      style={{ flex: 2 }}
+                      className={productChrome.flexGrow2}
                       onClick={handleProcessPayment}
                       disabled={
                         (cartItems.length === 0 && menuCartLines.length === 0) ||
@@ -3919,15 +3874,15 @@ export function ScanSellPage() {
                 open
                 onClose={() => setDetailModalItem(null)}
                 size="lg"
-                style={detailModalContentStyle}
+                className={detailModalContentStyle}
               >
                 <Inline
-                  style={detailModalHeaderStyle}
+                  className={detailModalHeaderStyle}
                   justify="between"
                   align="center"
                   width="full"
                 >
-                  <Inline gap="md" align="center" style={{ flex: 1 }}>
+                  <Inline gap="md" align="center" flex="1">
                     <Text aria-hidden>📦</Text>
                     <Stack gap="xs">
                       <Text variant="heading3">{inv.name || 'Product'}</Text>
@@ -3939,8 +3894,8 @@ export function ScanSellPage() {
                   </IconButton>
                 </Inline>
                 <Modal.Body>
-                  <Stack gap="lg" style={detailModalBodyStyle}>
-                    <Stack gap="md" style={detailModalSectionStyle}>
+                  <Stack gap="lg" className={detailModalBodyStyle}>
+                    <Stack gap="md" className={detailModalSectionStyle}>
                       <DetailSectionHeader icon="📋" title="Product Information" />
                       <Grid columns={2}>
                         {detailModalFullItemLoading ? (
@@ -3996,22 +3951,14 @@ export function ScanSellPage() {
                         </DetailField>
                       </Grid>
                     </Stack>
-                    <Stack
-                      gap="md"
-                      style={{
-                        ...detailModalSectionStyle,
-                        marginBottom: 0,
-                        paddingBottom: 0,
-                        borderBottom: 'none',
-                      }}
-                    >
+                    <Stack gap="md" className={detailModalSectionFlushStyle}>
                       <DetailSectionHeader icon="💰" title="Pricing" />
                       <Grid columns={2} gap="md">
                         <DetailField icon="💵" label="Selling Price" pricing>
-                          <Text style={detailPriceValueStyle}>₹{price.toFixed(2)}</Text>
+                          <Text className={detailPriceValueStyle}>₹{price.toFixed(2)}</Text>
                         </DetailField>
                         <DetailField icon="🏷️" label="MRP" pricing>
-                          <Text style={detailMrpValueStyle}>₹{mrp.toFixed(2)}</Text>
+                          <Text className={detailMrpValueStyle}>₹{mrp.toFixed(2)}</Text>
                         </DetailField>
                         {mrp > 0 ? (
                           <DetailField icon="📉" label="Discount off MRP" pricing>
@@ -4057,13 +4004,13 @@ export function ScanSellPage() {
                           </DetailField>
                         ) : null}
                         <DetailField icon="₹" label="Total amount" pricing>
-                          <Text style={detailTotalValueStyle}>
+                          <Text className={detailTotalValueStyle}>
                             ₹{(apiItem?.totalAmount ?? price * qty).toFixed(2)}
                           </Text>
                         </DetailField>
                       </Grid>
                       {detailModalItem.inventoryItem.pricingId ? (
-                        <Box style={{ marginTop: '1rem' }}>
+                        <Box mt="md">
                           <Link
                             to={`/dashboard/price-edit/${detailModalItem.inventoryItem.pricingId}`}
                             state={{
@@ -4104,10 +4051,10 @@ function SearchDropdownItem({
   };
 
   return (
-    <Inline as="li" justify="between" align="start" gap="md" style={dropdownItemStyle}>
-      <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
+    <Inline as="li" justify="between" align="start" gap="md" className={dropdownItemStyle}>
+      <Stack gap="xs" flex="1" minWidth="0">
         <Inline gap="sm" align="center">
-          <Text weight="semibold" style={dropdownItemNameStyle}>
+          <Text weight="semibold" className={dropdownItemNameStyle}>
             {item.name || 'Unnamed Product'}
           </Text>
           <Badge variant="info">{item.billingMode === 'BASIC' ? 'BASIC' : 'REGULAR'}</Badge>

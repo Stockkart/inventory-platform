@@ -93,7 +93,7 @@ export function PricingPage() {
       />
 
       <Inline gap="sm" flexWrap align="stretch" width="full">
-        <Box style={{ flex: 1, minWidth: 'min(100%, 280px)' }}>
+        <Box flex="1" style={{ minWidth: 'min(100%, 280px)' }}>
           <SearchInput
             value={searchInput}
             onChange={setSearchInput}

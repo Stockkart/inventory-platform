@@ -496,12 +496,374 @@
   transition: background-color 0.3s ease;
 }
 
+.videoFrame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+}
+
+.videoIframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.metricIcon {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  background: var(--sk-color-accent-soft);
+  color: var(--sk-color-accent);
+}
+
+.autoGridSm {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.autoGridMd {
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.kbdHint {
+  margin: 0 0.1rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+
+.commandPaletteBody {
+  max-height: min(70vh, 560px);
+}
+
+.commandPaletteList {
+  max-height: min(52vh, 360px);
+  padding: 0.35rem 0;
+}
+
+.commandPaletteEmpty {
+  padding: 1.5rem 1rem;
+}
+
+.commandRowIcon {
+  flex-shrink: 0;
+  width: 1.5rem;
+  text-align: center;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.shopSwitcherTrigger {
+  max-width: 180px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .mobileMenuFloating {
   display: none;
 }
 
 .sidebarBackdropVisible {
   display: none;
+}
+
+/* ──────────────────────────────────────────────────────
+   Toast chrome
+────────────────────────────────────────────────────── */
+.toastStack {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 99999;
+}
+
+/* ──────────────────────────────────────────────────────
+   Command palette chrome
+────────────────────────────────────────────────────── */
+.cmdSearchRow {
+  border-bottom: 1px solid var(--sk-color-border-default);
+  background: var(--sk-color-bg-canvas);
+}
+
+.cmdSearchIcon {
+  flex-shrink: 0;
+  color: var(--sk-color-text-secondary);
+  opacity: 0.85;
+}
+
+.cmdInput {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.cmdEscHint {
+  flex-shrink: 0;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid var(--sk-color-border-default);
+  border-radius: 4px;
+  background: var(--sk-color-bg-surface);
+}
+
+.cmdContainer {
+  max-height: min(70vh, 560px);
+}
+
+.cmdList {
+  max-height: min(52vh, 360px);
+  padding: 0.35rem 0;
+}
+
+.cmdFooter {
+  border-top: 1px solid var(--sk-color-border-default);
+  background: var(--sk-color-bg-muted, var(--sk-color-bg-canvas));
+  font-size: 0.75rem;
+}
+
+.cmdEmptyText {
+  padding: 1.5rem 1rem;
+}
+
+.cmdItem {
+  padding: 0.6rem 1rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: var(--sk-color-text-primary);
+}
+
+.cmdItemActive {
+  background: var(--sk-color-hover);
+}
+
+.cmdItemIdx {
+  flex-shrink: 0;
+  width: 1.5rem;
+  text-align: center;
+}
+
+.cmdItemIcon {
+  flex-shrink: 0;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.cmdItemSubLabel {
+  margin-top: 0.15rem;
+}
+
+.cmdFooterHint {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem;
+}
+
+.cmdFooterPlus {
+  margin: 0 0.1rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+
+.cmdFooterDesc {
+  margin-left: 0.25rem;
+}
+
+/* ──────────────────────────────────────────────────────
+   Keyboard shortcuts modal chrome
+────────────────────────────────────────────────────── */
+.noWrap {
+  white-space: nowrap;
+}
+
+.kbdDescText {
+  margin-bottom: 1rem;
+  line-height: 1.45;
+}
+
+.kbdSectionDesc {
+  margin-top: 0.35rem;
+  margin-bottom: 0.85rem;
+  line-height: 1.45;
+}
+
+.kbdAssignRow {
+  flex-wrap: wrap;
+  margin-bottom: 0.65rem;
+}
+
+.kbdAssignSelect {
+  flex: 1;
+  min-width: 11rem;
+}
+
+.kbdHeaderCellAction {
+  width: 4.5rem;
+  text-align: right;
+}
+
+.kbdActionCell {
+  text-align: right;
+  vertical-align: middle;
+}
+
+.kbdTopSm {
+  margin-top: 0.35rem;
+}
+
+.kbdFooterText {
+  margin-top: 1rem;
+  line-height: 1.45;
+}
+
+/* ──────────────────────────────────────────────────────
+   Shop section chrome (UserMenuShopSection)
+────────────────────────────────────────────────────── */
+.shopSection {
+  border-bottom: 1px solid var(--sk-color-border-default);
+  background: var(--sk-color-bg-canvas);
+}
+
+.shopSwitchList {
+  max-height: 160px;
+  overscroll-behavior: contain;
+}
+
+.shopSwitchBtn {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 0.1rem 0.5rem;
+  padding: 0.55rem 0.65rem;
+  text-align: left;
+  height: auto;
+}
+
+.shopSwitchBtnRole {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+}
+
+.accentText {
+  color: var(--sk-color-accent);
+}
+
+/* ──────────────────────────────────────────────────────
+   ShopSwitcher dropdown chrome
+────────────────────────────────────────────────────── */
+.shopTrigger {
+  max-width: 180px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.shopChevron {
+  font-size: 0.7rem;
+  opacity: 0.7;
+  transition: transform 0.2s;
+}
+
+.shopChevronOpen {
+  transform: rotate(180deg);
+}
+
+.shopDropdown {
+  right: 0;
+  top: calc(100% + 8px);
+  min-width: 220px;
+  max-width: 280px;
+  z-index: 1000;
+  box-shadow: var(--sk-shadow-lg);
+}
+
+.shopDropdownLabel {
+  display: block;
+  padding: 0.5rem 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--sk-color-border-default);
+}
+
+.shopDropdownItem {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0;
+}
+
+.shopDropdownItemActive {
+  background: var(--sk-color-accent-soft);
+  color: var(--sk-color-accent);
+}
+
+.shopDropdownAdd {
+  padding: 0.75rem 1rem;
+  border-radius: 0;
+  border-top: 1px solid var(--sk-color-border-default);
+  color: var(--sk-color-accent);
+  justify-content: flex-start;
+}
+
+/* ──────────────────────────────────────────────────────
+   Contextual help panel chrome
+────────────────────────────────────────────────────── */
+.helpSubtitle {
+  margin-top: 0.75rem;
+}
+
+/* ──────────────────────────────────────────────────────
+   YouTube help modal chrome
+────────────────────────────────────────────────────── */
+.videoDescription {
+  margin-bottom: 0.75rem;
+  line-height: 1.45;
+}
+
+.videoEmbed {
+  aspect-ratio: 16 / 9;
+  background: #000;
+}
+
+.iframeFill {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* ──────────────────────────────────────────────────────
+   Overview / metric chrome
+────────────────────────────────────────────────────── */
+.metricIcon {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  background: var(--sk-color-accent-soft);
+  color: var(--sk-color-accent);
+}
+
+.autoFitSm {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.autoFitMd {
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
 }
 
 @media (max-width: 768px) {

@@ -112,7 +112,8 @@ export default function ShopSelectionPage() {
       maxWidth="lg"
       mx="auto"
       padding="xl"
-      style={{ minHeight: '100vh', justifyContent: 'center' }}
+      minHeight="screen"
+      justify="center"
     >
       <Stack gap="xs" align="center">
         <Text variant="heading1">Get Started</Text>
@@ -134,11 +135,7 @@ export default function ShopSelectionPage() {
                 handleOptionSelect(key);
               }
             }}
-            style={
-              selectedOption === key
-                ? { borderColor: '#3b82f6', background: 'rgba(59, 130, 246, 0.08)' }
-                : undefined
-            }
+            selected={selectedOption === key}
           >
             <CardBody>
               <Stack gap="md" align="center">

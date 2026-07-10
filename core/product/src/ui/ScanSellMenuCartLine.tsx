@@ -54,11 +54,11 @@ export function ScanSellMenuCartLine({
             loading={customerProductHistoryLoading}
           />
         ) : null}
-        <Text variant="caption" color="secondary" style={cartLineMetaStyle}>
+        <Text variant="caption" color="secondary" className={cartLineMetaStyle}>
           {money(line.priceToRetail)} each · {money(lineTotal)}
         </Text>
       </Stack>
-      <Stack gap="sm" align="end" style={{ flexShrink: 0 }}>
+      <Stack gap="sm" align="end" flexShrink={0}>
         <CartQtyStepper
           value={line.quantity}
           disabled={disabled}
@@ -70,7 +70,7 @@ export function ScanSellMenuCartLine({
           type="button"
           variant="ghost"
           size="sm"
-          style={{ flexShrink: 0 }}
+          flexShrink={0}
           onClick={() => onRemove(ref)}
           disabled={disabled}
         >

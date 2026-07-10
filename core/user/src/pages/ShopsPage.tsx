@@ -87,14 +87,7 @@ export function ShopsPage() {
           {shops.map((s) => {
             const isActive = s.shopId === activeShopId;
             return (
-              <Card
-                key={s.shopId}
-                style={
-                  isActive
-                    ? { borderColor: '#3b82f6', background: 'rgba(59, 130, 246, 0.05)' }
-                    : undefined
-                }
-              >
+              <Card key={s.shopId} selected={isActive}>
                 <CardBody>
                   <Stack gap="md">
                     <Inline gap="sm" align="start" width="full">

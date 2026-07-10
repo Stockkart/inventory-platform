@@ -122,12 +122,7 @@ export function InvitationCard({
           {error ? <Alert variant="danger">{error}</Alert> : null}
 
           {showAcceptButton && isPending ? (
-            <Button
-              variant="solid"
-              onClick={handleAccept}
-              disabled={isAccepting}
-              style={{ width: '100%' }}
-            >
+            <Button variant="solid" onClick={handleAccept} disabled={isAccepting} fullWidth>
               {isAccepting ? 'Accepting...' : 'Accept Invitation'}
             </Button>
           ) : null}

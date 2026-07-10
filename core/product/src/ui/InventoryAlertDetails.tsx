@@ -37,6 +37,7 @@ import {
   Text,
   Textarea,
   type SelectOptionDef,
+  productChrome,
 } from '@inventory-platform/ui-kit';
 const SCHEME_TYPE_OPTIONS: readonly SelectOptionDef[] = [
   { value: 'FIXED_UNITS', label: 'Free units' },
@@ -58,7 +59,7 @@ const DISCOUNT_OPTIONS: readonly SelectOptionDef[] = [
 
 function SectionHeader({ icon, title }: { icon: string; title: string }) {
   return (
-    <Inline gap="sm" align="center" style={{ marginBottom: '1rem' }}>
+    <Inline gap="sm" align="center" mb="md">
       <Text>{icon}</Text>
       <Text variant="heading4">{title}</Text>
     </Inline>
@@ -78,8 +79,8 @@ function DetailField({
 }) {
   return (
     <Inline gap="sm" align="start" style={fullWidth ? { gridColumn: '1 / -1' } : undefined}>
-      {icon ? <Text style={{ flexShrink: 0 }}>{icon}</Text> : null}
-      <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
+      {icon ? <Text flexShrink={0}>{icon}</Text> : null}
+      <Stack gap="xs" flex="1" minWidth="0">
         <Text variant="caption" color="secondary">
           {label}
         </Text>
@@ -585,14 +586,8 @@ export function InventoryAlertDetails({
 
   return (
     <Modal open onClose={onClose} size="lg">
-      <Inline
-        justify="between"
-        align="center"
-        gap="md"
-        padding="lg"
-        style={{ borderBottom: '1px solid var(--border-color)' }}
-      >
-        <Inline gap="md" align="center" style={{ flex: 1, minWidth: 0 }}>
+      <Inline justify="between" align="center" gap="md" padding="lg" borderBottom>
+        <Inline gap="md" align="center" flex="1" minWidth="0">
           <Text style={{ fontSize: '2rem', lineHeight: 1 }}>📦</Text>
           <Stack gap="xs">
             <Text variant="heading3">{item?.name ?? item?.barcode ?? 'Item Details'}</Text>
@@ -618,7 +613,7 @@ export function InventoryAlertDetails({
 
       <Modal.Body>
         <Box padding="lg" overflow="auto" style={{ maxHeight: '70vh' }}>
-          <Box style={{ marginBottom: '1.5rem' }}>
+          <Box mb="lg">
             <SectionHeader icon="📋" title="Product Information" />
             <Grid columns={2} gap="sm">
               <DetailField icon="🏷️" label="Product Name">
@@ -734,7 +729,7 @@ export function InventoryAlertDetails({
             </Grid>
           </Box>
 
-          <Box style={{ marginBottom: '1.5rem' }}>
+          <Box mb="lg">
             <SectionHeader icon="📦" title="Stock & packaging" />
             <Grid columns={2} gap="sm">
               <DetailField icon="🔢" label="Current stock">
@@ -760,7 +755,7 @@ export function InventoryAlertDetails({
               <DetailField icon="📐" label="Packaging">
                 {isEditing ? (
                   <Inline gap="sm" align="center">
-                    <Text aria-hidden style={{ flexShrink: 0 }}>
+                    <Text aria-hidden flexShrink={0}>
                       1 ×
                     </Text>
                     <Input
@@ -824,7 +819,7 @@ export function InventoryAlertDetails({
             </Grid>
           </Box>
 
-          <Box style={{ marginBottom: '1.5rem' }}>
+          <Box mb="lg">
             <SectionHeader icon="🎁" title="Schemes & attributes" />
             <Grid columns={2} gap="sm">
               <DetailField label="Sale deal type">
@@ -946,7 +941,7 @@ export function InventoryAlertDetails({
             </Grid>
           </Box>
 
-          <Box style={{ marginBottom: '1.5rem' }}>
+          <Box mb="lg">
             <SectionHeader icon="💰" title="Pricing" />
             <Grid columns={2} gap="sm">
               <DetailField icon="💵" label="Selling Price (PTR)">
@@ -1051,7 +1046,7 @@ export function InventoryAlertDetails({
               </DetailField>
             </Grid>
             {item?.pricingId ? (
-              <Box style={{ marginTop: '1rem' }}>
+              <Box mt="md">
                 <RouterLink
                   to={`/dashboard/price-edit/${item.pricingId}`}
                   state={{
@@ -1071,7 +1066,7 @@ export function InventoryAlertDetails({
           </Box>
 
           {item?.vendorId ? (
-            <Box style={{ marginBottom: '1.5rem' }}>
+            <Box mb="lg">
               <SectionHeader icon="👤" title="Vendor Information" />
               {loadingVendor ? (
                 <CenteredLoader label="Loading vendor details..." />

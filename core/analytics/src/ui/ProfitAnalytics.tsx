@@ -10,6 +10,7 @@ import {
   Input,
   Select,
   Stack,
+  chartChrome,
 } from '@inventory-platform/ui-kit';
 import { useProfitAnalyticsQuery } from '../queries/hooks';
 import { ProfitSummaryCards } from './ProfitSummaryCards';
@@ -203,23 +204,23 @@ export function ProfitAnalytics() {
 
           <Stack gap="md">
             {profitData.costPriceTrends && profitData.costPriceTrends.length > 0 ? (
-              <Card style={{ minHeight: 400 }}>
+              <Card className={chartChrome.card}>
                 <CardBody>
                   <CostPriceTrendsChart data={profitData.costPriceTrends} />
                 </CardBody>
               </Card>
             ) : null}
-            <Card style={{ minHeight: 400 }}>
+            <Card className={chartChrome.card}>
               <CardBody>
                 <ProfitByGroupChart data={profitData.profitByProduct} groupBy="product" />
               </CardBody>
             </Card>
-            <Card style={{ minHeight: 400 }}>
+            <Card className={chartChrome.card}>
               <CardBody>
                 <ProfitByGroupChart data={profitData.profitByLotId} groupBy="lotId" />
               </CardBody>
             </Card>
-            <Card style={{ minHeight: 400 }}>
+            <Card className={chartChrome.card}>
               <CardBody>
                 <ProfitByGroupChart data={profitData.profitByBusinessType} groupBy="businessType" />
               </CardBody>
@@ -227,17 +228,17 @@ export function ProfitAnalytics() {
           </Stack>
 
           <Stack gap="md">
-            <Card style={{ minHeight: 400 }}>
+            <Card className={chartChrome.card}>
               <CardBody>
                 <ProfitByGroupPieChart data={profitData.profitByProduct} groupBy="product" />
               </CardBody>
             </Card>
-            <Card style={{ minHeight: 400 }}>
+            <Card className={chartChrome.card}>
               <CardBody>
                 <ProfitByGroupPieChart data={profitData.profitByLotId} groupBy="lotId" />
               </CardBody>
             </Card>
-            <Card style={{ minHeight: 400 }}>
+            <Card className={chartChrome.card}>
               <CardBody>
                 <ProfitByGroupPieChart
                   data={profitData.profitByBusinessType}
@@ -248,7 +249,7 @@ export function ProfitAnalytics() {
           </Stack>
 
           {profitData.lowMarginProducts && profitData.lowMarginProducts.length > 0 ? (
-            <Card style={{ minHeight: 400 }}>
+            <Card className={chartChrome.card}>
               <CardBody>
                 <LowMarginProductsTable data={profitData.lowMarginProducts} />
               </CardBody>

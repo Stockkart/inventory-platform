@@ -102,7 +102,8 @@ export function QuotationSetupPanel({
                         <Input
                           id="setup-customerPhone"
                           type="tel"
-                          style={{ flex: 1, minWidth: 0 }}
+                          flex="1"
+                          minWidth="0"
                           placeholder="e.g. 9876543210"
                           value={customerPhone}
                           onChange={(e) => onPhoneChange(e.target.value)}
@@ -138,7 +139,8 @@ export function QuotationSetupPanel({
                         <Input
                           id="setup-customerEmail"
                           type="email"
-                          style={{ flex: 1, minWidth: 0 }}
+                          flex="1"
+                          minWidth="0"
                           placeholder="Email (optional)"
                           value={customerEmail}
                           onChange={(e) => onEmailChange(e.target.value)}

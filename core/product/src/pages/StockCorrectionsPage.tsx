@@ -30,6 +30,7 @@ import {
   TableLoadingRow,
   TableRow,
   Text,
+  productChrome,
 } from '@inventory-platform/ui-kit';
 
 const impactGainStyle = { fontWeight: 600 as const, color: '#047857' };
@@ -834,7 +835,7 @@ export function StockCorrectionsPage() {
                               <TableCell>{c.status}</TableCell>
                               <TableCell>{c.lines.length}</TableCell>
                               <TableCell>{approvedCount}</TableCell>
-                              <TableCell style={{ fontWeight: 600 }}>
+                              <TableCell className={productChrome.fontSemibold}>
                                 {approvedCount === 0 ? (
                                   '—'
                                 ) : netTotal == null ? (

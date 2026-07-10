@@ -87,25 +87,27 @@ export function ContextualHelpPanel({
             </IconButton>
           </Inline>
 
-          <Text color="secondary" variant="caption" style={{ marginTop: '0.75rem' }}>
-            Tutorial videos matched to <Text as="code">{currentPath}</Text>
-          </Text>
+          <Box mt="sm">
+            <Text color="secondary" variant="caption">
+              Tutorial videos matched to <Text as="code">{currentPath}</Text>
+            </Text>
+          </Box>
 
           {loading ? (
-            <Inline gap="sm" align="center" style={{ marginTop: '1rem' }}>
+            <Inline gap="sm" align="center" mt="md">
               <Spinner size="sm" aria-hidden />
               <Text color="secondary">Loading videos…</Text>
             </Inline>
           ) : null}
 
           {error ? (
-            <Box padding="none" style={{ marginTop: '1rem' }}>
+            <Box padding="none" mt="md">
               <Alert variant="danger">{error}</Alert>
             </Box>
           ) : null}
 
           {!loading && !error && videos.length === 0 ? (
-            <Stack gap="none" style={{ marginTop: '1rem' }}>
+            <Stack gap="none" mt="md">
               <EmptyState
                 title="No videos yet"
                 description="No videos are mapped to this page yet. Try the StockKart overview from the home page demo, or check back after your admin adds tutorials."
@@ -113,12 +115,12 @@ export function ContextualHelpPanel({
             </Stack>
           ) : null}
 
-          <Stack gap="sm" style={{ marginTop: '1rem', paddingBottom: '1.5rem' }}>
+          <Stack gap="sm" mt="md" pb="lg">
             {videos.map((video) => (
               <Card key={video.id}>
                 <CardBody>
                   <Inline align="start" justify="between" gap="md">
-                    <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
+                    <Stack gap="xs" flex="1" minWidth="0">
                       <Text variant="heading3" weight="semibold">
                         {video.title}
                       </Text>

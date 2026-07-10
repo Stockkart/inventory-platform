@@ -31,6 +31,7 @@ import {
   TableHeaderCell,
   TableRow,
   Text,
+  productChrome,
 } from '@inventory-platform/ui-kit';
 import { useCapabilityFeatureGuard } from '@inventory-platform/routing';
 import {
@@ -590,7 +591,7 @@ export function VendorReturnPage() {
         description="Find a supplier purchase invoice, then enter how many selling units you are sending back—the same counting unit as stock on the shelf (like “Return to customer”). Credit notes appear in GSTR‑2 CDNR / CDNUR when applicable."
       />
 
-      <Inline gap="none" style={{ borderBottom: '1px solid var(--border-color)' }}>
+      <Inline gap="none" borderBottom>
         <Button
           type="button"
           size="sm"
@@ -737,7 +738,7 @@ export function VendorReturnPage() {
                             }}
                           >
                             <CardBody>
-                              <Inline justify="between" style={{ marginBottom: '0.75rem' }}>
+                              <Inline justify="between" mb="sm">
                                 <Inline gap="xs">
                                   <Text variant="caption" weight="semibold">
                                     Invoice:
@@ -767,7 +768,7 @@ export function VendorReturnPage() {
                           </Card>
 
                           {selected?.id === inv.id && detail ? (
-                            <Card style={{ marginTop: '0.25rem' }}>
+                            <Card className={productChrome.mtXs}>
                               <CardBody>
                                 <Stack gap="md">
                                   <Text variant="heading3" weight="semibold">
@@ -948,7 +949,7 @@ export function VendorReturnPage() {
                                         </TableBody>
                                       </Table>
                                       {returnDebitNoteEstimate.linesWithQty > 0 ? (
-                                        <Box style={{ marginTop: '0.5rem' }}>
+                                        <Box mt="sm">
                                           <Alert variant="info" role="status">
                                             <Text as="span" weight="semibold">
                                               Estimated debit note total (incl. GST):

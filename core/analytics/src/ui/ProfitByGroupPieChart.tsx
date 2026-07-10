@@ -1,4 +1,4 @@
-import { Box, Stack, Text } from '@inventory-platform/ui-kit';
+import { Box, Stack, Text, chartChrome } from '@inventory-platform/ui-kit';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 interface ProfitGroupData {
   groupKey: string | null;
@@ -70,26 +70,16 @@ export function ProfitByGroupPieChart({ data, groupBy }: ProfitByGroupPieChartPr
   };
 
   return (
-    <Stack gap="sm" style={{ minHeight: 300 }}>
-      <Text
-        variant="heading4"
-        weight="semibold"
-        style={{
-          marginBottom: '0.75rem',
-          paddingBottom: '0.5rem',
-          borderBottom: '1px solid var(--border-color, #e5e7eb)',
-        }}
-      >
+    <Stack gap="sm" className={chartChrome.frame}>
+      <Text variant="heading4" weight="semibold" className={chartChrome.chartToolbar}>
         {getTitle()}
       </Text>
       <Box
-        style={{
-          flex: 1,
-          minHeight: 320,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
+        display="flex"
+        flex="1"
+        align="center"
+        justify="center"
+        className={chartChrome.frameTall}
       >
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>

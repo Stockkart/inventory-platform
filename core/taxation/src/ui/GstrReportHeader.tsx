@@ -33,7 +33,7 @@ export function GstrReportHeader({
 }: GstrReportHeaderProps) {
   return (
     <Inline gap="md" align="start" justify="between" flexWrap>
-      <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
+      <Stack gap="xs" flex="1" minWidth="0">
         <Text variant="heading2">{title}</Text>
         <Text color="secondary">{description}</Text>
         {shopInfo ? (
@@ -42,7 +42,7 @@ export function GstrReportHeader({
           </Text>
         ) : null}
       </Stack>
-      <Inline gap="md" align="center" flexWrap style={{ flexShrink: 0 }}>
+      <Inline gap="md" align="center" flexWrap flexShrink={0}>
         <FormField label="Period" htmlFor={periodId}>
           <Input
             id={periodId}

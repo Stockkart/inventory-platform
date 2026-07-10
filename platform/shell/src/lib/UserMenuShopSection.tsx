@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuthStore } from '@inventory-platform/session';
 import type { ShopMembership } from '@inventory-platform/session/types';
-import { Badge, Button, Inline, Stack, Text } from '@inventory-platform/ui-kit';
+import { Badge, Box, Button, Inline, Stack, Text, shellChrome } from '@inventory-platform/ui-kit';
 
 export interface UserMenuShopSectionProps {
   onClose?: () => void;
@@ -46,25 +46,20 @@ export function UserMenuShopSection({ onClose }: UserMenuShopSectionProps) {
   };
 
   return (
-    <Stack
-      gap="md"
-      padding="md"
-      style={{
-        borderBottom: '1px solid var(--sk-color-border-default)',
-        background: 'var(--sk-color-bg-canvas)',
-      }}
-    >
+    <Stack gap="md" padding="md" className={shellChrome.shopSection}>
       <Stack gap="xs">
         <Text variant="caption" color="secondary" weight="bold">
           Current shop
         </Text>
-        <Inline align="center" gap="sm" style={{ minWidth: 0 }}>
+        <Inline align="center" gap="sm" minWidth="0">
           <Text as="span" aria-hidden>
             🏪
           </Text>
-          <Text weight="semibold" truncate style={{ flex: 1, minWidth: 0 }}>
-            {activeShopName}
-          </Text>
+          <Box flex="1" minWidth="0">
+            <Text weight="semibold" truncate>
+              {activeShopName}
+            </Text>
+          </Box>
           <Badge variant="success">Active</Badge>
         </Inline>
       </Stack>
@@ -74,14 +69,7 @@ export function UserMenuShopSection({ onClose }: UserMenuShopSectionProps) {
           <Text variant="caption" color="secondary" weight="bold">
             Switch shop
           </Text>
-          <Stack
-            gap="xs"
-            style={{
-              maxHeight: 160,
-              overflowY: 'auto',
-              overscrollBehavior: 'contain',
-            }}
-          >
+          <Stack gap="xs" overflowY="auto" className={shellChrome.shopSwitchList}>
             {otherShops.map((membership) => {
               const isSwitching = switchingId === membership.shopId;
               return (
@@ -92,15 +80,7 @@ export function UserMenuShopSection({ onClose }: UserMenuShopSectionProps) {
                   fullWidth
                   onClick={() => void handleSwitch(membership)}
                   disabled={isLoading || isSwitching}
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr auto',
-                    gridTemplateRows: 'auto auto',
-                    gap: '0.1rem 0.5rem',
-                    padding: '0.55rem 0.65rem',
-                    textAlign: 'left',
-                    height: 'auto',
-                  }}
+                  className={shellChrome.shopSwitchBtn}
                 >
                   <Text as="span" weight="semibold" variant="caption">
                     {membership.shopName}
@@ -109,16 +89,11 @@ export function UserMenuShopSection({ onClose }: UserMenuShopSectionProps) {
                     as="span"
                     variant="caption"
                     color="secondary"
-                    style={{ gridColumn: 2, gridRow: '1 / span 2', alignSelf: 'center' }}
+                    className={shellChrome.shopSwitchBtnRole}
                   >
                     {membership.role}
                   </Text>
-                  <Text
-                    as="span"
-                    variant="caption"
-                    weight="medium"
-                    style={{ color: 'var(--sk-color-accent)' }}
-                  >
+                  <Text as="span" variant="caption" weight="medium" color="primary">
                     {isSwitching ? 'Switching…' : 'Use this shop'}
                   </Text>
                 </Button>

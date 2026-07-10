@@ -90,7 +90,7 @@ export function SaleHistoryCard({ purchase }: { purchase: Purchase }) {
           <Stack gap="md">
             <Inline justify="between" align="start" gap="md" style={recordHeaderStyle}>
               <DetailLine label="Invoice" value={purchase.invoiceNo} />
-              <Inline gap="sm" align="center" style={{ flexShrink: 0 }}>
+              <Inline gap="sm" align="center" flexShrink={0}>
                 <DetailLine label="Date" value={formatDate(purchase.soldAt)} />
                 {purchase.status === 'COMPLETED' ? (
                   <Button

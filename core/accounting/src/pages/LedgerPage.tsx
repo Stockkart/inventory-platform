@@ -232,7 +232,7 @@ export function LedgerPage() {
                               style={active ? acctItemActiveStyle : acctItemStyle}
                               onClick={() => openAccount(account.id)}
                             >
-                              <Stack gap="none" style={{ minWidth: 0 }}>
+                              <Stack gap="none" minWidth="0">
                                 <Text as="span" style={acctItemCodeStyle}>
                                   {account.code}
                                 </Text>

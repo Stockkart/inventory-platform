@@ -11,6 +11,7 @@ import {
   Input,
   Select,
   Stack,
+  chartChrome,
 } from '@inventory-platform/ui-kit';
 import { useSalesAnalyticsQuery } from '../queries/hooks';
 import { SummaryCards } from './SummaryCards';
@@ -211,28 +212,28 @@ export function SalesAnalytics() {
           {data.periodComparison ? <ComparisonMetrics data={data} /> : null}
           <Stack gap="md">
             {data.timeSeries && data.timeSeries.length > 0 ? (
-              <Card style={{ minHeight: 400 }}>
+              <Card className={chartChrome.card}>
                 <CardBody>
                   <RevenueChart data={data.timeSeries} />
                 </CardBody>
               </Card>
             ) : null}
-            <Card style={{ minHeight: 400 }}>
+            <Card className={chartChrome.card}>
               <CardBody>
                 <TopProductsChart data={data.topProducts} />
               </CardBody>
             </Card>
-            <Card style={{ minHeight: 400 }}>
+            <Card className={chartChrome.card}>
               <CardBody>
                 <SalesByGroupChart data={data.salesByProduct} groupBy="product" />
               </CardBody>
             </Card>
-            <Card style={{ minHeight: 400 }}>
+            <Card className={chartChrome.card}>
               <CardBody>
                 <SalesByGroupChart data={data.salesByLotId} groupBy="lotId" />
               </CardBody>
             </Card>
-            <Card style={{ minHeight: 400 }}>
+            <Card className={chartChrome.card}>
               <CardBody>
                 <SalesByGroupChart data={data.salesByCompany} groupBy="company" />
               </CardBody>
@@ -240,7 +241,7 @@ export function SalesAnalytics() {
           </Stack>
 
           <Stack gap="md">
-            <Card style={{ minHeight: 400 }}>
+            <Card className={chartChrome.card}>
               <CardBody>
                 <SalesByGroupPieChart
                   data={data.salesByProduct}
@@ -249,12 +250,12 @@ export function SalesAnalytics() {
                 />
               </CardBody>
             </Card>
-            <Card style={{ minHeight: 400 }}>
+            <Card className={chartChrome.card}>
               <CardBody>
                 <SalesByGroupPieChart data={data.salesByLotId} groupBy="lotId" showRevenue={true} />
               </CardBody>
             </Card>
-            <Card style={{ minHeight: 400 }}>
+            <Card className={chartChrome.card}>
               <CardBody>
                 <SalesByGroupPieChart
                   data={data.salesByCompany}

@@ -24,6 +24,7 @@ import {
   Select,
   Stack,
   Text,
+  journeyChrome,
 } from '@inventory-platform/ui-kit';
 
 const STEPS: OnboardingStep[] = [
@@ -552,17 +553,15 @@ export default function OnboardingPage() {
   };
 
   return (
-    <Box
-      display="flex"
-      flexDirection={compactLayout ? 'column' : 'row'}
-      style={{ minHeight: '100vh' }}
-    >
+    <Box display="flex" flexDirection={compactLayout ? 'column' : 'row'} minHeight="screen">
       <Stack
         gap="md"
         bg="muted"
         padding="lg"
         border
-        style={{ width: compactLayout ? '100%' : 280, flexShrink: 0 }}
+        className={
+          compactLayout ? journeyChrome.onboardingSidebarCompact : journeyChrome.onboardingSidebar
+        }
       >
         <Stack gap="sm" align="center">
           <Avatar name={userDisplayName} />
@@ -580,7 +579,7 @@ export default function OnboardingPage() {
                 padding="sm"
                 rounded="md"
                 bg={index === currentStep ? 'surface' : undefined}
-                style={{ opacity: index <= currentStep ? 1 : 0.6 }}
+                className={index <= currentStep ? undefined : journeyChrome.stepMuted}
               >
                 <Text as="span" weight="semibold">
                   {index < currentStep ? '✓' : index + 1}
@@ -598,7 +597,7 @@ export default function OnboardingPage() {
         </Inline>
       </Stack>
 
-      <Stack gap="md" width="full" align="center" justify="center" padding="lg" style={{ flex: 1 }}>
+      <Stack gap="md" width="full" align="center" justify="center" padding="lg" flex="1">
         <Inline justify="between" width="full" maxWidth="md">
           <Button variant="ghost" onClick={handleBack}>
             ← Back

@@ -31,6 +31,7 @@ import {
   TableRow,
   Text,
   type SelectOptionDef,
+  productChrome,
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 
@@ -367,7 +368,7 @@ export function ImportPage() {
                 ) : null}
               </Inline>
             </CardHeader>
-            <CardBody style={{ paddingTop: 0 }}>
+            <CardBody className={productChrome.cardBodyFlushTop}>
               <Table>
                 <TableHead>
                   <TableRow>
@@ -375,14 +376,16 @@ export function ImportPage() {
                     <TableHeaderCell>Barcode</TableHeaderCell>
                     <TableHeaderCell>Name</TableHeaderCell>
                     <TableHeaderCell>Company</TableHeaderCell>
-                    <TableHeaderCell style={{ textAlign: 'right' }}>Count</TableHeaderCell>
-                    <TableHeaderCell style={{ textAlign: 'right' }}>MRP</TableHeaderCell>
-                    <TableHeaderCell style={{ textAlign: 'right' }}>Cost</TableHeaderCell>
-                    <TableHeaderCell style={{ textAlign: 'right' }}>Sales Price</TableHeaderCell>
+                    <TableHeaderCell className={productChrome.tableNum}>Count</TableHeaderCell>
+                    <TableHeaderCell className={productChrome.tableNum}>MRP</TableHeaderCell>
+                    <TableHeaderCell className={productChrome.tableNum}>Cost</TableHeaderCell>
+                    <TableHeaderCell className={productChrome.tableNum}>
+                      Sales Price
+                    </TableHeaderCell>
                     <TableHeaderCell>Batch</TableHeaderCell>
                     <TableHeaderCell>Expiry</TableHeaderCell>
-                    <TableHeaderCell style={{ textAlign: 'right' }}>Deal</TableHeaderCell>
-                    <TableHeaderCell style={{ textAlign: 'right' }}>Free</TableHeaderCell>
+                    <TableHeaderCell className={productChrome.tableNum}>Deal</TableHeaderCell>
+                    <TableHeaderCell className={productChrome.tableNum}>Free</TableHeaderCell>
                     <TableHeaderCell>Rec.Date</TableHeaderCell>
                   </TableRow>
                 </TableHead>
@@ -410,7 +413,7 @@ export function ImportPage() {
                             value={row.companyName}
                           />
                         </TableCell>
-                        <TableCell style={{ textAlign: 'right' }}>
+                        <TableCell className={productChrome.tableNum}>
                           <EditableCell
                             rowIdx={globalIdx}
                             field="count"
@@ -418,7 +421,7 @@ export function ImportPage() {
                             numeric
                           />
                         </TableCell>
-                        <TableCell style={{ textAlign: 'right' }}>
+                        <TableCell className={productChrome.tableNum}>
                           <EditableCell
                             rowIdx={globalIdx}
                             field="maximumRetailPrice"
@@ -426,7 +429,7 @@ export function ImportPage() {
                             numeric
                           />
                         </TableCell>
-                        <TableCell style={{ textAlign: 'right' }}>
+                        <TableCell className={productChrome.tableNum}>
                           <EditableCell
                             rowIdx={globalIdx}
                             field="costPrice"
@@ -434,7 +437,7 @@ export function ImportPage() {
                             numeric
                           />
                         </TableCell>
-                        <TableCell style={{ textAlign: 'right' }}>
+                        <TableCell className={productChrome.tableNum}>
                           <EditableCell
                             rowIdx={globalIdx}
                             field="priceToRetail"
@@ -452,7 +455,7 @@ export function ImportPage() {
                             value={row.expiryDate ? row.expiryDate.slice(0, 10) : null}
                           />
                         </TableCell>
-                        <TableCell style={{ textAlign: 'right' }}>
+                        <TableCell className={productChrome.tableNum}>
                           <EditableCell
                             rowIdx={globalIdx}
                             field="schemePayFor"
@@ -460,7 +463,7 @@ export function ImportPage() {
                             numeric
                           />
                         </TableCell>
-                        <TableCell style={{ textAlign: 'right' }}>
+                        <TableCell className={productChrome.tableNum}>
                           <EditableCell
                             rowIdx={globalIdx}
                             field="schemeFree"
@@ -495,7 +498,7 @@ export function ImportPage() {
                     options={BILLING_MODE_OPTIONS}
                     onChange={(e) => setBillingMode(e.target.value as BillingMode)}
                   />
-                  <Box width="full" style={{ flex: 1, minWidth: '12rem' }}>
+                  <Box width="full" flex="1" style={{ minWidth: '12rem' }}>
                     <SearchInput
                       value={vendorSearchQuery}
                       onChange={(value) => {
@@ -524,7 +527,8 @@ export function ImportPage() {
                         variant="ghost"
                         size="sm"
                         fullWidth
-                        style={{ justifyContent: 'flex-start', borderRadius: 0 }}
+                        align="start"
+                        style={{ borderRadius: 0 }}
                         onClick={() => handleSelectVendor(v)}
                       >
                         {v.name}

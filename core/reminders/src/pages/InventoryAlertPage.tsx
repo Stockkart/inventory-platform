@@ -132,7 +132,7 @@ export function InventoryAlertPage() {
                 <Inline gap="lg" align="center" flexWrap>
                   <Text variant="heading2">{alert.status === 'critical' ? '🔴' : '🟡'}</Text>
 
-                  <Stack gap="sm" style={{ flex: 1, minWidth: '12rem' }}>
+                  <Stack gap="sm" flex="1" style={{ minWidth: '12rem' }}>
                     <Text variant="heading3" weight="semibold">
                       {alert.product}
                     </Text>

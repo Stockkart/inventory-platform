@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useNavigate } from 'react-router';
 import { Search } from 'lucide-react';
-import { Box, Input, Modal, Text } from '@inventory-platform/ui-kit';
+import { Box, Input, Modal, Text, cn, shellChrome } from '@inventory-platform/ui-kit';
 import type { DashboardNavRow } from '@inventory-platform/routing';
 import { DASHBOARD_HOTKEY, getQuickNavFooterHints } from './dashboardHotkeys';
 import { KEYBOARD_NAV_SKIP } from './formKeyboardNav';
@@ -18,35 +18,6 @@ type CommandPaletteProps = {
 function normalize(s: string) {
   return s.trim().toLowerCase();
 }
-
-const searchRowStyle = {
-  borderBottom: '1px solid var(--sk-color-border-default)',
-  background: 'var(--sk-color-bg-canvas)',
-} as const;
-
-const inputStyle = {
-  flex: 1,
-  minWidth: 0,
-  border: 'none',
-  background: 'transparent',
-  boxShadow: 'none',
-  paddingLeft: 0,
-  paddingRight: 0,
-} as const;
-
-const escHintStyle = {
-  flexShrink: 0,
-  padding: '0.2rem 0.45rem',
-  border: '1px solid var(--sk-color-border-default)',
-  borderRadius: 4,
-  background: 'var(--sk-color-bg-surface)',
-} as const;
-
-const footerStyle = {
-  borderTop: '1px solid var(--sk-color-border-default)',
-  background: 'var(--sk-color-bg-muted, var(--sk-color-bg-canvas))',
-  fontSize: '0.75rem',
-} as const;
 
 export function CommandPalette({ open, onClose, navRows, modLabel }: CommandPaletteProps) {
   const navigate = useNavigate();
@@ -199,20 +170,22 @@ export function CommandPalette({ open, onClose, navRows, modLabel }: CommandPale
         display="flex"
         flexDirection="column"
         overflow="hidden"
-        style={{ maxHeight: 'min(70vh, 560px)' }}
+        className={shellChrome.commandPaletteBody}
       >
-        <Box display="flex" align="center" gap="sm" padding="md" style={searchRowStyle}>
-          <Search
-            size={20}
-            aria-hidden
-            style={{ flexShrink: 0, color: 'var(--sk-color-text-secondary)', opacity: 0.85 }}
-          />
+        <Box
+          display="flex"
+          align="center"
+          gap="sm"
+          padding="md"
+          className={shellChrome.cmdSearchRow}
+        >
+          <Search size={20} aria-hidden className={shellChrome.cmdSearchIcon} />
           <Input
             id="command-palette-input"
             type="search"
             inputMode="search"
             enterKeyHint="go"
-            style={inputStyle}
+            className={shellChrome.cmdInput}
             placeholder="Search pages…"
             value={query}
             onChange={(e) => {
@@ -224,17 +197,13 @@ export function CommandPalette({ open, onClose, navRows, modLabel }: CommandPale
             autoCorrect="off"
             spellCheck={false}
           />
-          <Text as="span" variant="caption" weight="semibold" style={escHintStyle}>
+          <Text as="span" variant="caption" weight="semibold" className={shellChrome.cmdEscHint}>
             Esc
           </Text>
         </Box>
-        <Box
-          role="listbox"
-          overflow="auto"
-          style={{ maxHeight: 'min(52vh, 360px)', padding: '0.35rem 0' }}
-        >
+        <Box role="listbox" overflow="auto" className={shellChrome.commandPaletteList}>
           {filtered.length === 0 ? (
-            <Text color="secondary" align="center" style={{ padding: '1.5rem 1rem' }}>
+            <Text color="secondary" align="center" className={shellChrome.commandPaletteEmpty}>
               No pages match your search.
             </Text>
           ) : (
@@ -256,15 +225,7 @@ export function CommandPalette({ open, onClose, navRows, modLabel }: CommandPale
                   activeRef.current = idx;
                 }}
                 onClick={() => go(row.path)}
-                style={{
-                  padding: '0.6rem 1rem',
-                  border: 'none',
-                  background: idx === active ? 'var(--sk-color-hover)' : 'transparent',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  font: 'inherit',
-                  color: 'var(--sk-color-text-primary)',
-                }}
+                className={cn(shellChrome.cmdItem, idx === active && shellChrome.cmdItemActive)}
               >
                 <Text
                   as="span"
@@ -272,20 +233,16 @@ export function CommandPalette({ open, onClose, navRows, modLabel }: CommandPale
                   weight="semibold"
                   color={idx === active ? 'primary' : 'secondary'}
                   aria-hidden
-                  style={{ flexShrink: 0, width: '1.5rem', textAlign: 'center' }}
+                  className={shellChrome.cmdItemIdx}
                 >
                   {idx < 9 ? String(idx + 1) : ''}
                 </Text>
-                <Text
-                  as="span"
-                  aria-hidden
-                  style={{ flexShrink: 0, fontSize: '1.1rem', lineHeight: 1 }}
-                >
+                <Text as="span" aria-hidden className={shellChrome.cmdItemIcon}>
                   <NavIcon name={row.icon} size="sm" />
                 </Text>
-                <Box style={{ flex: 1, minWidth: 0 }}>
+                <Box flex="1" minWidth="0">
                   <Text weight="medium">{row.label}</Text>
-                  <Text color="secondary" variant="caption" style={{ marginTop: '0.15rem' }}>
+                  <Text color="secondary" variant="caption">
                     {row.groupLabel}
                   </Text>
                 </Box>
@@ -293,34 +250,25 @@ export function CommandPalette({ open, onClose, navRows, modLabel }: CommandPale
             ))
           )}
         </Box>
-        <Box display="flex" flexWrap gap="sm" padding="sm" style={footerStyle}>
+        <Box display="flex" flexWrap gap="sm" padding="sm" className={shellChrome.cmdFooter}>
           {footerHints.map((hint) => (
             <Text
               key={hint.description}
               as="span"
               color="secondary"
-              style={{
-                display: 'inline-flex',
-                flexWrap: 'wrap',
-                alignItems: 'baseline',
-                gap: '0.15rem',
-              }}
+              className={shellChrome.cmdFooterHint}
             >
               {hint.keys.map((k, i) => (
                 <Text key={`${hint.description}-${k}-${i}`} as="span">
                   {i > 0 ? (
-                    <Text
-                      as="span"
-                      color="muted"
-                      style={{ margin: '0 0.1rem', fontSize: '0.65rem', fontWeight: 600 }}
-                    >
+                    <Text as="span" color="muted" className={shellChrome.kbdHint}>
                       +
                     </Text>
                   ) : null}
                   <Text as="kbd">{k}</Text>
                 </Text>
               ))}{' '}
-              <Text as="span" color="secondary" style={{ marginLeft: '0.25rem' }}>
+              <Text as="span" color="secondary">
                 {hint.description}
               </Text>
             </Text>

@@ -23,6 +23,7 @@ import {
   Stack,
   Switch,
   Text,
+  chartChrome,
 } from '@inventory-platform/ui-kit';
 
 export function meta() {
@@ -448,11 +449,7 @@ export function MenuAdminPage() {
                 {!isCollapsed ? (
                   <CardBody>
                     <Stack gap="md">
-                      <Box
-                        display="grid"
-                        gap="sm"
-                        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
-                      >
+                      <Box display="grid" gap="sm" className={chartChrome.autoGridFill}>
                         {section.items.map((item) => {
                           const isAvailable = item.available !== false;
                           return (

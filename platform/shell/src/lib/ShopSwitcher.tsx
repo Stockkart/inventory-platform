@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuthStore } from '@inventory-platform/session';
 import type { ShopMembership } from '@inventory-platform/session/types';
-import { Box, Button, Text } from '@inventory-platform/ui-kit';
+import { Box, Button, Text, cn, shellChrome } from '@inventory-platform/ui-kit';
 
 export function ShopSwitcher() {
   const navigate = useNavigate();
@@ -48,7 +48,7 @@ export function ShopSwitcher() {
         onClick={() => setOpen((o) => !o)}
         disabled={isLoading}
         title={shop?.name ?? 'Switch shop'}
-        style={{ maxWidth: 180, display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+        className={shellChrome.shopSwitcherTrigger}
       >
         <Text as="span" aria-hidden>
           🏪{' '}
@@ -59,12 +59,7 @@ export function ShopSwitcher() {
         <Text
           as="span"
           aria-hidden
-          style={{
-            fontSize: '0.7rem',
-            opacity: 0.7,
-            transform: open ? 'rotate(180deg)' : undefined,
-            transition: 'transform 0.2s',
-          }}
+          className={cn(shellChrome.shopChevron, open && shellChrome.shopChevronOpen)}
         >
           ▾
         </Text>
@@ -77,27 +72,14 @@ export function ShopSwitcher() {
           border
           rounded="md"
           overflow="hidden"
-          style={{
-            right: 0,
-            top: 'calc(100% + 8px)',
-            minWidth: 220,
-            maxWidth: 280,
-            zIndex: 1000,
-            boxShadow: 'var(--sk-shadow-lg)',
-          }}
+          className={shellChrome.shopDropdown}
         >
           <Text
             as="span"
             variant="caption"
             color="secondary"
             weight="semibold"
-            style={{
-              display: 'block',
-              padding: '0.5rem 1rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              borderBottom: '1px solid var(--sk-color-border-default)',
-            }}
+            className={shellChrome.shopDropdownLabel}
           >
             Your shops
           </Text>
@@ -109,19 +91,10 @@ export function ShopSwitcher() {
               fullWidth
               onClick={() => handleSelect(s)}
               disabled={isLoading}
-              style={{
-                flexDirection: 'column',
-                alignItems: 'flex-start',
-                gap: '0.15rem',
-                padding: '0.75rem 1rem',
-                borderRadius: 0,
-                ...(s.shopId === activeShopId
-                  ? {
-                      background: 'var(--sk-color-accent-soft)',
-                      color: 'var(--sk-color-accent)',
-                    }
-                  : undefined),
-              }}
+              className={cn(
+                shellChrome.shopDropdownItem,
+                s.shopId === activeShopId && shellChrome.shopDropdownItemActive,
+              )}
             >
               <Text as="span" weight="medium">
                 {s.shopName}
@@ -139,13 +112,7 @@ export function ShopSwitcher() {
               setOpen(false);
               navigate('/onboarding', { state: { addShop: true } });
             }}
-            style={{
-              padding: '0.75rem 1rem',
-              borderRadius: 0,
-              borderTop: '1px solid var(--sk-color-border-default)',
-              color: 'var(--sk-color-accent)',
-              justifyContent: 'flex-start',
-            }}
+            className={shellChrome.shopDropdownAdd}
           >
             + Add another shop
           </Button>

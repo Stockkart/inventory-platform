@@ -46,9 +46,9 @@ export default function PlansPage() {
   };
 
   return (
-    <Box bg="canvas" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <Box bg="canvas" display="flex" flexDirection="column" minHeight="screen">
       <Header />
-      <Box as="main" padding="xl" style={{ flex: 1 }}>
+      <Box as="main" padding="xl" flex="1">
         <FormKeyboardNavScope>
           <Stack gap="xl" maxWidth="lg" mx="auto">
             <Stack gap="sm" align="center">

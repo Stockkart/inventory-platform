@@ -24,6 +24,7 @@ import {
   Inline,
   Stack,
   Text,
+  shellChrome,
 } from '@inventory-platform/ui-kit';
 import { useResolvedSellPath } from '@inventory-platform/routing';
 import { useAuthStore, useNotify, useShopCapabilitiesStore } from '@inventory-platform/session';
@@ -68,13 +69,7 @@ function MetricCard({ icon, label, value, subtext, change }: MetricCardProps) {
             align="center"
             justify="center"
             rounded="md"
-            style={{
-              width: 44,
-              height: 44,
-              flexShrink: 0,
-              background: 'var(--sk-color-accent-soft)',
-              color: 'var(--sk-color-accent)',
-            }}
+            className={shellChrome.metricIcon}
           >
             <Icon icon={icon} size="md" />
           </Box>
@@ -202,11 +197,7 @@ export function OverviewPage() {
         Today&apos;s snapshot across products, sales, and inventory.
       </Text>
 
-      <Box
-        display="grid"
-        gap="md"
-        style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}
-      >
+      <Box display="grid" gap="md" className={shellChrome.autoGridSm}>
         <MetricCard
           icon={Package}
           label="Total Products"
@@ -231,11 +222,7 @@ export function OverviewPage() {
         />
       </Box>
 
-      <Box
-        display="grid"
-        gap="md"
-        style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}
-      >
+      <Box display="grid" gap="md" className={shellChrome.autoGridMd}>
         <Card>
           <CardHeader>
             <Text variant="heading4" weight="semibold">

@@ -184,14 +184,7 @@ export default function RequestJoinShopPage() {
   ];
 
   return (
-    <Stack
-      gap="lg"
-      width="full"
-      maxWidth="sm"
-      mx="auto"
-      padding="lg"
-      style={{ minHeight: '100vh' }}
-    >
+    <Stack gap="lg" width="full" maxWidth="sm" mx="auto" padding="lg" minHeight="screen">
       <Stack gap="xs">
         <Button variant="ghost" onClick={handleBack}>
           ← Back

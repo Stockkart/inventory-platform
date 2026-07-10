@@ -164,7 +164,7 @@ export function CustomRemindersSection({
       bg="elevated"
       style={{ marginTop: '1.5rem' }}
     >
-      <Inline justify="between" align="center" style={{ marginBottom: '1rem' }}>
+      <Inline justify="between" align="center" mb="md">
         <Text variant="heading3" weight="semibold">
           Custom Reminders
         </Text>

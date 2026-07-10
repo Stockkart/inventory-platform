@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Checkbox, Inline, Stack, Text } from '@inventory-platform/ui-kit';
+import { Box, Checkbox, Inline, Stack, Text, chartChrome } from '@inventory-platform/ui-kit';
 import {
   LineChart,
   Line,
@@ -45,16 +45,8 @@ export function RevenueChart({ data }: RevenueChartProps) {
   };
 
   return (
-    <Stack gap="sm" style={{ minHeight: 300 }}>
-      <Inline
-        align="center"
-        justify="between"
-        style={{
-          marginBottom: '0.75rem',
-          paddingBottom: '0.5rem',
-          borderBottom: '1px solid var(--border-color, #e5e7eb)',
-        }}
-      >
+    <Stack gap="sm" className={chartChrome.frame}>
+      <Inline align="center" justify="between" className={chartChrome.chartToolbar}>
         <Text variant="heading4" weight="semibold">
           Revenue Over Time
         </Text>
@@ -72,7 +64,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
           />
         </Inline>
       </Inline>
-      <Box style={{ flex: 1, minHeight: 320 }}>
+      <Box flex="1" className={chartChrome.frameTall}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />

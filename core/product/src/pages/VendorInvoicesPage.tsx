@@ -423,7 +423,7 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
                       <DetailLine label="Invoice" value={inv.invoiceNo} />
                       {inv.synthetic ? <Badge variant="info">Auto</Badge> : null}
                     </Inline>
-                    <Inline gap="sm" align="center" style={{ flexShrink: 0 }}>
+                    <Inline gap="sm" align="center" flexShrink={0}>
                       <DetailLine label="Date" value={formatDateShort(inv.invoiceDate)} />
                       <Button
                         type="button"

@@ -77,9 +77,14 @@ export function TableEmptyRow({
   );
 }
 
-export function Card({ className, children, ...rest }: HTMLAttributes<HTMLDivElement>) {
+export function Card({
+  className,
+  children,
+  selected,
+  ...rest
+}: HTMLAttributes<HTMLDivElement> & { selected?: boolean }) {
   return (
-    <div className={cn(styles.card, className)} {...rest}>
+    <div className={cn(styles.card, selected && styles.cardSelected, className)} {...rest}>
       {children}
     </div>
   );

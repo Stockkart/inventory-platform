@@ -11,6 +11,7 @@ import { CustomerProductHistoryHint, useCustomerProductHistory } from '@inventor
 import {
   cartActionsStyle,
   cartItemsStyle,
+  cartLineFlushStyle,
   cartSectionStyle,
   customerBlockStyle,
   customerFormStyle,
@@ -21,12 +22,17 @@ import {
   dropdownItemNameStyle,
   dropdownItemStyle,
   dropdownListStyle,
+  flexGrow2Style,
   menuSellPageShell,
   searchInputStyle,
   searchInputWrapperFocusedStyle,
   searchInputWrapperStyle,
   searchRowStyle,
+  sectionDividerStyle,
+  sectionDividerLgStyle,
   sidebarSearchBtnStyle,
+  summaryRowStyle,
+  summaryRowTotalStyle,
 } from '../menuSellStyles';
 import {
   Alert,
@@ -47,6 +53,7 @@ import {
   SearchDropdown,
   Stack,
   Text,
+  cn,
 } from '@inventory-platform/ui-kit';
 
 export function meta() {
@@ -81,23 +88,14 @@ function catalogToSearchHits(catalog: SellCatalog | null): SellSearchHit[] {
 function SummaryRow({ label, value, total }: { label: string; value: string; total?: boolean }) {
   if (total) {
     return (
-      <Inline
-        justify="between"
-        width="full"
-        style={{
-          padding: '0.75rem 0',
-          marginTop: '0.5rem',
-          borderTop: '1px solid var(--border-color)',
-          fontSize: '1.25rem',
-        }}
-      >
+      <Inline justify="between" width="full" className={summaryRowTotalStyle}>
         <Text weight="bold">{label}</Text>
         <Text weight="bold">{value}</Text>
       </Inline>
     );
   }
   return (
-    <Inline justify="between" width="full" style={{ padding: '0.5rem 0' }}>
+    <Inline justify="between" width="full" className={summaryRowStyle}>
       <Text color="secondary">{label}</Text>
       <Text color="secondary">{value}</Text>
     </Inline>
@@ -119,11 +117,11 @@ function MenuSearchDropdownItem({
       justify="between"
       align="start"
       gap="md"
-      style={dropdownItemStyle}
+      className={dropdownItemStyle}
       role="option"
     >
-      <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
-        <Text weight="semibold" style={dropdownItemNameStyle}>
+      <Stack gap="xs" flex="1" minWidth="0">
+        <Text weight="semibold" className={dropdownItemNameStyle}>
           {item.name || 'Unnamed item'}
         </Text>
         <Text variant="caption" color="secondary" truncate>
@@ -584,7 +582,7 @@ export function MenuSellPage() {
 
   if (isLoading) {
     return (
-      <Stack gap="md" maxWidth="xl" mx="auto" style={menuSellPageShell}>
+      <Stack gap="md" maxWidth="xl" mx="auto" className={menuSellPageShell}>
         <CenteredLoader label="Loading cart…" />
       </Stack>
     );
@@ -598,11 +596,11 @@ export function MenuSellPage() {
     );
 
   const cartMain = (
-    <Stack gap="md" bg="elevated" border rounded="lg" padding="lg" style={cartSectionStyle}>
+    <Stack gap="md" bg="elevated" border rounded="lg" padding="lg" className={cartSectionStyle}>
       <Box
         position="relative"
         width="full"
-        style={searchRowStyle}
+        className={searchRowStyle}
         ref={searchWrapperRef}
         onFocusCapture={() => setSearchFocused(true)}
         onBlurCapture={(e) => {
@@ -615,15 +613,12 @@ export function MenuSellPage() {
           gap="sm"
           align="center"
           width="full"
-          style={{
-            ...searchInputWrapperStyle,
-            ...(searchFocused ? searchInputWrapperFocusedStyle : {}),
-          }}
+          className={cn(searchInputWrapperStyle, searchFocused && searchInputWrapperFocusedStyle)}
         >
           <Text aria-hidden>🔍</Text>
           <Input
             type="text"
-            style={searchInputStyle}
+            className={searchInputStyle}
             placeholder="Search menu items..."
             value={searchQuery}
             onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchQuery(e.currentTarget.value)}
@@ -651,15 +646,15 @@ export function MenuSellPage() {
         {showSearchDropdown ? (
           <SearchDropdown id="menu-search-results-list" role="listbox">
             {isSearching ? (
-              <Box padding="md" style={{ textAlign: 'center' }}>
+              <Box padding="md" textAlign="center">
                 <Text color="secondary">Searching…</Text>
               </Box>
             ) : searchResults.length === 0 ? (
-              <Box padding="md" style={{ textAlign: 'center' }}>
+              <Box padding="md" textAlign="center">
                 <Text color="secondary">No menu items found</Text>
               </Box>
             ) : (
-              <Stack as="ul" gap="none" style={dropdownListStyle}>
+              <Stack as="ul" gap="none" className={dropdownListStyle}>
                 {searchResults.map((hit) => (
                   <MenuSearchDropdownItem
                     key={`menu-${hit.item.id}`}
@@ -674,7 +669,7 @@ export function MenuSellPage() {
         ) : null}
       </Box>
 
-      <Box style={cartItemsStyle}>
+      <Box className={cartItemsStyle}>
         {isSyncing && cartItems.length === 0 ? (
           <CenteredLoader label="Updating cart…" />
         ) : cartItems.length === 0 ? (
@@ -691,13 +686,9 @@ export function MenuSellPage() {
                 justify="between"
                 align="start"
                 gap="md"
-                style={{
-                  padding: '0.85rem 0',
-                  borderBottom: '1px solid var(--border-color)',
-                  minWidth: 0,
-                }}
+                className={cartLineFlushStyle}
               >
-                <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
+                <Stack gap="xs" flex="1" minWidth="0">
                   <Stack gap="xs">
                     <Text weight="semibold">{line.name || 'Menu item'}</Text>
                     {ref ? (
@@ -725,7 +716,7 @@ export function MenuSellPage() {
                       type="button"
                       variant="ghost"
                       size="sm"
-                      style={{ flexShrink: 0 }}
+                      flexShrink={0}
                       onClick={() => void removeLine(ref)}
                       disabled={isSyncing}
                     >
@@ -743,35 +734,35 @@ export function MenuSellPage() {
 
   const cartAside = (
     <Stack as="aside" gap="md" bg="elevated" border rounded="lg" padding="lg">
-      <Box style={customerBlockStyle}>
+      <Box className={customerBlockStyle}>
         <Button
           type="button"
           variant="ghost"
-          style={customerToggleStyle}
+          className={customerToggleStyle}
           onClick={() => setCustomerSectionOpen((o) => !o)}
           aria-expanded={customerSectionOpen}
         >
           <Inline gap="sm" align="center" width="full">
             <Text weight="semibold">Customer</Text>
             {customerName || customerPhone ? (
-              <Text style={customerToggleValueStyle}>{customerName || customerPhone}</Text>
+              <Text className={customerToggleValueStyle}>{customerName || customerPhone}</Text>
             ) : (
-              <Text color="secondary" style={{ flex: 1 }}>
+              <Text color="secondary" flex="1">
                 Optional
               </Text>
             )}
-            <Text style={customerToggleIconStyle}>{customerSectionOpen ? '▼' : '▶'}</Text>
+            <Text className={customerToggleIconStyle}>{customerSectionOpen ? '▼' : '▶'}</Text>
           </Inline>
         </Button>
         {customerSectionOpen ? (
-          <Stack gap="md" style={customerFormStyle}>
-            <Stack gap="sm" style={{ paddingTop: '0.75rem' }}>
+          <Stack gap="md" className={customerFormStyle}>
+            <Stack gap="sm" pt="sm">
               <FormField label="Phone" id="menu-sell-customerPhone">
                 <Inline gap="sm" width="full">
                   <Input
                     id="menu-sell-customerPhone"
                     type="tel"
-                    style={customerInputStyle}
+                    className={customerInputStyle}
                     placeholder="Phone"
                     value={customerPhone}
                     onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -782,7 +773,7 @@ export function MenuSellPage() {
                   <IconButton
                     label="Search customer"
                     title="Search customer"
-                    style={sidebarSearchBtnStyle}
+                    className={sidebarSearchBtnStyle}
                     onClick={() => void handleCustomerSearch()}
                     disabled={isSearchingCustomer || !customerPhone.trim()}
                   >
@@ -794,7 +785,7 @@ export function MenuSellPage() {
                 <Input
                   id="menu-sell-customerName"
                   type="text"
-                  style={customerInputStyle}
+                  className={customerInputStyle}
                   placeholder="Name"
                   value={customerName}
                   onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -807,7 +798,7 @@ export function MenuSellPage() {
                   <Input
                     id="menu-sell-customerEmail"
                     type="email"
-                    style={customerInputStyle}
+                    className={customerInputStyle}
                     placeholder="Email"
                     value={customerEmail}
                     onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -818,7 +809,7 @@ export function MenuSellPage() {
                   <IconButton
                     label="Search customer by email"
                     title="Search customer by email"
-                    style={sidebarSearchBtnStyle}
+                    className={sidebarSearchBtnStyle}
                     onClick={() => void handleCustomerSearchByEmail()}
                     disabled={isSearchingCustomer || !customerEmail.trim()}
                   >
@@ -830,7 +821,7 @@ export function MenuSellPage() {
                 <Input
                   id="menu-sell-customerAddress"
                   type="text"
-                  style={customerInputStyle}
+                  className={customerInputStyle}
                   placeholder="Address"
                   value={customerAddress}
                   onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -839,13 +830,7 @@ export function MenuSellPage() {
                 />
               </FormField>
             </Stack>
-            <Box
-              style={{
-                marginTop: '1.5rem',
-                paddingTop: '1.5rem',
-                borderTop: '1px solid var(--border-color)',
-              }}
-            >
+            <Box className={sectionDividerLgStyle}>
               <Checkbox
                 label="Is Retailer"
                 checked={isRetailer}
@@ -860,19 +845,12 @@ export function MenuSellPage() {
               />
             </Box>
             {isRetailer ? (
-              <Stack
-                gap="sm"
-                padding="md"
-                border
-                rounded="md"
-                bg="surface"
-                style={{ marginTop: '1rem', borderTop: '1px solid var(--border-color)' }}
-              >
+              <Stack gap="sm" padding="md" border rounded="md" bg="surface" mt="md" borderTop>
                 <FormField label="GSTIN" id="menu-sell-customerGstin">
                   <Input
                     id="menu-sell-customerGstin"
                     type="text"
-                    style={customerInputStyle}
+                    className={customerInputStyle}
                     placeholder="GSTIN"
                     value={customerGstin}
                     onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -884,7 +862,7 @@ export function MenuSellPage() {
                   <Input
                     id="menu-sell-customerDlNo"
                     type="text"
-                    style={customerInputStyle}
+                    className={customerInputStyle}
                     placeholder="DL No"
                     value={customerDlNo}
                     onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -896,7 +874,7 @@ export function MenuSellPage() {
                   <Input
                     id="menu-sell-customerPan"
                     type="text"
-                    style={customerInputStyle}
+                    className={customerInputStyle}
                     placeholder="PAN"
                     value={customerPan}
                     onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -906,14 +884,7 @@ export function MenuSellPage() {
                 </FormField>
               </Stack>
             ) : null}
-            <Stack
-              gap="sm"
-              style={{
-                marginTop: '1rem',
-                paddingTop: '1rem',
-                borderTop: '1px solid var(--border-color)',
-              }}
-            >
+            <Stack gap="sm" className={sectionDividerStyle}>
               <Text weight="semibold">Link to StockKart user</Text>
               {linkedUser ? (
                 <Inline gap="sm" align="center" width="full" flexWrap>
@@ -962,11 +933,11 @@ export function MenuSellPage() {
         </CardBody>
       </Card>
 
-      <Inline gap="sm" width="full" style={cartActionsStyle}>
+      <Inline gap="sm" width="full" className={cartActionsStyle}>
         <Button
           type="button"
           variant="outline"
-          style={{ flex: 1 }}
+          flex="1"
           onClick={() => void handleClearCart()}
           disabled={isSyncing || cartItems.length === 0}
         >
@@ -975,7 +946,7 @@ export function MenuSellPage() {
         <Button
           type="button"
           variant="solid"
-          style={{ flex: 2 }}
+          className={flexGrow2Style}
           onClick={() => void handleProcessPayment()}
           disabled={isProcessing || isSyncing || cartItems.length === 0}
           loading={isProcessing || isSyncing}
@@ -987,7 +958,7 @@ export function MenuSellPage() {
   );
 
   return (
-    <Stack gap="md" maxWidth="xl" mx="auto" style={menuSellPageShell}>
+    <Stack gap="md" maxWidth="xl" mx="auto" className={menuSellPageShell}>
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
       <PageHeader title="Sell" description="Search and add menu items to the cart" />

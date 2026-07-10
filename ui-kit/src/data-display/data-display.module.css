@@ -33,6 +33,11 @@
   box-shadow: var(--sk-shadow-sm);
 }
 
+.cardSelected {
+  border-color: var(--sk-color-brand);
+  background: var(--sk-color-brand-soft);
+}
+
 .cardHeader,
 .cardBody,
 .cardFooter {

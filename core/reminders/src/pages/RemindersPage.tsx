@@ -357,7 +357,7 @@ export function RemindersPage() {
                             <Text variant="heading2">
                               {reminder.type === 'EXPIRY' ? '📅' : '🔔'}
                             </Text>
-                            <Stack gap="sm" style={{ flex: 1, minWidth: '12rem' }}>
+                            <Stack gap="sm" flex="1" style={{ minWidth: '12rem' }}>
                               <Inline justify="between" align="start" flexWrap>
                                 <Text variant="heading3" weight="semibold">
                                   {reminder.type === 'EXPIRY'

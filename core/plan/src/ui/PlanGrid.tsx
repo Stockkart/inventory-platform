@@ -8,6 +8,7 @@ import {
   Inline,
   Stack,
   Text,
+  chartChrome,
 } from '@inventory-platform/ui-kit';
 
 const EXTRA_USER_PLAN = 'Extra User Plan';
@@ -86,12 +87,7 @@ export function PlanGrid({
   });
 
   return (
-    <Box
-      display="grid"
-      gap="lg"
-      width="full"
-      style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}
-    >
+    <Box display="grid" gap="lg" width="full" className={chartChrome.autoGridFillWide}>
       {sortedPlans.map((plan, idx) => {
         const features = buildPlanFeatures(plan);
         const highlight =

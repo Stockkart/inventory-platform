@@ -15,15 +15,9 @@ export function meta() {
 
 export default function LandingPage() {
   return (
-    <Box
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
+    <Box display="flex" flexDirection="column" minHeight="screen">
       <Header />
-      <Box as="main" style={{ flex: 1 }}>
+      <Box as="main" flex="1">
         <FormKeyboardNavScope>
           <Hero />
           <Stats />

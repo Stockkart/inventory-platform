@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Stack } from '@inventory-platform/ui-kit';
+import { Stack, shellChrome } from '@inventory-platform/ui-kit';
 import { useToastStore } from '@inventory-platform/session';
 import { Toast } from './Toast';
 
@@ -23,15 +23,7 @@ export function ToastProvider() {
   }
 
   return (
-    <Stack
-      gap="sm"
-      style={{
-        position: 'fixed',
-        top: 18,
-        right: 18,
-        zIndex: 99999,
-      }}
-    >
+    <Stack gap="sm" className={shellChrome.toastStack}>
       {toasts.map((toast) => (
         <Toast key={toast.id} toast={toast} onClose={() => remove(toast.id)} />
       ))}

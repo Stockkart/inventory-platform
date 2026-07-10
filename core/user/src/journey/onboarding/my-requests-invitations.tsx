@@ -29,14 +29,7 @@ export default function MyRequestsInvitationsPage() {
   };
 
   return (
-    <Stack
-      gap="lg"
-      width="full"
-      maxWidth="md"
-      mx="auto"
-      padding="lg"
-      style={{ minHeight: '100vh' }}
-    >
+    <Stack gap="lg" width="full" maxWidth="md" mx="auto" padding="lg" minHeight="screen">
       <Stack gap="xs">
         <Button variant="ghost" onClick={() => navigate('/shop-selection')}>
           ← Back

@@ -1,5 +1,5 @@
 import type { ComponentPropsWithoutRef } from 'react';
-import { Box, Link, Modal, Text } from '@inventory-platform/ui-kit';
+import { Box, Link, Modal, Text, shellChrome } from '@inventory-platform/ui-kit';
 import type { TutorialResourceResponse } from '@inventory-platform/shell/types';
 
 type YouTubeHelpModalProps = {
@@ -13,10 +13,8 @@ type IframeBoxProps = ComponentPropsWithoutRef<'iframe'> & {
   className?: string;
 };
 
-function IframeBox({ className, style, ...rest }: IframeBoxProps) {
-  return (
-    <Box as="iframe" className={className} style={style} {...(rest as Record<string, unknown>)} />
-  );
+function IframeBox({ className, ...rest }: IframeBoxProps) {
+  return <Box as="iframe" className={className} {...(rest as Record<string, unknown>)} />;
 }
 
 export function YouTubeHelpModal({ video, open, onClose, title }: YouTubeHelpModalProps) {
@@ -33,35 +31,22 @@ export function YouTubeHelpModal({ video, open, onClose, title }: YouTubeHelpMod
       <Modal.Header title={displayTitle} onClose={onClose} />
       <Modal.Body>
         {video.description ? (
-          <Text color="secondary" style={{ marginBottom: '0.75rem', lineHeight: 1.45 }}>
-            {video.description}
-          </Text>
+          <Box mb="sm">
+            <Text color="secondary">{video.description}</Text>
+          </Box>
         ) : null}
         {embedSrc ? (
-          <Box
-            style={{
-              position: 'relative',
-              width: '100%',
-              aspectRatio: '16 / 9',
-              background: '#000',
-            }}
-          >
+          <Box className={shellChrome.videoFrame}>
             <IframeBox
               src={`${embedSrc}?rel=0`}
               title={video.title}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
-              style={{
-                position: 'absolute',
-                inset: 0,
-                width: '100%',
-                height: '100%',
-                border: 0,
-              }}
+              className={shellChrome.videoIframe}
             />
           </Box>
         ) : (
-          <Box padding="lg" style={{ textAlign: 'center' }}>
+          <Box padding="lg" textAlign="center">
             <Link href={video.youtubeUrl} target="_blank" rel="noopener noreferrer">
               Watch on YouTube
             </Link>

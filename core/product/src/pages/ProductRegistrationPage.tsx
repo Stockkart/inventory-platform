@@ -103,6 +103,7 @@ import {
   Textarea,
   denseDataGrid,
   fileDropzone,
+  productChrome,
 } from '@inventory-platform/ui-kit';
 import {
   accordionStyles,
@@ -2411,46 +2412,46 @@ export function ProductRegistrationPage() {
             {success ? <Alert variant="success">{success}</Alert> : null}
 
             <Stack gap="lg">
-              <Box style={uploadLayoutStyles.uploadSection}>
-                <Box style={uploadLayoutStyles.uploadHeader}>
+              <Box className={uploadLayoutStyles.uploadSection}>
+                <Box className={uploadLayoutStyles.uploadHeader}>
                   <Text variant="heading3">Upload Invoice Image (Optional)</Text>
-                  <Box as="ul" style={pageStyles.helperText}>
+                  <Box as="ul" className={pageStyles.helperText}>
                     <Box as="li">Upload invoice image to auto-parse product details</Box>
                     <Box as="li">Review and edit parsed products before bulk save</Box>
                   </Box>
                 </Box>
-                <Box style={uploadLayoutStyles.uploadOptionsHeader}>
-                  <Text as="span" style={uploadLayoutStyles.uploadOptionsLabel}>
+                <Box className={uploadLayoutStyles.uploadOptionsHeader}>
+                  <Text as="span" className={uploadLayoutStyles.uploadOptionsLabel}>
                     Choose upload method:
                   </Text>
                 </Box>
-                <Box style={uploadLayoutStyles.uploadOptionsGrid}>
+                <Box className={uploadLayoutStyles.uploadOptionsGrid}>
                   <Button
                     type="button"
-                    style={uploadLayoutStyles.qrUploadBtn}
+                    className={uploadLayoutStyles.qrUploadBtn}
                     onClick={handleCreateQrCode}
                     disabled={isUploading || isLoading || isPolling}
                   >
-                    <Box style={uploadLayoutStyles.qrBtnIcon}>
+                    <Box className={uploadLayoutStyles.qrBtnIcon}>
                       <Text as="span" role="img" aria-label="QR Code icon">
                         📱
                       </Text>
                     </Box>
-                    <Box style={uploadLayoutStyles.qrBtnContent}>
-                      <Text as="span" style={uploadLayoutStyles.qrBtnTitle}>
+                    <Box className={uploadLayoutStyles.qrBtnContent}>
+                      <Text as="span" className={uploadLayoutStyles.qrBtnTitle}>
                         Upload via QR Code
                       </Text>
-                      <Text as="span" style={uploadLayoutStyles.qrBtnSubtitle}>
+                      <Text as="span" className={uploadLayoutStyles.qrBtnSubtitle}>
                         Use mobile device to scan & upload
                       </Text>
                     </Box>
                   </Button>
-                  <Box style={uploadLayoutStyles.uploadOptionsOr}>
-                    <Box style={uploadLayoutStyles.uploadOptionsOrLine}></Box>
-                    <Text as="span" style={uploadLayoutStyles.uploadOptionsOrText}>
+                  <Box className={uploadLayoutStyles.uploadOptionsOr}>
+                    <Box className={uploadLayoutStyles.uploadOptionsOrLine}></Box>
+                    <Text as="span" className={uploadLayoutStyles.uploadOptionsOrText}>
                       OR
                     </Text>
-                    <Box style={uploadLayoutStyles.uploadOptionsOrLine}></Box>
+                    <Box className={uploadLayoutStyles.uploadOptionsOrLine}></Box>
                   </Box>
                   <Box className={fileDropzone.container}>
                     <Box className={fileDropzone.optionLabel}>
@@ -2576,14 +2577,14 @@ export function ProductRegistrationPage() {
               </Box>
 
               {/* Shared vendor & billing */}
-              <Box style={vendorStyles.sharedSection}>
+              <Box className={vendorStyles.sharedSection}>
                 <Text variant="heading3">Shared Information</Text>
-                <Box style={vendorStyles.sharedTopRow}>
-                  <Text as="span" style={vendorStyles.sharedHint}>
+                <Box className={vendorStyles.sharedTopRow}>
+                  <Text as="span" className={vendorStyles.sharedHint}>
                     Applies to all products.
                   </Text>
                   <Select
-                    style={vendorStyles.sharedModeSelect}
+                    className={vendorStyles.sharedModeSelect}
                     value={billingMode}
                     onChange={(e) => handleBillingModeChange(e.target.value as BillingMode)}
                     disabled={isLoading}
@@ -2595,12 +2596,12 @@ export function ProductRegistrationPage() {
                 </Box>
 
                 {/* Vendor Section */}
-                <Box style={vendorStyles.vendorSection}>
+                <Box className={vendorStyles.vendorSection}>
                   <Text variant="heading4">Vendor Information *</Text>
-                  <Box style={pageStyles.formGroup}>
+                  <Box className={pageStyles.formGroup}>
                     <Label htmlFor="vendorSearch">Vendor Search *</Label>
-                    <Box style={{ position: 'relative' }}>
-                      <Box style={{ display: 'flex', gap: '8px' }}>
+                    <Box position="relative">
+                      <Box className={productChrome.inlineFlexGap}>
                         <Input
                           type="text"
                           id="vendorSearch"
@@ -2612,7 +2613,7 @@ export function ProductRegistrationPage() {
                             setShowVendorDropdown(false);
                           }}
                           disabled={isLoading || isSearchingVendor}
-                          style={{ flex: 1 }}
+                          flex="1"
                         />
                         <Button
                           type="button"
@@ -2645,31 +2646,21 @@ export function ProductRegistrationPage() {
                         )}
                       </Box>
                       {showVendorDropdown && vendorSearchResults.length > 0 && (
-                        <Box style={vendorStyles.dropdown}>
+                        <Box className={vendorStyles.dropdown}>
                           {vendorSearchResults.map((vendor) => (
                             <Box
                               key={vendor.vendorId}
-                              style={vendorStyles.dropdownItem}
+                              className={vendorStyles.dropdownItem}
                               onClick={() => handleSelectVendor(vendor)}
                             >
-                              <Box style={{ fontWeight: 500 }}>{vendor.name}</Box>
+                              <Box className={productChrome.fontMedium}>{vendor.name}</Box>
                               {vendor.contactPhone && (
-                                <Box
-                                  style={{
-                                    fontSize: '0.85rem',
-                                    color: 'var(--text-secondary)',
-                                  }}
-                                >
+                                <Box className={vendorStyles.dropdownMeta}>
                                   {vendor.contactPhone}
                                 </Box>
                               )}
                               {vendor.gstinUin && (
-                                <Box
-                                  style={{
-                                    fontSize: '0.8rem',
-                                    color: 'var(--text-tertiary)',
-                                  }}
-                                >
+                                <Box className={vendorStyles.dropdownMetaMuted}>
                                   GSTIN: {vendor.gstinUin}
                                 </Box>
                               )}
@@ -2680,7 +2671,7 @@ export function ProductRegistrationPage() {
                       {showVendorDropdown &&
                         vendorSearchResults.length === 0 &&
                         !isSearchingVendor && (
-                          <Box style={vendorStyles.vendorNotFound}>
+                          <Box className={vendorStyles.vendorNotFound}>
                             <Text>No vendors found. Would you like to create a new vendor?</Text>
                             <Button
                               type="button"
@@ -2699,8 +2690,8 @@ export function ProductRegistrationPage() {
                     </Box>
                   </Box>
                   {selectedVendor && (
-                    <Box style={vendorStyles.vendorInfo}>
-                      <Box style={vendorStyles.vendorCard}>
+                    <Box className={vendorStyles.vendorInfo}>
+                      <Box className={vendorStyles.vendorCard}>
                         {selectedVendor.userId && <Badge variant="success">StockKart user</Badge>}
                         <Text variant="heading4">{selectedVendor.name}</Text>
                         <Text>
@@ -2743,21 +2734,15 @@ export function ProductRegistrationPage() {
                     </Box>
                   )}
 
-                  <Box style={{ ...vendorStyles.vendorSection, marginTop: '1.25rem' }}>
+                  <Box className={vendorStyles.vendorSection}>
                     <Text variant="heading4">Vendor purchase invoice (optional)</Text>
-                    <Text style={{ ...pageStyles.helperText, marginBottom: '0.75rem' }}>
+                    <Text className={`${pageStyles.helperText} ${pageStyles.helperTextSpaced}`}>
                       Add the supplier&apos;s invoice number and amounts to keep a history of what
                       was bought on each bill. Leave blank to register stock without an invoice
                       record.
                     </Text>
                     {products.length > 0 ? (
-                      <Text
-                        style={{
-                          ...pageStyles.helperText,
-                          marginBottom: '0.75rem',
-                          fontSize: '0.85rem',
-                        }}
-                      >
+                      <Text className={`${pageStyles.helperText} ${pageStyles.helperTextCompact}`}>
                         Amounts tracked here follow each row&apos;s{' '}
                         <Text as="span" weight="bold">
                           PTS (price from stockist)
@@ -2772,8 +2757,8 @@ export function ProductRegistrationPage() {
                           : null}
                       </Text>
                     ) : null}
-                    <Box style={vendorStyles.sharedInfoGrid}>
-                      <Box style={pageStyles.formGroup}>
+                    <Box className={vendorStyles.sharedInfoGrid}>
+                      <Box className={pageStyles.formGroup}>
                         <Label htmlFor="vendorInvoiceNo">Invoice number</Label>
                         <Input
                           id="vendorInvoiceNo"
@@ -2784,7 +2769,7 @@ export function ProductRegistrationPage() {
                           disabled={isLoading}
                         />
                       </Box>
-                      <Box style={pageStyles.formGroup}>
+                      <Box className={pageStyles.formGroup}>
                         <Label htmlFor="vendorInvoiceDate">Invoice date</Label>
                         <Input
                           id="vendorInvoiceDate"
@@ -2794,7 +2779,7 @@ export function ProductRegistrationPage() {
                           disabled={isLoading}
                         />
                       </Box>
-                      <Box style={pageStyles.formGroup}>
+                      <Box className={pageStyles.formGroup}>
                         <Label htmlFor="vendorLineSubTotal">Line subtotal</Label>
                         <Input
                           id="vendorLineSubTotal"
@@ -2806,7 +2791,7 @@ export function ProductRegistrationPage() {
                           disabled={isLoading}
                         />
                       </Box>
-                      <Box style={pageStyles.formGroup}>
+                      <Box className={pageStyles.formGroup}>
                         <Label htmlFor="vendorTaxTotal">Tax total</Label>
                         <Input
                           id="vendorTaxTotal"
@@ -2818,7 +2803,7 @@ export function ProductRegistrationPage() {
                           disabled={isLoading}
                         />
                       </Box>
-                      <Box style={pageStyles.formGroup}>
+                      <Box className={pageStyles.formGroup}>
                         <Label htmlFor="vendorShippingCharge">Shipping / delivery</Label>
                         <Input
                           id="vendorShippingCharge"
@@ -2830,7 +2815,7 @@ export function ProductRegistrationPage() {
                           disabled={isLoading}
                         />
                       </Box>
-                      <Box style={pageStyles.formGroup}>
+                      <Box className={pageStyles.formGroup}>
                         <Label htmlFor="vendorOtherCharges">Other charges</Label>
                         <Input
                           id="vendorOtherCharges"
@@ -2842,7 +2827,7 @@ export function ProductRegistrationPage() {
                           disabled={isLoading}
                         />
                       </Box>
-                      <Box style={pageStyles.formGroup}>
+                      <Box className={pageStyles.formGroup}>
                         <Label htmlFor="vendorOverallDiscount">Overall discount</Label>
                         <Input
                           id="vendorOverallDiscount"
@@ -2854,7 +2839,7 @@ export function ProductRegistrationPage() {
                           disabled={isLoading}
                         />
                       </Box>
-                      <Box style={pageStyles.formGroup}>
+                      <Box className={pageStyles.formGroup}>
                         <Label htmlFor="vendorRoundOff">Round off</Label>
                         <Input
                           id="vendorRoundOff"
@@ -2867,7 +2852,8 @@ export function ProductRegistrationPage() {
                         />
                       </Box>
                       <Box
-                        style={{ ...pageStyles.formGroup, ...vendorStyles.sharedInfoGridSpanFull }}
+                        className={pageStyles.formGroup}
+                        className={vendorStyles.sharedInfoGridSpanFull}
                       >
                         <Label htmlFor="vendorInvoiceTotal">Invoice total</Label>
                         <Input
@@ -2885,38 +2871,38 @@ export function ProductRegistrationPage() {
                 </Box>
               </Box>
 
-              <Box style={pageStyles.separator}>
-                <Box style={pageStyles.separatorLine}></Box>
-                <Box style={pageStyles.separatorContent}>
+              <Box className={pageStyles.separator}>
+                <Box className={pageStyles.separatorLine}></Box>
+                <Box className={pageStyles.separatorContent}>
                   <Text
                     as="span"
-                    style={pageStyles.separatorIcon}
+                    className={pageStyles.separatorIcon}
                     role="img"
                     aria-label="Sparkle icon"
                   >
                     ✨
                   </Text>
-                  <Text as="span" style={pageStyles.separatorText}>
+                  <Text as="span" className={pageStyles.separatorText}>
                     Or manually add products below
                   </Text>
                 </Box>
-                <Box style={pageStyles.separatorLine}></Box>
+                <Box className={pageStyles.separatorLine}></Box>
               </Box>
 
               {/* Products Section */}
-              <Box style={pageStyles.productsSection} ref={productsSectionRef}>
+              <Box className={pageStyles.productsSection} ref={productsSectionRef}>
                 {showReviewBanner && (
-                  <Box style={pageStyles.reviewBanner}>
-                    <Box style={pageStyles.reviewBannerContent}>
+                  <Box className={pageStyles.reviewBanner}>
+                    <Box className={pageStyles.reviewBannerContent}>
                       <Text
                         as="span"
-                        style={pageStyles.reviewBannerIcon}
+                        className={pageStyles.reviewBannerIcon}
                         role="img"
                         aria-label="Clipboard icon"
                       >
                         📋
                       </Text>
-                      <Box style={pageStyles.reviewBannerText}>
+                      <Box className={pageStyles.reviewBannerText}>
                         <Text as="span" weight="bold">
                           Review Required:
                         </Text>{' '}
@@ -2925,7 +2911,7 @@ export function ProductRegistrationPage() {
                       </Box>
                       <Button
                         type="button"
-                        style={pageStyles.reviewBannerClose}
+                        className={pageStyles.reviewBannerClose}
                         onClick={() => setShowReviewBanner(false)}
                         aria-label="Close review banner"
                       >
@@ -2938,7 +2924,7 @@ export function ProductRegistrationPage() {
                   justify="between"
                   align="center"
                   width="full"
-                  style={pageStyles.productsHeader}
+                  className={pageStyles.productsHeader}
                 >
                   <Text variant="heading3">Products</Text>
                   <Inline gap="md" align="center">
@@ -3000,7 +2986,7 @@ export function ProductRegistrationPage() {
                 </Inline>
 
                 {!registrationSchemaReady ? (
-                  <Box style={pageStyles.schemaLoadingState} role="status" aria-live="polite">
+                  <Box className={pageStyles.schemaLoadingState} role="status" aria-live="polite">
                     {schemaLoadError ? (
                       <>
                         <Text variant="body" weight="semibold">
@@ -3026,27 +3012,27 @@ export function ProductRegistrationPage() {
                 ) : (
                   <>
                     {products.length > 0 && (
-                      <Text style={pageStyles.keyboardNavHint}>
-                        <Text as="span" style={pageStyles.keyboardNavHintLabel}>
+                      <Text className={pageStyles.keyboardNavHint}>
+                        <Text as="span" className={pageStyles.keyboardNavHintLabel}>
                           Keyboard:
                         </Text>{' '}
-                        <Text as="kbd" style={pageStyles.kbdInline}>
+                        <Text as="kbd" className={pageStyles.kbdInline}>
                           Enter
                         </Text>{' '}
                         next field ·{' '}
-                        <Text as="kbd" style={pageStyles.kbdInline}>
+                        <Text as="kbd" className={pageStyles.kbdInline}>
                           ↑
                         </Text>
-                        <Text as="kbd" style={pageStyles.kbdInline}>
+                        <Text as="kbd" className={pageStyles.kbdInline}>
                           ↓
                         </Text>{' '}
                         {productViewMode === 'grid' ? 'same column' : 'previous / next'}
                         {' · '}
-                        <Text as="kbd" style={pageStyles.kbdInline}>
+                        <Text as="kbd" className={pageStyles.kbdInline}>
                           Shift
                         </Text>
                         +
-                        <Text as="kbd" style={pageStyles.kbdInline}>
+                        <Text as="kbd" className={pageStyles.kbdInline}>
                           Enter
                         </Text>{' '}
                         back
@@ -3054,7 +3040,7 @@ export function ProductRegistrationPage() {
                     )}
 
                     {products.length === 0 ? (
-                      <Box style={pageStyles.emptyState}>
+                      <Box className={pageStyles.emptyState}>
                         <Text>
                           No products added yet. Click &quot;Add Product&quot; to get started.
                         </Text>
@@ -3933,7 +3919,7 @@ export function ProductRegistrationPage() {
                         </Text>
                       </Box>
                     ) : (
-                      <Box style={accordionStyles.productsList}>
+                      <Box className={accordionStyles.productsList}>
                         {products.map((product, index) => (
                           <ProductAccordion
                             key={product.id}
@@ -3968,14 +3954,7 @@ export function ProductRegistrationPage() {
 
               {products.length > 0 && (
                 <>
-                  <Stack
-                    gap="sm"
-                    style={{
-                      marginTop: '1.75rem',
-                      paddingTop: '1.25rem',
-                      borderTop: '1px solid var(--border-color)',
-                    }}
-                  >
+                  <Stack gap="sm" className={pageStyles.actionsDividerLg}>
                     <PaymentMethodSplit
                       context="purchase"
                       title="Payment to vendor"
@@ -4003,15 +3982,7 @@ export function ProductRegistrationPage() {
                       </Text>
                     ) : null}
                   </Stack>
-                  <Inline
-                    gap="md"
-                    justify="end"
-                    style={{
-                      marginTop: '1.25rem',
-                      paddingTop: '1.25rem',
-                      borderTop: '1px solid var(--border-color)',
-                    }}
-                  >
+                  <Inline gap="md" justify="end" className={pageStyles.actionsDivider}>
                     <Button
                       type="button"
                       variant="outline"
@@ -4052,7 +4023,7 @@ export function ProductRegistrationPage() {
           onClose={isCreatingVendor ? undefined : handleCloseVendorModal}
         />
         <Modal.Body>
-          <Box style={pageStyles.formGroup}>
+          <Box className={pageStyles.formGroup}>
             <Label htmlFor="vendorName">Vendor Name *</Label>
             <Input
               type="text"
@@ -4069,7 +4040,7 @@ export function ProductRegistrationPage() {
               required
             />
           </Box>
-          <Box style={pageStyles.formGroup}>
+          <Box className={pageStyles.formGroup}>
             <Label htmlFor="vendorContactPhone">Contact Phone *</Label>
             <Input
               type="tel"
@@ -4086,7 +4057,7 @@ export function ProductRegistrationPage() {
               required
             />
           </Box>
-          <Box style={pageStyles.formGroup}>
+          <Box className={pageStyles.formGroup}>
             <Label htmlFor="vendorContactEmail">Contact Email</Label>
             <Input
               type="email"
@@ -4102,15 +4073,13 @@ export function ProductRegistrationPage() {
               disabled={isCreatingVendor}
             />
           </Box>
-          <Box style={pageStyles.formGroup}>
+          <Box className={pageStyles.formGroup}>
             <Label>Link to registered user</Label>
-            <Text
-              style={{ ...pageStyles.helperText, marginBottom: 8, fontSize: 13, color: '#666' }}
-            >
+            <Text className={`${pageStyles.helperText} ${pageStyles.helperTextLinkHint}`}>
               If this vendor is a registered user, search by their email to link the vendor record
               to their account.
             </Text>
-            <Box style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <Box className={productChrome.inlineFlexGap}>
               <Button
                 type="button"
                 variant="outline"
@@ -4136,17 +4105,15 @@ export function ProductRegistrationPage() {
             </Box>
             {userSearchMessage && (
               <Text
-                style={{
-                  marginTop: 8,
-                  fontSize: 13,
-                  color: linkedUser ? '#16a34a' : '#666',
-                }}
+                className={
+                  linkedUser ? pageStyles.userLinkMessageSuccess : pageStyles.userLinkMessage
+                }
               >
                 {userSearchMessage}
               </Text>
             )}
           </Box>
-          <Box style={pageStyles.formGroup}>
+          <Box className={pageStyles.formGroup}>
             <Label htmlFor="vendorAddress">Address</Label>
             <Input
               type="text"
@@ -4162,7 +4129,7 @@ export function ProductRegistrationPage() {
               disabled={isCreatingVendor}
             />
           </Box>
-          <Box style={pageStyles.formGroup}>
+          <Box className={pageStyles.formGroup}>
             <Label htmlFor="vendorGstinUin">GSTIN / UIN</Label>
             <Input
               type="text"
@@ -4178,7 +4145,7 @@ export function ProductRegistrationPage() {
               disabled={isCreatingVendor}
             />
           </Box>
-          <Box style={pageStyles.formGroup}>
+          <Box className={pageStyles.formGroup}>
             <Label htmlFor="vendorBusinessType">Business Type *</Label>
             <Select
               id="vendorBusinessType"
@@ -4208,7 +4175,7 @@ export function ProductRegistrationPage() {
             </Select>
           </Box>
           {showCustomBusinessType && (
-            <Box style={pageStyles.formGroup}>
+            <Box className={pageStyles.formGroup}>
               <Label htmlFor="customBusinessType">Custom Business Type *</Label>
               <Input
                 type="text"
@@ -4247,83 +4214,38 @@ export function ProductRegistrationPage() {
       <Modal open={showQrModal} onClose={handleCloseQrModal} size="sm">
         <Modal.Header title="Scan QR Code to Upload Invoice" />
         <Modal.Body>
-          <Box
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '20px',
-              padding: '20px',
-            }}
-          >
+          <Box className={pageStyles.qrModalBody}>
             {uploadUrl && (
-              <Box
-                style={{
-                  padding: '20px',
-                  backgroundColor: '#fff',
-                  borderRadius: '8px',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
+              <Box className={pageStyles.qrCodeFrame}>
                 <QRCodeSVG value={uploadUrl} size={256} />
               </Box>
             )}
-            <Box style={{ textAlign: 'center' }}>
-              <Text style={{ marginBottom: '12px', fontWeight: 500 }}>
+            <Box textAlign="center">
+              <Text className={pageStyles.qrLead}>
                 Scan this QR code with your mobile device to upload one or more invoice photos
                 (multi-page bills).
               </Text>
-              <Text
-                style={{
-                  fontSize: '0.9rem',
-                  color: 'var(--text-secondary)',
-                  marginBottom: '8px',
-                }}
-              >
+              <Text className={pageStyles.qrStatus}>
                 Status:{' '}
                 <Text as="span" weight="bold">
                   {uploadStatus || 'PENDING'}
                 </Text>
               </Text>
               {isPolling && (
-                <Box
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    marginTop: '12px',
-                  }}
-                >
+                <Box className={pageStyles.qrPollingRow}>
                   <Spinner size="sm" />
-                  <Text as="span" style={{ fontSize: '0.9rem' }}>
+                  <Text as="span" className={pageStyles.qrPollingLabel}>
                     Waiting for upload...
                   </Text>
                 </Box>
               )}
               {uploadStatus === 'UPLOADING' && (
-                <Text
-                  style={{
-                    fontSize: '0.85rem',
-                    color: 'var(--text-secondary)',
-                    marginTop: '8px',
-                  }}
-                >
+                <Text className={pageStyles.qrStatusHint}>
                   Invoice photo(s) are being uploaded...
                 </Text>
               )}
               {uploadStatus === 'PROCESSING' && (
-                <Text
-                  style={{
-                    fontSize: '0.85rem',
-                    color: 'var(--text-secondary)',
-                    marginTop: '8px',
-                  }}
-                >
-                  Processing invoice...
-                </Text>
+                <Text className={pageStyles.qrStatusHint}>Processing invoice...</Text>
               )}
             </Box>
           </Box>
@@ -4663,11 +4585,11 @@ function GridBulkFillRow({
 
 function FormRowSpacer() {
   return (
-    <Box style={pageStyles.formGroup} aria-hidden="true">
-      <Text as="span" style={{ visibility: 'hidden' }}>
+    <Box className={pageStyles.formGroup} aria-hidden="true">
+      <Text as="span" className={productChrome.visuallyReserve}>
         .
       </Text>
-      <Text as="span" style={{ visibility: 'hidden', display: 'block' }}>
+      <Text as="span" className={productChrome.visuallyReserveBlock}>
         .
       </Text>
     </Box>
@@ -4878,22 +4800,22 @@ function ProductAccordion({
   })();
 
   return (
-    <Box style={accordionStyles.productAccordion}>
-      <Box style={accordionStyles.accordionHeader} onClick={onToggle}>
-        <Box style={accordionStyles.accordionTitle}>
-          <Text as="span" style={accordionStyles.accordionIcon}>
+    <Box className={accordionStyles.productAccordion}>
+      <Box className={accordionStyles.accordionHeader} onClick={onToggle}>
+        <Box className={accordionStyles.accordionTitle}>
+          <Text as="span" className={accordionStyles.accordionIcon}>
             {product.isExpanded ? '▼' : '▶'}
           </Text>
           <Text as="span">{productTitle}</Text>
           {product.barcode && (
-            <Text as="span" style={accordionStyles.accordionSubtitle}>
+            <Text as="span" className={accordionStyles.accordionSubtitle}>
               (Barcode: {product.barcode})
             </Text>
           )}
         </Box>
         <Button
           type="button"
-          style={accordionStyles.removeProductBtn}
+          className={accordionStyles.removeProductBtn}
           onClick={(e) => {
             e.stopPropagation();
             onRemove();
@@ -4906,9 +4828,9 @@ function ProductAccordion({
       </Box>
 
       {product.isExpanded && (
-        <Box style={accordionStyles.accordionContent}>
-          <Box style={accordionStyles.formRow}>
-            <Box style={pageStyles.formGroup}>
+        <Box className={accordionStyles.accordionContent}>
+          <Box className={accordionStyles.formRow}>
+            <Box className={pageStyles.formGroup}>
               <Label htmlFor={`name-${product.id}`}>Product Name *</Label>
               <Input
                 type="text"
@@ -4920,7 +4842,7 @@ function ProductAccordion({
                 disabled={isLoading}
               />
             </Box>
-            <Box style={pageStyles.formGroup}>
+            <Box className={pageStyles.formGroup}>
               <Label htmlFor={`count-${product.id}`}>Count *</Label>
               <Input
                 type="text"
@@ -4936,8 +4858,8 @@ function ProductAccordion({
             </Box>
           </Box>
 
-          <Box style={accordionStyles.formRow}>
-            <Box style={pageStyles.formGroup}>
+          <Box className={accordionStyles.formRow}>
+            <Box className={pageStyles.formGroup}>
               <Label htmlFor={`barcode-${product.id}`}>Barcode</Label>
               <Input
                 type="text"
@@ -4962,9 +4884,9 @@ function ProductAccordion({
           </Box>
 
           {companyField ? (
-            <Box style={accordionStyles.formRow}>
+            <Box className={accordionStyles.formRow}>
               {packagingInput}
-              <Box style={pageStyles.formGroup}>
+              <Box className={pageStyles.formGroup}>
                 <Label htmlFor={`location-${product.id}`}>Inventory Location *</Label>
                 <Input
                   type="text"
@@ -4990,9 +4912,9 @@ function ProductAccordion({
           )}
 
           {(companyField ? billingMode !== 'BASIC' : true) && (
-            <Box style={accordionStyles.formRow}>
+            <Box className={accordionStyles.formRow}>
               {!companyField ? (
-                <Box style={pageStyles.formGroup}>
+                <Box className={pageStyles.formGroup}>
                   <Label htmlFor={`location-${product.id}`}>Inventory Location *</Label>
                   <Input
                     type="text"
@@ -5008,7 +4930,7 @@ function ProductAccordion({
                 <FormRowSpacer />
               )}
               {billingMode !== 'BASIC' ? (
-                <Box style={pageStyles.formGroup}>
+                <Box className={pageStyles.formGroup}>
                   <Label htmlFor={`hsn-${product.id}`}>HSN Code</Label>
                   <Input
                     type="text"
@@ -5027,8 +4949,8 @@ function ProductAccordion({
 
           {!simplePricing && (
             <>
-              <Box style={accordionStyles.formRow}>
-                <Box style={pageStyles.formGroup}>
+              <Box className={accordionStyles.formRow}>
+                <Box className={pageStyles.formGroup}>
                   <Label htmlFor={`schemeType-${product.id}`}>Sale scheme/deal type</Label>
                   <Select
                     id={`schemeType-${product.id}`}
@@ -5049,7 +4971,7 @@ function ProductAccordion({
                   </Select>
                 </Box>
                 {(product.schemeType ?? 'FIXED_UNITS') === 'FIXED_UNITS' ? (
-                  <Box style={pageStyles.formGroup}>
+                  <Box className={pageStyles.formGroup}>
                     <Label htmlFor={`scheme-fixed-${product.id}`}>Pay + free (e.g. 10 + 2)</Label>
                     <Input
                       type="text"
@@ -5071,7 +4993,7 @@ function ProductAccordion({
                     />
                   </Box>
                 ) : (
-                  <Box style={pageStyles.formGroup}>
+                  <Box className={pageStyles.formGroup}>
                     <Label htmlFor={`schemePercentage-${product.id}`}>Sale Scheme/Deal % *</Label>
                     <Input
                       type="number"
@@ -5098,8 +5020,8 @@ function ProductAccordion({
                 )}
               </Box>
 
-              <Box style={accordionStyles.formRow}>
-                <Box style={pageStyles.formGroup}>
+              <Box className={accordionStyles.formRow}>
+                <Box className={pageStyles.formGroup}>
                   <Label htmlFor={`saleAdditionalDiscount-${product.id}`}>
                     Sale add. discount (%)
                   </Label>
@@ -5130,19 +5052,19 @@ function ProductAccordion({
                     disabled={isLoading}
                   />
                 </Box>
-                <Box style={pageStyles.formGroup} aria-hidden="true">
-                  <Text as="span" style={{ visibility: 'hidden' }}>
+                <Box className={pageStyles.formGroup} aria-hidden="true">
+                  <Text as="span" className={productChrome.visuallyReserve}>
                     .
                   </Text>
-                  <Text as="span" style={{ visibility: 'hidden', display: 'block' }}>
+                  <Text as="span" className={productChrome.visuallyReserveBlock}>
                     .
                   </Text>
                 </Box>
               </Box>
 
               {/* Purchase (from vendor) - for comparison at sale */}
-              <Box style={accordionStyles.formRow}>
-                <Box style={pageStyles.formGroup}>
+              <Box className={accordionStyles.formRow}>
+                <Box className={pageStyles.formGroup}>
                   <Label htmlFor={`purchaseSchemeType-${product.id}`}>
                     Purchase scheme/deal type
                   </Label>
@@ -5185,7 +5107,7 @@ function ProductAccordion({
                   </Select>
                 </Box>
                 {purchaseSchemeType === 'PERCENTAGE' ? (
-                  <Box style={pageStyles.formGroup}>
+                  <Box className={pageStyles.formGroup}>
                     <Label htmlFor={`purchaseSchemePercentage-${product.id}`}>
                       Purchase scheme %
                     </Label>
@@ -5216,7 +5138,7 @@ function ProductAccordion({
                     />
                   </Box>
                 ) : (
-                  <Box style={pageStyles.formGroup}>
+                  <Box className={pageStyles.formGroup}>
                     <Label htmlFor={`purchase-scheme-fixed-${product.id}`}>
                       {purchaseSchemeType === 'FREE_QUANTITY'
                         ? 'Free quantity (e.g. 60 on 540 paid)'
@@ -5259,7 +5181,7 @@ function ProductAccordion({
                       disabled={isLoading}
                     />
                     {purchaseSchemePaidFreeHint ? (
-                      <Text as="span" style={{ fontWeight: 400, marginTop: '0.25rem' }}>
+                      <Text as="span" className={pageStyles.schemeHint}>
                         {purchaseSchemePaidFreeHint}
                       </Text>
                     ) : null}
@@ -5267,8 +5189,8 @@ function ProductAccordion({
                 )}
               </Box>
 
-              <Box style={accordionStyles.formRow}>
-                <Box style={pageStyles.formGroup}>
+              <Box className={accordionStyles.formRow}>
+                <Box className={pageStyles.formGroup}>
                   <Label htmlFor={`purchaseAdditionalDiscount-${product.id}`}>
                     Purchase add. discount (%)
                   </Label>
@@ -5299,7 +5221,7 @@ function ProductAccordion({
                     disabled={isLoading}
                   />
                 </Box>
-                <Box style={pageStyles.formGroup}>
+                <Box className={pageStyles.formGroup}>
                   <Label htmlFor={`itemType-${product.id}`}>Item Type</Label>
                   <Select
                     id={`itemType-${product.id}`}
@@ -5321,9 +5243,9 @@ function ProductAccordion({
                 </Box>
               </Box>
 
-              <Box style={accordionStyles.formRow}>
+              <Box className={accordionStyles.formRow}>
                 {product.itemType === 'DEGREE' ? (
-                  <Box style={pageStyles.formGroup}>
+                  <Box className={pageStyles.formGroup}>
                     <Label htmlFor={`itemTypeDegree-${product.id}`}>Temperature / Degree *</Label>
                     <Input
                       type="number"
@@ -5347,16 +5269,16 @@ function ProductAccordion({
                     />
                   </Box>
                 ) : (
-                  <Box style={pageStyles.formGroup} aria-hidden="true">
-                    <Text as="span" style={{ visibility: 'hidden' }}>
+                  <Box className={pageStyles.formGroup} aria-hidden="true">
+                    <Text as="span" className={productChrome.visuallyReserve}>
                       .
                     </Text>
-                    <Text as="span" style={{ visibility: 'hidden', display: 'block' }}>
+                    <Text as="span" className={productChrome.visuallyReserveBlock}>
                       .
                     </Text>
                   </Box>
                 )}
-                <Box style={pageStyles.formGroup}>
+                <Box className={pageStyles.formGroup}>
                   <Label htmlFor={`discountApplicable-${product.id}`}>Discount applicable</Label>
                   <Select
                     id={`discountApplicable-${product.id}`}
@@ -5384,8 +5306,8 @@ function ProductAccordion({
           )}
 
           {simplePricing ? (
-            <Box style={accordionStyles.formRow}>
-              <Box style={pageStyles.formGroup}>
+            <Box className={accordionStyles.formRow}>
+              <Box className={pageStyles.formGroup}>
                 <Label htmlFor={`costPrice-${product.id}`}>Rate (cost) *</Label>
                 <Input
                   type="text"
@@ -5399,7 +5321,7 @@ function ProductAccordion({
                   disabled={isLoading}
                 />
               </Box>
-              <Box style={pageStyles.formGroup}>
+              <Box className={pageStyles.formGroup}>
                 <Label htmlFor={`sellingPrice-${product.id}`}>Sell price (optional)</Label>
                 <Input
                   type="text"
@@ -5419,8 +5341,8 @@ function ProductAccordion({
             </Box>
           ) : (
             <>
-              <Box style={accordionStyles.formRow}>
-                <Box style={pageStyles.formGroup}>
+              <Box className={accordionStyles.formRow}>
+                <Box className={pageStyles.formGroup}>
                   <Label htmlFor={`priceToRetail-${product.id}`}>Price to Retailer (PTR) *</Label>
                   <Input
                     type="text"
@@ -5434,7 +5356,7 @@ function ProductAccordion({
                     disabled={isLoading}
                   />
                 </Box>
-                <Box style={pageStyles.formGroup}>
+                <Box className={pageStyles.formGroup}>
                   <Label htmlFor={`costPrice-${product.id}`}>Price from stockist (PTS) *</Label>
                   <Input
                     type="text"
@@ -5450,8 +5372,8 @@ function ProductAccordion({
                 </Box>
               </Box>
 
-              <Box style={accordionStyles.formRow}>
-                <Box style={pageStyles.formGroup}>
+              <Box className={accordionStyles.formRow}>
+                <Box className={pageStyles.formGroup}>
                   <Label htmlFor={`maximumRetailPrice-${product.id}`}>MRP *</Label>
                   <Input
                     type="text"
@@ -5473,8 +5395,8 @@ function ProductAccordion({
           )}
 
           {billingMode === 'REGULAR' && (
-            <Box style={accordionStyles.formRow}>
-              <Box style={pageStyles.formGroup}>
+            <Box className={accordionStyles.formRow}>
+              <Box className={pageStyles.formGroup}>
                 <Label htmlFor={`cgst-${product.id}`}>CGST (%)</Label>
                 <Input
                   type="text"
@@ -5487,7 +5409,7 @@ function ProductAccordion({
                   disabled={isLoading}
                 />
               </Box>
-              <Box style={pageStyles.formGroup}>
+              <Box className={pageStyles.formGroup}>
                 <Label htmlFor={`sgst-${product.id}`}>SGST (%)</Label>
                 <Input
                   type="text"
@@ -5506,8 +5428,8 @@ function ProductAccordion({
           {/* Rates (optional) - custom pricing tiers */}
           {!simplePricing && (
             <>
-              <Box style={accordionStyles.ratesSection}>
-                <Box style={accordionStyles.ratesHeader}>
+              <Box className={accordionStyles.ratesSection}>
+                <Box className={accordionStyles.ratesHeader}>
                   <Label>Rates (optional)</Label>
                   <Button
                     type="button"
@@ -5517,18 +5439,18 @@ function ProductAccordion({
                         { name: '', price: 0 },
                       ])
                     }
-                    style={accordionStyles.addRateBtn}
+                    className={accordionStyles.addRateBtn}
                     disabled={isLoading}
                   >
                     + Add rate
                   </Button>
                 </Box>
-                <Text as="span" style={accordionStyles.unitHint}>
+                <Text as="span" className={accordionStyles.unitHint}>
                   Custom rate tiers (e.g. Rate-A, Rate-B). Default rate selects which price to use
                   for sales.
                 </Text>
                 {(product.rates ?? []).map((rate, i) => (
-                  <Box key={i} style={accordionStyles.rateRow}>
+                  <Box key={i} className={accordionStyles.rateRow}>
                     <Input
                       type="text"
                       value={rate.name}
@@ -5537,7 +5459,7 @@ function ProductAccordion({
                         next[i] = { ...next[i], name: e.target.value };
                         onChange(product.id, 'rates', next);
                       }}
-                      style={accordionStyles.rateNameInput}
+                      className={accordionStyles.rateNameInput}
                       placeholder="Rate name"
                       disabled={isLoading}
                     />
@@ -5554,7 +5476,7 @@ function ProductAccordion({
                         };
                         onChange(product.id, 'rates', next);
                       }}
-                      style={accordionStyles.ratePriceInput}
+                      className={accordionStyles.ratePriceInput}
                       placeholder="Price"
                       disabled={isLoading}
                     />
@@ -5564,7 +5486,7 @@ function ProductAccordion({
                         const next = (product.rates ?? []).filter((_, j) => j !== i);
                         onChange(product.id, 'rates', next);
                       }}
-                      style={accordionStyles.removeRateBtn}
+                      className={accordionStyles.removeRateBtn}
                       aria-label="Remove rate"
                       disabled={isLoading}
                     >
@@ -5573,7 +5495,7 @@ function ProductAccordion({
                   </Box>
                 ))}
               </Box>
-              <Box style={pageStyles.formGroup}>
+              <Box className={pageStyles.formGroup}>
                 <Label htmlFor={`defaultRate-${product.id}`}>Default rate (optional)</Label>
                 <Select
                   id={`defaultRate-${product.id}`}
@@ -5597,7 +5519,7 @@ function ProductAccordion({
             </>
           )}
 
-          <Box style={pageStyles.formGroup}>
+          <Box className={pageStyles.formGroup}>
             <Label htmlFor={`description-${product.id}`}>Description</Label>
             <Textarea
               id={`description-${product.id}`}
@@ -5610,12 +5532,12 @@ function ProductAccordion({
           </Box>
 
           {/* Reminders — custom for all verticals; expiry-linked when schema has expiryDate */}
-          <Box style={accordionStyles.reminderSection}>
+          <Box className={accordionStyles.reminderSection}>
             <Text variant="heading4">Reminders</Text>
             {showExpiryReminder && (
               <>
-                <Box style={accordionStyles.formRow}>
-                  <Box style={pageStyles.formGroup}>
+                <Box className={accordionStyles.formRow}>
+                  <Box className={pageStyles.formGroup}>
                     <Label htmlFor={`reminderAt-${product.id}`}>
                       Expiry Reminder Date & Time (Optional)
                     </Label>
@@ -5634,7 +5556,7 @@ function ProductAccordion({
                       }}
                       disabled={isLoading}
                     />
-                    <Text style={pageStyles.helperText}>
+                    <Text className={pageStyles.helperText}>
                       Set a reminder date to be notified before this inventory item expires
                     </Text>
                   </Box>

@@ -27,7 +27,7 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
       <Text variant="caption" weight="semibold" color="secondary" style={{ minWidth: '120px' }}>
         {label}
       </Text>
-      <Box style={{ flex: 1 }}>{children}</Box>
+      <Box flex="1">{children}</Box>
     </Inline>
   );
 }
@@ -89,9 +89,9 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
     <Card>
       <CardBody>
         <Stack gap="md">
-          <Box margin="none" style={{ marginBottom: '1rem' }}>
+          <Box margin="none" mb="md">
             <Inline justify="between" align="start" gap="md" flexWrap>
-              <Stack gap="xs" style={{ flex: 1 }}>
+              <Stack gap="xs" flex="1">
                 <Text variant="heading3" weight="semibold">
                   {purchase.invoiceNo}
                 </Text>
@@ -154,7 +154,7 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
                       rounded="md"
                       width="full"
                     >
-                      <Stack gap="xs" style={{ flex: 1 }}>
+                      <Stack gap="xs" flex="1">
                         <Text weight="medium">{item.name}</Text>
                         <Text variant="caption" color="secondary">
                           Qty: {item.quantity}

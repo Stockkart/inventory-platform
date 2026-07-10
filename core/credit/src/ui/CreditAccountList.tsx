@@ -31,7 +31,9 @@ export function CreditAccountList({
       display="flex"
       flexDirection="column"
       gap="sm"
-      style={{ listStyle: 'none', margin: 0, padding: 0 }}
+      margin="none"
+      padding="none"
+      style={{ listStyle: 'none' }}
     >
       {accounts.map((a) => {
         const active = a.id === selectedId;

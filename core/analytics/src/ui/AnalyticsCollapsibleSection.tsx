@@ -1,5 +1,13 @@
 import type { ReactNode } from 'react';
-import { Badge, Button, Card, CardBody, Inline, Text } from '@inventory-platform/ui-kit';
+import {
+  Badge,
+  Button,
+  Card,
+  CardBody,
+  Inline,
+  Text,
+  chartChrome,
+} from '@inventory-platform/ui-kit';
 import type { BadgeVariant } from '@inventory-platform/ui-kit';
 
 interface AnalyticsCollapsibleSectionProps {
@@ -18,21 +26,17 @@ export function AnalyticsCollapsibleSection({
   children,
 }: AnalyticsCollapsibleSectionProps) {
   return (
-    <Card style={{ marginBottom: '1rem' }}>
+    <Card className={chartChrome.collapsibleCard}>
       <Button
         type="button"
         variant="ghost"
         onClick={onToggle}
         aria-expanded={expanded}
-        style={{
-          width: '100%',
-          justifyContent: 'stretch',
-          padding: '0.85rem 1.25rem',
-          borderRadius: 0,
-          textAlign: 'left',
-        }}
+        fullWidth
+        align="start"
+        className={chartChrome.collapsibleTrigger}
       >
-        <Inline align="center" justify="between" style={{ width: '100%' }}>
+        <Inline align="center" justify="between" width="full">
           <Inline gap="sm" align="center">
             <Text variant="heading4" weight="semibold">
               {title}
@@ -42,10 +46,7 @@ export function AnalyticsCollapsibleSection({
           <Text
             variant="caption"
             color="secondary"
-            style={{
-              transition: 'transform 0.3s ease',
-              transform: expanded ? 'rotate(180deg)' : undefined,
-            }}
+            className={`${chartChrome.chevron} ${expanded ? chartChrome.chevronOpen : ''}`}
           >
             ▼
           </Text>

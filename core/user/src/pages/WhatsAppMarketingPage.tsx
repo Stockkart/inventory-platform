@@ -208,7 +208,7 @@ export function WhatsAppMarketingPage() {
               <Button
                 type="button"
                 variant="solid"
-                style={{ width: '100%' }}
+                fullWidth
                 onClick={handleSendPreview}
                 disabled={selectedCustomerIds.size === 0}
                 title={

@@ -6,16 +6,9 @@ import {
   Inline,
   Link as UiLink,
   ThemeToggle,
-  type BoxProps,
+  journeyChrome,
 } from '@inventory-platform/ui-kit';
 import { useAuthStore } from '@inventory-platform/session';
-
-const logoImgProps = {
-  as: 'img',
-  src: '/assets/logo/STOCKKART-3x.png',
-  alt: 'StockKart',
-  style: { height: 44, width: 'auto', maxWidth: 180, objectFit: 'contain' as const },
-} as unknown as BoxProps;
 
 function useCompactHeader() {
   const [compact, setCompact] = useState(false);
@@ -44,17 +37,16 @@ export function JourneyHeader() {
       bg="elevated"
       padding="sm"
       width="full"
-      style={{
-        top: 0,
-        left: 0,
-        right: 0,
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-      }}
+      className={journeyChrome.header}
     >
       <Inline maxWidth="xl" mx="auto" justify="between" width="full" padding="sm" gap="md">
         <Link to="/">
-          <Box {...logoImgProps} />
+          <Box
+            as="img"
+            src="/assets/logo/STOCKKART-3x.png"
+            alt="StockKart"
+            className={journeyChrome.logo}
+          />
         </Link>
 
         {!compact ? (

@@ -16,6 +16,7 @@ import {
   TableRow,
   Text,
   VisuallyHidden,
+  shellChrome,
 } from '@inventory-platform/ui-kit';
 import { DASHBOARD_HOTKEY, getShortcutHelpRows } from './dashboardHotkeys';
 import type { DashboardNavRow } from '@inventory-platform/routing';
@@ -41,7 +42,7 @@ function ShortcutKeys({ alternatives }: { alternatives: string[][] }) {
   return (
     <>
       {alternatives.map((segments, altIdx) => (
-        <Text key={altIdx} as="span" style={{ whiteSpace: 'nowrap' }}>
+        <Text key={altIdx} as="span" className={shellChrome.nowrap}>
           {segments.map((seg, segIdx) => (
             <Text key={`${seg}-${segIdx}`} as="span">
               {segIdx > 0 ? (
@@ -158,11 +159,7 @@ export function KeyboardShortcutsModal({
       <Box {...{ 'data-keyboard-nav': KEYBOARD_NAV_SKIP }}>
         <Modal.Header title="Keyboard shortcuts" onClose={onClose} />
         <Modal.Body>
-          <Text
-            color="secondary"
-            variant="caption"
-            style={{ marginBottom: '1rem', lineHeight: 1.45 }}
-          >
+          <Text color="secondary" variant="caption" mb="md">
             Most shortcuts work when focus is not in a field. While{' '}
             <Text as="strong">quick navigation</Text> is open (<Text as="kbd">{modLabel}</Text> +{' '}
             <Text as="kbd">{DASHBOARD_HOTKEY.quickNavToggleModKey.toUpperCase()}</Text> or{' '}
@@ -196,21 +193,19 @@ export function KeyboardShortcutsModal({
           <Text variant="heading3" weight="semibold">
             My page shortcuts
           </Text>
-          <Text
-            color="secondary"
-            variant="caption"
-            style={{ marginTop: '0.35rem', marginBottom: '0.85rem', lineHeight: 1.45 }}
-          >
-            Jump straight to a screen you use often. Pick a page below, click{' '}
-            <Text as="strong">Assign shortcut</Text>, then press one of: a{' '}
-            <Text as="strong">function key</Text> alone (<Text as="kbd">F1</Text>–
-            <Text as="kbd">F12</Text>), or a <Text as="strong">two-part</Text> shortcut such as{' '}
-            <Text as="kbd">{modLabel}</Text> + <Text as="kbd">G</Text>, <Text as="kbd">Alt</Text> +{' '}
-            <Text as="kbd">G</Text>, or <Text as="kbd">{modLabel}</Text> +{' '}
-            <Text as="kbd">Shift</Text> + <Text as="kbd">S</Text>. Saved on this device only.
-          </Text>
+          <Box mt="xs" mb="sm">
+            <Text color="secondary" variant="caption">
+              Jump straight to a screen you use often. Pick a page below, click{' '}
+              <Text as="strong">Assign shortcut</Text>, then press one of: a{' '}
+              <Text as="strong">function key</Text> alone (<Text as="kbd">F1</Text>–
+              <Text as="kbd">F12</Text>), or a <Text as="strong">two-part</Text> shortcut such as{' '}
+              <Text as="kbd">{modLabel}</Text> + <Text as="kbd">G</Text>, <Text as="kbd">Alt</Text>{' '}
+              + <Text as="kbd">G</Text>, or <Text as="kbd">{modLabel}</Text> +{' '}
+              <Text as="kbd">Shift</Text> + <Text as="kbd">S</Text>. Saved on this device only.
+            </Text>
+          </Box>
 
-          <Inline gap="sm" align="center" style={{ flexWrap: 'wrap', marginBottom: '0.65rem' }}>
+          <Inline gap="sm" align="center" flexWrap mb="sm">
             <Label htmlFor="favorite-page-select">
               <VisuallyHidden>Page to assign</VisuallyHidden>
             </Label>
@@ -219,7 +214,8 @@ export function KeyboardShortcutsModal({
               value={selectedPath}
               disabled={sortedNav.length === 0 || Boolean(recordingPath)}
               onChange={(e) => setSelectedPath(e.target.value)}
-              style={{ flex: 1, minWidth: '11rem' }}
+              flex="1"
+              className={shellChrome.kbdAssignSelect}
             >
               {sortedNav.map((r) => (
                 <option key={r.path} value={r.path}>
@@ -239,7 +235,7 @@ export function KeyboardShortcutsModal({
           </Inline>
 
           {recordingPath ? (
-            <Box style={{ marginBottom: '0.5rem' }}>
+            <Box mb="sm">
               <Alert variant="info" role="status">
                 Press your shortcut — e.g. <Text as="kbd">F7</Text>,{' '}
                 <Text as="kbd">{modLabel}</Text> + <Text as="kbd">R</Text>, or{' '}
@@ -251,59 +247,65 @@ export function KeyboardShortcutsModal({
             </Box>
           ) : null}
           {formError ? (
-            <Box style={{ marginBottom: '0.65rem' }}>
+            <Box mb="sm">
               <Alert variant="danger">{formError}</Alert>
             </Box>
           ) : null}
 
           {favorites.length > 0 ? (
-            <Table style={{ marginTop: '0.35rem' }}>
-              <TableHead>
-                <TableRow>
-                  <TableHeaderCell>Page</TableHeaderCell>
-                  <TableHeaderCell>Shortcut</TableHeaderCell>
-                  <TableHeaderCell style={{ width: '4.5rem', textAlign: 'right' }} />
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {favorites.map((f) => (
-                  <TableRow key={f.id}>
-                    <TableCell>
-                      <Text weight="medium">{f.label}</Text>
-                    </TableCell>
-                    <TableCell>
-                      <ShortcutKeys alternatives={formatFavoriteShortcutDisplay(f, modLabel)} />
-                    </TableCell>
-                    <TableCell style={{ textAlign: 'right', verticalAlign: 'middle' }}>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        onClick={() =>
-                          onFavoritesChange(removeFavoritePageShortcut(favorites, f.id))
-                        }
-                      >
-                        Remove
-                      </Button>
-                    </TableCell>
+            <Box mt="xs">
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableHeaderCell>Page</TableHeaderCell>
+                    <TableHeaderCell>Shortcut</TableHeaderCell>
+                    <TableHeaderCell className={shellChrome.kbdHeaderCellAction} />
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHead>
+                <TableBody>
+                  {favorites.map((f) => (
+                    <TableRow key={f.id}>
+                      <TableCell>
+                        <Text weight="medium">{f.label}</Text>
+                      </TableCell>
+                      <TableCell>
+                        <ShortcutKeys alternatives={formatFavoriteShortcutDisplay(f, modLabel)} />
+                      </TableCell>
+                      <TableCell className={shellChrome.kbdActionCell}>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            onFavoritesChange(removeFavoritePageShortcut(favorites, f.id))
+                          }
+                        >
+                          Remove
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Box>
           ) : (
             !recordingPath && (
-              <Text color="secondary" variant="caption" style={{ marginTop: '0.35rem' }}>
-                No custom shortcuts yet. Assign one using the controls above.
-              </Text>
+              <Box mt="xs">
+                <Text color="secondary" variant="caption">
+                  No custom shortcuts yet. Assign one using the controls above.
+                </Text>
+              </Box>
             )
           )}
 
-          <Text color="secondary" variant="caption" style={{ marginTop: '1rem', lineHeight: 1.45 }}>
-            Quick navigation: <Text as="kbd">↑</Text> <Text as="kbd">↓</Text> highlight a page,{' '}
-            <Text as="kbd">Enter</Text> opens it. Hold <Text as="kbd">Alt</Text> and press{' '}
-            <Text as="kbd">1</Text>–<Text as="kbd">9</Text> to jump straight to the matching row
-            (shown at the left of each line).
-          </Text>
+          <Box mt="md">
+            <Text color="secondary" variant="caption">
+              Quick navigation: <Text as="kbd">↑</Text> <Text as="kbd">↓</Text> highlight a page,{' '}
+              <Text as="kbd">Enter</Text> opens it. Hold <Text as="kbd">Alt</Text> and press{' '}
+              <Text as="kbd">1</Text>–<Text as="kbd">9</Text> to jump straight to the matching row
+              (shown at the left of each line).
+            </Text>
+          </Box>
         </Modal.Body>
       </Box>
     </Modal>

@@ -56,12 +56,12 @@ export function ScanSellCafeStockLine({
           history={customerProductHistory ?? null}
           loading={customerProductHistoryLoading}
         />
-        <Text variant="caption" color="secondary" style={cartLineMetaStyle}>
+        <Text variant="caption" color="secondary" className={cartLineMetaStyle}>
           {unitLabel ? `${unitLabel} · ` : ''}
           {money(price)} each · {money(lineTotal)}
         </Text>
       </Stack>
-      <Stack gap="sm" align="end" style={{ flexShrink: 0 }}>
+      <Stack gap="sm" align="end" flexShrink={0}>
         <CartQtyStepper
           value={quantity}
           disabled={disabled}
@@ -73,7 +73,7 @@ export function ScanSellCafeStockLine({
           type="button"
           variant="ghost"
           size="sm"
-          style={{ flexShrink: 0 }}
+          flexShrink={0}
           onClick={onRemove}
           disabled={disabled}
         >

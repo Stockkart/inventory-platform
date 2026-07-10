@@ -51,7 +51,7 @@ type BoxOwnProps = {
   flexShrink?: 0 | 1;
   flexGrow?: 0 | 1;
   minWidth?: '0';
-  minHeight?: '0';
+  minHeight?: '0' | 'full' | 'screen';
   textAlign?: 'left' | 'center' | 'right';
   zIndex?: 'dropdown' | 'sticky' | 'modal';
   /** Escape hatch — prefer token props. */
@@ -164,6 +164,8 @@ export const Box = forwardRef<HTMLElement, BoxProps>(function Box(
         flexGrow === 1 && styles['flex-grow-1'],
         minWidth === '0' && styles['min-w-0'],
         minHeight === '0' && styles['min-h-0'],
+        minHeight === 'full' && styles['min-h-full'],
+        minHeight === 'screen' && styles['min-h-screen'],
         textAlign && styles[`text-${textAlign}`],
         zIndex && styles[`z-${zIndex}`],
         className,

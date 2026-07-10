@@ -79,3 +79,19 @@ export {
   type DenseTableProps,
 } from './DenseTable';
 export { SocialAuthSlot, type SocialAuthSlotProps } from './SocialAuthSlot';
+export {
+  JourneyShell,
+  JourneyMain,
+  journeyChrome,
+  type JourneyShellProps,
+  type JourneyMainProps,
+} from './JourneyShell';
+export { chartChrome } from './ChartFrame';
+export { productChrome } from './ProductChrome';
+export {
+  registrationChrome,
+  pageStyles,
+  accordionStyles,
+  vendorStyles,
+  uploadLayoutStyles,
+} from './RegistrationChrome';

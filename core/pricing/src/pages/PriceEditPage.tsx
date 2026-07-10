@@ -305,7 +305,7 @@ export function PriceEditPage() {
                     type="text"
                     value={rate.name}
                     onChange={(e) => updateRate(i, 'name', e.target.value)}
-                    style={{ flex: 1 }}
+                    flex="1"
                     placeholder="Rate name"
                   />
                   <Input

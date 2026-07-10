@@ -141,6 +141,10 @@ export {
   SearchDropdown,
   StickyBar,
   SocialAuthSlot,
+  JourneyShell,
+  JourneyMain,
+  journeyChrome,
+  chartChrome,
   DenseTable,
   DenseTableSurface,
   DenseTableRow,
@@ -172,6 +176,8 @@ export {
   type SearchDropdownProps,
   type StickyBarProps,
   type SocialAuthSlotProps,
+  type JourneyShellProps,
+  type JourneyMainProps,
   type DenseTableProps,
   PlanCarousel3D,
   type PlanCarousel3DProps,
@@ -198,6 +204,12 @@ export {
   type PlanCardProps,
   PlanCardGrid,
   type PlanCardGridProps,
+  productChrome,
+  registrationChrome,
+  pageStyles,
+  accordionStyles,
+  vendorStyles,
+  uploadLayoutStyles,
 } from './patterns';
 
 // Hooks
