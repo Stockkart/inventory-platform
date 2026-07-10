@@ -21,6 +21,23 @@
   line-height: 1.4;
 }
 
+/** Dense UI copy (~13px) — nav links, compact rows */
+.variant-micro {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  font-weight: 400;
+}
+
+/** Section micro-labels — uppercase + tracking (e.g. “Call us”) */
+.variant-overline {
+  font-size: 0.6875rem;
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sk-color-text-secondary);
+}
+
 .variant-title {
   font-size: 1.25rem;
   font-weight: 600;

@@ -26,11 +26,18 @@ import {
   Label,
   Link as UiLink,
   Modal,
+  navGroupBlockClassName,
+  navGroupChevronClassName,
   navGroupClassName,
   navGroupIconClassName,
+  navGroupLabelClassName,
   navItemClassName,
+  navItemCollapsedClassName,
+  navItemIconClassName,
+  navItemLabelClassName,
   navSubListClassName,
   PopoverPanel,
+  shellChrome,
   Stack,
   Text,
 } from '@inventory-platform/ui-kit';
@@ -83,13 +90,6 @@ function isTypingInField(target: EventTarget | null): boolean {
   if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
   return Boolean(target.closest('[contenteditable="true"]'));
 }
-
-const navLinkLayoutStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  borderRadius: 6,
-  boxSizing: 'border-box' as const,
-};
 
 export function DashboardLayout({
   children,
@@ -462,18 +462,9 @@ export function DashboardLayout({
           !sidebarOpen && isMobile ? (
             <IconButton
               label="Open menu"
+              size="sm"
+              className={shellChrome.mobileMenuFab}
               onClick={() => setSidebarOpen(true)}
-              style={{
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 32,
-                height: 32,
-                background: 'var(--bg-secondary)',
-                border: '1px solid var(--border-color)',
-                borderRadius: 6,
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                color: 'var(--text-primary)',
-              }}
             >
               <Menu size={18} />
             </IconButton>
@@ -486,27 +477,19 @@ export function DashboardLayout({
               align="center"
               gap="xs"
               width="full"
-              style={{
-                boxSizing: 'border-box',
-                height: 'var(--header-height, 60px)',
-                minHeight: 'var(--header-height, 60px)',
-                padding: sidebarOpen ? '0 1rem' : '0.5rem',
-                borderBottom: '1px solid var(--border-color)',
-                flexShrink: 0,
-                flexDirection: sidebarOpen ? 'row' : 'column',
-              }}
+              className={
+                sidebarOpen
+                  ? shellChrome.sidebarHeader
+                  : `${shellChrome.sidebarHeader} ${shellChrome.sidebarHeaderCollapsed}`
+              }
             >
               <Link
                 to="/dashboard"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  flex: sidebarOpen ? 1 : undefined,
-                  minWidth: 0,
-                  textDecoration: 'none',
-                  cursor: 'pointer',
-                  order: sidebarOpen ? undefined : 1,
-                }}
+                className={
+                  sidebarOpen
+                    ? shellChrome.sidebarBrandLink
+                    : `${shellChrome.sidebarBrandLink} ${shellChrome.sidebarBrandLinkCollapsed}`
+                }
               >
                 <img
                   src={
@@ -515,46 +498,35 @@ export function DashboardLayout({
                       : '/assets/logo/stockkart_icon.png'
                   }
                   alt="StockKart"
-                  style={{
-                    height: 32,
-                    width: 'auto',
-                    maxWidth: sidebarOpen ? 140 : 36,
-                    objectFit: 'contain',
-                    flexShrink: 0,
-                  }}
+                  className={
+                    sidebarOpen
+                      ? shellChrome.sidebarLogo
+                      : `${shellChrome.sidebarLogo} ${shellChrome.sidebarLogoCollapsed}`
+                  }
                 />
               </Link>
 
               <IconButton
                 label="Toggle sidebar"
+                size="sm"
+                className={
+                  sidebarOpen
+                    ? shellChrome.sidebarToggle
+                    : `${shellChrome.sidebarToggle} ${shellChrome.sidebarToggleCollapsed}`
+                }
                 onClick={() => setSidebarOpen((s) => !s)}
-                style={{
-                  order: sidebarOpen ? undefined : 2,
-                  width: 32,
-                  height: 32,
-                  minWidth: 32,
-                  flexShrink: 0,
-                }}
               >
                 <Menu size={18} />
               </IconButton>
             </Inline>
 
-            <Box
-              as="nav"
-              style={{
-                flex: 1,
-                padding: '0.5rem 0',
-                overflowY: 'auto',
-                overflowX: 'hidden',
-              }}
-            >
+            <Box as="nav" className={shellChrome.sidebarNav}>
               {sidebarOpen ? (
                 filteredMenuGroups.map((group) => {
                   const isExpanded =
                     expandedGroups.has(group.id) || isPathInGroup(group.id, currentPath);
                   return (
-                    <Box key={group.id} style={{ marginBottom: '0.1rem' }}>
+                    <Box key={group.id} className={navGroupBlockClassName}>
                       <Button
                         type="button"
                         variant="ghost"
@@ -562,52 +534,19 @@ export function DashboardLayout({
                         onClick={() => toggleGroup(group.id)}
                         aria-expanded={isExpanded}
                         fullWidth
+                        align="start"
                         className={navGroupClassName()}
-                        style={{
-                          width: 'calc(100% - 0.3rem)',
-                          color: 'var(--sk-color-text-primary, var(--text-primary))',
-                          background: 'transparent',
-                          fontSize: '0.8125rem',
-                          fontWeight: 600,
-                          letterSpacing: '-0.01em',
-                          textTransform: 'none',
-                          padding: '0.45rem 0.45rem 0.45rem 0.5rem',
-                          lineHeight: 1.35,
-                          borderRadius: 6,
-                        }}
                       >
                         <Box as="span" className={navGroupIconClassName}>
                           <NavIcon name={group.icon} size="sm" />
                         </Box>
-                        <Text
-                          as="span"
-                          variant="caption"
-                          style={{
-                            flex: 1,
-                            minWidth: 0,
-                            textAlign: 'left',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            fontSize: 'inherit',
-                            fontWeight: 'inherit',
-                            letterSpacing: 'inherit',
-                            textTransform: 'none',
-                            color: 'inherit',
-                            lineHeight: 'inherit',
-                          }}
-                        >
+                        <Text as="span" variant="micro" className={navGroupLabelClassName}>
                           {group.label}
                         </Text>
                         <ChevronDown
                           size={13}
                           strokeWidth={1.75}
-                          style={{
-                            flexShrink: 0,
-                            opacity: 0.35,
-                            transform: isExpanded ? 'rotate(180deg)' : undefined,
-                            transition: 'transform 0.2s ease',
-                          }}
+                          className={navGroupChevronClassName(isExpanded)}
                         />
                       </Button>
                       {isExpanded && (
@@ -617,41 +556,14 @@ export function DashboardLayout({
                               key={item.path}
                               to={item.path}
                               className={navItemClassName(currentPath === item.path)}
-                              style={{
-                                ...navLinkLayoutStyle,
-                                gap: '0.55rem',
-                                padding: '0.4rem 0.55rem',
-                                margin: 0,
-                                borderRadius: 6,
-                              }}
                             >
                               <Box
-                                display="flex"
-                                align="center"
-                                justify="center"
-                                style={{
-                                  width: 15,
-                                  height: 15,
-                                  flexShrink: 0,
-                                  color: 'inherit',
-                                  opacity: currentPath === item.path ? 1 : 0.55,
-                                }}
+                                as="span"
+                                className={navItemIconClassName(currentPath === item.path)}
                               >
                                 <NavIcon name={item.icon} size="sm" />
                               </Box>
-                              <Text
-                                as="span"
-                                variant="caption"
-                                style={{
-                                  whiteSpace: 'nowrap',
-                                  fontSize: '0.8125rem',
-                                  fontWeight: currentPath === item.path ? 500 : 400,
-                                  color: 'inherit',
-                                  lineHeight: 1.4,
-                                  textTransform: 'none',
-                                  letterSpacing: 'normal',
-                                }}
-                              >
+                              <Text as="span" variant="micro" className={navItemLabelClassName}>
                                 {item.label}
                               </Text>
                             </Link>
@@ -668,19 +580,9 @@ export function DashboardLayout({
                       key={item.path}
                       to={item.path}
                       title={item.label}
-                      className={navItemClassName(currentPath === item.path)}
-                      style={{
-                        ...navLinkLayoutStyle,
-                        justifyContent: 'center',
-                        padding: '0.6rem',
-                      }}
+                      className={navItemCollapsedClassName(currentPath === item.path)}
                     >
-                      <Box
-                        display="flex"
-                        align="center"
-                        justify="center"
-                        style={{ width: 18, height: 18, flexShrink: 0, color: 'inherit' }}
-                      >
+                      <Box as="span" className={navItemIconClassName(false, true)}>
                         <NavIcon name={item.icon} size="sm" />
                       </Box>
                     </Link>
@@ -689,18 +591,17 @@ export function DashboardLayout({
               )}
             </Box>
 
-            <Box
-              style={{
-                flexShrink: 0,
-                marginTop: 'auto',
-                borderTop: '1px solid var(--border-color)',
-                padding: '0.5rem',
-              }}
-            >
+            <Box className={shellChrome.sidebarFooter}>
               <Button
                 type="button"
                 variant="ghost"
                 fullWidth
+                align={sidebarOpen ? 'start' : 'center'}
+                className={
+                  sidebarOpen
+                    ? shellChrome.supportToggle
+                    : `${shellChrome.supportToggle} ${shellChrome.supportToggleCollapsed}`
+                }
                 onClick={() => {
                   if (!sidebarOpen) {
                     setSidebarOpen(true);
@@ -711,31 +612,11 @@ export function DashboardLayout({
                 }}
                 aria-expanded={supportOpen}
                 title="Support"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: sidebarOpen ? '0.45rem 0.65rem' : '0.45rem',
-                  justifyContent: sidebarOpen ? 'flex-start' : 'center',
-                  color: 'var(--text-secondary)',
-                  fontSize: '0.8125rem',
-                  borderRadius: 8,
-                }}
               >
-                <Headphones size={16} style={{ flexShrink: 0 }} />
+                <Headphones size={16} className={shellChrome.supportIcon} />
                 {sidebarOpen && (
                   <>
-                    <Text
-                      as="span"
-                      variant="caption"
-                      style={{
-                        flex: 1,
-                        textAlign: 'left',
-                        fontSize: '0.8125rem',
-                        fontWeight: 500,
-                        color: 'inherit',
-                      }}
-                    >
+                    <Text as="span" variant="micro" className={shellChrome.supportToggleLabel}>
                       Support
                     </Text>
                     {supportOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -748,28 +629,14 @@ export function DashboardLayout({
                   padding="sm"
                   rounded="md"
                   border
-                  style={{
-                    marginTop: '0.5rem',
-                    background: 'var(--bg-primary)',
-                    maxHeight: 320,
-                    overflowY: 'auto',
-                  }}
+                  className={shellChrome.supportPanel}
                   {...{ 'data-keyboard-nav': KEYBOARD_NAV_SKIP }}
                 >
                   <Stack gap="md">
                     <Stack gap="xs">
                       <Inline gap="xs" align="center">
-                        <Phone size={14} style={{ opacity: 0.8 }} />
-                        <Text
-                          variant="caption"
-                          weight="semibold"
-                          color="secondary"
-                          style={{
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.04em',
-                            fontSize: '0.7rem',
-                          }}
-                        >
+                        <Phone size={14} className={shellChrome.supportIcon} />
+                        <Text variant="overline" color="secondary">
                           Call us
                         </Text>
                       </Inline>
@@ -779,17 +646,8 @@ export function DashboardLayout({
 
                     <Stack gap="xs">
                       <Inline gap="xs" align="center">
-                        <Mail size={14} style={{ opacity: 0.8 }} />
-                        <Text
-                          variant="caption"
-                          weight="semibold"
-                          color="secondary"
-                          style={{
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.04em',
-                            fontSize: '0.7rem',
-                          }}
-                        >
+                        <Mail size={14} className={shellChrome.supportIcon} />
+                        <Text variant="overline" color="secondary">
                           Email
                         </Text>
                       </Inline>
@@ -800,31 +658,13 @@ export function DashboardLayout({
 
                     <Stack gap="xs">
                       <Inline gap="xs" align="center">
-                        <MessageCircle size={14} style={{ opacity: 0.8 }} />
-                        <Text
-                          variant="caption"
-                          weight="semibold"
-                          color="secondary"
-                          style={{
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.04em',
-                            fontSize: '0.7rem',
-                          }}
-                        >
+                        <MessageCircle size={14} className={shellChrome.supportIcon} />
+                        <Text variant="overline" color="secondary">
                           Instant online support
                         </Text>
                       </Inline>
-                      <Stack gap="sm" style={{ marginTop: '0.5rem' }}>
-                        <Box
-                          padding="sm"
-                          rounded="sm"
-                          style={{
-                            minHeight: 60,
-                            maxHeight: 120,
-                            overflowY: 'auto',
-                            background: 'var(--bg-secondary)',
-                          }}
-                        >
+                      <Stack gap="sm" mt="sm">
+                        <Box padding="sm" rounded="sm" className={shellChrome.chatThread}>
                           {chatMessages.length === 0 ? (
                             <Text variant="caption" color="secondary">
                               Start a conversation. We&apos;ll integrate with backend soon.
@@ -833,22 +673,11 @@ export function DashboardLayout({
                             chatMessages.map((m, i) => (
                               <Box
                                 key={i}
-                                style={{
-                                  fontSize: '0.8rem',
-                                  padding: '0.35rem 0.5rem',
-                                  borderRadius: 6,
-                                  marginBottom: '0.35rem',
-                                  background:
-                                    m.from === 'user'
-                                      ? 'rgba(59, 130, 246, 0.2)'
-                                      : 'var(--bg-card)',
-                                  color:
-                                    m.from === 'user'
-                                      ? 'var(--text-primary)'
-                                      : 'var(--text-secondary)',
-                                  marginLeft: m.from === 'user' ? '1rem' : undefined,
-                                  marginRight: m.from === 'support' ? '1rem' : undefined,
-                                }}
+                                className={`${shellChrome.chatBubble} ${
+                                  m.from === 'user'
+                                    ? shellChrome.chatBubbleUser
+                                    : shellChrome.chatBubbleSupport
+                                }`}
                               >
                                 {m.text}
                               </Box>
@@ -862,7 +691,7 @@ export function DashboardLayout({
                             value={chatMessage}
                             onChange={(e) => setChatMessage(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
-                            style={{ flex: 1, fontSize: '0.85rem' }}
+                            className={shellChrome.chatInput}
                           />
                           <Button
                             type="button"
@@ -884,15 +713,11 @@ export function DashboardLayout({
         }
         header={
           <Box
-            style={{
-              backgroundColor: 'var(--bg-header)',
-              borderBottom: '1px solid var(--border-color)',
-              boxSizing: 'border-box',
-              height: 'var(--header-height, 60px)',
-              minHeight: 'var(--header-height, 60px)',
-              padding: isMobile ? '0.5rem 0.75rem' : '0 1rem',
-              transition: 'background-color 0.3s ease, border-color 0.3s ease',
-            }}
+            className={
+              isMobile
+                ? `${shellChrome.headerBar} ${shellChrome.headerBarCompact}`
+                : shellChrome.headerBar
+            }
           >
             <Inline justify="between" align="center" gap="md" height="full" width="full">
               <Text
@@ -901,29 +726,23 @@ export function DashboardLayout({
                 aria-level={1}
                 variant="title"
                 weight="semibold"
-                style={{ margin: 0, letterSpacing: '-0.01em' }}
+                className={shellChrome.headerTitle}
               >
                 {currentPageLabel}
               </Text>
 
-              <Inline align="center" gap="none" style={{ flexShrink: 0 }}>
+              <Inline align="center" gap="none" className={shellChrome.headerActions}>
                 <Inline gap="xs" align="center">
                   <IconButton
                     label="Help for this page"
                     size="sm"
+                    shape="circle"
+                    className={shellChrome.headerIconButton}
                     onClick={() => {
                       setShowNotificationMenu(false);
                       setContextualHelpOpen(true);
                     }}
                     title="Help for this page"
-                    style={{
-                      width: '2.25rem',
-                      height: '2.25rem',
-                      borderRadius: 'var(--sk-radius-full, 9999px)',
-                      border: '1px solid var(--border-color)',
-                      background: 'var(--bg-primary)',
-                      color: 'var(--text-secondary)',
-                    }}
                   >
                     <Info size={18} aria-hidden />
                   </IconButton>
@@ -932,47 +751,26 @@ export function DashboardLayout({
                     <IconButton
                       label="Notifications"
                       size="sm"
+                      shape="circle"
+                      className={shellChrome.headerIconButton}
                       onClick={() => setShowNotificationMenu((o) => !o)}
-                      style={{
-                        width: '2.25rem',
-                        height: '2.25rem',
-                        borderRadius: 'var(--sk-radius-full, 9999px)',
-                        border: '1px solid var(--border-color)',
-                        background: 'var(--bg-primary)',
-                        color: 'var(--text-secondary)',
-                      }}
                     >
                       <Bell size={18} aria-hidden />
                       {unreadCount > 0 && (
-                        <Box style={{ position: 'absolute', top: -2, right: -2 }}>
+                        <Box className={shellChrome.notificationBadge}>
                           <Badge variant="danger">{unreadCount}</Badge>
                         </Box>
                       )}
                     </IconButton>
 
                     {showNotificationMenu && (
-                      <PopoverPanel
-                        style={{
-                          top: '110%',
-                          right: 0,
-                          marginTop: '0.5rem',
-                          backgroundColor: 'var(--bg-secondary)',
-                          border: '1px solid var(--border-color)',
-                          borderRadius: '0.75rem',
-                          boxShadow: '0 18px 45px rgba(0, 0, 0, 0.35)',
-                          minWidth: 260,
-                          maxWidth: 320,
-                          maxHeight: 320,
-                          overflowY: 'auto',
-                          padding: '0.5rem 0',
-                        }}
-                      >
+                      <PopoverPanel variant="notification">
                         {notifications.length === 0 ? (
                           <Text
                             variant="caption"
                             color="secondary"
                             align="center"
-                            style={{ display: 'block', padding: '0.75rem 1rem' }}
+                            className={shellChrome.notificationEmpty}
                           >
                             No notifications
                           </Text>
@@ -983,37 +781,20 @@ export function DashboardLayout({
                               type="button"
                               variant="ghost"
                               fullWidth
+                              align="start"
+                              className={shellChrome.notificationRow}
                               onClick={() => handleNotificationClick(n.id)}
-                              style={{
-                                textAlign: 'left',
-                                padding: '0.6rem 1rem',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '0.15rem',
-                                alignItems: 'stretch',
-                              }}
                             >
                               <Inline justify="between" align="center" width="full">
                                 <Text variant="caption" weight="semibold">
                                   {n.title}
                                 </Text>
-                                {!n.read && (
-                                  <Box
-                                    style={{
-                                      width: 8,
-                                      height: 8,
-                                      borderRadius: 999,
-                                      backgroundColor: '#22c55e',
-                                      flexShrink: 0,
-                                      marginLeft: '0.5rem',
-                                    }}
-                                  />
-                                )}
+                                {!n.read && <Box className={shellChrome.unreadDot} />}
                               </Inline>
                               <Text
                                 variant="caption"
                                 color="secondary"
-                                style={{ whiteSpace: 'pre-line' }}
+                                className={shellChrome.preLine}
                               >
                                 {n.message}
                               </Text>
@@ -1027,98 +808,41 @@ export function DashboardLayout({
                   <IconButton
                     label="Keyboard shortcuts"
                     size="sm"
+                    shape="circle"
+                    className={shellChrome.headerIconButton}
                     onClick={() => setShortcutsHelpOpen(true)}
                     title={`Keyboard shortcuts (${DASHBOARD_HOTKEY.shortcutsHelp})`}
-                    style={{
-                      width: '2.25rem',
-                      height: '2.25rem',
-                      borderRadius: 'var(--sk-radius-full, 9999px)',
-                      border: '1px solid var(--border-color)',
-                      background: 'var(--bg-primary)',
-                      color: 'var(--text-secondary)',
-                    }}
                   >
                     <Keyboard size={18} aria-hidden />
                   </IconButton>
                 </Inline>
 
-                <Box
-                  aria-hidden
-                  style={{
-                    width: 1,
-                    height: '1.625rem',
-                    margin: '0 0.75rem',
-                    background: 'var(--border-color)',
-                    flexShrink: 0,
-                  }}
-                />
+                <Box aria-hidden className={shellChrome.headerDivider} />
 
-                <Inline gap="sm" align="center" style={{ minWidth: 0 }}>
+                <Inline gap="sm" align="center" minWidth="0">
                   <ThemeToggle
                     size="sm"
                     variant="outline"
-                    style={{
-                      height: '2.25rem',
-                      minWidth: '2.25rem',
-                      padding: '0 0.75rem',
-                      borderRadius: 'var(--sk-radius-full, 9999px)',
-                      fontSize: '0.8125rem',
-                      whiteSpace: 'nowrap',
-                    }}
+                    className={shellChrome.headerThemeToggle}
                   />
 
-                  <Box ref={userMenuRef} position="relative" style={{ minWidth: 0 }}>
+                  <Box ref={userMenuRef} position="relative" minWidth="0">
                     <Button
                       type="button"
                       variant="ghost"
                       onClick={() => setUserMenuOpen((o) => !o)}
                       disabled={isLoading}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        height: '2.25rem',
-                        background: 'var(--bg-primary)',
-                        border: '1px solid var(--border-color)',
-                        color: 'var(--text-primary)',
-                        padding: '0 0.75rem 0 0.25rem',
-                        borderRadius: 'var(--sk-radius-full, 9999px)',
-                        fontSize: '0.8125rem',
-                        maxWidth: '12rem',
-                        minWidth: 0,
-                      }}
+                      className={shellChrome.headerUserTrigger}
                     >
                       <Avatar name={user?.name || user?.email || 'User'} size="sm" />
-                      <Text
-                        as="span"
-                        variant="caption"
-                        weight="medium"
-                        truncate
-                        style={{
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
+                      <Text as="span" variant="caption" weight="medium" truncate>
                         {user?.name || user?.email || 'User'}
                       </Text>
                     </Button>
 
                     {userMenuOpen && (
-                      <PopoverPanel
-                        style={{
-                          right: 0,
-                          top: 'calc(100% + 8px)',
-                          backgroundColor: 'var(--bg-secondary)',
-                          border: '1px solid var(--border-color)',
-                          borderRadius: 12,
-                          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.4)',
-                          minWidth: 280,
-                          maxWidth: 320,
-                          overflow: 'hidden',
-                        }}
-                      >
-                        <Box padding="md" style={{ borderBottom: '1px solid var(--border-color)' }}>
+                      <PopoverPanel variant="userMenu">
+                        <Box padding="md" className={shellChrome.menuSection}>
                           <Inline gap="md" align="center">
                             <Avatar name={user?.name || user?.email || 'User'} size="md" />
                             <Stack gap="none">
@@ -1126,7 +850,7 @@ export function DashboardLayout({
                               <Text
                                 variant="caption"
                                 color="secondary"
-                                style={{ wordBreak: 'break-all' }}
+                                className={shellChrome.breakAll}
                               >
                                 {user?.email}
                               </Text>
@@ -1140,17 +864,12 @@ export function DashboardLayout({
                           type="button"
                           variant="ghost"
                           fullWidth
+                          align="start"
                           leftIcon={<User size={16} aria-hidden />}
+                          className={`${shellChrome.menuItem} ${shellChrome.menuItemBordered}`}
                           onClick={() => {
                             setUserMenuOpen(false);
                             navigate('/dashboard/profile');
-                          }}
-                          style={{
-                            justifyContent: 'flex-start',
-                            padding: '0.75rem 1rem',
-                            fontSize: '0.85rem',
-                            borderTop: '1px solid var(--border-color)',
-                            borderRadius: 0,
                           }}
                         >
                           View profile
@@ -1160,15 +879,10 @@ export function DashboardLayout({
                           type="button"
                           variant="ghost"
                           fullWidth
+                          align="start"
                           leftIcon={<LogOut size={16} aria-hidden />}
+                          className={`${shellChrome.menuItem} ${shellChrome.menuItemDanger}`}
                           onClick={handleLogout}
-                          style={{
-                            justifyContent: 'flex-start',
-                            padding: '0.75rem 1rem',
-                            fontSize: '0.85rem',
-                            color: '#ef4444',
-                            borderRadius: 0,
-                          }}
                         >
                           Logout
                         </Button>
@@ -1184,11 +898,7 @@ export function DashboardLayout({
         <Box
           as="main"
           ref={mainContentRef}
-          style={{
-            minHeight: '100%',
-            backgroundColor: 'var(--sk-color-bg-surface, var(--bg-tertiary))',
-            transition: 'background-color 0.3s ease',
-          }}
+          className={shellChrome.mainSurface}
           onKeyDownCapture={(e) => {
             const mainEl = mainContentRef.current;
             if (!mainEl) return;

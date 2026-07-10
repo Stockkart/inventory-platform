@@ -238,6 +238,11 @@
   width: 100%;
 }
 
+.alignStart {
+  justify-content: flex-start;
+  text-align: left;
+}
+
 .iconButton {
   display: inline-flex;
   align-items: center;
@@ -264,6 +269,10 @@
   width: 2.5rem;
   height: 2.5rem;
   padding: 0;
+}
+
+.iconButtonCircle {
+  border-radius: var(--sk-radius-full, 9999px);
 }
 
 .link {

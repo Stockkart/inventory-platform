@@ -9,6 +9,8 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: UiSize;
   loading?: boolean;
   fullWidth?: boolean;
+  /** Content alignment — use `start` for menu / sidebar rows. */
+  align?: 'start' | 'center';
   leftIcon?: ReactNode;
   rightIcon?: ReactNode;
 }
@@ -18,6 +20,7 @@ export function Button({
   size = 'md',
   loading = false,
   fullWidth = false,
+  align = 'center',
   leftIcon,
   rightIcon,
   disabled,
@@ -34,6 +37,7 @@ export function Button({
         styles[`variant-${variant}`],
         styles[`size-${size}`],
         fullWidth && styles.fullWidth,
+        align === 'start' && styles.alignStart,
         className,
       )}
       disabled={disabled || loading}

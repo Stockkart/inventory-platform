@@ -16,6 +16,8 @@ export type TextVariant =
   | 'body'
   | 'caption'
   | 'label'
+  | 'micro'
+  | 'overline'
   | 'title'
   | 'heading1'
   | 'heading2'

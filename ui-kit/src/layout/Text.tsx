@@ -8,6 +8,8 @@ const variantElement: Record<TextVariant, ElementType> = {
   body: 'p',
   caption: 'span',
   label: 'span',
+  micro: 'span',
+  overline: 'span',
   title: 'h2',
   heading1: 'h1',
   heading2: 'h2',

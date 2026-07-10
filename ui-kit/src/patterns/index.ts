@@ -17,12 +17,20 @@ export { CartQtyStepper, type CartQtyStepperProps } from './CartQtyStepper';
 export {
   AppShell,
   navItemClassName,
+  navItemCollapsedClassName,
   navGroupClassName,
   navGroupIconClassName,
+  navGroupLabelClassName,
+  navGroupBlockClassName,
+  navGroupChevronClassName,
+  navItemIconClassName,
+  navItemLabelClassName,
   navSubListClassName,
+  shellChrome,
   PopoverPanel,
   NotificationDot,
   type AppShellProps,
+  type PopoverPanelVariant,
 } from './AppShell';
 export {
   AsideLayout,

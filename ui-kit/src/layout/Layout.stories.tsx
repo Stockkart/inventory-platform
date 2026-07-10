@@ -18,13 +18,21 @@ export const StackAndText: StoryObj = {
       <Text color="secondary">Secondary description text for a dashboard section.</Text>
       <Divider />
       <Inline gap="sm">
-        <Box padding="sm" style={{ background: 'var(--sk-color-bg-muted)', borderRadius: 8 }}>
+        <Box padding="sm" bg="muted" rounded="md">
           <Text variant="caption">Metric A</Text>
         </Box>
-        <Box padding="sm" style={{ background: 'var(--sk-color-bg-muted)', borderRadius: 8 }}>
+        <Box padding="sm" bg="muted" rounded="md">
           <Text variant="caption">Metric B</Text>
         </Box>
       </Inline>
+      <Stack gap="xs">
+        <Text variant="overline" color="muted">
+          Section label
+        </Text>
+        <Text variant="micro" color="secondary">
+          Dense micro copy for nav rows and compact UI.
+        </Text>
+      </Stack>
     </Stack>
   ),
 };
@@ -56,6 +64,12 @@ export const BoxLayoutProps: StoryObj = {
           <Text>flex=&quot;none&quot;</Text>
         </Box>
       </Box>
+      <Box pt="lg" px="md" pb="sm" borderTop borderBottom bg="muted" rounded="md">
+        <Text variant="caption">
+          Directional spacing: pt=&quot;lg&quot; px=&quot;md&quot; pb=&quot;sm&quot; + borderTop /
+          borderBottom
+        </Text>
+      </Box>
       <Box position="relative" padding="md" border rounded="md" style={{ height: 88 }}>
         <Text>position=&quot;relative&quot;</Text>
         <Box
@@ -71,8 +85,8 @@ export const BoxLayoutProps: StoryObj = {
         </Box>
       </Box>
       <Grid columns={2} gap="md" width="full">
-        <Box padding="sm" bg="muted" rounded="md">
-          <Text variant="caption">Grid col 1</Text>
+        <Box padding="sm" bg="muted" rounded="md" textAlign="center">
+          <Text variant="caption">textAlign=&quot;center&quot;</Text>
         </Box>
         <Box padding="sm" bg="muted" rounded="md">
           <Text variant="caption">Grid col 2</Text>
