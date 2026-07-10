@@ -1,9 +1,0 @@
-@media (max-width: 768px) {
-  .onboardingLayout {
-    flex-direction: column;
-  }
-
-  .sidebar {
-    width: 100%;
-  }
-}

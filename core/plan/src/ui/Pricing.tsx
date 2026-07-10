@@ -11,7 +11,11 @@ import {
   Text,
 } from '@inventory-platform/ui-kit';
 import { PlanCarousel } from './PlanCarousel';
-import styles from './Pricing.module.css';
+
+const sectionStyle = {
+  background: 'var(--bg-primary)',
+  color: 'var(--text-primary)',
+} as const;
 
 export function Pricing() {
   const navigate = useNavigate();
@@ -39,7 +43,7 @@ export function Pricing() {
 
   if (loading) {
     return (
-      <Box as="section" id="pricing" className={styles.pricing} padding="xl" width="full">
+      <Box as="section" id="pricing" padding="xl" width="full" style={sectionStyle}>
         <CenteredLoader label="Loading plans..." />
       </Box>
     );
@@ -47,7 +51,7 @@ export function Pricing() {
 
   if (error) {
     return (
-      <Box as="section" id="pricing" className={styles.pricing} padding="xl" width="full">
+      <Box as="section" id="pricing" padding="xl" width="full" style={sectionStyle}>
         <Box maxWidth="lg" mx="auto">
           <Alert variant="danger">{error}</Alert>
         </Box>
@@ -56,7 +60,7 @@ export function Pricing() {
   }
 
   return (
-    <Box as="section" id="pricing" className={styles.pricing} padding="xl" width="full">
+    <Box as="section" id="pricing" padding="xl" width="full" style={sectionStyle}>
       <Stack gap="xl" maxWidth="lg" mx="auto">
         <Stack gap="sm" align="center">
           <Text as="h2" variant="heading2" align="center">

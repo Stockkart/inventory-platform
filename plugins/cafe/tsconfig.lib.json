@@ -14,15 +14,6 @@
     "types": ["node", "vite/client"],
     "paths": {
       "@inventory-platform/product/api": ["../../core/product/src/api/index.ts"],
-      "@inventory-platform/product/pages/scan-sell.module.css": [
-        "../../core/product/src/pages/scan-sell.module.css"
-      ],
-      "@inventory-platform/product/ui/scan-sell-qty.module.css": [
-        "../../core/product/src/ui/scan-sell-qty.module.css"
-      ],
-      "@inventory-platform/product/ui/scan-sell-customer.module.css": [
-        "../../core/product/src/ui/scan-sell-customer.module.css"
-      ],
       "@inventory-platform/product/types": ["../../core/product/src/model/index.ts"],
       "@inventory-platform/contracts": ["../../platform/contracts/src/index.ts"],
       "@inventory-platform/access": ["../../platform/access/src/index.ts"],

@@ -4,8 +4,7 @@ import { ChevronRight, Play } from 'lucide-react';
 import { resourcesApi } from '@inventory-platform/shell/api';
 import type { TutorialResourceResponse } from '@inventory-platform/shell/types';
 import { YouTubeHelpModal } from '@inventory-platform/shell';
-import { Box, Button, Inline, Stack, Text } from '@inventory-platform/ui-kit';
-import styles from './Hero.module.css';
+import { Box, Button, Inline, Stack, Text, useMatchMedia } from '@inventory-platform/ui-kit';
 
 const backgrounds = [
   '/assets/logo/inventory-pic.png',
@@ -15,12 +14,26 @@ const backgrounds = [
 
 const DEMO_VIDEO_KEY = 'stockkart-overview';
 
+const primaryBtnStyle = {
+  background: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)',
+  color: 'white',
+  border: 'none',
+} as const;
+
+const secondaryBtnStyle = {
+  background: 'transparent',
+  color: '#ffffff',
+  border: '0.2px solid rgba(255, 255, 255, 0.35)',
+  backdropFilter: 'blur(4px)',
+} as const;
+
 export function Hero() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [demoVideo, setDemoVideo] = useState<TutorialResourceResponse | null>(null);
   const [demoOpen, setDemoOpen] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
   const navigate = useNavigate();
+  const isMobile = useMatchMedia('(max-width: 768px)');
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -53,16 +66,45 @@ export function Hero() {
   };
 
   return (
-    <Box as="section" className={styles.hero}>
-      <Box className={styles.backgroundWrapper}>
+    <Box
+      as="section"
+      display="flex"
+      align="center"
+      justify="center"
+      width="full"
+      overflow="hidden"
+      position="relative"
+      style={{
+        minHeight: '90vh',
+        textAlign: 'center',
+        marginTop: 'calc(var(--header-height) * -0.2)',
+        padding: isMobile ? '2rem 1rem' : undefined,
+      }}
+    >
+      <Box position="absolute" overflow="hidden" style={{ inset: 0, zIndex: 0 }}>
         {backgrounds.map((src, index) => (
           <Box
             key={index}
-            className={`${styles.bgImage} ${index === currentIndex ? styles.bgImageActive : ''}`}
-            style={{ backgroundImage: `url(${src})` }}
+            position="absolute"
+            style={{
+              inset: 0,
+              backgroundImage: `url(${src})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              opacity: index === currentIndex ? 1 : 0,
+              transition: 'opacity 1s ease-in-out',
+            }}
           />
         ))}
-        <Box className={styles.overlay} />
+        <Box
+          position="absolute"
+          style={{
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.55)',
+            backdropFilter: 'blur(2px)',
+          }}
+        />
       </Box>
 
       <Stack
@@ -73,11 +115,20 @@ export function Hero() {
         padding="sm"
         style={{ zIndex: 2, maxWidth: 800 }}
       >
-        <Text as="h1" variant="heading1" className={styles.title}>
-          <Text as="span" className={styles.titleBlue}>
+        <Text
+          as="h1"
+          variant="heading1"
+          weight="bold"
+          style={{
+            fontSize: isMobile ? '2.5rem' : '3.5rem',
+            lineHeight: 1.2,
+            marginBottom: '1.5rem',
+          }}
+        >
+          <Text as="span" style={{ color: '#f4f6f8' }}>
             Powerful Inventory
           </Text>{' '}
-          <Text as="span" className={styles.titleTeal}>
+          <Text as="span" style={{ color: '#f6f8f8' }}>
             Management
           </Text>
         </Text>
@@ -93,7 +144,7 @@ export function Hero() {
           <Button
             variant="solid"
             size="lg"
-            className={styles.primaryBtn}
+            style={primaryBtnStyle}
             onClick={() => navigate('/plans')}
             rightIcon={<ChevronRight size={20} />}
           >
@@ -103,7 +154,7 @@ export function Hero() {
             type="button"
             variant="outline"
             size="lg"
-            className={styles.secondaryBtn}
+            style={secondaryBtnStyle}
             onClick={() => void handleWatchDemo()}
             disabled={demoLoading}
             leftIcon={<Play size={18} />}

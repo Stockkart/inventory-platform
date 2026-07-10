@@ -1,4 +1,3 @@
-/* Shell layout tokens + grid transition */
 .shell {
   --shell-sidebar-width: 260px;
   min-height: 100vh;
@@ -15,7 +14,11 @@
   transition: grid-template-columns 0.3s ease;
 }
 
-/* Fixed sidebar width + collapse transition */
+.sidebarColumn {
+  min-height: 100%;
+  align-self: stretch;
+}
+
 .sidebar {
   position: fixed;
   top: 0;
@@ -26,16 +29,17 @@
   transition: width 0.3s ease, transform 0.3s ease;
   min-width: 0;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--sk-color-border-default, var(--border-color));
 }
 
-/* Sticky header stacking */
 .shellHeader {
   position: sticky;
   top: 0;
   z-index: 50;
 }
 
-/* Dropdown / badge stacking */
 .popover {
   position: absolute;
   z-index: 1000;
@@ -47,15 +51,14 @@
   right: -2px;
 }
 
-/* Nav link hover + active (pseudo-classes) */
 .navLink {
   text-decoration: none;
   transition: background 0.15s ease, color 0.15s ease;
 }
 
 .navLink:hover {
-  background: var(--bg-card);
-  color: var(--text-primary);
+  background: var(--sk-color-bg-elevated, var(--bg-card));
+  color: var(--sk-color-text-primary, var(--text-primary));
 }
 
 .navLinkActive {
@@ -64,12 +67,11 @@
   font-weight: 500;
 }
 
-.navLinkActive .navIcon {
-  color: var(--sk-color-accent, #4f46e5);
+.mobileMenuFloating {
+  display: none;
 }
 
-/* Mobile drawer + backdrop */
-.mobileMenuFloating {
+.sidebarBackdropVisible {
   display: none;
 }
 

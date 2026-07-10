@@ -1,19 +1,51 @@
-import { Box, Divider, Link, Stack, Text, type BoxProps } from '@inventory-platform/ui-kit';
-import styles from './Footer.module.css';
+import {
+  Box,
+  Divider,
+  Link,
+  Stack,
+  Text,
+  useMatchMedia,
+  type BoxProps,
+} from '@inventory-platform/ui-kit';
+
+const brandLogoStyle = {
+  height: 40,
+  width: 'auto',
+  maxWidth: 160,
+  objectFit: 'contain' as const,
+};
 
 const brandLogoProps = {
   as: 'img',
   src: '/assets/logo/STOCKKART-3x.png',
   alt: 'StockKart',
-  className: styles.brandLogo,
+  style: brandLogoStyle,
 } as unknown as BoxProps;
 
 export function Footer() {
+  const isNarrow = useMatchMedia('(max-width: 640px)');
+  const isMedium = useMatchMedia('(max-width: 968px)');
+
+  const gridColumns = isNarrow ? '1fr' : isMedium ? '1fr 1fr' : '2fr 1fr 1fr 1fr';
+  const gridGap = isMedium ? '2rem' : '3rem';
+
   return (
     <Box as="footer" bg="surface" padding="xl" border width="full">
       <Stack gap="lg" maxWidth="xl" mx="auto">
-        <Box className={styles.footerGrid}>
-          <Stack gap="sm" className={styles.brandColumn} style={{ maxWidth: 300 }}>
+        <Box
+          display="grid"
+          style={{
+            gridTemplateColumns: gridColumns,
+            gap: gridGap,
+          }}
+        >
+          <Stack
+            gap="sm"
+            style={{
+              maxWidth: 300,
+              gridColumn: isMedium && !isNarrow ? '1 / -1' : undefined,
+            }}
+          >
             <Box {...brandLogoProps} />
             <Text color="secondary">
               Complete inventory management solution for modern businesses.

@@ -1,41 +1,86 @@
 import { Link as RouterLink } from 'react-router';
-import { Box, Inline, Link, Text, ThemeToggle, type BoxProps } from '@inventory-platform/ui-kit';
+import {
+  Box,
+  Inline,
+  Link,
+  Text,
+  ThemeToggle,
+  useMatchMedia,
+  type BoxProps,
+} from '@inventory-platform/ui-kit';
 import { useAuthStore } from '@inventory-platform/session';
-import styles from './Header.module.css';
+
+const logoStyle = {
+  height: 44,
+  width: 'auto',
+  maxWidth: 180,
+  objectFit: 'contain' as const,
+  flexShrink: 0,
+};
 
 const logoImgProps = {
   as: 'img',
   src: '/assets/logo/STOCKKART-3x.png',
   alt: 'StockKart',
-  className: styles.logoImg,
+  style: logoStyle,
 } as unknown as BoxProps;
+
+const getStartedBtnStyle = {
+  background: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)',
+  color: '#ffffff',
+  borderRadius: 999,
+  textDecoration: 'none',
+  display: 'inline-block',
+} as const;
+
+const signInBtnStyle = {
+  textDecoration: 'none',
+  color: 'var(--link)',
+} as const;
 
 export function Header() {
   const { isAuthenticated } = useAuthStore();
+  const isMobile = useMatchMedia('(max-width: 768px)');
 
   return (
-    <Box as="header" className={styles.header} padding="sm" width="full">
+    <Box
+      as="header"
+      padding="sm"
+      width="full"
+      style={{
+        background: 'var(--bg-header)',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 100,
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+      }}
+    >
       <Inline maxWidth="xl" mx="auto" width="full" padding="sm" align="center" justify="between">
         <RouterLink to="/">
           <Box {...logoImgProps} />
         </RouterLink>
 
-        <Box as="nav" display="flex" gap="lg" align="center" justify="center">
-          <Link href="#features" className={styles.navLink}>
-            Features
-          </Link>
-          <Link href="#pricing" className={styles.navLink}>
-            Pricing
-          </Link>
-          <Link href="#about" className={styles.navLink}>
-            About
-          </Link>
-        </Box>
+        {!isMobile ? (
+          <Box as="nav" display="flex" gap="lg" align="center" justify="center">
+            <Link href="#features">Features</Link>
+            <Link href="#pricing">Pricing</Link>
+            <Link href="#about">About</Link>
+          </Box>
+        ) : null}
 
         <Inline gap="md" align="center">
           <ThemeToggle />
           {isAuthenticated ? (
-            <RouterLink to="/dashboard" className={styles.getStartedBtn}>
+            <RouterLink
+              to="/dashboard"
+              style={{
+                ...getStartedBtnStyle,
+                ...(isMobile ? { boxShadow: '0 6px 14px rgba(37, 99, 235, 0.5)' } : {}),
+              }}
+            >
               <Text
                 as="span"
                 weight="semibold"
@@ -46,12 +91,20 @@ export function Header() {
             </RouterLink>
           ) : (
             <>
-              <RouterLink to="/login" className={styles.signInBtn}>
-                <Text as="span" weight="semibold">
-                  Sign In
-                </Text>
-              </RouterLink>
-              <RouterLink to="/signup" className={styles.getStartedBtn}>
+              {!isMobile ? (
+                <RouterLink to="/login" style={signInBtnStyle}>
+                  <Text as="span" weight="semibold">
+                    Sign In
+                  </Text>
+                </RouterLink>
+              ) : null}
+              <RouterLink
+                to="/signup"
+                style={{
+                  ...getStartedBtnStyle,
+                  ...(isMobile ? { boxShadow: '0 6px 14px rgba(37, 99, 235, 0.5)' } : {}),
+                }}
+              >
                 <Text
                   as="span"
                   weight="semibold"

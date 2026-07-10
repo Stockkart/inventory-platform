@@ -80,10 +80,12 @@ import {
 } from '../ui/PackagingFactorInput';
 import {
   Alert,
+  Badge,
   Box,
   Button,
   Card,
   CardBody,
+  Inline,
   Input,
   Label,
   Modal,
@@ -99,8 +101,15 @@ import {
   TableRow,
   Text,
   Textarea,
+  denseDataGrid,
+  fileDropzone,
 } from '@inventory-platform/ui-kit';
-import styles from './product-registration.module.css';
+import {
+  accordionStyles,
+  pageStyles,
+  uploadLayoutStyles,
+  vendorStyles,
+} from '../ui/registration-layout-styles';
 
 function optionalNumFromString(s: string): number | undefined {
   const t = s.trim();
@@ -2389,68 +2398,66 @@ export function ProductRegistrationPage() {
   };
 
   return (
-    <Stack gap="lg" className={styles.page}>
+    <Stack gap="lg" maxWidth="xl" mx="auto">
       <PageHeader
         title="Product Registration"
         description="Register multiple products at once with shared vendor and stock-in (invoice) information"
       />
 
-      <Card className={styles.formContainer}>
+      <Card>
         <CardBody>
           <Stack gap="lg">
             {error ? <Alert variant="danger">{error}</Alert> : null}
             {success ? <Alert variant="success">{success}</Alert> : null}
 
-            <Stack className={styles.form} gap="lg">
-              <Box className={styles.uploadSection}>
-                <Box className={styles.uploadHeader}>
-                  <Text variant="heading3" className={styles.sectionTitle}>
-                    Upload Invoice Image (Optional)
-                  </Text>
-                  <Box as="ul" className={styles.helperText}>
+            <Stack gap="lg">
+              <Box style={uploadLayoutStyles.uploadSection}>
+                <Box style={uploadLayoutStyles.uploadHeader}>
+                  <Text variant="heading3">Upload Invoice Image (Optional)</Text>
+                  <Box as="ul" style={pageStyles.helperText}>
                     <Box as="li">Upload invoice image to auto-parse product details</Box>
                     <Box as="li">Review and edit parsed products before bulk save</Box>
                   </Box>
                 </Box>
-                <Box className={styles.uploadOptionsHeader}>
-                  <Text as="span" className={styles.uploadOptionsLabel}>
+                <Box style={uploadLayoutStyles.uploadOptionsHeader}>
+                  <Text as="span" style={uploadLayoutStyles.uploadOptionsLabel}>
                     Choose upload method:
                   </Text>
                 </Box>
-                <Box className={styles.uploadOptionsGrid}>
+                <Box style={uploadLayoutStyles.uploadOptionsGrid}>
                   <Button
                     type="button"
-                    className={styles.qrUploadBtn}
+                    style={uploadLayoutStyles.qrUploadBtn}
                     onClick={handleCreateQrCode}
                     disabled={isUploading || isLoading || isPolling}
                   >
-                    <Box className={styles.qrBtnIcon}>
+                    <Box style={uploadLayoutStyles.qrBtnIcon}>
                       <Text as="span" role="img" aria-label="QR Code icon">
                         📱
                       </Text>
                     </Box>
-                    <Box className={styles.qrBtnContent}>
-                      <Text as="span" className={styles.qrBtnTitle}>
+                    <Box style={uploadLayoutStyles.qrBtnContent}>
+                      <Text as="span" style={uploadLayoutStyles.qrBtnTitle}>
                         Upload via QR Code
                       </Text>
-                      <Text as="span" className={styles.qrBtnSubtitle}>
+                      <Text as="span" style={uploadLayoutStyles.qrBtnSubtitle}>
                         Use mobile device to scan & upload
                       </Text>
                     </Box>
                   </Button>
-                  <Box className={styles.uploadOptionsOr}>
-                    <Box className={styles.uploadOptionsOrLine}></Box>
-                    <Text as="span" className={styles.uploadOptionsOrText}>
+                  <Box style={uploadLayoutStyles.uploadOptionsOr}>
+                    <Box style={uploadLayoutStyles.uploadOptionsOrLine}></Box>
+                    <Text as="span" style={uploadLayoutStyles.uploadOptionsOrText}>
                       OR
                     </Text>
-                    <Box className={styles.uploadOptionsOrLine}></Box>
+                    <Box style={uploadLayoutStyles.uploadOptionsOrLine}></Box>
                   </Box>
-                  <Box className={styles.uploadContainer}>
-                    <Box className={styles.uploadOptionLabel}>
-                      <Text as="span" className={styles.uploadOptionTitle}>
+                  <Box className={fileDropzone.container}>
+                    <Box className={fileDropzone.optionLabel}>
+                      <Text as="span" className={fileDropzone.optionTitle}>
                         Upload from this device
                       </Text>
-                      <Text as="span" className={styles.uploadOptionSubtitle}>
+                      <Text as="span" className={fileDropzone.optionSubtitle}>
                         Choose one or more photos (multi-page invoice)
                       </Text>
                     </Box>
@@ -2460,35 +2467,35 @@ export function ProductRegistrationPage() {
                       accept="image/*"
                       multiple
                       onChange={handleFileSelect}
-                      className={styles.fileInput}
+                      className={fileDropzone.fileInput}
                       id="invoice-upload"
                       disabled={isUploading || isLoading}
                     />
-                    <Box className={styles.uploadControls}>
-                      <Label htmlFor="invoice-upload" className={styles.fileInputLabel}>
+                    <Box className={fileDropzone.controls}>
+                      <Label htmlFor="invoice-upload" className={fileDropzone.fileInputLabel}>
                         {selectedFiles.length > 0 ? (
-                          <Box className={styles.fileListSummary}>
+                          <Box className={fileDropzone.fileListSummary}>
                             <Text
                               as="span"
-                              className={styles.fileIcon}
+                              className={fileDropzone.fileIcon}
                               role="img"
                               aria-label="Files selected"
                             >
                               📄
                             </Text>
-                            <Text as="span" className={styles.fileListCount}>
+                            <Text as="span" className={fileDropzone.fileListCount}>
                               {selectedFiles.length} image
                               {selectedFiles.length === 1 ? '' : 's'} selected
                             </Text>
-                            <Text as="span" className={styles.fileListHint}>
+                            <Text as="span" className={fileDropzone.fileListHint}>
                               Click to add more
                             </Text>
                           </Box>
                         ) : (
-                          <Box className={styles.uploadPlaceholder}>
+                          <Box className={fileDropzone.placeholder}>
                             <Text
                               as="span"
-                              className={styles.uploadIcon}
+                              className={fileDropzone.placeholderIcon}
                               role="img"
                               aria-label="Upload icon"
                             >
@@ -2500,23 +2507,23 @@ export function ProductRegistrationPage() {
                       </Label>
 
                       {selectedFiles.length > 0 && (
-                        <Box as="ul" className={styles.fileList}>
+                        <Box as="ul" className={fileDropzone.fileList}>
                           {selectedFiles.map((file, index) => (
                             <Box
                               as="li"
                               key={`${file.name}-${index}`}
-                              className={styles.fileListItem}
+                              className={fileDropzone.fileListItem}
                             >
-                              <Text as="span" className={styles.fileName} title={file.name}>
+                              <Text as="span" className={fileDropzone.fileName} title={file.name}>
                                 {index + 1}. {file.name}
                               </Text>
-                              <Text as="span" className={styles.fileSize}>
+                              <Text as="span" className={fileDropzone.fileSize}>
                                 ({(file.size / 1024 / 1024).toFixed(2)} MB)
                               </Text>
                               {!isUploading && (
                                 <Button
                                   type="button"
-                                  className={styles.fileRemoveBtn}
+                                  className={fileDropzone.fileRemoveBtn}
                                   onClick={() => handleRemoveSelectedFile(index)}
                                   aria-label={`Remove ${file.name}`}
                                 >
@@ -2529,23 +2536,23 @@ export function ProductRegistrationPage() {
                       )}
 
                       {isUploading && (
-                        <Box className={styles.uploadProgress}>
+                        <Box className={fileDropzone.progress}>
                           <Spinner size="sm" />
-                          <Box className={styles.progressText}>{uploadProgress}</Box>
+                          <Box className={fileDropzone.progressText}>{uploadProgress}</Box>
                         </Box>
                       )}
 
                       {selectedFiles.length > 0 && !isUploading && (
-                        <Box className={styles.uploadActions}>
+                        <Box className={fileDropzone.actions}>
                           <Button
                             type="button"
-                            className={styles.uploadBtn}
+                            className={fileDropzone.uploadBtn}
                             onClick={handleUploadInvoice}
                             disabled={isLoading}
                           >
                             <Text
                               as="span"
-                              className={styles.btnIcon}
+                              className={fileDropzone.btnIcon}
                               role="img"
                               aria-label="Rocket icon"
                             >
@@ -2555,7 +2562,7 @@ export function ProductRegistrationPage() {
                           </Button>
                           <Button
                             type="button"
-                            className={styles.clearUploadBtn}
+                            className={fileDropzone.clearBtn}
                             onClick={handleClearUpload}
                             disabled={isLoading}
                           >
@@ -2569,16 +2576,14 @@ export function ProductRegistrationPage() {
               </Box>
 
               {/* Shared vendor & billing */}
-              <Box className={styles.sharedSection}>
-                <Text variant="heading3" className={styles.sectionTitle}>
-                  Shared Information
-                </Text>
-                <Box className={styles.sharedTopRow}>
-                  <Text as="span" className={styles.sharedHint}>
+              <Box style={vendorStyles.sharedSection}>
+                <Text variant="heading3">Shared Information</Text>
+                <Box style={vendorStyles.sharedTopRow}>
+                  <Text as="span" style={vendorStyles.sharedHint}>
                     Applies to all products.
                   </Text>
                   <Select
-                    className={`${styles.input} ${styles.sharedModeSelect}`}
+                    style={vendorStyles.sharedModeSelect}
                     value={billingMode}
                     onChange={(e) => handleBillingModeChange(e.target.value as BillingMode)}
                     disabled={isLoading}
@@ -2590,20 +2595,15 @@ export function ProductRegistrationPage() {
                 </Box>
 
                 {/* Vendor Section */}
-                <Box className={styles.vendorSection}>
-                  <Text variant="heading4" className={styles.subsectionTitle}>
-                    Vendor Information *
-                  </Text>
-                  <Box className={styles.formGroup}>
-                    <Label htmlFor="vendorSearch" className={styles.label}>
-                      Vendor Search *
-                    </Label>
+                <Box style={vendorStyles.vendorSection}>
+                  <Text variant="heading4">Vendor Information *</Text>
+                  <Box style={pageStyles.formGroup}>
+                    <Label htmlFor="vendorSearch">Vendor Search *</Label>
                     <Box style={{ position: 'relative' }}>
                       <Box style={{ display: 'flex', gap: '8px' }}>
                         <Input
                           type="text"
                           id="vendorSearch"
-                          className={styles.input}
                           placeholder="Search by name, phone, email, or any keyword"
                           value={vendorSearchQuery}
                           onChange={(e) => {
@@ -2645,11 +2645,11 @@ export function ProductRegistrationPage() {
                         )}
                       </Box>
                       {showVendorDropdown && vendorSearchResults.length > 0 && (
-                        <Box className={styles.dropdown}>
+                        <Box style={vendorStyles.dropdown}>
                           {vendorSearchResults.map((vendor) => (
                             <Box
                               key={vendor.vendorId}
-                              className={styles.dropdownItem}
+                              style={vendorStyles.dropdownItem}
                               onClick={() => handleSelectVendor(vendor)}
                             >
                               <Box style={{ fontWeight: 500 }}>{vendor.name}</Box>
@@ -2680,7 +2680,7 @@ export function ProductRegistrationPage() {
                       {showVendorDropdown &&
                         vendorSearchResults.length === 0 &&
                         !isSearchingVendor && (
-                          <Box className={styles.vendorNotFound}>
+                          <Box style={vendorStyles.vendorNotFound}>
                             <Text>No vendors found. Would you like to create a new vendor?</Text>
                             <Button
                               type="button"
@@ -2699,13 +2699,9 @@ export function ProductRegistrationPage() {
                     </Box>
                   </Box>
                   {selectedVendor && (
-                    <Box className={styles.vendorInfo}>
-                      <Box className={styles.vendorCard}>
-                        {selectedVendor.userId && (
-                          <Text as="span" className={styles.stockkartUserBadge}>
-                            StockKart user
-                          </Text>
-                        )}
+                    <Box style={vendorStyles.vendorInfo}>
+                      <Box style={vendorStyles.vendorCard}>
+                        {selectedVendor.userId && <Badge variant="success">StockKart user</Badge>}
                         <Text variant="heading4">{selectedVendor.name}</Text>
                         <Text>
                           <Text as="span" weight="bold">
@@ -2747,19 +2743,20 @@ export function ProductRegistrationPage() {
                     </Box>
                   )}
 
-                  <Box className={styles.vendorSection} style={{ marginTop: '1.25rem' }}>
-                    <Text variant="heading4" className={styles.subsectionTitle}>
-                      Vendor purchase invoice (optional)
-                    </Text>
-                    <Text className={styles.helperText} style={{ marginBottom: '0.75rem' }}>
+                  <Box style={{ ...vendorStyles.vendorSection, marginTop: '1.25rem' }}>
+                    <Text variant="heading4">Vendor purchase invoice (optional)</Text>
+                    <Text style={{ ...pageStyles.helperText, marginBottom: '0.75rem' }}>
                       Add the supplier&apos;s invoice number and amounts to keep a history of what
                       was bought on each bill. Leave blank to register stock without an invoice
                       record.
                     </Text>
                     {products.length > 0 ? (
                       <Text
-                        className={styles.helperText}
-                        style={{ marginBottom: '0.75rem', fontSize: '0.85rem' }}
+                        style={{
+                          ...pageStyles.helperText,
+                          marginBottom: '0.75rem',
+                          fontSize: '0.85rem',
+                        }}
                       >
                         Amounts tracked here follow each row&apos;s{' '}
                         <Text as="span" weight="bold">
@@ -2775,133 +2772,108 @@ export function ProductRegistrationPage() {
                           : null}
                       </Text>
                     ) : null}
-                    <Box className={styles.sharedInfoGrid}>
-                      <Box className={styles.formGroup}>
-                        <Label htmlFor="vendorInvoiceNo" className={styles.label}>
-                          Invoice number
-                        </Label>
+                    <Box style={vendorStyles.sharedInfoGrid}>
+                      <Box style={pageStyles.formGroup}>
+                        <Label htmlFor="vendorInvoiceNo">Invoice number</Label>
                         <Input
                           id="vendorInvoiceNo"
                           type="text"
-                          className={styles.input}
                           value={vendorInvoiceNo}
                           onChange={(e) => setVendorInvoiceNo(e.target.value)}
                           placeholder="e.g. INV-2024-001"
                           disabled={isLoading}
                         />
                       </Box>
-                      <Box className={styles.formGroup}>
-                        <Label htmlFor="vendorInvoiceDate" className={styles.label}>
-                          Invoice date
-                        </Label>
+                      <Box style={pageStyles.formGroup}>
+                        <Label htmlFor="vendorInvoiceDate">Invoice date</Label>
                         <Input
                           id="vendorInvoiceDate"
                           type="date"
-                          className={styles.input}
                           value={vendorInvoiceDate}
                           onChange={(e) => setVendorInvoiceDate(e.target.value)}
                           disabled={isLoading}
                         />
                       </Box>
-                      <Box className={styles.formGroup}>
-                        <Label htmlFor="vendorLineSubTotal" className={styles.label}>
-                          Line subtotal
-                        </Label>
+                      <Box style={pageStyles.formGroup}>
+                        <Label htmlFor="vendorLineSubTotal">Line subtotal</Label>
                         <Input
                           id="vendorLineSubTotal"
                           type="text"
                           inputMode="decimal"
-                          className={styles.input}
                           value={vendorLineSubTotal}
                           onChange={(e) => setVendorLineSubTotal(e.target.value)}
                           placeholder="0"
                           disabled={isLoading}
                         />
                       </Box>
-                      <Box className={styles.formGroup}>
-                        <Label htmlFor="vendorTaxTotal" className={styles.label}>
-                          Tax total
-                        </Label>
+                      <Box style={pageStyles.formGroup}>
+                        <Label htmlFor="vendorTaxTotal">Tax total</Label>
                         <Input
                           id="vendorTaxTotal"
                           type="text"
                           inputMode="decimal"
-                          className={styles.input}
                           value={vendorTaxTotal}
                           onChange={(e) => setVendorTaxTotal(e.target.value)}
                           placeholder="0"
                           disabled={isLoading}
                         />
                       </Box>
-                      <Box className={styles.formGroup}>
-                        <Label htmlFor="vendorShippingCharge" className={styles.label}>
-                          Shipping / delivery
-                        </Label>
+                      <Box style={pageStyles.formGroup}>
+                        <Label htmlFor="vendorShippingCharge">Shipping / delivery</Label>
                         <Input
                           id="vendorShippingCharge"
                           type="text"
                           inputMode="decimal"
-                          className={styles.input}
                           value={vendorShippingCharge}
                           onChange={(e) => setVendorShippingCharge(e.target.value)}
                           placeholder="0"
                           disabled={isLoading}
                         />
                       </Box>
-                      <Box className={styles.formGroup}>
-                        <Label htmlFor="vendorOtherCharges" className={styles.label}>
-                          Other charges
-                        </Label>
+                      <Box style={pageStyles.formGroup}>
+                        <Label htmlFor="vendorOtherCharges">Other charges</Label>
                         <Input
                           id="vendorOtherCharges"
                           type="text"
                           inputMode="decimal"
-                          className={styles.input}
                           value={vendorOtherCharges}
                           onChange={(e) => setVendorOtherCharges(e.target.value)}
                           placeholder="0"
                           disabled={isLoading}
                         />
                       </Box>
-                      <Box className={styles.formGroup}>
-                        <Label htmlFor="vendorOverallDiscount" className={styles.label}>
-                          Overall discount
-                        </Label>
+                      <Box style={pageStyles.formGroup}>
+                        <Label htmlFor="vendorOverallDiscount">Overall discount</Label>
                         <Input
                           id="vendorOverallDiscount"
                           type="text"
                           inputMode="decimal"
-                          className={styles.input}
                           value={vendorOverallDiscount}
                           onChange={(e) => setVendorOverallDiscount(e.target.value)}
                           placeholder="0"
                           disabled={isLoading}
                         />
                       </Box>
-                      <Box className={styles.formGroup}>
-                        <Label htmlFor="vendorRoundOff" className={styles.label}>
-                          Round off
-                        </Label>
+                      <Box style={pageStyles.formGroup}>
+                        <Label htmlFor="vendorRoundOff">Round off</Label>
                         <Input
                           id="vendorRoundOff"
                           type="text"
                           inputMode="decimal"
-                          className={styles.input}
                           value={vendorRoundOff}
                           onChange={(e) => setVendorRoundOff(e.target.value)}
                           placeholder="0"
                           disabled={isLoading}
                         />
                       </Box>
-                      <Box className={`${styles.formGroup} ${styles.sharedInfoGridSpanFull}`}>
-                        <Label htmlFor="vendorInvoiceTotal" className={styles.label}>
-                          Invoice total
-                        </Label>
+                      <Box
+                        style={{ ...pageStyles.formGroup, ...vendorStyles.sharedInfoGridSpanFull }}
+                      >
+                        <Label htmlFor="vendorInvoiceTotal">Invoice total</Label>
                         <Input
                           id="vendorInvoiceTotal"
                           type="text"
                           inputMode="decimal"
-                          className={styles.input}
                           value={vendorInvoiceTotal}
                           placeholder="0"
                           disabled={isLoading}
@@ -2913,38 +2885,38 @@ export function ProductRegistrationPage() {
                 </Box>
               </Box>
 
-              <Box className={styles.separator}>
-                <Box className={styles.separatorLine}></Box>
-                <Box className={styles.separatorContent}>
+              <Box style={pageStyles.separator}>
+                <Box style={pageStyles.separatorLine}></Box>
+                <Box style={pageStyles.separatorContent}>
                   <Text
                     as="span"
-                    className={styles.separatorIcon}
+                    style={pageStyles.separatorIcon}
                     role="img"
                     aria-label="Sparkle icon"
                   >
                     ✨
                   </Text>
-                  <Text as="span" className={styles.separatorText}>
+                  <Text as="span" style={pageStyles.separatorText}>
                     Or manually add products below
                   </Text>
                 </Box>
-                <Box className={styles.separatorLine}></Box>
+                <Box style={pageStyles.separatorLine}></Box>
               </Box>
 
               {/* Products Section */}
-              <Box className={styles.productsSection} ref={productsSectionRef}>
+              <Box style={pageStyles.productsSection} ref={productsSectionRef}>
                 {showReviewBanner && (
-                  <Box className={styles.reviewBanner}>
-                    <Box className={styles.reviewBannerContent}>
+                  <Box style={pageStyles.reviewBanner}>
+                    <Box style={pageStyles.reviewBannerContent}>
                       <Text
                         as="span"
-                        className={styles.reviewBannerIcon}
+                        style={pageStyles.reviewBannerIcon}
                         role="img"
                         aria-label="Clipboard icon"
                       >
                         📋
                       </Text>
-                      <Box className={styles.reviewBannerText}>
+                      <Box style={pageStyles.reviewBannerText}>
                         <Text as="span" weight="bold">
                           Review Required:
                         </Text>{' '}
@@ -2953,7 +2925,7 @@ export function ProductRegistrationPage() {
                       </Box>
                       <Button
                         type="button"
-                        className={styles.reviewBannerClose}
+                        style={pageStyles.reviewBannerClose}
                         onClick={() => setShowReviewBanner(false)}
                         aria-label="Close review banner"
                       >
@@ -2962,26 +2934,24 @@ export function ProductRegistrationPage() {
                     </Box>
                   </Box>
                 )}
-                <Box className={styles.productsHeader}>
-                  <Text variant="heading3" className={styles.sectionTitle}>
-                    Products
-                  </Text>
-                  <Box className={styles.productsHeaderRight}>
+                <Inline
+                  justify="between"
+                  align="center"
+                  width="full"
+                  style={pageStyles.productsHeader}
+                >
+                  <Text variant="heading3">Products</Text>
+                  <Inline gap="md" align="center">
                     {products.length > 0 && (
-                      <Box className={styles.viewToggleWrap}>
-                        <Text as="span" className={styles.viewToggleLabel}>
+                      <Inline gap="sm" align="center">
+                        <Text variant="caption" color="secondary">
                           View:
                         </Text>
-                        <Box
-                          className={styles.viewToggleButtons}
-                          role="group"
-                          aria-label="Product view mode"
-                        >
+                        <Inline gap="xs" role="group" aria-label="Product view mode">
                           <Button
                             type="button"
-                            className={`${styles.viewToggleBtn} ${
-                              productViewMode === 'list' ? styles.viewToggleBtnActive : ''
-                            }`}
+                            size="sm"
+                            variant={productViewMode === 'list' ? 'solid' : 'outline'}
                             onClick={() => {
                               setProductViewMode('list');
                               localStorage.setItem('product-registration-view-mode', 'list');
@@ -2996,9 +2966,8 @@ export function ProductRegistrationPage() {
                           </Button>
                           <Button
                             type="button"
-                            className={`${styles.viewToggleBtn} ${
-                              productViewMode === 'grid' ? styles.viewToggleBtnActive : ''
-                            }`}
+                            size="sm"
+                            variant={productViewMode === 'grid' ? 'solid' : 'outline'}
                             onClick={() => {
                               setProductViewMode('grid');
                               localStorage.setItem('product-registration-view-mode', 'grid');
@@ -3011,12 +2980,12 @@ export function ProductRegistrationPage() {
                             </Text>{' '}
                             Grid
                           </Button>
-                        </Box>
-                      </Box>
+                        </Inline>
+                      </Inline>
                     )}
                     <Button
                       type="button"
-                      className={styles.addProductBtn}
+                      variant="solid"
                       onClick={handleAddProduct}
                       disabled={isLoading || !registrationSchemaReady}
                       title={
@@ -3027,23 +2996,27 @@ export function ProductRegistrationPage() {
                     >
                       + Add Product
                     </Button>
-                  </Box>
-                </Box>
+                  </Inline>
+                </Inline>
 
                 {!registrationSchemaReady ? (
-                  <Box className={styles.schemaLoadingState} role="status" aria-live="polite">
+                  <Box style={pageStyles.schemaLoadingState} role="status" aria-live="polite">
                     {schemaLoadError ? (
                       <>
-                        <Text className={styles.schemaLoadingTitle}>
+                        <Text variant="body" weight="semibold">
                           Could not load product fields
                         </Text>
-                        <Text className={styles.schemaLoadingHint}>{schemaLoadError}</Text>
+                        <Text variant="caption" color="secondary">
+                          {schemaLoadError}
+                        </Text>
                       </>
                     ) : (
                       <>
                         <Spinner size="md" aria-hidden />
-                        <Text className={styles.schemaLoadingTitle}>Loading product fields…</Text>
-                        <Text className={styles.schemaLoadingHint}>
+                        <Text variant="body" weight="semibold">
+                          Loading product fields…
+                        </Text>
+                        <Text variant="caption" color="secondary">
                           Vertical columns come from your shop schema only — no fields are shown
                           until loading finishes.
                         </Text>
@@ -3053,27 +3026,27 @@ export function ProductRegistrationPage() {
                 ) : (
                   <>
                     {products.length > 0 && (
-                      <Text className={styles.keyboardNavHint}>
-                        <Text as="span" className={styles.keyboardNavHintLabel}>
+                      <Text style={pageStyles.keyboardNavHint}>
+                        <Text as="span" style={pageStyles.keyboardNavHintLabel}>
                           Keyboard:
                         </Text>{' '}
-                        <Text as="kbd" className={styles.kbdInline}>
+                        <Text as="kbd" style={pageStyles.kbdInline}>
                           Enter
                         </Text>{' '}
                         next field ·{' '}
-                        <Text as="kbd" className={styles.kbdInline}>
+                        <Text as="kbd" style={pageStyles.kbdInline}>
                           ↑
                         </Text>
-                        <Text as="kbd" className={styles.kbdInline}>
+                        <Text as="kbd" style={pageStyles.kbdInline}>
                           ↓
                         </Text>{' '}
                         {productViewMode === 'grid' ? 'same column' : 'previous / next'}
                         {' · '}
-                        <Text as="kbd" className={styles.kbdInline}>
+                        <Text as="kbd" style={pageStyles.kbdInline}>
                           Shift
                         </Text>
                         +
-                        <Text as="kbd" className={styles.kbdInline}>
+                        <Text as="kbd" style={pageStyles.kbdInline}>
                           Enter
                         </Text>{' '}
                         back
@@ -3081,14 +3054,14 @@ export function ProductRegistrationPage() {
                     )}
 
                     {products.length === 0 ? (
-                      <Box className={styles.emptyState}>
+                      <Box style={pageStyles.emptyState}>
                         <Text>
                           No products added yet. Click &quot;Add Product&quot; to get started.
                         </Text>
                       </Box>
                     ) : productViewMode === 'grid' ? (
                       <Box
-                        className={styles.excelTableWrap}
+                        className={denseDataGrid.wrap}
                         {...{ 'data-keyboard-nav': KEYBOARD_NAV_GRID }}
                         onKeyDownCapture={(e: React.KeyboardEvent<HTMLElement>) => {
                           if (shouldSkipNestedFormKeyboardNav(document.activeElement)) {
@@ -3099,100 +3072,106 @@ export function ProductRegistrationPage() {
                       >
                         <Table
                           key={schemaModeForBilling(billingMode)}
-                          className={styles.excelTable}
+                          className={denseDataGrid.table}
                         >
                           <TableHead>
                             <TableRow>
-                              <TableHeaderCell className={styles.excelTh}>#</TableHeaderCell>
-                              <TableHeaderCell className={styles.excelTh}>Barcode</TableHeaderCell>
+                              <TableHeaderCell className={denseDataGrid.th}>#</TableHeaderCell>
+                              <TableHeaderCell className={denseDataGrid.th}>
+                                Barcode
+                              </TableHeaderCell>
                               <VerticalRegistrationGridCompanyHeader field={companyField} />
-                              <TableHeaderCell className={styles.excelTh}>
+                              <TableHeaderCell className={denseDataGrid.th}>
                                 Product *
                               </TableHeaderCell>
                               <VerticalRegistrationGridHeaders
                                 fields={verticalRegistrationFields}
                               />
-                              <TableHeaderCell className={styles.excelTh}>Count *</TableHeaderCell>
-                              <TableHeaderCell className={styles.excelTh}>
+                              <TableHeaderCell className={denseDataGrid.th}>
+                                Count *
+                              </TableHeaderCell>
+                              <TableHeaderCell className={denseDataGrid.th}>
                                 Packaging
                               </TableHeaderCell>
-                              <TableHeaderCell className={styles.excelTh}>
+                              <TableHeaderCell className={denseDataGrid.th}>
                                 Location *
                               </TableHeaderCell>
                               {sellDirectField && (
-                                <TableHeaderCell className={styles.excelTh}>
+                                <TableHeaderCell className={denseDataGrid.th}>
                                   {fieldLabel(sellDirectField)} *
                                 </TableHeaderCell>
                               )}
                               {billingMode !== 'BASIC' && (
-                                <TableHeaderCell className={styles.excelTh}>HSN</TableHeaderCell>
+                                <TableHeaderCell className={denseDataGrid.th}>HSN</TableHeaderCell>
                               )}
                               {isSimplePricing ? (
                                 <>
-                                  <TableHeaderCell className={styles.excelTh}>
+                                  <TableHeaderCell className={denseDataGrid.th}>
                                     Rate *
                                   </TableHeaderCell>
-                                  <TableHeaderCell className={styles.excelTh}>
+                                  <TableHeaderCell className={denseDataGrid.th}>
                                     Sell price
                                   </TableHeaderCell>
                                 </>
                               ) : (
                                 <>
-                                  <TableHeaderCell className={styles.excelTh}>
+                                  <TableHeaderCell className={denseDataGrid.th}>
                                     PTS *
                                   </TableHeaderCell>
-                                  <TableHeaderCell className={styles.excelTh}>
+                                  <TableHeaderCell className={denseDataGrid.th}>
                                     PTR *
                                   </TableHeaderCell>
-                                  <TableHeaderCell className={styles.excelTh}>
+                                  <TableHeaderCell className={denseDataGrid.th}>
                                     MRP *
                                   </TableHeaderCell>
-                                  <TableHeaderCell className={styles.excelTh}>
+                                  <TableHeaderCell className={denseDataGrid.th}>
                                     Sale deal type
                                   </TableHeaderCell>
                                   <TableHeaderCell
-                                    className={styles.excelTh}
+                                    className={denseDataGrid.th}
                                     title="When deal type is Percentage, scheme % is required."
                                   >
                                     Sale scheme
                                   </TableHeaderCell>
-                                  <TableHeaderCell className={styles.excelTh}>
+                                  <TableHeaderCell className={denseDataGrid.th}>
                                     Sale disc %
                                   </TableHeaderCell>
-                                  <TableHeaderCell className={styles.excelTh}>
+                                  <TableHeaderCell className={denseDataGrid.th}>
                                     Purchase deal type
                                   </TableHeaderCell>
-                                  <TableHeaderCell className={styles.excelTh}>
+                                  <TableHeaderCell className={denseDataGrid.th}>
                                     Purchase scheme
                                   </TableHeaderCell>
-                                  <TableHeaderCell className={styles.excelTh}>
+                                  <TableHeaderCell className={denseDataGrid.th}>
                                     Purchase disc %
                                   </TableHeaderCell>
-                                  <TableHeaderCell className={styles.excelTh}>
+                                  <TableHeaderCell className={denseDataGrid.th}>
                                     Item type
                                   </TableHeaderCell>
                                   <TableHeaderCell
-                                    className={styles.excelTh}
+                                    className={denseDataGrid.th}
                                     title="Required when item type is Temperature for the item"
                                   >
                                     ° *
                                   </TableHeaderCell>
-                                  <TableHeaderCell className={styles.excelTh}>
+                                  <TableHeaderCell className={denseDataGrid.th}>
                                     Disc appl.
                                   </TableHeaderCell>
                                 </>
                               )}
                               {billingMode === 'REGULAR' && (
                                 <>
-                                  <TableHeaderCell className={styles.excelTh}>
+                                  <TableHeaderCell className={denseDataGrid.th}>
                                     CGST %
                                   </TableHeaderCell>
-                                  <TableHeaderCell className={styles.excelTh}>
+                                  <TableHeaderCell className={denseDataGrid.th}>
                                     SGST %
                                   </TableHeaderCell>
                                 </>
                               )}
-                              <TableHeaderCell className={styles.excelTh}>Actions</TableHeaderCell>
+                              <TableHeaderCell className={denseDataGrid.th}>
+                                Actions
+                              </TableHeaderCell>
                             </TableRow>
                             <GridBulkFillRow
                               bulk={gridBulkFill}
@@ -3209,12 +3188,12 @@ export function ProductRegistrationPage() {
                           </TableHead>
                           <TableBody>
                             {products.map((product, idx) => (
-                              <TableRow key={product.id} className={styles.excelTr}>
-                                <TableCell className={styles.excelTd}>{idx + 1}</TableCell>
-                                <TableCell className={styles.excelTd}>
+                              <TableRow key={product.id} className={denseDataGrid.tr}>
+                                <TableCell className={denseDataGrid.td}>{idx + 1}</TableCell>
+                                <TableCell className={denseDataGrid.td}>
                                   <Input
                                     type="text"
-                                    className={styles.excelInput}
+                                    className={denseDataGrid.input}
                                     placeholder="Barcode"
                                     value={product.barcode}
                                     onChange={(e) =>
@@ -3232,10 +3211,10 @@ export function ProductRegistrationPage() {
                                     applyVerticalFieldChange(product.id, field, value)
                                   }
                                 />
-                                <TableCell className={styles.excelTd}>
+                                <TableCell className={denseDataGrid.td}>
                                   <Input
                                     type="text"
-                                    className={styles.excelInput}
+                                    className={denseDataGrid.input}
                                     placeholder="Product name"
                                     value={product.name}
                                     onChange={(e) =>
@@ -3254,12 +3233,12 @@ export function ProductRegistrationPage() {
                                     applyVerticalFieldChange(product.id, field, value)
                                   }
                                 />
-                                <TableCell className={styles.excelTd}>
+                                <TableCell className={denseDataGrid.td}>
                                   <Input
                                     type="text"
                                     inputMode="numeric"
                                     pattern="[0-9]*"
-                                    className={styles.excelInputNarrow}
+                                    className={denseDataGrid.inputNarrow}
                                     placeholder="0"
                                     value={product.count === 0 ? '' : product.count}
                                     onChange={(e) =>
@@ -3269,7 +3248,7 @@ export function ProductRegistrationPage() {
                                     required
                                   />
                                 </TableCell>
-                                <TableCell className={styles.excelTd}>
+                                <TableCell className={denseDataGrid.td}>
                                   <PackagingUnitInput
                                     label=""
                                     compact
@@ -3288,10 +3267,10 @@ export function ProductRegistrationPage() {
                                     disabled={isLoading}
                                   />
                                 </TableCell>
-                                <TableCell className={styles.excelTd}>
+                                <TableCell className={denseDataGrid.td}>
                                   <Input
                                     type="text"
-                                    className={styles.excelInput}
+                                    className={denseDataGrid.input}
                                     placeholder="Location"
                                     value={product.location}
                                     onChange={(e) =>
@@ -3302,9 +3281,9 @@ export function ProductRegistrationPage() {
                                   />
                                 </TableCell>
                                 {sellDirectField && (
-                                  <TableCell className={styles.excelTd}>
+                                  <TableCell className={denseDataGrid.td}>
                                     <Select
-                                      className={styles.excelInput}
+                                      className={denseDataGrid.input}
                                       value={
                                         getVerticalFieldValue(product, sellDirectField) || 'no'
                                       }
@@ -3325,10 +3304,10 @@ export function ProductRegistrationPage() {
                                 )}
                                 {billingMode !== 'BASIC' && (
                                   <>
-                                    <TableCell className={styles.excelTd}>
+                                    <TableCell className={denseDataGrid.td}>
                                       <Input
                                         type="text"
-                                        className={styles.excelInput}
+                                        className={denseDataGrid.input}
                                         placeholder="HSN"
                                         value={product.hsn || ''}
                                         onChange={(e) =>
@@ -3341,12 +3320,12 @@ export function ProductRegistrationPage() {
                                 )}
                                 {isSimplePricing ? (
                                   <>
-                                    <TableCell className={styles.excelTd}>
+                                    <TableCell className={denseDataGrid.td}>
                                       <Input
                                         type="text"
                                         inputMode="decimal"
                                         pattern="[0-9]*\.?[0-9]*"
-                                        className={styles.excelInputNarrow}
+                                        className={denseDataGrid.inputNarrow}
                                         placeholder="Rate"
                                         value={product.costPrice === 0 ? '' : product.costPrice}
                                         onChange={(e) =>
@@ -3360,12 +3339,12 @@ export function ProductRegistrationPage() {
                                         required
                                       />
                                     </TableCell>
-                                    <TableCell className={styles.excelTd}>
+                                    <TableCell className={denseDataGrid.td}>
                                       <Input
                                         type="text"
                                         inputMode="decimal"
                                         pattern="[0-9]*\.?[0-9]*"
-                                        className={styles.excelInputNarrow}
+                                        className={denseDataGrid.inputNarrow}
                                         placeholder="Optional"
                                         value={
                                           product.sellingPrice === 0 || product.sellingPrice == null
@@ -3385,12 +3364,12 @@ export function ProductRegistrationPage() {
                                   </>
                                 ) : (
                                   <>
-                                    <TableCell className={styles.excelTd}>
+                                    <TableCell className={denseDataGrid.td}>
                                       <Input
                                         type="text"
                                         inputMode="decimal"
                                         pattern="[0-9]*\.?[0-9]*"
-                                        className={styles.excelInputNarrow}
+                                        className={denseDataGrid.inputNarrow}
                                         placeholder="PTS"
                                         value={product.costPrice === 0 ? '' : product.costPrice}
                                         onChange={(e) =>
@@ -3404,12 +3383,12 @@ export function ProductRegistrationPage() {
                                         required
                                       />
                                     </TableCell>
-                                    <TableCell className={styles.excelTd}>
+                                    <TableCell className={denseDataGrid.td}>
                                       <Input
                                         type="text"
                                         inputMode="decimal"
                                         pattern="[0-9]*\.?[0-9]*"
-                                        className={styles.excelInputNarrow}
+                                        className={denseDataGrid.inputNarrow}
                                         placeholder="PTR"
                                         value={
                                           product.priceToRetail === 0 ? '' : product.priceToRetail
@@ -3425,12 +3404,12 @@ export function ProductRegistrationPage() {
                                         required
                                       />
                                     </TableCell>
-                                    <TableCell className={styles.excelTd}>
+                                    <TableCell className={denseDataGrid.td}>
                                       <Input
                                         type="text"
                                         inputMode="decimal"
                                         pattern="[0-9]*\.?[0-9]*"
-                                        className={styles.excelInputNarrow}
+                                        className={denseDataGrid.inputNarrow}
                                         placeholder="MRP"
                                         value={
                                           product.maximumRetailPrice === 0
@@ -3448,16 +3427,16 @@ export function ProductRegistrationPage() {
                                         required
                                       />
                                     </TableCell>
-                                    <TableCell className={styles.excelTd}>
+                                    <TableCell className={denseDataGrid.td}>
                                       <Label
-                                        className={styles.srOnly}
+                                        className={denseDataGrid.srOnly}
                                         htmlFor={`grid-scheme-type-${product.id}`}
                                       >
                                         Sale scheme deal type
                                       </Label>
                                       <Select
                                         id={`grid-scheme-type-${product.id}`}
-                                        className={styles.excelSelect}
+                                        className={denseDataGrid.select}
                                         value={product.schemeType ?? 'FIXED_UNITS'}
                                         onChange={(e) => {
                                           const val = e.target.value as SchemeType;
@@ -3478,9 +3457,9 @@ export function ProductRegistrationPage() {
                                         <option value="PERCENTAGE">Percentage</option>
                                       </Select>
                                     </TableCell>
-                                    <TableCell className={styles.excelTd}>
+                                    <TableCell className={denseDataGrid.td}>
                                       <Label
-                                        className={styles.srOnly}
+                                        className={denseDataGrid.srOnly}
                                         htmlFor={`grid-sale-scheme-${product.id}`}
                                       >
                                         Sale scheme (e.g. 10+2 or 10%; required when deal type is
@@ -3489,7 +3468,7 @@ export function ProductRegistrationPage() {
                                       <Input
                                         id={`grid-sale-scheme-${product.id}`}
                                         type="text"
-                                        className={styles.excelInputNarrow}
+                                        className={denseDataGrid.inputNarrow}
                                         placeholder="e.g. 10+2"
                                         value={
                                           gridSchemeDrafts[product.id]?.sale ??
@@ -3593,10 +3572,10 @@ export function ProductRegistrationPage() {
                                         disabled={isLoading}
                                       />
                                     </TableCell>
-                                    <TableCell className={styles.excelTd}>
+                                    <TableCell className={denseDataGrid.td}>
                                       <Input
                                         type="number"
-                                        className={styles.excelInputNarrow}
+                                        className={denseDataGrid.inputNarrow}
                                         placeholder="—"
                                         step="0.01"
                                         min={0}
@@ -3629,16 +3608,16 @@ export function ProductRegistrationPage() {
                                         disabled={isLoading}
                                       />
                                     </TableCell>
-                                    <TableCell className={styles.excelTd}>
+                                    <TableCell className={denseDataGrid.td}>
                                       <Label
-                                        className={styles.srOnly}
+                                        className={denseDataGrid.srOnly}
                                         htmlFor={`grid-purchase-scheme-type-${product.id}`}
                                       >
                                         Purchase scheme deal type
                                       </Label>
                                       <Select
                                         id={`grid-purchase-scheme-type-${product.id}`}
-                                        className={styles.excelSelect}
+                                        className={denseDataGrid.select}
                                         value={product.purchaseSchemeType ?? 'FIXED_UNITS'}
                                         onChange={(e) => {
                                           const val = e.target.value as PurchaseSchemeInputType;
@@ -3682,10 +3661,10 @@ export function ProductRegistrationPage() {
                                         <option value="PERCENTAGE">Percentage</option>
                                       </Select>
                                     </TableCell>
-                                    <TableCell className={styles.excelTd}>
+                                    <TableCell className={denseDataGrid.td}>
                                       <Input
                                         type="text"
-                                        className={styles.excelInputNarrow}
+                                        className={denseDataGrid.inputNarrow}
                                         placeholder={
                                           (product.purchaseSchemeType ?? 'FIXED_UNITS') ===
                                           'FREE_QUANTITY'
@@ -3760,10 +3739,10 @@ export function ProductRegistrationPage() {
                                         disabled={isLoading}
                                       />
                                     </TableCell>
-                                    <TableCell className={styles.excelTd}>
+                                    <TableCell className={denseDataGrid.td}>
                                       <Input
                                         type="number"
-                                        className={styles.excelInputNarrow}
+                                        className={denseDataGrid.inputNarrow}
                                         placeholder="—"
                                         step="0.01"
                                         min={0}
@@ -3796,16 +3775,16 @@ export function ProductRegistrationPage() {
                                         disabled={isLoading}
                                       />
                                     </TableCell>
-                                    <TableCell className={styles.excelTd}>
+                                    <TableCell className={denseDataGrid.td}>
                                       <Label
-                                        className={styles.srOnly}
+                                        className={denseDataGrid.srOnly}
                                         htmlFor={`grid-item-type-${product.id}`}
                                       >
                                         Item type
                                       </Label>
                                       <Select
                                         id={`grid-item-type-${product.id}`}
-                                        className={styles.excelSelect}
+                                        className={denseDataGrid.select}
                                         value={product.itemType ?? 'NORMAL'}
                                         onChange={(e) => {
                                           const val = e.target.value as ItemType | '';
@@ -3827,13 +3806,13 @@ export function ProductRegistrationPage() {
                                         <option value="DEGREE">Temp / °</option>
                                       </Select>
                                     </TableCell>
-                                    <TableCell className={styles.excelTd}>
+                                    <TableCell className={denseDataGrid.td}>
                                       {product.itemType === 'DEGREE' ? (
                                         <Input
                                           id={`grid-item-degree-${product.id}`}
                                           aria-label="Temperature or degree value"
                                           type="number"
-                                          className={styles.excelInputNarrow}
+                                          className={denseDataGrid.inputNarrow}
                                           placeholder="°"
                                           min={1}
                                           step={1}
@@ -3865,21 +3844,21 @@ export function ProductRegistrationPage() {
                                           disabled={isLoading}
                                         />
                                       ) : (
-                                        <Text as="span" className={styles.excelCellDash}>
+                                        <Text as="span" className={denseDataGrid.cellDash}>
                                           —
                                         </Text>
                                       )}
                                     </TableCell>
-                                    <TableCell className={styles.excelTd}>
+                                    <TableCell className={denseDataGrid.td}>
                                       <Label
-                                        className={styles.srOnly}
+                                        className={denseDataGrid.srOnly}
                                         htmlFor={`grid-discount-applicable-${product.id}`}
                                       >
                                         Discount applicable
                                       </Label>
                                       <Select
                                         id={`grid-discount-applicable-${product.id}`}
-                                        className={styles.excelSelect}
+                                        className={denseDataGrid.select}
                                         value={product.discountApplicable ?? ''}
                                         onChange={(e) => {
                                           const val = e.target.value as DiscountApplicable | '';
@@ -3901,11 +3880,11 @@ export function ProductRegistrationPage() {
                                 )}
                                 {billingMode === 'REGULAR' && (
                                   <>
-                                    <TableCell className={styles.excelTd}>
+                                    <TableCell className={denseDataGrid.td}>
                                       <Input
                                         type="text"
                                         inputMode="decimal"
-                                        className={styles.excelInputNarrow}
+                                        className={denseDataGrid.inputNarrow}
                                         placeholder="CGST"
                                         value={product.cgst || ''}
                                         onChange={(e) =>
@@ -3914,11 +3893,11 @@ export function ProductRegistrationPage() {
                                         disabled={isLoading}
                                       />
                                     </TableCell>
-                                    <TableCell className={styles.excelTd}>
+                                    <TableCell className={denseDataGrid.td}>
                                       <Input
                                         type="text"
                                         inputMode="decimal"
-                                        className={styles.excelInputNarrow}
+                                        className={denseDataGrid.inputNarrow}
                                         placeholder="SGST"
                                         value={product.sgst || ''}
                                         onChange={(e) =>
@@ -3929,10 +3908,10 @@ export function ProductRegistrationPage() {
                                     </TableCell>
                                   </>
                                 )}
-                                <TableCell className={styles.excelTd}>
+                                <TableCell className={denseDataGrid.td}>
                                   <Button
                                     type="button"
-                                    className={styles.excelRemoveBtn}
+                                    className={denseDataGrid.removeBtn}
                                     onClick={() => handleRemoveProduct(product.id)}
                                     disabled={isLoading}
                                     aria-label="Remove product"
@@ -3944,7 +3923,7 @@ export function ProductRegistrationPage() {
                             ))}
                           </TableBody>
                         </Table>
-                        <Text className={styles.gridViewFootnote}>
+                        <Text className={denseDataGrid.footnote}>
                           Use the fill row above to copy the same value into every row (only columns
                           you type in are updated). Packaging is optional in grid view (defaults to
                           1× on save). Columns marked * match required fields.
@@ -3954,7 +3933,7 @@ export function ProductRegistrationPage() {
                         </Text>
                       </Box>
                     ) : (
-                      <Box className={styles.productsList}>
+                      <Box style={accordionStyles.productsList}>
                         {products.map((product, index) => (
                           <ProductAccordion
                             key={product.id}
@@ -3989,7 +3968,14 @@ export function ProductRegistrationPage() {
 
               {products.length > 0 && (
                 <>
-                  <Box className={styles.paymentBottomSlot}>
+                  <Stack
+                    gap="sm"
+                    style={{
+                      marginTop: '1.75rem',
+                      paddingTop: '1.25rem',
+                      borderTop: '1px solid var(--border-color)',
+                    }}
+                  >
                     <PaymentMethodSplit
                       context="purchase"
                       title="Payment to vendor"
@@ -4008,7 +3994,7 @@ export function ProductRegistrationPage() {
                     {vendorPaymentMethod &&
                     vendorInvoiceTotalNum > 0 &&
                     isCreditMethod(vendorPaymentMethod) ? (
-                      <Text className={styles.vendorPaymentSummaryFoot} aria-live="polite">
+                      <Text variant="caption" color="secondary" aria-live="polite">
                         ₹{vendorCreditLedgerOutstandingNum.toFixed(2)} will be tracked in{' '}
                         <Text as="span" weight="bold">
                           Credit balances
@@ -4016,8 +4002,16 @@ export function ProductRegistrationPage() {
                         (settle later in partial payments).
                       </Text>
                     ) : null}
-                  </Box>
-                  <Box className={styles.formActions}>
+                  </Stack>
+                  <Inline
+                    gap="md"
+                    justify="end"
+                    style={{
+                      marginTop: '1.25rem',
+                      paddingTop: '1.25rem',
+                      borderTop: '1px solid var(--border-color)',
+                    }}
+                  >
                     <Button
                       type="button"
                       variant="outline"
@@ -4039,7 +4033,7 @@ export function ProductRegistrationPage() {
                         ? `Registering ${products.length} Product(s)...`
                         : `Register ${products.length} Product(s)`}
                     </Button>
-                  </Box>
+                  </Inline>
                 </>
               )}
             </Stack>
@@ -4058,14 +4052,11 @@ export function ProductRegistrationPage() {
           onClose={isCreatingVendor ? undefined : handleCloseVendorModal}
         />
         <Modal.Body>
-          <Box className={styles.formGroup}>
-            <Label htmlFor="vendorName" className={styles.label}>
-              Vendor Name *
-            </Label>
+          <Box style={pageStyles.formGroup}>
+            <Label htmlFor="vendorName">Vendor Name *</Label>
             <Input
               type="text"
               id="vendorName"
-              className={styles.input}
               placeholder="Enter vendor name"
               value={vendorFormData.name}
               onChange={(e) =>
@@ -4078,14 +4069,11 @@ export function ProductRegistrationPage() {
               required
             />
           </Box>
-          <Box className={styles.formGroup}>
-            <Label htmlFor="vendorContactPhone" className={styles.label}>
-              Contact Phone *
-            </Label>
+          <Box style={pageStyles.formGroup}>
+            <Label htmlFor="vendorContactPhone">Contact Phone *</Label>
             <Input
               type="tel"
               id="vendorContactPhone"
-              className={styles.input}
               placeholder="Enter contact phone"
               value={vendorFormData.contactPhone}
               onChange={(e) =>
@@ -4098,14 +4086,11 @@ export function ProductRegistrationPage() {
               required
             />
           </Box>
-          <Box className={styles.formGroup}>
-            <Label htmlFor="vendorContactEmail" className={styles.label}>
-              Contact Email
-            </Label>
+          <Box style={pageStyles.formGroup}>
+            <Label htmlFor="vendorContactEmail">Contact Email</Label>
             <Input
               type="email"
               id="vendorContactEmail"
-              className={styles.input}
               placeholder="Enter contact email"
               value={vendorFormData.contactEmail}
               onChange={(e) =>
@@ -4117,11 +4102,10 @@ export function ProductRegistrationPage() {
               disabled={isCreatingVendor}
             />
           </Box>
-          <Box className={styles.formGroup}>
-            <Label className={styles.label}>Link to registered user</Label>
+          <Box style={pageStyles.formGroup}>
+            <Label>Link to registered user</Label>
             <Text
-              className={styles.helperText}
-              style={{ marginBottom: 8, fontSize: 13, color: '#666' }}
+              style={{ ...pageStyles.helperText, marginBottom: 8, fontSize: 13, color: '#666' }}
             >
               If this vendor is a registered user, search by their email to link the vendor record
               to their account.
@@ -4162,14 +4146,11 @@ export function ProductRegistrationPage() {
               </Text>
             )}
           </Box>
-          <Box className={styles.formGroup}>
-            <Label htmlFor="vendorAddress" className={styles.label}>
-              Address
-            </Label>
+          <Box style={pageStyles.formGroup}>
+            <Label htmlFor="vendorAddress">Address</Label>
             <Input
               type="text"
               id="vendorAddress"
-              className={styles.input}
               placeholder="Enter address"
               value={vendorFormData.address}
               onChange={(e) =>
@@ -4181,14 +4162,11 @@ export function ProductRegistrationPage() {
               disabled={isCreatingVendor}
             />
           </Box>
-          <Box className={styles.formGroup}>
-            <Label htmlFor="vendorGstinUin" className={styles.label}>
-              GSTIN / UIN
-            </Label>
+          <Box style={pageStyles.formGroup}>
+            <Label htmlFor="vendorGstinUin">GSTIN / UIN</Label>
             <Input
               type="text"
               id="vendorGstinUin"
-              className={styles.input}
               placeholder="Enter GSTIN / UIN number"
               value={vendorFormData.gstinUin ?? ''}
               onChange={(e) =>
@@ -4200,13 +4178,10 @@ export function ProductRegistrationPage() {
               disabled={isCreatingVendor}
             />
           </Box>
-          <Box className={styles.formGroup}>
-            <Label htmlFor="vendorBusinessType" className={styles.label}>
-              Business Type *
-            </Label>
+          <Box style={pageStyles.formGroup}>
+            <Label htmlFor="vendorBusinessType">Business Type *</Label>
             <Select
               id="vendorBusinessType"
-              className={styles.input}
               value={showCustomBusinessType ? 'OTHER' : vendorFormData.businessType}
               onChange={(e) => {
                 if (e.target.value === 'OTHER') {
@@ -4233,14 +4208,11 @@ export function ProductRegistrationPage() {
             </Select>
           </Box>
           {showCustomBusinessType && (
-            <Box className={styles.formGroup}>
-              <Label htmlFor="customBusinessType" className={styles.label}>
-                Custom Business Type *
-              </Label>
+            <Box style={pageStyles.formGroup}>
+              <Label htmlFor="customBusinessType">Custom Business Type *</Label>
               <Input
                 type="text"
                 id="customBusinessType"
-                className={styles.input}
                 placeholder="Enter custom business type"
                 value={customBusinessType}
                 onChange={(e) => setCustomBusinessType(e.target.value)}
@@ -4395,14 +4367,14 @@ function GridBulkFillRow({
   onApply,
 }: GridBulkFillRowProps) {
   return (
-    <TableRow className={styles.excelBulkRow}>
-      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <Text as="span" className={styles.excelBulkLabel}>
+    <TableRow className={denseDataGrid.bulkRow}>
+      <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
+        <Text as="span" className={denseDataGrid.bulkLabel}>
           Fill all
         </Text>
         <Button
           type="button"
-          className={styles.excelBulkApplyBtn}
+          className={denseDataGrid.bulkApplyBtn}
           onClick={onApply}
           disabled={isLoading}
           title="Apply filled values to every product row"
@@ -4410,16 +4382,16 @@ function GridBulkFillRow({
           Apply to all
         </Button>
       </TableHeaderCell>
-      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-        <Text as="span" className={styles.excelBulkDisabled} title="Barcode must be set per row">
+      <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
+        <Text as="span" className={denseDataGrid.bulkDisabled} title="Barcode must be set per row">
           —
         </Text>
       </TableHeaderCell>
       {companyField && (
-        <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
           <Input
             type="text"
-            className={styles.excelInput}
+            className={denseDataGrid.input}
             placeholder="Company"
             value={bulk.verticalBulk?.[companyField.key] ?? bulk.companyName ?? ''}
             onChange={(e) => onVerticalBulkChange(companyField.key, e.target.value)}
@@ -4427,10 +4399,10 @@ function GridBulkFillRow({
           />
         </TableHeaderCell>
       )}
-      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+      <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
         <Input
           type="text"
-          className={styles.excelInput}
+          className={denseDataGrid.input}
           placeholder="Product"
           value={bulk.name ?? ''}
           onChange={(e) => onBulkChange('name', e.target.value)}
@@ -4438,10 +4410,10 @@ function GridBulkFillRow({
         />
       </TableHeaderCell>
       {schemaFields.map((field) => (
-        <TableHeaderCell key={field.key} className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <TableHeaderCell key={field.key} className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
           <Input
             type={field.type === 'date' ? 'date' : 'text'}
-            className={field.type === 'date' ? styles.excelInputDate : styles.excelInput}
+            className={field.type === 'date' ? denseDataGrid.inputDate : denseDataGrid.input}
             placeholder={field.label ?? field.key}
             value={bulk.verticalBulk?.[field.key] ?? ''}
             onChange={(e) => onVerticalBulkChange(field.key, e.target.value)}
@@ -4449,32 +4421,32 @@ function GridBulkFillRow({
           />
         </TableHeaderCell>
       ))}
-      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+      <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
         <Input
           type="text"
           inputMode="numeric"
-          className={styles.excelInputNarrow}
+          className={denseDataGrid.inputNarrow}
           placeholder="Count"
           value={bulk.count ?? ''}
           onChange={(e) => onBulkChange('count', e.target.value)}
           disabled={isLoading}
         />
       </TableHeaderCell>
-      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+      <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
         <Input
           type="text"
           inputMode="decimal"
-          className={styles.excelInputNarrow}
+          className={denseDataGrid.inputNarrow}
           placeholder="1 x _"
           value={bulk.conversionFactor ?? ''}
           onChange={(e) => onBulkChange('conversionFactor', e.target.value)}
           disabled={isLoading}
         />
       </TableHeaderCell>
-      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+      <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
         <Input
           type="text"
-          className={styles.excelInput}
+          className={denseDataGrid.input}
           placeholder="Location"
           value={bulk.location ?? ''}
           onChange={(e) => onBulkChange('location', e.target.value)}
@@ -4482,9 +4454,9 @@ function GridBulkFillRow({
         />
       </TableHeaderCell>
       {sellDirectField && (
-        <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+        <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
           <Select
-            className={styles.excelInput}
+            className={denseDataGrid.input}
             value={bulk.verticalBulk?.[sellDirectField.key] ?? ''}
             onChange={(e) => onVerticalBulkChange(sellDirectField.key, e.target.value)}
             disabled={isLoading}
@@ -4496,30 +4468,30 @@ function GridBulkFillRow({
         </TableHeaderCell>
       )}
       {billingMode !== 'BASIC' && (
-        <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-          <Text as="span" className={styles.excelBulkDisabled} title="HSN must be set per row">
+        <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
+          <Text as="span" className={denseDataGrid.bulkDisabled} title="HSN must be set per row">
             —
           </Text>
         </TableHeaderCell>
       )}
       {simplePricing ? (
         <>
-          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
             <Input
               type="text"
               inputMode="decimal"
-              className={styles.excelInputNarrow}
+              className={denseDataGrid.inputNarrow}
               placeholder="Rate"
               value={bulk.costPrice ?? ''}
               onChange={(e) => onBulkChange('costPrice', e.target.value)}
               disabled={isLoading}
             />
           </TableHeaderCell>
-          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
             <Input
               type="text"
               inputMode="decimal"
-              className={styles.excelInputNarrow}
+              className={denseDataGrid.inputNarrow}
               placeholder="Sell"
               value={bulk.sellingPrice ?? ''}
               onChange={(e) => onBulkChange('sellingPrice', e.target.value)}
@@ -4529,24 +4501,24 @@ function GridBulkFillRow({
         </>
       ) : (
         <>
-          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-            <Text as="span" className={styles.excelBulkDisabled} title="PTS must be set per row">
+          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
+            <Text as="span" className={denseDataGrid.bulkDisabled} title="PTS must be set per row">
               —
             </Text>
           </TableHeaderCell>
-          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-            <Text as="span" className={styles.excelBulkDisabled} title="PTR must be set per row">
+          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
+            <Text as="span" className={denseDataGrid.bulkDisabled} title="PTR must be set per row">
               —
             </Text>
           </TableHeaderCell>
-          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
-            <Text as="span" className={styles.excelBulkDisabled} title="MRP must be set per row">
+          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
+            <Text as="span" className={denseDataGrid.bulkDisabled} title="MRP must be set per row">
               —
             </Text>
           </TableHeaderCell>
-          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
             <Select
-              className={styles.excelSelect}
+              className={denseDataGrid.select}
               value={bulk.schemeType ?? ''}
               onChange={(e) => onBulkChange('schemeType', e.target.value as SchemeType | '')}
               disabled={isLoading}
@@ -4556,20 +4528,20 @@ function GridBulkFillRow({
               <option value="PERCENTAGE">Percentage</option>
             </Select>
           </TableHeaderCell>
-          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
             <Input
               type="text"
-              className={styles.excelInputNarrow}
+              className={denseDataGrid.inputNarrow}
               placeholder="e.g. 10+2"
               value={bulk.saleScheme ?? ''}
               onChange={(e) => onBulkChange('saleScheme', e.target.value)}
               disabled={isLoading}
             />
           </TableHeaderCell>
-          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
             <Input
               type="number"
-              className={styles.excelInputNarrow}
+              className={denseDataGrid.inputNarrow}
               placeholder="—"
               step="0.01"
               min={0}
@@ -4579,9 +4551,9 @@ function GridBulkFillRow({
               disabled={isLoading}
             />
           </TableHeaderCell>
-          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
             <Select
-              className={styles.excelSelect}
+              className={denseDataGrid.select}
               value={bulk.purchaseSchemeType ?? ''}
               onChange={(e) =>
                 onBulkChange('purchaseSchemeType', e.target.value as SchemeType | '')
@@ -4593,20 +4565,20 @@ function GridBulkFillRow({
               <option value="PERCENTAGE">Percentage</option>
             </Select>
           </TableHeaderCell>
-          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
             <Input
               type="text"
-              className={styles.excelInputNarrow}
+              className={denseDataGrid.inputNarrow}
               placeholder="e.g. 10+2"
               value={bulk.purchaseScheme ?? ''}
               onChange={(e) => onBulkChange('purchaseScheme', e.target.value)}
               disabled={isLoading}
             />
           </TableHeaderCell>
-          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
             <Input
               type="number"
-              className={styles.excelInputNarrow}
+              className={denseDataGrid.inputNarrow}
               placeholder="—"
               step="0.01"
               min={0}
@@ -4616,9 +4588,9 @@ function GridBulkFillRow({
               disabled={isLoading}
             />
           </TableHeaderCell>
-          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
             <Select
-              className={styles.excelSelect}
+              className={denseDataGrid.select}
               value={bulk.itemType ?? ''}
               onChange={(e) => onBulkChange('itemType', e.target.value as ItemType | '')}
               disabled={isLoading}
@@ -4629,10 +4601,10 @@ function GridBulkFillRow({
               <option value="DEGREE">Temp / °</option>
             </Select>
           </TableHeaderCell>
-          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
             <Input
               type="number"
-              className={styles.excelInputNarrow}
+              className={denseDataGrid.inputNarrow}
               placeholder="°"
               min={1}
               step={1}
@@ -4641,9 +4613,9 @@ function GridBulkFillRow({
               disabled={isLoading}
             />
           </TableHeaderCell>
-          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
             <Select
-              className={styles.excelSelect}
+              className={denseDataGrid.select}
               value={bulk.discountApplicable ?? ''}
               onChange={(e) =>
                 onBulkChange('discountApplicable', e.target.value as DiscountApplicable | '')
@@ -4660,22 +4632,22 @@ function GridBulkFillRow({
       )}
       {billingMode === 'REGULAR' && (
         <>
-          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
             <Input
               type="text"
               inputMode="decimal"
-              className={styles.excelInputNarrow}
+              className={denseDataGrid.inputNarrow}
               placeholder="CGST"
               value={bulk.cgst ?? ''}
               onChange={(e) => onBulkChange('cgst', e.target.value)}
               disabled={isLoading}
             />
           </TableHeaderCell>
-          <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`}>
+          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
             <Input
               type="text"
               inputMode="decimal"
-              className={styles.excelInputNarrow}
+              className={denseDataGrid.inputNarrow}
               placeholder="SGST"
               value={bulk.sgst ?? ''}
               onChange={(e) => onBulkChange('sgst', e.target.value)}
@@ -4684,18 +4656,18 @@ function GridBulkFillRow({
           </TableHeaderCell>
         </>
       )}
-      <TableHeaderCell className={`${styles.excelTh} ${styles.excelBulkTh}`} />
+      <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`} />
     </TableRow>
   );
 }
 
 function FormRowSpacer() {
   return (
-    <Box className={styles.formGroup} aria-hidden="true">
-      <Text as="span" className={styles.label} style={{ visibility: 'hidden' }}>
+    <Box style={pageStyles.formGroup} aria-hidden="true">
+      <Text as="span" style={{ visibility: 'hidden' }}>
         .
       </Text>
-      <Text as="span" className={styles.input} style={{ visibility: 'hidden', display: 'block' }}>
+      <Text as="span" style={{ visibility: 'hidden', display: 'block' }}>
         .
       </Text>
     </Box>
@@ -4906,22 +4878,22 @@ function ProductAccordion({
   })();
 
   return (
-    <Box className={styles.productAccordion}>
-      <Box className={styles.accordionHeader} onClick={onToggle}>
-        <Box className={styles.accordionTitle}>
-          <Text as="span" className={styles.accordionIcon}>
+    <Box style={accordionStyles.productAccordion}>
+      <Box style={accordionStyles.accordionHeader} onClick={onToggle}>
+        <Box style={accordionStyles.accordionTitle}>
+          <Text as="span" style={accordionStyles.accordionIcon}>
             {product.isExpanded ? '▼' : '▶'}
           </Text>
           <Text as="span">{productTitle}</Text>
           {product.barcode && (
-            <Text as="span" className={styles.accordionSubtitle}>
+            <Text as="span" style={accordionStyles.accordionSubtitle}>
               (Barcode: {product.barcode})
             </Text>
           )}
         </Box>
         <Button
           type="button"
-          className={styles.removeProductBtn}
+          style={accordionStyles.removeProductBtn}
           onClick={(e) => {
             e.stopPropagation();
             onRemove();
@@ -4934,16 +4906,13 @@ function ProductAccordion({
       </Box>
 
       {product.isExpanded && (
-        <Box className={styles.accordionContent}>
-          <Box className={styles.formRow}>
-            <Box className={styles.formGroup}>
-              <Label htmlFor={`name-${product.id}`} className={styles.label}>
-                Product Name *
-              </Label>
+        <Box style={accordionStyles.accordionContent}>
+          <Box style={accordionStyles.formRow}>
+            <Box style={pageStyles.formGroup}>
+              <Label htmlFor={`name-${product.id}`}>Product Name *</Label>
               <Input
                 type="text"
                 id={`name-${product.id}`}
-                className={styles.input}
                 placeholder="Enter product name"
                 value={product.name}
                 onChange={(e) => onChange(product.id, 'name', e.target.value)}
@@ -4951,16 +4920,13 @@ function ProductAccordion({
                 disabled={isLoading}
               />
             </Box>
-            <Box className={styles.formGroup}>
-              <Label htmlFor={`count-${product.id}`} className={styles.label}>
-                Count *
-              </Label>
+            <Box style={pageStyles.formGroup}>
+              <Label htmlFor={`count-${product.id}`}>Count *</Label>
               <Input
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
                 id={`count-${product.id}`}
-                className={styles.input}
                 placeholder="0"
                 value={product.count === 0 ? '' : product.count}
                 onChange={(e) => onIntegerChange(product.id, 'count', e.target.value)}
@@ -4970,15 +4936,12 @@ function ProductAccordion({
             </Box>
           </Box>
 
-          <Box className={styles.formRow}>
-            <Box className={styles.formGroup}>
-              <Label htmlFor={`barcode-${product.id}`} className={styles.label}>
-                Barcode
-              </Label>
+          <Box style={accordionStyles.formRow}>
+            <Box style={pageStyles.formGroup}>
+              <Label htmlFor={`barcode-${product.id}`}>Barcode</Label>
               <Input
                 type="text"
                 id={`barcode-${product.id}`}
-                className={styles.input}
                 placeholder="Enter barcode (optional)"
                 value={product.barcode}
                 onChange={(e) => onChange(product.id, 'barcode', e.target.value)}
@@ -4992,8 +4955,6 @@ function ProductAccordion({
                 onChange={(value) => onVerticalFieldChange(product.id, companyField, value)}
                 disabled={isLoading}
                 idPrefix={`acc-${product.id}`}
-                inputClassName={styles.input}
-                labelClassName={styles.label}
               />
             ) : (
               packagingInput
@@ -5001,16 +4962,13 @@ function ProductAccordion({
           </Box>
 
           {companyField ? (
-            <Box className={styles.formRow}>
+            <Box style={accordionStyles.formRow}>
               {packagingInput}
-              <Box className={styles.formGroup}>
-                <Label htmlFor={`location-${product.id}`} className={styles.label}>
-                  Inventory Location *
-                </Label>
+              <Box style={pageStyles.formGroup}>
+                <Label htmlFor={`location-${product.id}`}>Inventory Location *</Label>
                 <Input
                   type="text"
                   id={`location-${product.id}`}
-                  className={styles.input}
                   placeholder="Enter inventory location"
                   value={product.location}
                   onChange={(e) => onChange(product.id, 'location', e.target.value)}
@@ -5028,22 +4986,17 @@ function ProductAccordion({
               onFieldChange={(field, value) => onVerticalFieldChange(product.id, field, value)}
               disabled={isLoading}
               idPrefix={`acc-${product.id}`}
-              inputClassName={styles.input}
-              labelClassName={styles.label}
             />
           )}
 
           {(companyField ? billingMode !== 'BASIC' : true) && (
-            <Box className={styles.formRow}>
+            <Box style={accordionStyles.formRow}>
               {!companyField ? (
-                <Box className={styles.formGroup}>
-                  <Label htmlFor={`location-${product.id}`} className={styles.label}>
-                    Inventory Location *
-                  </Label>
+                <Box style={pageStyles.formGroup}>
+                  <Label htmlFor={`location-${product.id}`}>Inventory Location *</Label>
                   <Input
                     type="text"
                     id={`location-${product.id}`}
-                    className={styles.input}
                     placeholder="Enter inventory location"
                     value={product.location}
                     onChange={(e) => onChange(product.id, 'location', e.target.value)}
@@ -5055,14 +5008,11 @@ function ProductAccordion({
                 <FormRowSpacer />
               )}
               {billingMode !== 'BASIC' ? (
-                <Box className={styles.formGroup}>
-                  <Label htmlFor={`hsn-${product.id}`} className={styles.label}>
-                    HSN Code
-                  </Label>
+                <Box style={pageStyles.formGroup}>
+                  <Label htmlFor={`hsn-${product.id}`}>HSN Code</Label>
                   <Input
                     type="text"
                     id={`hsn-${product.id}`}
-                    className={styles.input}
                     placeholder="Enter the HSN code"
                     value={product.hsn || ''}
                     onChange={(e) => onChange(product.id, 'hsn', e.target.value)}
@@ -5077,14 +5027,11 @@ function ProductAccordion({
 
           {!simplePricing && (
             <>
-              <Box className={styles.formRow}>
-                <Box className={styles.formGroup}>
-                  <Label htmlFor={`schemeType-${product.id}`} className={styles.label}>
-                    Sale scheme/deal type
-                  </Label>
+              <Box style={accordionStyles.formRow}>
+                <Box style={pageStyles.formGroup}>
+                  <Label htmlFor={`schemeType-${product.id}`}>Sale scheme/deal type</Label>
                   <Select
                     id={`schemeType-${product.id}`}
-                    className={styles.input}
                     value={product.schemeType ?? 'FIXED_UNITS'}
                     onChange={(e) => {
                       const val = e.target.value as SchemeType;
@@ -5102,14 +5049,11 @@ function ProductAccordion({
                   </Select>
                 </Box>
                 {(product.schemeType ?? 'FIXED_UNITS') === 'FIXED_UNITS' ? (
-                  <Box className={styles.formGroup}>
-                    <Label htmlFor={`scheme-fixed-${product.id}`} className={styles.label}>
-                      Pay + free (e.g. 10 + 2)
-                    </Label>
+                  <Box style={pageStyles.formGroup}>
+                    <Label htmlFor={`scheme-fixed-${product.id}`}>Pay + free (e.g. 10 + 2)</Label>
                     <Input
                       type="text"
                       id={`scheme-fixed-${product.id}`}
-                      className={styles.input}
                       placeholder="Optional, e.g. 10 + 2"
                       value={schemeFixedDraft}
                       onChange={(e) => setSchemeFixedDraft(e.target.value)}
@@ -5127,14 +5071,11 @@ function ProductAccordion({
                     />
                   </Box>
                 ) : (
-                  <Box className={styles.formGroup}>
-                    <Label htmlFor={`schemePercentage-${product.id}`} className={styles.label}>
-                      Sale Scheme/Deal % *
-                    </Label>
+                  <Box style={pageStyles.formGroup}>
+                    <Label htmlFor={`schemePercentage-${product.id}`}>Sale Scheme/Deal % *</Label>
                     <Input
                       type="number"
                       id={`schemePercentage-${product.id}`}
-                      className={styles.input}
                       placeholder="e.g. 10 for 10%"
                       min={0.01}
                       max={100}
@@ -5157,15 +5098,14 @@ function ProductAccordion({
                 )}
               </Box>
 
-              <Box className={styles.formRow}>
-                <Box className={styles.formGroup}>
-                  <Label htmlFor={`saleAdditionalDiscount-${product.id}`} className={styles.label}>
+              <Box style={accordionStyles.formRow}>
+                <Box style={pageStyles.formGroup}>
+                  <Label htmlFor={`saleAdditionalDiscount-${product.id}`}>
                     Sale add. discount (%)
                   </Label>
                   <Input
                     type="number"
                     id={`saleAdditionalDiscount-${product.id}`}
-                    className={styles.input}
                     placeholder="Enter discount percentage"
                     step="0.01"
                     min="0"
@@ -5190,29 +5130,24 @@ function ProductAccordion({
                     disabled={isLoading}
                   />
                 </Box>
-                <Box className={styles.formGroup} aria-hidden="true">
-                  <Text as="span" className={styles.label} style={{ visibility: 'hidden' }}>
+                <Box style={pageStyles.formGroup} aria-hidden="true">
+                  <Text as="span" style={{ visibility: 'hidden' }}>
                     .
                   </Text>
-                  <Text
-                    as="span"
-                    className={styles.input}
-                    style={{ visibility: 'hidden', display: 'block' }}
-                  >
+                  <Text as="span" style={{ visibility: 'hidden', display: 'block' }}>
                     .
                   </Text>
                 </Box>
               </Box>
 
               {/* Purchase (from vendor) - for comparison at sale */}
-              <Box className={styles.formRow}>
-                <Box className={styles.formGroup}>
-                  <Label htmlFor={`purchaseSchemeType-${product.id}`} className={styles.label}>
+              <Box style={accordionStyles.formRow}>
+                <Box style={pageStyles.formGroup}>
+                  <Label htmlFor={`purchaseSchemeType-${product.id}`}>
                     Purchase scheme/deal type
                   </Label>
                   <Select
                     id={`purchaseSchemeType-${product.id}`}
-                    className={styles.input}
                     value={product.purchaseSchemeType ?? 'FIXED_UNITS'}
                     onChange={(e) => {
                       const val = e.target.value as PurchaseSchemeInputType;
@@ -5250,17 +5185,13 @@ function ProductAccordion({
                   </Select>
                 </Box>
                 {purchaseSchemeType === 'PERCENTAGE' ? (
-                  <Box className={styles.formGroup}>
-                    <Label
-                      htmlFor={`purchaseSchemePercentage-${product.id}`}
-                      className={styles.label}
-                    >
+                  <Box style={pageStyles.formGroup}>
+                    <Label htmlFor={`purchaseSchemePercentage-${product.id}`}>
                       Purchase scheme %
                     </Label>
                     <Input
                       type="number"
                       id={`purchaseSchemePercentage-${product.id}`}
-                      className={styles.input}
                       placeholder="From vendor"
                       min={0}
                       max={100}
@@ -5285,8 +5216,8 @@ function ProductAccordion({
                     />
                   </Box>
                 ) : (
-                  <Box className={styles.formGroup}>
-                    <Label htmlFor={`purchase-scheme-fixed-${product.id}`} className={styles.label}>
+                  <Box style={pageStyles.formGroup}>
+                    <Label htmlFor={`purchase-scheme-fixed-${product.id}`}>
                       {purchaseSchemeType === 'FREE_QUANTITY'
                         ? 'Free quantity (e.g. 60 on 540 paid)'
                         : 'Purchase scheme/deal'}
@@ -5294,7 +5225,6 @@ function ProductAccordion({
                     <Input
                       type="text"
                       id={`purchase-scheme-fixed-${product.id}`}
-                      className={styles.input}
                       placeholder={
                         purchaseSchemeType === 'FREE_QUANTITY'
                           ? (Number(product.count) || 0) > 0
@@ -5329,11 +5259,7 @@ function ProductAccordion({
                       disabled={isLoading}
                     />
                     {purchaseSchemePaidFreeHint ? (
-                      <Text
-                        as="span"
-                        className={styles.label}
-                        style={{ fontWeight: 400, marginTop: '0.25rem' }}
-                      >
+                      <Text as="span" style={{ fontWeight: 400, marginTop: '0.25rem' }}>
                         {purchaseSchemePaidFreeHint}
                       </Text>
                     ) : null}
@@ -5341,18 +5267,14 @@ function ProductAccordion({
                 )}
               </Box>
 
-              <Box className={styles.formRow}>
-                <Box className={styles.formGroup}>
-                  <Label
-                    htmlFor={`purchaseAdditionalDiscount-${product.id}`}
-                    className={styles.label}
-                  >
+              <Box style={accordionStyles.formRow}>
+                <Box style={pageStyles.formGroup}>
+                  <Label htmlFor={`purchaseAdditionalDiscount-${product.id}`}>
                     Purchase add. discount (%)
                   </Label>
                   <Input
                     type="number"
                     id={`purchaseAdditionalDiscount-${product.id}`}
-                    className={styles.input}
                     placeholder="From vendor"
                     step="0.01"
                     min="0"
@@ -5377,13 +5299,10 @@ function ProductAccordion({
                     disabled={isLoading}
                   />
                 </Box>
-                <Box className={styles.formGroup}>
-                  <Label htmlFor={`itemType-${product.id}`} className={styles.label}>
-                    Item Type
-                  </Label>
+                <Box style={pageStyles.formGroup}>
+                  <Label htmlFor={`itemType-${product.id}`}>Item Type</Label>
                   <Select
                     id={`itemType-${product.id}`}
-                    className={styles.input}
                     value={product.itemType ?? 'NORMAL'}
                     onChange={(e) => {
                       const val = e.target.value as ItemType | '';
@@ -5402,16 +5321,13 @@ function ProductAccordion({
                 </Box>
               </Box>
 
-              <Box className={styles.formRow}>
+              <Box style={accordionStyles.formRow}>
                 {product.itemType === 'DEGREE' ? (
-                  <Box className={styles.formGroup}>
-                    <Label htmlFor={`itemTypeDegree-${product.id}`} className={styles.label}>
-                      Temperature / Degree *
-                    </Label>
+                  <Box style={pageStyles.formGroup}>
+                    <Label htmlFor={`itemTypeDegree-${product.id}`}>Temperature / Degree *</Label>
                     <Input
                       type="number"
                       id={`itemTypeDegree-${product.id}`}
-                      className={styles.input}
                       placeholder="e.g. 8, 24"
                       min={1}
                       step={1}
@@ -5431,26 +5347,19 @@ function ProductAccordion({
                     />
                   </Box>
                 ) : (
-                  <Box className={styles.formGroup} aria-hidden="true">
-                    <Text as="span" className={styles.label} style={{ visibility: 'hidden' }}>
+                  <Box style={pageStyles.formGroup} aria-hidden="true">
+                    <Text as="span" style={{ visibility: 'hidden' }}>
                       .
                     </Text>
-                    <Text
-                      as="span"
-                      className={styles.input}
-                      style={{ visibility: 'hidden', display: 'block' }}
-                    >
+                    <Text as="span" style={{ visibility: 'hidden', display: 'block' }}>
                       .
                     </Text>
                   </Box>
                 )}
-                <Box className={styles.formGroup}>
-                  <Label htmlFor={`discountApplicable-${product.id}`} className={styles.label}>
-                    Discount applicable
-                  </Label>
+                <Box style={pageStyles.formGroup}>
+                  <Label htmlFor={`discountApplicable-${product.id}`}>Discount applicable</Label>
                   <Select
                     id={`discountApplicable-${product.id}`}
-                    className={styles.input}
                     value={product.discountApplicable ?? ''}
                     onChange={(e) => {
                       const val = e.target.value as DiscountApplicable | '';
@@ -5475,17 +5384,14 @@ function ProductAccordion({
           )}
 
           {simplePricing ? (
-            <Box className={styles.formRow}>
-              <Box className={styles.formGroup}>
-                <Label htmlFor={`costPrice-${product.id}`} className={styles.label}>
-                  Rate (cost) *
-                </Label>
+            <Box style={accordionStyles.formRow}>
+              <Box style={pageStyles.formGroup}>
+                <Label htmlFor={`costPrice-${product.id}`}>Rate (cost) *</Label>
                 <Input
                   type="text"
                   inputMode="decimal"
                   pattern="[0-9]*\.?[0-9]*"
                   id={`costPrice-${product.id}`}
-                  className={styles.input}
                   placeholder="0.00"
                   value={product.costPrice === 0 ? '' : product.costPrice}
                   onChange={(e) => onDecimalChange(product.id, 'costPrice', e.target.value)}
@@ -5493,16 +5399,13 @@ function ProductAccordion({
                   disabled={isLoading}
                 />
               </Box>
-              <Box className={styles.formGroup}>
-                <Label htmlFor={`sellingPrice-${product.id}`} className={styles.label}>
-                  Sell price (optional)
-                </Label>
+              <Box style={pageStyles.formGroup}>
+                <Label htmlFor={`sellingPrice-${product.id}`}>Sell price (optional)</Label>
                 <Input
                   type="text"
                   inputMode="decimal"
                   pattern="[0-9]*\.?[0-9]*"
                   id={`sellingPrice-${product.id}`}
-                  className={styles.input}
                   placeholder="Menu sets customer price"
                   value={
                     product.sellingPrice === 0 || product.sellingPrice == null
@@ -5516,17 +5419,14 @@ function ProductAccordion({
             </Box>
           ) : (
             <>
-              <Box className={styles.formRow}>
-                <Box className={styles.formGroup}>
-                  <Label htmlFor={`priceToRetail-${product.id}`} className={styles.label}>
-                    Price to Retailer (PTR) *
-                  </Label>
+              <Box style={accordionStyles.formRow}>
+                <Box style={pageStyles.formGroup}>
+                  <Label htmlFor={`priceToRetail-${product.id}`}>Price to Retailer (PTR) *</Label>
                   <Input
                     type="text"
                     inputMode="decimal"
                     pattern="[0-9]*\.?[0-9]*"
                     id={`priceToRetail-${product.id}`}
-                    className={styles.input}
                     placeholder="0.00"
                     value={product.priceToRetail === 0 ? '' : product.priceToRetail}
                     onChange={(e) => onDecimalChange(product.id, 'priceToRetail', e.target.value)}
@@ -5534,16 +5434,13 @@ function ProductAccordion({
                     disabled={isLoading}
                   />
                 </Box>
-                <Box className={styles.formGroup}>
-                  <Label htmlFor={`costPrice-${product.id}`} className={styles.label}>
-                    Price from stockist (PTS) *
-                  </Label>
+                <Box style={pageStyles.formGroup}>
+                  <Label htmlFor={`costPrice-${product.id}`}>Price from stockist (PTS) *</Label>
                   <Input
                     type="text"
                     inputMode="decimal"
                     pattern="[0-9]*\.?[0-9]*"
                     id={`costPrice-${product.id}`}
-                    className={styles.input}
                     placeholder="0.00"
                     value={product.costPrice === 0 ? '' : product.costPrice}
                     onChange={(e) => onDecimalChange(product.id, 'costPrice', e.target.value)}
@@ -5553,17 +5450,14 @@ function ProductAccordion({
                 </Box>
               </Box>
 
-              <Box className={styles.formRow}>
-                <Box className={styles.formGroup}>
-                  <Label htmlFor={`maximumRetailPrice-${product.id}`} className={styles.label}>
-                    MRP *
-                  </Label>
+              <Box style={accordionStyles.formRow}>
+                <Box style={pageStyles.formGroup}>
+                  <Label htmlFor={`maximumRetailPrice-${product.id}`}>MRP *</Label>
                   <Input
                     type="text"
                     inputMode="decimal"
                     pattern="[0-9]*\.?[0-9]*"
                     id={`maximumRetailPrice-${product.id}`}
-                    className={styles.input}
                     placeholder="0.00"
                     value={product.maximumRetailPrice === 0 ? '' : product.maximumRetailPrice}
                     onChange={(e) =>
@@ -5579,33 +5473,27 @@ function ProductAccordion({
           )}
 
           {billingMode === 'REGULAR' && (
-            <Box className={styles.formRow}>
-              <Box className={styles.formGroup}>
-                <Label htmlFor={`cgst-${product.id}`} className={styles.label}>
-                  CGST (%)
-                </Label>
+            <Box style={accordionStyles.formRow}>
+              <Box style={pageStyles.formGroup}>
+                <Label htmlFor={`cgst-${product.id}`}>CGST (%)</Label>
                 <Input
                   type="text"
                   inputMode="decimal"
                   pattern="[0-9]*\.?[0-9]*"
                   id={`cgst-${product.id}`}
-                  className={styles.input}
                   placeholder="Leave empty for shop default"
                   value={product.cgst || ''}
                   onChange={(e) => onChange(product.id, 'cgst', e.target.value)}
                   disabled={isLoading}
                 />
               </Box>
-              <Box className={styles.formGroup}>
-                <Label htmlFor={`sgst-${product.id}`} className={styles.label}>
-                  SGST (%)
-                </Label>
+              <Box style={pageStyles.formGroup}>
+                <Label htmlFor={`sgst-${product.id}`}>SGST (%)</Label>
                 <Input
                   type="text"
                   inputMode="decimal"
                   pattern="[0-9]*\.?[0-9]*"
                   id={`sgst-${product.id}`}
-                  className={styles.input}
                   placeholder="Leave empty for shop default"
                   value={product.sgst || ''}
                   onChange={(e) => onChange(product.id, 'sgst', e.target.value)}
@@ -5618,9 +5506,9 @@ function ProductAccordion({
           {/* Rates (optional) - custom pricing tiers */}
           {!simplePricing && (
             <>
-              <Box className={styles.ratesSection}>
-                <Box className={styles.ratesHeader}>
-                  <Label className={styles.label}>Rates (optional)</Label>
+              <Box style={accordionStyles.ratesSection}>
+                <Box style={accordionStyles.ratesHeader}>
+                  <Label>Rates (optional)</Label>
                   <Button
                     type="button"
                     onClick={() =>
@@ -5629,18 +5517,18 @@ function ProductAccordion({
                         { name: '', price: 0 },
                       ])
                     }
-                    className={styles.addRateBtn}
+                    style={accordionStyles.addRateBtn}
                     disabled={isLoading}
                   >
                     + Add rate
                   </Button>
                 </Box>
-                <Text as="span" className={styles.unitHint}>
+                <Text as="span" style={accordionStyles.unitHint}>
                   Custom rate tiers (e.g. Rate-A, Rate-B). Default rate selects which price to use
                   for sales.
                 </Text>
                 {(product.rates ?? []).map((rate, i) => (
-                  <Box key={i} className={styles.rateRow}>
+                  <Box key={i} style={accordionStyles.rateRow}>
                     <Input
                       type="text"
                       value={rate.name}
@@ -5649,7 +5537,7 @@ function ProductAccordion({
                         next[i] = { ...next[i], name: e.target.value };
                         onChange(product.id, 'rates', next);
                       }}
-                      className={styles.rateNameInput}
+                      style={accordionStyles.rateNameInput}
                       placeholder="Rate name"
                       disabled={isLoading}
                     />
@@ -5666,7 +5554,7 @@ function ProductAccordion({
                         };
                         onChange(product.id, 'rates', next);
                       }}
-                      className={styles.ratePriceInput}
+                      style={accordionStyles.ratePriceInput}
                       placeholder="Price"
                       disabled={isLoading}
                     />
@@ -5676,7 +5564,7 @@ function ProductAccordion({
                         const next = (product.rates ?? []).filter((_, j) => j !== i);
                         onChange(product.id, 'rates', next);
                       }}
-                      className={styles.removeRateBtn}
+                      style={accordionStyles.removeRateBtn}
                       aria-label="Remove rate"
                       disabled={isLoading}
                     >
@@ -5685,15 +5573,12 @@ function ProductAccordion({
                   </Box>
                 ))}
               </Box>
-              <Box className={styles.formGroup}>
-                <Label htmlFor={`defaultRate-${product.id}`} className={styles.label}>
-                  Default rate (optional)
-                </Label>
+              <Box style={pageStyles.formGroup}>
+                <Label htmlFor={`defaultRate-${product.id}`}>Default rate (optional)</Label>
                 <Select
                   id={`defaultRate-${product.id}`}
                   value={product.defaultRate ?? ''}
                   onChange={(e) => onChange(product.id, 'defaultRate', e.target.value)}
-                  className={styles.input}
                   disabled={isLoading}
                 >
                   <option value="">— None —</option>
@@ -5712,13 +5597,10 @@ function ProductAccordion({
             </>
           )}
 
-          <Box className={styles.formGroup}>
-            <Label htmlFor={`description-${product.id}`} className={styles.label}>
-              Description
-            </Label>
+          <Box style={pageStyles.formGroup}>
+            <Label htmlFor={`description-${product.id}`}>Description</Label>
             <Textarea
               id={`description-${product.id}`}
-              className={styles.textarea}
               placeholder="Enter product description (optional)"
               value={product.description || ''}
               onChange={(e) => onChange(product.id, 'description', e.target.value)}
@@ -5728,21 +5610,18 @@ function ProductAccordion({
           </Box>
 
           {/* Reminders — custom for all verticals; expiry-linked when schema has expiryDate */}
-          <Box className={styles.reminderSection}>
-            <Text variant="heading4" className={styles.subsectionTitle}>
-              Reminders
-            </Text>
+          <Box style={accordionStyles.reminderSection}>
+            <Text variant="heading4">Reminders</Text>
             {showExpiryReminder && (
               <>
-                <Box className={styles.formRow}>
-                  <Box className={styles.formGroup}>
-                    <Label htmlFor={`reminderAt-${product.id}`} className={styles.label}>
+                <Box style={accordionStyles.formRow}>
+                  <Box style={pageStyles.formGroup}>
+                    <Label htmlFor={`reminderAt-${product.id}`}>
                       Expiry Reminder Date & Time (Optional)
                     </Label>
                     <Input
                       type="datetime-local"
                       id={`reminderAt-${product.id}`}
-                      className={styles.input}
                       value={product.reminderAt ? isoToLocalDateTime(product.reminderAt) : ''}
                       onChange={(e) => {
                         const dateValue = e.target.value;
@@ -5755,7 +5634,7 @@ function ProductAccordion({
                       }}
                       disabled={isLoading}
                     />
-                    <Text className={styles.helperText}>
+                    <Text style={pageStyles.helperText}>
                       Set a reminder date to be notified before this inventory item expires
                     </Text>
                   </Box>
@@ -5777,8 +5656,6 @@ function ProductAccordion({
               onChange={(value) => onVerticalFieldChange(product.id, sellDirectField, value)}
               disabled={isLoading}
               idPrefix={`acc-${product.id}`}
-              inputClassName={styles.input}
-              labelClassName={styles.label}
             />
           )}
         </Box>

@@ -128,18 +128,6 @@ export function generateInventoryWorkspaceAliases({
     '@inventory-platform/pricing/api': core('pricing', 'src/api/index.ts'),
     '@inventory-platform/pricing': core('pricing', 'src/index.ts'),
     '@inventory-platform/product/api': core('product', 'src/api/index.ts'),
-    '@inventory-platform/product/pages/scan-sell.module.css': core(
-      'product',
-      'src/pages/scan-sell.module.css',
-    ),
-    '@inventory-platform/product/ui/scan-sell-qty.module.css': core(
-      'product',
-      'src/ui/scan-sell-qty.module.css',
-    ),
-    '@inventory-platform/product/ui/scan-sell-customer.module.css': core(
-      'product',
-      'src/ui/scan-sell-customer.module.css',
-    ),
     '@inventory-platform/product': core('product', 'src/index.ts'),
     '@inventory-platform/plugin-registry/routes': plugins('registry/src/routes/index.ts'),
     '@inventory-platform/plugin-registry': plugins('registry/src/index.ts'),

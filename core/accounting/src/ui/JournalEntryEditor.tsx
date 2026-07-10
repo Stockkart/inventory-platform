@@ -15,7 +15,14 @@ import {
 import { JOURNAL_TEMPLATES, type JournalTemplateId, getTemplate } from '../model/journalTemplates';
 import { needsPartyOnLine } from '../model/accountingConstants';
 import { formatMoney } from '../model/format';
-import styles from './accounting.module.css';
+import {
+  balanceBalancedStyle,
+  balanceFooterStyle,
+  balanceUnbalancedStyle,
+  journalHeaderLineGridStyle,
+  journalLineGridStyle,
+  templateChipStyle,
+} from './accountingStyles';
 
 export type JournalEntryEditorProps = {
   accounts: AccountResponse[];
@@ -133,7 +140,7 @@ export function JournalEntryEditor({
               type="button"
               size="sm"
               variant="ghost"
-              className={activeTemplate === t.id ? styles.templateChipActive : styles.templateChip}
+              style={templateChipStyle(activeTemplate === t.id)}
               onClick={() => applyTemplate(t.id)}
               disabled={disabled || accountsLoading}
               title={t.description}
@@ -145,7 +152,7 @@ export function JournalEntryEditor({
             type="button"
             size="sm"
             variant="ghost"
-            className={activeTemplate === 'BLANK' ? styles.templateChipActive : styles.templateChip}
+            style={templateChipStyle(activeTemplate === 'BLANK')}
             onClick={() => applyTemplate('BLANK')}
             disabled={disabled || accountsLoading}
           >
@@ -177,7 +184,7 @@ export function JournalEntryEditor({
         />
       </Inline>
 
-      <Box className={styles.headerLineGrid}>
+      <Box style={journalHeaderLineGridStyle}>
         <Text variant="label" color="secondary">
           Account
         </Text>
@@ -193,7 +200,7 @@ export function JournalEntryEditor({
         <Box />
       </Box>
       {lines.map((line, idx) => (
-        <Box key={idx} className={styles.lineGrid}>
+        <Box key={idx} style={journalLineGridStyle}>
           <Stack gap="xs">
             <AccountPicker
               accounts={accounts}
@@ -274,9 +281,10 @@ export function JournalEntryEditor({
 
       <Inline
         gap="md"
-        className={`${styles.balanceFooter} ${
-          balanced ? styles.balanceBalanced : styles.balanceUnbalanced
-        }`}
+        style={{
+          ...balanceFooterStyle,
+          ...(balanced ? balanceBalancedStyle : balanceUnbalancedStyle),
+        }}
       >
         <Text weight="semibold">Total Debit: ₹ {formatMoney(totalDebit)}</Text>
         <Text weight="semibold">Total Credit: ₹ {formatMoney(totalCredit)}</Text>

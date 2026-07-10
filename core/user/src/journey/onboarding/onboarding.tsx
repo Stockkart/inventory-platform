@@ -25,7 +25,6 @@ import {
   Stack,
   Text,
 } from '@inventory-platform/ui-kit';
-import styles from './onboarding.module.css';
 
 const STEPS: OnboardingStep[] = [
   'name',
@@ -65,6 +64,7 @@ export function meta() {
 export default function OnboardingPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [compactLayout, setCompactLayout] = useState(false);
   const addShop = (location.state as { addShop?: boolean })?.addShop ?? false;
   const { user, isAuthenticated, fetchCurrentUser, logout } = useAuthStore();
   const [currentStep, setCurrentStep] = useState(0);
@@ -96,6 +96,14 @@ export default function OnboardingPage() {
     cgst: '',
     tagline: '',
   });
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    const update = () => setCompactLayout(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -544,14 +552,17 @@ export default function OnboardingPage() {
   };
 
   return (
-    <Box display="flex" className={styles.onboardingLayout} style={{ minHeight: '100vh' }}>
+    <Box
+      display="flex"
+      flexDirection={compactLayout ? 'column' : 'row'}
+      style={{ minHeight: '100vh' }}
+    >
       <Stack
-        className={styles.sidebar}
         gap="md"
         bg="muted"
         padding="lg"
         border
-        style={{ width: 280, flexShrink: 0 }}
+        style={{ width: compactLayout ? '100%' : 280, flexShrink: 0 }}
       >
         <Stack gap="sm" align="center">
           <Avatar name={userDisplayName} />

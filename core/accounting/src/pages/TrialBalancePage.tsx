@@ -28,7 +28,11 @@ import type {
 } from '@inventory-platform/accounting/types';
 import { AccountingTabs } from '../ui/AccountingTabs';
 import { formatDate, formatMoney, todayLocalDate } from '../model/format';
-import styles from '../ui/accounting.module.css';
+import {
+  grandTotalCellStyle,
+  groupHeadingCellStyle,
+  subTotalCellStyle,
+} from '../ui/accountingStyles';
 import { numColBoldStyle, numColStyle } from '../ui/tabNav';
 
 const GROUP_ORDER: AccountType[] = ['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE'];
@@ -160,20 +164,20 @@ export function TrialBalancePage() {
                       />
                     );
                   })}
-                  <TableRow className={styles.grandTotalRow}>
+                  <TableRow>
                     <TableCell colSpan={4} style={numColStyle}>
                       Grand Totals
                     </TableCell>
-                    <TableCell style={numColBoldStyle}>{formatMoney(data.totalDebit)}</TableCell>
-                    <TableCell style={numColBoldStyle}>{formatMoney(data.totalCredit)}</TableCell>
+                    <TableCell style={{ ...numColBoldStyle, ...grandTotalCellStyle }}>
+                      {formatMoney(data.totalDebit)}
+                    </TableCell>
+                    <TableCell style={{ ...numColBoldStyle, ...grandTotalCellStyle }}>
+                      {formatMoney(data.totalCredit)}
+                    </TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
-              <Alert
-                variant={isBalanced ? 'success' : 'warning'}
-                role="status"
-                className={isBalanced ? styles.balanceBalanced : styles.balanceUnbalanced}
-              >
+              <Alert variant={isBalanced ? 'success' : 'warning'} role="status">
                 {isBalanced
                   ? '✓ Books balance — total debits = total credits'
                   : '⚠ Trial balance does not match — investigate immediately'}
@@ -202,7 +206,7 @@ function RowsForType({
   return (
     <>
       <TableRow>
-        <TableCell colSpan={6} className={styles.groupHeading}>
+        <TableCell colSpan={6} style={groupHeadingCellStyle}>
           {GROUP_LABEL[type]}
         </TableCell>
       </TableRow>
@@ -233,12 +237,16 @@ function RowsForType({
           </TableCell>
         </TableRow>
       ))}
-      <TableRow className={styles.subTotalRow}>
-        <TableCell colSpan={4} style={numColStyle}>
+      <TableRow>
+        <TableCell colSpan={4} style={{ ...numColStyle, ...subTotalCellStyle }}>
           {GROUP_LABEL[type]} subtotal
         </TableCell>
-        <TableCell style={numColBoldStyle}>{formatMoney(subDr)}</TableCell>
-        <TableCell style={numColBoldStyle}>{formatMoney(subCr)}</TableCell>
+        <TableCell style={{ ...numColBoldStyle, ...subTotalCellStyle }}>
+          {formatMoney(subDr)}
+        </TableCell>
+        <TableCell style={{ ...numColBoldStyle, ...subTotalCellStyle }}>
+          {formatMoney(subCr)}
+        </TableCell>
       </TableRow>
     </>
   );

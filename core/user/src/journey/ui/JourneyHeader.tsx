@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import {
   Box,
@@ -8,7 +9,6 @@ import {
   type BoxProps,
 } from '@inventory-platform/ui-kit';
 import { useAuthStore } from '@inventory-platform/session';
-import styles from './JourneyHeader.module.css';
 
 const logoImgProps = {
   as: 'img',
@@ -17,28 +17,53 @@ const logoImgProps = {
   style: { height: 44, width: 'auto', maxWidth: 180, objectFit: 'contain' as const },
 } as unknown as BoxProps;
 
+function useCompactHeader() {
+  const [compact, setCompact] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    const update = () => setCompact(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+
+  return compact;
+}
+
 export function JourneyHeader() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
+  const compact = useCompactHeader();
 
   return (
-    <Box as="header" className={styles.header} bg="elevated" padding="sm" width="full">
+    <Box
+      as="header"
+      position="fixed"
+      zIndex="sticky"
+      bg="elevated"
+      padding="sm"
+      width="full"
+      style={{
+        top: 0,
+        left: 0,
+        right: 0,
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+      }}
+    >
       <Inline maxWidth="xl" mx="auto" justify="between" width="full" padding="sm" gap="md">
         <Link to="/">
           <Box {...logoImgProps} />
         </Link>
 
-        <Box as="nav" display="flex" gap="lg" align="center" justify="center">
-          <UiLink href="/#features" className={styles.navLink}>
-            Features
-          </UiLink>
-          <UiLink href="/#pricing" className={styles.navLink}>
-            Pricing
-          </UiLink>
-          <UiLink href="/#about" className={styles.navLink}>
-            About
-          </UiLink>
-        </Box>
+        {!compact ? (
+          <Box as="nav" display="flex" gap="lg" align="center" justify="center">
+            <UiLink href="/#features">Features</UiLink>
+            <UiLink href="/#pricing">Pricing</UiLink>
+            <UiLink href="/#about">About</UiLink>
+          </Box>
+        ) : null}
 
         <Inline gap="sm" align="center">
           <ThemeToggle />
@@ -48,14 +73,11 @@ export function JourneyHeader() {
             </Button>
           ) : (
             <>
-              <Button
-                variant="ghost"
-                size="sm"
-                className={styles.signInBtn}
-                onClick={() => navigate('/login')}
-              >
-                Sign In
-              </Button>
+              {!compact ? (
+                <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>
+                  Sign In
+                </Button>
+              ) : null}
               <Button variant="solid" size="sm" onClick={() => navigate('/signup')}>
                 Get Started
               </Button>

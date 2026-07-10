@@ -40,6 +40,12 @@ const bannedNativeHtmlSyntaxRules = bannedNativeHtmlTags.map((tag) => ({
   message: `Use @inventory-platform/ui-kit primitives instead of native <${tag}>.`,
 }));
 
+const cssModuleImportBan = {
+  selector: 'ImportDeclaration[source.value=/\\.module\\.css$/]',
+  message:
+    'CSS modules are only allowed inside ui-kit. Use @inventory-platform/ui-kit patterns/props or inline styles.',
+};
+
 /** Patterns relative to each package eslint.config.mjs (nx run <project>:lint). */
 export const domainUiKitHtmlBan = {
   files: [
@@ -48,9 +54,10 @@ export const domainUiKitHtmlBan = {
     'src/journey/**/*.{ts,tsx,js,jsx}',
     'src/lib/**/*.{ts,tsx,js,jsx}',
     'src/guards/**/*.{ts,tsx,js,jsx}',
+    'src/**/*.{ts,tsx,js,jsx}',
   ],
   rules: {
-    'no-restricted-syntax': ['error', ...bannedNativeHtmlSyntaxRules],
+    'no-restricted-syntax': ['error', ...bannedNativeHtmlSyntaxRules, cssModuleImportBan],
   },
 };
 
@@ -161,7 +168,19 @@ export default [
   {
     files: uiKitNativeHtmlBanGlobs,
     rules: {
-      'no-restricted-syntax': ['error', ...bannedNativeHtmlSyntaxRules],
+      'no-restricted-syntax': ['error', ...bannedNativeHtmlSyntaxRules, cssModuleImportBan],
+    },
+  },
+  {
+    files: [
+      'core/**/*.{ts,tsx,js,jsx}',
+      'platform/**/*.{ts,tsx,js,jsx}',
+      'plugins/**/*.{ts,tsx,js,jsx}',
+      'apps/**/*.{ts,tsx,js,jsx}',
+    ],
+    ignores: ['ui-kit/**'],
+    rules: {
+      'no-restricted-syntax': ['error', cssModuleImportBan],
     },
   },
   eslintConfigPrettier,

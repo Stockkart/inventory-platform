@@ -1,8 +1,3 @@
-:root {
-  --card-width: 300px;
-  --card-gap: 24px;
-}
-
 .carouselWrapper {
   --card-width: 300px;
   --card-gap: 24px;
@@ -57,61 +52,8 @@
   transform: scale(0.92) rotateY(-12deg);
 }
 
-.card {
-  min-height: 400px;
-  transition: all 0.5s ease;
-  overflow: visible;
-}
-
-.slideCenter .card {
-  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.35);
-}
-
 .slide:not(.slideCenter) {
   filter: blur(0.8px);
-}
-
-.cardCenter {
-  border-color: var(--border-hover);
-}
-
-.cardHighlight.cardCenter {
-  border-color: #2563eb;
-}
-
-.badge {
-  position: absolute;
-  top: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
-}
-
-.trialBadge {
-  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
-  color: white;
-  width: fit-content;
-}
-
-.cardInner {
-  position: relative;
-  flex: 1;
-}
-
-.featuresList {
-  flex-grow: 1;
-}
-
-.ctaButton {
-  margin-top: auto;
-  background: linear-gradient(90deg, #2563eb 0%, #06b6d4 100%);
-  color: white;
-  border-radius: 999px;
-}
-
-.checkIcon {
-  color: #22c55e;
-  flex-shrink: 0;
 }
 
 .dot {

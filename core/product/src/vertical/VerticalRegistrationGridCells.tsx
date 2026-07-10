@@ -1,12 +1,11 @@
 import type { VerticalSchemaFieldDef } from '@inventory-platform/schema/types';
-import { TableCell, TableHeaderCell } from '@inventory-platform/ui-kit';
+import { TableCell, TableHeaderCell, denseDataGrid } from '@inventory-platform/ui-kit';
 import {
   VerticalSchemaFieldInput,
   fieldLabel,
   getVerticalFieldValue,
   type VerticalFieldProduct,
 } from '@inventory-platform/schema';
-import styles from '../pages/product-registration.module.css';
 
 export function VerticalRegistrationGridCompanyHeader({
   field,
@@ -17,7 +16,7 @@ export function VerticalRegistrationGridCompanyHeader({
     return null;
   }
   return (
-    <TableHeaderCell className={styles.excelTh}>
+    <TableHeaderCell className={denseDataGrid.th}>
       {fieldLabel(field)}
       {field.required ? ' *' : ''}
     </TableHeaderCell>
@@ -28,7 +27,7 @@ export function VerticalRegistrationGridHeaders({ fields }: { fields: VerticalSc
   return (
     <>
       {fields.map((field) => (
-        <TableHeaderCell key={field.key} className={styles.excelTh}>
+        <TableHeaderCell key={field.key} className={denseDataGrid.th}>
           {fieldLabel(field)}
           {field.required ? ' *' : ''}
         </TableHeaderCell>
@@ -54,15 +53,15 @@ export function VerticalRegistrationGridCompanyCell({
     return null;
   }
   return (
-    <TableCell className={styles.excelTd}>
+    <TableCell className={denseDataGrid.td}>
       <VerticalSchemaFieldInput
         field={field}
         value={getVerticalFieldValue(product, field)}
         onChange={(value) => onFieldChange(field, value)}
         disabled={disabled}
         idPrefix={`grid-${productId}`}
-        inputClassName={styles.excelInput}
-        labelClassName={styles.srOnly}
+        inputClassName={denseDataGrid.input}
+        labelClassName={denseDataGrid.srOnly}
         compact
       />
     </TableCell>
@@ -87,15 +86,15 @@ export function VerticalRegistrationGridCells({
   return (
     <>
       {fields.map((field) => (
-        <TableCell key={field.key} className={styles.excelTd}>
+        <TableCell key={field.key} className={denseDataGrid.td}>
           <VerticalSchemaFieldInput
             field={field}
             value={getVerticalFieldValue(product, field)}
             onChange={(value) => onFieldChange(field, value)}
             disabled={disabled}
             idPrefix={`grid-${productId}`}
-            inputClassName={field.type === 'date' ? styles.excelInputDate : styles.excelInput}
-            labelClassName={styles.srOnly}
+            inputClassName={field.type === 'date' ? denseDataGrid.inputDate : denseDataGrid.input}
+            labelClassName={denseDataGrid.srOnly}
             compact
           />
         </TableCell>

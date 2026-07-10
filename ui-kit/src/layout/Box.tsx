@@ -25,7 +25,11 @@ type BoxOwnProps = {
   border?: boolean;
   rounded?: 'sm' | 'md' | 'lg';
   overflow?: 'hidden' | 'auto';
-  position?: 'relative' | 'absolute';
+  position?: 'relative' | 'absolute' | 'sticky' | 'fixed';
+  flex?: '1' | 'none';
+  minWidth?: '0';
+  minHeight?: '0';
+  zIndex?: 'dropdown' | 'sticky' | 'modal';
   style?: CSSProperties;
 };
 
@@ -53,6 +57,10 @@ export const Box = forwardRef<HTMLElement, BoxProps>(function Box(
     rounded,
     overflow,
     position,
+    flex,
+    minWidth,
+    minHeight,
+    zIndex,
     style,
     ...rest
   },
@@ -81,6 +89,11 @@ export const Box = forwardRef<HTMLElement, BoxProps>(function Box(
         rounded && styles[`rounded-${rounded}`],
         overflow && styles[`overflow-${overflow}`],
         position && styles[`position-${position}`],
+        flex === '1' && styles['flex-1'],
+        flex === 'none' && styles['flex-none'],
+        minWidth === '0' && styles['min-w-0'],
+        minHeight === '0' && styles['min-h-0'],
+        zIndex && styles[`z-${zIndex}`],
         className,
       )}
       {...rest}

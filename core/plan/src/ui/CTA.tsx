@@ -1,12 +1,16 @@
 import { useNavigate } from 'react-router';
 import { ChevronRight } from 'lucide-react';
 import { Box, Button, Stack, Text } from '@inventory-platform/ui-kit';
-import styles from './CTA.module.css';
 
 export function CTA() {
   const navigate = useNavigate();
   return (
-    <Box as="section" className={styles.cta} padding="xl" width="full">
+    <Box
+      as="section"
+      padding="xl"
+      width="full"
+      style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)' }}
+    >
       <Stack gap="md" align="center" mx="auto" style={{ maxWidth: 800 }}>
         <Text as="h2" variant="heading2" color="inverse" align="center">
           Ready to Transform Your Inventory Management?
@@ -17,7 +21,10 @@ export function CTA() {
         <Button
           variant="solid"
           size="lg"
-          className={styles.ctaButton}
+          style={{
+            background: 'var(--bg-primary)',
+            color: 'var(--text-primary)',
+          }}
           onClick={() => navigate('/plans')}
           rightIcon={<ChevronRight size={20} />}
         >

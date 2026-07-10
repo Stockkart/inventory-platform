@@ -28,7 +28,7 @@ import type {
   CreateAccountRequest,
 } from '@inventory-platform/accounting/types';
 import { AccountingTabs } from '../ui/AccountingTabs';
-import styles from '../ui/accounting.module.css';
+import { groupHeadingCellStyle } from '../ui/accountingStyles';
 
 const TYPE_ORDER: AccountType[] = ['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE'];
 
@@ -232,7 +232,7 @@ function RowsForType({
   return (
     <>
       <TableRow>
-        <TableCell colSpan={7} className={styles.groupHeading}>
+        <TableCell colSpan={7} style={groupHeadingCellStyle}>
           {TYPE_LABEL[type]}
         </TableCell>
       </TableRow>

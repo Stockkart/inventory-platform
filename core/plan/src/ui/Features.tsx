@@ -1,8 +1,21 @@
 import type { Feature } from '@inventory-platform/shell/types';
-import { Box, Stack, Text } from '@inventory-platform/ui-kit';
-import styles from './Features.module.css';
+import { Box, Stack, Text, useMatchMedia } from '@inventory-platform/ui-kit';
+
+const iconStyle = {
+  width: 64,
+  height: 64,
+  background: '#e0f2fe',
+  border: '2px solid #3b82f6',
+  borderRadius: '50%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: '2rem',
+} as const;
 
 export function Features() {
+  const isMobile = useMatchMedia('(max-width: 768px)');
+
   const mainFeatures: Feature[] = [
     {
       icon: '📦',
@@ -67,10 +80,27 @@ export function Features() {
     },
   ];
 
+  const gridStyle = {
+    display: 'grid',
+    gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
+    gap: isMobile ? '1.5rem' : '2rem',
+  } as const;
+
   const renderFeature = (feature: Feature, index: number) => (
-    <Box key={index} className={styles.featureCard}>
+    <Box
+      key={index}
+      padding={isMobile ? 'lg' : 'xl'}
+      rounded="md"
+      border
+      style={{
+        background: 'var(--bg-card)',
+        backdropFilter: 'blur(6px)',
+        transition: 'all 0.25s ease',
+        boxShadow: '0 4px 18px rgba(0, 0, 0, 0.08)',
+      }}
+    >
       <Stack gap="md">
-        <Text as="span" className={styles.icon}>
+        <Text as="span" style={iconStyle}>
           {feature.icon}
         </Text>
         <Text as="h3" variant="heading3" weight="semibold">
@@ -94,8 +124,8 @@ export function Features() {
           </Text>
         </Stack>
 
-        <Box className={styles.featureGrid}>{mainFeatures.map(renderFeature)}</Box>
-        <Box className={styles.featureGrid}>{additionalFeatures.map(renderFeature)}</Box>
+        <Box style={gridStyle}>{mainFeatures.map(renderFeature)}</Box>
+        <Box style={gridStyle}>{additionalFeatures.map(renderFeature)}</Box>
       </Stack>
     </Box>
   );

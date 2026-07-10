@@ -24,7 +24,7 @@ import type {
 } from '@inventory-platform/accounting/types';
 import { AccountingTabs } from '../ui/AccountingTabs';
 import { formatDate, formatMoney, todayLocalDate } from '../model/format';
-import styles from '../ui/accounting.module.css';
+import { subTotalCellStyle } from '../ui/accountingStyles';
 import { numColBoldStyle, numColStyle } from '../ui/tabNav';
 
 export function BalanceSheetPage() {
@@ -180,9 +180,13 @@ function BsSection({
                     <TableCell style={numColBoldStyle}>{formatMoney(r.amount)}</TableCell>
                   </TableRow>
                 ))}
-                <TableRow className={styles.subTotalRow}>
-                  <TableCell colSpan={2}>Total {title.toLowerCase()}</TableCell>
-                  <TableCell style={numColBoldStyle}>{formatMoney(total)}</TableCell>
+                <TableRow>
+                  <TableCell colSpan={2} style={subTotalCellStyle}>
+                    Total {title.toLowerCase()}
+                  </TableCell>
+                  <TableCell style={{ ...numColBoldStyle, ...subTotalCellStyle }}>
+                    {formatMoney(total)}
+                  </TableCell>
                 </TableRow>
               </TableBody>
             </Table>

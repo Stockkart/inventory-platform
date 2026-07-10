@@ -33,7 +33,15 @@ import type {
 } from '@inventory-platform/accounting/types';
 import { AccountingTabs } from '../ui/AccountingTabs';
 import { formatDate, formatMoney } from '../model/format';
-import styles from '../ui/accounting.module.css';
+import {
+  acctItemActiveStyle,
+  acctItemBalanceMutedStyle,
+  acctItemBalanceStyle,
+  acctItemCodeStyle,
+  acctItemLabelStyle,
+  acctItemStyle,
+  ledgerLayoutStyle,
+} from '../ui/accountingStyles';
 import { numColBoldStyle, numColStyle } from '../ui/tabNav';
 
 const TYPE_ORDER: AccountType[] = ['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE'];
@@ -70,6 +78,15 @@ export function LedgerPage() {
   const [data, setData] = useState<LedgerPageResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [accountsLoading, setAccountsLoading] = useState(true);
+  const [compactLayout, setCompactLayout] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 960px)');
+    const update = () => setCompactLayout(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -165,7 +182,7 @@ export function LedgerPage() {
         <AccountingTabs />
       </Stack>
 
-      <Box display="grid" className={styles.ledgerLayout}>
+      <Box style={ledgerLayoutStyle(compactLayout)}>
         <Card style={{ maxHeight: '78vh', overflow: 'auto' }}>
           <CardBody>
             <Stack gap="md">
@@ -212,21 +229,21 @@ export function LedgerPage() {
                               variant="ghost"
                               size="sm"
                               fullWidth
-                              className={active ? styles.acctItemActive : styles.acctItem}
+                              style={active ? acctItemActiveStyle : acctItemStyle}
                               onClick={() => openAccount(account.id)}
                             >
                               <Stack gap="none" style={{ minWidth: 0 }}>
-                                <Text as="span" className={styles.acctItemCode}>
+                                <Text as="span" style={acctItemCodeStyle}>
                                   {account.code}
                                 </Text>
-                                <Text as="span" className={styles.acctItemLabel}>
+                                <Text as="span" style={acctItemLabelStyle}>
                                   {account.name}
                                 </Text>
                               </Stack>
                               <Text
                                 as="span"
-                                className={
-                                  hasActivity ? styles.acctItemBalance : styles.acctItemBalanceMuted
+                                style={
+                                  hasActivity ? acctItemBalanceStyle : acctItemBalanceMutedStyle
                                 }
                               >
                                 {hasActivity ? formatMoney(net) : '—'}

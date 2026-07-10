@@ -30,7 +30,7 @@ import { AccountingTabs } from '../ui/AccountingTabs';
 import { ACCOUNT_CODES } from '../model/accountingConstants';
 import { JOURNAL_TEMPLATES } from '../model/journalTemplates';
 import { formatDate, formatMoney } from '../model/format';
-import styles from '../ui/accounting.module.css';
+import { quickActionCardStyle } from '../ui/accountingStyles';
 import { numColBoldStyle, numColStyle } from '../ui/tabNav';
 
 const CODES = ACCOUNT_CODES;
@@ -207,7 +207,7 @@ export function AccountingOverviewPage() {
                   key={action.key}
                   type="button"
                   variant="ghost"
-                  className={styles.quickActionCard}
+                  style={quickActionCardStyle}
                   onClick={() => navigate(action.to)}
                 >
                   <Text weight="semibold">{action.label}</Text>

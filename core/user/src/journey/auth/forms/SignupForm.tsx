@@ -4,7 +4,6 @@ import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
 import { useAuthStore } from '@inventory-platform/session';
 import {
   Alert,
-  Box,
   Button,
   Card,
   CardBody,
@@ -12,10 +11,10 @@ import {
   Divider,
   FormField,
   Link as UiLink,
+  SocialAuthSlot,
   Stack,
   Text,
 } from '@inventory-platform/ui-kit';
-import styles from './LoginForm.module.css';
 
 export function SignupForm() {
   const navigate = useNavigate();
@@ -192,7 +191,7 @@ export function SignupForm() {
 
           <Divider label="or" />
 
-          <Box className={styles.socialButtons}>
+          <SocialAuthSlot>
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
               onError={handleGoogleError}
@@ -204,7 +203,7 @@ export function SignupForm() {
               shape="pill"
               ux_mode="popup"
             />
-          </Box>
+          </SocialAuthSlot>
 
           <Stack gap="xs" align="center">
             <Text color="secondary">

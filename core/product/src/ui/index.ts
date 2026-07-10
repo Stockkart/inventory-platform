@@ -39,4 +39,5 @@ export type { AddToSellQuotationPickerProps } from './AddToSellQuotationPicker';
 export { CustomerProductHistoryHint } from './CustomerProductHistoryHint';
 export type { CustomerProductHistoryHintProps } from './CustomerProductHistoryHint';
 export { useCustomerProductHistory } from './useCustomerProductHistory';
+export * from './scanSellStyles';
 export { CustomRemindersSection } from './CustomReminderInput';

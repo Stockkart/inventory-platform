@@ -28,13 +28,18 @@ import {
   PageHeader,
   Select,
   Stack,
-  Table,
   TableBody,
-  TableCell,
   TableHead,
-  TableHeaderCell,
-  TableRow,
   Text,
+  AsideLayout,
+  SearchDropdown,
+  StickyBar,
+  DenseTable,
+  DenseTableSurface,
+  DenseTableRow,
+  DenseTableHeaderCell,
+  DenseTableCell,
+  denseTableClassNames,
 } from '@inventory-platform/ui-kit';
 import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
 import { cartApi } from '../api/cart.api';
@@ -59,12 +64,58 @@ import {
   menuSellableRef,
   menuItemIdFromSellableRef,
 } from '@inventory-platform/product/types';
-import styles from './scan-sell.module.css';
-import qtyStyles from '../ui/scan-sell-qty.module.css';
-import customerStyles from '../ui/scan-sell-customer.module.css';
-import detailStyles from '../ui/scan-sell-detail-modal.module.css';
-import excelStyles from '../ui/scan-sell-excel.module.css';
-import cafeStyles from '../ui/scan-sell-cafe.module.css';
+import { CartQtyStepper } from '@inventory-platform/ui-kit';
+import {
+  scanSellPageShell,
+  scanSellCafePageShell,
+  searchRowStyle,
+  searchRowCafeStyle,
+  searchInputWrapperStyle,
+  searchInputWrapperFocusedStyle,
+  searchInputStyle,
+  dropdownListStyle,
+  dropdownItemStyle,
+  dropdownItemNameStyle,
+  cartSectionStyle,
+  cartItemsStyle,
+  viewToggleActiveStyle,
+  itemEditFieldsStyle,
+  itemPriceBlockStyle,
+  itemSellingPriceInputStyle,
+  itemAdditionalInputStyle,
+  itemRateSelectStyle,
+  itemUnitSelectStyle,
+  itemSaleRowInlineStyle,
+  cartActionsStyle,
+  customerBlockStyle,
+  customerBlockCafeStyle,
+  customerToggleStyle,
+  customerToggleValueStyle,
+  customerToggleIconStyle,
+  customerFormStyle,
+  customerInputStyle,
+  sidebarSearchBtnStyle,
+  detailModalContentStyle,
+  detailModalHeaderStyle,
+  detailModalBodyStyle,
+  detailModalSectionStyle,
+  detailCardStyle,
+  detailPricingCardStyle,
+  detailPriceValueStyle,
+  detailMrpValueStyle,
+  detailTotalValueStyle,
+  cafeSellWorkspaceStyle,
+  cafePickerColumnStyle,
+  cafePickerSectionStyle,
+  cafeOrderColumnStyle,
+  cafeOrderPanelStyle,
+  cafeOrderListStyle,
+  cafeOrderEmptyStyle,
+  cafeAnalyticsStyle,
+  cafeCheckoutBarInnerStyle,
+  cafeCheckoutTotalValueStyle,
+  cafeCheckoutPayBtnStyle,
+} from '../ui/scanSellStyles';
 import { CafeSellCatalogPanel } from '../ui/CafeSellCatalogPanel';
 import { ScanSellMenuCartLine } from '../ui/ScanSellMenuCartLine';
 import { ScanSellCafeStockLine } from '../ui/ScanSellCafeStockLine';
@@ -229,7 +280,6 @@ function CartQuantityInput({
   return (
     <Input
       type="number"
-      className={qtyStyles.qtyInput}
       value={draft}
       min={1}
       disabled={disabled}
@@ -277,7 +327,7 @@ function CartSellingPriceInput({
     <Input
       id={id}
       type="number"
-      className={styles.itemSellingPriceInput}
+      style={itemSellingPriceInputStyle}
       value={draft}
       min={0}
       step={0.01}
@@ -331,7 +381,7 @@ function CartAdditionalDiscountInput({
     <Input
       id={id}
       type="number"
-      className={styles.itemAdditionalInput}
+      style={itemAdditionalInputStyle}
       value={draft}
       placeholder="0"
       min={-100}
@@ -466,7 +516,7 @@ function CartSchemeInput({
     <Input
       id={id}
       type="text"
-      className={styles.itemAdditionalInput}
+      style={itemAdditionalInputStyle}
       value={draft}
       placeholder="0, 10, 10 + 1 (number = %)"
       disabled={disabled}
@@ -492,14 +542,23 @@ function CartSchemeInput({
 function SummaryRow({ label, value, total }: { label: string; value: string; total?: boolean }) {
   if (total) {
     return (
-      <Inline justify="between" width="full" className={styles.summaryRowTotal}>
+      <Inline
+        justify="between"
+        width="full"
+        style={{
+          padding: '0.75rem 0',
+          marginTop: '0.5rem',
+          borderTop: '1px solid var(--border-color)',
+          fontSize: '1.25rem',
+        }}
+      >
         <Text weight="bold">{label}</Text>
         <Text weight="bold">{value}</Text>
       </Inline>
     );
   }
   return (
-    <Inline justify="between" width="full" className={styles.summaryRow}>
+    <Inline justify="between" width="full" style={{ padding: '0.5rem 0' }}>
       <Text color="secondary">{label}</Text>
       <Text color="secondary">{value}</Text>
     </Inline>
@@ -521,14 +580,17 @@ function DetailField({
     <Inline
       gap="sm"
       align="start"
-      className={`${detailStyles.detailCard} ${pricing ? detailStyles.pricingCard : ''}`}
+      style={{
+        ...detailCardStyle,
+        ...(pricing ? detailPricingCardStyle : {}),
+      }}
     >
-      <Text className={detailStyles.detailIcon}>{icon}</Text>
+      <Text aria-hidden>{icon}</Text>
       <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
-        <Text variant="caption" color="secondary" className={detailStyles.detailLabel}>
+        <Text variant="caption" color="secondary" weight="semibold">
           {label}
         </Text>
-        <Text className={detailStyles.detailValue}>{children}</Text>
+        <Text weight="medium">{children}</Text>
       </Stack>
     </Inline>
   );
@@ -536,10 +598,8 @@ function DetailField({
 
 function DetailSectionHeader({ icon, title }: { icon: string; title: string }) {
   return (
-    <Inline gap="sm" align="center" className={detailStyles.sectionHeader}>
-      <Text aria-hidden className={detailStyles.sectionIcon}>
-        {icon}
-      </Text>
+    <Inline gap="sm" align="center">
+      <Text aria-hidden>{icon}</Text>
       <Text variant="heading3">{title}</Text>
     </Inline>
   );
@@ -556,7 +616,8 @@ function ProductSearchBlock({
   autoFocus,
   onAddToCart,
   addDisabled,
-  rowClassName,
+  rowStyle,
+  searchWrapperRef,
 }: {
   searchQuery: string;
   setSearchQuery: (value: string) => void;
@@ -568,15 +629,37 @@ function ProductSearchBlock({
   autoFocus?: boolean;
   onAddToCart: (item: InventoryItem, price?: number) => void;
   addDisabled: (item: InventoryItem) => boolean;
-  rowClassName?: string;
+  rowStyle?: React.CSSProperties;
+  searchWrapperRef?: React.RefObject<HTMLDivElement | null>;
 }) {
+  const [searchFocused, setSearchFocused] = useState(false);
+
   return (
-    <Box position="relative" width="full" className={`${styles.searchRow} ${rowClassName ?? ''}`}>
-      <Inline className={styles.searchInputWrapper} gap="sm" align="center" width="full">
+    <Box
+      position="relative"
+      width="full"
+      style={{ ...searchRowStyle, ...rowStyle }}
+      ref={searchWrapperRef}
+      onFocusCapture={() => setSearchFocused(true)}
+      onBlurCapture={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+          setSearchFocused(false);
+        }
+      }}
+    >
+      <Inline
+        gap="sm"
+        align="center"
+        width="full"
+        style={{
+          ...searchInputWrapperStyle,
+          ...(searchFocused ? searchInputWrapperFocusedStyle : {}),
+        }}
+      >
         <Text aria-hidden>🔍</Text>
         <Input
           type="text"
-          className={styles.searchInput}
+          style={searchInputStyle}
           placeholder={placeholder}
           value={searchQuery}
           onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchQuery(e.currentTarget.value)}
@@ -597,7 +680,7 @@ function ProductSearchBlock({
         </Button>
       </Inline>
       {showSearchDropdown ? (
-        <Box className={styles.searchDropdown}>
+        <SearchDropdown id="search-results-list" role="listbox">
           {isSearching ? (
             <Box padding="md" style={{ textAlign: 'center' }}>
               <Text color="secondary">Searching…</Text>
@@ -607,7 +690,7 @@ function ProductSearchBlock({
               <Text color="secondary">No products found</Text>
             </Box>
           ) : (
-            <Stack as="ul" gap="none" className={styles.dropdownList}>
+            <Stack as="ul" gap="none" style={dropdownListStyle}>
               {searchResults.map((item) => (
                 <SearchDropdownItem
                   key={item.id}
@@ -618,7 +701,7 @@ function ProductSearchBlock({
               ))}
             </Stack>
           )}
-        </Box>
+        </SearchDropdown>
       ) : null}
     </Box>
   );
@@ -675,42 +758,39 @@ function CustomerSectionBlock({
 }) {
   return (
     <Box
-      className={`${customerStyles.customerBlock} ${
-        idPrefix === 'cafe' ? customerStyles.cafeEmbedded : ''
-      }`}
+      style={{
+        ...customerBlockStyle,
+        ...(idPrefix === 'cafe' ? customerBlockCafeStyle : {}),
+      }}
     >
       <Button
         type="button"
         variant="ghost"
-        className={customerStyles.customerToggle}
+        style={customerToggleStyle}
         onClick={() => setCustomerSectionOpen((o) => !o)}
         aria-expanded={customerSectionOpen}
       >
         <Inline gap="sm" align="center" width="full">
           <Text weight="semibold">Customer</Text>
           {customerName || customerPhone ? (
-            <Text className={customerStyles.customerToggleValue}>
-              {customerName || customerPhone}
-            </Text>
+            <Text style={customerToggleValueStyle}>{customerName || customerPhone}</Text>
           ) : (
-            <Text color="secondary" className={customerStyles.customerToggleHint}>
+            <Text color="secondary" style={{ flex: 1 }}>
               Optional
             </Text>
           )}
-          <Text className={customerStyles.customerToggleIcon}>
-            {customerSectionOpen ? '▼' : '▶'}
-          </Text>
+          <Text style={customerToggleIconStyle}>{customerSectionOpen ? '▼' : '▶'}</Text>
         </Inline>
       </Button>
       {customerSectionOpen ? (
-        <Stack gap="md" className={customerStyles.customerForm}>
-          <Stack gap="sm" className={customerStyles.customerFields}>
+        <Stack gap="md" style={customerFormStyle}>
+          <Stack gap="sm" style={{ paddingTop: '0.75rem' }}>
             <FormField label="Phone" id={`${idPrefix}-customerPhone`}>
               <Inline gap="sm" width="full">
                 <Input
                   id={`${idPrefix}-customerPhone`}
                   type="tel"
-                  className={customerStyles.customerInput}
+                  style={customerInputStyle}
                   placeholder="Phone"
                   value={customerPhone}
                   onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -722,7 +802,7 @@ function CustomerSectionBlock({
                 <IconButton
                   label="Search customer"
                   title="Search customer"
-                  className={customerStyles.sidebarSearchBtn}
+                  style={sidebarSearchBtnStyle}
                   onClick={handleCustomerSearch}
                   disabled={isSearchingCustomer || !customerPhone.trim()}
                 >
@@ -734,7 +814,7 @@ function CustomerSectionBlock({
               <Input
                 id={`${idPrefix}-customerName`}
                 type="text"
-                className={customerStyles.customerInput}
+                style={customerInputStyle}
                 placeholder="Name"
                 value={customerName}
                 onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -748,7 +828,7 @@ function CustomerSectionBlock({
                 <Input
                   id={`${idPrefix}-customerEmail`}
                   type="email"
-                  className={customerStyles.customerInput}
+                  style={customerInputStyle}
                   placeholder="Email"
                   value={customerEmail}
                   onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -760,7 +840,7 @@ function CustomerSectionBlock({
                 <IconButton
                   label="Search customer by email"
                   title="Search customer by email"
-                  className={customerStyles.sidebarSearchBtn}
+                  style={sidebarSearchBtnStyle}
                   onClick={handleCustomerSearchByEmail}
                   disabled={isSearchingCustomer || !customerEmail.trim()}
                 >
@@ -772,7 +852,7 @@ function CustomerSectionBlock({
               <Input
                 id={`${idPrefix}-customerAddress`}
                 type="text"
-                className={customerStyles.customerInput}
+                style={customerInputStyle}
                 placeholder="Address"
                 value={customerAddress}
                 onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -784,7 +864,13 @@ function CustomerSectionBlock({
           </Stack>
           {idPrefix === 'sidebar' ? (
             <>
-              <Box className={customerStyles.retailerDivider}>
+              <Box
+                style={{
+                  marginTop: '1.5rem',
+                  paddingTop: '1.5rem',
+                  borderTop: '1px solid var(--border-color)',
+                }}
+              >
                 <Checkbox
                   label="Is Retailer"
                   checked={isRetailer}
@@ -799,12 +885,19 @@ function CustomerSectionBlock({
                 />
               </Box>
               {isRetailer ? (
-                <Stack gap="sm" className={customerStyles.retailerSection}>
+                <Stack
+                  gap="sm"
+                  padding="md"
+                  border
+                  rounded="md"
+                  bg="surface"
+                  style={{ marginTop: '1rem', borderTop: '1px solid var(--border-color)' }}
+                >
                   <FormField label="GSTIN" id={`${idPrefix}-customerGstin`}>
                     <Input
                       id={`${idPrefix}-customerGstin`}
                       type="text"
-                      className={customerStyles.customerInput}
+                      style={customerInputStyle}
                       placeholder="GSTIN"
                       value={customerGstin}
                       onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -816,7 +909,7 @@ function CustomerSectionBlock({
                     <Input
                       id={`${idPrefix}-customerDlNo`}
                       type="text"
-                      className={customerStyles.customerInput}
+                      style={customerInputStyle}
                       placeholder="DL No"
                       value={customerDlNo}
                       onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -828,7 +921,7 @@ function CustomerSectionBlock({
                     <Input
                       id={`${idPrefix}-customerPan`}
                       type="text"
-                      className={customerStyles.customerInput}
+                      style={customerInputStyle}
                       placeholder="PAN"
                       value={customerPan}
                       onChange={(e: ChangeEvent<HTMLInputElement>) =>
@@ -1213,8 +1306,7 @@ export function ScanSellPage() {
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (!showSearchDropdown) return;
-      const wrapper = document.querySelector(`.${styles.searchRow}`);
-      if (wrapper && !wrapper.contains(e.target as Node)) {
+      if (searchWrapperRef.current && !searchWrapperRef.current.contains(e.target as Node)) {
         setShowSearchDropdown(false);
       }
     };
@@ -1223,6 +1315,7 @@ export function ScanSellPage() {
   }, [showSearchDropdown]);
 
   // Load cart on mount (once; time guard avoids double run in React Strict Mode)
+  const searchWrapperRef = useRef<HTMLDivElement>(null);
   const lastLoadCartTimeRef = useRef(0);
   useEffect(() => {
     const now = Date.now();
@@ -2699,18 +2792,13 @@ export function ScanSellPage() {
   const renderCafeOrderLines = () => {
     if (isLoadingCart) {
       return (
-        <Text color="secondary" className={cafeStyles.orderEmpty}>
+        <Text color="secondary" style={cafeOrderEmptyStyle}>
           Loading order…
         </Text>
       );
     }
     if (menuCartLines.length === 0 && cartItems.length === 0) {
-      return (
-        <EmptyState
-          title="Tap menu or stock items to start an order"
-          className={cafeStyles.orderEmpty}
-        />
-      );
+      return <EmptyState title="Tap menu or stock items to start an order" />;
     }
     return (
       <>
@@ -2759,9 +2847,9 @@ export function ScanSellPage() {
   };
 
   const renderCafeCheckoutBar = () => (
-    <Box className={cafeStyles.checkoutBar}>
-      <Inline className={cafeStyles.checkoutBarInner} justify="between" align="center" width="full">
-        <Stack gap="xs" className={cafeStyles.checkoutTotals}>
+    <StickyBar fixed style={{ background: 'var(--bg-card)' }}>
+      <Inline style={cafeCheckoutBarInnerStyle} justify="between" align="center" width="full">
+        <Stack gap="xs">
           {isLoadingCart ? (
             <Text color="secondary">Loading…</Text>
           ) : (
@@ -2772,20 +2860,20 @@ export function ScanSellPage() {
                 (cartData?.cgstAmount ?? 0) !== 0) && (
                 <SummaryRow label="Tax" value={`₹${calculateTax().toFixed(2)}`} />
               )}
-              <Inline justify="between" width="full" className={cafeStyles.checkoutTotal}>
+              <Inline justify="between" width="full" style={{ fontSize: '1rem' }}>
                 <Text weight="bold">Total</Text>
-                <Text weight="bold" className={cafeStyles.checkoutTotalValue}>
+                <Text weight="bold" style={cafeCheckoutTotalValueStyle}>
                   ₹{calculateTotal().toFixed(2)}
                 </Text>
               </Inline>
             </>
           )}
         </Stack>
-        <Inline gap="sm" className={cafeStyles.checkoutActions}>
+        <Inline gap="sm" style={{ flexShrink: 0 }}>
           <Button
             type="button"
             variant="outline"
-            className={`${styles.clearBtn} ${cafeStyles.checkoutClearBtn}`}
+            style={{ whiteSpace: 'nowrap' }}
             onClick={() => void handleClearCart()}
             disabled={isUpdatingCart || isLoadingCart}
           >
@@ -2794,7 +2882,7 @@ export function ScanSellPage() {
           <Button
             type="button"
             variant="solid"
-            className={`${styles.checkoutBtn} ${cafeStyles.checkoutPayBtn}`}
+            style={cafeCheckoutPayBtnStyle}
             onClick={() => void handleProcessPayment()}
             disabled={
               (cartItems.length === 0 && menuCartLines.length === 0) ||
@@ -2807,7 +2895,7 @@ export function ScanSellPage() {
           </Button>
         </Inline>
       </Inline>
-    </Box>
+    </StickyBar>
   );
 
   return (
@@ -2815,7 +2903,7 @@ export function ScanSellPage() {
       gap="md"
       maxWidth={isCafeSell ? undefined : 'xl'}
       mx={isCafeSell ? undefined : 'auto'}
-      className={`${styles.pageShell} ${isCafeSell ? cafeStyles.pageCafe : ''}`}
+      style={isCafeSell ? scanSellCafePageShell : scanSellPageShell}
     >
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
@@ -2843,16 +2931,16 @@ export function ScanSellPage() {
 
           {isCafeSell ? (
             <>
-              <Box className={cafeStyles.sellShell}>
-                <Inline className={cafeStyles.sellWorkspace} align="start" width="full">
-                  <Box className={cafeStyles.pickerColumn}>
+              <Box style={{ flex: 1, minHeight: 0 }}>
+                <Inline style={cafeSellWorkspaceStyle} align="start" width="full">
+                  <Box display="flex" style={cafePickerColumnStyle}>
                     <Stack
                       gap="md"
                       bg="elevated"
                       border
                       rounded="lg"
                       padding="md"
-                      className={cafeStyles.pickerSection}
+                      style={cafePickerSectionStyle}
                     >
                       <ProductSearchBlock
                         searchQuery={searchQuery}
@@ -2863,7 +2951,8 @@ export function ScanSellPage() {
                         onSearch={() => handleSearchSubmit()}
                         placeholder="Filter menu, or search more products…"
                         onAddToCart={handleAddToCart}
-                        rowClassName={cafeStyles.searchRowCafe}
+                        rowStyle={searchRowCafeStyle}
+                        searchWrapperRef={searchWrapperRef}
                         addDisabled={(item) =>
                           item.currentCount <= 0 ||
                           (item.sellingPrice ?? item.priceToRetail) == null ||
@@ -2881,7 +2970,7 @@ export function ScanSellPage() {
                     </Stack>
                   </Box>
 
-                  <Box as="aside" className={cafeStyles.orderColumn}>
+                  <Box as="aside" style={cafeOrderColumnStyle}>
                     <CustomerSectionBlock
                       idPrefix="cafe"
                       customerSectionOpen={customerSectionOpen}
@@ -2908,21 +2997,26 @@ export function ScanSellPage() {
                       setCustomerPan={setCustomerPan}
                     />
 
-                    <Card className={cafeStyles.orderPanel}>
+                    <Card style={cafeOrderPanelStyle}>
                       <CardBody>
                         <Inline
-                          className={cafeStyles.orderHeader}
                           justify="between"
                           align="center"
                           width="full"
+                          padding="sm"
+                          style={{
+                            borderBottom: '1px solid var(--border-color)',
+                            background: '#fff',
+                            flexShrink: 0,
+                          }}
                         >
                           <Text variant="heading3">Current order</Text>
-                          <Badge variant="neutral" className={cafeStyles.orderCount}>
+                          <Badge variant="neutral">
                             {cafeOrderItemCount} item
                             {cafeOrderItemCount === 1 ? '' : 's'}
                           </Badge>
                         </Inline>
-                        <Stack gap="sm" className={cafeStyles.orderList}>
+                        <Stack gap="sm" style={cafeOrderListStyle}>
                           {renderCafeOrderLines()}
                         </Stack>
                       </CardBody>
@@ -2933,7 +3027,14 @@ export function ScanSellPage() {
                         cartData.revenueAfterTax != null ||
                         cartData.totalProfit != null ||
                         cartData.marginPercent != null) && (
-                        <Stack gap="xs" className={cafeStyles.analytics}>
+                        <Stack
+                          gap="xs"
+                          padding="md"
+                          border
+                          rounded="md"
+                          bg="surface"
+                          style={cafeAnalyticsStyle}
+                        >
                           <SummaryRow
                             label="Total Cost"
                             value={`₹${(cartData.totalCost ?? 0).toFixed(2)}`}
@@ -2964,620 +3065,641 @@ export function ScanSellPage() {
               {renderCafeCheckoutBar()}
             </>
           ) : (
-            <Inline className={styles.mainRow} gap="md" align="start" width="full">
-              <Box display="flex" className={styles.cartArea}>
-                <Stack
-                  gap="md"
-                  bg="elevated"
-                  border
-                  rounded="lg"
-                  padding="lg"
-                  className={styles.cartSection}
-                >
-                  <ProductSearchBlock
-                    searchQuery={searchQuery}
-                    setSearchQuery={setSearchQuery}
-                    isSearching={isSearching}
-                    showSearchDropdown={showSearchDropdown}
-                    searchResults={searchResults}
-                    onSearch={() => handleSearchSubmit()}
-                    placeholder="Search products..."
-                    autoFocus
-                    onAddToCart={handleAddToCart}
-                    addDisabled={(item) =>
-                      item.currentCount <= 0 ||
-                      (item.sellingPrice ?? item.priceToRetail) == null ||
-                      isUpdatingCart
-                    }
-                  />
-
-                  {cartItems.length > 0 ? (
-                    <Inline className={styles.viewToggleWrap} gap="sm" align="center">
-                      <Text color="secondary">View:</Text>
-                      <Inline gap="xs">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className={`${styles.viewToggleBtn} ${
-                            cartViewMode === 'list' ? styles.viewToggleBtnActive : ''
-                          }`}
-                          onClick={() => {
-                            setCartViewMode('list');
-                            localStorage.setItem('scan-sell-view-mode', 'list');
-                          }}
-                          title="List view"
-                          aria-pressed={cartViewMode === 'list'}
-                        >
-                          <Text aria-hidden>☰</Text> List
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className={`${styles.viewToggleBtn} ${
-                            cartViewMode === 'grid' ? styles.viewToggleBtnActive : ''
-                          }`}
-                          onClick={() => {
-                            setCartViewMode('grid');
-                            localStorage.setItem('scan-sell-view-mode', 'grid');
-                          }}
-                          title="Grid view"
-                          aria-pressed={cartViewMode === 'grid'}
-                        >
-                          <Text aria-hidden>⊞</Text> Grid
-                        </Button>
-                      </Inline>
-                    </Inline>
-                  ) : null}
-
-                  <Box
-                    className={`${styles.cartItems} ${
-                      cartViewMode === 'grid' ? excelStyles.cartItemsExcel : ''
-                    }`}
+            <AsideLayout
+              main={
+                <Box display="flex" flex="1" minWidth="0">
+                  <Stack
+                    gap="md"
+                    bg="elevated"
+                    border
+                    rounded="lg"
+                    padding="lg"
+                    style={cartSectionStyle}
                   >
-                    {isLoadingCart ? (
-                      <CenteredLoader label="Loading cart..." />
-                    ) : cartItems.length === 0 ? (
-                      <EmptyState title="Cart is empty" className={styles.emptyCart} />
-                    ) : cartViewMode === 'grid' ? (
-                      <Box className={excelStyles.tableWrap}>
-                        <Table className={excelStyles.table}>
-                          <TableHead>
-                            <TableRow>
-                              <TableHeaderCell className={excelStyles.th}>#</TableHeaderCell>
-                              <TableHeaderCell className={excelStyles.th}>Product</TableHeaderCell>
-                              <TableHeaderCell className={excelStyles.th}>Company</TableHeaderCell>
-                              <TableHeaderCell className={excelStyles.th}>Qty</TableHeaderCell>
-                              <TableHeaderCell className={excelStyles.th}>Unit</TableHeaderCell>
-                              <TableHeaderCell className={excelStyles.th}>Amount</TableHeaderCell>
-                              <TableHeaderCell className={excelStyles.th}>Price</TableHeaderCell>
-                              <TableHeaderCell className={excelStyles.th}>Discount</TableHeaderCell>
-                              <TableHeaderCell className={excelStyles.th}>Scheme</TableHeaderCell>
-                              <TableHeaderCell className={excelStyles.th}>Actions</TableHeaderCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {cartItems.map((cartItem, idx) => {
-                              const isPackOnlySale =
-                                cartItem.inventoryItem.sellUnitRule === 'PACK_ONLY';
-                              const isBaseUnitSelected =
-                                !isPackOnlySale &&
-                                ((cartItem.inventoryItem.baseUnit != null &&
-                                  cartItem.unit === cartItem.inventoryItem.baseUnit) ||
-                                  cartItem.availableUnits.some(
-                                    (u) => u.baseUnit && u.unit === cartItem.unit,
-                                  ));
-                              const quantityInputValue = isBaseUnitSelected
-                                ? cartItem.baseQuantity
-                                : cartItem.quantity;
-                              const lineTotal = cartItem.price * cartItem.quantity;
-                              const formatPrice = (n: number) =>
-                                new Intl.NumberFormat('en-IN', {
-                                  style: 'currency',
-                                  currency: 'INR',
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                }).format(n);
-                              const pricingId =
-                                cartItem.inventoryItem.pricingId ??
-                                inventoryToPricingId[cartItem.inventoryItem.id];
-                              const pricing = pricingId ? pricingCache[pricingId] : undefined;
-                              const rateOpts = getRateOptions(cartItem.inventoryItem, pricing);
-                              const showRateDropdown =
-                                pricingId || cartItem.inventoryItem.id || rateOpts.length > 1;
-                              const matched = rateOpts.find(
-                                (o) => Math.abs(o.price - cartItem.price) < 0.01,
-                              );
-                              const isLoading =
-                                pricingLoading[pricingId ?? ''] ||
-                                pricingLoading[`inv:${cartItem.inventoryItem.id}`];
-                              return (
-                                <TableRow
-                                  key={cartItem.inventoryItem.id}
-                                  className={excelStyles.tr}
-                                >
-                                  <TableCell className={excelStyles.td}>{idx + 1}</TableCell>
-                                  <TableCell className={excelStyles.td}>
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      className={excelStyles.productBtn}
-                                      onClick={() => setDetailModalItem(cartItem)}
-                                    >
-                                      {cartItem.inventoryItem.name || '—'}
-                                    </Button>
-                                    <CustomerProductHistoryHint
-                                      sellableRef={inventorySellableRef(cartItem.inventoryItem.id)}
-                                      history={customerProductHistory}
-                                      loading={customerProductHistoryLoading}
-                                    />
-                                  </TableCell>
-                                  <TableCell className={excelStyles.td}>
-                                    {cartItem.inventoryItem.companyName || '—'}
-                                  </TableCell>
-                                  <TableCell className={excelStyles.td}>
-                                    <Box className={excelStyles.cellInput}>
-                                      <CartQuantityInput
-                                        value={quantityInputValue}
-                                        disabled={isUpdatingCart}
-                                        onCommit={async (newQty) => {
-                                          const delta = newQty - quantityInputValue;
-                                          if (delta !== 0) {
-                                            await handleUpdateQuantity(
-                                              cartItem.inventoryItem.id,
-                                              delta,
-                                              isBaseUnitSelected,
-                                            );
-                                          }
-                                        }}
-                                      />
-                                    </Box>
-                                  </TableCell>
-                                  <TableCell className={excelStyles.td}>
-                                    <Select
-                                      className={excelStyles.select}
-                                      value={cartItem.unit}
-                                      onChange={(e) =>
-                                        handleUnitChange(
-                                          cartItem.inventoryItem.id,
-                                          e.currentTarget.value,
-                                        )
-                                      }
-                                      disabled={
-                                        isUpdatingCart ||
-                                        cartItem.inventoryItem.sellUnitRule === 'PACK_ONLY'
-                                      }
-                                      options={(cartItem.availableUnits.length > 0
-                                        ? cartItem.availableUnits
-                                        : [{ unit: cartItem.unit, baseUnit: false }]
-                                      ).map((uo) => ({
-                                        value: uo.unit,
-                                        label: `${uo.unit}${uo.baseUnit ? ' (base)' : ''}`,
-                                      }))}
-                                    />
-                                  </TableCell>
-                                  <TableCell className={excelStyles.td}>
-                                    {formatPrice(lineTotal)}
-                                  </TableCell>
-                                  <TableCell className={excelStyles.td}>
-                                    <Stack gap="xs" className={excelStyles.priceCell}>
-                                      <CartSellingPriceInput
-                                        value={cartItem.price}
-                                        onCommit={(n) =>
-                                          handleSellingPriceChange(cartItem.inventoryItem.id, n)
-                                        }
-                                        disabled={isUpdatingCart}
-                                      />
-                                      {showRateDropdown ? (
-                                        <Select
-                                          className={excelStyles.rateSelect}
-                                          value={matched ? matched.label : '__custom__'}
-                                          onChange={(e) => {
-                                            const sel = e.target.value;
-                                            if (sel === '__custom__') return;
-                                            const opt = rateOpts.find((o) => o.label === sel);
-                                            if (opt)
-                                              handleSellingPriceChange(
-                                                cartItem.inventoryItem.id,
-                                                opt.price,
-                                              );
-                                          }}
-                                          onMouseDown={() =>
-                                            loadPricingOnDropdownClick(
-                                              cartItem.inventoryItem.pricingId ?? undefined,
-                                              cartItem.inventoryItem.id,
-                                            )
-                                          }
-                                          disabled={isUpdatingCart || isLoading}
-                                          options={[
-                                            { value: '__custom__', label: 'Custom' },
-                                            ...rateOpts.map((opt) => ({
-                                              value: opt.label,
-                                              label: `${opt.label} (${formatPrice(opt.price)})`,
-                                            })),
-                                          ]}
-                                        />
-                                      ) : null}
-                                    </Stack>
-                                  </TableCell>
-                                  <TableCell className={excelStyles.td}>
-                                    <Stack gap="xs" className={styles.compareCell}>
-                                      {!hidePurchaseDetailsInSell ? (
-                                        <Text variant="caption" className={styles.compareTop}>
-                                          {(() => {
-                                            const v = getPurchaseAdditionalDiscount(
-                                              cartItem.inventoryItem,
-                                            );
-                                            return v != null ? `${v}%` : '—';
-                                          })()}
-                                        </Text>
-                                      ) : null}
-                                      <Box className={styles.compareBottom}>
-                                        <CartAdditionalDiscountInput
-                                          value={getEffectiveAdditionalDiscount(
-                                            cartItem.inventoryItem.id,
-                                            cartItem,
-                                          )}
-                                          onCommit={(n) =>
-                                            handleAdditionalDiscountChange(
-                                              cartItem.inventoryItem.id,
-                                              n,
-                                            )
-                                          }
-                                          disabled={isUpdatingCart}
-                                        />
-                                      </Box>
-                                    </Stack>
-                                  </TableCell>
-                                  <TableCell className={excelStyles.td}>
-                                    <Stack gap="xs" className={styles.compareCell}>
-                                      {!hidePurchaseDetailsInSell ? (
-                                        <Text variant="caption" className={styles.compareTop}>
-                                          {formatPurchaseSchemeLabel(cartItem.inventoryItem)}
-                                        </Text>
-                                      ) : null}
-                                      <Box className={styles.compareBottom}>
-                                        <CartSchemeInput
-                                          schemeType={cartItem.schemeType ?? null}
-                                          payFor={cartItem.schemePayFor ?? null}
-                                          free={cartItem.schemeFree ?? null}
-                                          percentage={cartItem.schemePercentage ?? null}
-                                          onCommitUnits={(pf, f) =>
-                                            handleSchemeChange(cartItem.inventoryItem.id, pf, f)
-                                          }
-                                          onCommitPercentage={(p) =>
-                                            handleSchemePercentageChange(
-                                              cartItem.inventoryItem.id,
-                                              p,
-                                            )
-                                          }
-                                          disabled={isUpdatingCart}
-                                        />
-                                      </Box>
-                                    </Stack>
-                                  </TableCell>
-                                  <TableCell className={excelStyles.td}>
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      className={excelStyles.removeBtn}
-                                      onClick={() => handleRemoveItem(cartItem.inventoryItem.id)}
-                                      disabled={isUpdatingCart}
-                                    >
-                                      Remove
-                                    </Button>
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })}
-                          </TableBody>
-                        </Table>
-                      </Box>
-                    ) : (
-                      cartItems.map((cartItem) =>
-                        (() => {
-                          const isBaseUnitSelected =
-                            (cartItem.inventoryItem.baseUnit != null &&
-                              cartItem.unit === cartItem.inventoryItem.baseUnit) ||
-                            cartItem.availableUnits.some(
-                              (unitOption) =>
-                                unitOption.baseUnit && unitOption.unit === cartItem.unit,
-                            );
-                          const quantityInputValue = isBaseUnitSelected
-                            ? cartItem.baseQuantity
-                            : cartItem.quantity;
-                          return (
-                            <Card key={cartItem.inventoryItem.id} className={styles.cartItem}>
-                              <CardBody>
-                                <Stack gap="md" style={{ flex: 1, minWidth: 0 }}>
-                                  <Stack gap="xs">
-                                    <Inline
-                                      gap="sm"
-                                      align="center"
-                                      justify="between"
-                                      width="full"
-                                      flexWrap
-                                    >
+                    <ProductSearchBlock
+                      searchQuery={searchQuery}
+                      setSearchQuery={setSearchQuery}
+                      isSearching={isSearching}
+                      showSearchDropdown={showSearchDropdown}
+                      searchResults={searchResults}
+                      onSearch={() => handleSearchSubmit()}
+                      placeholder="Search products..."
+                      autoFocus
+                      onAddToCart={handleAddToCart}
+                      searchWrapperRef={searchWrapperRef}
+                      addDisabled={(item) =>
+                        item.currentCount <= 0 ||
+                        (item.sellingPrice ?? item.priceToRetail) == null ||
+                        isUpdatingCart
+                      }
+                    />
+
+                    {cartItems.length > 0 ? (
+                      <Inline
+                        gap="sm"
+                        align="center"
+                        style={{ marginBottom: '1rem', flexShrink: 0 }}
+                      >
+                        <Text color="secondary">View:</Text>
+                        <Inline gap="xs">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            style={cartViewMode === 'list' ? viewToggleActiveStyle : undefined}
+                            onClick={() => {
+                              setCartViewMode('list');
+                              localStorage.setItem('scan-sell-view-mode', 'list');
+                            }}
+                            title="List view"
+                            aria-pressed={cartViewMode === 'list'}
+                          >
+                            <Text aria-hidden>☰</Text> List
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            style={cartViewMode === 'grid' ? viewToggleActiveStyle : undefined}
+                            onClick={() => {
+                              setCartViewMode('grid');
+                              localStorage.setItem('scan-sell-view-mode', 'grid');
+                            }}
+                            title="Grid view"
+                            aria-pressed={cartViewMode === 'grid'}
+                          >
+                            <Text aria-hidden>⊞</Text> Grid
+                          </Button>
+                        </Inline>
+                      </Inline>
+                    ) : null}
+
+                    <Box style={cartItemsStyle}>
+                      {isLoadingCart ? (
+                        <CenteredLoader label="Loading cart..." />
+                      ) : cartItems.length === 0 ? (
+                        <Box padding="lg">
+                          <EmptyState title="Cart is empty" />
+                        </Box>
+                      ) : cartViewMode === 'grid' ? (
+                        <DenseTable>
+                          <DenseTableSurface>
+                            <TableHead>
+                              <DenseTableRow>
+                                <DenseTableHeaderCell>#</DenseTableHeaderCell>
+                                <DenseTableHeaderCell>Product</DenseTableHeaderCell>
+                                <DenseTableHeaderCell>Company</DenseTableHeaderCell>
+                                <DenseTableHeaderCell>Qty</DenseTableHeaderCell>
+                                <DenseTableHeaderCell>Unit</DenseTableHeaderCell>
+                                <DenseTableHeaderCell>Amount</DenseTableHeaderCell>
+                                <DenseTableHeaderCell>Price</DenseTableHeaderCell>
+                                <DenseTableHeaderCell>Discount</DenseTableHeaderCell>
+                                <DenseTableHeaderCell>Scheme</DenseTableHeaderCell>
+                                <DenseTableHeaderCell>Actions</DenseTableHeaderCell>
+                              </DenseTableRow>
+                            </TableHead>
+                            <TableBody>
+                              {cartItems.map((cartItem, idx) => {
+                                const isPackOnlySale =
+                                  cartItem.inventoryItem.sellUnitRule === 'PACK_ONLY';
+                                const isBaseUnitSelected =
+                                  !isPackOnlySale &&
+                                  ((cartItem.inventoryItem.baseUnit != null &&
+                                    cartItem.unit === cartItem.inventoryItem.baseUnit) ||
+                                    cartItem.availableUnits.some(
+                                      (u) => u.baseUnit && u.unit === cartItem.unit,
+                                    ));
+                                const quantityInputValue = isBaseUnitSelected
+                                  ? cartItem.baseQuantity
+                                  : cartItem.quantity;
+                                const lineTotal = cartItem.price * cartItem.quantity;
+                                const formatPrice = (n: number) =>
+                                  new Intl.NumberFormat('en-IN', {
+                                    style: 'currency',
+                                    currency: 'INR',
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  }).format(n);
+                                const pricingId =
+                                  cartItem.inventoryItem.pricingId ??
+                                  inventoryToPricingId[cartItem.inventoryItem.id];
+                                const pricing = pricingId ? pricingCache[pricingId] : undefined;
+                                const rateOpts = getRateOptions(cartItem.inventoryItem, pricing);
+                                const showRateDropdown =
+                                  pricingId || cartItem.inventoryItem.id || rateOpts.length > 1;
+                                const matched = rateOpts.find(
+                                  (o) => Math.abs(o.price - cartItem.price) < 0.01,
+                                );
+                                const isLoading =
+                                  pricingLoading[pricingId ?? ''] ||
+                                  pricingLoading[`inv:${cartItem.inventoryItem.id}`];
+                                return (
+                                  <DenseTableRow key={cartItem.inventoryItem.id}>
+                                    <DenseTableCell>{idx + 1}</DenseTableCell>
+                                    <DenseTableCell>
                                       <Button
                                         type="button"
                                         variant="ghost"
-                                        className={styles.itemNameButton}
+                                        className={denseTableClassNames.productBtn}
                                         onClick={() => setDetailModalItem(cartItem)}
-                                        aria-label="View pricing details"
                                       >
-                                        {cartItem.inventoryItem.name || 'Unnamed Product'}
+                                        {cartItem.inventoryItem.name || '—'}
                                       </Button>
-                                      <Badge variant="neutral" className={styles.modeBadge}>
-                                        {normalizeBillingMode(cartItem.inventoryItem.billingMode)}
-                                      </Badge>
-                                    </Inline>
-                                    {cartItem.inventoryItem.companyName ? (
-                                      <Text variant="caption" color="secondary">
-                                        {cartItem.inventoryItem.companyName}
-                                      </Text>
-                                    ) : null}
-                                    <CustomerProductHistoryHint
-                                      sellableRef={inventorySellableRef(cartItem.inventoryItem.id)}
-                                      history={customerProductHistory}
-                                      loading={customerProductHistoryLoading}
-                                    />
-                                    <Inline gap="sm" align="center" flexWrap>
-                                      <Text variant="caption" color="secondary">
-                                        {formatCartPackagingMeta(cartItem)}
-                                      </Text>
-                                    </Inline>
-                                    {cartItem.inventoryItem.maximumRetailPrice > cartItem.price ? (
-                                      <Text variant="caption" className={styles.itemDiscount}>
-                                        {(
-                                          ((cartItem.inventoryItem.maximumRetailPrice -
-                                            cartItem.price) /
-                                            cartItem.inventoryItem.maximumRetailPrice) *
-                                          100
-                                        ).toFixed(1)}
-                                        % off MRP
-                                      </Text>
-                                    ) : null}
-                                  </Stack>
-                                  <Inline align="start" gap="lg" width="full" flexWrap>
-                                    <Stack gap="md" className={styles.itemEditFields}>
-                                      <FormField
-                                        label="Price"
-                                        id={`price-${cartItem.inventoryItem.id}`}
-                                      >
-                                        <Inline
-                                          gap="sm"
-                                          align="center"
-                                          width="full"
-                                          className={styles.itemPriceBlock}
-                                        >
-                                          <CartSellingPriceInput
-                                            id={`price-${cartItem.inventoryItem.id}`}
-                                            value={cartItem.price}
-                                            onCommit={(num) =>
-                                              handleSellingPriceChange(
+                                      <CustomerProductHistoryHint
+                                        sellableRef={inventorySellableRef(
+                                          cartItem.inventoryItem.id,
+                                        )}
+                                        history={customerProductHistory}
+                                        loading={customerProductHistoryLoading}
+                                      />
+                                    </DenseTableCell>
+                                    <DenseTableCell>
+                                      {cartItem.inventoryItem.companyName || '—'}
+                                    </DenseTableCell>
+                                    <DenseTableCell>
+                                      <Box className={denseTableClassNames.cellInput}>
+                                        <CartQuantityInput
+                                          value={quantityInputValue}
+                                          disabled={isUpdatingCart}
+                                          onCommit={async (newQty) => {
+                                            const delta = newQty - quantityInputValue;
+                                            if (delta !== 0) {
+                                              await handleUpdateQuantity(
                                                 cartItem.inventoryItem.id,
-                                                num,
-                                              )
+                                                delta,
+                                                isBaseUnitSelected,
+                                              );
                                             }
-                                            disabled={isUpdatingCart}
-                                          />
-                                          <Text
-                                            variant="caption"
-                                            color="secondary"
-                                            className={styles.itemFieldUnit}
-                                          >
-                                            per {cartItem.unit}
-                                          </Text>
-                                          {(() => {
-                                            const pricingId =
-                                              cartItem.inventoryItem.pricingId ??
-                                              inventoryToPricingId[cartItem.inventoryItem.id];
-                                            const pricing = pricingId
-                                              ? pricingCache[pricingId]
-                                              : undefined;
-                                            const invId = cartItem.inventoryItem.id;
-                                            const isLoading =
-                                              pricingLoading[pricingId ?? ''] ||
-                                              pricingLoading[`inv:${invId}`];
-                                            const rateOpts = getRateOptions(
-                                              cartItem.inventoryItem,
-                                              pricing,
-                                            );
-                                            const formatPrice = (n: number) =>
-                                              new Intl.NumberFormat('en-IN', {
-                                                style: 'currency',
-                                                currency: 'INR',
-                                                minimumFractionDigits: 2,
-                                                maximumFractionDigits: 2,
-                                              }).format(n);
-                                            const showDropdown =
-                                              pricingId || invId || rateOpts.length > 1;
-                                            if (!showDropdown) return null;
-                                            const matched = rateOpts.find(
-                                              (o) => Math.abs(o.price - cartItem.price) < 0.01,
-                                            );
-                                            const selectValue = matched
-                                              ? matched.label
-                                              : '__custom__';
-                                            // Never switch select value to loading - keep current selection to avoid flicker
-                                            const displayValue =
-                                              isLoading && rateOpts.length === 0
-                                                ? '__custom__'
-                                                : selectValue;
-                                            const selectedOpt = rateOpts.find(
-                                              (o) => o.label === displayValue,
-                                            );
-                                            return (
-                                              <Select
-                                                className={styles.itemRateSelect}
-                                                value={displayValue}
-                                                onChange={(e) => {
-                                                  const sel = e.target.value;
-                                                  if (sel === '__custom__') return;
-                                                  const opt = rateOpts.find((o) => o.label === sel);
-                                                  if (opt) {
-                                                    handleSellingPriceChange(
-                                                      cartItem.inventoryItem.id,
-                                                      opt.price,
-                                                    );
-                                                  }
-                                                }}
-                                                onMouseDown={() => {
-                                                  loadPricingOnDropdownClick(
-                                                    cartItem.inventoryItem.pricingId ?? undefined,
-                                                    invId,
-                                                  );
-                                                }}
-                                                disabled={isUpdatingCart || isLoading}
-                                                aria-label={
-                                                  isLoading
-                                                    ? 'Loading rates'
-                                                    : selectedOpt
-                                                    ? `Rate: ${selectedOpt.label}, ${formatPrice(
-                                                        selectedOpt.price,
-                                                      )}`
-                                                    : 'Select selling rate'
-                                                }
-                                                options={[
-                                                  { value: '__custom__', label: 'Custom' },
-                                                  ...rateOpts.map((opt) => ({
-                                                    value: opt.label,
-                                                    label: `${opt.label} · ${formatPrice(
-                                                      opt.price,
-                                                    )}`,
-                                                  })),
-                                                ]}
-                                              />
-                                            );
-                                          })()}
-                                        </Inline>
-                                      </FormField>
-                                      <Inline
-                                        className={styles.itemSaleRowInline}
-                                        gap="md"
-                                        align="start"
-                                      >
-                                        <FormField label="Disc">
-                                          <Stack gap="xs" className={styles.compareCell}>
-                                            {!hidePurchaseDetailsInSell ? (
-                                              <Text variant="caption" className={styles.compareTop}>
-                                                {(() => {
-                                                  const v = getPurchaseAdditionalDiscount(
-                                                    cartItem.inventoryItem,
-                                                  );
-                                                  return v != null ? `${v}%` : '—';
-                                                })()}
-                                              </Text>
-                                            ) : null}
-                                            <Box className={styles.compareBottom}>
-                                              <CartAdditionalDiscountInput
-                                                value={getEffectiveAdditionalDiscount(
-                                                  cartItem.inventoryItem.id,
-                                                  cartItem,
-                                                )}
-                                                onCommit={(num) =>
-                                                  handleAdditionalDiscountChange(
-                                                    cartItem.inventoryItem.id,
-                                                    num,
-                                                  )
-                                                }
-                                                disabled={isUpdatingCart}
-                                              />
-                                            </Box>
-                                          </Stack>
-                                        </FormField>
-
-                                        <FormField label="Scheme">
-                                          <Stack gap="xs" className={styles.compareCell}>
-                                            {!hidePurchaseDetailsInSell ? (
-                                              <Text variant="caption" className={styles.compareTop}>
-                                                {formatPurchaseSchemeLabel(cartItem.inventoryItem)}
-                                              </Text>
-                                            ) : null}
-                                            <Box className={styles.compareBottom}>
-                                              <CartSchemeInput
-                                                schemeType={cartItem.schemeType ?? null}
-                                                payFor={cartItem.schemePayFor ?? null}
-                                                free={cartItem.schemeFree ?? null}
-                                                percentage={cartItem.schemePercentage ?? null}
-                                                onCommitUnits={(pf, f) =>
-                                                  handleSchemeChange(
-                                                    cartItem.inventoryItem.id,
-                                                    pf,
-                                                    f,
-                                                  )
-                                                }
-                                                onCommitPercentage={(p) =>
-                                                  handleSchemePercentageChange(
-                                                    cartItem.inventoryItem.id,
-                                                    p,
-                                                  )
-                                                }
-                                                disabled={isUpdatingCart}
-                                              />
-                                            </Box>
-                                          </Stack>
-                                        </FormField>
-
-                                        <FormField label="Unit">
+                                          }}
+                                        />
+                                      </Box>
+                                    </DenseTableCell>
+                                    <DenseTableCell>
+                                      <Select
+                                        className={denseTableClassNames.select}
+                                        value={cartItem.unit}
+                                        onChange={(e) =>
+                                          handleUnitChange(
+                                            cartItem.inventoryItem.id,
+                                            e.currentTarget.value,
+                                          )
+                                        }
+                                        disabled={
+                                          isUpdatingCart ||
+                                          cartItem.inventoryItem.sellUnitRule === 'PACK_ONLY'
+                                        }
+                                        options={(cartItem.availableUnits.length > 0
+                                          ? cartItem.availableUnits
+                                          : [{ unit: cartItem.unit, baseUnit: false }]
+                                        ).map((uo) => ({
+                                          value: uo.unit,
+                                          label: `${uo.unit}${uo.baseUnit ? ' (base)' : ''}`,
+                                        }))}
+                                      />
+                                    </DenseTableCell>
+                                    <DenseTableCell>{formatPrice(lineTotal)}</DenseTableCell>
+                                    <DenseTableCell>
+                                      <Stack gap="xs" className={denseTableClassNames.priceCell}>
+                                        <CartSellingPriceInput
+                                          value={cartItem.price}
+                                          onCommit={(n) =>
+                                            handleSellingPriceChange(cartItem.inventoryItem.id, n)
+                                          }
+                                          disabled={isUpdatingCart}
+                                        />
+                                        {showRateDropdown ? (
                                           <Select
-                                            className={styles.itemUnitSelect}
-                                            value={cartItem.unit}
-                                            onChange={(e) =>
-                                              handleUnitChange(
+                                            className={denseTableClassNames.rateSelect}
+                                            value={matched ? matched.label : '__custom__'}
+                                            onChange={(e) => {
+                                              const sel = e.target.value;
+                                              if (sel === '__custom__') return;
+                                              const opt = rateOpts.find((o) => o.label === sel);
+                                              if (opt)
+                                                handleSellingPriceChange(
+                                                  cartItem.inventoryItem.id,
+                                                  opt.price,
+                                                );
+                                            }}
+                                            onMouseDown={() =>
+                                              loadPricingOnDropdownClick(
+                                                cartItem.inventoryItem.pricingId ?? undefined,
                                                 cartItem.inventoryItem.id,
-                                                e.currentTarget.value,
+                                              )
+                                            }
+                                            disabled={isUpdatingCart || isLoading}
+                                            options={[
+                                              { value: '__custom__', label: 'Custom' },
+                                              ...rateOpts.map((opt) => ({
+                                                value: opt.label,
+                                                label: `${opt.label} (${formatPrice(opt.price)})`,
+                                              })),
+                                            ]}
+                                          />
+                                        ) : null}
+                                      </Stack>
+                                    </DenseTableCell>
+                                    <DenseTableCell>
+                                      <Stack gap="xs">
+                                        {!hidePurchaseDetailsInSell ? (
+                                          <Text variant="caption" style={{ fontSize: '0.72rem' }}>
+                                            {(() => {
+                                              const v = getPurchaseAdditionalDiscount(
+                                                cartItem.inventoryItem,
+                                              );
+                                              return v != null ? `${v}%` : '—';
+                                            })()}
+                                          </Text>
+                                        ) : null}
+                                        <Box style={{ fontWeight: 600 }}>
+                                          <CartAdditionalDiscountInput
+                                            value={getEffectiveAdditionalDiscount(
+                                              cartItem.inventoryItem.id,
+                                              cartItem,
+                                            )}
+                                            onCommit={(n) =>
+                                              handleAdditionalDiscountChange(
+                                                cartItem.inventoryItem.id,
+                                                n,
                                               )
                                             }
                                             disabled={isUpdatingCart}
-                                            options={(cartItem.availableUnits.length > 0
-                                              ? cartItem.availableUnits
-                                              : [
-                                                  {
-                                                    unit: cartItem.unit,
-                                                    baseUnit: false,
-                                                  },
-                                                ]
-                                            ).map((unitOption) => ({
-                                              value: unitOption.unit,
-                                              label: `${unitOption.unit}${
-                                                unitOption.baseUnit ? ' (base)' : ''
-                                              }`,
-                                            }))}
                                           />
-                                        </FormField>
-                                      </Inline>
-                                    </Stack>
-                                    <Stack
-                                      gap="sm"
-                                      align="end"
-                                      style={{ flexShrink: 0, marginLeft: 'auto' }}
-                                    >
-                                      <Inline gap="sm" align="center">
-                                        <Inline
-                                          className={qtyStyles.qtyStepper}
-                                          gap="none"
-                                          align="center"
+                                        </Box>
+                                      </Stack>
+                                    </DenseTableCell>
+                                    <DenseTableCell>
+                                      <Stack gap="xs">
+                                        {!hidePurchaseDetailsInSell ? (
+                                          <Text variant="caption" style={{ fontSize: '0.72rem' }}>
+                                            {formatPurchaseSchemeLabel(cartItem.inventoryItem)}
+                                          </Text>
+                                        ) : null}
+                                        <Box style={{ fontWeight: 600 }}>
+                                          <CartSchemeInput
+                                            schemeType={cartItem.schemeType ?? null}
+                                            payFor={cartItem.schemePayFor ?? null}
+                                            free={cartItem.schemeFree ?? null}
+                                            percentage={cartItem.schemePercentage ?? null}
+                                            onCommitUnits={(pf, f) =>
+                                              handleSchemeChange(cartItem.inventoryItem.id, pf, f)
+                                            }
+                                            onCommitPercentage={(p) =>
+                                              handleSchemePercentageChange(
+                                                cartItem.inventoryItem.id,
+                                                p,
+                                              )
+                                            }
+                                            disabled={isUpdatingCart}
+                                          />
+                                        </Box>
+                                      </Stack>
+                                    </DenseTableCell>
+                                    <DenseTableCell>
+                                      <Button
+                                        type="button"
+                                        variant="danger"
+                                        size="sm"
+                                        onClick={() => handleRemoveItem(cartItem.inventoryItem.id)}
+                                        disabled={isUpdatingCart}
+                                      >
+                                        Remove
+                                      </Button>
+                                    </DenseTableCell>
+                                  </DenseTableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </DenseTableSurface>
+                        </DenseTable>
+                      ) : (
+                        cartItems.map((cartItem) =>
+                          (() => {
+                            const isBaseUnitSelected =
+                              (cartItem.inventoryItem.baseUnit != null &&
+                                cartItem.unit === cartItem.inventoryItem.baseUnit) ||
+                              cartItem.availableUnits.some(
+                                (unitOption) =>
+                                  unitOption.baseUnit && unitOption.unit === cartItem.unit,
+                              );
+                            const quantityInputValue = isBaseUnitSelected
+                              ? cartItem.baseQuantity
+                              : cartItem.quantity;
+                            return (
+                              <Card
+                                key={cartItem.inventoryItem.id}
+                                style={{
+                                  padding: '0.85rem 0',
+                                  borderBottom: '1px solid var(--border-color)',
+                                  minWidth: 0,
+                                }}
+                              >
+                                <CardBody>
+                                  <Stack gap="md" style={{ flex: 1, minWidth: 0 }}>
+                                    <Stack gap="xs">
+                                      <Inline
+                                        gap="sm"
+                                        align="center"
+                                        justify="between"
+                                        width="full"
+                                        flexWrap
+                                      >
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          onClick={() => setDetailModalItem(cartItem)}
+                                          aria-label="View pricing details"
                                         >
-                                          <IconButton
-                                            label="Decrease quantity"
-                                            className={qtyStyles.qtyBtn}
-                                            onClick={() =>
+                                          {cartItem.inventoryItem.name || 'Unnamed Product'}
+                                        </Button>
+                                        <Badge variant="info">
+                                          {normalizeBillingMode(cartItem.inventoryItem.billingMode)}
+                                        </Badge>
+                                      </Inline>
+                                      {cartItem.inventoryItem.companyName ? (
+                                        <Text variant="caption" color="secondary">
+                                          {cartItem.inventoryItem.companyName}
+                                        </Text>
+                                      ) : null}
+                                      <CustomerProductHistoryHint
+                                        sellableRef={inventorySellableRef(
+                                          cartItem.inventoryItem.id,
+                                        )}
+                                        history={customerProductHistory}
+                                        loading={customerProductHistoryLoading}
+                                      />
+                                      <Inline gap="sm" align="center" flexWrap>
+                                        <Text variant="caption" color="secondary">
+                                          {formatCartPackagingMeta(cartItem)}
+                                        </Text>
+                                      </Inline>
+                                      {cartItem.inventoryItem.maximumRetailPrice >
+                                      cartItem.price ? (
+                                        <Text variant="caption" color="success">
+                                          {(
+                                            ((cartItem.inventoryItem.maximumRetailPrice -
+                                              cartItem.price) /
+                                              cartItem.inventoryItem.maximumRetailPrice) *
+                                            100
+                                          ).toFixed(1)}
+                                          % off MRP
+                                        </Text>
+                                      ) : null}
+                                    </Stack>
+                                    <Inline align="start" gap="lg" width="full" flexWrap>
+                                      <Stack
+                                        gap="md"
+                                        padding="md"
+                                        bg="muted"
+                                        border
+                                        rounded="md"
+                                        style={itemEditFieldsStyle}
+                                      >
+                                        <FormField
+                                          label="Price"
+                                          id={`price-${cartItem.inventoryItem.id}`}
+                                        >
+                                          <Inline
+                                            gap="sm"
+                                            align="center"
+                                            width="full"
+                                            style={itemPriceBlockStyle}
+                                          >
+                                            <CartSellingPriceInput
+                                              id={`price-${cartItem.inventoryItem.id}`}
+                                              value={cartItem.price}
+                                              onCommit={(num) =>
+                                                handleSellingPriceChange(
+                                                  cartItem.inventoryItem.id,
+                                                  num,
+                                                )
+                                              }
+                                              disabled={isUpdatingCart}
+                                            />
+                                            <Text
+                                              variant="caption"
+                                              color="secondary"
+                                              style={{
+                                                fontSize: '0.72rem',
+                                                letterSpacing: '0.02em',
+                                                textTransform: 'uppercase',
+                                              }}
+                                            >
+                                              per {cartItem.unit}
+                                            </Text>
+                                            {(() => {
+                                              const pricingId =
+                                                cartItem.inventoryItem.pricingId ??
+                                                inventoryToPricingId[cartItem.inventoryItem.id];
+                                              const pricing = pricingId
+                                                ? pricingCache[pricingId]
+                                                : undefined;
+                                              const invId = cartItem.inventoryItem.id;
+                                              const isLoading =
+                                                pricingLoading[pricingId ?? ''] ||
+                                                pricingLoading[`inv:${invId}`];
+                                              const rateOpts = getRateOptions(
+                                                cartItem.inventoryItem,
+                                                pricing,
+                                              );
+                                              const formatPrice = (n: number) =>
+                                                new Intl.NumberFormat('en-IN', {
+                                                  style: 'currency',
+                                                  currency: 'INR',
+                                                  minimumFractionDigits: 2,
+                                                  maximumFractionDigits: 2,
+                                                }).format(n);
+                                              const showDropdown =
+                                                pricingId || invId || rateOpts.length > 1;
+                                              if (!showDropdown) return null;
+                                              const matched = rateOpts.find(
+                                                (o) => Math.abs(o.price - cartItem.price) < 0.01,
+                                              );
+                                              const selectValue = matched
+                                                ? matched.label
+                                                : '__custom__';
+                                              // Never switch select value to loading - keep current selection to avoid flicker
+                                              const displayValue =
+                                                isLoading && rateOpts.length === 0
+                                                  ? '__custom__'
+                                                  : selectValue;
+                                              const selectedOpt = rateOpts.find(
+                                                (o) => o.label === displayValue,
+                                              );
+                                              return (
+                                                <Select
+                                                  style={itemRateSelectStyle}
+                                                  value={displayValue}
+                                                  onChange={(e) => {
+                                                    const sel = e.target.value;
+                                                    if (sel === '__custom__') return;
+                                                    const opt = rateOpts.find(
+                                                      (o) => o.label === sel,
+                                                    );
+                                                    if (opt) {
+                                                      handleSellingPriceChange(
+                                                        cartItem.inventoryItem.id,
+                                                        opt.price,
+                                                      );
+                                                    }
+                                                  }}
+                                                  onMouseDown={() => {
+                                                    loadPricingOnDropdownClick(
+                                                      cartItem.inventoryItem.pricingId ?? undefined,
+                                                      invId,
+                                                    );
+                                                  }}
+                                                  disabled={isUpdatingCart || isLoading}
+                                                  aria-label={
+                                                    isLoading
+                                                      ? 'Loading rates'
+                                                      : selectedOpt
+                                                      ? `Rate: ${selectedOpt.label}, ${formatPrice(
+                                                          selectedOpt.price,
+                                                        )}`
+                                                      : 'Select selling rate'
+                                                  }
+                                                  options={[
+                                                    { value: '__custom__', label: 'Custom' },
+                                                    ...rateOpts.map((opt) => ({
+                                                      value: opt.label,
+                                                      label: `${opt.label} · ${formatPrice(
+                                                        opt.price,
+                                                      )}`,
+                                                    })),
+                                                  ]}
+                                                />
+                                              );
+                                            })()}
+                                          </Inline>
+                                        </FormField>
+                                        <Inline
+                                          style={itemSaleRowInlineStyle}
+                                          gap="md"
+                                          align="start"
+                                        >
+                                          <FormField label="Disc">
+                                            <Stack gap="xs">
+                                              {!hidePurchaseDetailsInSell ? (
+                                                <Text
+                                                  variant="caption"
+                                                  style={{ fontSize: '0.72rem' }}
+                                                >
+                                                  {(() => {
+                                                    const v = getPurchaseAdditionalDiscount(
+                                                      cartItem.inventoryItem,
+                                                    );
+                                                    return v != null ? `${v}%` : '—';
+                                                  })()}
+                                                </Text>
+                                              ) : null}
+                                              <Box style={{ fontWeight: 600 }}>
+                                                <CartAdditionalDiscountInput
+                                                  value={getEffectiveAdditionalDiscount(
+                                                    cartItem.inventoryItem.id,
+                                                    cartItem,
+                                                  )}
+                                                  onCommit={(num) =>
+                                                    handleAdditionalDiscountChange(
+                                                      cartItem.inventoryItem.id,
+                                                      num,
+                                                    )
+                                                  }
+                                                  disabled={isUpdatingCart}
+                                                />
+                                              </Box>
+                                            </Stack>
+                                          </FormField>
+
+                                          <FormField label="Scheme">
+                                            <Stack gap="xs">
+                                              {!hidePurchaseDetailsInSell ? (
+                                                <Text
+                                                  variant="caption"
+                                                  style={{ fontSize: '0.72rem' }}
+                                                >
+                                                  {formatPurchaseSchemeLabel(
+                                                    cartItem.inventoryItem,
+                                                  )}
+                                                </Text>
+                                              ) : null}
+                                              <Box style={{ fontWeight: 600 }}>
+                                                <CartSchemeInput
+                                                  schemeType={cartItem.schemeType ?? null}
+                                                  payFor={cartItem.schemePayFor ?? null}
+                                                  free={cartItem.schemeFree ?? null}
+                                                  percentage={cartItem.schemePercentage ?? null}
+                                                  onCommitUnits={(pf, f) =>
+                                                    handleSchemeChange(
+                                                      cartItem.inventoryItem.id,
+                                                      pf,
+                                                      f,
+                                                    )
+                                                  }
+                                                  onCommitPercentage={(p) =>
+                                                    handleSchemePercentageChange(
+                                                      cartItem.inventoryItem.id,
+                                                      p,
+                                                    )
+                                                  }
+                                                  disabled={isUpdatingCart}
+                                                />
+                                              </Box>
+                                            </Stack>
+                                          </FormField>
+
+                                          <FormField label="Unit">
+                                            <Select
+                                              style={itemUnitSelectStyle}
+                                              value={cartItem.unit}
+                                              onChange={(e) =>
+                                                handleUnitChange(
+                                                  cartItem.inventoryItem.id,
+                                                  e.currentTarget.value,
+                                                )
+                                              }
+                                              disabled={isUpdatingCart}
+                                              options={(cartItem.availableUnits.length > 0
+                                                ? cartItem.availableUnits
+                                                : [
+                                                    {
+                                                      unit: cartItem.unit,
+                                                      baseUnit: false,
+                                                    },
+                                                  ]
+                                              ).map((unitOption) => ({
+                                                value: unitOption.unit,
+                                                label: `${unitOption.unit}${
+                                                  unitOption.baseUnit ? ' (base)' : ''
+                                                }`,
+                                              }))}
+                                            />
+                                          </FormField>
+                                        </Inline>
+                                      </Stack>
+                                      <Stack
+                                        gap="sm"
+                                        align="end"
+                                        style={{ flexShrink: 0, marginLeft: 'auto' }}
+                                      >
+                                        <Inline gap="sm" align="center">
+                                          <CartQtyStepper
+                                            value={quantityInputValue}
+                                            disabled={isUpdatingCart}
+                                            onDecrement={() =>
                                               handleUpdateQuantity(
                                                 cartItem.inventoryItem.id,
                                                 -1,
                                                 isBaseUnitSelected,
                                               )
                                             }
-                                            disabled={isUpdatingCart}
-                                          >
-                                            −
-                                          </IconButton>
-                                          <CartQuantityInput
-                                            value={quantityInputValue}
-                                            disabled={isUpdatingCart}
+                                            onIncrement={() =>
+                                              handleUpdateQuantity(
+                                                cartItem.inventoryItem.id,
+                                                1,
+                                                isBaseUnitSelected,
+                                              )
+                                            }
                                             onCommit={async (newQty) => {
                                               const delta = newQty - quantityInputValue;
                                               if (delta !== 0) {
@@ -3589,182 +3711,185 @@ export function ScanSellPage() {
                                               }
                                             }}
                                           />
-                                          <IconButton
-                                            label="Increase quantity"
-                                            className={qtyStyles.qtyBtn}
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            style={{ flexShrink: 0 }}
                                             onClick={() =>
-                                              handleUpdateQuantity(
-                                                cartItem.inventoryItem.id,
-                                                1,
-                                                isBaseUnitSelected,
-                                              )
+                                              handleRemoveItem(cartItem.inventoryItem.id)
                                             }
                                             disabled={isUpdatingCart}
                                           >
-                                            +
-                                          </IconButton>
+                                            Remove
+                                          </Button>
                                         </Inline>
-                                        <Button
-                                          type="button"
-                                          variant="ghost"
-                                          size="sm"
-                                          className={qtyStyles.removeBtn}
-                                          onClick={() =>
-                                            handleRemoveItem(cartItem.inventoryItem.id)
-                                          }
-                                          disabled={isUpdatingCart}
+                                        <Text
+                                          weight="semibold"
+                                          style={{
+                                            marginTop: '0.35rem',
+                                            marginBottom: '0.2rem',
+                                            textAlign: 'center',
+                                          }}
                                         >
-                                          Remove
-                                        </Button>
-                                      </Inline>
-                                      <Text weight="semibold" className={styles.itemActionAmount}>
-                                        ₹{(cartItem.price * cartItem.quantity).toFixed(2)}
-                                      </Text>
-                                    </Stack>
-                                  </Inline>
-                                </Stack>
-                              </CardBody>
-                            </Card>
-                          );
-                        })(),
-                      )
-                    )}
-                  </Box>
-                </Stack>
-              </Box>
+                                          ₹{(cartItem.price * cartItem.quantity).toFixed(2)}
+                                        </Text>
+                                      </Stack>
+                                    </Inline>
+                                  </Stack>
+                                </CardBody>
+                              </Card>
+                            );
+                          })(),
+                        )
+                      )}
+                    </Box>
+                  </Stack>
+                </Box>
+              }
+              aside={
+                <Stack as="aside" gap="md" bg="elevated" border rounded="lg" padding="lg">
+                  <CustomerSectionBlock
+                    idPrefix="sidebar"
+                    customerSectionOpen={customerSectionOpen}
+                    setCustomerSectionOpen={setCustomerSectionOpen}
+                    customerName={customerName}
+                    customerPhone={customerPhone}
+                    customerEmail={customerEmail}
+                    customerAddress={customerAddress}
+                    setCustomerName={setCustomerName}
+                    setCustomerPhone={setCustomerPhone}
+                    setCustomerEmail={setCustomerEmail}
+                    setCustomerAddress={setCustomerAddress}
+                    handleCustomerFieldBlur={handleCustomerFieldBlur}
+                    isSearchingCustomer={isSearchingCustomer}
+                    handleCustomerSearch={handleCustomerSearch}
+                    handleCustomerSearchByEmail={handleCustomerSearchByEmail}
+                    isRetailer={isRetailer}
+                    setIsRetailer={setIsRetailer}
+                    customerGstin={customerGstin}
+                    customerDlNo={customerDlNo}
+                    customerPan={customerPan}
+                    setCustomerGstin={setCustomerGstin}
+                    setCustomerDlNo={setCustomerDlNo}
+                    setCustomerPan={setCustomerPan}
+                  />
 
-              <Stack as="aside" gap="md" className={styles.summarySidebar}>
-                <CustomerSectionBlock
-                  idPrefix="sidebar"
-                  customerSectionOpen={customerSectionOpen}
-                  setCustomerSectionOpen={setCustomerSectionOpen}
-                  customerName={customerName}
-                  customerPhone={customerPhone}
-                  customerEmail={customerEmail}
-                  customerAddress={customerAddress}
-                  setCustomerName={setCustomerName}
-                  setCustomerPhone={setCustomerPhone}
-                  setCustomerEmail={setCustomerEmail}
-                  setCustomerAddress={setCustomerAddress}
-                  handleCustomerFieldBlur={handleCustomerFieldBlur}
-                  isSearchingCustomer={isSearchingCustomer}
-                  handleCustomerSearch={handleCustomerSearch}
-                  handleCustomerSearchByEmail={handleCustomerSearchByEmail}
-                  isRetailer={isRetailer}
-                  setIsRetailer={setIsRetailer}
-                  customerGstin={customerGstin}
-                  customerDlNo={customerDlNo}
-                  customerPan={customerPan}
-                  setCustomerGstin={setCustomerGstin}
-                  setCustomerDlNo={setCustomerDlNo}
-                  setCustomerPan={setCustomerPan}
-                />
-
-                <Stack gap="xs" className={styles.sectionDivider}>
-                  {isLoadingCart ? (
-                    <CenteredLoader label="Loading..." />
-                  ) : (
-                    <>
-                      <SummaryRow label="Billing Mode" value={cartBillingMode} />
-                      <SummaryRow label="Subtotal" value={`₹${calculateSubtotal().toFixed(2)}`} />
-                      {cartData &&
-                        cartData.saleAdditionalDiscountTotal !== undefined &&
-                        cartData.saleAdditionalDiscountTotal !== null &&
-                        cartData.saleAdditionalDiscountTotal !== 0 && (
-                          <SummaryRow
-                            label={
-                              cartData.saleAdditionalDiscountTotal > 0
-                                ? 'Additional Discount'
-                                : 'Additional (markup)'
-                            }
-                            value={
-                              cartData.saleAdditionalDiscountTotal > 0
-                                ? `-₹${cartData.saleAdditionalDiscountTotal.toFixed(2)}`
-                                : `+₹${Math.abs(cartData.saleAdditionalDiscountTotal).toFixed(2)}`
-                            }
-                          />
-                        )}
-                      {cartBillingMode === 'REGULAR' &&
-                        ((cartData?.taxTotal ?? 0) !== 0 ||
+                  <Stack
+                    gap="xs"
+                    style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}
+                  >
+                    {isLoadingCart ? (
+                      <CenteredLoader label="Loading..." />
+                    ) : (
+                      <>
+                        <SummaryRow label="Billing Mode" value={cartBillingMode} />
+                        <SummaryRow label="Subtotal" value={`₹${calculateSubtotal().toFixed(2)}`} />
+                        {cartData &&
+                          cartData.saleAdditionalDiscountTotal !== undefined &&
+                          cartData.saleAdditionalDiscountTotal !== null &&
+                          cartData.saleAdditionalDiscountTotal !== 0 && (
+                            <SummaryRow
+                              label={
+                                cartData.saleAdditionalDiscountTotal > 0
+                                  ? 'Additional Discount'
+                                  : 'Additional (markup)'
+                              }
+                              value={
+                                cartData.saleAdditionalDiscountTotal > 0
+                                  ? `-₹${cartData.saleAdditionalDiscountTotal.toFixed(2)}`
+                                  : `+₹${Math.abs(cartData.saleAdditionalDiscountTotal).toFixed(2)}`
+                              }
+                            />
+                          )}
+                        {cartBillingMode === 'REGULAR' &&
+                          ((cartData?.taxTotal ?? 0) !== 0 ||
+                            (cartData?.sgstAmount ?? 0) !== 0 ||
+                            (cartData?.cgstAmount ?? 0) !== 0) && (
+                            <>
+                              <SummaryRow
+                                label={`SGST (${getSGSTPercentage()}%)`}
+                                value={`₹${calculateSGST().toFixed(2)}`}
+                              />
+                              <SummaryRow
+                                label={`CGST (${getCGSTPercentage()}%)`}
+                                value={`₹${calculateCGST().toFixed(2)}`}
+                              />
+                            </>
+                          )}
+                        {((cartData?.taxTotal ?? 0) !== 0 ||
                           (cartData?.sgstAmount ?? 0) !== 0 ||
                           (cartData?.cgstAmount ?? 0) !== 0) && (
-                          <>
-                            <SummaryRow
-                              label={`SGST (${getSGSTPercentage()}%)`}
-                              value={`₹${calculateSGST().toFixed(2)}`}
-                            />
-                            <SummaryRow
-                              label={`CGST (${getCGSTPercentage()}%)`}
-                              value={`₹${calculateCGST().toFixed(2)}`}
-                            />
-                          </>
+                          <SummaryRow label="Total Tax" value={`₹${calculateTax().toFixed(2)}`} />
                         )}
-                      {((cartData?.taxTotal ?? 0) !== 0 ||
-                        (cartData?.sgstAmount ?? 0) !== 0 ||
-                        (cartData?.cgstAmount ?? 0) !== 0) && (
-                        <SummaryRow label="Total Tax" value={`₹${calculateTax().toFixed(2)}`} />
-                      )}
-                      <SummaryRow label="Total" value={`₹${calculateTotal().toFixed(2)}`} total />
-                    </>
-                  )}
+                        <SummaryRow label="Total" value={`₹${calculateTotal().toFixed(2)}`} total />
+                      </>
+                    )}
+                  </Stack>
+                  {cartData &&
+                    (cartData.totalCost != null ||
+                      cartData.revenueAfterTax != null ||
+                      cartData.totalProfit != null ||
+                      cartData.marginPercent != null) && (
+                      <Stack
+                        gap="xs"
+                        style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}
+                      >
+                        <SummaryRow
+                          label="Total Cost"
+                          value={`₹${(cartData.totalCost ?? 0).toFixed(2)}`}
+                        />
+                        {cartData.revenueAfterTax != null && (
+                          <SummaryRow
+                            label="Revenue (after tax)"
+                            value={`₹${cartData.revenueAfterTax.toFixed(2)}`}
+                          />
+                        )}
+                        {cartData.totalProfit != null && (
+                          <SummaryRow
+                            label="Profit"
+                            value={`₹${cartData.totalProfit.toFixed(2)}`}
+                          />
+                        )}
+                        {cartData.marginPercent != null && (
+                          <SummaryRow
+                            label="Margin"
+                            value={`${cartData.marginPercent.toFixed(1)}%`}
+                          />
+                        )}
+                      </Stack>
+                    )}
+                  <Inline gap="sm" width="full" style={cartActionsStyle}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      style={{ flex: 1 }}
+                      onClick={handleClearCart}
+                    >
+                      Clear Cart
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="solid"
+                      style={{ flex: 2 }}
+                      onClick={handleProcessPayment}
+                      disabled={
+                        (cartItems.length === 0 && menuCartLines.length === 0) ||
+                        isProcessing ||
+                        isUpdatingCart ||
+                        isLoadingCart
+                      }
+                    >
+                      {isProcessing
+                        ? 'Processing...'
+                        : isUpdatingCart
+                        ? 'Updating...'
+                        : 'Process Payment'}
+                    </Button>
+                  </Inline>
                 </Stack>
-                {cartData &&
-                  (cartData.totalCost != null ||
-                    cartData.revenueAfterTax != null ||
-                    cartData.totalProfit != null ||
-                    cartData.marginPercent != null) && (
-                    <Stack gap="xs" className={styles.sectionDivider}>
-                      <SummaryRow
-                        label="Total Cost"
-                        value={`₹${(cartData.totalCost ?? 0).toFixed(2)}`}
-                      />
-                      {cartData.revenueAfterTax != null && (
-                        <SummaryRow
-                          label="Revenue (after tax)"
-                          value={`₹${cartData.revenueAfterTax.toFixed(2)}`}
-                        />
-                      )}
-                      {cartData.totalProfit != null && (
-                        <SummaryRow label="Profit" value={`₹${cartData.totalProfit.toFixed(2)}`} />
-                      )}
-                      {cartData.marginPercent != null && (
-                        <SummaryRow
-                          label="Margin"
-                          value={`${cartData.marginPercent.toFixed(1)}%`}
-                        />
-                      )}
-                    </Stack>
-                  )}
-                <Inline gap="sm" width="full" className={styles.cartActions}>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className={styles.clearBtn}
-                    onClick={handleClearCart}
-                  >
-                    Clear Cart
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="solid"
-                    className={styles.checkoutBtn}
-                    onClick={handleProcessPayment}
-                    disabled={
-                      (cartItems.length === 0 && menuCartLines.length === 0) ||
-                      isProcessing ||
-                      isUpdatingCart ||
-                      isLoadingCart
-                    }
-                  >
-                    {isProcessing
-                      ? 'Processing...'
-                      : isUpdatingCart
-                      ? 'Updating...'
-                      : 'Process Payment'}
-                  </Button>
-                </Inline>
-              </Stack>
-            </Inline>
+              }
+            />
           )}
         </>
       )}
@@ -3794,31 +3919,30 @@ export function ScanSellPage() {
                 open
                 onClose={() => setDetailModalItem(null)}
                 size="lg"
-                className={detailStyles.content}
+                style={detailModalContentStyle}
               >
-                <Box className={detailStyles.header}>
-                  <Inline className={detailStyles.headerContent} gap="md" align="center">
-                    <Text aria-hidden className={detailStyles.productIcon}>
-                      📦
-                    </Text>
+                <Inline
+                  style={detailModalHeaderStyle}
+                  justify="between"
+                  align="center"
+                  width="full"
+                >
+                  <Inline gap="md" align="center" style={{ flex: 1 }}>
+                    <Text aria-hidden>📦</Text>
                     <Stack gap="xs">
                       <Text variant="heading3">{inv.name || 'Product'}</Text>
                       {inv.companyName ? <Text color="secondary">{inv.companyName}</Text> : null}
                     </Stack>
                   </Inline>
-                  <IconButton
-                    label="Close"
-                    className={detailStyles.close}
-                    onClick={() => setDetailModalItem(null)}
-                  >
+                  <IconButton label="Close" onClick={() => setDetailModalItem(null)}>
                     ×
                   </IconButton>
-                </Box>
+                </Inline>
                 <Modal.Body>
-                  <Stack gap="lg" className={detailStyles.body}>
-                    <Stack gap="md" className={detailStyles.section}>
+                  <Stack gap="lg" style={detailModalBodyStyle}>
+                    <Stack gap="md" style={detailModalSectionStyle}>
                       <DetailSectionHeader icon="📋" title="Product Information" />
-                      <Grid className={detailStyles.detailsGrid}>
+                      <Grid columns={2}>
                         {detailModalFullItemLoading ? (
                           <DetailField icon="⏳" label="Loading full details">
                             …
@@ -3872,14 +3996,22 @@ export function ScanSellPage() {
                         </DetailField>
                       </Grid>
                     </Stack>
-                    <Stack gap="md" className={detailStyles.section}>
+                    <Stack
+                      gap="md"
+                      style={{
+                        ...detailModalSectionStyle,
+                        marginBottom: 0,
+                        paddingBottom: 0,
+                        borderBottom: 'none',
+                      }}
+                    >
                       <DetailSectionHeader icon="💰" title="Pricing" />
-                      <Grid className={detailStyles.pricingGrid}>
+                      <Grid columns={2} gap="md">
                         <DetailField icon="💵" label="Selling Price" pricing>
-                          <Text className={detailStyles.priceValue}>₹{price.toFixed(2)}</Text>
+                          <Text style={detailPriceValueStyle}>₹{price.toFixed(2)}</Text>
                         </DetailField>
                         <DetailField icon="🏷️" label="MRP" pricing>
-                          <Text className={detailStyles.mrpValue}>₹{mrp.toFixed(2)}</Text>
+                          <Text style={detailMrpValueStyle}>₹{mrp.toFixed(2)}</Text>
                         </DetailField>
                         {mrp > 0 ? (
                           <DetailField icon="📉" label="Discount off MRP" pricing>
@@ -3925,13 +4057,13 @@ export function ScanSellPage() {
                           </DetailField>
                         ) : null}
                         <DetailField icon="₹" label="Total amount" pricing>
-                          <Text className={detailStyles.totalValue}>
+                          <Text style={detailTotalValueStyle}>
                             ₹{(apiItem?.totalAmount ?? price * qty).toFixed(2)}
                           </Text>
                         </DetailField>
                       </Grid>
                       {detailModalItem.inventoryItem.pricingId ? (
-                        <Box className={detailStyles.pricingActions}>
+                        <Box style={{ marginTop: '1rem' }}>
                           <Link
                             to={`/dashboard/price-edit/${detailModalItem.inventoryItem.pricingId}`}
                             state={{
@@ -3941,9 +4073,8 @@ export function ScanSellPage() {
                               rates: detailModalItem.inventoryItem.rates ?? undefined,
                               defaultRate: detailModalItem.inventoryItem.defaultRate ?? undefined,
                             }}
-                            className={detailStyles.editPriceLink}
                           >
-                            <Text>Edit price</Text>
+                            <Text color="primary">Edit price</Text>
                           </Link>
                         </Box>
                       ) : null}
@@ -3973,52 +4104,38 @@ function SearchDropdownItem({
   };
 
   return (
-    <Inline as="li" justify="between" align="start" gap="md" className={styles.dropdownItem}>
+    <Inline as="li" justify="between" align="start" gap="md" style={dropdownItemStyle}>
       <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
         <Inline gap="sm" align="center">
-          <Text weight="semibold" className={styles.dropdownItemName}>
+          <Text weight="semibold" style={dropdownItemNameStyle}>
             {item.name || 'Unnamed Product'}
           </Text>
-          <Badge variant="neutral" className={styles.dropdownModeBadge}>
-            {item.billingMode === 'BASIC' ? 'BASIC' : 'REGULAR'}
-          </Badge>
+          <Badge variant="info">{item.billingMode === 'BASIC' ? 'BASIC' : 'REGULAR'}</Badge>
         </Inline>
         {item.companyName ? (
-          <Text variant="caption" color="secondary" className={styles.dropdownItemCompany}>
+          <Text variant="caption" color="secondary" truncate>
             Company: {item.companyName}
           </Text>
         ) : null}
         {item.barcode ? (
-          <Text variant="caption" color="secondary" className={styles.dropdownItemMeta}>
+          <Text variant="caption" color="secondary" truncate>
             Barcode: {item.barcode}
           </Text>
         ) : null}
-        <Text variant="caption" color="secondary" className={styles.dropdownItemMeta}>
+        <Text variant="caption" color="secondary" truncate>
           Current: {item.currentCount}
         </Text>
-        <Text
-          variant="caption"
-          weight="semibold"
-          className={`${styles.dropdownItemMeta} ${styles.dropdownItemMetaBold}`}
-        >
+        <Text variant="caption" weight="semibold" truncate>
           MRP: ₹{item.maximumRetailPrice != null ? item.maximumRetailPrice.toFixed(2) : '—'}
         </Text>
-        <Text
-          variant="caption"
-          weight="semibold"
-          className={`${styles.dropdownItemMeta} ${styles.dropdownItemMetaBold}`}
-        >
+        <Text variant="caption" weight="semibold" truncate>
           Selling: ₹
           {(item.sellingPrice ?? item.priceToRetail) != null
             ? (item.sellingPrice ?? item.priceToRetail)!.toFixed(2)
             : '—'}
         </Text>
         {hasInventoryExpiryDate(item) ? (
-          <Text
-            variant="caption"
-            weight="semibold"
-            className={`${styles.dropdownItemMeta} ${styles.dropdownItemMetaBold}`}
-          >
+          <Text variant="caption" weight="semibold" truncate>
             Expires: {formatInventoryExpiryDate(item)}
           </Text>
         ) : null}

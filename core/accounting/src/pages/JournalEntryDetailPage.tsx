@@ -21,7 +21,7 @@ import { useNotify } from '@inventory-platform/session';
 import { useJournalQuery, useReverseJournalMutation } from '../queries/hooks';
 import { AccountingTabs } from '../ui/AccountingTabs';
 import { formatDateTime, formatDate, formatMoney } from '../model/format';
-import styles from '../ui/accounting.module.css';
+import { grandTotalCellStyle } from '../ui/accountingStyles';
 import { numColBoldStyle, numColStyle } from '../ui/tabNav';
 
 function statusVariant(
@@ -201,12 +201,16 @@ export function JournalEntryDetailPage() {
                       </TableCell>
                     </TableRow>
                   ))}
-                  <TableRow className={styles.grandTotalRow}>
-                    <TableCell colSpan={3} style={numColStyle}>
+                  <TableRow>
+                    <TableCell colSpan={3} style={{ ...numColStyle, ...grandTotalCellStyle }}>
                       Totals
                     </TableCell>
-                    <TableCell style={numColBoldStyle}>{formatMoney(entry.totalDebit)}</TableCell>
-                    <TableCell style={numColBoldStyle}>{formatMoney(entry.totalCredit)}</TableCell>
+                    <TableCell style={{ ...numColBoldStyle, ...grandTotalCellStyle }}>
+                      {formatMoney(entry.totalDebit)}
+                    </TableCell>
+                    <TableCell style={{ ...numColBoldStyle, ...grandTotalCellStyle }}>
+                      {formatMoney(entry.totalCredit)}
+                    </TableCell>
                   </TableRow>
                 </TableBody>
               </Table>

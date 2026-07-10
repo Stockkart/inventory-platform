@@ -1,28 +1,28 @@
-.socialButtons {
+.root {
   display: flex;
   gap: 1rem;
   width: 100%;
   align-items: stretch;
 }
 
-.socialButtons > div {
+.root > div {
   width: 100% !important;
   display: flex !important;
   justify-content: center !important;
 }
 
-.socialButtons iframe {
+.root iframe {
   width: 100% !important;
   max-width: 100% !important;
 }
 
-.socialButtons div[role='button'] {
+.root div[role='button'] {
   width: 100% !important;
   max-width: 100% !important;
 }
 
 @media (max-width: 640px) {
-  .socialButtons {
+  .root {
     flex-direction: column;
   }
 }

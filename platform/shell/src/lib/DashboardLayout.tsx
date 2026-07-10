@@ -9,16 +9,15 @@ import { useNotifications } from './useNotifications';
 import { shopsApi } from '@inventory-platform/user/shops';
 import type { DashboardLayoutProps } from '@inventory-platform/shell/types';
 import type { Location as LocationType } from '@inventory-platform/user/types';
-import styles from './DashboardLayout.module.css';
 import { ThemeToggle } from './ThemeToggle';
 import {
   Alert,
+  AppShell,
   Avatar,
   Badge,
   Box,
   Button,
   CenteredLoader,
-  cn,
   FormField,
   Grid,
   IconButton,
@@ -27,6 +26,8 @@ import {
   Label,
   Link as UiLink,
   Modal,
+  navItemClassName,
+  PopoverPanel,
   Stack,
   Text,
 } from '@inventory-platform/ui-kit';
@@ -80,12 +81,13 @@ function isTypingInField(target: EventTarget | null): boolean {
   return Boolean(target.closest('[contenteditable="true"]'));
 }
 
-const navLinkStyle = {
+const navLinkLayoutStyle = {
+  display: 'flex',
+  alignItems: 'center',
   borderRadius: 8,
   fontSize: '0.875rem',
   lineHeight: 1.25,
   boxSizing: 'border-box' as const,
-  color: 'var(--text-secondary)',
 };
 
 export function DashboardLayout({
@@ -427,10 +429,7 @@ export function DashboardLayout({
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
 
   return (
-    <Box
-      className={cn(styles.shell, !sidebarOpen && styles.shellCollapsed)}
-      style={{ backgroundColor: 'var(--bg-primary)', transition: 'background-color 0.3s ease' }}
-    >
+    <>
       <CommandPalette
         open={commandPaletteOpen}
         onClose={() => setCommandPaletteOpen(false)}
@@ -454,50 +453,33 @@ export function DashboardLayout({
         pageLabel={currentPageLabel}
       />
       <ToastProvider />
-      {!sidebarOpen && isMobile && (
-        <IconButton
-          label="Open menu"
-          className={styles.mobileMenuFloating}
-          onClick={() => setSidebarOpen(true)}
-          style={{
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 32,
-            height: 32,
-            background: 'var(--bg-secondary)',
-            border: '1px solid var(--border-color)',
-            borderRadius: 6,
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-            color: 'var(--text-primary)',
-          }}
-        >
-          <Menu size={18} />
-        </IconButton>
-      )}
-      {sidebarOpen && isMobile && (
-        <Box
-          className={styles.sidebarBackdropVisible}
-          onClick={() => setSidebarOpen(false)}
-          aria-hidden="true"
-        />
-      )}
-      <Box className={styles.shellBody}>
-        <Box
-          className={styles.sidebarColumn}
-          style={{
-            backgroundColor: 'var(--bg-secondary)',
-            borderRight: '1px solid var(--border-color)',
-            minHeight: '100%',
-            alignSelf: 'stretch',
-          }}
-        >
-          <Box
-            as="aside"
-            className={cn(styles.sidebar, sidebarOpen ? styles.sidebarOpen : styles.sidebarClosed)}
-            display="flex"
-            flexDirection="column"
-            style={{ backgroundColor: 'var(--bg-secondary)' }}
-          >
+      <AppShell
+        collapsed={!sidebarOpen}
+        mobileOpen={sidebarOpen && isMobile}
+        onMobileClose={() => setSidebarOpen(false)}
+        mobileMenuButton={
+          !sidebarOpen && isMobile ? (
+            <IconButton
+              label="Open menu"
+              onClick={() => setSidebarOpen(true)}
+              style={{
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 32,
+                height: 32,
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 6,
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                color: 'var(--text-primary)',
+              }}
+            >
+              <Menu size={18} />
+            </IconButton>
+          ) : undefined
+        }
+        sidebar={
+          <>
             <Inline
               justify={sidebarOpen ? 'between' : 'center'}
               align="center"
@@ -641,21 +623,15 @@ export function DashboardLayout({
                             <Link
                               key={item.path}
                               to={item.path}
-                              className={cn(
-                                styles.navLink,
-                                currentPath === item.path && styles.navLinkActive,
-                              )}
+                              className={navItemClassName(currentPath === item.path)}
                               style={{
-                                ...navLinkStyle,
-                                display: 'flex',
-                                alignItems: 'center',
+                                ...navLinkLayoutStyle,
                                 gap: '0.625rem',
                                 padding: '0.5rem 0.625rem',
                                 margin: '0.125rem 0',
                               }}
                             >
                               <Box
-                                className={styles.navIcon}
                                 display="flex"
                                 align="center"
                                 justify="center"
@@ -680,20 +656,14 @@ export function DashboardLayout({
                       key={item.path}
                       to={item.path}
                       title={item.label}
-                      className={cn(
-                        styles.navLink,
-                        currentPath === item.path && styles.navLinkActive,
-                      )}
+                      className={navItemClassName(currentPath === item.path)}
                       style={{
-                        ...navLinkStyle,
-                        display: 'flex',
-                        alignItems: 'center',
+                        ...navLinkLayoutStyle,
                         justifyContent: 'center',
                         padding: '0.6rem',
                       }}
                     >
                       <Box
-                        className={styles.navIcon}
                         display="flex"
                         align="center"
                         justify="center"
@@ -888,13 +858,10 @@ export function DashboardLayout({
                 </Box>
               )}
             </Box>
-          </Box>
-        </Box>
-
-        <Box display="flex" flexDirection="column" style={{ minWidth: 0 }}>
+          </>
+        }
+        header={
           <Box
-            as="header"
-            className={styles.shellHeader}
             style={{
               backgroundColor: 'var(--bg-header)',
               borderBottom: '1px solid var(--border-color)',
@@ -955,15 +922,14 @@ export function DashboardLayout({
                     >
                       <Bell size={18} aria-hidden />
                       {unreadCount > 0 && (
-                        <Badge variant="danger" className={styles.notificationBadge}>
-                          {unreadCount}
-                        </Badge>
+                        <Box style={{ position: 'absolute', top: -2, right: -2 }}>
+                          <Badge variant="danger">{unreadCount}</Badge>
+                        </Box>
                       )}
                     </IconButton>
 
                     {showNotificationMenu && (
-                      <Box
-                        className={styles.popover}
+                      <PopoverPanel
                         style={{
                           top: '110%',
                           right: 0,
@@ -1032,7 +998,7 @@ export function DashboardLayout({
                             </Button>
                           ))
                         )}
-                      </Box>
+                      </PopoverPanel>
                     )}
                   </Box>
 
@@ -1117,8 +1083,7 @@ export function DashboardLayout({
                     </Button>
 
                     {userMenuOpen && (
-                      <Box
-                        className={styles.popover}
+                      <PopoverPanel
                         style={{
                           right: 0,
                           top: 'calc(100% + 8px)',
@@ -1185,39 +1150,37 @@ export function DashboardLayout({
                         >
                           Logout
                         </Button>
-                      </Box>
+                      </PopoverPanel>
                     )}
                   </Box>
                 </Inline>
               </Inline>
             </Inline>
           </Box>
-
-          <Box
-            as="main"
-            ref={mainContentRef}
-            padding="md"
-            style={{
-              flex: 1,
-              minWidth: 0,
-              backgroundColor: 'var(--sk-color-bg-surface, var(--bg-tertiary))',
-              transition: 'background-color 0.3s ease',
-            }}
-            onKeyDownCapture={(e) => {
-              const mainEl = mainContentRef.current;
-              if (!mainEl) return;
-              const active = document.activeElement;
-              if (active?.closest(`[data-keyboard-nav="${KEYBOARD_NAV_GRID}"]`)) {
-                return;
-              }
-              if (shouldSkipGlobalMainKeyboardNav(active)) return;
-              runFormKeyboardNavigation(e, mainEl, 'list');
-            }}
-          >
-            {children}
-          </Box>
+        }
+      >
+        <Box
+          as="main"
+          ref={mainContentRef}
+          style={{
+            minHeight: '100%',
+            backgroundColor: 'var(--sk-color-bg-surface, var(--bg-tertiary))',
+            transition: 'background-color 0.3s ease',
+          }}
+          onKeyDownCapture={(e) => {
+            const mainEl = mainContentRef.current;
+            if (!mainEl) return;
+            const active = document.activeElement;
+            if (active?.closest(`[data-keyboard-nav="${KEYBOARD_NAV_GRID}"]`)) {
+              return;
+            }
+            if (shouldSkipGlobalMainKeyboardNav(active)) return;
+            runFormKeyboardNavigation(e, mainEl, 'list');
+          }}
+        >
+          {children}
         </Box>
-      </Box>
+      </AppShell>
 
       <Modal open={editModalOpen} onClose={closeEditModal}>
         <Modal.Header title="Edit tagline & location" onClose={closeEditModal} />
@@ -1329,6 +1292,6 @@ export function DashboardLayout({
           </Modal.Footer>
         )}
       </Modal>
-    </Box>
+    </>
   );
 }

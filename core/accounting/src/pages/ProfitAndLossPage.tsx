@@ -23,7 +23,7 @@ import { useNotify } from '@inventory-platform/session';
 import type { ProfitAndLossResponse } from '@inventory-platform/accounting/types';
 import { AccountingTabs } from '../ui/AccountingTabs';
 import { formatDate, formatMoney, todayLocalDate } from '../model/format';
-import styles from '../ui/accounting.module.css';
+import { subTotalCellStyle } from '../ui/accountingStyles';
 import { numColBoldStyle, numColStyle } from '../ui/tabNav';
 
 function monthStart(d = new Date()): string {
@@ -212,9 +212,13 @@ function ReportSection({
                     <TableCell style={numColBoldStyle}>{formatMoney(r.amount)}</TableCell>
                   </TableRow>
                 ))}
-                <TableRow className={styles.subTotalRow}>
-                  <TableCell colSpan={2}>Subtotal</TableCell>
-                  <TableCell style={numColBoldStyle}>{formatMoney(total)}</TableCell>
+                <TableRow>
+                  <TableCell colSpan={2} style={subTotalCellStyle}>
+                    Subtotal
+                  </TableCell>
+                  <TableCell style={{ ...numColBoldStyle, ...subTotalCellStyle }}>
+                    {formatMoney(total)}
+                  </TableCell>
                 </TableRow>
               </TableBody>
             </Table>

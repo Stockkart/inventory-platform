@@ -18,6 +18,7 @@ export interface ModalProps {
   size?: ModalSize;
   children: ReactNode;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 function useModalContext() {
@@ -28,7 +29,7 @@ function useModalContext() {
   return ctx;
 }
 
-export function Modal({ open, onClose, size = 'md', children, className }: ModalProps) {
+export function Modal({ open, onClose, size = 'md', children, className, style }: ModalProps) {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -67,6 +68,7 @@ export function Modal({ open, onClose, size = 'md', children, className }: Modal
           aria-labelledby={titleId}
           tabIndex={-1}
           className={cn(styles.modal, styles[`size-${size}`], className)}
+          style={style}
           onClick={(event) => event.stopPropagation()}
         >
           {children}
