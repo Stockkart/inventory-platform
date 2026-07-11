@@ -13,6 +13,12 @@ export function formatMoneyOrDash(value: number | undefined | null): string {
   return formatMoney(value);
 }
 
+/** Debit/credit turnover cells — always absolute; empty when zero. */
+export function formatTurnover(value: number | undefined | null): string {
+  if (value == null || value === 0) return '—';
+  return formatMoney(Math.abs(value));
+}
+
 /** {@code "yyyy-mm-dd"} string from server is left as-is for display. */
 export function formatDate(date?: string | null): string {
   if (!date) return '—';
