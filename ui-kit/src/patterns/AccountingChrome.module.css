@@ -1,16 +1,83 @@
 .journalLineGrid {
   display: grid;
-  grid-template-columns: 2.2fr 1fr 1fr 1fr 2rem;
-  gap: 0.4rem 0.5rem;
-  align-items: stretch;
-  margin-bottom: 0.4rem;
+  grid-template-columns: minmax(12rem, 2.4fr) minmax(6.5rem, 1fr) minmax(6.5rem, 1fr) minmax(
+      7rem,
+      1.2fr
+    ) 2.25rem;
+  gap: 0.55rem 0.65rem;
+  align-items: start;
+  margin-bottom: 0.55rem;
 }
 
 .journalHeaderLineGrid {
   display: grid;
-  grid-template-columns: 2.2fr 1fr 1fr 1fr 2rem;
-  gap: 0.4rem 0.5rem;
-  margin-bottom: 0.2rem;
+  grid-template-columns: minmax(12rem, 2.4fr) minmax(6.5rem, 1fr) minmax(6.5rem, 1fr) minmax(
+      7rem,
+      1.2fr
+    ) 2.25rem;
+  gap: 0.55rem 0.65rem;
+  align-items: end;
+  margin-bottom: 0.45rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
+}
+
+.journalColLabel {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--sk-color-text-secondary, #94a3b8);
+}
+
+.journalColLabelRight {
+  text-align: right;
+}
+
+.journalMetaBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1rem;
+  width: 100%;
+}
+
+.journalMetaNarration {
+  flex: 1 1 16rem;
+  min-width: 12rem;
+}
+
+.journalBalanceBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
+}
+
+.journalBalanceMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.journalBalanceFigures {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--sk-color-text-secondary, #64748b);
+}
+
+.journalActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .ledgerLayout {
@@ -328,6 +395,12 @@
   vertical-align: middle;
 }
 
+.recentEntriesTable :global(th) {
+  font-weight: 600 !important;
+  font-size: 0.8125rem !important;
+  color: var(--sk-color-text-secondary, #64748b) !important;
+}
+
 .recentEntriesAmount {
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -427,6 +500,12 @@
 .detailLinesTable :global(td) {
   padding-block: 0.8rem !important;
   vertical-align: middle;
+}
+
+.detailLinesTable :global(th) {
+  font-weight: 600 !important;
+  font-size: 0.8125rem !important;
+  color: var(--sk-color-text-secondary, #64748b) !important;
 }
 
 .detailAmountCol {
@@ -565,6 +644,12 @@
   vertical-align: middle;
 }
 
+.ledgerTable :global(th) {
+  font-weight: 600 !important;
+  font-size: 0.8125rem !important;
+  color: var(--sk-color-text-secondary, #64748b) !important;
+}
+
 .ledgerDateCol {
   white-space: nowrap;
   width: 7rem;
@@ -619,6 +704,384 @@
 .ledgerAmountMuted {
   color: var(--sk-color-text-secondary, #94a3b8);
   font-weight: 500;
+}
+
+.partiesFilterBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1rem;
+  width: 100%;
+}
+
+.partiesFilterSearch {
+  flex: 1 1 18rem;
+  min-width: 14rem;
+}
+
+.partiesFilterDates {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.65rem 0.75rem;
+  flex-shrink: 0;
+}
+
+.partiesFilterField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  min-width: 0;
+}
+
+.partiesFilterLabel {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--sk-color-text-secondary, #94a3b8);
+}
+
+.partiesTable {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.partiesTable :global(th),
+.partiesTable :global(td) {
+  padding-block: 0.85rem !important;
+  vertical-align: middle;
+}
+
+.partiesTable :global(th) {
+  font-weight: 600 !important;
+  font-size: 0.8125rem !important;
+  color: var(--sk-color-text-secondary, #64748b) !important;
+}
+
+.partiesNameCol {
+  width: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.partiesNumCol {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+  width: 7.25rem;
+  padding-left: 1.25rem !important;
+}
+
+.partiesOwedCol {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  white-space: nowrap;
+  width: 8.75rem;
+  padding-left: 1.5rem !important;
+}
+
+.partiesActivityCol {
+  white-space: nowrap;
+  width: 8.25rem;
+  padding-left: 1.5rem !important;
+  color: var(--sk-color-text-secondary, #64748b);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.partiesTxnsCol {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+  width: 4.25rem;
+  padding-left: 1.25rem !important;
+}
+
+.partiesKpiGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  width: 100%;
+}
+
+@media (max-width: 720px) {
+  .partiesKpiGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pnlKpiGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .pnlKpiGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.reportEmpty {
+  margin: 0;
+  padding: 1.25rem 0 0.5rem;
+  font-size: 0.875rem;
+  color: var(--sk-color-text-secondary, #64748b);
+  text-align: left;
+}
+
+.tbAsOfInput {
+  width: 11.5rem;
+  max-width: 100%;
+}
+
+.tbTable {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.tbTable :global(thead) {
+  background: transparent;
+}
+
+.tbTable :global(th),
+.tbTable :global(td) {
+  padding: 0.75rem 0 !important;
+  vertical-align: middle;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 70%, transparent);
+}
+
+.tbTable :global(thead th) {
+  padding-bottom: 0.65rem !important;
+  font-weight: 600 !important;
+  font-size: 0.75rem !important;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sk-color-text-secondary, #64748b) !important;
+  border-bottom-color: color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 95%, transparent);
+  background: transparent !important;
+}
+
+.tbTable :global(tbody tr:last-child td) {
+  border-bottom: none;
+}
+
+.tbCodeCol {
+  width: 5rem;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--sk-color-text-secondary, #64748b);
+  text-align: left !important;
+  padding-right: 1.75rem !important;
+}
+
+.tbAccountCol {
+  width: auto;
+  text-align: left !important;
+  padding-left: 0.25rem !important;
+  padding-right: 2rem !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tbAccountMain {
+  display: flex;
+  align-items: baseline;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.tbAccountCode {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: var(--sk-color-text-secondary, #94a3b8);
+}
+
+.tbAccountLink.tbAccountLink {
+  display: inline;
+  min-height: unset;
+  height: auto;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #2563eb;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  text-align: left;
+}
+
+.tbAccountLink.tbAccountLink:hover:not(:disabled) {
+  color: #1d4ed8;
+  background: transparent;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.tbNumCol {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  white-space: nowrap;
+  width: 8.5rem;
+  padding-left: 1.5rem !important;
+  letter-spacing: -0.01em;
+}
+
+.tbNumMuted {
+  color: var(--sk-color-text-secondary, #94a3b8);
+  font-weight: 500;
+}
+
+.tbGroupRow {
+  font-size: 0.9375rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.015em;
+  color: var(--sk-color-text-primary, #0f172a) !important;
+  background: transparent !important;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 95%, transparent) !important;
+  padding-top: 1.5rem !important;
+  padding-bottom: 0.55rem !important;
+}
+
+.tbGroupRowFirst {
+  padding-top: 0.35rem !important;
+}
+
+.tbSubtotalLabel {
+  text-align: left !important;
+  font-weight: 500 !important;
+  font-size: 0.8125rem !important;
+  color: var(--sk-color-text-secondary, #64748b) !important;
+  background: transparent !important;
+  border-bottom: none !important;
+  padding-top: 0.55rem !important;
+  padding-bottom: 1.15rem !important;
+}
+
+.tbSubtotalRow {
+  background: transparent !important;
+  border-bottom: none !important;
+  font-weight: 600;
+  padding-top: 0.55rem !important;
+  padding-bottom: 1.15rem !important;
+  color: var(--sk-color-text-primary, #0f172a);
+}
+
+.tbTotalsLabel {
+  text-align: left !important;
+  font-weight: 700 !important;
+  font-size: 0.9375rem !important;
+  color: var(--sk-color-text-primary, #0f172a) !important;
+  background: transparent !important;
+  border-top: 1px solid var(--sk-color-text-primary, #0f172a) !important;
+  border-bottom: none !important;
+  padding-top: 0.85rem !important;
+  padding-bottom: 0.25rem !important;
+}
+
+.tbTotalsRow {
+  background: transparent !important;
+  border-top: 1px solid var(--sk-color-text-primary, #0f172a) !important;
+  border-bottom: none !important;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  padding-top: 0.85rem !important;
+  padding-bottom: 0.25rem !important;
+}
+
+.tbStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--sk-color-text-secondary, #64748b);
+}
+
+.coaTable {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.coaTable :global(th),
+.coaTable :global(td) {
+  padding-block: 0.75rem !important;
+  vertical-align: middle;
+}
+
+.coaTable :global(th) {
+  font-weight: 600 !important;
+  font-size: 0.8125rem !important;
+  color: var(--sk-color-text-secondary, #64748b) !important;
+}
+
+.coaNormalCol {
+  width: 6.5rem;
+  white-space: nowrap;
+  font-size: 0.875rem;
+  color: var(--sk-color-text-secondary, #64748b);
+}
+
+.coaMetaCol {
+  width: 7.5rem;
+  white-space: nowrap;
+}
+
+.coaActionCol {
+  width: 7.5rem;
+  text-align: right !important;
+  white-space: nowrap;
+}
+
+.coaAccountCell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.coaInactiveName {
+  opacity: 0.55;
+}
+
+.coaCreateGrid {
+  display: grid;
+  grid-template-columns: minmax(6rem, 8rem) minmax(12rem, 1fr) minmax(8rem, 10rem) auto;
+  gap: 0.75rem 1rem;
+  align-items: end;
+  width: 100%;
+}
+
+@media (max-width: 720px) {
+  .coaCreateGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .coaActionCol {
+    width: 5.5rem;
+  }
 }
 
 @media (max-width: 1100px) {

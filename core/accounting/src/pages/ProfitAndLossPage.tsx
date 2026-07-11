@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
+  Box,
   Button,
   Card,
   CardBody,
-  Grid,
-  Inline,
   Input,
   PageHeader,
   Stack,
@@ -18,14 +17,13 @@ import {
   TableRow,
   Text,
   cn,
+  accountingChrome,
 } from '@inventory-platform/ui-kit';
 import { accountingApi } from '../api/accounting.api';
 import { useNotify } from '@inventory-platform/session';
 import type { ProfitAndLossResponse } from '@inventory-platform/accounting/types';
 import { AccountingTabs } from '../ui/AccountingTabs';
-import { formatDate, formatMoney, todayLocalDate } from '../model/format';
-import { subTotalCellStyle } from '../ui/accountingStyles';
-import { numColBoldStyle, numColStyle } from '../ui/tabNav';
+import { formatDateShort, formatMoney, todayLocalDate } from '../model/format';
 
 function monthStart(d = new Date()): string {
   const y = d.getFullYear();
@@ -36,6 +34,8 @@ function monthStart(d = new Date()): string {
 export function ProfitAndLossPage() {
   const navigate = useNavigate();
   const { error: notifyError } = useNotify;
+  const [fromInput, setFromInput] = useState(monthStart());
+  const [toInput, setToInput] = useState(todayLocalDate());
   const [from, setFrom] = useState(monthStart());
   const [to, setTo] = useState(todayLocalDate());
   const [data, setData] = useState<ProfitAndLossResponse | null>(null);
@@ -61,29 +61,60 @@ export function ProfitAndLossPage() {
     };
   }, [from, to, notifyError]);
 
-  const netProfitColor = useMemo(() => {
-    if (!data) return 'primary' as const;
-    return data.netProfit >= 0 ? ('success' as const) : ('danger' as const);
-  }, [data]);
+  function handleSearch() {
+    setFrom(fromInput);
+    setTo(toInput);
+  }
+
+  const netProfit = data?.netProfit ?? 0;
 
   return (
     <Stack gap="md">
-      <Stack gap="md">
-        <AccountingTabs />
-        <PageHeader description="Revenue and expense accounts for the selected period (turnover, not closing balances)." />
-        <Inline gap="sm">
-          <Text variant="label" color="secondary">
-            From
-          </Text>
-          <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-          <Text variant="label" color="secondary">
-            To
-          </Text>
-          <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-        </Inline>
-      </Stack>
+      <AccountingTabs />
 
-      {loading ? (
+      <PageHeader description="Revenue and expenses for the selected period." />
+
+      <Box className={accountingChrome.partiesFilterBar}>
+        <Box className={accountingChrome.partiesFilterDates}>
+          <Box className={accountingChrome.partiesFilterField}>
+            <Text as="span" className={accountingChrome.partiesFilterLabel}>
+              From
+            </Text>
+            <Input
+              aria-label="From date"
+              type="date"
+              value={fromInput}
+              onChange={(e) => setFromInput(e.target.value)}
+              className={accountingChrome.tbAsOfInput}
+              disabled={loading}
+            />
+          </Box>
+          <Box className={accountingChrome.partiesFilterField}>
+            <Text as="span" className={accountingChrome.partiesFilterLabel}>
+              To
+            </Text>
+            <Input
+              aria-label="To date"
+              type="date"
+              value={toInput}
+              onChange={(e) => setToInput(e.target.value)}
+              className={accountingChrome.tbAsOfInput}
+              disabled={loading}
+            />
+          </Box>
+          <Button
+            type="button"
+            variant="solid"
+            onClick={handleSearch}
+            loading={loading}
+            disabled={loading || !fromInput || !toInput}
+          >
+            Search
+          </Button>
+        </Box>
+      </Box>
+
+      {loading && !data ? (
         <Card>
           <CardBody>
             <Table>
@@ -96,76 +127,69 @@ export function ProfitAndLossPage() {
       ) : !data ? (
         <Card>
           <CardBody>
-            <Text color="secondary" align="center">
-              No data.
-            </Text>
+            <Text color="secondary">No data for this period.</Text>
           </CardBody>
         </Card>
       ) : (
         <Stack gap="md">
-          <Grid gap="md">
-            <Card>
-              <CardBody>
-                <Stack gap="xs">
-                  <Text variant="caption" color="secondary">
-                    Total revenue
-                  </Text>
-                  <Text variant="heading2" weight="bold">
-                    ₹ {formatMoney(data.totalRevenue)}
-                  </Text>
-                </Stack>
-              </CardBody>
-            </Card>
-            <Card>
-              <CardBody>
-                <Stack gap="xs">
-                  <Text variant="caption" color="secondary">
-                    Total expenses
-                  </Text>
-                  <Text variant="heading2" weight="bold">
-                    ₹ {formatMoney(data.totalExpense)}
-                  </Text>
-                </Stack>
-              </CardBody>
-            </Card>
-            <Card>
-              <CardBody>
-                <Stack gap="xs">
-                  <Text variant="caption" color="secondary">
-                    Net profit
-                  </Text>
-                  <Text variant="heading2" weight="bold" color={netProfitColor}>
-                    ₹ {formatMoney(data.netProfit)}
-                  </Text>
-                </Stack>
-              </CardBody>
-            </Card>
-          </Grid>
+          <Box className={accountingChrome.pnlKpiGrid}>
+            <Box className={accountingChrome.overviewKpiCard}>
+              <Text as="span" className={accountingChrome.overviewKpiLabel}>
+                Total revenue
+              </Text>
+              <Text as="span" className={accountingChrome.overviewKpiValue}>
+                ₹{formatMoney(data.totalRevenue)}
+              </Text>
+            </Box>
+            <Box className={accountingChrome.overviewKpiCard}>
+              <Text as="span" className={accountingChrome.overviewKpiLabel}>
+                Total expenses
+              </Text>
+              <Text as="span" className={accountingChrome.overviewKpiValue}>
+                ₹{formatMoney(data.totalExpense)}
+              </Text>
+            </Box>
+            <Box className={accountingChrome.overviewKpiCard}>
+              <Text as="span" className={accountingChrome.overviewKpiLabel}>
+                Net profit
+              </Text>
+              <Text
+                as="span"
+                className={cn(
+                  accountingChrome.overviewKpiValue,
+                  netProfit >= 0
+                    ? accountingChrome.overviewKpiValuePositive
+                    : accountingChrome.overviewKpiValueWarning,
+                )}
+              >
+                ₹{formatMoney(netProfit)}
+              </Text>
+            </Box>
+          </Box>
 
           <ReportSection
             title="Revenue"
             rows={data.revenueLines}
-            emptyLabel="No revenue in period"
+            emptyLabel="No revenue in this period."
           />
           <ReportSection
             title="Expenses"
             rows={data.expenseLines}
-            emptyLabel="No expenses in period"
+            emptyLabel="No expenses in this period."
           />
 
-          <Inline gap="xs" align="center">
-            <Text variant="caption" color="secondary">
-              Period {formatDate(data.from)} – {formatDate(data.to)} ·
-            </Text>
+          <Text variant="caption" color="secondary">
+            Period {formatDateShort(data.from)} – {formatDateShort(data.to)} ·{' '}
             <Button
               type="button"
               variant="ghost"
               size="sm"
+              className={accountingChrome.entryLink}
               onClick={() => navigate('/dashboard/accounting/trial-balance')}
             >
               Trial balance
             </Button>
-          </Inline>
+          </Text>
         </Stack>
       )}
     </Stack>
@@ -181,40 +205,58 @@ function ReportSection({
   rows: ProfitAndLossResponse['revenueLines'];
   emptyLabel: string;
 }) {
+  const navigate = useNavigate();
   const total = rows.reduce((s, r) => s + r.amount, 0);
+
   return (
     <Card>
       <CardBody>
         <Stack gap="sm">
-          <Text variant="title" weight="bold">
+          <Text as="h3" className={accountingChrome.overviewSectionTitle}>
             {title}
           </Text>
           {rows.length === 0 ? (
-            <Text color="secondary" align="center">
+            <Text as="p" className={accountingChrome.reportEmpty}>
               {emptyLabel}
             </Text>
           ) : (
-            <Table>
+            <Table className={accountingChrome.tbTable}>
               <TableHead>
                 <TableRow>
-                  <TableHeaderCell>Code</TableHeaderCell>
-                  <TableHeaderCell>Account</TableHeaderCell>
-                  <TableHeaderCell className={numColStyle}>Amount</TableHeaderCell>
+                  <TableHeaderCell className={accountingChrome.tbCodeCol}>Code</TableHeaderCell>
+                  <TableHeaderCell className={accountingChrome.tbAccountCol}>
+                    Account
+                  </TableHeaderCell>
+                  <TableHeaderCell className={accountingChrome.tbNumCol}>Amount</TableHeaderCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {rows.map((r) => (
                   <TableRow key={r.accountId}>
-                    <TableCell>{r.accountCode}</TableCell>
-                    <TableCell>{r.accountName}</TableCell>
-                    <TableCell className={numColBoldStyle}>{formatMoney(r.amount)}</TableCell>
+                    <TableCell className={accountingChrome.tbCodeCol}>{r.accountCode}</TableCell>
+                    <TableCell className={accountingChrome.tbAccountCol}>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className={accountingChrome.tbAccountLink}
+                        onClick={() => navigate(`/dashboard/accounting/ledger/${r.accountId}`)}
+                      >
+                        {r.accountName}
+                      </Button>
+                    </TableCell>
+                    <TableCell className={accountingChrome.tbNumCol}>
+                      {formatMoney(r.amount)}
+                    </TableCell>
                   </TableRow>
                 ))}
                 <TableRow>
-                  <TableCell colSpan={2} className={subTotalCellStyle}>
+                  <TableCell colSpan={2} className={accountingChrome.tbTotalsLabel}>
                     Subtotal
                   </TableCell>
-                  <TableCell className={cn(numColBoldStyle, subTotalCellStyle)}>
+                  <TableCell
+                    className={cn(accountingChrome.tbNumCol, accountingChrome.tbTotalsRow)}
+                  >
                     {formatMoney(total)}
                   </TableCell>
                 </TableRow>

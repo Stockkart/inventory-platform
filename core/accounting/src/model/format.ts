@@ -44,6 +44,7 @@ const JOURNAL_SOURCE_LABELS: Record<string, string> = {
   SALES_RETURN: 'Sales return',
   CUSTOMER_SETTLEMENT: 'Customer settlement',
   VENDOR_PAYMENT: 'Vendor payment',
+  VENDOR_CREDIT_CHARGE: 'Credit charge',
   INVENTORY_CORRECTION: 'Stock correction',
   MANUAL: 'Manual',
   REVERSAL: 'Reversal',

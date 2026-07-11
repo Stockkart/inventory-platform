@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
-  Alert,
+  Badge,
+  Box,
   Button,
   Card,
   CardBody,
-  Inline,
   Input,
   PageHeader,
   Stack,
@@ -19,6 +19,7 @@ import {
   TableRow,
   Text,
   cn,
+  accountingChrome,
 } from '@inventory-platform/ui-kit';
 import { accountingApi } from '../api/accounting.api';
 import { useNotify } from '@inventory-platform/session';
@@ -28,13 +29,7 @@ import type {
   TrialBalanceRow,
 } from '@inventory-platform/accounting/types';
 import { AccountingTabs } from '../ui/AccountingTabs';
-import { formatDate, formatMoney, todayLocalDate } from '../model/format';
-import {
-  grandTotalCellStyle,
-  groupHeadingCellStyle,
-  subTotalCellStyle,
-} from '../ui/accountingStyles';
-import { numColBoldStyle, numColStyle } from '../ui/tabNav';
+import { formatMoney, formatTurnover, todayLocalDate } from '../model/format';
 
 const GROUP_ORDER: AccountType[] = ['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE'];
 
@@ -98,88 +93,125 @@ export function TrialBalancePage() {
   }
 
   const isBalanced = !!data && Math.abs(data.totalDebit - data.totalCredit) < 0.005;
+  const totalDebit = data?.totalDebit ?? 0;
+  const totalCredit = data?.totalCredit ?? 0;
+  const groups = GROUP_ORDER.flatMap((type) => {
+    const rows = grouped[type];
+    if (rows.length === 0) return [];
+    return [{ type, rows, sub: groupSubtotal(rows) }];
+  });
 
   return (
     <Stack gap="md">
-      <Stack gap="md">
-        <AccountingTabs />
-        <PageHeader description="Closing balances as of a date. Total Debit must equal Total Credit — if they don't, no entry can be unbalanced." />
-        <Inline gap="sm">
-          <Text variant="label" color="secondary">
+      <AccountingTabs />
+
+      <PageHeader description="Closing balances as of a date. Debits must equal credits." />
+
+      <Box className={accountingChrome.partiesFilterBar}>
+        <Box className={accountingChrome.partiesFilterField}>
+          <Text as="span" className={accountingChrome.partiesFilterLabel}>
             As of
           </Text>
-          <Input type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} />
-          {data ? (
-            <Text variant="caption" color="secondary">
-              · {formatDate(data.asOf)}
+          <Input
+            aria-label="As of date"
+            type="date"
+            value={asOf}
+            onChange={(e) => setAsOf(e.target.value)}
+            className={accountingChrome.tbAsOfInput}
+          />
+        </Box>
+      </Box>
+
+      {!loading && data && data.rows.length > 0 ? (
+        <Box className={accountingChrome.partiesKpiGrid}>
+          <Box className={accountingChrome.overviewKpiCard}>
+            <Text as="span" className={accountingChrome.overviewKpiLabel}>
+              Total debit
             </Text>
-          ) : null}
-        </Inline>
-      </Stack>
+            <Text as="span" className={accountingChrome.overviewKpiValue}>
+              ₹{formatMoney(totalDebit)}
+            </Text>
+          </Box>
+          <Box className={accountingChrome.overviewKpiCard}>
+            <Text as="span" className={accountingChrome.overviewKpiLabel}>
+              Total credit
+            </Text>
+            <Text as="span" className={accountingChrome.overviewKpiValue}>
+              ₹{formatMoney(totalCredit)}
+            </Text>
+          </Box>
+        </Box>
+      ) : null}
 
       <Card>
         <CardBody>
           {loading ? (
             <Table>
               <TableBody>
-                <TableLoadingRow colSpan={6} label="Loading trial balance…" />
+                <TableLoadingRow colSpan={4} label="Loading trial balance…" />
               </TableBody>
             </Table>
           ) : !data || data.rows.length === 0 ? (
             <Table>
               <TableBody>
                 <TableEmptyRow
-                  colSpan={6}
+                  colSpan={4}
                   message="No postings yet. Once you register vendor invoices or post journals, the trial balance will populate."
                 />
               </TableBody>
             </Table>
           ) : (
-            <Stack gap="sm">
-              <Table>
+            <Stack gap="md">
+              <Table className={accountingChrome.tbTable}>
                 <TableHead>
                   <TableRow>
-                    <TableHeaderCell>Code</TableHeaderCell>
-                    <TableHeaderCell>Account</TableHeaderCell>
-                    <TableHeaderCell className={numColStyle}>Debit Turnover</TableHeaderCell>
-                    <TableHeaderCell className={numColStyle}>Credit Turnover</TableHeaderCell>
-                    <TableHeaderCell className={numColStyle}>Debit Balance</TableHeaderCell>
-                    <TableHeaderCell className={numColStyle}>Credit Balance</TableHeaderCell>
+                    <TableHeaderCell className={accountingChrome.tbCodeCol}>Code</TableHeaderCell>
+                    <TableHeaderCell className={accountingChrome.tbAccountCol}>
+                      Account
+                    </TableHeaderCell>
+                    <TableHeaderCell className={accountingChrome.tbNumCol}>Debit</TableHeaderCell>
+                    <TableHeaderCell className={accountingChrome.tbNumCol}>Credit</TableHeaderCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {GROUP_ORDER.map((type) => {
-                    const rows = grouped[type];
-                    if (rows.length === 0) return null;
-                    const sub = groupSubtotal(rows);
-                    return (
-                      <RowsForType
-                        key={type}
-                        type={type}
-                        rows={rows}
-                        subDr={sub.dr}
-                        subCr={sub.cr}
-                      />
-                    );
-                  })}
+                  {groups.map((group, index) => (
+                    <RowsForType
+                      key={group.type}
+                      type={group.type}
+                      rows={group.rows}
+                      subDr={group.sub.dr}
+                      subCr={group.sub.cr}
+                      isFirst={index === 0}
+                    />
+                  ))}
                   <TableRow>
-                    <TableCell colSpan={4} className={numColStyle}>
-                      Grand Totals
+                    <TableCell colSpan={2} className={accountingChrome.tbTotalsLabel}>
+                      Totals
                     </TableCell>
-                    <TableCell className={cn(numColBoldStyle, grandTotalCellStyle)}>
-                      {formatMoney(data.totalDebit)}
+                    <TableCell
+                      className={cn(accountingChrome.tbNumCol, accountingChrome.tbTotalsRow)}
+                    >
+                      {formatMoney(totalDebit)}
                     </TableCell>
-                    <TableCell className={cn(numColBoldStyle, grandTotalCellStyle)}>
-                      {formatMoney(data.totalCredit)}
+                    <TableCell
+                      className={cn(accountingChrome.tbNumCol, accountingChrome.tbTotalsRow)}
+                    >
+                      {formatMoney(totalCredit)}
                     </TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
-              <Alert variant={isBalanced ? 'success' : 'warning'} role="status">
-                {isBalanced
-                  ? '✓ Books balance — total debits = total credits'
-                  : '⚠ Trial balance does not match — investigate immediately'}
-              </Alert>
+
+              <Box className={accountingChrome.tbStatus}>
+                <Badge variant={isBalanced ? 'success' : 'warning'}>
+                  {isBalanced ? 'Balanced' : 'Out of balance'}
+                </Badge>
+                <Text as="span" variant="caption" color="secondary">
+                  {isBalanced
+                    ? 'Total debits equal total credits.'
+                    : 'Investigate before posting further entries.'}
+                </Text>
+              </Box>
             </Stack>
           )}
         </CardBody>
@@ -188,61 +220,68 @@ export function TrialBalancePage() {
   );
 }
 
+function AmountCell({ value }: { value: number }) {
+  const label = formatTurnover(value);
+  return (
+    <TableCell
+      className={cn(accountingChrome.tbNumCol, label === '—' && accountingChrome.tbNumMuted)}
+    >
+      {label}
+    </TableCell>
+  );
+}
+
 function RowsForType({
   type,
   rows,
   subDr,
   subCr,
+  isFirst,
 }: {
   type: AccountType;
   rows: TrialBalanceRow[];
   subDr: number;
   subCr: number;
+  isFirst?: boolean;
 }) {
   const navigate = useNavigate();
 
   return (
     <>
       <TableRow>
-        <TableCell colSpan={6} className={groupHeadingCellStyle}>
+        <TableCell
+          colSpan={4}
+          className={cn(accountingChrome.tbGroupRow, isFirst && accountingChrome.tbGroupRowFirst)}
+        >
           {GROUP_LABEL[type]}
         </TableCell>
       </TableRow>
       {rows.map((r) => (
         <TableRow key={r.accountId}>
-          <TableCell>
-            <Text variant="caption" color="secondary">
-              {r.accountCode}
-            </Text>
-          </TableCell>
-          <TableCell>
+          <TableCell className={accountingChrome.tbCodeCol}>{r.accountCode}</TableCell>
+          <TableCell className={accountingChrome.tbAccountCol}>
             <Button
               type="button"
               variant="ghost"
               size="sm"
+              className={accountingChrome.tbAccountLink}
               onClick={() => navigate(`/dashboard/accounting/ledger/${r.accountId}`)}
             >
               {r.accountName}
             </Button>
           </TableCell>
-          <TableCell className={numColBoldStyle}>{formatMoney(r.debitTurnover)}</TableCell>
-          <TableCell className={numColBoldStyle}>{formatMoney(r.creditTurnover)}</TableCell>
-          <TableCell className={numColBoldStyle}>
-            {r.debitBalance ? formatMoney(r.debitBalance) : ''}
-          </TableCell>
-          <TableCell className={numColBoldStyle}>
-            {r.creditBalance ? formatMoney(r.creditBalance) : ''}
-          </TableCell>
+          <AmountCell value={r.debitBalance} />
+          <AmountCell value={r.creditBalance} />
         </TableRow>
       ))}
       <TableRow>
-        <TableCell colSpan={4} className={cn(numColStyle, subTotalCellStyle)}>
+        <TableCell colSpan={2} className={accountingChrome.tbSubtotalLabel}>
           {GROUP_LABEL[type]} subtotal
         </TableCell>
-        <TableCell className={cn(numColBoldStyle, subTotalCellStyle)}>
+        <TableCell className={cn(accountingChrome.tbNumCol, accountingChrome.tbSubtotalRow)}>
           {formatMoney(subDr)}
         </TableCell>
-        <TableCell className={cn(numColBoldStyle, subTotalCellStyle)}>
+        <TableCell className={cn(accountingChrome.tbNumCol, accountingChrome.tbSubtotalRow)}>
           {formatMoney(subCr)}
         </TableCell>
       </TableRow>

@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
+  Badge,
   Button,
   Card,
   CardBody,
-  Inline,
   PageHeader,
   Stack,
   Text,
+  accountingChrome,
 } from '@inventory-platform/ui-kit';
 import { accountingApi } from '../api/accounting.api';
 import { useNotify } from '@inventory-platform/session';
@@ -15,7 +16,7 @@ import type { AccountResponse, JournalEntryResponse } from '@inventory-platform/
 import { AccountingTabs } from '../ui/AccountingTabs';
 import { JournalEntryEditor } from '../ui/JournalEntryEditor';
 import { emptyLine } from '../model/journalEntryFormUtils';
-import { todayLocalDate, formatDate } from '../model/format';
+import { todayLocalDate, formatDateShort } from '../model/format';
 
 export function OpeningBalanceWizardPage() {
   const navigate = useNavigate();
@@ -54,35 +55,31 @@ export function OpeningBalanceWizardPage() {
     };
   }, [notifyError]);
 
-  const locked = Boolean(existing);
+  const locked = Boolean(existing?.id);
 
   return (
     <Stack gap="md">
-      <Stack gap="md">
-        <AccountingTabs />
-        <PageHeader description="One-time entry to bring forward balances when you start using accounting. Debits must equal credits." />
-      </Stack>
+      <AccountingTabs />
 
-      {existing ? (
+      <PageHeader description="One-time entry to bring forward balances when you start using accounting." />
+
+      {existing?.id ? (
         <Card>
           <CardBody>
-            <Stack gap="sm">
+            <Stack gap="sm" align="start">
+              <Badge variant="info">Already posted</Badge>
               <Text color="secondary">
-                Opening balances were already posted on {formatDate(existing.txnDate)} as
-              </Text>
-              <Inline gap="xs" align="center">
+                Opening balances were posted on {formatDateShort(existing.txnDate)} as{' '}
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
+                  className={accountingChrome.entryLink}
                   onClick={() => navigate(`/dashboard/accounting/journal/${existing.id}`)}
                 >
                   {existing.entryNo}
                 </Button>
-              </Inline>
-              <Text color="secondary">
-                To change opening balances you must reverse that entry and post a new one (contact
-                support if you need help).
+                . Reverse that entry before posting a new opening balance.
               </Text>
             </Stack>
           </CardBody>
@@ -101,7 +98,7 @@ export function OpeningBalanceWizardPage() {
             lines={lines}
             onLinesChange={setLines}
             showTemplates={false}
-            submitLabel="Post Opening Balances"
+            submitLabel="Post opening balances"
             submitting={submitting}
             disabled={locked}
             onValidationError={notifyError}

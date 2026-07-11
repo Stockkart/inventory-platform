@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
+  Box,
   Button,
   Card,
   CardBody,
-  Grid,
-  Inline,
   Input,
   PageHeader,
   SearchInput,
@@ -19,13 +18,14 @@ import {
   TableLoadingRow,
   TableRow,
   Text,
+  cn,
+  accountingChrome,
 } from '@inventory-platform/ui-kit';
 import { accountingApi } from '../api/accounting.api';
 import { useNotify } from '@inventory-platform/session';
 import type { PartySummariesResponse } from '@inventory-platform/accounting/types';
 import { AccountingTabs } from '../ui/AccountingTabs';
-import { numColBoldStyle, numColStyle } from '../ui/tabNav';
-import { formatDate, formatMoney } from '../model/format';
+import { formatDateShort, formatMoney, formatTurnover } from '../model/format';
 
 /** Subsidiary ledgers exist for vendors and customers; SHOP entries don't get a per-party view. */
 export type SubsidiaryPartyType = 'VENDOR' | 'CUSTOMER';
@@ -38,23 +38,26 @@ const COPY: Record<
     balanceCol: string;
     netLabel: string;
     emptyLabel: string;
+    searchPlaceholder: string;
   }
 > = {
   VENDOR: {
     title: 'Vendors',
     subtitle:
       'Subsidiary ledger of Sundry Creditors. Each row is one supplier; the balance is what you owe them as of today.',
-    balanceCol: 'Owed to vendor',
+    balanceCol: 'Payable',
     netLabel: 'Total payable',
     emptyLabel: 'No vendor activity yet.',
+    searchPlaceholder: 'Search vendors…',
   },
   CUSTOMER: {
     title: 'Customers',
     subtitle:
       'Subsidiary ledger of Sundry Debtors. Each row is one customer; the balance is what they owe you as of today.',
-    balanceCol: 'Owed by customer',
+    balanceCol: 'Receivable',
     netLabel: 'Total receivable',
     emptyLabel: 'No customer activity yet.',
+    searchPlaceholder: 'Search customers…',
   },
 };
 
@@ -112,87 +115,115 @@ export function PartiesPage({ partyType }: PartiesPageProps) {
   const partyHref = (refId: string) =>
     `/dashboard/accounting/${partyType.toLowerCase()}s/${encodeURIComponent(refId)}`;
 
+  const totalBalance = data?.totalBalance ?? 0;
+
   return (
     <Stack gap="md">
-      <Stack gap="md">
-        <PageHeader description={copy.subtitle} />
-        <AccountingTabs />
-        <Inline gap="sm">
+      <AccountingTabs />
+      <PageHeader description={copy.subtitle} />
+
+      <Box className={accountingChrome.partiesFilterBar}>
+        <Box className={accountingChrome.partiesFilterSearch}>
           <SearchInput
             value={searchInput}
             onChange={setSearchInput}
             onSearch={handleSearch}
             showSearchButton
-            placeholder={`Search ${partyType === 'VENDOR' ? 'vendors' : 'customers'}…`}
+            buttonVariant="solid"
+            grow
+            placeholder={copy.searchPlaceholder}
+            disabled={loading}
+            searchLabel={loading ? 'Searching…' : 'Search'}
           />
-          <FormFieldRow label="From">
-            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-          </FormFieldRow>
-          <FormFieldRow label="To">
-            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-          </FormFieldRow>
+        </Box>
+        <Box className={accountingChrome.partiesFilterDates}>
+          <Box className={accountingChrome.partiesFilterField}>
+            <Text as="span" className={accountingChrome.partiesFilterLabel}>
+              From
+            </Text>
+            <Input
+              aria-label="From date"
+              type="date"
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+            />
+          </Box>
+          <Box className={accountingChrome.partiesFilterField}>
+            <Text as="span" className={accountingChrome.partiesFilterLabel}>
+              To
+            </Text>
+            <Input
+              aria-label="To date"
+              type="date"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+            />
+          </Box>
           <Button
             type="button"
             variant="outline"
-            size="sm"
             onClick={() => {
               setFrom('');
               setTo('');
             }}
             disabled={!from && !to}
           >
-            Clear dates
+            Clear
           </Button>
-        </Inline>
-      </Stack>
+        </Box>
+      </Box>
 
-      <Grid columns={2} gap="md">
-        <Card>
-          <CardBody>
-            <Stack gap="xs">
-              <Text variant="caption" color="secondary">
-                {copy.netLabel}
-              </Text>
-              <Text variant="heading2" weight="bold">
-                {formatMoney(data?.totalBalance ?? 0)}
-              </Text>
-              <Text variant="caption" color="secondary">
-                Total debit {formatMoney(data?.totalDebit ?? 0)} · Total credit{' '}
-                {formatMoney(data?.totalCredit ?? 0)}
-              </Text>
-            </Stack>
-          </CardBody>
-        </Card>
-        <Card>
-          <CardBody>
-            <Stack gap="xs">
-              <Text variant="caption" color="secondary">
-                Active parties
-              </Text>
-              <Text variant="heading2" weight="bold">
-                {data?.parties.length ?? 0}
-              </Text>
-              <Text variant="caption" color="secondary">
-                {filtered.length === (data?.parties.length ?? 0)
-                  ? 'All shown'
-                  : `${filtered.length} match search`}
-              </Text>
-            </Stack>
-          </CardBody>
-        </Card>
-      </Grid>
+      <Box className={accountingChrome.partiesKpiGrid}>
+        <Box className={accountingChrome.overviewKpiCard}>
+          <Text as="span" className={accountingChrome.overviewKpiLabel}>
+            {copy.netLabel}
+          </Text>
+          <Text
+            as="span"
+            className={cn(
+              accountingChrome.overviewKpiValue,
+              totalBalance < 0 && accountingChrome.overviewKpiValueWarning,
+            )}
+          >
+            ₹{formatMoney(totalBalance)}
+          </Text>
+          <Text variant="caption" color="secondary">
+            Debit {formatMoney(data?.totalDebit ?? 0)} · Credit{' '}
+            {formatMoney(data?.totalCredit ?? 0)}
+          </Text>
+        </Box>
+        <Box className={accountingChrome.overviewKpiCard}>
+          <Text as="span" className={accountingChrome.overviewKpiLabel}>
+            Active parties
+          </Text>
+          <Text as="span" className={accountingChrome.overviewKpiValue}>
+            {data?.parties.length ?? 0}
+          </Text>
+          <Text variant="caption" color="secondary">
+            {filtered.length === (data?.parties.length ?? 0)
+              ? 'All shown'
+              : `${filtered.length} match search`}
+          </Text>
+        </Box>
+      </Box>
 
       <Card>
         <CardBody>
-          <Table>
+          <Table className={accountingChrome.partiesTable}>
             <TableHead>
               <TableRow>
-                <TableHeaderCell>{partyType === 'VENDOR' ? 'Vendor' : 'Customer'}</TableHeaderCell>
-                <TableHeaderCell className={numColStyle}>Debit</TableHeaderCell>
-                <TableHeaderCell className={numColStyle}>Credit</TableHeaderCell>
-                <TableHeaderCell className={numColStyle}>{copy.balanceCol}</TableHeaderCell>
-                <TableHeaderCell>Last activity</TableHeaderCell>
-                <TableHeaderCell className={numColStyle}>Txns</TableHeaderCell>
+                <TableHeaderCell className={accountingChrome.partiesNameCol}>
+                  {partyType === 'VENDOR' ? 'Vendor' : 'Customer'}
+                </TableHeaderCell>
+                <TableHeaderCell className={accountingChrome.partiesNumCol}>Debit</TableHeaderCell>
+                <TableHeaderCell className={accountingChrome.partiesNumCol}>Credit</TableHeaderCell>
+                <TableHeaderCell className={accountingChrome.partiesOwedCol}>
+                  {copy.balanceCol}
+                </TableHeaderCell>
+                <TableHeaderCell className={accountingChrome.partiesActivityCol}>
+                  Last activity
+                </TableHeaderCell>
+                <TableHeaderCell className={accountingChrome.partiesTxnsCol}>Txns</TableHeaderCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -208,50 +239,56 @@ export function PartiesPage({ partyType }: PartiesPageProps) {
                   }
                 />
               ) : (
-                filtered.map((p) => (
-                  <TableRow key={p.partyRefId}>
-                    <TableCell>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => navigate(partyHref(p.partyRefId))}
+                filtered.map((p) => {
+                  const debitLabel = formatTurnover(p.debitTurnover);
+                  const creditLabel = formatTurnover(p.creditTurnover);
+                  return (
+                    <TableRow key={p.partyRefId}>
+                      <TableCell className={accountingChrome.partiesNameCol}>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className={accountingChrome.entryLink}
+                          onClick={() => navigate(partyHref(p.partyRefId))}
+                        >
+                          {p.partyDisplayName || `Party ${p.partyRefId}`}
+                        </Button>
+                      </TableCell>
+                      <TableCell
+                        className={cn(
+                          accountingChrome.partiesNumCol,
+                          debitLabel === '—' && accountingChrome.ledgerAmountMuted,
+                        )}
                       >
-                        {p.partyDisplayName || `Party ${p.partyRefId}`}
-                      </Button>
-                    </TableCell>
-                    <TableCell className={numColBoldStyle}>
-                      {p.debitTurnover ? formatMoney(p.debitTurnover) : '—'}
-                    </TableCell>
-                    <TableCell className={numColBoldStyle}>
-                      {p.creditTurnover ? formatMoney(p.creditTurnover) : '—'}
-                    </TableCell>
-                    <TableCell className={numColBoldStyle}>{formatMoney(p.balance)}</TableCell>
-                    <TableCell>
-                      <Text color="secondary" variant="caption">
-                        {formatDate(p.lastTxnDate)}
-                      </Text>
-                    </TableCell>
-                    <TableCell className={numColBoldStyle}>{p.txnCount}</TableCell>
-                  </TableRow>
-                ))
+                        {debitLabel}
+                      </TableCell>
+                      <TableCell
+                        className={cn(
+                          accountingChrome.partiesNumCol,
+                          creditLabel === '—' && accountingChrome.ledgerAmountMuted,
+                        )}
+                      >
+                        {creditLabel}
+                      </TableCell>
+                      <TableCell className={accountingChrome.partiesOwedCol}>
+                        {formatMoney(p.balance)}
+                      </TableCell>
+                      <TableCell className={accountingChrome.partiesActivityCol}>
+                        {formatDateShort(p.lastTxnDate)}
+                      </TableCell>
+                      <TableCell className={accountingChrome.partiesTxnsCol}>
+                        {p.txnCount}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
         </CardBody>
       </Card>
     </Stack>
-  );
-}
-
-function FormFieldRow({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <Inline gap="sm" align="center">
-      <Text variant="label" color="secondary">
-        {label}
-      </Text>
-      {children}
-    </Inline>
   );
 }
 

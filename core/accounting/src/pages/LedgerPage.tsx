@@ -9,6 +9,7 @@ import {
   CenteredLoader,
   Inline,
   Input,
+  PageHeader,
   PaginationBar,
   SearchInput,
   Stack,
@@ -176,6 +177,8 @@ export function LedgerPage() {
   return (
     <Stack gap="md">
       <AccountingTabs />
+
+      <PageHeader description="Pick an account to see its running balance and every posting that touched it." />
 
       <Box className={ledgerLayoutStyle(compactLayout)}>
         <Card className={accountingChrome.sidebarScrollCard}>

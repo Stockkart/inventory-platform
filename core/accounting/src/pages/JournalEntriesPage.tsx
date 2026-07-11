@@ -83,6 +83,7 @@ export function JournalEntriesPage() {
   return (
     <Stack gap="md">
       <Stack gap="md">
+        <AccountingTabs />
         <PageHeader
           description="Every business event creates a balanced journal entry. Filter, drill in, or post a manual entry."
           actions={
@@ -91,7 +92,6 @@ export function JournalEntriesPage() {
             </Button>
           }
         />
-        <AccountingTabs />
         <Inline gap="sm">
           <Inline gap="sm" align="center">
             <Text variant="label" color="secondary">

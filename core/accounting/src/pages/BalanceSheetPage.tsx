@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
 import {
+  Box,
+  Button,
   Card,
   CardBody,
-  Grid,
-  Inline,
   Input,
   PageHeader,
   Stack,
@@ -16,6 +17,7 @@ import {
   TableRow,
   Text,
   cn,
+  accountingChrome,
 } from '@inventory-platform/ui-kit';
 import { accountingApi } from '../api/accounting.api';
 import { useNotify } from '@inventory-platform/session';
@@ -24,12 +26,12 @@ import type {
   FinancialReportLineDto,
 } from '@inventory-platform/accounting/types';
 import { AccountingTabs } from '../ui/AccountingTabs';
-import { formatDate, formatMoney, todayLocalDate } from '../model/format';
-import { subTotalCellStyle } from '../ui/accountingStyles';
-import { numColBoldStyle, numColStyle } from '../ui/tabNav';
+import { formatDateShort, formatMoney, todayLocalDate } from '../model/format';
 
 export function BalanceSheetPage() {
+  const navigate = useNavigate();
   const { error: notifyError } = useNotify;
+  const [asOfInput, setAsOfInput] = useState(todayLocalDate());
   const [asOf, setAsOf] = useState(todayLocalDate());
   const [data, setData] = useState<BalanceSheetResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -54,20 +56,46 @@ export function BalanceSheetPage() {
     };
   }, [asOf, notifyError]);
 
+  function handleSearch() {
+    setAsOf(asOfInput);
+  }
+
+  const showImbalance = !!data && Math.abs(data.imbalance) > 0.01;
+
   return (
     <Stack gap="md">
-      <Stack gap="md">
-        <AccountingTabs />
-        <PageHeader description="Assets, liabilities, and equity as of the selected date (from trial balance)." />
-        <Inline gap="sm">
-          <Text variant="label" color="secondary">
-            As of
-          </Text>
-          <Input type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} />
-        </Inline>
-      </Stack>
+      <AccountingTabs />
 
-      {loading ? (
+      <PageHeader description="Assets, liabilities, and equity as of the selected date." />
+
+      <Box className={accountingChrome.partiesFilterBar}>
+        <Box className={accountingChrome.partiesFilterDates}>
+          <Box className={accountingChrome.partiesFilterField}>
+            <Text as="span" className={accountingChrome.partiesFilterLabel}>
+              As of
+            </Text>
+            <Input
+              aria-label="As of date"
+              type="date"
+              value={asOfInput}
+              onChange={(e) => setAsOfInput(e.target.value)}
+              className={accountingChrome.tbAsOfInput}
+              disabled={loading}
+            />
+          </Box>
+          <Button
+            type="button"
+            variant="solid"
+            onClick={handleSearch}
+            loading={loading}
+            disabled={loading || !asOfInput}
+          >
+            Search
+          </Button>
+        </Box>
+      </Box>
+
+      {loading && !data ? (
         <Card>
           <CardBody>
             <Table>
@@ -80,60 +108,76 @@ export function BalanceSheetPage() {
       ) : !data ? (
         <Card>
           <CardBody>
-            <Text color="secondary" align="center">
-              No data.
-            </Text>
+            <Text color="secondary">No data for this date.</Text>
           </CardBody>
         </Card>
       ) : (
         <Stack gap="md">
-          <Grid gap="md">
-            <Card>
-              <CardBody>
-                <Stack gap="xs">
-                  <Text variant="caption" color="secondary">
-                    Total assets
-                  </Text>
-                  <Text variant="heading2" weight="bold">
-                    ₹ {formatMoney(data.totalAssets)}
-                  </Text>
-                </Stack>
-              </CardBody>
-            </Card>
-            <Card>
-              <CardBody>
-                <Stack gap="xs">
-                  <Text variant="caption" color="secondary">
-                    Liabilities + equity
-                  </Text>
-                  <Text variant="heading2" weight="bold">
-                    ₹ {formatMoney(data.totalLiabilitiesAndEquity)}
-                  </Text>
-                </Stack>
-              </CardBody>
-            </Card>
-            {Math.abs(data.imbalance) > 0.01 ? (
-              <Card>
-                <CardBody>
-                  <Stack gap="xs">
-                    <Text variant="caption" color="secondary">
-                      Imbalance
-                    </Text>
-                    <Text variant="heading2" weight="bold" color="danger">
-                      ₹ {formatMoney(data.imbalance)}
-                    </Text>
-                  </Stack>
-                </CardBody>
-              </Card>
-            ) : null}
-          </Grid>
+          <Box className={accountingChrome.pnlKpiGrid}>
+            <Box className={accountingChrome.overviewKpiCard}>
+              <Text as="span" className={accountingChrome.overviewKpiLabel}>
+                Total assets
+              </Text>
+              <Text as="span" className={accountingChrome.overviewKpiValue}>
+                ₹{formatMoney(data.totalAssets)}
+              </Text>
+            </Box>
+            <Box className={accountingChrome.overviewKpiCard}>
+              <Text as="span" className={accountingChrome.overviewKpiLabel}>
+                Liabilities + equity
+              </Text>
+              <Text as="span" className={accountingChrome.overviewKpiValue}>
+                ₹{formatMoney(data.totalLiabilitiesAndEquity)}
+              </Text>
+            </Box>
+            {showImbalance ? (
+              <Box className={accountingChrome.overviewKpiCard}>
+                <Text as="span" className={accountingChrome.overviewKpiLabel}>
+                  Imbalance
+                </Text>
+                <Text
+                  as="span"
+                  className={cn(
+                    accountingChrome.overviewKpiValue,
+                    accountingChrome.overviewKpiValueWarning,
+                  )}
+                >
+                  ₹{formatMoney(data.imbalance)}
+                </Text>
+              </Box>
+            ) : (
+              <Box className={accountingChrome.overviewKpiCard}>
+                <Text as="span" className={accountingChrome.overviewKpiLabel}>
+                  Status
+                </Text>
+                <Text
+                  as="span"
+                  className={cn(
+                    accountingChrome.overviewKpiValue,
+                    accountingChrome.overviewKpiValuePositive,
+                  )}
+                >
+                  Balanced
+                </Text>
+              </Box>
+            )}
+          </Box>
 
           <BsSection title="Assets" rows={data.assets} total={data.totalAssets} />
           <BsSection title="Liabilities" rows={data.liabilities} total={data.totalLiabilities} />
           <BsSection title="Equity" rows={data.equity} total={data.totalEquity} />
 
           <Text variant="caption" color="secondary">
-            As of {formatDate(data.asOf)}
+            As of {formatDateShort(data.asOf)} ·{' '}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className={accountingChrome.entryLink}
+              onClick={() => navigate('/dashboard/accounting/trial-balance')}
+            >
+              Trial balance
+            </Button>
           </Text>
         </Stack>
       )}
@@ -150,39 +194,57 @@ function BsSection({
   rows: FinancialReportLineDto[];
   total: number;
 }) {
+  const navigate = useNavigate();
+
   return (
     <Card>
       <CardBody>
         <Stack gap="sm">
-          <Text variant="title" weight="bold">
+          <Text as="h3" className={accountingChrome.overviewSectionTitle}>
             {title}
           </Text>
           {rows.length === 0 ? (
-            <Text color="secondary" align="center">
-              No balances
+            <Text as="p" className={accountingChrome.reportEmpty}>
+              No balances in this section.
             </Text>
           ) : (
-            <Table>
+            <Table className={accountingChrome.tbTable}>
               <TableHead>
                 <TableRow>
-                  <TableHeaderCell>Code</TableHeaderCell>
-                  <TableHeaderCell>Account</TableHeaderCell>
-                  <TableHeaderCell className={numColStyle}>Balance</TableHeaderCell>
+                  <TableHeaderCell className={accountingChrome.tbCodeCol}>Code</TableHeaderCell>
+                  <TableHeaderCell className={accountingChrome.tbAccountCol}>
+                    Account
+                  </TableHeaderCell>
+                  <TableHeaderCell className={accountingChrome.tbNumCol}>Balance</TableHeaderCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {rows.map((r) => (
                   <TableRow key={r.accountId}>
-                    <TableCell>{r.accountCode}</TableCell>
-                    <TableCell>{r.accountName}</TableCell>
-                    <TableCell className={numColBoldStyle}>{formatMoney(r.amount)}</TableCell>
+                    <TableCell className={accountingChrome.tbCodeCol}>{r.accountCode}</TableCell>
+                    <TableCell className={accountingChrome.tbAccountCol}>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className={accountingChrome.tbAccountLink}
+                        onClick={() => navigate(`/dashboard/accounting/ledger/${r.accountId}`)}
+                      >
+                        {r.accountName}
+                      </Button>
+                    </TableCell>
+                    <TableCell className={accountingChrome.tbNumCol}>
+                      {formatMoney(r.amount)}
+                    </TableCell>
                   </TableRow>
                 ))}
                 <TableRow>
-                  <TableCell colSpan={2} className={subTotalCellStyle}>
+                  <TableCell colSpan={2} className={accountingChrome.tbTotalsLabel}>
                     Total {title.toLowerCase()}
                   </TableCell>
-                  <TableCell className={cn(numColBoldStyle, subTotalCellStyle)}>
+                  <TableCell
+                    className={cn(accountingChrome.tbNumCol, accountingChrome.tbTotalsRow)}
+                  >
                     {formatMoney(total)}
                   </TableCell>
                 </TableRow>

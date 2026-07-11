@@ -78,7 +78,7 @@ export function ManualJournalEntryPage() {
     <Stack gap="md">
       <Stack gap="md">
         <AccountingTabs />
-        <PageHeader description="Posts with source MANUAL." />
+        <PageHeader description="Post a balanced one-off entry. Source is recorded as Manual." />
         <Inline gap="sm" align="center">
           <Button
             type="button"
