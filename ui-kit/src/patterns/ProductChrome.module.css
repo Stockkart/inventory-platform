@@ -853,8 +853,8 @@
 }
 
 .historyExpandRow {
-  padding: 0.75rem 0.5rem;
-  border-top: 1px dashed var(--sk-color-border-default, var(--border-color));
+  padding: 0.35rem 0.25rem 0.65rem;
+  background: transparent;
 }
 
 .statusMuted {

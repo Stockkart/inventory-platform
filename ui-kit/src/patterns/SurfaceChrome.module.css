@@ -513,7 +513,184 @@
 
 .historyCaption {
   font-size: 0.8125rem;
-  line-height: 1.4;
+  line-height: 1.45;
+  max-width: 52rem;
+}
+
+.historyHint {
+  padding: 0.7rem 0.85rem;
+  border-radius: var(--sk-radius-md, 8px);
+  background: var(--sk-color-bg-muted, #f8fafc);
+  border: 1px solid var(--sk-color-border-default, var(--border-color));
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--sk-color-text-secondary, var(--text-secondary));
+}
+
+.historyTable {
+  width: 100%;
+  min-width: 980px;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+/* Force continuous row rules — colspan expand rows can break default cell borders. */
+.historyTable :global(th),
+.historyTable :global(td) {
+  border-bottom: 1px solid var(--sk-color-border-default, #e2e8f0);
+}
+
+.historyTable :global(tbody tr:last-child > td) {
+  border-bottom: 1px solid var(--sk-color-border-default, #e2e8f0);
+}
+
+.historyActionCell {
+  width: 7.5rem;
+  white-space: nowrap;
+}
+
+.historyNumCell {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  padding-left: 0.85rem;
+  padding-right: 0.85rem;
+}
+
+.historyImpactCell {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  padding-left: 1.5rem;
+  padding-right: 1.75rem;
+  width: 9rem;
+}
+
+.historyDateCell {
+  white-space: nowrap;
+  color: var(--sk-color-text-secondary, var(--text-secondary));
+  font-size: 0.8125rem;
+  padding-left: 1.75rem;
+  padding-right: 0.85rem;
+  width: 10.5rem;
+}
+
+.historyExpandPanel {
+  margin: 0.15rem 0 0.35rem;
+  padding: 1rem 1.1rem;
+  border-radius: var(--sk-radius-md, 8px);
+  background: color-mix(in srgb, var(--sk-color-bg-muted, #f8fafc) 88%, #fff);
+  border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 92%, transparent);
+}
+
+.historyExpandTitle {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--sk-color-text-primary, var(--text-primary));
+}
+
+.historyExpandHint {
+  max-width: 40rem;
+  line-height: 1.45;
+  font-size: 0.75rem;
+}
+
+.historyBatch {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0;
+  padding: 0.12rem 0.45rem;
+  border-radius: var(--sk-radius-full, 999px);
+  border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 85%, transparent);
+  background: #fff;
+  color: var(--sk-color-text-secondary, #475569);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.historyNestedTable {
+  width: 100%;
+  min-width: 640px;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  background: #fff;
+  border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 90%, transparent);
+  border-radius: var(--sk-radius-sm, 6px);
+  overflow: hidden;
+}
+
+.historyNestedTable :global(th),
+.historyNestedTable :global(td) {
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent) !important;
+  vertical-align: middle;
+  padding-block: 0.7rem !important;
+}
+
+.historyNestedTable :global(thead th) {
+  background: color-mix(in srgb, var(--sk-color-bg-muted, #f8fafc) 75%, #fff);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--sk-color-text-secondary, #64748b);
+}
+
+.historyNestedTable :global(tbody tr:last-child td) {
+  border-bottom: none !important;
+}
+
+.historyNestedTable :global(tbody tr:hover td) {
+  background: color-mix(in srgb, var(--sk-color-bg-muted, #f8fafc) 40%, #fff);
+}
+
+.historyProductCell {
+  width: 40%;
+  text-align: left !important;
+}
+
+.historyProductCell :global(span) {
+  overflow-wrap: anywhere;
+}
+
+.historyNestedTable :global(th):nth-child(2),
+.historyNestedTable :global(td):nth-child(2),
+.historyNestedTable :global(th):nth-child(3),
+.historyNestedTable :global(td):nth-child(3),
+.historyNestedTable :global(th):nth-child(4),
+.historyNestedTable :global(td):nth-child(4) {
+  width: 4.75rem;
+  padding-left: 0.65rem;
+  padding-right: 0.65rem;
+}
+
+.historyNestedTable :global(th):nth-child(5),
+.historyNestedTable :global(td):nth-child(5) {
+  width: 7rem;
+  padding-left: 0.85rem;
+  padding-right: 1rem;
+}
+
+.historyStatusCell {
+  width: 7.25rem;
+  text-align: left !important;
+  vertical-align: middle;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+.historyStatusBadge {
+  width: fit-content !important;
+  max-width: 100%;
+  flex-shrink: 0;
+  align-self: flex-start;
 }
 
 .estPartial {
