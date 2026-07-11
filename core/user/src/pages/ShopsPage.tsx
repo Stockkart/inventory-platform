@@ -162,14 +162,19 @@ export function ShopsPage() {
           );
         })}
 
-        <button type="button" onClick={handleAddShop} className={surfaceChrome.shopTileAdd}>
-          <span className={surfaceChrome.shopTileAddIcon} aria-hidden>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={handleAddShop}
+          className={surfaceChrome.shopTileAdd}
+        >
+          <Box as="span" className={surfaceChrome.shopTileAddIcon} aria-hidden>
             +
-          </span>
+          </Box>
           <Text as="span" weight="semibold">
             Add another shop
           </Text>
-        </button>
+        </Button>
       </Box>
     </Stack>
   );

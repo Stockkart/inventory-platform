@@ -528,7 +528,8 @@
   align-self: flex-start;
 }
 
-.shopTileAdd {
+/* Double class beats Button size/variant kit styles on chrome tiles. */
+.shopTileAdd.shopTileAdd {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -546,7 +547,7 @@
   transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
 }
 
-.shopTileAdd:hover {
+.shopTileAdd.shopTileAdd:hover:not(:disabled) {
   border-color: var(--sk-color-brand);
   background: var(--sk-color-brand-soft);
   color: var(--sk-color-brand);

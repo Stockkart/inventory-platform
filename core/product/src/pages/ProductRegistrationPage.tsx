@@ -85,6 +85,7 @@ import {
   Button,
   Card,
   CardBody,
+  FormField,
   Inline,
   Input,
   Label,
@@ -2452,8 +2453,9 @@ export function ProductRegistrationPage() {
                   </Text>
                 </Box>
                 <Box className={uploadLayoutStyles.uploadOptionsGrid}>
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
                     className={uploadLayoutStyles.qrUploadBtn}
                     onClick={handleCreateQrCode}
                     disabled={isUploading || isLoading || isPolling}
@@ -2469,7 +2471,7 @@ export function ProductRegistrationPage() {
                         Scan with your phone to upload
                       </Text>
                     </Box>
-                  </button>
+                  </Button>
                   <Box className={uploadLayoutStyles.uploadOptionsOr}>
                     <Box className={uploadLayoutStyles.uploadOptionsOrLine} />
                     <Text as="span" className={uploadLayoutStyles.uploadOptionsOrText}>
@@ -4020,171 +4022,176 @@ export function ProductRegistrationPage() {
           onClose={isCreatingVendor ? undefined : handleCloseVendorModal}
         />
         <Modal.Body>
-          <Box className={pageStyles.formGroup}>
-            <Label htmlFor="vendorName">Vendor Name *</Label>
-            <Input
-              type="text"
-              id="vendorName"
-              placeholder="Enter vendor name"
-              value={vendorFormData.name}
-              onChange={(e) =>
-                setVendorFormData((prev) => ({
-                  ...prev,
-                  name: e.target.value,
-                }))
-              }
-              disabled={isCreatingVendor}
-              required
-            />
-          </Box>
-          <Box className={pageStyles.formGroup}>
-            <Label htmlFor="vendorContactPhone">Contact Phone *</Label>
-            <Input
-              type="tel"
-              id="vendorContactPhone"
-              placeholder="Enter contact phone"
-              value={vendorFormData.contactPhone}
-              onChange={(e) =>
-                setVendorFormData((prev) => ({
-                  ...prev,
-                  contactPhone: e.target.value,
-                }))
-              }
-              disabled={isCreatingVendor}
-              required
-            />
-          </Box>
-          <Box className={pageStyles.formGroup}>
-            <Label htmlFor="vendorContactEmail">Contact Email</Label>
-            <Input
-              type="email"
-              id="vendorContactEmail"
-              placeholder="Enter contact email"
-              value={vendorFormData.contactEmail}
-              onChange={(e) =>
-                setVendorFormData((prev) => ({
-                  ...prev,
-                  contactEmail: e.target.value,
-                }))
-              }
-              disabled={isCreatingVendor}
-            />
-          </Box>
-          <Box className={pageStyles.formGroup}>
-            <Label>Link to registered user</Label>
-            <Text className={`${pageStyles.helperText} ${pageStyles.helperTextLinkHint}`}>
-              If this vendor is a registered user, search by their email to link the vendor record
-              to their account.
-            </Text>
-            <Box className={productChrome.inlineFlexGap}>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleSearchUserForLink}
-                disabled={
-                  isCreatingVendor || isSearchingUser || !vendorFormData.contactEmail?.trim()
-                }
-              >
-                {isSearchingUser ? 'Checking...' : 'Check'}
-              </Button>
-              {linkedUser && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleUnlinkUser}
-                  disabled={isCreatingVendor}
-                >
-                  Unlink
-                </Button>
-              )}
-            </Box>
-            {userSearchMessage && (
-              <Text
-                className={
-                  linkedUser ? pageStyles.userLinkMessageSuccess : pageStyles.userLinkMessage
-                }
-              >
-                {userSearchMessage}
-              </Text>
-            )}
-          </Box>
-          <Box className={pageStyles.formGroup}>
-            <Label htmlFor="vendorAddress">Address</Label>
-            <Input
-              type="text"
-              id="vendorAddress"
-              placeholder="Enter address"
-              value={vendorFormData.address}
-              onChange={(e) =>
-                setVendorFormData((prev) => ({
-                  ...prev,
-                  address: e.target.value,
-                }))
-              }
-              disabled={isCreatingVendor}
-            />
-          </Box>
-          <Box className={pageStyles.formGroup}>
-            <Label htmlFor="vendorGstinUin">GSTIN / UIN</Label>
-            <Input
-              type="text"
-              id="vendorGstinUin"
-              placeholder="Enter GSTIN / UIN number"
-              value={vendorFormData.gstinUin ?? ''}
-              onChange={(e) =>
-                setVendorFormData((prev) => ({
-                  ...prev,
-                  gstinUin: e.target.value,
-                }))
-              }
-              disabled={isCreatingVendor}
-            />
-          </Box>
-          <Box className={pageStyles.formGroup}>
-            <Label htmlFor="vendorBusinessType">Business Type *</Label>
-            <Select
-              id="vendorBusinessType"
-              value={showCustomBusinessType ? 'OTHER' : vendorFormData.businessType}
-              onChange={(e) => {
-                if (e.target.value === 'OTHER') {
-                  setShowCustomBusinessType(true);
-                  setCustomBusinessType('');
-                } else {
-                  setShowCustomBusinessType(false);
-                  setCustomBusinessType('');
-                  setVendorFormData((prev) => ({
-                    ...prev,
-                    businessType: e.target.value as VendorBusinessType,
-                  }));
-                }
-              }}
-              disabled={isCreatingVendor}
-              required
-            >
-              <option value="WHOLESALE">Wholesale</option>
-              <option value="RETAIL">Retail</option>
-              <option value="MANUFACTURER">Manufacturer</option>
-              <option value="DISTRIBUTOR">Distributor</option>
-              <option value="C&F">C&F</option>
-              <option value="OTHER">Other</option>
-            </Select>
-          </Box>
-          {showCustomBusinessType && (
-            <Box className={pageStyles.formGroup}>
-              <Label htmlFor="customBusinessType">Custom Business Type *</Label>
+          <Stack gap="md">
+            <FormField label="Vendor Name" htmlFor="vendorName" required>
               <Input
                 type="text"
-                id="customBusinessType"
-                placeholder="Enter custom business type"
-                value={customBusinessType}
-                onChange={(e) => setCustomBusinessType(e.target.value)}
+                id="vendorName"
+                placeholder="Enter vendor name"
+                value={vendorFormData.name}
+                onChange={(e) =>
+                  setVendorFormData((prev) => ({
+                    ...prev,
+                    name: e.target.value,
+                  }))
+                }
                 disabled={isCreatingVendor}
                 required
               />
+            </FormField>
+
+            <Box className={vendorStyles.modalFormGrid}>
+              <FormField label="Contact Phone" htmlFor="vendorContactPhone" required>
+                <Input
+                  type="tel"
+                  id="vendorContactPhone"
+                  placeholder="Enter contact phone"
+                  value={vendorFormData.contactPhone}
+                  onChange={(e) =>
+                    setVendorFormData((prev) => ({
+                      ...prev,
+                      contactPhone: e.target.value,
+                    }))
+                  }
+                  disabled={isCreatingVendor}
+                  required
+                />
+              </FormField>
+              <FormField label="Business Type" htmlFor="vendorBusinessType" required>
+                <Select
+                  id="vendorBusinessType"
+                  value={showCustomBusinessType ? 'OTHER' : vendorFormData.businessType}
+                  onChange={(e) => {
+                    if (e.target.value === 'OTHER') {
+                      setShowCustomBusinessType(true);
+                      setCustomBusinessType('');
+                    } else {
+                      setShowCustomBusinessType(false);
+                      setCustomBusinessType('');
+                      setVendorFormData((prev) => ({
+                        ...prev,
+                        businessType: e.target.value as VendorBusinessType,
+                      }));
+                    }
+                  }}
+                  disabled={isCreatingVendor}
+                  required
+                >
+                  <option value="WHOLESALE">Wholesale</option>
+                  <option value="RETAIL">Retail</option>
+                  <option value="MANUFACTURER">Manufacturer</option>
+                  <option value="DISTRIBUTOR">Distributor</option>
+                  <option value="C&F">C&F</option>
+                  <option value="OTHER">Other</option>
+                </Select>
+              </FormField>
             </Box>
-          )}
+
+            {showCustomBusinessType ? (
+              <FormField label="Custom Business Type" htmlFor="customBusinessType" required>
+                <Input
+                  type="text"
+                  id="customBusinessType"
+                  placeholder="Enter custom business type"
+                  value={customBusinessType}
+                  onChange={(e) => setCustomBusinessType(e.target.value)}
+                  disabled={isCreatingVendor}
+                  required
+                />
+              </FormField>
+            ) : null}
+
+            <FormField
+              label="Contact Email"
+              htmlFor="vendorContactEmail"
+              hint="If this vendor is a registered user, check their email to link the account."
+            >
+              <Box className={vendorStyles.searchRow}>
+                <Input
+                  type="email"
+                  id="vendorContactEmail"
+                  placeholder="Enter contact email"
+                  value={vendorFormData.contactEmail}
+                  onChange={(e) => {
+                    setVendorFormData((prev) => ({
+                      ...prev,
+                      contactEmail: e.target.value,
+                    }));
+                    if (linkedUser || userSearchMessage) {
+                      setLinkedUser(null);
+                      setUserSearchMessage(null);
+                    }
+                  }}
+                  disabled={isCreatingVendor}
+                  className={productChrome.searchGrow}
+                />
+                <Box className={vendorStyles.searchActions}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleSearchUserForLink}
+                    disabled={
+                      isCreatingVendor || isSearchingUser || !vendorFormData.contactEmail?.trim()
+                    }
+                    loading={isSearchingUser}
+                  >
+                    {isSearchingUser ? 'Checking…' : 'Check'}
+                  </Button>
+                  {linkedUser ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleUnlinkUser}
+                      disabled={isCreatingVendor}
+                    >
+                      Unlink
+                    </Button>
+                  ) : null}
+                </Box>
+              </Box>
+            </FormField>
+
+            {userSearchMessage ? (
+              <Box className={vendorStyles.linkStatus}>
+                {linkedUser ? <Badge variant="success">Linked</Badge> : null}
+                <Text variant="caption" color={linkedUser ? 'success' : 'secondary'}>
+                  {userSearchMessage}
+                </Text>
+              </Box>
+            ) : null}
+
+            <FormField label="Address" htmlFor="vendorAddress">
+              <Textarea
+                id="vendorAddress"
+                placeholder="Enter address"
+                value={vendorFormData.address}
+                onChange={(e) =>
+                  setVendorFormData((prev) => ({
+                    ...prev,
+                    address: e.target.value,
+                  }))
+                }
+                disabled={isCreatingVendor}
+                rows={2}
+              />
+            </FormField>
+
+            <FormField label="GSTIN / UIN" htmlFor="vendorGstinUin">
+              <Input
+                type="text"
+                id="vendorGstinUin"
+                placeholder="Enter GSTIN / UIN number"
+                value={vendorFormData.gstinUin ?? ''}
+                onChange={(e) =>
+                  setVendorFormData((prev) => ({
+                    ...prev,
+                    gstinUin: e.target.value,
+                  }))
+                }
+                disabled={isCreatingVendor}
+              />
+            </FormField>
+          </Stack>
         </Modal.Body>
         <Modal.Footer>
           <Button
