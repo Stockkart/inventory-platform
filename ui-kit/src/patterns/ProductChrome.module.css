@@ -683,20 +683,266 @@
 
 .selectedCard {
   cursor: pointer;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px var(--focus-ring);
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #2563eb 18%, transparent);
+  background: color-mix(in srgb, #2563eb 4%, var(--sk-color-bg-elevated, #fff));
 }
 
 .clickableCard {
   cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.clickableCard:hover {
+  border-color: color-mix(in srgb, #2563eb 45%, var(--sk-color-border-default, #e2e8f0));
+  box-shadow: 0 4px 14px color-mix(in srgb, #0f172a 6%, transparent);
+  background: color-mix(in srgb, #2563eb 2.5%, var(--sk-color-bg-elevated, #fff));
+}
+
+.clickableCard:focus-visible {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #2563eb 22%, transparent);
+}
+
+.clickableCard:active {
+  transform: translateY(1px);
+}
+
+.salePickRow {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+}
+
+.salePickMain {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.salePickTitleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 0.85rem;
+}
+
+.salePickTitle {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--sk-color-text-primary, #0f172a);
+  line-height: 1.25;
+}
+
+.salePickInvoiceHint {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sk-color-text-secondary, #94a3b8);
+}
+
+.salePickGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem 1.25rem;
+}
+
+@media (max-width: 640px) {
+  .salePickGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.salePickField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.salePickLabel {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sk-color-text-secondary, #94a3b8);
+}
+
+.salePickValue {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--sk-color-text-primary, #0f172a);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.salePickValueStrong {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9375rem;
+}
+
+.salePickValueMuted {
+  color: var(--sk-color-text-secondary, #64748b);
+  font-weight: 500;
+}
+
+.salePickMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.85rem;
+  color: var(--sk-color-text-secondary, #64748b);
+  font-size: 0.8125rem;
+}
+
+.salePickMetaStrong {
+  font-weight: 600;
+  color: var(--sk-color-text-primary, #0f172a);
+  font-variant-numeric: tabular-nums;
+}
+
+.salePickAction {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  color: #2563eb;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.salePickActionMuted {
+  color: var(--sk-color-text-secondary, #64748b);
+}
+
+.paymentMethodChip {
+  border-radius: 999px !important;
+  min-height: 2.25rem;
+  padding-inline: 0.9rem !important;
+  font-weight: 600;
+}
+
+.paymentMethodChipIdle {
+  background: var(--sk-color-bg-canvas, #fff) !important;
+  border-color: var(--sk-color-border-default, #e2e8f0) !important;
+}
+
+.qtyStepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.qtyStepperBtn {
+  width: 2rem;
+  height: 2rem;
+  min-height: 2rem;
+  padding: 0 !important;
+  border-radius: 0.5rem !important;
+}
+
+.qtyStepperInput {
+  width: 3.25rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.qtyStepperInput::-webkit-outer-spin-button,
+.qtyStepperInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.qtyStepperInput[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 .returnDetailPanel {
-  margin-top: 1rem;
-  padding: 1.5rem;
-  border-top: 1px solid var(--sk-color-border-default, var(--border-color));
-  background: var(--sk-color-bg-elevated, var(--bg-card));
-  border-radius: 8px;
+  margin: 0;
+  padding: 1.15rem 1.25rem 1.25rem;
+  border-top: 1px solid color-mix(in srgb, #2563eb 18%, var(--sk-color-border-default, #e2e8f0));
+  background: color-mix(in srgb, #2563eb 3.5%, var(--sk-color-bg-elevated, #fff));
+  border-radius: 0 0 var(--sk-radius-md, 8px) var(--sk-radius-md, 8px);
+}
+
+.salePickHeader {
+  cursor: pointer;
+}
+
+.salePickHeader:focus-visible {
+  outline: 2px solid color-mix(in srgb, #2563eb 45%, transparent);
+  outline-offset: -2px;
+}
+
+.selectedCard .salePickHeader {
+  cursor: default;
+}
+
+.historyRecordCard {
+  overflow: hidden;
+}
+
+.historyRecordHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+}
+
+.historyRecordAmount {
+  margin: 0;
+  flex-shrink: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--sk-color-text-primary, #0f172a);
+  line-height: 1.2;
+}
+
+.historyItemsPanel {
+  margin: 0;
+  padding: 1rem 1.25rem 1.15rem;
+  border-top: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 92%, transparent);
+  background: color-mix(in srgb, #0f172a 2%, var(--sk-color-bg-elevated, #fff));
+}
+
+.historyItemsTitle {
+  margin: 0 0 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sk-color-text-secondary, #64748b);
+}
+
+.historyItemsTable :global(th) {
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  color: var(--sk-color-text-secondary, #64748b) !important;
+}
+
+.historyItemsTable :global(td) {
+  font-size: 0.875rem;
+  vertical-align: middle;
 }
 
 .estimateBar {

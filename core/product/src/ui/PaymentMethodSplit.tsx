@@ -248,6 +248,10 @@ export function PaymentMethodSplit({
               aria-checked={active}
               variant={active ? 'solid' : 'outline'}
               size="sm"
+              className={cn(
+                productChrome.paymentMethodChip,
+                !active && productChrome.paymentMethodChipIdle,
+              )}
               onClick={() => handleMethodChange(m)}
               disabled={disabled}
             >

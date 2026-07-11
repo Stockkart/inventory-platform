@@ -20,6 +20,8 @@ import {
   EmptyState,
   FormField,
   Grid,
+  Icon,
+  IconButton,
   Inline,
   Input,
   PageHeader,
@@ -36,11 +38,13 @@ import {
   cn,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
+import { ChevronRight, Minus, Plus } from 'lucide-react';
 import { useCapabilityFeatureGuard } from '@inventory-platform/routing';
 import {
   PaymentMethodSplit,
   RefundHistoryList,
   emptyPaymentSplit,
+  formatPaymentMethod,
   isCreditMethod,
   roundMoney,
   validatePaymentSplit,
@@ -145,16 +149,42 @@ function formatDate(dateString: string): string {
   }
 }
 
-function DetailLine({ label, value }: { label: string; value: string }) {
+function saleInvoiceNo(purchase: Purchase): string | null {
+  const invoice = purchase.invoiceNo?.trim();
+  return invoice || null;
+}
+
+function saleCustomerLabel(purchase: Purchase): string {
+  return purchase.customerName?.trim() || 'Walk-in customer';
+}
+
+function SalePickField({
+  label,
+  value,
+  strong,
+  muted,
+}: {
+  label: string;
+  value: string;
+  strong?: boolean;
+  muted?: boolean;
+}) {
   return (
-    <Inline gap="xs">
-      <Text variant="caption" color="secondary" weight="semibold">
-        {label}:
+    <Box className={productChrome.salePickField}>
+      <Text as="p" className={productChrome.salePickLabel}>
+        {label}
       </Text>
-      <Text variant="caption" color="secondary">
+      <Text
+        as="p"
+        className={cn(
+          productChrome.salePickValue,
+          strong && productChrome.salePickValueStrong,
+          muted && productChrome.salePickValueMuted,
+        )}
+      >
         {value}
       </Text>
-    </Inline>
+    </Box>
   );
 }
 
@@ -455,8 +485,6 @@ export function RefundPage() {
 
   return (
     <Stack gap="md">
-      <PageHeader description="Process customer sale returns and view return history" />
-
       <Inline gap="none" className={productChrome.processTabBar}>
         {processTabs.map((tab) => {
           const active = activeTab === tab.id;
@@ -476,6 +504,8 @@ export function RefundPage() {
           );
         })}
       </Inline>
+
+      <PageHeader description="Process customer sale returns and view return history" />
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
       {success ? <Alert variant="success">{success}</Alert> : null}
@@ -575,215 +605,295 @@ export function RefundPage() {
                     <Stack gap="md">
                       {purchases.map((purchase) => {
                         const isSelected = selectedPurchase?.purchaseId === purchase.purchaseId;
+                        const invoiceNo = saleInvoiceNo(purchase);
+                        const customerLabel = saleCustomerLabel(purchase);
+                        const paymentLabel = formatPaymentMethod(purchase.paymentMethod);
+                        const hasPayment =
+                          Boolean(purchase.paymentMethod) && paymentLabel !== 'Not specified';
+                        const selectLabel = invoiceNo
+                          ? `Select invoice ${invoiceNo}`
+                          : `Select sale for ${customerLabel}`;
                         return (
                           <Card
                             key={purchase.purchaseId}
                             className={cn(
-                              productChrome.clickableCard,
+                              !isSelected && productChrome.clickableCard,
                               isSelected && productChrome.selectedCard,
                             )}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => handleSelectPurchase(purchase)}
-                            onKeyDown={(ev) => {
-                              if (ev.key === 'Enter' || ev.key === ' ') {
-                                ev.preventDefault();
-                                handleSelectPurchase(purchase);
-                              }
-                            }}
                           >
-                            <CardBody>
-                              <Stack gap="md">
-                                <Inline justify="between" align="start" gap="md">
-                                  <DetailLine label="Invoice No" value={purchase.invoiceNo} />
-                                  <DetailLine label="Date" value={formatDate(purchase.soldAt)} />
-                                </Inline>
-                                <Grid columns={2} gap="sm">
-                                  <DetailLine
-                                    label="Customer"
-                                    value={purchase.customerName || 'N/A'}
-                                  />
-                                  <DetailLine
-                                    label="Phone"
-                                    value={purchase.customerPhone || 'N/A'}
-                                  />
-                                  <DetailLine
-                                    label="Total"
-                                    value={formatCurrency(purchase.grandTotal)}
-                                  />
-                                  <DetailLine label="Payment" value={purchase.paymentMethod} />
-                                </Grid>
-
-                                {isSelected && selectedPurchase ? (
-                                  <Stack gap="md" className={productChrome.returnDetailPanel}>
-                                    <Text variant="heading3" weight="semibold">
-                                      Select Items to Return
-                                    </Text>
-                                    <Grid columns={3} gap="sm">
-                                      <DetailLine
-                                        label="Invoice No"
-                                        value={selectedPurchase.invoiceNo}
-                                      />
-                                      <DetailLine
-                                        label="Customer"
-                                        value={selectedPurchase.customerName || 'N/A'}
-                                      />
-                                      <DetailLine
+                            <Box
+                              className={productChrome.salePickHeader}
+                              role="button"
+                              tabIndex={0}
+                              aria-pressed={isSelected}
+                              aria-label={selectLabel}
+                              onClick={() => handleSelectPurchase(purchase)}
+                              onKeyDown={(ev) => {
+                                if (ev.key === 'Enter' || ev.key === ' ') {
+                                  ev.preventDefault();
+                                  handleSelectPurchase(purchase);
+                                }
+                              }}
+                            >
+                              <CardBody>
+                                <Box className={productChrome.salePickRow}>
+                                  <Box className={productChrome.salePickMain}>
+                                    <Box className={productChrome.salePickTitleRow}>
+                                      <Text as="p" className={productChrome.salePickInvoiceHint}>
+                                        Invoice
+                                      </Text>
+                                      <Text
+                                        as="p"
+                                        className={cn(
+                                          productChrome.salePickTitle,
+                                          !invoiceNo && productChrome.salePickValueMuted,
+                                        )}
+                                      >
+                                        {invoiceNo ?? 'No invoice number'}
+                                      </Text>
+                                    </Box>
+                                    <Box className={productChrome.salePickGrid}>
+                                      <SalePickField
                                         label="Date"
-                                        value={formatDate(selectedPurchase.soldAt)}
+                                        value={formatDate(purchase.soldAt)}
                                       />
-                                    </Grid>
+                                      <SalePickField label="Customer" value={customerLabel} />
+                                      <SalePickField
+                                        label="Phone"
+                                        value={purchase.customerPhone?.trim() || '—'}
+                                        muted={!purchase.customerPhone?.trim()}
+                                      />
+                                      <SalePickField
+                                        label="Total"
+                                        value={formatCurrency(purchase.grandTotal)}
+                                        strong
+                                      />
+                                      <SalePickField
+                                        label="Payment"
+                                        value={hasPayment ? paymentLabel : '—'}
+                                        muted={!hasPayment}
+                                      />
+                                      <SalePickField
+                                        label="Items"
+                                        value={`${purchase.items?.length ?? 0}`}
+                                      />
+                                    </Box>
+                                  </Box>
+                                  <Box
+                                    className={cn(
+                                      productChrome.salePickAction,
+                                      isSelected && productChrome.salePickActionMuted,
+                                    )}
+                                  >
+                                    <Text as="span" variant="caption" weight="semibold">
+                                      {isSelected ? 'Selected' : 'Select'}
+                                    </Text>
+                                    <Icon icon={ChevronRight} size="sm" />
+                                  </Box>
+                                </Box>
+                              </CardBody>
+                            </Box>
 
-                                    <Box overflow="auto">
-                                      <Table>
-                                        <TableHead>
-                                          <TableRow>
-                                            <TableHeaderCell>Item Name</TableHeaderCell>
-                                            <TableHeaderCell>MRP</TableHeaderCell>
-                                            <TableHeaderCell>Selling Price</TableHeaderCell>
-                                            <TableHeaderCell>Purchased Qty</TableHeaderCell>
-                                            <TableHeaderCell>GST rates</TableHeaderCell>
-                                            <TableHeaderCell className={surfaceChrome.numericCell}>
-                                              Est. credit
-                                            </TableHeaderCell>
-                                            <TableHeaderCell>Return Qty</TableHeaderCell>
-                                          </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                          {selectedPurchase.items.map((item, index) => {
-                                            const lineKey = refundLineKey(item, index);
-                                            const refundItem = refundItems[lineKey];
-                                            const rq = refundItem?.quantity ?? 0;
-                                            const lineEst =
-                                              rq > 0 ? estimateCustomerRefundLine(rq, item) : null;
-                                            return (
-                                              <TableRow key={lineKey}>
-                                                <TableCell>{item.name}</TableCell>
-                                                <TableCell>
-                                                  {formatCurrency(item.maximumRetailPrice)}
-                                                </TableCell>
-                                                <TableCell>
-                                                  {formatCurrency(item.priceToRetail)}
-                                                </TableCell>
-                                                <TableCell>{item.quantity}</TableCell>
-                                                <TableCell>
-                                                  {formatGstRatesLabelForSaleLine(item)}
-                                                </TableCell>
-                                                <TableCell
-                                                  className={surfaceChrome.numericCell}
-                                                  title={lineEst?.title}
-                                                >
-                                                  {lineEst != null
-                                                    ? formatCurrency(lineEst.total)
-                                                    : '—'}
-                                                </TableCell>
-                                                <TableCell>
+                            {isSelected && selectedPurchase ? (
+                              <Box
+                                className={productChrome.returnDetailPanel}
+                                onClick={(ev) => ev.stopPropagation()}
+                                onKeyDown={(ev) => ev.stopPropagation()}
+                              >
+                                <Stack gap="md">
+                                  <Stack gap="xs" align="start">
+                                    <Text variant="heading3" weight="semibold">
+                                      Select items to return
+                                    </Text>
+                                    <Text variant="caption" color="secondary">
+                                      Set return quantities for this sale. Estimated credit updates
+                                      as you go.
+                                    </Text>
+                                  </Stack>
+
+                                  <Box overflow="auto">
+                                    <Table>
+                                      <TableHead>
+                                        <TableRow>
+                                          <TableHeaderCell>Item</TableHeaderCell>
+                                          <TableHeaderCell>MRP</TableHeaderCell>
+                                          <TableHeaderCell>Selling price</TableHeaderCell>
+                                          <TableHeaderCell>Purchased</TableHeaderCell>
+                                          <TableHeaderCell>GST</TableHeaderCell>
+                                          <TableHeaderCell className={surfaceChrome.numericCell}>
+                                            Est. credit
+                                          </TableHeaderCell>
+                                          <TableHeaderCell>Return qty</TableHeaderCell>
+                                        </TableRow>
+                                      </TableHead>
+                                      <TableBody>
+                                        {selectedPurchase.items.map((item, index) => {
+                                          const lineKey = refundLineKey(item, index);
+                                          const refundItem = refundItems[lineKey];
+                                          const rq = refundItem?.quantity ?? 0;
+                                          const lineEst =
+                                            rq > 0 ? estimateCustomerRefundLine(rq, item) : null;
+                                          return (
+                                            <TableRow key={lineKey}>
+                                              <TableCell>
+                                                <Text weight="medium">{item.name}</Text>
+                                              </TableCell>
+                                              <TableCell>
+                                                {formatCurrency(item.maximumRetailPrice)}
+                                              </TableCell>
+                                              <TableCell>
+                                                {formatCurrency(item.priceToRetail)}
+                                              </TableCell>
+                                              <TableCell>{item.quantity}</TableCell>
+                                              <TableCell>
+                                                {formatGstRatesLabelForSaleLine(item)}
+                                              </TableCell>
+                                              <TableCell
+                                                className={surfaceChrome.numericCell}
+                                                title={lineEst?.title}
+                                              >
+                                                {lineEst != null
+                                                  ? formatCurrency(lineEst.total)
+                                                  : '—'}
+                                              </TableCell>
+                                              <TableCell>
+                                                <Box className={productChrome.qtyStepper}>
+                                                  <IconButton
+                                                    type="button"
+                                                    size="sm"
+                                                    label={`Decrease return qty for ${item.name}`}
+                                                    className={productChrome.qtyStepperBtn}
+                                                    disabled={isLoading || rq <= 0}
+                                                    onClick={() =>
+                                                      handleRefundQuantityChange(
+                                                        lineKey,
+                                                        String(Math.max(0, rq - 1)),
+                                                      )
+                                                    }
+                                                  >
+                                                    <Icon icon={Minus} size="sm" />
+                                                  </IconButton>
                                                   <Input
                                                     type="number"
                                                     min={0}
                                                     max={item.quantity}
-                                                    value={refundItem?.quantity || 0}
+                                                    value={rq}
                                                     onChange={(e) =>
                                                       handleRefundQuantityChange(
                                                         lineKey,
                                                         e.target.value,
                                                       )
                                                     }
-                                                    className={productChrome.qtyInputNarrow}
+                                                    className={productChrome.qtyStepperInput}
                                                     disabled={isLoading}
                                                     aria-label={`Return quantity for ${item.name}`}
                                                   />
-                                                </TableCell>
-                                              </TableRow>
-                                            );
-                                          })}
-                                        </TableBody>
-                                      </Table>
-                                    </Box>
+                                                  <IconButton
+                                                    type="button"
+                                                    size="sm"
+                                                    label={`Increase return qty for ${item.name}`}
+                                                    className={productChrome.qtyStepperBtn}
+                                                    disabled={isLoading || rq >= item.quantity}
+                                                    onClick={() =>
+                                                      handleRefundQuantityChange(
+                                                        lineKey,
+                                                        String(Math.min(item.quantity, rq + 1)),
+                                                      )
+                                                    }
+                                                  >
+                                                    <Icon icon={Plus} size="sm" />
+                                                  </IconButton>
+                                                </Box>
+                                              </TableCell>
+                                            </TableRow>
+                                          );
+                                        })}
+                                      </TableBody>
+                                    </Table>
+                                  </Box>
 
-                                    <Box
-                                      padding="md"
-                                      bg="surface"
+                                  <Box
+                                    padding="md"
+                                    bg="surface"
+                                    rounded="md"
+                                    className={productChrome.estimateBar}
+                                  >
+                                    <Inline justify="between" align="center">
+                                      <Text>Estimated return amount</Text>
+                                      <Text weight="semibold" variant="title">
+                                        {formatCurrency(estimatedRefund.grandTotal)}
+                                      </Text>
+                                    </Inline>
+                                  </Box>
+
+                                  {estimatedRefund.linesWithQty > 0 ? (
+                                    <Stack
+                                      gap="xs"
+                                      padding="sm"
                                       rounded="md"
-                                      className={productChrome.estimateBar}
+                                      border
+                                      className={productChrome.estimateCreditBar}
                                     >
-                                      <Inline justify="between" align="center">
-                                        <Text>Estimated return amount:</Text>
-                                        <Text weight="semibold" variant="title">
-                                          {formatCurrency(estimatedRefund.grandTotal)}
-                                        </Text>
-                                      </Inline>
-                                    </Box>
-
-                                    {estimatedRefund.linesWithQty > 0 ? (
-                                      <Stack
-                                        gap="xs"
-                                        padding="sm"
-                                        rounded="md"
-                                        border
-                                        className={productChrome.estimateCreditBar}
+                                      <Text weight="semibold">
+                                        Estimated credit total:{' '}
+                                        {formatCurrency(estimatedRefund.grandTotal)}
+                                      </Text>
+                                      <Text
+                                        variant="caption"
+                                        color="secondary"
+                                        className={productChrome.blockHint}
                                       >
-                                        <Text weight="semibold">
-                                          Estimated credit total:{' '}
-                                          {formatCurrency(estimatedRefund.grandTotal)}
-                                        </Text>
+                                        Selling price × return qty per line. Hover Est. credit for a
+                                        notional GST split when rates apply. Final amount is set
+                                        when you process the return.
+                                      </Text>
+                                    </Stack>
+                                  ) : null}
+
+                                  {estimatedRefund.linesWithQty > 0 ? (
+                                    <Stack gap="sm" className={productChrome.paymentSectionTop}>
+                                      <PaymentMethodSplit
+                                        context="sale"
+                                        title="How are you refunding?"
+                                        intro="Choose cash, online, credit (reduces what they owe), or a mix. This drives accounting — not the original sale payment."
+                                        total={returnTotalNum}
+                                        value={{
+                                          method: paymentMethod,
+                                          split: paymentSplit,
+                                        }}
+                                        onChange={(next) => {
+                                          setPaymentMethod(next.method);
+                                          setPaymentSplit(next.split);
+                                        }}
+                                        disabled={isLoading}
+                                      />
+                                      {paymentMethod &&
+                                      isCreditMethod(paymentMethod) &&
+                                      paymentSplit.creditAmount > 0 ? (
                                         <Text
                                           variant="caption"
                                           color="secondary"
-                                          className={productChrome.blockHint}
+                                          className={productChrome.mtXs}
                                         >
-                                          Same as server: selling price × return qty per line. Hover
-                                          “Est. credit” for a notional GST split when rates apply.
-                                          Final amount is set when you process the return.
+                                          ₹{paymentSplit.creditAmount.toFixed(2)} reduces customer
+                                          credit (they owe you less).
                                         </Text>
-                                      </Stack>
-                                    ) : null}
+                                      ) : null}
+                                    </Stack>
+                                  ) : null}
 
-                                    {estimatedRefund.linesWithQty > 0 ? (
-                                      <Stack gap="sm" className={productChrome.paymentSectionTop}>
-                                        <PaymentMethodSplit
-                                          context="sale"
-                                          title="How are you refunding?"
-                                          intro="Choose cash, online, credit (reduces what they owe), or a mix. This drives accounting — not the original sale payment."
-                                          total={returnTotalNum}
-                                          value={{
-                                            method: paymentMethod,
-                                            split: paymentSplit,
-                                          }}
-                                          onChange={(next) => {
-                                            setPaymentMethod(next.method);
-                                            setPaymentSplit(next.split);
-                                          }}
-                                          disabled={isLoading}
-                                        />
-                                        {paymentMethod &&
-                                        isCreditMethod(paymentMethod) &&
-                                        paymentSplit.creditAmount > 0 ? (
-                                          <Text
-                                            variant="caption"
-                                            color="secondary"
-                                            className={productChrome.mtXs}
-                                          >
-                                            ₹{paymentSplit.creditAmount.toFixed(2)} reduces customer
-                                            credit (they owe you less).
-                                          </Text>
-                                        ) : null}
-                                      </Stack>
-                                    ) : null}
-
-                                    <Button
-                                      type="button"
-                                      variant="solid"
-                                      fullWidth
-                                      disabled={!canProcessReturn}
-                                      onClick={() => void handleProcessRefund()}
-                                    >
-                                      {isLoading ? 'Processing...' : 'Process Return'}
-                                    </Button>
-                                  </Stack>
-                                ) : null}
-                              </Stack>
-                            </CardBody>
+                                  <Button
+                                    type="button"
+                                    variant="solid"
+                                    fullWidth
+                                    disabled={!canProcessReturn}
+                                    onClick={() => void handleProcessRefund()}
+                                  >
+                                    {isLoading ? 'Processing…' : 'Process return'}
+                                  </Button>
+                                </Stack>
+                              </Box>
+                            ) : null}
                           </Card>
                         );
                       })}
@@ -807,12 +917,7 @@ export function RefundPage() {
       {activeTab === 'history' ? (
         <Card>
           <CardBody>
-            <Stack gap="md">
-              <Text variant="heading3" weight="semibold">
-                Return History
-              </Text>
-              <RefundHistoryList refreshTrigger={refundHistoryRefreshTrigger} />
-            </Stack>
+            <RefundHistoryList refreshTrigger={refundHistoryRefreshTrigger} />
           </CardBody>
         </Card>
       ) : null}

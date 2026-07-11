@@ -40,6 +40,36 @@
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
+select.control {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2.35rem;
+  background-image: linear-gradient(
+      45deg,
+      transparent 50%,
+      var(--sk-color-text-secondary, #64748b) 50%
+    ),
+    linear-gradient(135deg, var(--sk-color-text-secondary, #64748b) 50%, transparent 50%);
+  background-position: calc(100% - 1.05rem) calc(50% - 0.12rem),
+    calc(100% - 0.7rem) calc(50% - 0.12rem);
+  background-size: 0.35rem 0.35rem, 0.35rem 0.35rem;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+select.control:hover:not(:disabled) {
+  border-color: color-mix(
+    in srgb,
+    var(--sk-color-accent, #2563eb) 40%,
+    var(--sk-color-border-default)
+  );
+}
+
+select.control:focus {
+  background-image: linear-gradient(45deg, transparent 50%, var(--sk-color-accent, #2563eb) 50%),
+    linear-gradient(135deg, var(--sk-color-accent, #2563eb) 50%, transparent 50%);
+}
+
 .control:focus {
   outline: none;
   border-color: var(--sk-color-accent);

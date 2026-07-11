@@ -8,8 +8,6 @@ import {
   CardBody,
   CenteredLoader,
   EmptyState,
-  Grid,
-  Inline,
   PaginationBar,
   Stack,
   Table,
@@ -19,6 +17,8 @@ import {
   TableHeaderCell,
   TableRow,
   Text,
+  cn,
+  productChrome,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { HistoryListSummary } from './HistoryListSummary';
@@ -73,16 +73,38 @@ function formatDate(dateString: string): string {
   }
 }
 
-function DetailLine({ label, value }: { label: string; value: string }) {
+function creditNoteLabel(r: VendorPurchaseReturnSummary): string {
+  const note = r.supplierCreditNoteNo?.trim();
+  return note || 'No credit note number';
+}
+
+function HistoryField({
+  label,
+  value,
+  strong,
+  muted,
+}: {
+  label: string;
+  value: string;
+  strong?: boolean;
+  muted?: boolean;
+}) {
   return (
-    <Inline gap="xs">
-      <Text variant="caption" color="secondary" weight="semibold">
-        {label}:
+    <Box className={productChrome.salePickField}>
+      <Text as="p" className={productChrome.salePickLabel}>
+        {label}
       </Text>
-      <Text variant="caption" color="secondary">
+      <Text
+        as="p"
+        className={cn(
+          productChrome.salePickValue,
+          strong && productChrome.salePickValueStrong,
+          muted && productChrome.salePickValueMuted,
+        )}
+      >
         {value}
       </Text>
-    </Inline>
+    </Box>
   );
 }
 
@@ -185,87 +207,128 @@ export function VendorReturnHistoryList({ refreshTrigger, filters }: VendorRetur
       ) : (
         <>
           <Stack gap="md">
-            {returns.map((r) => (
-              <Card key={r.returnId}>
-                <CardBody>
-                  <Stack gap="md">
-                    <Inline
-                      justify="between"
-                      align="start"
-                      gap="md"
-                      className={surfaceChrome.recordHeader}
-                    >
-                      <DetailLine
-                        label="Credit note"
-                        value={r.supplierCreditNoteNo ?? r.returnId}
-                      />
-                      <DetailLine label="Date" value={formatDate(r.createdAt)} />
-                    </Inline>
-                    <Grid columns={2} gap="sm">
-                      <DetailLine label="Purchase invoice" value={r.invoiceNo ?? '—'} />
-                      <DetailLine label="Vendor" value={r.vendorName ?? '—'} />
-                      <DetailLine label="Lines returned" value={String(r.totalLinesReturned)} />
-                      <DetailLine label="Note value" value={formatCurrency(r.returnAmount)} />
-                      {r.reason ? <DetailLine label="Reason" value={r.reason} /> : null}
-                    </Grid>
-                    {(r.lines?.length ?? 0) > 0 ? (
-                      <Stack gap="sm" className={surfaceChrome.breakdownWrap}>
-                        <Text
-                          variant="caption"
-                          color="secondary"
-                          weight="semibold"
-                          className={surfaceChrome.sectionLabelSm}
-                        >
-                          Line breakdown
+            {returns.map((r) => {
+              const note = creditNoteLabel(r);
+              const hasNote = Boolean(r.supplierCreditNoteNo?.trim());
+              const invoice = r.invoiceNo?.trim() || '—';
+              const vendor = r.vendorName?.trim() || '—';
+              const hasLines = (r.lines?.length ?? 0) > 0;
+
+              return (
+                <Card key={r.returnId} className={productChrome.historyRecordCard}>
+                  <CardBody>
+                    <Box className={productChrome.salePickMain}>
+                      <Box className={productChrome.historyRecordHeader}>
+                        <Box className={productChrome.salePickTitleRow}>
+                          <Text as="p" className={productChrome.salePickInvoiceHint}>
+                            Credit note
+                          </Text>
+                          <Text
+                            as="p"
+                            className={cn(
+                              productChrome.salePickTitle,
+                              !hasNote && productChrome.salePickValueMuted,
+                            )}
+                          >
+                            {note}
+                          </Text>
+                        </Box>
+                        <Text as="p" className={productChrome.historyRecordAmount}>
+                          {formatCurrency(r.returnAmount)}
                         </Text>
-                        <Box overflow="auto">
-                          <Table className={surfaceChrome.minW320}>
-                            <TableHead>
-                              <TableRow>
-                                <TableHeaderCell>Product</TableHeaderCell>
-                                <TableHeaderCell>Barcode</TableHeaderCell>
-                                <TableHeaderCell>Qty returned</TableHeaderCell>
-                                <TableHeaderCell>Taxable</TableHeaderCell>
-                                <TableHeaderCell>CGST</TableHeaderCell>
-                                <TableHeaderCell>SGST/UTGST</TableHeaderCell>
-                                <TableHeaderCell>Line total</TableHeaderCell>
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {r.lines!.map((line, idx) => (
-                                <TableRow key={`${line.inventoryId ?? 'unknown'}-${idx}`}>
-                                  <TableCell>
+                      </Box>
+
+                      <Box className={productChrome.salePickGrid}>
+                        <HistoryField label="Date" value={formatDate(r.createdAt)} />
+                        <HistoryField
+                          label="Purchase invoice"
+                          value={invoice}
+                          muted={invoice === '—'}
+                        />
+                        <HistoryField label="Vendor" value={vendor} muted={vendor === '—'} />
+                        <HistoryField
+                          label="Lines returned"
+                          value={String(r.totalLinesReturned ?? 0)}
+                        />
+                        {r.reason?.trim() ? (
+                          <HistoryField label="Reason" value={r.reason.trim()} />
+                        ) : null}
+                      </Box>
+                    </Box>
+                  </CardBody>
+
+                  {hasLines ? (
+                    <Box className={productChrome.historyItemsPanel}>
+                      <Text as="p" className={productChrome.historyItemsTitle}>
+                        Line breakdown
+                      </Text>
+                      <Box overflow="auto">
+                        <Table
+                          className={cn(surfaceChrome.minW320, productChrome.historyItemsTable)}
+                        >
+                          <TableHead>
+                            <TableRow>
+                              <TableHeaderCell>Product</TableHeaderCell>
+                              <TableHeaderCell>Barcode</TableHeaderCell>
+                              <TableHeaderCell className={surfaceChrome.numericCell}>
+                                Qty returned
+                              </TableHeaderCell>
+                              <TableHeaderCell className={surfaceChrome.numericCell}>
+                                Taxable
+                              </TableHeaderCell>
+                              <TableHeaderCell className={surfaceChrome.numericCell}>
+                                CGST
+                              </TableHeaderCell>
+                              <TableHeaderCell className={surfaceChrome.numericCell}>
+                                SGST/UTGST
+                              </TableHeaderCell>
+                              <TableHeaderCell className={surfaceChrome.numericCell}>
+                                Line total
+                              </TableHeaderCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {(r.lines ?? []).map((line, idx) => (
+                              <TableRow key={`${line.inventoryId ?? 'unknown'}-${idx}`}>
+                                <TableCell>
+                                  <Text weight="medium">
                                     {line.productName?.trim()
                                       ? line.productName
                                       : line.inventoryId ?? '—'}
-                                  </TableCell>
-                                  <TableCell>{line.barcode ?? '—'}</TableCell>
-                                  <TableCell>
-                                    {formatReturnedDisplayQty(line.displayQuantityReturned)}
-                                  </TableCell>
-                                  <TableCell>{moneyOrDash(line.taxableValue)}</TableCell>
-                                  <TableCell>{moneyOrDash(line.centralGstAmount)}</TableCell>
-                                  <TableCell>{moneyOrDash(line.stateGstAmount)}</TableCell>
-                                  <TableCell>{moneyOrDash(line.lineNoteValue)}</TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </Box>
-                      </Stack>
-                    ) : (
-                      <Text
-                        variant="caption"
-                        color="secondary"
-                        className={surfaceChrome.breakdownLegacy}
-                      >
+                                  </Text>
+                                </TableCell>
+                                <TableCell>{line.barcode ?? '—'}</TableCell>
+                                <TableCell className={surfaceChrome.numericCell}>
+                                  {formatReturnedDisplayQty(line.displayQuantityReturned)}
+                                </TableCell>
+                                <TableCell className={surfaceChrome.numericCell}>
+                                  {moneyOrDash(line.taxableValue)}
+                                </TableCell>
+                                <TableCell className={surfaceChrome.numericCell}>
+                                  {moneyOrDash(line.centralGstAmount)}
+                                </TableCell>
+                                <TableCell className={surfaceChrome.numericCell}>
+                                  {moneyOrDash(line.stateGstAmount)}
+                                </TableCell>
+                                <TableCell className={surfaceChrome.numericCell}>
+                                  <Text weight="semibold">{moneyOrDash(line.lineNoteValue)}</Text>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </Box>
+                    </Box>
+                  ) : (
+                    <Box className={productChrome.historyItemsPanel}>
+                      <Text variant="caption" color="secondary">
                         No saved line breakdown for this debit note (often older returns).
                       </Text>
-                    )}
-                  </Stack>
-                </CardBody>
-              </Card>
-            ))}
+                    </Box>
+                  )}
+                </Card>
+              );
+            })}
           </Stack>
 
           <PaginationBar
