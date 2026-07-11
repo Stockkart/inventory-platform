@@ -572,10 +572,8 @@
   grid-template-columns: minmax(0, 1fr) 7rem 2.5rem;
   gap: 0.5rem;
   padding: 0 0.15rem;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 500;
   color: var(--sk-color-text-secondary, #64748b);
 }
 

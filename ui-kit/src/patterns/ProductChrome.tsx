@@ -56,7 +56,6 @@ export const productChrome = {
   cartLineStock: styles.cartLineStock,
   cartLineMeta: styles.cartLineMeta,
   detailModalContent: styles.detailModalContent,
-  detailModalHeader: styles.detailModalHeader,
   detailModalBody: styles.detailModalBody,
   detailModalSection: styles.detailModalSection,
   detailModalSectionFlush: styles.detailModalSectionFlush,

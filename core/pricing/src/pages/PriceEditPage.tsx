@@ -289,31 +289,31 @@ export function PriceEditPage() {
             <Divider />
 
             <Box className={surfaceChrome.priceEditSection}>
-              <div className={surfaceChrome.priceEditSectionHead}>
+              <Box className={surfaceChrome.priceEditSectionHead}>
                 <Text as="h3" className={surfaceChrome.priceEditSectionTitle}>
                   Custom rates
                 </Text>
                 <Button type="button" variant="outline" size="sm" onClick={addRate}>
                   Add rate
                 </Button>
-              </div>
+              </Box>
               <Text as="p" className={surfaceChrome.priceEditHint}>
                 Saving replaces the full rate list—keep every rate you still need.
               </Text>
 
               {rates.length === 0 ? (
-                <div className={surfaceChrome.priceEditEmptyRates}>
+                <Box className={surfaceChrome.priceEditEmptyRates}>
                   No custom rates yet. Add one if this product uses named price tiers.
-                </div>
+                </Box>
               ) : (
                 <Stack gap="sm">
-                  <div className={surfaceChrome.priceEditRateHead} aria-hidden>
-                    <span>Name</span>
-                    <span>Price</span>
-                    <span />
-                  </div>
+                  <Box className={surfaceChrome.priceEditRateHead} aria-hidden>
+                    <Text as="span">Name</Text>
+                    <Text as="span">Price</Text>
+                    <Box as="span" />
+                  </Box>
                   {rates.map((rate, i) => (
-                    <div key={i} className={surfaceChrome.priceEditRateRow}>
+                    <Box key={i} className={surfaceChrome.priceEditRateRow}>
                       <Input
                         type="text"
                         value={rate.name}
@@ -339,7 +339,7 @@ export function PriceEditPage() {
                       >
                         ×
                       </IconButton>
-                    </div>
+                    </Box>
                   ))}
                 </Stack>
               )}
