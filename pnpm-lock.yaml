@@ -457,6 +457,9 @@ importers:
       axios:
         specifier: ^1.7.9
         version: 1.13.2
+      lucide-react:
+        specifier: ^0.554.0
+        version: 0.554.0(react@19.2.0)
       qrcode.react:
         specifier: ^3.1.0
         version: 3.2.0(react@19.2.0)
