@@ -41,6 +41,7 @@ export const accountingChrome = {
   metaLabelCell: styles.metaLabelCell,
   quickActionsGrid: styles.quickActionsGrid,
   overviewKpiGrid: styles.overviewKpiGrid,
+  autoKpiGrid: styles.autoKpiGrid,
   overviewKpiCard: styles.overviewKpiCard,
   overviewKpiLabel: styles.overviewKpiLabel,
   overviewKpiValue: styles.overviewKpiValue,

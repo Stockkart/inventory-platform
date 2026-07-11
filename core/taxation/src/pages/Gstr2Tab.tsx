@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import {
   Alert,
-  Box,
   Card,
   CardBody,
   CenteredLoader,
+  EmptyState,
   Stack,
   Table,
   TableBody,
@@ -13,6 +13,7 @@ import {
   TableHeaderCell,
   TableRow,
   Text,
+  accountingChrome,
 } from '@inventory-platform/ui-kit';
 import { triggerBlobDownload } from '../api/download';
 import { gstr2Api } from '../api/gstr2.api';
@@ -21,28 +22,30 @@ import { formatCurrency, formatDate, getDefaultPeriod, GstrReportHeader, GstrSub
 import { numColStyle } from '../ui/tabNav';
 
 const TABS = [
-  { id: 'b2b', label: 'B2B (Registered)' },
-  { id: 'b2bur', label: 'B2BUR (Unregistered)' },
-  { id: 'imps', label: 'IMPS (Import Services)' },
-  { id: 'impg', label: 'IMPG (Import Goods)' },
-  { id: 'cdnr', label: 'CDNR (Registered)' },
-  { id: 'cdnur', label: 'CDNUR (Unregistered)' },
-  { id: 'at', label: 'Advance Paid' },
-  { id: 'atadj', label: 'Advance Adjusted' },
-  { id: 'exemp', label: 'Exempt / Nil / Non-GST' },
-  { id: 'itcr', label: 'ITC Reversal' },
-  { id: 'hsnsum', label: 'HSN Summary' },
+  { id: 'b2b', label: 'B2B', title: 'B2B inward – registered suppliers' },
+  { id: 'b2bur', label: 'B2BUR', title: 'B2B inward – unregistered' },
+  { id: 'imps', label: 'IMPS', title: 'Import of services' },
+  { id: 'impg', label: 'IMPG', title: 'Import of goods' },
+  { id: 'cdnr', label: 'CDNR', title: 'Credit/Debit notes – registered' },
+  { id: 'cdnur', label: 'CDNUR', title: 'Credit/Debit notes – unregistered' },
+  { id: 'at', label: 'Advance', title: 'Advance Paid' },
+  { id: 'atadj', label: 'Adv. Adj.', title: 'Advance Adjusted' },
+  { id: 'exemp', label: 'Exempt', title: 'Exempt / Nil / Non-GST' },
+  { id: 'itcr', label: 'ITC Rev.', title: 'ITC Reversal' },
+  { id: 'hsnsum', label: 'HSN', title: 'HSN Summary' },
 ] as const;
 
 type Gstr2SectionId = (typeof TABS)[number]['id'];
 
 function EmptySection({ message }: { message: string }) {
+  return <EmptyState title={message} />;
+}
+
+function SectionTitle({ children }: { children: string }) {
   return (
-    <Box padding="lg">
-      <Text color="secondary" align="center">
-        {message}
-      </Text>
-    </Box>
+    <Text as="h3" className={accountingChrome.overviewSectionTitle}>
+      {children}
+    </Text>
   );
 }
 
@@ -88,16 +91,14 @@ export function Gstr2Tab() {
   return (
     <Stack gap="md">
       <GstrReportHeader
-        title="GSTR-2 Report"
-        description="View and download your GSTR-2 tax return for inward supplies"
-        shopInfo={data ? `GSTIN: ${data.shopGstin || '—'} · Period: ${data.period}` : undefined}
+        description="Inward supplies for the period — download Excel for your GSTR-2 working papers."
         periodId="gstr2-period"
         period={period}
         onPeriodChange={setPeriod}
         periodDisabled={isLoading}
         downloads={[
           {
-            label: '📥 Download Excel',
+            label: 'Download Excel',
             loadingLabel: 'Downloading…',
             onClick: handleDownload,
             disabled: isLoading || isDownloading,
@@ -118,7 +119,7 @@ export function Gstr2Tab() {
             <CardBody>
               {activeTab === 'b2b' && (
                 <Stack gap="md">
-                  <Text variant="heading3">B2B Inward Supplies (Registered Suppliers)</Text>
+                  <SectionTitle>B2B Inward Supplies (Registered Suppliers)</SectionTitle>
                   {b2bData.length === 0 ? (
                     <EmptySection message="No B2B inward supplies for this period." />
                   ) : (
@@ -166,7 +167,7 @@ export function Gstr2Tab() {
 
               {activeTab === 'b2bur' && (
                 <Stack gap="md">
-                  <Text variant="heading3">B2BUR Inward Supplies (Unregistered Suppliers)</Text>
+                  <SectionTitle>B2BUR Inward Supplies (Unregistered Suppliers)</SectionTitle>
                   {b2burData.length === 0 ? (
                     <EmptySection message="No B2BUR inward supplies for this period." />
                   ) : (
@@ -214,7 +215,7 @@ export function Gstr2Tab() {
 
               {activeTab === 'imps' && (
                 <Stack gap="md">
-                  <Text variant="heading3">Import of Services</Text>
+                  <SectionTitle>Import of Services</SectionTitle>
                   {impsData.length === 0 ? (
                     <EmptySection message="No import of services for this period." />
                   ) : (
@@ -256,7 +257,7 @@ export function Gstr2Tab() {
 
               {activeTab === 'impg' && (
                 <Stack gap="md">
-                  <Text variant="heading3">Import of Goods</Text>
+                  <SectionTitle>Import of Goods</SectionTitle>
                   {impgData.length === 0 ? (
                     <EmptySection message="No import of goods for this period." />
                   ) : (
@@ -298,7 +299,7 @@ export function Gstr2Tab() {
 
               {activeTab === 'cdnr' && (
                 <Stack gap="md">
-                  <Text variant="heading3">Credit/Debit Notes from Registered Suppliers</Text>
+                  <SectionTitle>Credit/Debit Notes from Registered Suppliers</SectionTitle>
                   {cdnrData.length === 0 ? (
                     <EmptySection message="No CDNR entries for this period." />
                   ) : (
@@ -349,7 +350,7 @@ export function Gstr2Tab() {
 
               {activeTab === 'cdnur' && (
                 <Stack gap="md">
-                  <Text variant="heading3">Credit/Debit Notes from Unregistered Suppliers</Text>
+                  <SectionTitle>Credit/Debit Notes from Unregistered Suppliers</SectionTitle>
                   {cdnurData.length === 0 ? (
                     <EmptySection message="No CDNUR entries for this period." />
                   ) : (
@@ -390,7 +391,7 @@ export function Gstr2Tab() {
 
               {activeTab === 'at' && (
                 <Stack gap="md">
-                  <Text variant="heading3">Tax on Advance Paid</Text>
+                  <SectionTitle>Tax on Advance Paid</SectionTitle>
                   {atData.length === 0 ? (
                     <EmptySection message="No advance tax entries for this period." />
                   ) : (
@@ -424,7 +425,7 @@ export function Gstr2Tab() {
 
               {activeTab === 'atadj' && (
                 <Stack gap="md">
-                  <Text variant="heading3">Advance Adjustment</Text>
+                  <SectionTitle>Advance Adjustment</SectionTitle>
                   {atadjData.length === 0 ? (
                     <EmptySection message="No advance adjustment entries for this period." />
                   ) : (
@@ -458,7 +459,7 @@ export function Gstr2Tab() {
 
               {activeTab === 'exemp' && (
                 <Stack gap="md">
-                  <Text variant="heading3">Exempt / Nil / Non-GST Supplies</Text>
+                  <SectionTitle>Exempt / Nil / Non-GST Supplies</SectionTitle>
                   {exempData.length === 0 ? (
                     <EmptySection message="No exempt entries for this period." />
                   ) : (
@@ -498,7 +499,7 @@ export function Gstr2Tab() {
 
               {activeTab === 'itcr' && (
                 <Stack gap="md">
-                  <Text variant="heading3">ITC Reversal</Text>
+                  <SectionTitle>ITC Reversal</SectionTitle>
                   {itcrData.length === 0 ? (
                     <EmptySection message="No ITC reversal entries for this period." />
                   ) : (
@@ -540,7 +541,7 @@ export function Gstr2Tab() {
 
               {activeTab === 'hsnsum' && (
                 <Stack gap="md">
-                  <Text variant="heading3">HSN Summary</Text>
+                  <SectionTitle>HSN Summary</SectionTitle>
                   {hsnData.length === 0 ? (
                     <EmptySection message="No HSN summary for this period." />
                   ) : (

@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import {
   Alert,
-  Box,
   Card,
   CardBody,
   CenteredLoader,
+  EmptyState,
   Stack,
   Table,
   TableBody,
@@ -13,6 +13,7 @@ import {
   TableHeaderCell,
   TableRow,
   Text,
+  accountingChrome,
 } from '@inventory-platform/ui-kit';
 import { triggerBlobDownload } from '../api/download';
 import { gstr1Api } from '../api/gstr1.api';
@@ -28,29 +29,31 @@ import {
 import { numColStyle } from '../ui/tabNav';
 
 const TABS = [
-  { id: 'b2b', label: 'B2B / SEZ / DE' },
-  { id: 'b2cl', label: 'B2C Large' },
-  { id: 'b2cs', label: 'B2C Small' },
-  { id: 'cdnr', label: 'CDNR (Registered)' },
-  { id: 'cdnur', label: 'CDNUR (Unregistered)' },
-  { id: 'exp', label: 'Export' },
-  { id: 'at', label: 'Advance Received' },
-  { id: 'atadj', label: 'Advance Adjusted' },
-  { id: 'exemp', label: 'Nil / Exempt / Non-GST' },
-  { id: 'hsnb2b', label: 'HSN (B2B)' },
-  { id: 'hsnb2c', label: 'HSN (B2C)' },
-  { id: 'docs', label: 'Document Summary' },
+  { id: 'b2b', label: 'B2B', title: 'B2B / SEZ / Deemed Export' },
+  { id: 'b2cl', label: 'B2C Large', title: 'B2C Large invoices' },
+  { id: 'b2cs', label: 'B2C Small', title: 'B2C Small (summary)' },
+  { id: 'cdnr', label: 'CDNR', title: 'Credit/Debit notes – registered' },
+  { id: 'cdnur', label: 'CDNUR', title: 'Credit/Debit notes – unregistered' },
+  { id: 'exp', label: 'Export', title: 'Export invoices' },
+  { id: 'at', label: 'Advance', title: 'Advance Received' },
+  { id: 'atadj', label: 'Adv. Adj.', title: 'Advance Adjusted' },
+  { id: 'exemp', label: 'Exempt', title: 'Nil / Exempt / Non-GST' },
+  { id: 'hsnb2b', label: 'HSN B2B', title: 'HSN summary (B2B)' },
+  { id: 'hsnb2c', label: 'HSN B2C', title: 'HSN summary (B2C)' },
+  { id: 'docs', label: 'Docs', title: 'Document Summary' },
 ] as const;
 
 type Gstr1SectionId = (typeof TABS)[number]['id'];
 
 function EmptySection({ message }: { message: string }) {
+  return <EmptyState title={message} />;
+}
+
+function SectionTitle({ children }: { children: string }) {
   return (
-    <Box padding="lg">
-      <Text color="secondary" align="center">
-        {message}
-      </Text>
-    </Box>
+    <Text as="h3" className={accountingChrome.overviewSectionTitle}>
+      {children}
+    </Text>
   );
 }
 
@@ -123,29 +126,27 @@ export function Gstr1Tab() {
   return (
     <Stack gap="md">
       <GstrReportHeader
-        title="GSTR-1 Report"
-        description="View and download your GSTR-1 tax return for GST filing"
-        shopInfo={data ? `GSTIN: ${data.shopGstin || '—'} · Period: ${data.period}` : undefined}
+        description="Outward supplies for the period — download Excel or GST offline JSON for filing."
         periodId="gstr1-period"
         period={period}
         onPeriodChange={setPeriod}
         periodDisabled={isLoading}
         downloads={[
           {
-            label: '📥 Download Excel',
-            loadingLabel: 'Downloading…',
-            onClick: handleDownload,
-            disabled: isLoading || isDownloading || isDownloadingOfflineJson,
-            loading: isDownloading,
-          },
-          {
-            label: '📄 Download offline JSON',
+            label: 'Offline JSON',
             loadingLabel: 'Preparing JSON…',
             onClick: handleDownloadOfflineJson,
             disabled: isLoading || isDownloading || isDownloadingOfflineJson,
             loading: isDownloadingOfflineJson,
             variant: 'outline',
             title: 'GST utility / portal layout (gstin, fp, b2b, b2cs, hsn, doc_issue)',
+          },
+          {
+            label: 'Download Excel',
+            loadingLabel: 'Downloading…',
+            onClick: handleDownload,
+            disabled: isLoading || isDownloading || isDownloadingOfflineJson,
+            loading: isDownloading,
           },
         ]}
       />
@@ -162,7 +163,7 @@ export function Gstr1Tab() {
             <CardBody>
               {activeTab === 'b2b' && (
                 <Stack gap="md">
-                  <Text variant="heading3">B2B / SEZ / Deemed Export</Text>
+                  <SectionTitle>B2B / SEZ / Deemed Export</SectionTitle>
                   <GstrSummaryGrid
                     items={
                       b2bTab?.summary
@@ -238,7 +239,7 @@ export function Gstr1Tab() {
 
               {activeTab === 'b2cl' && (
                 <Stack gap="md">
-                  <Text variant="heading3">B2C Large Invoices</Text>
+                  <SectionTitle>B2C Large Invoices</SectionTitle>
                   <GstrSummaryGrid
                     items={
                       b2clTab?.summary
@@ -304,7 +305,7 @@ export function Gstr1Tab() {
 
               {activeTab === 'b2cs' && (
                 <Stack gap="md">
-                  <Text variant="heading3">B2C Small (Aggregated)</Text>
+                  <SectionTitle>B2C Small (Aggregated)</SectionTitle>
                   <GstrSummaryGrid
                     items={
                       b2csTab?.summary
@@ -358,7 +359,7 @@ export function Gstr1Tab() {
 
               {activeTab === 'cdnr' && (
                 <Stack gap="md">
-                  <Text variant="heading3">Credit/Debit Notes (Registered)</Text>
+                  <SectionTitle>Credit/Debit Notes (Registered)</SectionTitle>
                   <GstrSummaryGrid
                     items={
                       cdnrTab?.summary
@@ -438,7 +439,7 @@ export function Gstr1Tab() {
 
               {activeTab === 'cdnur' && (
                 <Stack gap="md">
-                  <Text variant="heading3">Credit/Debit Notes (Unregistered)</Text>
+                  <SectionTitle>Credit/Debit Notes (Unregistered)</SectionTitle>
                   <GstrSummaryGrid
                     items={
                       cdnurTab?.summary
@@ -512,7 +513,7 @@ export function Gstr1Tab() {
 
               {activeTab === 'exp' && (
                 <Stack gap="md">
-                  <Text variant="heading3">Export Invoices</Text>
+                  <SectionTitle>Export Invoices</SectionTitle>
                   <GstrSummaryGrid
                     items={
                       expTab?.summary
@@ -578,7 +579,7 @@ export function Gstr1Tab() {
 
               {activeTab === 'at' && (
                 <Stack gap="md">
-                  <Text variant="heading3">Advance Received</Text>
+                  <SectionTitle>Advance Received</SectionTitle>
                   <GstrSummaryGrid
                     items={
                       atTab?.summary
@@ -628,7 +629,7 @@ export function Gstr1Tab() {
 
               {activeTab === 'atadj' && (
                 <Stack gap="md">
-                  <Text variant="heading3">Advance Adjusted</Text>
+                  <SectionTitle>Advance Adjusted</SectionTitle>
                   <GstrSummaryGrid
                     items={
                       atadjTab?.summary
@@ -678,7 +679,7 @@ export function Gstr1Tab() {
 
               {activeTab === 'exemp' && (
                 <Stack gap="md">
-                  <Text variant="heading3">Nil / Exempt / Non-GST Supplies</Text>
+                  <SectionTitle>Nil / Exempt / Non-GST Supplies</SectionTitle>
                   <GstrSummaryGrid
                     items={
                       exempTab?.summary
@@ -734,7 +735,7 @@ export function Gstr1Tab() {
 
               {activeTab === 'hsnb2b' && (
                 <Stack gap="md">
-                  <Text variant="heading3">HSN Summary (B2B)</Text>
+                  <SectionTitle>HSN Summary (B2B)</SectionTitle>
                   <GstrSummaryGrid
                     items={
                       hsnB2bTab?.summary
@@ -828,7 +829,7 @@ export function Gstr1Tab() {
 
               {activeTab === 'hsnb2c' && (
                 <Stack gap="md">
-                  <Text variant="heading3">HSN Summary (B2C)</Text>
+                  <SectionTitle>HSN Summary (B2C)</SectionTitle>
                   <GstrSummaryGrid
                     items={
                       hsnB2cTab?.summary
@@ -922,7 +923,7 @@ export function Gstr1Tab() {
 
               {activeTab === 'docs' && (
                 <Stack gap="md">
-                  <Text variant="heading3">Document Summary</Text>
+                  <SectionTitle>Document Summary</SectionTitle>
                   <GstrSummaryGrid
                     items={
                       docsTab?.summary

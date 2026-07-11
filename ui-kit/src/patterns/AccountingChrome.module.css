@@ -188,6 +188,7 @@
   border: 1px solid var(--border-color, rgba(148, 163, 184, 0.45));
   background: var(--card-bg, #fff);
   color: var(--text-primary, #0f172a);
+  white-space: nowrap;
 }
 
 .templateChipActive {
@@ -299,6 +300,13 @@
 .overviewKpiGrid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.85rem;
+  width: 100%;
+}
+
+.autoKpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.75rem, 1fr));
   gap: 0.85rem;
   width: 100%;
 }
