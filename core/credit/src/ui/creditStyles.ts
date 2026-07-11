@@ -6,7 +6,7 @@ export const accountBalToneStyle: Record<BalanceTone, CSSProperties> = {
   collect: { color: '#065f46' },
   pay: { color: '#9a3412' },
   advance_customer: { color: '#0c4a6e' },
-  advance_vendor: { color: '#5b21b6' },
+  advance_vendor: { color: '#1e40af' },
   settled: { color: 'var(--sk-color-text-secondary)' },
 };
 
@@ -14,7 +14,7 @@ export const accountBalHeadlineStyle: Record<BalanceTone, CSSProperties> = {
   collect: { color: '#047857' },
   pay: { color: '#b45309' },
   advance_customer: { color: '#0369a1' },
-  advance_vendor: { color: '#6d28d9' },
+  advance_vendor: { color: '#1d4ed8' },
   settled: { color: 'var(--sk-color-text-secondary)', fontWeight: 600 },
 };
 
@@ -32,8 +32,8 @@ export const contextBalBlockStyle: Record<BalanceTone, CSSProperties> = {
     background: 'color-mix(in srgb, #0284c7 8%, var(--sk-color-bg-elevated))',
   },
   advance_vendor: {
-    borderColor: 'color-mix(in srgb, #7c3aed 35%, var(--sk-color-border-default))',
-    background: 'color-mix(in srgb, #7c3aed 9%, var(--sk-color-bg-elevated))',
+    borderColor: 'color-mix(in srgb, #2563eb 40%, var(--sk-color-border-default))',
+    background: 'color-mix(in srgb, #2563eb 10%, var(--sk-color-bg-elevated))',
   },
   settled: { borderStyle: 'dashed', opacity: 0.95 },
 };
@@ -42,7 +42,7 @@ export const contextBalLabelStyle: Record<BalanceTone, CSSProperties> = {
   collect: { color: '#047857' },
   pay: { color: '#b45309' },
   advance_customer: { color: '#0369a1' },
-  advance_vendor: { color: '#6d28d9' },
+  advance_vendor: { color: '#1d4ed8' },
   settled: { color: 'var(--sk-color-text-secondary)', fontWeight: 600 },
 };
 
@@ -67,11 +67,13 @@ export const timelineReturnStyle: CSSProperties = {
 export const accountBtnStyle = (active: boolean): CSSProperties => ({
   width: '100%',
   textAlign: 'left',
+  justifyContent: 'flex-start',
+  justifyItems: 'start',
   border: active ? '1px solid #2563eb' : '1px solid var(--sk-color-border-default)',
   background: active ? 'rgba(59, 130, 246, 0.08)' : 'var(--sk-color-bg-elevated)',
   borderRadius: 10,
-  padding: '0.6rem 0.65rem',
+  padding: '0.65rem 0.7rem',
   cursor: 'pointer',
   display: 'grid',
-  gap: '0.28rem',
+  gap: '0.2rem',
 });

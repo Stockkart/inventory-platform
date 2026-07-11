@@ -44,6 +44,8 @@ export function CreditAccountList({
             <Button
               type="button"
               variant="ghost"
+              fullWidth
+              align="start"
               style={accountBtnStyle(active)}
               onClick={() => onSelect(a.id)}
             >
@@ -51,9 +53,7 @@ export function CreditAccountList({
                 {a.partyDisplayName}
               </Text>
               <Text as="span" variant="caption" color="secondary">
-                {a.partyType === 'CUSTOMER'
-                  ? 'Customer — you collect from them'
-                  : 'Vendor — you pay them'}
+                {a.partyType === 'CUSTOMER' ? 'Customer' : 'Vendor'}
               </Text>
               <Box as="span" className={surfaceChrome.creditBalMeta}>
                 <Text

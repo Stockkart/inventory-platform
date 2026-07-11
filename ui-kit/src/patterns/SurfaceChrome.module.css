@@ -343,11 +343,55 @@
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  justify-content: space-between;
-  gap: 0.35rem 0.75rem;
+  justify-content: flex-start;
+  gap: 0.5rem 0.75rem;
   margin-top: 0.15rem;
   padding-top: 0.35rem;
   border-top: 1px dashed var(--sk-color-border-default);
+}
+
+.creditSidebarBody {
+  padding: 0.85rem 0.85rem !important;
+}
+
+.creditLedgerCard,
+.creditLedgerCardReturn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--sk-radius-md, 8px);
+  border: 1px solid var(--sk-color-border-default, #e2e8f0);
+  background: var(--sk-color-bg-elevated, #fff);
+}
+
+.creditLedgerCardReturn {
+  border-color: color-mix(in srgb, #10b981 40%, var(--sk-color-border-default, #e2e8f0));
+  background: color-mix(in srgb, #10b981 7%, var(--sk-color-bg-elevated, #fff));
+}
+
+.creditLedgerAmount {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.creditLedgerMeta {
+  padding-top: 0.35rem;
+  border-top: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 80%, transparent);
+}
+
+.creditLedgerRef {
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.75rem;
+}
+
+.creditLedgerNote {
+  margin: 0;
+  line-height: 1.4;
 }
 
 .reminderInfoChip {

@@ -44,20 +44,14 @@ export function CreditPartiesSidebar({
 
   return (
     <Stack gap="md">
-      <Text variant="title" weight="semibold">
-        Outstanding
-      </Text>
-      <Text variant="caption" color="secondary">
-        <Text as="span" weight="semibold">
-          Customer
-        </Text>{' '}
-        rows are money to collect.{' '}
-        <Text as="span" weight="semibold">
-          Vendor
-        </Text>{' '}
-        rows are money you must pay. Search finds anyone to view past ledger entries, including
-        fully settled parties.
-      </Text>
+      <Stack gap="xs">
+        <Text variant="title" weight="semibold">
+          Outstanding
+        </Text>
+        <Text as="p" variant="caption" color="secondary">
+          Customers you collect from, vendors you pay. Search includes settled parties.
+        </Text>
+      </Stack>
 
       <Box position="relative">
         <Input
@@ -109,31 +103,29 @@ export function CreditPartiesSidebar({
               })}
             </Box>
           ) : (
-            <Text variant="caption" color="secondary">
+            <Text as="p" variant="caption" color="secondary">
               No party matches.
             </Text>
           )
         ) : null}
       </Box>
 
-      <Text variant="heading3" weight="semibold">
-        Still open
-      </Text>
-      <CreditAccountList
-        accounts={pendingAccounts}
-        selectedId={selectedId}
-        onSelect={onSelect}
-        emptyMessage={pendingListEmptyMessage}
-      />
+      <Stack gap="sm">
+        <Text variant="heading3" weight="semibold">
+          Still open
+        </Text>
+        <CreditAccountList
+          accounts={pendingAccounts}
+          selectedId={selectedId}
+          onSelect={onSelect}
+          emptyMessage={pendingListEmptyMessage}
+        />
+      </Stack>
 
       {favourAccounts.length > 0 ? (
-        <>
+        <Stack gap="sm">
           <Text variant="heading3" weight="semibold">
             In your favour
-          </Text>
-          <Text variant="caption" color="secondary">
-            Often from a return on credit when you had little or no payable left — the supplier owes
-            you (vendor credit) or the customer paid ahead.
           </Text>
           <CreditAccountList
             accounts={favourAccounts}
@@ -141,7 +133,7 @@ export function CreditPartiesSidebar({
             onSelect={onSelect}
             emptyMessage=""
           />
-        </>
+        </Stack>
       ) : null}
     </Stack>
   );

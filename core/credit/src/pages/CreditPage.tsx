@@ -8,6 +8,7 @@ import {
   PageHeader,
   Stack,
   Text,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import {
@@ -105,7 +106,7 @@ export function CreditPage() {
       ) : (
         <Box display="grid" style={creditGridStyle}>
           <Card>
-            <CardBody>
+            <CardBody className={surfaceChrome.creditSidebarBody}>
               <CreditPartiesSidebar
                 allAccounts={accounts}
                 pendingAccounts={pendingAccounts}
@@ -116,7 +117,7 @@ export function CreditPage() {
                   accounts.length === 0
                     ? 'No credit accounts yet. Add a charge or settlement first.'
                     : favourAccounts.length > 0
-                    ? 'No amounts due right now. See “In your favour” below (e.g. supplier credit from returns).'
+                    ? 'Nothing due right now. See “In your favour” below.'
                     : 'No outstanding dues right now.'
                 }
               />
