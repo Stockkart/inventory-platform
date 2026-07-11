@@ -525,6 +525,92 @@
   text-align: right;
 }
 
+.customersTable {
+  width: 100%;
+  min-width: 1120px;
+  table-layout: fixed;
+  font-size: 0.9375rem;
+}
+
+.customersTable :global(th),
+.customersTable :global(td) {
+  padding: 1rem 1.15rem !important;
+  vertical-align: middle;
+}
+
+.customersTable :global(thead) :global(tr),
+.customersTable :global(tbody) :global(tr) {
+  box-shadow: inset 0 -1px 0 var(--sk-color-border-default, #e2e8f0);
+}
+
+.customersNameCell {
+  width: 13%;
+}
+
+.customersPhoneCell {
+  width: 8.75rem;
+  white-space: nowrap;
+}
+
+.customersTable :global(tbody) .customersPhoneCell {
+  font-variant-numeric: tabular-nums;
+}
+
+.customersEmailCell {
+  width: 17%;
+}
+
+.customersTable :global(tbody) .customersEmailCell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.customersAddressCell {
+  width: 22%;
+}
+
+.customersTable :global(tbody) .customersAddressCell {
+  max-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--sk-color-text-secondary, #475569);
+}
+
+.customersIdCell {
+  width: 9.25rem;
+  white-space: nowrap;
+  padding-left: 1.35rem !important;
+  padding-right: 1.35rem !important;
+}
+
+.customersTable :global(tbody) .customersIdCell {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.8125rem;
+  letter-spacing: 0.01em;
+}
+
+.customersActionCell {
+  width: 14.5rem;
+  white-space: nowrap;
+  padding-left: 1.35rem !important;
+  padding-right: 1.15rem !important;
+  vertical-align: middle;
+}
+
+.customersActionRow {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.5rem;
+  width: max-content;
+}
+
+.customersActionRow > * {
+  flex-shrink: 0;
+}
+
 .pricingMeta {
   font-size: 0.8125rem;
   color: var(--sk-color-text-secondary, var(--text-secondary));

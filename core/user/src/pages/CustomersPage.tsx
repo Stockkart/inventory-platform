@@ -2,7 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
   Alert,
+  Box,
   Button,
+  Card,
+  CardBody,
   EditModal,
   Inline,
   PageHeader,
@@ -17,6 +20,7 @@ import {
   TableHeaderCell,
   TableLoadingRow,
   TableRow,
+  Text,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { useResolvedSellPath } from '@inventory-platform/routing';
@@ -28,6 +32,7 @@ import type {
   CreateCustomerDto,
   UpdateCustomerDto,
 } from '@inventory-platform/user/types';
+
 export function meta() {
   return [
     { title: 'Customers - StockKart' },
@@ -36,8 +41,8 @@ export function meta() {
 }
 
 function formatAddress(addr: string | null | undefined) {
-  if (!addr) return '—';
-  return addr.length > 50 ? `${addr.slice(0, 50)}…` : addr;
+  if (!addr?.trim()) return '—';
+  return addr.trim();
 }
 
 export function CustomersPage() {
@@ -175,89 +180,141 @@ export function CustomersPage() {
 
   return (
     <Stack gap="md">
-      <PageHeader
-        description="Manage your customer contacts"
-        actions={
-          <Button variant="solid" onClick={handleOpenCreate}>
-            New customer
-          </Button>
-        }
-      />
+      <PageHeader description="Manage your customer contacts" />
 
-      <SearchInput
-        value={searchInput}
-        onChange={setSearchInput}
-        onSearch={handleSearch}
-        showSearchButton
-        placeholder="Search by name, phone, email…"
-      />
+      <Inline gap="sm" flexWrap align="stretch" width="full">
+        <Box flex="1" className={surfaceChrome.minW280}>
+          <SearchInput
+            value={searchInput}
+            onChange={setSearchInput}
+            onSearch={handleSearch}
+            showSearchButton
+            buttonVariant="solid"
+            grow
+            placeholder="Search by name, phone, email…"
+            disabled={loading}
+            searchLabel={loading ? 'Searching…' : 'Search'}
+          />
+        </Box>
+        <Button
+          type="button"
+          variant="solid"
+          onClick={handleOpenCreate}
+          className={surfaceChrome.flexShrink0}
+        >
+          New customer
+        </Button>
+      </Inline>
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableHeaderCell>Name</TableHeaderCell>
-            <TableHeaderCell>Phone</TableHeaderCell>
-            <TableHeaderCell>Email</TableHeaderCell>
-            <TableHeaderCell>Address</TableHeaderCell>
-            <TableHeaderCell>GSTIN</TableHeaderCell>
-            <TableHeaderCell>DL No</TableHeaderCell>
-            <TableHeaderCell className={surfaceChrome.minW14Nowrap}>Actions</TableHeaderCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {loading ? (
-            <TableLoadingRow colSpan={7} label="Loading customers…" />
-          ) : data.length === 0 ? (
-            <TableEmptyRow
-              colSpan={7}
-              message='No customers found. Add one with "New customer" or they’ll appear when you complete a sale.'
-            />
-          ) : (
-            data.map((customer) => (
-              <TableRow key={customer.customerId}>
-                <TableCell>{customer.name ?? '—'}</TableCell>
-                <TableCell>{customer.phone ?? '—'}</TableCell>
-                <TableCell>{customer.email ?? '—'}</TableCell>
-                <TableCell>{formatAddress(customer.address)}</TableCell>
-                <TableCell>{customer.gstin ?? '—'}</TableCell>
-                <TableCell>{customer.dlNo ?? '—'}</TableCell>
-                <TableCell>
-                  <Inline gap="sm" flexWrap>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => goScanSellWithCustomer(customer)}
-                      title="Open Scan and Sell with this customer filled in"
-                    >
-                      Sell
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => goReturnWithCustomer(customer)}
-                      title="Open Return to customer with this customer prefilled"
-                    >
-                      Return
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleOpenEdit(customer)}
-                    >
-                      Edit
-                    </Button>
-                  </Inline>
-                </TableCell>
+      <Inline gap="md" flexWrap align="center">
+        <Text as="span" className={surfaceChrome.pricingMeta}>
+          {loading ? 'Loading…' : `${total} customer${total === 1 ? '' : 's'}`}
+          {query ? ` matching “${query}”` : null}
+        </Text>
+      </Inline>
+
+      <Card>
+        <CardBody>
+          <Table className={surfaceChrome.customersTable}>
+            <TableHead>
+              <TableRow>
+                <TableHeaderCell className={surfaceChrome.customersNameCell}>Name</TableHeaderCell>
+                <TableHeaderCell className={surfaceChrome.customersPhoneCell}>
+                  Phone
+                </TableHeaderCell>
+                <TableHeaderCell className={surfaceChrome.customersEmailCell}>
+                  Email
+                </TableHeaderCell>
+                <TableHeaderCell className={surfaceChrome.customersAddressCell}>
+                  Address
+                </TableHeaderCell>
+                <TableHeaderCell className={surfaceChrome.customersIdCell}>GSTIN</TableHeaderCell>
+                <TableHeaderCell className={surfaceChrome.customersIdCell}>DL No</TableHeaderCell>
+                <TableHeaderCell className={surfaceChrome.customersActionCell}>
+                  Actions
+                </TableHeaderCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            </TableHead>
+            <TableBody>
+              {loading ? (
+                <TableLoadingRow colSpan={7} label="Loading customers…" />
+              ) : data.length === 0 ? (
+                <TableEmptyRow
+                  colSpan={7}
+                  message={
+                    query
+                      ? 'No customers match your search.'
+                      : 'No customers yet. Add one with New customer, or they’ll appear after a sale.'
+                  }
+                />
+              ) : (
+                data.map((customer) => (
+                  <TableRow key={customer.customerId}>
+                    <TableCell className={surfaceChrome.customersNameCell}>
+                      <Text as="span" weight="medium">
+                        {customer.name ?? '—'}
+                      </Text>
+                    </TableCell>
+                    <TableCell className={surfaceChrome.customersPhoneCell}>
+                      {customer.phone ?? '—'}
+                    </TableCell>
+                    <TableCell
+                      className={surfaceChrome.customersEmailCell}
+                      title={customer.email ?? undefined}
+                    >
+                      {customer.email ?? '—'}
+                    </TableCell>
+                    <TableCell
+                      className={surfaceChrome.customersAddressCell}
+                      title={customer.address ?? undefined}
+                    >
+                      {formatAddress(customer.address)}
+                    </TableCell>
+                    <TableCell className={surfaceChrome.customersIdCell}>
+                      {customer.gstin ?? '—'}
+                    </TableCell>
+                    <TableCell className={surfaceChrome.customersIdCell}>
+                      {customer.dlNo ?? '—'}
+                    </TableCell>
+                    <TableCell className={surfaceChrome.customersActionCell}>
+                      <Box className={surfaceChrome.customersActionRow}>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => goScanSellWithCustomer(customer)}
+                          title="Open Scan and Sell with this customer filled in"
+                        >
+                          Sell
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => goReturnWithCustomer(customer)}
+                          title="Open Return to customer with this customer prefilled"
+                        >
+                          Return
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleOpenEdit(customer)}
+                        >
+                          Edit
+                        </Button>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardBody>
+      </Card>
 
       <PaginationBar
         page={page}
@@ -277,7 +334,7 @@ export function CustomersPage() {
       {editModal ? (
         <EditModal
           open
-          title="Edit Customer"
+          title="Edit customer"
           onClose={handleCloseEdit}
           error={saveError}
           onCancel={handleCloseEdit}
@@ -295,7 +352,7 @@ export function CustomersPage() {
       {createModalOpen ? (
         <EditModal
           open
-          title="New Customer"
+          title="New customer"
           onClose={handleCloseCreate}
           error={saveError}
           onCancel={handleCloseCreate}
