@@ -144,11 +144,15 @@ export function PageHeader({ title, description, actions, className }: PageHeade
   }
 
   return (
-    <div className={cn(styles.pageHeader, className)}>
+    <div className={cn(styles.pageHeader, !title && styles.pageHeaderCompact, className)}>
       {title || description ? (
         <Stack gap="xs">
           {title ? <Text variant="heading2">{title}</Text> : null}
-          {description ? <Text color="secondary">{description}</Text> : null}
+          {description ? (
+            <Text color="secondary" variant={title ? 'body' : 'caption'}>
+              {description}
+            </Text>
+          ) : null}
         </Stack>
       ) : null}
       {actions ? <div className={styles.pageHeaderActions}>{actions}</div> : null}

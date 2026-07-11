@@ -49,6 +49,11 @@
   margin-bottom: var(--sk-space-md);
 }
 
+.pageHeaderCompact {
+  gap: var(--sk-space-sm);
+  margin-bottom: var(--sk-space-sm);
+}
+
 .pageHeaderActions {
   display: inline-flex;
   flex-wrap: wrap;

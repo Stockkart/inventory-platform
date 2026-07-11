@@ -107,4 +107,12 @@ export const surfaceChrome = {
   shopTileAction: styles.shopTileAction,
   shopTileAdd: styles.shopTileAdd,
   shopTileAddIcon: styles.shopTileAddIcon,
+  reminderSection: styles.reminderSection,
+  reminderSectionHeader: styles.reminderSectionHeader,
+  reminderEmpty: styles.reminderEmpty,
+  reminderEmptyIcon: styles.reminderEmptyIcon,
+  reminderRow: styles.reminderRow,
+  reminderRowHeader: styles.reminderRowHeader,
+  reminderDateGrid: styles.reminderDateGrid,
+  reminderNotes: styles.reminderNotes,
 } as const;

@@ -563,3 +563,67 @@
   line-height: 1;
   font-weight: 500;
 }
+
+.reminderSection {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--sk-color-border-default, var(--border-color));
+  border-radius: var(--sk-radius-lg, 10px);
+  background: var(--sk-color-bg-elevated, var(--bg-elevated, #fff));
+}
+
+.reminderSectionHeader {
+  margin-bottom: 0.75rem;
+}
+
+.reminderEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.85rem 0.75rem;
+  border: 1.5px dashed var(--sk-color-border-default, var(--border-color));
+  border-radius: var(--sk-radius-md, 8px);
+  background: var(--sk-color-bg-muted, var(--bg-muted, #f8fafc));
+}
+
+.reminderEmptyIcon {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--sk-radius-md, 8px);
+  background: color-mix(in srgb, var(--sk-color-brand, #3b82f6) 10%, transparent);
+  color: var(--sk-color-brand, #3b82f6);
+}
+
+.reminderRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--sk-color-border-default, var(--border-color));
+  border-radius: var(--sk-radius-md, 8px);
+  background: var(--sk-color-bg-canvas, var(--bg-primary, #fff));
+}
+
+.reminderRowHeader {
+  min-height: 1.5rem;
+}
+
+.reminderDateGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.reminderNotes {
+  min-height: 2.5rem;
+  resize: vertical;
+}
+
+@media (max-width: 640px) {
+  .reminderDateGrid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -12,6 +12,7 @@ export {
   type ConfirmDialogProps,
   type EditModalProps,
 } from './PaginationBar';
+export { ViewModeToggle, type ViewMode, type ViewModeToggleProps } from './ViewModeToggle';
 export { QtyStepper, type QtyStepperProps } from './QtyStepper';
 export { CartQtyStepper, type CartQtyStepperProps } from './CartQtyStepper';
 export {

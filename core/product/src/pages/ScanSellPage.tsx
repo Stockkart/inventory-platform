@@ -44,6 +44,7 @@ import {
   productChrome,
   shellChrome,
   surfaceChrome,
+  ViewModeToggle,
 } from '@inventory-platform/ui-kit';
 import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
 import { cartApi } from '../api/cart.api';
@@ -82,7 +83,6 @@ import {
   dropdownItemNameStyle,
   cartSectionStyle,
   cartItemsStyle,
-  viewToggleActiveStyle,
   itemEditFieldsStyle,
   itemPriceBlockStyle,
   itemSellingPriceInputStyle,
@@ -3074,37 +3074,14 @@ export function ScanSellPage() {
 
                     {cartItems.length > 0 ? (
                       <Inline gap="sm" align="center" mb="md" flexShrink={0}>
-                        <Text color="secondary">View:</Text>
-                        <Inline gap="xs">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className={cartViewMode === 'list' ? viewToggleActiveStyle : undefined}
-                            onClick={() => {
-                              setCartViewMode('list');
-                              localStorage.setItem('scan-sell-view-mode', 'list');
-                            }}
-                            title="List view"
-                            aria-pressed={cartViewMode === 'list'}
-                          >
-                            <Text aria-hidden>☰</Text> List
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className={cartViewMode === 'grid' ? viewToggleActiveStyle : undefined}
-                            onClick={() => {
-                              setCartViewMode('grid');
-                              localStorage.setItem('scan-sell-view-mode', 'grid');
-                            }}
-                            title="Grid view"
-                            aria-pressed={cartViewMode === 'grid'}
-                          >
-                            <Text aria-hidden>⊞</Text> Grid
-                          </Button>
-                        </Inline>
+                        <ViewModeToggle
+                          value={cartViewMode}
+                          aria-label="Cart view mode"
+                          onChange={(mode) => {
+                            setCartViewMode(mode);
+                            localStorage.setItem('scan-sell-view-mode', mode);
+                          }}
+                        />
                       </Inline>
                     ) : null}
 
