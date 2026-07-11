@@ -611,6 +611,11 @@
   flex-shrink: 0;
 }
 
+.vendorsBusinessCell {
+  width: 8.5rem;
+  white-space: nowrap;
+}
+
 .pricingMeta {
   font-size: 0.8125rem;
   color: var(--sk-color-text-secondary, var(--text-secondary));

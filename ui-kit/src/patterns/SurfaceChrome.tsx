@@ -105,6 +105,7 @@ export const surfaceChrome = {
   customersActionCell: styles.customersActionCell,
   customersActionRow: styles.customersActionRow,
   customersIdCell: styles.customersIdCell,
+  vendorsBusinessCell: styles.vendorsBusinessCell,
   pricingMeta: styles.pricingMeta,
   priceEditId: styles.priceEditId,
   priceEditSection: styles.priceEditSection,

@@ -2,7 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
   Alert,
+  Box,
   Button,
+  Card,
+  CardBody,
   EditModal,
   Inline,
   PageHeader,
@@ -17,6 +20,7 @@ import {
   TableHeaderCell,
   TableLoadingRow,
   TableRow,
+  Text,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { vendorsApi } from '../api/vendors.api';
@@ -26,6 +30,7 @@ import type {
   CreateVendorDto,
   UpdateVendorDto,
 } from '@inventory-platform/user/types';
+
 export function meta() {
   return [
     { title: 'Vendors - StockKart' },
@@ -34,8 +39,21 @@ export function meta() {
 }
 
 function formatAddress(addr: string | null | undefined) {
-  if (!addr) return '—';
-  return addr.length > 50 ? `${addr.slice(0, 50)}…` : addr;
+  if (!addr?.trim()) return '—';
+  return addr.trim();
+}
+
+function formatBusinessType(value: string | null | undefined) {
+  if (!value) return '—';
+  const labels: Record<string, string> = {
+    WHOLESALE: 'Wholesale',
+    RETAIL: 'Retail',
+    MANUFACTURER: 'Manufacturer',
+    DISTRIBUTOR: 'Distributor',
+    'C&F': 'C&F',
+    OTHER: 'Other',
+  };
+  return labels[value] ?? value;
 }
 
 export function VendorsPage() {
@@ -176,89 +194,143 @@ export function VendorsPage() {
 
   return (
     <Stack gap="md">
-      <PageHeader
-        description="Manage your vendor contacts"
-        actions={
-          <Button variant="solid" onClick={handleOpenCreate}>
-            New vendor
-          </Button>
-        }
-      />
+      <PageHeader description="Manage your vendor contacts" />
 
-      <SearchInput
-        value={searchInput}
-        onChange={setSearchInput}
-        onSearch={handleSearch}
-        showSearchButton
-        placeholder="Search by name, email, phone…"
-      />
+      <Inline gap="sm" flexWrap align="stretch" width="full">
+        <Box flex="1" className={surfaceChrome.minW280}>
+          <SearchInput
+            value={searchInput}
+            onChange={setSearchInput}
+            onSearch={handleSearch}
+            showSearchButton
+            buttonVariant="solid"
+            grow
+            placeholder="Search by name, email, phone…"
+            disabled={loading}
+            searchLabel={loading ? 'Searching…' : 'Search'}
+          />
+        </Box>
+        <Button
+          type="button"
+          variant="solid"
+          onClick={handleOpenCreate}
+          className={surfaceChrome.flexShrink0}
+        >
+          New vendor
+        </Button>
+      </Inline>
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableHeaderCell>Name</TableHeaderCell>
-            <TableHeaderCell>Contact Phone</TableHeaderCell>
-            <TableHeaderCell>Address</TableHeaderCell>
-            <TableHeaderCell>Email</TableHeaderCell>
-            <TableHeaderCell>Business Type</TableHeaderCell>
-            <TableHeaderCell>GSTIN</TableHeaderCell>
-            <TableHeaderCell className={surfaceChrome.minW14Nowrap}>Actions</TableHeaderCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {loading ? (
-            <TableLoadingRow colSpan={7} label="Loading vendors…" />
-          ) : data.length === 0 ? (
-            <TableEmptyRow
-              colSpan={7}
-              message="No vendors found. Vendors are added when you register products with a vendor."
-            />
-          ) : (
-            data.map((vendor) => (
-              <TableRow key={vendor.vendorId}>
-                <TableCell>{vendor.name ?? '—'}</TableCell>
-                <TableCell>{vendor.contactPhone ?? '—'}</TableCell>
-                <TableCell>{formatAddress(vendor.address)}</TableCell>
-                <TableCell>{vendor.contactEmail ?? '—'}</TableCell>
-                <TableCell>{vendor.businessType ?? '—'}</TableCell>
-                <TableCell>{vendor.gstinUin ?? '—'}</TableCell>
-                <TableCell>
-                  <Inline gap="sm" flexWrap>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => goRegisterPurchaseFromVendor(vendor)}
-                      title="Open product registration with this vendor selected"
-                    >
-                      Buy
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => goReturnToVendor(vendor)}
-                      title="Open Return to vendor for this supplier"
-                    >
-                      Return
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleOpenEdit(vendor)}
-                    >
-                      Edit
-                    </Button>
-                  </Inline>
-                </TableCell>
+      <Inline gap="md" flexWrap align="center">
+        <Text as="span" className={surfaceChrome.pricingMeta}>
+          {loading ? 'Loading…' : `${total} vendor${total === 1 ? '' : 's'}`}
+          {query ? ` matching “${query}”` : null}
+        </Text>
+      </Inline>
+
+      <Card>
+        <CardBody>
+          <Table className={surfaceChrome.customersTable}>
+            <TableHead>
+              <TableRow>
+                <TableHeaderCell className={surfaceChrome.customersNameCell}>Name</TableHeaderCell>
+                <TableHeaderCell className={surfaceChrome.customersPhoneCell}>
+                  Phone
+                </TableHeaderCell>
+                <TableHeaderCell className={surfaceChrome.customersAddressCell}>
+                  Address
+                </TableHeaderCell>
+                <TableHeaderCell className={surfaceChrome.customersEmailCell}>
+                  Email
+                </TableHeaderCell>
+                <TableHeaderCell className={surfaceChrome.vendorsBusinessCell}>
+                  Business type
+                </TableHeaderCell>
+                <TableHeaderCell className={surfaceChrome.customersIdCell}>GSTIN</TableHeaderCell>
+                <TableHeaderCell className={surfaceChrome.customersActionCell}>
+                  Actions
+                </TableHeaderCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            </TableHead>
+            <TableBody>
+              {loading ? (
+                <TableLoadingRow colSpan={7} label="Loading vendors…" />
+              ) : data.length === 0 ? (
+                <TableEmptyRow
+                  colSpan={7}
+                  message={
+                    query
+                      ? 'No vendors match your search.'
+                      : 'No vendors yet. Add one with New vendor, or they’ll appear when you register products.'
+                  }
+                />
+              ) : (
+                data.map((vendor) => (
+                  <TableRow key={vendor.vendorId}>
+                    <TableCell className={surfaceChrome.customersNameCell}>
+                      <Text as="span" weight="medium">
+                        {vendor.name ?? '—'}
+                      </Text>
+                    </TableCell>
+                    <TableCell className={surfaceChrome.customersPhoneCell}>
+                      {vendor.contactPhone ?? '—'}
+                    </TableCell>
+                    <TableCell
+                      className={surfaceChrome.customersAddressCell}
+                      title={vendor.address ?? undefined}
+                    >
+                      {formatAddress(vendor.address)}
+                    </TableCell>
+                    <TableCell
+                      className={surfaceChrome.customersEmailCell}
+                      title={vendor.contactEmail ?? undefined}
+                    >
+                      {vendor.contactEmail ?? '—'}
+                    </TableCell>
+                    <TableCell className={surfaceChrome.vendorsBusinessCell}>
+                      {formatBusinessType(vendor.businessType)}
+                    </TableCell>
+                    <TableCell className={surfaceChrome.customersIdCell}>
+                      {vendor.gstinUin ?? '—'}
+                    </TableCell>
+                    <TableCell className={surfaceChrome.customersActionCell}>
+                      <Box className={surfaceChrome.customersActionRow}>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => goRegisterPurchaseFromVendor(vendor)}
+                          title="Open product registration with this vendor selected"
+                        >
+                          Buy
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => goReturnToVendor(vendor)}
+                          title="Open Return to vendor for this supplier"
+                        >
+                          Return
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleOpenEdit(vendor)}
+                        >
+                          Edit
+                        </Button>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardBody>
+      </Card>
 
       <PaginationBar
         page={page}
@@ -278,7 +350,7 @@ export function VendorsPage() {
       {editModal ? (
         <EditModal
           open
-          title="Edit Vendor"
+          title="Edit vendor"
           onClose={handleCloseEdit}
           error={saveError}
           onCancel={handleCloseEdit}
@@ -302,7 +374,7 @@ export function VendorsPage() {
       {createModalOpen ? (
         <EditModal
           open
-          title="New Vendor"
+          title="New vendor"
           onClose={handleCloseCreate}
           error={saveError}
           onCancel={handleCloseCreate}
