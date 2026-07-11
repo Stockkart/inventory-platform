@@ -79,7 +79,6 @@ export function JournalEntriesPage() {
     <Stack gap="md">
       <Stack gap="md">
         <PageHeader
-          title="Journal Entries"
           description="Every business event creates a balanced journal entry. Filter, drill in, or post a manual entry."
           actions={
             <Button variant="solid" onClick={() => navigate('/dashboard/accounting/journal/new')}>

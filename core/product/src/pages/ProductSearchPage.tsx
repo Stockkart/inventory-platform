@@ -343,10 +343,7 @@ export function ProductSearchPage() {
 
   return (
     <Stack gap="md">
-      <PageHeader
-        title="Product Search"
-        description="Search by product name, barcode, or batch number"
-      />
+      <PageHeader description="Search by product name, barcode, or batch number" />
 
       <Inline gap="sm" flexWrap>
         <Box width="full" className={surfaceChrome.growMin12}>

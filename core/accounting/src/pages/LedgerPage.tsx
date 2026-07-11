@@ -176,10 +176,7 @@ export function LedgerPage() {
   return (
     <Stack gap="md">
       <Stack gap="md">
-        <PageHeader
-          title="Ledger"
-          description="Every account in your books. Pick one to see its postings with a running balance on its normal side."
-        />
+        <PageHeader description="Every account in your books. Pick one to see its postings with a running balance on its normal side." />
         <AccountingTabs />
       </Stack>
 

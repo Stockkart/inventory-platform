@@ -159,17 +159,10 @@ export function AccountingOverviewPage() {
       <Stack gap="md">
         <AccountingTabs />
         <PageHeader
-          title="Accounting"
           description="Every business event is recorded as a balanced journal entry. Browse the journal, drill into per-account ledgers, and view the trial balance."
           actions={
             <Inline gap="sm">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleRebuild}
-                disabled={reposting}
-                title="Re-post every vendor purchase invoice using current shop settings (GST %, payment routing, etc.)"
-              >
+              <Button type="button" variant="outline" onClick={handleRebuild} disabled={reposting}>
                 {reposting ? 'Rebuilding…' : 'Rebuild Books'}
               </Button>
               <Button

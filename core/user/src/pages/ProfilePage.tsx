@@ -171,7 +171,7 @@ export function ProfilePage() {
 
   return (
     <Stack gap="md" width="full" maxWidth="sm" mx="auto">
-      <PageHeader title="Shop Profile" description="View and edit your active shop information" />
+      <PageHeader description="View and edit your active shop information" />
 
       {!editing ? (
         <Card>

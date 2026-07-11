@@ -2891,7 +2891,6 @@ export function ScanSellPage() {
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
       <PageHeader
-        title={isCafeSell ? 'Sell' : 'Scan and Sell'}
         description={
           isCafeSell
             ? 'Tap menu items or direct stock to build the order'

@@ -88,10 +88,7 @@ export function PricingPage() {
 
   return (
     <Stack gap="md">
-      <PageHeader
-        title="Pricing"
-        description="Search inventory and update pricing (table shows effective selling price)"
-      />
+      <PageHeader description="Search inventory and update pricing (table shows effective selling price)" />
 
       <Inline gap="sm" flexWrap align="stretch" width="full">
         <Box flex="1" className={surfaceChrome.minW280}>

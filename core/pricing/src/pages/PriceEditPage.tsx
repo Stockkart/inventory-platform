@@ -215,7 +215,6 @@ export function PriceEditPage() {
   if (!pricingId) {
     return (
       <PageShell>
-        <PageHeader title="Edit Price" />
         <Alert variant="danger">No pricing ID provided.</Alert>
         <Button type="button" variant="ghost" onClick={() => navigate('/dashboard/pricing')}>
           ← Back to Pricing
@@ -227,7 +226,6 @@ export function PriceEditPage() {
   if (loading) {
     return (
       <PageShell>
-        <PageHeader title="Edit Price" />
         <Card>
           <CardBody>
             <CenteredLoader label="Loading pricing…" />
@@ -239,10 +237,7 @@ export function PriceEditPage() {
 
   return (
     <PageShell>
-      <PageHeader
-        title="Edit Price"
-        description={state?.productName ? `Product: ${state.productName}` : undefined}
-      />
+      {state?.productName ? <PageHeader description={`Product: ${state.productName}`} /> : null}
 
       <Text color="secondary" variant="caption">
         Pricing ID:{' '}

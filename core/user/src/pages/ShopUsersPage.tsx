@@ -27,7 +27,7 @@ export function ShopUsersPage() {
 
   return (
     <Stack gap="md" width="full" maxWidth="xl" mx="auto">
-      <PageHeader title="Shop Users" description="View all users associated with your shop" />
+      <PageHeader description="View all users associated with your shop" />
 
       <Card>
         <CardBody>

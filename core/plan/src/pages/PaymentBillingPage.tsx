@@ -19,7 +19,7 @@ export function PaymentBillingPage() {
 
   return (
     <Stack gap="md" width="full" maxWidth="xl" mx="auto">
-      <PageHeader title="Payment & Billing" description="Process payments and manage invoices" />
+      <PageHeader description="Process payments and manage invoices" />
 
       <Grid columns={2} gap="md" width="full">
         <Card>

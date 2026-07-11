@@ -177,7 +177,6 @@ export function VendorsPage() {
   return (
     <Stack gap="md">
       <PageHeader
-        title="Vendors"
         description="Manage your vendor contacts"
         actions={
           <Button variant="solid" onClick={handleOpenCreate}>

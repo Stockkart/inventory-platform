@@ -88,10 +88,7 @@ export function InventoryAlertPage() {
 
   return (
     <Stack gap="md" width="full" maxWidth="xl" mx="auto">
-      <PageHeader
-        title="Inventory Low Alert"
-        description="Monitor products with low stock levels"
-      />
+      <PageHeader description="Monitor products with low stock levels" />
 
       <Text color="secondary" variant="caption">
         {isLoading

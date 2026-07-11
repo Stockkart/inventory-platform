@@ -473,3 +473,93 @@
 .tableRowAlt {
   background: var(--sk-color-bg-muted, var(--bg-muted, #fafbfc));
 }
+
+.shopTile {
+  height: 100%;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.shopTile:hover {
+  border-color: var(--sk-color-border-strong, var(--sk-color-border-default));
+  box-shadow: var(--sk-shadow-md, 0 8px 24px rgba(15, 23, 42, 0.08));
+}
+
+.shopTileBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-height: 10rem;
+  height: 100%;
+}
+
+.shopTileIcon {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+  border-radius: var(--sk-radius-md, 8px);
+  background: var(--sk-color-bg-muted);
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.shopTileActiveIcon {
+  background: color-mix(in srgb, var(--sk-color-brand) 16%, transparent);
+}
+
+.shopTileMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.shopTileFooter {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 0.15rem;
+}
+
+.shopTileAction {
+  width: auto;
+  align-self: flex-start;
+}
+
+.shopTileAdd {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 10rem;
+  height: 100%;
+  padding: var(--sk-space-md) var(--sk-space-lg);
+  border: 1.5px dashed var(--sk-color-border-default);
+  border-radius: var(--sk-radius-lg);
+  background: transparent;
+  color: var(--sk-color-text-secondary);
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.shopTileAdd:hover {
+  border-color: var(--sk-color-brand);
+  background: var(--sk-color-brand-soft);
+  color: var(--sk-color-brand);
+}
+
+.shopTileAddIcon {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  border: 1.5px dashed currentColor;
+  font-size: 1.25rem;
+  line-height: 1;
+  font-weight: 500;
+}

@@ -440,10 +440,7 @@ export function StockCorrectionsPage() {
 
   return (
     <Stack gap="md" maxWidth="xl" mx="auto">
-      <PageHeader
-        title="Correct stock / price"
-        description="Search invoices by product, barcode, invoice no, or vendor name; propose quantity corrections and approve lines; and review correction history."
-      />
+      <PageHeader description="Search invoices by product, barcode, invoice no, or vendor name; propose quantity corrections and approve lines; and review correction history." />
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
       {success ? <Alert variant="success">{success}</Alert> : null}

@@ -329,7 +329,6 @@ export function MenuAdminPage() {
   return (
     <Stack gap="md" width="full" maxWidth="xl" mx="auto" padding="md">
       <PageHeader
-        title="Menu"
         description="Organize sellable items into sections. Prices set here appear on Sell."
         actions={
           <Inline gap="sm" flexWrap>

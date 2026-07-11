@@ -98,4 +98,13 @@ export const surfaceChrome = {
   busyDim: styles.busyDim,
   gridSpanFull: styles.gridSpanFull,
   tableRowAlt: styles.tableRowAlt,
+  shopTile: styles.shopTile,
+  shopTileBody: styles.shopTileBody,
+  shopTileIcon: styles.shopTileIcon,
+  shopTileActiveIcon: styles.shopTileActiveIcon,
+  shopTileMeta: styles.shopTileMeta,
+  shopTileFooter: styles.shopTileFooter,
+  shopTileAction: styles.shopTileAction,
+  shopTileAdd: styles.shopTileAdd,
+  shopTileAddIcon: styles.shopTileAddIcon,
 } as const;

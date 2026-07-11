@@ -359,7 +359,7 @@ export function CheckoutPage() {
 
   return (
     <Stack gap="md" maxWidth="xl" mx="auto" padding="lg">
-      <PageHeader title="Checkout" description={invoiceSubtitle} />
+      <PageHeader description={invoiceSubtitle} />
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
 

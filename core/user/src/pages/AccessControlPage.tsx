@@ -214,10 +214,7 @@ export function AccessControlPage() {
 
   return (
     <Stack gap="md" width="full" maxWidth="xl" mx="auto">
-      <PageHeader
-        title="Access control"
-        description="Choose which modules each team member can open. Cashiers start with limited access; you can grant Accounting, Analytics, Taxes, and more as needed."
-      />
+      <PageHeader description="Choose which modules each team member can open. Cashiers start with limited access; you can grant Accounting, Analytics, Taxes, and more as needed." />
 
       <Card>
         <CardBody>

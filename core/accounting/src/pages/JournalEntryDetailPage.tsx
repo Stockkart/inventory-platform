@@ -64,7 +64,6 @@ export function JournalEntryDetailPage() {
       <Stack gap="md">
         <AccountingTabs />
         <PageHeader
-          title="Journal Entry"
           actions={
             entry && entry.status === 'POSTED' ? (
               <Button

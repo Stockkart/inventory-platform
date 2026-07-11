@@ -108,7 +108,6 @@ export function PartyStatementPage({ partyType }: PartyStatementPageProps) {
       <Stack gap="md">
         <AccountingTabs />
         <PageHeader
-          title={data?.partyDisplayName || `${titles.kind} ${partyRefId}`}
           description={`${titles.kind} statement · subsidiary view of ${
             partyType === 'VENDOR' ? 'Sundry Creditors' : 'Sundry Debtors'
           } for this party.`}

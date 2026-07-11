@@ -145,7 +145,7 @@ export function HistoryPage() {
 
   return (
     <Stack gap="md">
-      <PageHeader title="History" description={subtitle} />
+      <PageHeader description={subtitle} />
 
       <Tabs
         value={activeTab}

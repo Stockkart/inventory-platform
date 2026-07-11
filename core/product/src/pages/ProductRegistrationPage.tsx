@@ -2401,10 +2401,7 @@ export function ProductRegistrationPage() {
 
   return (
     <Stack gap="lg" maxWidth="xl" mx="auto">
-      <PageHeader
-        title="Product Registration"
-        description="Register multiple products at once with shared vendor and stock-in (invoice) information"
-      />
+      <PageHeader description="Register multiple products at once with shared vendor and stock-in (invoice) information" />
 
       <Card>
         <CardBody>

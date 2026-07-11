@@ -60,10 +60,7 @@ export function OpeningBalanceWizardPage() {
     <Stack gap="md">
       <Stack gap="md">
         <AccountingTabs />
-        <PageHeader
-          title="Opening Balances"
-          description="One-time entry to bring forward balances when you start using accounting. Debits must equal credits."
-        />
+        <PageHeader description="One-time entry to bring forward balances when you start using accounting. Debits must equal credits." />
       </Stack>
 
       {existing ? (

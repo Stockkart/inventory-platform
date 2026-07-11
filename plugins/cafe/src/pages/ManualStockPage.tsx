@@ -373,7 +373,7 @@ export function ManualStockPage() {
 
   return (
     <Stack gap="md">
-      <PageHeader title="Ingredient Search" description="Search ingredients by name or barcode." />
+      <PageHeader description="Search ingredients by name or barcode." />
 
       <Text color="secondary">
         Register new stock via{' '}

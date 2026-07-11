@@ -60,7 +60,7 @@ export function PlanStatusPage() {
 
   return (
     <Stack gap="md" width="full" maxWidth="xl" mx="auto">
-      <PageHeader title="Plan" description="View your subscription, usage, and upgrade options" />
+      <PageHeader description="View your subscription, usage, and upgrade options" />
 
       <Stack gap="md">
         <Card>

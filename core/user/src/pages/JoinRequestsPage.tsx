@@ -32,10 +32,7 @@ export function JoinRequestsPage() {
 
   return (
     <Stack gap="md" width="full" maxWidth="xl" mx="auto">
-      <PageHeader
-        title="Join Requests"
-        description="Review and manage requests from users who want to join your shop"
-      />
+      <PageHeader description="Review and manage requests from users who want to join your shop" />
 
       <Card>
         <CardBody>

@@ -176,7 +176,6 @@ export function CustomersPage() {
   return (
     <Stack gap="md">
       <PageHeader
-        title="Customers"
         description="Manage your customer contacts"
         actions={
           <Button variant="solid" onClick={handleOpenCreate}>

@@ -58,10 +58,7 @@ export function BalanceSheetPage() {
     <Stack gap="md">
       <Stack gap="md">
         <AccountingTabs />
-        <PageHeader
-          title="Balance Sheet"
-          description="Assets, liabilities, and equity as of the selected date (from trial balance)."
-        />
+        <PageHeader description="Assets, liabilities, and equity as of the selected date (from trial balance)." />
         <Inline gap="sm">
           <Text variant="label" color="secondary">
             As of

@@ -9,7 +9,7 @@ export function MyInvitationsPage() {
 
   return (
     <Stack gap="md" width="full" maxWidth="xl" mx="auto">
-      <PageHeader title="My Invitations" description="View and accept invitations to join shops" />
+      <PageHeader description="View and accept invitations to join shops" />
 
       <Card>
         <CardBody>

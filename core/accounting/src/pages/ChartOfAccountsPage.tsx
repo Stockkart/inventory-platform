@@ -126,7 +126,6 @@ export function ChartOfAccountsPage() {
     <Stack gap="md">
       <Stack gap="md">
         <PageHeader
-          title="Chart of Accounts"
           description="The accounting backbone. System accounts (locked) come pre-seeded; add your own for custom expense or income categories."
           actions={
             <Button variant="solid" onClick={() => setShowCreate((s) => !s)}>

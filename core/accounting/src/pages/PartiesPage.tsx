@@ -115,7 +115,7 @@ export function PartiesPage({ partyType }: PartiesPageProps) {
   return (
     <Stack gap="md">
       <Stack gap="md">
-        <PageHeader title={copy.title} description={copy.subtitle} />
+        <PageHeader description={copy.subtitle} />
         <AccountingTabs />
         <Inline gap="sm">
           <SearchInput

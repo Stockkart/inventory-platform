@@ -103,10 +103,7 @@ export function TrialBalancePage() {
     <Stack gap="md">
       <Stack gap="md">
         <AccountingTabs />
-        <PageHeader
-          title="Trial Balance"
-          description="Closing balances as of a date. Total Debit must equal Total Credit — if they don't, no entry can be unbalanced."
-        />
+        <PageHeader description="Closing balances as of a date. Total Debit must equal Total Credit — if they don't, no entry can be unbalanced." />
         <Inline gap="sm">
           <Text variant="label" color="secondary">
             As of

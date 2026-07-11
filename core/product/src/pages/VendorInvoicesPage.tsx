@@ -562,9 +562,7 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
       maxWidth={embedded ? undefined : 'xl'}
       mx={embedded ? undefined : 'auto'}
     >
-      {!embedded ? (
-        <PageHeader title="Vendor purchase invoices" description={pageDescription} />
-      ) : null}
+      {!embedded ? <PageHeader description={pageDescription} /> : null}
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
 

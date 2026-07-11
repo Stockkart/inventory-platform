@@ -27,10 +27,7 @@ export function InvitationsPage() {
 
   return (
     <Stack gap="md" width="full" maxWidth="xl" mx="auto">
-      <PageHeader
-        title="Manage Invitations"
-        description="Send invitations to users to join your shop and manage existing invitations"
-      />
+      <PageHeader description="Send invitations to users to join your shop and manage existing invitations" />
 
       <Stack gap="lg" width="full">
         <Card>

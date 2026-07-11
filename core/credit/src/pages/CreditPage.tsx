@@ -94,10 +94,7 @@ export function CreditPage() {
 
   return (
     <Stack gap="md">
-      <PageHeader
-        title="Credit balances"
-        description="Track amounts due and settlements with customers and vendors"
-      />
+      <PageHeader description="Track amounts due and settlements with customers and vendors" />
 
       {isLoading ? (
         <Card>

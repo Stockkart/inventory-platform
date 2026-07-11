@@ -455,10 +455,7 @@ export function RefundPage() {
 
   return (
     <Stack gap="md">
-      <PageHeader
-        title="Return to customer"
-        description="Process customer sale returns and view return history"
-      />
+      <PageHeader description="Process customer sale returns and view return history" />
 
       <Inline gap="none" className={productChrome.processTabBar}>
         {processTabs.map((tab) => {

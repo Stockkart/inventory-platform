@@ -70,10 +70,7 @@ export function ProfitAndLossPage() {
     <Stack gap="md">
       <Stack gap="md">
         <AccountingTabs />
-        <PageHeader
-          title="Profit & Loss"
-          description="Revenue and expense accounts for the selected period (turnover, not closing balances)."
-        />
+        <PageHeader description="Revenue and expense accounts for the selected period (turnover, not closing balances)." />
         <Inline gap="sm">
           <Text variant="label" color="secondary">
             From

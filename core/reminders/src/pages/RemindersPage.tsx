@@ -194,7 +194,6 @@ export function RemindersPage() {
   return (
     <Stack gap="md" width="full" maxWidth="xl" mx="auto">
       <PageHeader
-        title="Reminders"
         description={
           fromNotification
             ? 'Reminder details from notification'

@@ -581,10 +581,7 @@ export function VendorReturnPage() {
 
   return (
     <Stack gap="md" maxWidth="xl" mx="auto">
-      <PageHeader
-        title="Return stock to supplier"
-        description="Find a supplier purchase invoice, then enter how many selling units you are sending back—the same counting unit as stock on the shelf (like “Return to customer”). Credit notes appear in GSTR‑2 CDNR / CDNUR when applicable."
-      />
+      <PageHeader description="Find a supplier purchase invoice, then enter how many selling units you are sending back—the same counting unit as stock on the shelf (like “Return to customer”). Credit notes appear in GSTR‑2 CDNR / CDNUR when applicable." />
 
       <Inline gap="none" borderBottom>
         <Button
