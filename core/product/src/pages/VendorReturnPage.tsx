@@ -297,7 +297,7 @@ function InvoicePickField({
   );
 }
 
-function invoiceLabel(inv: { invoiceNo?: string | null; synthetic?: boolean }): string {
+function invoiceLabel(inv: { invoiceNo?: string | null; synthetic?: boolean | null }): string {
   const no = inv.invoiceNo?.trim();
   if (no) return inv.synthetic ? `${no} (auto)` : no;
   return 'No invoice number';

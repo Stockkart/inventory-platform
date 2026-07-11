@@ -159,6 +159,7 @@ export const productChrome = {
   historyRecordCard: styles.historyRecordCard,
   historyRecordHeader: styles.historyRecordHeader,
   historyRecordAmount: styles.historyRecordAmount,
+  historyRecordActions: styles.historyRecordActions,
   historyItemsPanel: styles.historyItemsPanel,
   historyItemsTitle: styles.historyItemsTitle,
   historyItemsTable: styles.historyItemsTable,

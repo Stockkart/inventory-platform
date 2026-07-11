@@ -6,9 +6,7 @@ import {
   Button,
   Card,
   CardBody,
-  Grid,
   Inline,
-  Stack,
   Table,
   TableBody,
   TableCell,
@@ -16,6 +14,8 @@ import {
   TableHeaderCell,
   TableRow,
   Text,
+  cn,
+  productChrome,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { PrintInvoiceModal } from './PrintInvoiceModal';
@@ -44,16 +44,41 @@ function formatDate(dateString: string): string {
   }
 }
 
-function DetailLine({ label, value }: { label: string; value: string }) {
+function formatStatus(status: string): string {
+  const s = status.trim().toUpperCase();
+  if (s === 'COMPLETED') return 'Completed';
+  if (s === 'CANCELLED') return 'Cancelled';
+  if (!s) return '—';
+  return status.charAt(0) + status.slice(1).toLowerCase();
+}
+
+function HistoryField({
+  label,
+  value,
+  strong,
+  muted,
+}: {
+  label: string;
+  value: string;
+  strong?: boolean;
+  muted?: boolean;
+}) {
   return (
-    <Inline gap="xs">
-      <Text variant="caption" color="secondary" weight="semibold">
-        {label}:
+    <Box className={productChrome.salePickField}>
+      <Text as="p" className={productChrome.salePickLabel}>
+        {label}
       </Text>
-      <Text variant="caption" color="secondary">
+      <Text
+        as="p"
+        className={cn(
+          productChrome.salePickValue,
+          strong && productChrome.salePickValueStrong,
+          muted && productChrome.salePickValueMuted,
+        )}
+      >
         {value}
       </Text>
-    </Inline>
+    </Box>
   );
 }
 
@@ -67,6 +92,13 @@ export function SaleHistoryCard({ purchase }: { purchase: Purchase }) {
     creditAmount: purchase.creditAmount ?? undefined,
   });
 
+  const invoiceNo = purchase.invoiceNo?.trim() || null;
+  const paymentLabel = formatPaymentMethod(purchase.paymentMethod);
+  const hasPayment = Boolean(purchase.paymentMethod) && paymentLabel !== 'Not specified';
+  const customer = purchase.customerName?.trim() || 'Walk-in customer';
+  const phone = purchase.customerPhone?.trim() || '—';
+  const hasItems = purchase.items.length > 0;
+
   const statusVariant =
     purchase.status === 'COMPLETED'
       ? 'success'
@@ -76,90 +108,111 @@ export function SaleHistoryCard({ purchase }: { purchase: Purchase }) {
 
   return (
     <>
-      <Card>
+      <Card className={productChrome.historyRecordCard}>
         <CardBody>
-          <Stack gap="md">
-            <Inline justify="between" align="start" gap="md" className={surfaceChrome.recordHeader}>
-              <DetailLine label="Invoice" value={purchase.invoiceNo} />
-              <Inline gap="sm" align="center" flexShrink={0}>
-                <DetailLine label="Date" value={formatDate(purchase.soldAt)} />
-                {purchase.status === 'COMPLETED' ? (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setShowPrintModal(true)}
-                  >
-                    Print
-                  </Button>
-                ) : null}
-                {purchase.items.length > 0 ? (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setExpanded((v) => !v)}
-                    aria-expanded={expanded}
-                  >
-                    {expanded ? 'Hide items' : 'View items'}
-                  </Button>
-                ) : null}
-              </Inline>
-            </Inline>
-
-            <Grid columns={2} gap="sm">
-              <DetailLine label="Customer" value={purchase.customerName ?? '—'} />
-              <DetailLine label="Phone" value={purchase.customerPhone ?? '—'} />
-              <DetailLine label="Total" value={formatCurrency(purchase.grandTotal)} />
-              <Inline gap="xs" align="center">
-                <Text variant="caption" color="secondary" weight="semibold">
-                  Status:
+          <Box className={productChrome.salePickMain}>
+            <Box className={productChrome.historyRecordHeader}>
+              <Box className={productChrome.salePickTitleRow}>
+                <Text as="p" className={productChrome.salePickInvoiceHint}>
+                  Invoice
                 </Text>
-                <Badge variant={statusVariant}>{purchase.status}</Badge>
-              </Inline>
-              <DetailLine label="Payment" value={formatPaymentMethod(purchase.paymentMethod)} />
-              {paymentSplitLine ? <DetailLine label="Split" value={paymentSplitLine} /> : null}
-              <DetailLine label="Items" value={String(purchase.items.length)} />
-            </Grid>
-
-            {expanded && purchase.items.length > 0 ? (
-              <Stack gap="sm" className={surfaceChrome.breakdownWrap}>
                 <Text
-                  variant="caption"
-                  color="secondary"
-                  weight="semibold"
-                  className={surfaceChrome.sectionLabelSm}
+                  as="p"
+                  className={cn(
+                    productChrome.salePickTitle,
+                    !invoiceNo && productChrome.salePickValueMuted,
+                  )}
                 >
-                  Line items
+                  {invoiceNo ?? 'No invoice number'}
                 </Text>
-                <Box overflow="auto">
-                  <Table className={surfaceChrome.minW320}>
-                    <TableHead>
-                      <TableRow>
-                        <TableHeaderCell>Product</TableHeaderCell>
-                        <TableHeaderCell>Qty</TableHeaderCell>
-                        <TableHeaderCell>Unit price</TableHeaderCell>
-                        <TableHeaderCell>Line total</TableHeaderCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {purchase.items.map((item, idx) => (
-                        <TableRow key={`${item.inventoryId ?? item.name}-${idx}`}>
-                          <TableCell>{item.name ?? item.inventoryId ?? '—'}</TableCell>
-                          <TableCell>{item.quantity}</TableCell>
-                          <TableCell>{formatCurrency(item.priceToRetail ?? 0)}</TableCell>
-                          <TableCell>
-                            {formatCurrency((item.priceToRetail ?? 0) * (item.quantity ?? 0))}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </Box>
-              </Stack>
-            ) : null}
-          </Stack>
+                <Badge variant={statusVariant}>{formatStatus(purchase.status)}</Badge>
+              </Box>
+              <Box className={productChrome.historyRecordActions}>
+                <Text as="p" className={productChrome.historyRecordAmount}>
+                  {formatCurrency(purchase.grandTotal)}
+                </Text>
+                <Inline gap="xs" align="center">
+                  {purchase.status === 'COMPLETED' ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setShowPrintModal(true)}
+                    >
+                      Print
+                    </Button>
+                  ) : null}
+                  {hasItems ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setExpanded((v) => !v)}
+                      aria-expanded={expanded}
+                    >
+                      {expanded ? 'Hide items' : 'View items'}
+                    </Button>
+                  ) : null}
+                </Inline>
+              </Box>
+            </Box>
+
+            <Box className={productChrome.salePickGrid}>
+              <HistoryField label="Date" value={formatDate(purchase.soldAt)} />
+              <HistoryField label="Customer" value={customer} />
+              <HistoryField label="Phone" value={phone} muted={phone === '—'} />
+              <HistoryField
+                label="Payment"
+                value={hasPayment ? paymentLabel : '—'}
+                muted={!hasPayment}
+              />
+              {paymentSplitLine ? <HistoryField label="Split" value={paymentSplitLine} /> : null}
+              <HistoryField label="Items" value={String(purchase.items.length)} />
+            </Box>
+          </Box>
         </CardBody>
+
+        {expanded && hasItems ? (
+          <Box className={productChrome.historyItemsPanel}>
+            <Text as="p" className={productChrome.historyItemsTitle}>
+              Line items
+            </Text>
+            <Box overflow="auto">
+              <Table className={cn(surfaceChrome.minW320, productChrome.historyItemsTable)}>
+                <TableHead>
+                  <TableRow>
+                    <TableHeaderCell>Product</TableHeaderCell>
+                    <TableHeaderCell className={surfaceChrome.numericCell}>Qty</TableHeaderCell>
+                    <TableHeaderCell className={surfaceChrome.numericCell}>
+                      Unit price
+                    </TableHeaderCell>
+                    <TableHeaderCell className={surfaceChrome.numericCell}>
+                      Line total
+                    </TableHeaderCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {purchase.items.map((item, idx) => (
+                    <TableRow key={`${item.inventoryId ?? item.name}-${idx}`}>
+                      <TableCell>
+                        <Text weight="medium">{item.name ?? item.inventoryId ?? '—'}</Text>
+                      </TableCell>
+                      <TableCell className={surfaceChrome.numericCell}>{item.quantity}</TableCell>
+                      <TableCell className={surfaceChrome.numericCell}>
+                        {formatCurrency(item.priceToRetail ?? 0)}
+                      </TableCell>
+                      <TableCell className={surfaceChrome.numericCell}>
+                        <Text weight="semibold">
+                          {formatCurrency((item.priceToRetail ?? 0) * (item.quantity ?? 0))}
+                        </Text>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Box>
+          </Box>
+        ) : null}
       </Card>
       <PrintInvoiceModal
         isOpen={showPrintModal}
