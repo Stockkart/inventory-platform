@@ -194,5 +194,294 @@
 }
 
 .quickActionsGrid {
+  display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.overviewKpiGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.85rem;
+  width: 100%;
+}
+
+.overviewKpiCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 5.75rem;
+  padding: 0.95rem 1.05rem;
+  border-radius: var(--sk-radius-md, 8px);
+  border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 92%, transparent);
+  background: var(--sk-color-bg-elevated, #fff);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.overviewKpiLabel {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--sk-color-text-secondary, #64748b);
+}
+
+.overviewKpiValue {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--sk-color-text-primary, #0f172a);
+}
+
+.overviewKpiValuePositive {
+  color: #047857;
+}
+
+.overviewKpiValueWarning {
+  color: #b91c1c;
+}
+
+.overviewKpiValueMuted {
+  color: var(--sk-color-text-secondary, #94a3b8);
+}
+
+.overviewSectionTitle {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.entryLink.entryLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: unset;
+  height: auto;
+  padding: 0.15rem 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #2563eb;
+  font-weight: 600;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.entryLink.entryLink:hover:not(:disabled) {
+  color: #1d4ed8;
+  background: transparent;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.entryLink.entryLink:focus-visible {
+  outline: 2px solid color-mix(in srgb, #2563eb 45%, transparent);
+  outline-offset: 2px;
+}
+
+.recentEntriesTable {
+  width: 100%;
+}
+
+.recentEntriesTable :global(th),
+.recentEntriesTable :global(td) {
+  padding-block: 0.85rem !important;
+  vertical-align: middle;
+}
+
+.recentEntriesAmount {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+  width: 8.5rem;
+  padding-right: 1.75rem !important;
+}
+
+.recentEntriesDate {
+  white-space: nowrap;
+  width: 7.5rem;
+  color: var(--sk-color-text-secondary, #64748b);
+  font-size: 0.875rem;
+}
+
+.recentEntriesStatus {
+  width: 7rem;
+  white-space: nowrap;
+  padding-left: 1rem !important;
+  text-align: left !important;
+}
+
+.detailToolbar {
+  width: 100%;
+}
+
+.detailHeader {
+  padding-bottom: 1.1rem;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
+}
+
+.detailEntryNo {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+  color: var(--sk-color-text-primary, #0f172a);
+  line-height: 1.2;
+}
+
+.detailNarration {
+  margin: 0;
+  max-width: 42rem;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--sk-color-text-secondary, #64748b);
+}
+
+.detailMetaGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 0.85rem 1.5rem;
+  margin-top: 1rem;
+}
+
+.detailMetaItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.detailMetaLabel {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--sk-color-text-secondary, #94a3b8);
+}
+
+.detailMetaValue {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--sk-color-text-primary, #0f172a);
+  font-variant-numeric: tabular-nums;
+}
+
+.detailSectionTitle {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--sk-color-text-secondary, #64748b);
+}
+
+.detailLinesTable {
+  width: 100%;
+}
+
+.detailLinesTable :global(th),
+.detailLinesTable :global(td) {
+  padding-block: 0.8rem !important;
+  vertical-align: middle;
+}
+
+.detailAmountCol {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+  width: 7.5rem;
+  padding-left: 1.25rem !important;
+}
+
+.detailAmountMuted {
+  color: var(--sk-color-text-secondary, #94a3b8);
+  font-weight: 500;
+}
+
+.detailTotalsCell {
+  border-top: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 92%, transparent);
+  background: color-mix(in srgb, var(--sk-color-bg-muted, #f8fafc) 70%, transparent);
+  font-weight: 700;
+}
+
+.detailParty {
+  color: var(--sk-color-text-secondary, #64748b);
+  font-size: 0.8125rem;
+}
+
+.detailMemo {
+  color: var(--sk-color-text-secondary, #94a3b8);
+  font-size: 0.8125rem;
+}
+
+.reverseSummary {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--sk-radius-md, 8px);
+  border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 90%, transparent);
+  background: color-mix(in srgb, var(--sk-color-bg-muted, #f8fafc) 88%, transparent);
+}
+
+.reverseSummaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.reverseSummaryLabel {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--sk-color-text-secondary, #94a3b8);
+}
+
+.reverseSummaryValue {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: right;
+  color: var(--sk-color-text-primary, #0f172a);
+  font-variant-numeric: tabular-nums;
+}
+
+.reverseHint {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--sk-color-text-secondary, #64748b);
+}
+
+@media (max-width: 1100px) {
+  .overviewKpiGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .overviewKpiGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .overviewKpiGrid {
+    grid-template-columns: 1fr;
+  }
 }

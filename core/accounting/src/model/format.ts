@@ -19,12 +19,63 @@ export function formatDate(date?: string | null): string {
   return date;
 }
 
+/** Short human date for dense tables (e.g. 11 Jul 2026). */
+export function formatDateShort(date?: string | null): string {
+  if (!date) return '—';
+  const d = new Date(`${date}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return date;
+  return d.toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+const JOURNAL_SOURCE_LABELS: Record<string, string> = {
+  VENDOR_PURCHASE_INVOICE: 'Vendor purchase',
+  VENDOR_PURCHASE_RETURN: 'Vendor return',
+  SALE: 'Sale',
+  SALES_RETURN: 'Sales return',
+  CUSTOMER_SETTLEMENT: 'Customer settlement',
+  VENDOR_PAYMENT: 'Vendor payment',
+  INVENTORY_CORRECTION: 'Stock correction',
+  MANUAL: 'Manual',
+  REVERSAL: 'Reversal',
+  OPENING_BALANCE: 'Opening balance',
+};
+
+export function formatJournalSource(source?: string | null): string {
+  if (!source) return '—';
+  return JOURNAL_SOURCE_LABELS[source] ?? source.replace(/_/g, ' ').toLowerCase();
+}
+
+export function formatJournalStatus(status?: string | null): string {
+  if (!status) return '—';
+  return status.charAt(0) + status.slice(1).toLowerCase();
+}
+
+export function formatPartyLabel(partyType?: string | null): string {
+  if (!partyType) return '';
+  const labels: Record<string, string> = {
+    VENDOR: 'Vendor',
+    CUSTOMER: 'Customer',
+    SHOP: 'Shop',
+  };
+  return labels[partyType] ?? partyType.charAt(0) + partyType.slice(1).toLowerCase();
+}
+
 export function formatDateTime(iso?: string | null): string {
   if (!iso) return '—';
   try {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return iso;
-    return d.toLocaleString();
+    return d.toLocaleString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   } catch {
     return iso;
   }
