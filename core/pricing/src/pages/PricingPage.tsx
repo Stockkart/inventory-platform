@@ -4,8 +4,11 @@ import { inventoryApi } from '@inventory-platform/product/api';
 import type { InventoryItem } from '@inventory-platform/product/types';
 import {
   Alert,
+  Badge,
   Box,
   Button,
+  Card,
+  CardBody,
   Inline,
   PageHeader,
   PaginationBar,
@@ -33,8 +36,6 @@ export function meta() {
 function formatMoney(value: number | null | undefined) {
   return value != null ? `₹${value.toFixed(2)}` : '—';
 }
-
-const numColStyle = { textAlign: 'right' as const, fontVariantNumeric: 'tabular-nums' as const };
 
 export function PricingPage() {
   const navigate = useNavigate();
@@ -97,8 +98,10 @@ export function PricingPage() {
             onChange={setSearchInput}
             onSearch={handleSearch}
             showSearchButton
+            buttonVariant="solid"
             placeholder="Search by name, company, or barcode…"
             disabled={isLoading}
+            searchLabel={isLoading ? 'Searching…' : 'Search'}
           />
         </Box>
         {searchInput ? (
@@ -111,80 +114,90 @@ export function PricingPage() {
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
       <Inline gap="md" flexWrap align="center">
-        <Text color="secondary" variant="caption">
+        <Text as="span" className={surfaceChrome.pricingMeta}>
           {isLoading ? 'Loading…' : `${totalItems} item${totalItems === 1 ? '' : 's'} found`}
         </Text>
         {itemsWithoutPricing.length > 0 && itemsWithPricing.length > 0 ? (
-          <Text color="secondary" variant="caption">
-            {itemsWithoutPricing.length} item(s) without pricing (legacy)
+          <Text as="span" className={surfaceChrome.pricingMeta}>
+            {itemsWithoutPricing.length} without pricing (legacy)
           </Text>
         ) : null}
       </Inline>
 
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableHeaderCell>Product</TableHeaderCell>
-            <TableHeaderCell>Company</TableHeaderCell>
-            <TableHeaderCell>Barcode</TableHeaderCell>
-            <TableHeaderCell style={numColStyle}>Selling</TableHeaderCell>
-            <TableHeaderCell style={numColStyle}>MRP</TableHeaderCell>
-            <TableHeaderCell>Location</TableHeaderCell>
-            <TableHeaderCell className={surfaceChrome.nowrap}>Actions</TableHeaderCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {isLoading ? (
-            <TableLoadingRow colSpan={7} label="Loading inventory…" />
-          ) : inventory.length === 0 ? (
-            <TableEmptyRow
-              colSpan={7}
-              message={query ? 'No inventory matches your search.' : 'No inventory found.'}
-            />
-          ) : (
-            inventory.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell>
-                  <Text weight="medium">{item.name || '—'}</Text>
-                </TableCell>
-                <TableCell>{item.companyName || '—'}</TableCell>
-                <TableCell className={surfaceChrome.monoSm}>{item.barcode || '—'}</TableCell>
-                <TableCell style={numColStyle}>
-                  {formatMoney(item.sellingPrice ?? item.priceToRetail)}
-                </TableCell>
-                <TableCell style={numColStyle}>{formatMoney(item.maximumRetailPrice)}</TableCell>
-                <TableCell>{item.location || '—'}</TableCell>
-                <TableCell className={surfaceChrome.nowrap}>
-                  {item.pricingId ? (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() =>
-                        navigate(`/dashboard/price-edit/${item.pricingId}`, {
-                          state: {
-                            priceToRetail: item.priceToRetail,
-                            maximumRetailPrice: item.maximumRetailPrice,
-                            productName: item.name,
-                            rates: item.rates ?? undefined,
-                            defaultRate: item.defaultRate ?? undefined,
-                          },
-                        })
-                      }
-                    >
-                      Edit price
-                    </Button>
-                  ) : (
-                    <Text color="secondary" variant="caption">
-                      No pricing
-                    </Text>
-                  )}
-                </TableCell>
+      <Card>
+        <CardBody>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableHeaderCell>Product</TableHeaderCell>
+                <TableHeaderCell>Company</TableHeaderCell>
+                <TableHeaderCell>Barcode</TableHeaderCell>
+                <TableHeaderCell className={surfaceChrome.pricingMoneyCell}>
+                  Selling
+                </TableHeaderCell>
+                <TableHeaderCell className={surfaceChrome.pricingMoneyCell}>MRP</TableHeaderCell>
+                <TableHeaderCell>Location</TableHeaderCell>
+                <TableHeaderCell className={surfaceChrome.pricingActionCell}>
+                  Actions
+                </TableHeaderCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            </TableHead>
+            <TableBody>
+              {isLoading ? (
+                <TableLoadingRow colSpan={7} label="Loading inventory…" />
+              ) : inventory.length === 0 ? (
+                <TableEmptyRow
+                  colSpan={7}
+                  message={query ? 'No inventory matches your search.' : 'No inventory found.'}
+                />
+              ) : (
+                inventory.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell>
+                      <Text as="span" weight="medium">
+                        {item.name || '—'}
+                      </Text>
+                    </TableCell>
+                    <TableCell>{item.companyName || '—'}</TableCell>
+                    <TableCell className={surfaceChrome.monoSm}>{item.barcode || '—'}</TableCell>
+                    <TableCell className={surfaceChrome.pricingMoneyCell}>
+                      {formatMoney(item.sellingPrice ?? item.priceToRetail)}
+                    </TableCell>
+                    <TableCell className={surfaceChrome.pricingMoneyCell}>
+                      {formatMoney(item.maximumRetailPrice)}
+                    </TableCell>
+                    <TableCell>{item.location || '—'}</TableCell>
+                    <TableCell className={surfaceChrome.pricingActionCell}>
+                      {item.pricingId ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            navigate(`/dashboard/price-edit/${item.pricingId}`, {
+                              state: {
+                                priceToRetail: item.priceToRetail,
+                                maximumRetailPrice: item.maximumRetailPrice,
+                                productName: item.name,
+                                rates: item.rates ?? undefined,
+                                defaultRate: item.defaultRate ?? undefined,
+                              },
+                            })
+                          }
+                        >
+                          Edit price
+                        </Button>
+                      ) : (
+                        <Badge variant="neutral">No pricing</Badge>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardBody>
+      </Card>
 
       {inventory.length > 0 || isLoading ? (
         <PaginationBar

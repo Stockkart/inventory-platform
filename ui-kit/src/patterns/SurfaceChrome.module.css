@@ -511,6 +511,95 @@
   font-variant-numeric: tabular-nums;
 }
 
+.pricingMoneyCell {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  width: 6.5rem;
+}
+
+.pricingActionCell {
+  width: 7.5rem;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.pricingMeta {
+  font-size: 0.8125rem;
+  color: var(--sk-color-text-secondary, var(--text-secondary));
+}
+
+.priceEditId {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.75rem;
+  color: var(--sk-color-text-secondary, #64748b);
+  word-break: break-all;
+}
+
+.priceEditSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-top: 0.15rem;
+}
+
+.priceEditSectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.priceEditSectionTitle {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--sk-color-text-primary, var(--text-primary));
+}
+
+.priceEditHint {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--sk-color-text-secondary, #64748b);
+}
+
+.priceEditRateHead {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 7rem 2.5rem;
+  gap: 0.5rem;
+  padding: 0 0.15rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--sk-color-text-secondary, #64748b);
+}
+
+.priceEditRateRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 7rem 2.5rem;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.priceEditRatePrice {
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+.priceEditEmptyRates {
+  padding: 0.85rem 1rem;
+  border-radius: var(--sk-radius-md, 8px);
+  border: 1px dashed color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 90%, transparent);
+  background: color-mix(in srgb, var(--sk-color-bg-muted, #f8fafc) 70%, #fff);
+  font-size: 0.8125rem;
+  color: var(--sk-color-text-secondary, #64748b);
+}
+
 .historyCaption {
   font-size: 0.8125rem;
   line-height: 1.45;
@@ -532,6 +621,11 @@
   min-width: 980px;
   table-layout: fixed;
   border-collapse: collapse;
+}
+
+.historyTable :global(thead) :global(tr),
+.historyTable :global(tbody) :global(tr) {
+  box-shadow: none;
 }
 
 /* Force continuous row rules — colspan expand rows can break default cell borders. */
@@ -624,6 +718,11 @@
   border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 90%, transparent);
   border-radius: var(--sk-radius-sm, 6px);
   overflow: hidden;
+}
+
+.historyNestedTable :global(thead) :global(tr),
+.historyNestedTable :global(tbody) :global(tr) {
+  box-shadow: none;
 }
 
 .historyNestedTable :global(th),
