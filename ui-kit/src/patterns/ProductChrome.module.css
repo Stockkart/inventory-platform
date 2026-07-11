@@ -387,3 +387,477 @@
 .mtXs {
   margin-top: 0.25rem;
 }
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.tabularNums {
+  font-variant-numeric: tabular-nums;
+}
+
+.sectionLabel {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.italicMuted {
+  font-style: italic;
+}
+
+/* Cafe catalog panel */
+.cafeCatalogShell {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.cafeCatalogTabs {
+  flex-shrink: 0;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--sk-color-border-default, var(--border-color));
+}
+
+.cafeCatalogScroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.cafeCatalogSection {
+  margin-bottom: 1.4rem;
+}
+
+.cafeCatalogSectionHeader {
+  margin-bottom: 0.7rem;
+}
+
+.cafeCatalogGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
+  gap: 0.7rem;
+}
+
+.cafeCatalogTile {
+  min-height: 92px;
+  text-align: left;
+  border-left: 3px solid #3b82f6;
+}
+
+.cafeCatalogTileStock {
+  min-height: 92px;
+  text-align: left;
+  border-left: 3px solid #22c55e;
+}
+
+.cafeCatalogAddBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--primary-color, #2563eb);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.cafeCatalogAddBadgeStock {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(34, 197, 94, 0.14);
+  color: #16a34a;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.cafeCatalogTab {
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.paymentCreditSummary {
+  border-color: color-mix(
+    in srgb,
+    #d97706 35%,
+    var(--sk-color-border-default, var(--border-color, #e2e8f0))
+  );
+  background: color-mix(in srgb, #f59e0b 6%, var(--sk-color-bg-elevated, var(--card-bg, #fff)));
+}
+
+/* Payment method split */
+.requiredMark {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.paymentPickHint {
+  border-style: dashed;
+  background: transparent;
+}
+
+.tenderBadge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tenderBadgeCash {
+  background: color-mix(in srgb, #10b981 10%, transparent);
+  color: #047857;
+}
+
+.tenderBadgeOnline {
+  background: color-mix(in srgb, #3b82f6 10%, transparent);
+  color: #1d4ed8;
+}
+
+.tenderBadgeCredit {
+  background: color-mix(in srgb, #d97706 12%, transparent);
+  color: #b45309;
+}
+
+.tenderPrefix {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-weight: 500;
+  color: var(--sk-color-text-secondary, var(--text-secondary));
+  pointer-events: none;
+}
+
+.tenderInput {
+  padding-left: 1.55rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.tenderCreditHighlight {
+  font-variant-numeric: tabular-nums;
+  color: #b45309;
+}
+
+/* History filters */
+.historyFiltersBar {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--sk-color-border-default, var(--border-color));
+}
+
+.historyFilterField {
+  min-width: 130px;
+  flex: 1 1 130px;
+  max-width: 200px;
+}
+
+.historyFilterActions {
+  flex: 0 0 auto;
+}
+
+/* Customer product history hint */
+.historyHintRoot {
+  margin-top: 0.35rem;
+}
+
+.historyHintInline {
+  margin-top: 0.35rem;
+  display: inline-flex;
+}
+
+.historyHintCard {
+  margin-top: 0.35rem;
+  max-width: 100%;
+}
+
+.historyHintHeader {
+  margin-bottom: 0.2rem;
+}
+
+.historyInvoiceChip {
+  margin-left: 0.1rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 4px;
+  background: var(--sk-color-bg-canvas, #fff);
+  border: 1px solid var(--sk-color-border-subtle, var(--border-subtle, #e2e8f0));
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.65rem;
+  white-space: nowrap;
+}
+
+.historyChevron {
+  transition: transform 0.15s ease;
+}
+
+.historyChevronOpen {
+  transform: rotate(180deg);
+}
+
+.historyPriorList {
+  margin-top: 0.3rem;
+  padding-top: 0.25rem;
+  padding-left: 0.55rem;
+  border-left: 2px solid #ddd6fe;
+}
+
+/* Quotation stack */
+.quotationStack {
+  margin-bottom: 0.75rem;
+}
+
+.quotationScroll {
+  overflow-x: auto;
+  padding-bottom: 0.1rem;
+}
+
+.quotationPill {
+  border-color: #93c5fd;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 999px;
+}
+
+.quotationTab {
+  flex-shrink: 0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.quotationTabActive {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px #2563eb;
+}
+
+.quotationTabBtn {
+  border-radius: 0;
+  max-width: 220px;
+  text-align: left;
+  padding: 0.35rem 0.55rem 0.35rem 0.75rem;
+}
+
+.quotationTabClose {
+  width: 1.65rem;
+  flex-shrink: 0;
+  border-radius: 0;
+  border-left: 1px solid var(--sk-color-border-subtle, var(--border-subtle, #e2e8f0));
+}
+
+/* Process / history underline tabs */
+.processTabBar {
+  border-bottom: 1px solid var(--sk-color-border-default, var(--border-color));
+}
+
+.processTab {
+  margin-bottom: -1px;
+  white-space: nowrap;
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
+}
+
+.processTabActive {
+  border-bottom-color: #3b82f6;
+}
+
+.helperLine {
+  line-height: 1.45;
+}
+
+.qtyInputNarrow {
+  width: 5rem;
+  text-align: center;
+}
+
+.blockHint {
+  display: block;
+  margin-top: 0.35rem;
+}
+
+.selectedCard {
+  cursor: pointer;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.clickableCard {
+  cursor: pointer;
+}
+
+.returnDetailPanel {
+  margin-top: 1rem;
+  padding: 1.5rem;
+  border-top: 1px solid var(--sk-color-border-default, var(--border-color));
+  background: var(--sk-color-bg-elevated, var(--bg-card));
+  border-radius: 8px;
+}
+
+.estimateBar {
+  background: var(--sk-color-bg-canvas, var(--bg-primary));
+}
+
+.estimateCreditBar {
+  background: var(--hover-bg, rgba(59, 130, 246, 0.06));
+}
+
+.paymentSectionTop {
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--sk-color-border-default, var(--border-color));
+}
+
+.checkoutTotalRow {
+  padding: 1rem 0;
+  margin-top: 0.5rem;
+  border-top: 2px solid var(--sk-color-border-default, var(--border-color));
+}
+
+.checkoutLineRow {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--sk-color-border-default, var(--border-color));
+}
+
+.successCheck {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: #10b981;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.successCheckMark {
+  color: #fff;
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.tokenHighlight {
+  color: var(--link-hover);
+}
+
+.creditLink {
+  color: #047857;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.tableMinWide {
+  min-width: 700px;
+}
+
+.mtSm {
+  margin-top: 0.75rem;
+}
+
+.detailLabel {
+  min-width: 120px;
+}
+
+.cardSectionDivider {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--sk-color-border-default, var(--border-color));
+}
+
+.hairlineRule {
+  height: 1px;
+  background: var(--sk-color-border-default, var(--border-color));
+  margin: 0.5rem 0;
+}
+
+.quotationSetupShell {
+  flex: 1;
+  padding-bottom: 1.5rem;
+}
+
+.gridSpanFull {
+  grid-column: 1 / -1;
+}
+
+.ptXs {
+  padding-top: 0.25rem;
+}
+
+.mbXs {
+  margin-bottom: 0.25rem;
+}
+
+.mbSm {
+  margin-bottom: 0.5rem;
+}
+
+.mtSmHalf {
+  margin-top: 0.5rem;
+}
+
+.softDivider {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--sk-color-border-default, var(--border-color));
+}
+
+.priceGrandRow {
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 2px solid var(--sk-color-border-default, var(--border-color));
+}
+
+.priceGrandValue {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.tableActionHeader {
+  width: 6.5rem;
+  text-align: right;
+}
+
+.tableCellRight {
+  text-align: right;
+}
+
+.tableCellFlush {
+  padding: 0;
+}
+
+.searchGrow {
+  flex: 1;
+  min-width: 200px;
+}
+
+.monoHint {
+  font-family: ui-monospace, monospace;
+  font-size: 0.875em;
+}
+
+.filterToolbarBottom {
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--sk-color-border-default, var(--border-color));
+}
+
+.qtyInputMd {
+  width: 100px;
+}
+
+.btnSmText {
+  font-size: 0.8125rem;
+}
+
+.historyExpandRow {
+  padding: 0.75rem 0.5rem;
+  border-top: 1px dashed var(--sk-color-border-default, var(--border-color));
+}
+
+.statusMuted {
+  color: var(--sk-color-text-secondary, var(--text-secondary));
+  font-size: 0.8125rem;
+}

@@ -157,8 +157,8 @@ export function JournalEntriesPage() {
                 <TableHeaderCell>Entry #</TableHeaderCell>
                 <TableHeaderCell>Source</TableHeaderCell>
                 <TableHeaderCell>Narration</TableHeaderCell>
-                <TableHeaderCell style={numColStyle}>Debit</TableHeaderCell>
-                <TableHeaderCell style={numColStyle}>Credit</TableHeaderCell>
+                <TableHeaderCell className={numColStyle}>Debit</TableHeaderCell>
+                <TableHeaderCell className={numColStyle}>Credit</TableHeaderCell>
                 <TableHeaderCell>Status</TableHeaderCell>
               </TableRow>
             </TableHead>
@@ -189,8 +189,12 @@ export function JournalEntriesPage() {
                         {entry.narration ?? '—'}
                       </Text>
                     </TableCell>
-                    <TableCell style={numColBoldStyle}>{formatMoney(entry.totalDebit)}</TableCell>
-                    <TableCell style={numColBoldStyle}>{formatMoney(entry.totalCredit)}</TableCell>
+                    <TableCell className={numColBoldStyle}>
+                      {formatMoney(entry.totalDebit)}
+                    </TableCell>
+                    <TableCell className={numColBoldStyle}>
+                      {formatMoney(entry.totalCredit)}
+                    </TableCell>
                     <TableCell>
                       <Badge variant={statusVariant(entry.status)}>{entry.status}</Badge>
                     </TableCell>

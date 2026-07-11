@@ -1,5 +1,13 @@
 import type { QuotationSummary } from '@inventory-platform/product/types';
-import { Button, IconButton, Inline, Stack, Text } from '@inventory-platform/ui-kit';
+import {
+  Button,
+  IconButton,
+  Inline,
+  Stack,
+  Text,
+  cn,
+  productChrome,
+} from '@inventory-platform/ui-kit';
 
 function formatMoney(n: number): string {
   return new Intl.NumberFormat('en-IN', {
@@ -45,7 +53,7 @@ export function ScanSellQuotationStack({
       border
       rounded="md"
       bg="elevated"
-      style={{ marginBottom: '0.75rem' }}
+      className={productChrome.quotationStack}
       aria-label="Open quotations"
     >
       <Inline gap="sm" align="center" flexWrap>
@@ -53,7 +61,7 @@ export function ScanSellQuotationStack({
           variant="caption"
           weight="semibold"
           color="secondary"
-          style={{ whiteSpace: 'nowrap' }}
+          className={productChrome.nowrap}
         >
           Open quotations
         </Text>
@@ -63,18 +71,13 @@ export function ScanSellQuotationStack({
           size="sm"
           onClick={onNew}
           disabled={disabled}
-          style={{
-            borderColor: '#93c5fd',
-            background: '#eff6ff',
-            color: '#1d4ed8',
-            borderRadius: '999px',
-          }}
+          className={productChrome.quotationPill}
         >
           + New
         </Button>
       </Inline>
 
-      <Inline gap="sm" style={{ overflowX: 'auto', paddingBottom: '0.1rem' }}>
+      <Inline gap="sm" className={productChrome.quotationScroll}>
         {quotations.map((q) => {
           const isActive = q.purchaseId === activePurchaseId;
           const total = formatMoney(Number(q.grandTotal) || 0);
@@ -86,13 +89,10 @@ export function ScanSellQuotationStack({
               border
               rounded="lg"
               bg={isActive ? 'muted' : 'surface'}
-              style={{
-                flexShrink: 0,
-                borderRadius: '999px',
-                overflow: 'hidden',
-                borderColor: isActive ? '#2563eb' : undefined,
-                boxShadow: isActive ? '0 0 0 1px #2563eb' : undefined,
-              }}
+              className={cn(
+                productChrome.quotationTab,
+                isActive && productChrome.quotationTabActive,
+              )}
             >
               <Button
                 type="button"
@@ -101,18 +101,13 @@ export function ScanSellQuotationStack({
                 aria-selected={isActive}
                 onClick={() => onSelect(q.purchaseId)}
                 disabled={disabled}
-                style={{
-                  borderRadius: 0,
-                  maxWidth: '220px',
-                  textAlign: 'left',
-                  padding: '0.35rem 0.55rem 0.35rem 0.75rem',
-                }}
+                className={productChrome.quotationTabBtn}
               >
                 <Stack gap="none" align="start">
                   <Text weight="semibold" truncate>
                     {tabLabel}
                   </Text>
-                  <Text variant="caption" color="muted" style={{ whiteSpace: 'nowrap' }}>
+                  <Text variant="caption" color="muted" className={productChrome.nowrap}>
                     {q.itemCount} item{q.itemCount === 1 ? '' : 's'} · {total}
                   </Text>
                 </Stack>
@@ -125,12 +120,7 @@ export function ScanSellQuotationStack({
                   onCancel(q.purchaseId);
                 }}
                 disabled={disabled}
-                style={{
-                  width: '1.65rem',
-                  flexShrink: 0,
-                  borderRadius: 0,
-                  borderLeft: '1px solid var(--border-subtle, #e2e8f0)',
-                }}
+                className={productChrome.quotationTabClose}
               >
                 ×
               </IconButton>

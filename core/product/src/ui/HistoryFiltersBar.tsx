@@ -10,6 +10,7 @@ import {
   Input,
   Stack,
   Text,
+  productChrome,
 } from '@inventory-platform/ui-kit';
 
 type HistoryFiltersBarProps = {
@@ -65,15 +66,11 @@ export function HistoryFiltersBar({
       gap="sm"
       width="full"
       padding="none"
-      style={{
-        marginBottom: '1.5rem',
-        paddingBottom: '1.25rem',
-        borderBottom: '1px solid var(--border-color)',
-      }}
+      className={productChrome.historyFiltersBar}
       aria-label="History filters"
     >
       <Inline gap="sm" align="end" flexWrap>
-        <Box style={{ minWidth: '130px', flex: '1 1 130px', maxWidth: '200px' }}>
+        <Box className={productChrome.historyFilterField}>
           <FormField label="From" id="history-date-from">
             <Input
               id="history-date-from"
@@ -83,7 +80,7 @@ export function HistoryFiltersBar({
             />
           </FormField>
         </Box>
-        <Box style={{ minWidth: '130px', flex: '1 1 130px', maxWidth: '200px' }}>
+        <Box className={productChrome.historyFilterField}>
           <FormField label="To" id="history-date-to">
             <Input
               id="history-date-to"
@@ -93,7 +90,7 @@ export function HistoryFiltersBar({
             />
           </FormField>
         </Box>
-        <Box style={{ minWidth: '130px', flex: '1 1 130px', maxWidth: '200px' }}>
+        <Box className={productChrome.historyFilterField}>
           <FormField label="Invoice no." id="history-invoice">
             <Input
               id="history-invoice"
@@ -105,7 +102,7 @@ export function HistoryFiltersBar({
           </FormField>
         </Box>
         {showCustomer ? (
-          <Box style={{ minWidth: '130px', flex: '1 1 130px', maxWidth: '200px' }}>
+          <Box className={productChrome.historyFilterField}>
             <FormField label="Customer" id="history-customer">
               <Input
                 id="history-customer"
@@ -118,7 +115,7 @@ export function HistoryFiltersBar({
           </Box>
         ) : null}
         {showVendor ? (
-          <Box style={{ minWidth: '130px', flex: '1 1 130px', maxWidth: '200px' }}>
+          <Box className={productChrome.historyFilterField}>
             <FormField label="Vendor" id="history-vendor">
               <Input
                 id="history-vendor"
@@ -130,7 +127,7 @@ export function HistoryFiltersBar({
             </FormField>
           </Box>
         ) : null}
-        <Inline gap="sm" style={{ flex: '0 0 auto' }}>
+        <Inline gap="sm" className={productChrome.historyFilterActions}>
           <Button type="button" variant="solid" size="sm" onClick={handleApply}>
             Apply
           </Button>

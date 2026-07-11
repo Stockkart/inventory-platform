@@ -3,7 +3,17 @@ import type {
   CustomerProductHistoryGroup,
   CustomerProductHistoryResponse,
 } from '@inventory-platform/product/types';
-import { Badge, Box, Button, Inline, Spinner, Stack, Text } from '@inventory-platform/ui-kit';
+import {
+  Badge,
+  Box,
+  Button,
+  Inline,
+  Spinner,
+  Stack,
+  Text,
+  cn,
+  productChrome,
+} from '@inventory-platform/ui-kit';
 
 const dateFormatter = new Intl.DateTimeFormat('en-IN', {
   day: 'numeric',
@@ -55,7 +65,7 @@ function HistoryEntryRow({
         variant="caption"
         weight={isPrior ? 'medium' : 'semibold'}
         color={isPrior ? 'secondary' : 'primary'}
-        style={{ whiteSpace: 'nowrap' }}
+        className={productChrome.nowrap}
       >
         {date}
       </Text>
@@ -66,25 +76,12 @@ function HistoryEntryRow({
         variant="caption"
         weight="medium"
         color={isPrior ? 'muted' : 'secondary'}
-        style={{ whiteSpace: 'nowrap' }}
+        className={productChrome.nowrap}
       >
         {qtyAtRate}
       </Text>
       {invoice ? (
-        <Text
-          variant="caption"
-          weight="semibold"
-          style={{
-            marginLeft: '0.1rem',
-            padding: '0.05rem 0.35rem',
-            borderRadius: '4px',
-            background: '#fff',
-            border: '1px solid var(--border-subtle, #e2e8f0)',
-            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-            fontSize: '0.65rem',
-            whiteSpace: 'nowrap',
-          }}
-        >
+        <Text variant="caption" weight="semibold" className={productChrome.historyInvoiceChip}>
           {invoice}
         </Text>
       ) : null}
@@ -108,10 +105,10 @@ export function CustomerProductHistoryHint({
 
   if (loading && !group) {
     return (
-      <Box style={{ marginTop: '0.35rem' }}>
+      <Box className={productChrome.historyHintRoot}>
         <Inline gap="xs" align="center">
           <Spinner size="sm" />
-          <Text variant="caption" color="muted" style={{ fontStyle: 'italic' }}>
+          <Text variant="caption" color="muted" className={productChrome.italicMuted}>
             Checking past purchases…
           </Text>
         </Inline>
@@ -121,7 +118,7 @@ export function CustomerProductHistoryHint({
 
   if (!group?.lastSale) {
     return (
-      <Box style={{ marginTop: '0.35rem', display: 'inline-flex' }}>
+      <Box className={productChrome.historyHintInline}>
         <Badge variant="success">New for customer</Badge>
       </Box>
     );
@@ -131,14 +128,13 @@ export function CustomerProductHistoryHint({
   const priorLabel = prior.length === 1 ? '1 earlier' : `${prior.length} earlier`;
 
   return (
-    <Box
-      padding="xs"
-      border
-      rounded="md"
-      bg="muted"
-      style={{ marginTop: '0.35rem', maxWidth: '100%' }}
-    >
-      <Inline justify="between" align="center" width="full" style={{ marginBottom: '0.2rem' }}>
+    <Box padding="xs" border rounded="md" bg="muted" className={productChrome.historyHintCard}>
+      <Inline
+        justify="between"
+        align="center"
+        width="full"
+        className={productChrome.historyHintHeader}
+      >
         <Badge variant="info">Bought before</Badge>
         {prior.length > 0 ? (
           <Button
@@ -160,10 +156,10 @@ export function CustomerProductHistoryHint({
               <Text
                 variant="caption"
                 aria-hidden
-                style={{
-                  transform: expanded ? 'rotate(180deg)' : undefined,
-                  transition: 'transform 0.15s ease',
-                }}
+                className={cn(
+                  productChrome.historyChevron,
+                  expanded && productChrome.historyChevronOpen,
+                )}
               >
                 ▾
               </Text>
@@ -175,15 +171,7 @@ export function CustomerProductHistoryHint({
       <HistoryEntryRow entry={group.lastSale} variant="primary" />
 
       {expanded && prior.length > 0 ? (
-        <Stack
-          gap="xs"
-          style={{
-            marginTop: '0.3rem',
-            paddingTop: '0.25rem',
-            paddingLeft: '0.55rem',
-            borderLeft: '2px solid #ddd6fe',
-          }}
-        >
+        <Stack gap="xs" className={productChrome.historyPriorList}>
           {prior.map((entry) => (
             <Box key={`${entry.purchaseId}-${entry.soldAt}`}>
               <HistoryEntryRow entry={entry} variant="prior" />

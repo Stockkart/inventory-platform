@@ -3,7 +3,17 @@ import type {
   AccountResponse,
   CreateJournalLineRequest,
 } from '@inventory-platform/accounting/types';
-import { Box, Button, IconButton, Inline, Input, Stack, Text } from '@inventory-platform/ui-kit';
+import {
+  Box,
+  Button,
+  IconButton,
+  Inline,
+  Input,
+  Stack,
+  Text,
+  cn,
+  accountingChrome,
+} from '@inventory-platform/ui-kit';
 import { AccountPicker } from './AccountPicker';
 import { PartyLineFields } from './PartyLineFields';
 import {
@@ -140,7 +150,7 @@ export function JournalEntryEditor({
               type="button"
               size="sm"
               variant="ghost"
-              style={templateChipStyle(activeTemplate === t.id)}
+              className={templateChipStyle(activeTemplate === t.id)}
               onClick={() => applyTemplate(t.id)}
               disabled={disabled || accountsLoading}
               title={t.description}
@@ -152,7 +162,7 @@ export function JournalEntryEditor({
             type="button"
             size="sm"
             variant="ghost"
-            style={templateChipStyle(activeTemplate === 'BLANK')}
+            className={templateChipStyle(activeTemplate === 'BLANK')}
             onClick={() => applyTemplate('BLANK')}
             disabled={disabled || accountsLoading}
           >
@@ -179,12 +189,12 @@ export function JournalEntryEditor({
           value={narration}
           onChange={(e) => onNarrationChange(e.target.value)}
           placeholder="What is this entry about?"
-          style={{ flex: 1, minWidth: '14rem' }}
+          className={accountingChrome.growMin14}
           disabled={disabled}
         />
       </Inline>
 
-      <Box style={journalHeaderLineGridStyle}>
+      <Box className={journalHeaderLineGridStyle}>
         <Text variant="label" color="secondary">
           Account
         </Text>
@@ -200,7 +210,7 @@ export function JournalEntryEditor({
         <Box />
       </Box>
       {lines.map((line, idx) => (
-        <Box key={idx} style={journalLineGridStyle}>
+        <Box key={idx} className={journalLineGridStyle}>
           <Stack gap="xs">
             <AccountPicker
               accounts={accounts}
@@ -227,7 +237,7 @@ export function JournalEntryEditor({
             ) : null}
           </Stack>
           <Input
-            style={{ textAlign: 'right' }}
+            className={accountingChrome.inputNumRight}
             type="number"
             inputMode="decimal"
             min="0"
@@ -243,7 +253,7 @@ export function JournalEntryEditor({
             disabled={disabled}
           />
           <Input
-            style={{ textAlign: 'right' }}
+            className={accountingChrome.inputNumRight}
             type="number"
             inputMode="decimal"
             min="0"
@@ -281,10 +291,7 @@ export function JournalEntryEditor({
 
       <Inline
         gap="md"
-        style={{
-          ...balanceFooterStyle,
-          ...(balanced ? balanceBalancedStyle : balanceUnbalancedStyle),
-        }}
+        className={cn(balanceFooterStyle, balanced ? balanceBalancedStyle : balanceUnbalancedStyle)}
       >
         <Text weight="semibold">Total Debit: ₹ {formatMoney(totalDebit)}</Text>
         <Text weight="semibold">Total Credit: ₹ {formatMoney(totalCredit)}</Text>

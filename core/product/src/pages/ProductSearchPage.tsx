@@ -22,6 +22,7 @@ import {
   Stack,
   Text,
   type SelectOptionDef,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { InventoryAlertDetails, ProductSearchCard, normalizedBillingMode } from '../ui';
 import { sortInventoryByExpirySoonest } from '@inventory-platform/schema';
@@ -348,7 +349,7 @@ export function ProductSearchPage() {
       />
 
       <Inline gap="sm" flexWrap>
-        <Box width="full" style={{ flex: 1, minWidth: '12rem' }}>
+        <Box width="full" className={surfaceChrome.growMin12}>
           <SearchInput
             value={searchQuery}
             onChange={setSearchQuery}
@@ -407,12 +408,7 @@ export function ProductSearchPage() {
               />
             ) : (
               <>
-                <Box
-                  display="grid"
-                  gap="lg"
-                  width="full"
-                  style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
-                >
+                <Box display="grid" gap="lg" width="full" className={surfaceChrome.autoGrid280}>
                   {filteredInventory.map((item) => {
                     const inventoryId = resolveInventoryDocumentId(item);
                     return (

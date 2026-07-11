@@ -18,6 +18,7 @@ import {
   TableLoadingRow,
   TableRow,
   Text,
+  cn,
 } from '@inventory-platform/ui-kit';
 import { accountingApi } from '../api/accounting.api';
 import { useNotify } from '@inventory-platform/session';
@@ -143,10 +144,10 @@ export function TrialBalancePage() {
                   <TableRow>
                     <TableHeaderCell>Code</TableHeaderCell>
                     <TableHeaderCell>Account</TableHeaderCell>
-                    <TableHeaderCell style={numColStyle}>Debit Turnover</TableHeaderCell>
-                    <TableHeaderCell style={numColStyle}>Credit Turnover</TableHeaderCell>
-                    <TableHeaderCell style={numColStyle}>Debit Balance</TableHeaderCell>
-                    <TableHeaderCell style={numColStyle}>Credit Balance</TableHeaderCell>
+                    <TableHeaderCell className={numColStyle}>Debit Turnover</TableHeaderCell>
+                    <TableHeaderCell className={numColStyle}>Credit Turnover</TableHeaderCell>
+                    <TableHeaderCell className={numColStyle}>Debit Balance</TableHeaderCell>
+                    <TableHeaderCell className={numColStyle}>Credit Balance</TableHeaderCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -165,13 +166,13 @@ export function TrialBalancePage() {
                     );
                   })}
                   <TableRow>
-                    <TableCell colSpan={4} style={numColStyle}>
+                    <TableCell colSpan={4} className={numColStyle}>
                       Grand Totals
                     </TableCell>
-                    <TableCell style={{ ...numColBoldStyle, ...grandTotalCellStyle }}>
+                    <TableCell className={cn(numColBoldStyle, grandTotalCellStyle)}>
                       {formatMoney(data.totalDebit)}
                     </TableCell>
-                    <TableCell style={{ ...numColBoldStyle, ...grandTotalCellStyle }}>
+                    <TableCell className={cn(numColBoldStyle, grandTotalCellStyle)}>
                       {formatMoney(data.totalCredit)}
                     </TableCell>
                   </TableRow>
@@ -206,7 +207,7 @@ function RowsForType({
   return (
     <>
       <TableRow>
-        <TableCell colSpan={6} style={groupHeadingCellStyle}>
+        <TableCell colSpan={6} className={groupHeadingCellStyle}>
           {GROUP_LABEL[type]}
         </TableCell>
       </TableRow>
@@ -227,24 +228,24 @@ function RowsForType({
               {r.accountName}
             </Button>
           </TableCell>
-          <TableCell style={numColBoldStyle}>{formatMoney(r.debitTurnover)}</TableCell>
-          <TableCell style={numColBoldStyle}>{formatMoney(r.creditTurnover)}</TableCell>
-          <TableCell style={numColBoldStyle}>
+          <TableCell className={numColBoldStyle}>{formatMoney(r.debitTurnover)}</TableCell>
+          <TableCell className={numColBoldStyle}>{formatMoney(r.creditTurnover)}</TableCell>
+          <TableCell className={numColBoldStyle}>
             {r.debitBalance ? formatMoney(r.debitBalance) : ''}
           </TableCell>
-          <TableCell style={numColBoldStyle}>
+          <TableCell className={numColBoldStyle}>
             {r.creditBalance ? formatMoney(r.creditBalance) : ''}
           </TableCell>
         </TableRow>
       ))}
       <TableRow>
-        <TableCell colSpan={4} style={{ ...numColStyle, ...subTotalCellStyle }}>
+        <TableCell colSpan={4} className={cn(numColStyle, subTotalCellStyle)}>
           {GROUP_LABEL[type]} subtotal
         </TableCell>
-        <TableCell style={{ ...numColBoldStyle, ...subTotalCellStyle }}>
+        <TableCell className={cn(numColBoldStyle, subTotalCellStyle)}>
           {formatMoney(subDr)}
         </TableCell>
-        <TableCell style={{ ...numColBoldStyle, ...subTotalCellStyle }}>
+        <TableCell className={cn(numColBoldStyle, subTotalCellStyle)}>
           {formatMoney(subCr)}
         </TableCell>
       </TableRow>

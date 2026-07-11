@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type ReactNode } from 'react';
+import { useState, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router';
 import { uploadApi } from '@inventory-platform/product/api';
 import type { UploadStatus } from '@inventory-platform/product/types';
@@ -14,11 +14,11 @@ import {
   Spinner,
   Stack,
   Text,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 
 const MAX_INVOICE_IMAGES = 20;
 const MAX_INVOICE_IMAGE_BYTES = 10 * 1024 * 1024;
-const hiddenInputStyle = { display: 'none' } as const;
 
 export function meta() {
   return [
@@ -43,6 +43,18 @@ export default function MobileUploadPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
+
+  const firstPreviewFile = selectedFiles[0];
+  const previewUrl = useMemo(() => {
+    if (!firstPreviewFile?.type.startsWith('image/')) return null;
+    return URL.createObjectURL(firstPreviewFile);
+  }, [firstPreviewFile]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
 
   useEffect(() => {
     const validateToken = async () => {
@@ -246,12 +258,10 @@ export default function MobileUploadPage() {
       align="center"
       justify="center"
       padding="lg"
-      style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      }}
+      minHeight="screen"
+      className={surfaceChrome.mobileUploadShell}
     >
-      <Card style={{ width: '100%', maxWidth: '500px' }}>
+      <Card className={surfaceChrome.maxW500}>
         <CardBody>
           <Stack gap="md">{children}</Stack>
         </CardBody>
@@ -326,7 +336,7 @@ export default function MobileUploadPage() {
             accept="image/*"
             multiple
             onChange={handleFileSelect}
-            style={hiddenInputStyle}
+            className={surfaceChrome.hiddenInput}
             id="invoice-upload"
             disabled={isUploading}
           />
@@ -336,7 +346,7 @@ export default function MobileUploadPage() {
               <Text weight="semibold">
                 {selectedFiles.length} image{selectedFiles.length === 1 ? '' : 's'} ready
               </Text>
-              <Stack gap="sm" overflow="auto" style={{ maxHeight: '160px' }}>
+              <Stack gap="sm" overflow="auto" className={surfaceChrome.maxH160}>
                 {selectedFiles.map((file, index) => (
                   <Inline
                     key={`${file.name}-${index}`}
@@ -347,15 +357,7 @@ export default function MobileUploadPage() {
                     rounded="md"
                     bg="muted"
                   >
-                    <Text
-                      style={{
-                        flex: 1,
-                        minWidth: 0,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
+                    <Text truncate className={surfaceChrome.flexMin0}>
                       {file.name}
                     </Text>
                     <Text variant="caption" color="secondary">
@@ -375,21 +377,14 @@ export default function MobileUploadPage() {
                   </Inline>
                 ))}
               </Stack>
-              {selectedFiles[0]?.type.startsWith('image/') ? (
-                <Box
-                  border
-                  rounded="md"
-                  overflow="hidden"
-                  role="img"
-                  aria-label="Preview of first page"
-                  style={{
-                    backgroundImage: `url("${URL.createObjectURL(selectedFiles[0])}")`,
-                    backgroundSize: '100% auto',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'top center',
-                    minHeight: '12rem',
-                  }}
-                />
+              {previewUrl ? (
+                <Box border rounded="md" overflow="hidden">
+                  <img
+                    src={previewUrl}
+                    alt="Preview of first page"
+                    className={surfaceChrome.previewImageImg}
+                  />
+                </Box>
               ) : null}
               <Stack gap="sm">
                 <Button

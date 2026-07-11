@@ -19,6 +19,7 @@ import {
   TableHeaderCell,
   TableRow,
   Text,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { HistoryListSummary } from './HistoryListSummary';
 import type { HistoryFilters } from './historyFilters';
@@ -28,21 +29,6 @@ import {
   paginateLocal,
   matchesRegexField,
 } from './historyFilters';
-
-const recordHeaderStyle = {
-  paddingBottom: '0.75rem',
-  borderBottom: '1px solid var(--border-color)',
-} as const;
-
-const breakdownWrapStyle = {
-  paddingTop: '1rem',
-  borderTop: '1px solid var(--border-color)',
-} as const;
-
-const breakdownLegacyStyle = {
-  paddingTop: '1rem',
-  borderTop: '1px dashed var(--border-color)',
-} as const;
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('en-IN', {
@@ -192,7 +178,12 @@ export function RefundHistoryList({ refreshTrigger, filters }: RefundHistoryList
           <Card key={refund.refundId}>
             <CardBody>
               <Stack gap="md">
-                <Inline justify="between" align="start" gap="md" style={recordHeaderStyle}>
+                <Inline
+                  justify="between"
+                  align="start"
+                  gap="md"
+                  className={surfaceChrome.recordHeader}
+                >
                   <DetailLine label="Credit note" value={refund.creditNoteNo ?? refund.refundId} />
                   <DetailLine label="Date" value={formatDate(refund.createdAt)} />
                 </Inline>
@@ -205,17 +196,17 @@ export function RefundHistoryList({ refreshTrigger, filters }: RefundHistoryList
                   {refund.reason ? <DetailLine label="Reason" value={refund.reason} /> : null}
                 </Grid>
                 {refund.refundedItems && refund.refundedItems.length > 0 ? (
-                  <Stack gap="sm" style={breakdownWrapStyle}>
+                  <Stack gap="sm" className={surfaceChrome.breakdownWrap}>
                     <Text
                       variant="caption"
                       color="secondary"
                       weight="semibold"
-                      style={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}
+                      className={surfaceChrome.sectionLabelSm}
                     >
                       Returned items
                     </Text>
                     <Box overflow="auto">
-                      <Table style={{ minWidth: '320px' }}>
+                      <Table className={surfaceChrome.minW320}>
                         <TableHead>
                           <TableRow>
                             <TableHeaderCell>Product</TableHeaderCell>
@@ -240,7 +231,11 @@ export function RefundHistoryList({ refreshTrigger, filters }: RefundHistoryList
                     </Box>
                   </Stack>
                 ) : (
-                  <Text variant="caption" color="secondary" style={breakdownLegacyStyle}>
+                  <Text
+                    variant="caption"
+                    color="secondary"
+                    className={surfaceChrome.breakdownLegacy}
+                  >
                     No line-by-line breakdown saved for this return (often older records).
                   </Text>
                 )}

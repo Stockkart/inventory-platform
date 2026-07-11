@@ -1,4 +1,14 @@
-import { Card, CardBody, CardHeader, Grid, Inline, Stack, Text } from '@inventory-platform/ui-kit';
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  Grid,
+  Inline,
+  Stack,
+  Text,
+  cn,
+  surfaceChrome,
+} from '@inventory-platform/ui-kit';
 
 interface ComparisonMetricsProps {
   data: {
@@ -108,14 +118,10 @@ export function ComparisonMetrics({ data }: ComparisonMetricsProps) {
                   <Text
                     variant="caption"
                     weight="semibold"
-                    style={{
-                      color:
-                        metric.changePercent > 0
-                          ? '#10b981'
-                          : metric.changePercent < 0
-                          ? '#ef4444'
-                          : undefined,
-                    }}
+                    className={cn(
+                      metric.changePercent > 0 && surfaceChrome.metricUp,
+                      metric.changePercent < 0 && surfaceChrome.metricDown,
+                    )}
                   >
                     {metric.label === 'Purchases'
                       ? `${metric.change >= 0 ? '+' : ''}${metric.change}`

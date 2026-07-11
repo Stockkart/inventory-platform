@@ -37,7 +37,7 @@ import {
   Text,
   Textarea,
   type SelectOptionDef,
-  productChrome,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 const SCHEME_TYPE_OPTIONS: readonly SelectOptionDef[] = [
   { value: 'FIXED_UNITS', label: 'Free units' },
@@ -78,8 +78,8 @@ function DetailField({
   children: ReactNode;
 }) {
   return (
-    <Inline gap="sm" align="start" style={fullWidth ? { gridColumn: '1 / -1' } : undefined}>
-      {icon ? <Text flexShrink={0}>{icon}</Text> : null}
+    <Inline gap="sm" align="start" className={fullWidth ? surfaceChrome.gridSpanFull : undefined}>
+      {icon ? <Text className={surfaceChrome.flexShrink0}>{icon}</Text> : null}
       <Stack gap="xs" flex="1" minWidth="0">
         <Text variant="caption" color="secondary">
           {label}
@@ -588,7 +588,7 @@ export function InventoryAlertDetails({
     <Modal open onClose={onClose} size="lg">
       <Inline justify="between" align="center" gap="md" padding="lg" borderBottom>
         <Inline gap="md" align="center" flex="1" minWidth="0">
-          <Text style={{ fontSize: '2rem', lineHeight: 1 }}>📦</Text>
+          <Text className={surfaceChrome.emojiLg}>📦</Text>
           <Stack gap="xs">
             <Text variant="heading3">{item?.name ?? item?.barcode ?? 'Item Details'}</Text>
             {item?.companyName ? <Text color="secondary">{item.companyName}</Text> : null}
@@ -612,7 +612,7 @@ export function InventoryAlertDetails({
       </Inline>
 
       <Modal.Body>
-        <Box padding="lg" overflow="auto" style={{ maxHeight: '70vh' }}>
+        <Box padding="lg" overflow="auto" className={surfaceChrome.maxH70vh}>
           <Box mb="lg">
             <SectionHeader icon="📋" title="Product Information" />
             <Grid columns={2} gap="sm">
@@ -736,11 +736,7 @@ export function InventoryAlertDetails({
                 <DetailValue>
                   {item.currentCount}
                   {isEditing ? (
-                    <Text
-                      variant="caption"
-                      color="secondary"
-                      style={{ display: 'block', marginTop: '0.35rem' }}
-                    >
+                    <Text variant="caption" color="secondary" className={surfaceChrome.blockHint}>
                       Quantity changes via sales and purchases only
                     </Text>
                   ) : null}
@@ -755,7 +751,7 @@ export function InventoryAlertDetails({
               <DetailField icon="📐" label="Packaging">
                 {isEditing ? (
                   <Inline gap="sm" align="center">
-                    <Text aria-hidden flexShrink={0}>
+                    <Text aria-hidden className={surfaceChrome.flexShrink0}>
                       1 ×
                     </Text>
                     <Input
@@ -1057,9 +1053,7 @@ export function InventoryAlertDetails({
                     defaultRate: item.defaultRate ?? undefined,
                   }}
                 >
-                  <Text style={{ color: 'var(--link-color, #2563eb)', fontWeight: 600 }}>
-                    Edit price
-                  </Text>
+                  <Text className={surfaceChrome.linkStrong}>Edit price</Text>
                 </RouterLink>
               </Box>
             ) : null}

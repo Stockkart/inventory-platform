@@ -43,6 +43,7 @@ import {
   cn,
   productChrome,
   shellChrome,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
 import { cartApi } from '../api/cart.api';
@@ -103,8 +104,6 @@ import {
   detailModalBodyStyle,
   detailModalSectionStyle,
   detailModalSectionFlushStyle,
-  detailCardStyle,
-  detailPricingCardStyle,
   detailPriceValueStyle,
   detailMrpValueStyle,
   detailTotalValueStyle,
@@ -614,7 +613,7 @@ function ProductSearchBlock({
   autoFocus,
   onAddToCart,
   addDisabled,
-  rowStyle,
+  rowClassName,
   searchWrapperRef,
 }: {
   searchQuery: string;
@@ -627,7 +626,7 @@ function ProductSearchBlock({
   autoFocus?: boolean;
   onAddToCart: (item: InventoryItem, price?: number) => void;
   addDisabled: (item: InventoryItem) => boolean;
-  rowStyle?: React.CSSProperties;
+  rowClassName?: string;
   searchWrapperRef?: React.RefObject<HTMLDivElement | null>;
 }) {
   const [searchFocused, setSearchFocused] = useState(false);
@@ -636,8 +635,7 @@ function ProductSearchBlock({
     <Box
       position="relative"
       width="full"
-      className={searchRowStyle}
-      style={rowStyle}
+      className={cn(searchRowStyle, rowClassName)}
       ref={searchWrapperRef}
       onFocusCapture={() => setSearchFocused(true)}
       onBlurCapture={(e) => {
@@ -766,7 +764,7 @@ function CustomerSectionBlock({
           {customerName || customerPhone ? (
             <Text className={customerToggleValueStyle}>{customerName || customerPhone}</Text>
           ) : (
-            <Text color="secondary" flex="1">
+            <Text color="secondary" className={surfaceChrome.flexMin0}>
               Optional
             </Text>
           )}
@@ -2888,7 +2886,7 @@ export function ScanSellPage() {
       gap="md"
       maxWidth={isCafeSell ? undefined : 'xl'}
       mx={isCafeSell ? undefined : 'auto'}
-      style={isCafeSell ? scanSellCafePageShell : scanSellPageShell}
+      className={isCafeSell ? scanSellCafePageShell : scanSellPageShell}
     >
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
@@ -2936,7 +2934,7 @@ export function ScanSellPage() {
                         onSearch={() => handleSearchSubmit()}
                         placeholder="Filter menu, or search more products…"
                         onAddToCart={handleAddToCart}
-                        rowStyle={searchRowCafeStyle}
+                        rowClassName={searchRowCafeStyle}
                         searchWrapperRef={searchWrapperRef}
                         addDisabled={(item) =>
                           item.currentCount <= 0 ||
@@ -3688,7 +3686,7 @@ export function ScanSellPage() {
                                             type="button"
                                             variant="ghost"
                                             size="sm"
-                                            flexShrink={0}
+                                            className={surfaceChrome.flexShrink0}
                                             onClick={() =>
                                               handleRemoveItem(cartItem.inventoryItem.id)
                                             }
@@ -3820,7 +3818,12 @@ export function ScanSellPage() {
                       </Stack>
                     )}
                   <Inline gap="sm" width="full" className={cartActionsStyle}>
-                    <Button type="button" variant="outline" flex="1" onClick={handleClearCart}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className={surfaceChrome.flexMin0}
+                      onClick={handleClearCart}
+                    >
                       Clear Cart
                     </Button>
                     <Button

@@ -104,6 +104,7 @@ import {
   denseDataGrid,
   fileDropzone,
   productChrome,
+  cn,
 } from '@inventory-platform/ui-kit';
 import {
   accordionStyles,
@@ -2613,7 +2614,7 @@ export function ProductRegistrationPage() {
                             setShowVendorDropdown(false);
                           }}
                           disabled={isLoading || isSearchingVendor}
-                          flex="1"
+                          className={productChrome.searchGrow}
                         />
                         <Button
                           type="button"
@@ -2852,8 +2853,7 @@ export function ProductRegistrationPage() {
                         />
                       </Box>
                       <Box
-                        className={pageStyles.formGroup}
-                        className={vendorStyles.sharedInfoGridSpanFull}
+                        className={cn(pageStyles.formGroup, vendorStyles.sharedInfoGridSpanFull)}
                       >
                         <Label htmlFor="vendorInvoiceTotal">Invoice total</Label>
                         <Input

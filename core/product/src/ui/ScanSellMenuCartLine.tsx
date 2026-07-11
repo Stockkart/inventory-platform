@@ -3,7 +3,16 @@ import type {
   CustomerProductHistoryResponse,
 } from '@inventory-platform/product/types';
 import { lineSellableRef } from '@inventory-platform/product/types';
-import { Badge, Button, CartQtyStepper, Inline, Stack, Text } from '@inventory-platform/ui-kit';
+import {
+  Badge,
+  Button,
+  CartQtyStepper,
+  Inline,
+  Stack,
+  Text,
+  cn,
+  surfaceChrome,
+} from '@inventory-platform/ui-kit';
 import { CustomerProductHistoryHint } from './CustomerProductHistoryHint';
 import { cartLineMenuStyle, cartLineMetaStyle, cartLineStyle } from './scanSellStyles';
 
@@ -35,12 +44,12 @@ export function ScanSellMenuCartLine({
 
   return (
     <Inline
-      style={{ ...cartLineStyle, ...cartLineMenuStyle }}
+      className={cn(cartLineStyle, cartLineMenuStyle)}
       justify="between"
       align="start"
       width="full"
     >
-      <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
+      <Stack gap="xs" className={surfaceChrome.flexMin0}>
         <Inline justify="between" align="center" width="full">
           <Text weight="semibold" truncate>
             {line.name || 'Menu item'}
@@ -70,7 +79,7 @@ export function ScanSellMenuCartLine({
           type="button"
           variant="ghost"
           size="sm"
-          flexShrink={0}
+          className={surfaceChrome.flexShrink0}
           onClick={() => onRemove(ref)}
           disabled={disabled}
         >

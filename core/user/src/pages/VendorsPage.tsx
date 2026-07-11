@@ -17,6 +17,7 @@ import {
   TableHeaderCell,
   TableLoadingRow,
   TableRow,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { vendorsApi } from '../api/vendors.api';
 import { VendorEditForm } from '../ui';
@@ -204,9 +205,7 @@ export function VendorsPage() {
             <TableHeaderCell>Email</TableHeaderCell>
             <TableHeaderCell>Business Type</TableHeaderCell>
             <TableHeaderCell>GSTIN</TableHeaderCell>
-            <TableHeaderCell style={{ whiteSpace: 'nowrap', minWidth: '14rem' }}>
-              Actions
-            </TableHeaderCell>
+            <TableHeaderCell className={surfaceChrome.minW14Nowrap}>Actions</TableHeaderCell>
           </TableRow>
         </TableHead>
         <TableBody>

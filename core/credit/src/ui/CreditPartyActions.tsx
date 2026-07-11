@@ -16,6 +16,7 @@ import {
   Stack,
   type SelectOptionDef,
   Text,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { creditActionCopy, presentCreditBalance, todayLocalDate } from '../model/credit-utils';
 import {
@@ -121,11 +122,7 @@ export function CreditPartyActions({
         rounded="lg"
         border
         aria-live="polite"
-        style={{
-          borderColor: 'color-mix(in srgb, var(--sk-color-border-default) 85%, #2563eb 15%)',
-          background:
-            'color-mix(in srgb, var(--sk-color-bg-elevated) 92%, rgba(37, 99, 235, 0.06))',
-        }}
+        className={surfaceChrome.creditContextCard}
       >
         <Inline justify="between" align="start" flexWrap>
           <Badge variant={account.partyType === 'VENDOR' ? 'info' : 'success'}>
@@ -135,7 +132,7 @@ export function CreditPartyActions({
             variant="caption"
             color="secondary"
             align="right"
-            style={{ flex: 1, minWidth: '8rem' }}
+            className={surfaceChrome.growMin8}
           >
             {sub}
           </Text>
@@ -174,9 +171,7 @@ export function CreditPartyActions({
         gap="none"
         padding="xs"
         rounded="md"
-        style={{
-          background: 'color-mix(in srgb, var(--sk-color-border-default) 35%, transparent)',
-        }}
+        className={surfaceChrome.creditTabTrack}
       >
         <Button
           type="button"
@@ -219,7 +214,7 @@ export function CreditPartyActions({
               placeholder="0.00"
               disabled={submitting}
               required
-              style={{ fontSize: '1.15rem', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}
+              className={surfaceChrome.amountInputLg}
             />
           </FormField>
 

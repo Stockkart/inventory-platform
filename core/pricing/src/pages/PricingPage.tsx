@@ -20,6 +20,7 @@ import {
   TableLoadingRow,
   TableRow,
   Text,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 
 export function meta() {
@@ -93,7 +94,7 @@ export function PricingPage() {
       />
 
       <Inline gap="sm" flexWrap align="stretch" width="full">
-        <Box flex="1" style={{ minWidth: 'min(100%, 280px)' }}>
+        <Box flex="1" className={surfaceChrome.minW280}>
           <SearchInput
             value={searchInput}
             onChange={setSearchInput}
@@ -132,7 +133,7 @@ export function PricingPage() {
             <TableHeaderCell style={numColStyle}>Selling</TableHeaderCell>
             <TableHeaderCell style={numColStyle}>MRP</TableHeaderCell>
             <TableHeaderCell>Location</TableHeaderCell>
-            <TableHeaderCell style={{ whiteSpace: 'nowrap' }}>Actions</TableHeaderCell>
+            <TableHeaderCell className={surfaceChrome.nowrap}>Actions</TableHeaderCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -150,15 +151,13 @@ export function PricingPage() {
                   <Text weight="medium">{item.name || '—'}</Text>
                 </TableCell>
                 <TableCell>{item.companyName || '—'}</TableCell>
-                <TableCell style={{ fontFamily: 'ui-monospace, monospace', fontSize: '0.9em' }}>
-                  {item.barcode || '—'}
-                </TableCell>
+                <TableCell className={surfaceChrome.monoSm}>{item.barcode || '—'}</TableCell>
                 <TableCell style={numColStyle}>
                   {formatMoney(item.sellingPrice ?? item.priceToRetail)}
                 </TableCell>
                 <TableCell style={numColStyle}>{formatMoney(item.maximumRetailPrice)}</TableCell>
                 <TableCell>{item.location || '—'}</TableCell>
-                <TableCell style={{ whiteSpace: 'nowrap' }}>
+                <TableCell className={surfaceChrome.nowrap}>
                   {item.pricingId ? (
                     <Button
                       type="button"

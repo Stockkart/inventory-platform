@@ -24,6 +24,8 @@ import {
   PaginationBar,
   Stack,
   Text,
+  surfaceChrome,
+  cn,
 } from '@inventory-platform/ui-kit';
 import { ReminderForm } from '../ui';
 import { useNotify } from '@inventory-platform/session';
@@ -38,12 +40,6 @@ import {
 } from '../queries/hooks';
 
 const SNOOZE_OPTIONS = [1, 2, 3, 5, 7, 14, 30];
-
-const priorityBorderColor = {
-  high: '#ef4444',
-  medium: '#fbbf24',
-  low: '#3b82f6',
-} as const;
 
 function statusBadgeVariant(status: Reminder['status']) {
   return status === 'COMPLETED' ? 'success' : 'warning';
@@ -332,7 +328,7 @@ export function RemindersPage() {
             {isLoading ? (
               <CenteredLoader label="Loading reminders…" />
             ) : filteredReminders.length === 0 ? (
-              <Stack gap="md" align="center" style={{ minHeight: '14rem' }}>
+              <Stack gap="md" align="center" className={surfaceChrome.minH14}>
                 <Text color="secondary">No reminders found.</Text>
                 {!showCreateForm && !fromNotification ? (
                   <Button variant="solid" onClick={() => setShowCreateForm(true)}>
@@ -350,14 +346,19 @@ export function RemindersPage() {
                     return (
                       <Card
                         key={reminder.id}
-                        style={{ borderLeft: `4px solid ${priorityBorderColor[priority]}` }}
+                        className={cn(
+                          surfaceChrome.reminderPriority,
+                          priority === 'high' && surfaceChrome.reminderPriorityHigh,
+                          priority === 'medium' && surfaceChrome.reminderPriorityMedium,
+                          priority === 'low' && surfaceChrome.reminderPriorityLow,
+                        )}
                       >
                         <CardBody>
                           <Inline gap="lg" align="start" flexWrap>
                             <Text variant="heading2">
                               {reminder.type === 'EXPIRY' ? '📅' : '🔔'}
                             </Text>
-                            <Stack gap="sm" flex="1" style={{ minWidth: '12rem' }}>
+                            <Stack gap="sm" flex="1" className={surfaceChrome.minW12}>
                               <Inline justify="between" align="start" flexWrap>
                                 <Text variant="heading3" weight="semibold">
                                   {reminder.type === 'EXPIRY'
@@ -401,10 +402,7 @@ export function RemindersPage() {
                                   <Box
                                     padding="sm"
                                     rounded="md"
-                                    style={{
-                                      background: 'rgba(59, 130, 246, 0.08)',
-                                      border: '1px solid rgba(59, 130, 246, 0.25)',
-                                    }}
+                                    className={surfaceChrome.reminderInfoChip}
                                   >
                                     <Grid columns={3} gap="sm">
                                       <Text variant="caption">
@@ -438,7 +436,7 @@ export function RemindersPage() {
                               </Stack>
                             </Stack>
 
-                            <Stack gap="sm" style={{ minWidth: '12rem', alignSelf: 'stretch' }}>
+                            <Stack gap="sm" className={surfaceChrome.minHStretch12}>
                               {fromNotification ? (
                                 <Stack gap="sm">
                                   <Inline gap="sm" flexWrap>

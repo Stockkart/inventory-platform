@@ -24,6 +24,7 @@ import {
   TableHeaderCell,
   TableRow,
   Text,
+  productChrome,
 } from '@inventory-platform/ui-kit';
 import {
   PaymentMethodSplit,
@@ -59,15 +60,7 @@ function InfoField({ label, value }: { label: string; value: ReactNode }) {
 function SummaryRow({ label, value, total }: { label: string; value: string; total?: boolean }) {
   if (total) {
     return (
-      <Inline
-        justify="between"
-        width="full"
-        style={{
-          padding: '1rem 0',
-          marginTop: '0.5rem',
-          borderTop: '2px solid var(--border-color)',
-        }}
-      >
+      <Inline justify="between" width="full" className={productChrome.checkoutTotalRow}>
         <Text variant="title" weight="bold">
           {label}
         </Text>
@@ -79,11 +72,7 @@ function SummaryRow({ label, value, total }: { label: string; value: string; tot
   }
 
   return (
-    <Inline
-      justify="between"
-      width="full"
-      style={{ padding: '0.75rem 0', borderBottom: '1px solid var(--border-color)' }}
-    >
+    <Inline justify="between" width="full" className={productChrome.checkoutLineRow}>
       <Text color="secondary">{label}</Text>
       <Text color="secondary">{value}</Text>
     </Inline>
@@ -340,14 +329,9 @@ export function CheckoutPage() {
               display="flex"
               align="center"
               justify="center"
-              style={{
-                width: '100px',
-                height: '100px',
-                borderRadius: '50%',
-                background: '#10b981',
-              }}
+              className={productChrome.successCheck}
             >
-              <Text weight="bold" style={{ color: '#fff', fontSize: '3rem', lineHeight: 1 }}>
+              <Text weight="bold" className={productChrome.successCheckMark}>
                 ✓
               </Text>
             </Box>
@@ -359,7 +343,7 @@ export function CheckoutPage() {
                 variant="heading3"
                 weight="bold"
                 align="center"
-                style={{ color: 'var(--link-hover)' }}
+                className={productChrome.tokenHighlight}
               >
                 Token #{checkoutData.tokenNo}
               </Text>
@@ -459,7 +443,7 @@ export function CheckoutPage() {
                 Items
               </Text>
               <Box overflow="auto" width="full">
-                <Table style={{ minWidth: '700px' }}>
+                <Table className={productChrome.tableMinWide}>
                   <TableHead>
                     <TableRow>
                       <TableHeaderCell>Product Name</TableHeaderCell>
@@ -571,13 +555,7 @@ export function CheckoutPage() {
                   checkoutData.totalProfit != null ||
                   checkoutData.marginPercent != null) && (
                   <>
-                    <Box
-                      style={{
-                        marginTop: '0.5rem',
-                        paddingTop: '0.75rem',
-                        borderTop: '1px solid var(--border-color)',
-                      }}
-                    />
+                    <Box className={productChrome.sectionDivider} />
                     <SummaryRow
                       label="Total Cost:"
                       value={`₹${(checkoutData.totalCost ?? 0).toFixed(2)}`}
@@ -629,12 +607,9 @@ export function CheckoutPage() {
                 />
 
                 {paymentMethod && isCreditMethod(paymentMethod) && paymentSplit.creditAmount > 0 ? (
-                  <Text variant="caption" color="secondary" style={{ lineHeight: 1.45 }}>
+                  <Text variant="caption" color="secondary" className={productChrome.helperLine}>
                     <Link to="/dashboard/credit">
-                      <Text
-                        as="span"
-                        style={{ color: '#047857', fontWeight: 600, textDecoration: 'none' }}
-                      >
+                      <Text as="span" className={productChrome.creditLink}>
                         Credit balances
                       </Text>
                     </Link>{' '}

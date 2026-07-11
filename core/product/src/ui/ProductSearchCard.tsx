@@ -1,5 +1,14 @@
 import type { BillingMode, InventoryItem } from '@inventory-platform/product/types';
-import { Badge, Button, Card, CardBody, Inline, Stack, Text } from '@inventory-platform/ui-kit';
+import {
+  Badge,
+  Button,
+  Card,
+  CardBody,
+  Inline,
+  Stack,
+  Text,
+  surfaceChrome,
+} from '@inventory-platform/ui-kit';
 import { formatInventoryExpiryDate } from '@inventory-platform/schema';
 
 export function normalizedBillingMode(item: InventoryItem): BillingMode {
@@ -125,7 +134,7 @@ export function ProductSearchCard({
             </Text>
           ) : null}
 
-          <Stack gap="xs" padding="sm" style={{ borderTop: '1px solid var(--border-color)' }}>
+          <Stack gap="xs" padding="sm" className={surfaceChrome.borderTop}>
             <Stack gap="xs">
               <Text variant="caption" color="secondary">
                 Current: {item.currentCount}
@@ -182,7 +191,7 @@ export function ProductSearchCard({
           </Stack>
 
           {item.description ? (
-            <Text variant="caption" color="secondary" style={{ fontStyle: 'italic' }}>
+            <Text variant="caption" color="secondary" className={surfaceChrome.italic}>
               {item.description}
             </Text>
           ) : null}

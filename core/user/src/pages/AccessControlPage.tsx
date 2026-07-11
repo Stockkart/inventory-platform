@@ -31,6 +31,7 @@ import {
   TableRow,
   Text,
   VisuallyHidden,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 
 const MODULE_COLUMNS: {
@@ -343,7 +344,7 @@ export function AccessControlPage() {
                   <TableRow>
                     <TableHeaderCell>Member</TableHeaderCell>
                     {moduleColumns.map((col) => (
-                      <TableHeaderCell key={col.key} style={{ textAlign: 'center' }}>
+                      <TableHeaderCell key={col.key} className={surfaceChrome.textCenter}>
                         <Text title={col.label}>{col.short}</Text>
                       </TableHeaderCell>
                     ))}
@@ -356,7 +357,7 @@ export function AccessControlPage() {
                     const draft = draftModules[member.userId];
                     return (
                       <TableRow key={member.userId}>
-                        <TableCell style={{ minWidth: '11.25rem' }}>
+                        <TableCell className={surfaceChrome.minW11_25}>
                           <Stack gap="xs">
                             <Text weight="semibold">{member.name || member.email}</Text>
                             <Inline gap="xs" align="center">
@@ -375,7 +376,7 @@ export function AccessControlPage() {
                           </Stack>
                         </TableCell>
                         {moduleColumns.map((col) => (
-                          <TableCell key={col.key} style={{ textAlign: 'center' }}>
+                          <TableCell key={col.key} className={surfaceChrome.textCenter}>
                             <Switch
                               label={
                                 <VisuallyHidden>

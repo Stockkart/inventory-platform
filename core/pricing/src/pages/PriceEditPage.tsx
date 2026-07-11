@@ -18,6 +18,7 @@ import {
   Stack,
   Text,
   type SelectOptionDef,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 
 export function meta() {
@@ -245,14 +246,7 @@ export function PriceEditPage() {
 
       <Text color="secondary" variant="caption">
         Pricing ID:{' '}
-        <Text
-          as="span"
-          style={{
-            fontFamily: 'ui-monospace, monospace',
-            fontSize: '0.9em',
-            padding: '0.1rem 0.3rem',
-          }}
-        >
+        <Text as="span" className={surfaceChrome.monoPad}>
           {pricingId}
         </Text>
       </Text>
@@ -305,7 +299,7 @@ export function PriceEditPage() {
                     type="text"
                     value={rate.name}
                     onChange={(e) => updateRate(i, 'name', e.target.value)}
-                    flex="1"
+                    className={surfaceChrome.flexMin0}
                     placeholder="Rate name"
                   />
                   <Input
@@ -314,7 +308,7 @@ export function PriceEditPage() {
                     min="0"
                     value={rate.price || ''}
                     onChange={(e) => updateRate(i, 'price', e.target.value)}
-                    style={{ width: '6rem' }}
+                    className={surfaceChrome.inputW6}
                     placeholder="Price"
                   />
                   <IconButton type="button" onClick={() => removeRate(i)} label="Remove rate">

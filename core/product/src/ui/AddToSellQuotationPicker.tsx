@@ -1,5 +1,5 @@
 import type { QuotationSummary } from '@inventory-platform/product/types';
-import { Button, Modal, Stack, Text } from '@inventory-platform/ui-kit';
+import { Button, Modal, Stack, Text, surfaceChrome } from '@inventory-platform/ui-kit';
 
 function formatMoney(n: number): string {
   return new Intl.NumberFormat('en-IN', {
@@ -42,18 +42,14 @@ export function AddToSellQuotationPicker({
             type="button"
             variant="outline"
             fullWidth
-            style={{ borderStyle: 'dashed' }}
+            className={surfaceChrome.dashedBorder}
             onClick={onNewQuotation}
             disabled={isSubmitting}
           >
             + New quotation
           </Button>
 
-          <Stack
-            gap="sm"
-            aria-label="Open quotations"
-            style={{ maxHeight: 'min(50vh, 320px)', overflowY: 'auto' }}
-          >
+          <Stack gap="sm" aria-label="Open quotations" className={surfaceChrome.scrollPanel50}>
             {quotations.map((q) => (
               <Button
                 key={q.purchaseId}
@@ -61,13 +57,7 @@ export function AddToSellQuotationPicker({
                 variant="outline"
                 onClick={() => onSelect(q.purchaseId)}
                 disabled={isSubmitting}
-                style={{
-                  flexDirection: 'column',
-                  alignItems: 'flex-start',
-                  height: 'auto',
-                  padding: '0.65rem 0.75rem',
-                  textAlign: 'left',
-                }}
+                className={surfaceChrome.pickerBtn}
               >
                 <Text weight="semibold">{q.customerName}</Text>
                 <Text variant="caption" color="muted">

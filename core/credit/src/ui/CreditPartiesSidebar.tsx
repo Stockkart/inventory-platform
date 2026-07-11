@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { CreditAccountResponse } from '@inventory-platform/credit/types';
-import { Box, Button, Input, Stack, Text } from '@inventory-platform/ui-kit';
+import { Box, Button, Input, Stack, Text, surfaceChrome } from '@inventory-platform/ui-kit';
 import { CreditAccountList } from './CreditAccountList';
 import { accountSort, presentCreditBalance } from '../model/credit-utils';
 
@@ -80,7 +80,7 @@ export function CreditPartiesSidebar({
               bg="elevated"
               overflow="auto"
               padding="none"
-              style={{ listStyle: 'none', maxHeight: '16rem' }}
+              className={surfaceChrome.listPlainScroll}
             >
               {searchMatches.map((a) => {
                 const pr = presentCreditBalance(a);
@@ -94,7 +94,7 @@ export function CreditPartiesSidebar({
                       onClick={() => pickParty(a.id)}
                       fullWidth
                       align="start"
-                      style={{ borderRadius: 0 }}
+                      className={surfaceChrome.radiusNone}
                     >
                       <Stack gap="none">
                         <Text weight="semibold">{a.partyDisplayName}</Text>

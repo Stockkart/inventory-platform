@@ -12,6 +12,7 @@ import {
   Inline,
   Stack,
   Text,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 
@@ -24,7 +25,7 @@ interface JoinRequestCardProps {
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <Inline align="start" gap="sm" width="full">
-      <Text color="secondary" variant="caption" style={{ minWidth: '7.5rem' }}>
+      <Text color="secondary" variant="caption" className={surfaceChrome.minW7_5}>
         {label}
       </Text>
       <Text variant="caption">{value}</Text>

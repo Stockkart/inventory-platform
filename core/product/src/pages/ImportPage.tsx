@@ -32,10 +32,9 @@ import {
   Text,
   type SelectOptionDef,
   productChrome,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
-
-const hiddenFileInputStyle = { display: 'none' } as const;
 
 const BILLING_MODE_OPTIONS: readonly SelectOptionDef[] = [
   { value: 'REGULAR', label: 'REGULAR' },
@@ -247,7 +246,7 @@ export function ImportPage() {
     return editing ? (
       <Input
         type={numeric ? 'number' : 'text'}
-        style={{ width: '100%', minWidth: '60px' }}
+        className={surfaceChrome.cellEditInput}
         value={display}
         autoFocus
         onBlur={() => setEditingCell(null)}
@@ -265,13 +264,7 @@ export function ImportPage() {
         type="button"
         variant="ghost"
         size="sm"
-        style={{
-          display: 'block',
-          minHeight: '1.5em',
-          cursor: 'pointer',
-          padding: '0.15rem 0',
-          borderRadius: '4px',
-        }}
+        className={surfaceChrome.cellDisplay}
         onClick={() => setEditingCell({ rowIdx, field })}
         title="Click to edit"
       >
@@ -300,7 +293,7 @@ export function ImportPage() {
               id={fileInputId}
               type="file"
               accept=".xls,.xlsx"
-              style={hiddenFileInputStyle}
+              className={surfaceChrome.hiddenInput}
               onChange={(e) => {
                 const f = e.target.files?.[0];
                 if (f) {
@@ -395,9 +388,7 @@ export function ImportPage() {
                     return (
                       <TableRow
                         key={row.id}
-                        style={
-                          idx % 2 === 1 ? { background: 'var(--bg-muted, #fafbfc)' } : undefined
-                        }
+                        className={idx % 2 === 1 ? surfaceChrome.tableRowAlt : undefined}
                       >
                         <TableCell>{globalIdx + 1}</TableCell>
                         <TableCell>
@@ -498,7 +489,7 @@ export function ImportPage() {
                     options={BILLING_MODE_OPTIONS}
                     onChange={(e) => setBillingMode(e.target.value as BillingMode)}
                   />
-                  <Box width="full" flex="1" style={{ minWidth: '12rem' }}>
+                  <Box width="full" flex="1" className={surfaceChrome.minW12}>
                     <SearchInput
                       value={vendorSearchQuery}
                       onChange={(value) => {
@@ -518,7 +509,7 @@ export function ImportPage() {
                     border
                     rounded="md"
                     overflow="auto"
-                    style={{ maxHeight: '180px' }}
+                    className={surfaceChrome.maxH180}
                   >
                     {vendorSearchResults.map((v) => (
                       <Button
@@ -528,7 +519,7 @@ export function ImportPage() {
                         size="sm"
                         fullWidth
                         align="start"
-                        style={{ borderRadius: 0 }}
+                        className={surfaceChrome.radiusNone}
                         onClick={() => handleSelectVendor(v)}
                       >
                         {v.name}

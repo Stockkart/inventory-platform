@@ -4,6 +4,7 @@ import { Box } from '../src/layout/Box';
 import { ThemeProvider, useTheme } from '../src/theme/ThemeProvider';
 import type { ThemeMode } from '../src/theme/types';
 import '../src/theme/tokens.css';
+import styles from './preview.module.css';
 
 function ThemeSync({ mode }: { mode: 'light' | 'dark' }) {
   const { setMode } = useTheme();
@@ -20,15 +21,7 @@ const withTheme: Decorator = (Story, context) => {
   return (
     <ThemeProvider defaultMode={resolved}>
       <ThemeSync mode={resolved} />
-      <Box
-        style={{
-          padding: '1.5rem',
-          minHeight: '100vh',
-          boxSizing: 'border-box',
-          background: 'var(--sk-color-bg-canvas)',
-          color: 'var(--sk-color-text-primary)',
-        }}
-      >
+      <Box padding="lg" minHeight="screen" bg="canvas" className={styles.frame}>
         <Story />
       </Box>
     </ThemeProvider>

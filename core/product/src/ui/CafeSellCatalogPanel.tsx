@@ -10,6 +10,7 @@ import {
   Inline,
   Stack,
   Text,
+  productChrome,
 } from '@inventory-platform/ui-kit';
 
 function money(n: number): string {
@@ -34,30 +35,6 @@ function stockPrice(item: InventoryItem): number {
 function stockAvailable(item: InventoryItem): number {
   return item.currentBaseCount ?? item.currentCount ?? 0;
 }
-
-const panelShellStyle: React.CSSProperties = {
-  flex: 1,
-  minHeight: 0,
-  overflow: 'hidden',
-  boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
-};
-
-const catalogGridStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(158px, 1fr))',
-  gap: '0.7rem',
-};
-
-const tileBaseStyle: React.CSSProperties = {
-  minHeight: '92px',
-  textAlign: 'left',
-  borderLeft: '3px solid #3b82f6',
-};
-
-const tileStockStyle: React.CSSProperties = {
-  ...tileBaseStyle,
-  borderLeftColor: '#22c55e',
-};
 
 export function CafeSellCatalogPanel({
   catalog,
@@ -135,7 +112,13 @@ export function CafeSellCatalogPanel({
 
   if (loading) {
     return (
-      <Box padding="lg" border rounded="lg" bg="elevated" style={panelShellStyle}>
+      <Box
+        padding="lg"
+        border
+        rounded="lg"
+        bg="elevated"
+        className={productChrome.cafeCatalogShell}
+      >
         <CenteredLoader label="Loading menu…" />
       </Box>
     );
@@ -143,7 +126,13 @@ export function CafeSellCatalogPanel({
 
   if (!hasMenu && !hasDirectStock) {
     return (
-      <Box padding="lg" border rounded="lg" bg="elevated" style={panelShellStyle}>
+      <Box
+        padding="lg"
+        border
+        rounded="lg"
+        bg="elevated"
+        className={productChrome.cafeCatalogShell}
+      >
         <EmptyState
           title={
             normalizedFilter
@@ -156,18 +145,9 @@ export function CafeSellCatalogPanel({
   }
 
   return (
-    <Stack gap="none" border rounded="lg" bg="elevated" style={panelShellStyle}>
+    <Stack gap="none" border rounded="lg" bg="elevated" className={productChrome.cafeCatalogShell}>
       {tabs.length > 1 ? (
-        <Inline
-          gap="xs"
-          padding="sm"
-          bg="surface"
-          style={{
-            flexShrink: 0,
-            overflowX: 'auto',
-            borderBottom: '1px solid var(--border-color)',
-          }}
-        >
+        <Inline gap="xs" padding="sm" bg="surface" className={productChrome.cafeCatalogTabs}>
           {tabs.map((tab) => {
             const isActive = resolvedTab === tab.id;
             return (
@@ -179,9 +159,7 @@ export function CafeSellCatalogPanel({
                 role="tab"
                 aria-selected={isActive}
                 onClick={() => setActiveTab(tab.id)}
-                style={
-                  isActive ? { borderRadius: '999px' } : { borderRadius: '999px', flexShrink: 0 }
-                }
+                className={productChrome.cafeCatalogTab}
               >
                 {tab.label}
               </Button>
@@ -190,29 +168,26 @@ export function CafeSellCatalogPanel({
         </Inline>
       ) : null}
 
-      <Box
-        padding="md"
-        style={{
-          flex: 1,
-          minHeight: 0,
-          overflowY: 'auto',
-          overscrollBehavior: 'contain',
-        }}
-      >
+      <Box padding="md" className={productChrome.cafeCatalogScroll}>
         {menuSectionsToRender.map((section) => (
-          <Box key={section.id} style={{ marginBottom: '1.4rem' }}>
-            <Inline justify="between" align="center" gap="sm" style={{ marginBottom: '0.7rem' }}>
+          <Box key={section.id} className={productChrome.cafeCatalogSection}>
+            <Inline
+              justify="between"
+              align="center"
+              gap="sm"
+              className={productChrome.cafeCatalogSectionHeader}
+            >
               <Text
                 variant="caption"
                 weight="bold"
                 color="secondary"
-                style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}
+                className={productChrome.sectionLabel}
               >
                 {section.title || 'Menu'}
               </Text>
               <Badge variant="neutral">{section.items.length}</Badge>
             </Inline>
-            <Box style={catalogGridStyle}>
+            <Box className={productChrome.cafeCatalogGrid}>
               {section.items.map((item) => (
                 <Button
                   key={item.id}
@@ -220,7 +195,7 @@ export function CafeSellCatalogPanel({
                   variant="outline"
                   disabled={disabled}
                   onClick={() => onAddMenuItem(item)}
-                  style={tileBaseStyle}
+                  className={productChrome.cafeCatalogTile}
                 >
                   <Stack gap="xs" width="full">
                     <Text weight="semibold" truncate>
@@ -228,20 +203,7 @@ export function CafeSellCatalogPanel({
                     </Text>
                     <Inline justify="between" align="center" width="full">
                       <Text weight="semibold">{money(item.sellingPrice)}</Text>
-                      <Text
-                        aria-hidden
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          width: '22px',
-                          height: '22px',
-                          borderRadius: '50%',
-                          background: 'rgba(59, 130, 246, 0.12)',
-                          color: 'var(--primary-color, #2563eb)',
-                          fontWeight: 700,
-                        }}
-                      >
+                      <Text aria-hidden className={productChrome.cafeCatalogAddBadge}>
                         +
                       </Text>
                     </Inline>
@@ -254,18 +216,23 @@ export function CafeSellCatalogPanel({
 
         {showStock && hasDirectStock ? (
           <Box>
-            <Inline justify="between" align="center" gap="sm" style={{ marginBottom: '0.7rem' }}>
+            <Inline
+              justify="between"
+              align="center"
+              gap="sm"
+              className={productChrome.cafeCatalogSectionHeader}
+            >
               <Text
                 variant="caption"
                 weight="bold"
                 color="secondary"
-                style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}
+                className={productChrome.sectionLabel}
               >
                 Direct stock
               </Text>
               <Badge variant="neutral">{filteredDirectStock.length}</Badge>
             </Inline>
-            <Box style={catalogGridStyle}>
+            <Box className={productChrome.cafeCatalogGrid}>
               {filteredDirectStock.map((item) => {
                 const available = stockAvailable(item);
                 const outOfStock = available <= 0;
@@ -276,7 +243,7 @@ export function CafeSellCatalogPanel({
                     variant="outline"
                     disabled={disabled || outOfStock}
                     onClick={() => onAddDirectStock(item)}
-                    style={tileStockStyle}
+                    className={productChrome.cafeCatalogTileStock}
                   >
                     <Stack gap="xs" width="full">
                       <Text weight="semibold" truncate>
@@ -287,20 +254,7 @@ export function CafeSellCatalogPanel({
                       </Text>
                       <Inline justify="between" align="center" width="full">
                         <Text weight="semibold">{money(stockPrice(item))}</Text>
-                        <Text
-                          aria-hidden
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            width: '22px',
-                            height: '22px',
-                            borderRadius: '50%',
-                            background: 'rgba(34, 197, 94, 0.14)',
-                            color: '#16a34a',
-                            fontWeight: 700,
-                          }}
-                        >
+                        <Text aria-hidden className={productChrome.cafeCatalogAddBadgeStock}>
                           +
                         </Text>
                       </Inline>

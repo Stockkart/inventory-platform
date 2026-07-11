@@ -17,6 +17,7 @@ import {
   TableHeaderCell,
   TableLoadingRow,
   TableRow,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { useResolvedSellPath } from '@inventory-platform/routing';
 import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/session';
@@ -203,9 +204,7 @@ export function CustomersPage() {
             <TableHeaderCell>Address</TableHeaderCell>
             <TableHeaderCell>GSTIN</TableHeaderCell>
             <TableHeaderCell>DL No</TableHeaderCell>
-            <TableHeaderCell style={{ whiteSpace: 'nowrap', minWidth: '14rem' }}>
-              Actions
-            </TableHeaderCell>
+            <TableHeaderCell className={surfaceChrome.minW14Nowrap}>Actions</TableHeaderCell>
           </TableRow>
         </TableHead>
         <TableBody>

@@ -11,6 +11,7 @@ import {
   Input,
   Stack,
   Text,
+  productChrome,
 } from '@inventory-platform/ui-kit';
 
 export interface QuotationSetupPanelProps {
@@ -79,13 +80,13 @@ export function QuotationSetupPanel({
       justify="center"
       align="start"
       padding="sm"
-      style={{ flex: 1, paddingBottom: '1.5rem' }}
+      className={productChrome.quotationSetupShell}
     >
       <Box maxWidth="md" width="full" mx="auto">
         <Card>
           <CardBody>
             <Stack gap="md">
-              <Stack gap="xs" style={{ marginBottom: '0.25rem' }}>
+              <Stack gap="xs" className={productChrome.mbXs}>
                 <Text variant="heading3" weight="bold">
                   New quotation
                 </Text>
@@ -102,8 +103,7 @@ export function QuotationSetupPanel({
                         <Input
                           id="setup-customerPhone"
                           type="tel"
-                          flex="1"
-                          minWidth="0"
+                          className={productChrome.searchGrow}
                           placeholder="e.g. 9876543210"
                           value={customerPhone}
                           onChange={(e) => onPhoneChange(e.target.value)}
@@ -139,8 +139,7 @@ export function QuotationSetupPanel({
                         <Input
                           id="setup-customerEmail"
                           type="email"
-                          flex="1"
-                          minWidth="0"
+                          className={productChrome.searchGrow}
                           placeholder="Email (optional)"
                           value={customerEmail}
                           onChange={(e) => onEmailChange(e.target.value)}
@@ -159,7 +158,7 @@ export function QuotationSetupPanel({
                       </Inline>
                     </FormField>
 
-                    <Box style={{ gridColumn: '1 / -1' }}>
+                    <Box className={productChrome.gridSpanFull}>
                       <FormField label="Address" id="setup-customerAddress">
                         <Input
                           id="setup-customerAddress"
@@ -212,7 +211,7 @@ export function QuotationSetupPanel({
                     </Grid>
                   ) : null}
 
-                  <Inline gap="sm" justify="end" padding="none" style={{ paddingTop: '0.25rem' }}>
+                  <Inline gap="sm" justify="end" padding="none" className={productChrome.ptXs}>
                     {showCancel && onCancel ? (
                       <Button
                         type="button"

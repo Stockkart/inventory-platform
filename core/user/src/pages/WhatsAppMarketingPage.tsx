@@ -21,6 +21,7 @@ import {
   Stack,
   Text,
   Textarea,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import type { CustomerResponse } from '@inventory-platform/user/types';
 
@@ -196,7 +197,7 @@ export function WhatsAppMarketingPage() {
                   </Text>
                   <Card>
                     <CardBody>
-                      <Text style={{ whiteSpace: 'pre-wrap' }}>{selectedTemplate.body}</Text>
+                      <Text className={surfaceChrome.preWrap}>{selectedTemplate.body}</Text>
                       <Text color="secondary" variant="caption">
                         Variables like {'{{name}}'} will be replaced per customer.
                       </Text>
@@ -253,7 +254,7 @@ export function WhatsAppMarketingPage() {
                 border
                 rounded="md"
                 overflow="auto"
-                style={{ maxHeight: '22.5rem' }}
+                className={surfaceChrome.maxH22_5}
               >
                 {loading ? (
                   <CenteredLoader label="Loading customers…" />

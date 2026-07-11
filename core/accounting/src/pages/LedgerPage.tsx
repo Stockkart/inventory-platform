@@ -22,6 +22,7 @@ import {
   TableLoadingRow,
   TableRow,
   Text,
+  accountingChrome,
 } from '@inventory-platform/ui-kit';
 import { accountingApi } from '../api/accounting.api';
 import { useNotify } from '@inventory-platform/session';
@@ -182,8 +183,8 @@ export function LedgerPage() {
         <AccountingTabs />
       </Stack>
 
-      <Box style={ledgerLayoutStyle(compactLayout)}>
-        <Card style={{ maxHeight: '78vh', overflow: 'auto' }}>
+      <Box className={ledgerLayoutStyle(compactLayout)}>
+        <Card className={accountingChrome.sidebarScrollCard}>
           <CardBody>
             <Stack gap="md">
               <SearchInput
@@ -229,20 +230,20 @@ export function LedgerPage() {
                               variant="ghost"
                               size="sm"
                               fullWidth
-                              style={active ? acctItemActiveStyle : acctItemStyle}
+                              className={active ? acctItemActiveStyle : acctItemStyle}
                               onClick={() => openAccount(account.id)}
                             >
                               <Stack gap="none" minWidth="0">
-                                <Text as="span" style={acctItemCodeStyle}>
+                                <Text as="span" className={acctItemCodeStyle}>
                                   {account.code}
                                 </Text>
-                                <Text as="span" style={acctItemLabelStyle}>
+                                <Text as="span" className={acctItemLabelStyle}>
                                   {account.name}
                                 </Text>
                               </Stack>
                               <Text
                                 as="span"
-                                style={
+                                className={
                                   hasActivity ? acctItemBalanceStyle : acctItemBalanceMutedStyle
                                 }
                               >
@@ -348,9 +349,9 @@ export function LedgerPage() {
                       <TableHeaderCell>Source</TableHeaderCell>
                       <TableHeaderCell>Party</TableHeaderCell>
                       <TableHeaderCell>Narration</TableHeaderCell>
-                      <TableHeaderCell style={numColStyle}>Debit</TableHeaderCell>
-                      <TableHeaderCell style={numColStyle}>Credit</TableHeaderCell>
-                      <TableHeaderCell style={numColStyle}>Balance</TableHeaderCell>
+                      <TableHeaderCell className={numColStyle}>Debit</TableHeaderCell>
+                      <TableHeaderCell className={numColStyle}>Credit</TableHeaderCell>
+                      <TableHeaderCell className={numColStyle}>Balance</TableHeaderCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -391,13 +392,13 @@ export function LedgerPage() {
                               {row.narration ?? '—'}
                             </Text>
                           </TableCell>
-                          <TableCell style={numColBoldStyle}>
+                          <TableCell className={numColBoldStyle}>
                             {row.debit ? formatMoney(row.debit) : '—'}
                           </TableCell>
-                          <TableCell style={numColBoldStyle}>
+                          <TableCell className={numColBoldStyle}>
                             {row.credit ? formatMoney(row.credit) : '—'}
                           </TableCell>
-                          <TableCell style={numColBoldStyle}>
+                          <TableCell className={numColBoldStyle}>
                             {formatMoney(row.balanceAfter)}
                           </TableCell>
                         </TableRow>

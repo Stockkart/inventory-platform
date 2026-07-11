@@ -9,6 +9,7 @@ import {
   Spinner,
   Stack,
   Text,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 
 export type PrinterType = 'NORMAL' | 'DOT_MATRIX';
@@ -65,7 +66,7 @@ export function PrintInvoiceModal({
       <Modal.Body>
         <Stack gap="md">
           <Text color="secondary">Select printer type for this invoice:</Text>
-          <Box style={isGenerating ? { opacity: 0.6, pointerEvents: 'none' } : undefined}>
+          <Box className={isGenerating ? surfaceChrome.busyDim : undefined}>
             <RadioGroup
               name="printerType"
               value={printerType}

@@ -32,6 +32,8 @@ import {
   TableRow,
   Text,
   productChrome,
+  cn,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { useCapabilityFeatureGuard } from '@inventory-platform/routing';
 import {
@@ -43,13 +45,6 @@ import {
   validatePaymentSplit,
 } from '../ui';
 import { useNotify } from '@inventory-platform/session';
-
-const numericCellStyle = {
-  textAlign: 'right' as const,
-  fontVariantNumeric: 'tabular-nums' as const,
-  whiteSpace: 'nowrap' as const,
-};
-const selectedCardStyle = { borderColor: '#3b82f6', boxShadow: '0 0 0 3px var(--focus-ring)' };
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -598,12 +593,10 @@ export function VendorReturnPage() {
           variant="ghost"
           role="tab"
           aria-selected={activeTab === 'process'}
-          style={{
-            marginBottom: -1,
-            whiteSpace: 'nowrap',
-            borderBottom: activeTab === 'process' ? '2px solid #3b82f6' : '2px solid transparent',
-            borderRadius: 0,
-          }}
+          className={cn(
+            productChrome.processTab,
+            activeTab === 'process' && productChrome.processTabActive,
+          )}
           onClick={() => handleTabChange('process')}
         >
           Process return
@@ -614,12 +607,10 @@ export function VendorReturnPage() {
           variant="ghost"
           role="tab"
           aria-selected={activeTab === 'history'}
-          style={{
-            marginBottom: -1,
-            whiteSpace: 'nowrap',
-            borderBottom: activeTab === 'history' ? '2px solid #3b82f6' : '2px solid transparent',
-            borderRadius: 0,
-          }}
+          className={cn(
+            productChrome.processTab,
+            activeTab === 'history' && productChrome.processTabActive,
+          )}
           onClick={() => handleTabChange('history')}
         >
           Return history
@@ -647,7 +638,7 @@ export function VendorReturnPage() {
                 <Text variant="heading3" weight="semibold">
                   Search purchase invoice
                 </Text>
-                <Text variant="caption" color="secondary" style={{ lineHeight: 1.45 }}>
+                <Text variant="caption" color="secondary" className={productChrome.helperLine}>
                   Recent supplier purchase invoices load automatically. Narrow the list with search
                   (same Java regex rules as History → Purchase history). When invoice number is set,
                   product/barcode is omitted from the server search.
@@ -723,10 +714,10 @@ export function VendorReturnPage() {
                       {invoices.map((inv) => (
                         <Stack key={inv.id} gap="sm">
                           <Card
-                            style={{
-                              cursor: 'pointer',
-                              ...(selected?.id === inv.id ? selectedCardStyle : {}),
-                            }}
+                            className={cn(
+                              productChrome.clickableCard,
+                              selected?.id === inv.id && productChrome.selectedCard,
+                            )}
                             onClick={() => void selectInvoice(inv)}
                             role="button"
                             tabIndex={0}
@@ -792,7 +783,7 @@ export function VendorReturnPage() {
                                     <Text
                                       variant="caption"
                                       color="secondary"
-                                      style={{ lineHeight: 1.45 }}
+                                      className={productChrome.helperLine}
                                     >
                                       No inventoried lines on this bill.
                                     </Text>
@@ -806,7 +797,7 @@ export function VendorReturnPage() {
                                         <Text
                                           variant="caption"
                                           color="secondary"
-                                          style={{ lineHeight: 1.45 }}
+                                          className={productChrome.helperLine}
                                         >
                                           Quantities use the same{' '}
                                           <Text as="span" weight="semibold">
@@ -835,7 +826,7 @@ export function VendorReturnPage() {
                                             <TableHeaderCell>Qty on bill</TableHeaderCell>
                                             <TableHeaderCell>Current qty</TableHeaderCell>
                                             <TableHeaderCell>GST rates</TableHeaderCell>
-                                            <TableHeaderCell style={numericCellStyle}>
+                                            <TableHeaderCell className={surfaceChrome.numericCell}>
                                               Est. debit note
                                             </TableHeaderCell>
                                             <TableHeaderCell>Return qty</TableHeaderCell>
@@ -893,7 +884,7 @@ export function VendorReturnPage() {
                                                 </TableCell>
                                                 <TableCell>{formatGstRatesLabel(invRow)}</TableCell>
                                                 <TableCell
-                                                  style={numericCellStyle}
+                                                  className={surfaceChrome.numericCell}
                                                   title={debitTitle}
                                                 >
                                                   {debitEst != null
@@ -905,7 +896,7 @@ export function VendorReturnPage() {
                                                     type="number"
                                                     min={0}
                                                     max={maxSell > 0 ? maxSell : undefined}
-                                                    style={{ width: '5rem', textAlign: 'center' }}
+                                                    className={productChrome.qtyInputNarrow}
                                                     inputMode="numeric"
                                                     placeholder="0"
                                                     title={
@@ -958,7 +949,7 @@ export function VendorReturnPage() {
                                             <Text
                                               variant="caption"
                                               color="secondary"
-                                              style={{ display: 'block', marginTop: '0.35rem' }}
+                                              className={productChrome.blockHint}
                                             >
                                               Per-line breakdown on hover · final amount set when
                                               you record the return.
@@ -981,14 +972,7 @@ export function VendorReturnPage() {
                                   />
 
                                   {returnDebitNoteEstimate.linesWithQty > 0 ? (
-                                    <Stack
-                                      gap="sm"
-                                      style={{
-                                        marginTop: '0.5rem',
-                                        paddingTop: '1rem',
-                                        borderTop: '1px solid var(--border-color)',
-                                      }}
-                                    >
+                                    <Stack gap="sm" className={productChrome.paymentSectionTop}>
                                       <PaymentMethodSplit
                                         context="purchase"
                                         title="How are you receiving the refund?"
@@ -1010,7 +994,7 @@ export function VendorReturnPage() {
                                         <Text
                                           variant="caption"
                                           color="secondary"
-                                          style={{ marginTop: '0.75rem' }}
+                                          className={productChrome.mtSm}
                                         >
                                           ₹{paymentSplit.creditAmount.toFixed(2)} reduces vendor
                                           credit (you owe them less).

@@ -32,6 +32,9 @@ import {
   TableHeaderCell,
   TableRow,
   Text,
+  productChrome,
+  cn,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { useCapabilityFeatureGuard } from '@inventory-platform/routing';
 import {
@@ -43,13 +46,6 @@ import {
   validatePaymentSplit,
 } from '../ui';
 import { useNotify } from '@inventory-platform/session';
-
-const numericCellStyle = {
-  textAlign: 'right' as const,
-  fontVariantNumeric: 'tabular-nums' as const,
-  whiteSpace: 'nowrap' as const,
-};
-const selectedCardStyle = { borderColor: '#3b82f6', boxShadow: '0 0 0 3px var(--focus-ring)' };
 
 export function meta() {
   return [
@@ -464,7 +460,7 @@ export function RefundPage() {
         description="Process customer sale returns and view return history"
       />
 
-      <Inline gap="none" style={{ borderBottom: '1px solid var(--border-color)' }}>
+      <Inline gap="none" className={productChrome.processTabBar}>
         {processTabs.map((tab) => {
           const active = activeTab === tab.id;
           return (
@@ -475,12 +471,7 @@ export function RefundPage() {
               variant="ghost"
               role="tab"
               aria-selected={active}
-              style={{
-                marginBottom: -1,
-                whiteSpace: 'nowrap',
-                borderBottom: active ? '2px solid #3b82f6' : '2px solid transparent',
-                borderRadius: 0,
-              }}
+              className={cn(productChrome.processTab, active && productChrome.processTabActive)}
               onClick={() => handleTabChange(tab.id)}
             >
               {tab.label}
@@ -590,10 +581,10 @@ export function RefundPage() {
                         return (
                           <Card
                             key={purchase.purchaseId}
-                            style={{
-                              cursor: 'pointer',
-                              ...(isSelected ? selectedCardStyle : {}),
-                            }}
+                            className={cn(
+                              productChrome.clickableCard,
+                              isSelected && productChrome.selectedCard,
+                            )}
                             role="button"
                             tabIndex={0}
                             onClick={() => handleSelectPurchase(purchase)}
@@ -627,16 +618,7 @@ export function RefundPage() {
                                 </Grid>
 
                                 {isSelected && selectedPurchase ? (
-                                  <Stack
-                                    gap="md"
-                                    style={{
-                                      marginTop: '1rem',
-                                      padding: '1.5rem',
-                                      borderTop: '1px solid var(--border-color)',
-                                      background: 'var(--bg-card)',
-                                      borderRadius: '8px',
-                                    }}
-                                  >
+                                  <Stack gap="md" className={productChrome.returnDetailPanel}>
                                     <Text variant="heading3" weight="semibold">
                                       Select Items to Return
                                     </Text>
@@ -664,7 +646,7 @@ export function RefundPage() {
                                             <TableHeaderCell>Selling Price</TableHeaderCell>
                                             <TableHeaderCell>Purchased Qty</TableHeaderCell>
                                             <TableHeaderCell>GST rates</TableHeaderCell>
-                                            <TableHeaderCell style={numericCellStyle}>
+                                            <TableHeaderCell className={surfaceChrome.numericCell}>
                                               Est. credit
                                             </TableHeaderCell>
                                             <TableHeaderCell>Return Qty</TableHeaderCell>
@@ -691,7 +673,7 @@ export function RefundPage() {
                                                   {formatGstRatesLabelForSaleLine(item)}
                                                 </TableCell>
                                                 <TableCell
-                                                  style={numericCellStyle}
+                                                  className={surfaceChrome.numericCell}
                                                   title={lineEst?.title}
                                                 >
                                                   {lineEst != null
@@ -710,7 +692,7 @@ export function RefundPage() {
                                                         e.target.value,
                                                       )
                                                     }
-                                                    style={{ width: '5rem', textAlign: 'center' }}
+                                                    className={productChrome.qtyInputNarrow}
                                                     disabled={isLoading}
                                                     aria-label={`Return quantity for ${item.name}`}
                                                   />
@@ -726,7 +708,7 @@ export function RefundPage() {
                                       padding="md"
                                       bg="surface"
                                       rounded="md"
-                                      style={{ background: 'var(--bg-primary)' }}
+                                      className={productChrome.estimateBar}
                                     >
                                       <Inline justify="between" align="center">
                                         <Text>Estimated return amount:</Text>
@@ -742,9 +724,7 @@ export function RefundPage() {
                                         padding="sm"
                                         rounded="md"
                                         border
-                                        style={{
-                                          background: 'var(--hover-bg, rgba(59, 130, 246, 0.06))',
-                                        }}
+                                        className={productChrome.estimateCreditBar}
                                       >
                                         <Text weight="semibold">
                                           Estimated credit total:{' '}
@@ -753,7 +733,7 @@ export function RefundPage() {
                                         <Text
                                           variant="caption"
                                           color="secondary"
-                                          style={{ display: 'block', marginTop: '0.35rem' }}
+                                          className={productChrome.blockHint}
                                         >
                                           Same as server: selling price × return qty per line. Hover
                                           “Est. credit” for a notional GST split when rates apply.
@@ -763,13 +743,7 @@ export function RefundPage() {
                                     ) : null}
 
                                     {estimatedRefund.linesWithQty > 0 ? (
-                                      <Stack
-                                        gap="sm"
-                                        style={{
-                                          paddingTop: '1rem',
-                                          borderTop: '1px solid var(--border-color, #e5e7eb)',
-                                        }}
-                                      >
+                                      <Stack gap="sm" className={productChrome.paymentSectionTop}>
                                         <PaymentMethodSplit
                                           context="sale"
                                           title="How are you refunding?"
@@ -791,7 +765,7 @@ export function RefundPage() {
                                           <Text
                                             variant="caption"
                                             color="secondary"
-                                            style={{ marginTop: '0.25rem' }}
+                                            className={productChrome.mtXs}
                                           >
                                             ₹{paymentSplit.creditAmount.toFixed(2)} reduces customer
                                             credit (they owe you less).

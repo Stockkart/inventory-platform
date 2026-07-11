@@ -7,6 +7,7 @@ import {
   ThemeToggle,
   useMatchMedia,
   type BoxProps,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { useAuthStore } from '@inventory-platform/session';
 
@@ -31,32 +32,14 @@ export function Header() {
   const navigate = useNavigate();
 
   return (
-    <Box
-      as="header"
-      width="full"
-      style={{
-        background: 'var(--header-blur)',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 100,
-        minHeight: 'var(--header-height)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-      }}
-    >
+    <Box as="header" width="full" className={surfaceChrome.planHeader}>
       <Inline
         maxWidth="xl"
         mx="auto"
         width="full"
         align="center"
         justify="between"
-        style={{
-          paddingInline: '1.25rem',
-          paddingBlock: '0.75rem',
-          minHeight: 'var(--header-height)',
-        }}
+        className={surfaceChrome.planHeaderInner}
       >
         <RouterLink to="/">
           <Box {...logoImgProps} />

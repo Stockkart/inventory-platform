@@ -9,6 +9,8 @@ import {
   Stack,
   Text,
   chartChrome,
+  surfaceChrome,
+  cn,
 } from '@inventory-platform/ui-kit';
 
 const EXTRA_USER_PLAN = 'Extra User Plan';
@@ -97,28 +99,25 @@ export function PlanGrid({
         return (
           <Card
             key={plan.id}
-            style={{
-              borderColor: isCurrent ? '#22c55e' : highlight ? '#2563eb' : undefined,
-              background: isCurrent ? 'rgba(34, 197, 94, 0.05)' : undefined,
-            }}
+            className={cn(
+              isCurrent && surfaceChrome.planCardCurrent,
+              !isCurrent && highlight && surfaceChrome.planCardHighlight,
+            )}
           >
             <CardBody>
               <Box position="relative">
                 {highlight ? (
-                  <Box
-                    position="absolute"
-                    style={{ top: '-1.75rem', left: '50%', transform: 'translateX(-50%)' }}
-                  >
+                  <Box position="absolute" className={surfaceChrome.planBadgeCenter}>
                     <Badge variant="info">Most Popular</Badge>
                   </Box>
                 ) : null}
                 {isCurrent ? (
-                  <Box position="absolute" style={{ top: '-1.75rem', right: '1rem' }}>
+                  <Box position="absolute" className={surfaceChrome.planBadgeRight}>
                     <Badge variant="success">Current</Badge>
                   </Box>
                 ) : null}
 
-                <Stack gap="md" style={{ minHeight: '320px' }} justify="between">
+                <Stack gap="md" className={surfaceChrome.planCardMin} justify="between">
                   <Stack gap="sm">
                     {showTrialBadge && !EXTRA_PLANS.includes(plan.planName) ? (
                       <Badge variant="success">Free 30-day trial</Badge>

@@ -11,6 +11,7 @@ import {
   Inline,
   Stack,
   Text,
+  productChrome,
 } from '@inventory-platform/ui-kit';
 import { Printer } from 'lucide-react';
 import { PrintInvoiceModal } from './PrintInvoiceModal';
@@ -24,7 +25,12 @@ interface PurchaseCardProps {
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <Inline justify="between" align="start" gap="md">
-      <Text variant="caption" weight="semibold" color="secondary" style={{ minWidth: '120px' }}>
+      <Text
+        variant="caption"
+        weight="semibold"
+        color="secondary"
+        className={productChrome.detailLabel}
+      >
         {label}
       </Text>
       <Box flex="1">{children}</Box>
@@ -35,18 +41,20 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
 function PriceRow({
   label,
   value,
-  valueStyle,
-  rowStyle,
+  valueClassName,
+  rowClassName,
+  valueColor,
 }: {
   label: string;
   value: string;
-  valueStyle?: React.CSSProperties;
-  rowStyle?: React.CSSProperties;
+  valueClassName?: string;
+  rowClassName?: string;
+  valueColor?: 'primary' | 'secondary' | 'muted' | 'success' | 'danger';
 }) {
   return (
-    <Inline justify="between" align="center" gap="md" style={rowStyle}>
+    <Inline justify="between" align="center" gap="md" className={rowClassName}>
       <Text color="secondary">{label}</Text>
-      <Text weight="medium" style={valueStyle}>
+      <Text weight="medium" color={valueColor} className={valueClassName}>
         {value}
       </Text>
     </Inline>
@@ -118,13 +126,7 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
           </Box>
 
           {purchase.items && purchase.items.length > 0 ? (
-            <Box
-              style={{
-                marginBottom: '1.5rem',
-                paddingBottom: '1rem',
-                borderBottom: '1px solid var(--border-color)',
-              }}
-            >
+            <Box className={productChrome.cardSectionDivider}>
               <Button
                 type="button"
                 variant="ghost"
@@ -141,7 +143,7 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
                 </Inline>
               </Button>
               {isItemsExpanded ? (
-                <Stack gap="sm" padding="none" style={{ marginTop: '0.5rem' }}>
+                <Stack gap="sm" padding="none" className={productChrome.mtSmHalf}>
                   {purchase.items.map((item, index) => (
                     <Inline
                       key={index}
@@ -201,7 +203,7 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
               bg="surface"
               border
               rounded="md"
-              style={{ marginBottom: '0.5rem' }}
+              className={productChrome.mbSm}
             >
               <Button
                 type="button"
@@ -223,7 +225,7 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
                     <PriceRow
                       label="Discount:"
                       value={`-₹${purchase.discountTotal.toFixed(2)}`}
-                      valueStyle={{ color: '#16a34a' }}
+                      valueColor="success"
                     />
                   ) : null}
                   {purchase.taxTotal > 0 ? (
@@ -232,12 +234,8 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
                   <PriceRow
                     label="Grand Total:"
                     value={`₹${purchase.grandTotal.toFixed(2)}`}
-                    valueStyle={{ fontSize: '1.1rem', fontWeight: 700 }}
-                    rowStyle={{
-                      marginTop: '0.5rem',
-                      paddingTop: '0.75rem',
-                      borderTop: '2px solid var(--border-color)',
-                    }}
+                    valueClassName={productChrome.priceGrandValue}
+                    rowClassName={productChrome.priceGrandRow}
                   />
                   {purchase.totalCost != null ||
                   purchase.revenueBeforeTax != null ||
@@ -245,13 +243,7 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
                   purchase.totalProfit != null ||
                   purchase.marginPercent != null ? (
                     <>
-                      <Box
-                        style={{
-                          marginTop: '0.5rem',
-                          paddingTop: '0.5rem',
-                          borderTop: '1px solid var(--border-color)',
-                        }}
-                      />
+                      <Box className={productChrome.softDivider} />
                       {purchase.totalCost != null ? (
                         <PriceRow label="Total Cost:" value={`₹${purchase.totalCost.toFixed(2)}`} />
                       ) : null}
@@ -281,12 +273,12 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
                 <PriceRow
                   label="Grand Total:"
                   value={`₹${purchase.grandTotal.toFixed(2)}`}
-                  valueStyle={{ fontSize: '1.1rem', fontWeight: 700 }}
+                  valueClassName={productChrome.priceGrandValue}
                 />
               ) : null}
             </Stack>
 
-            <Box style={{ height: '1px', background: 'var(--border-color)', margin: '0.5rem 0' }} />
+            <Box className={productChrome.hairlineRule} />
 
             <DetailRow label="Payment Method:">
               <Stack gap="xs">

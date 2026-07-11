@@ -188,11 +188,11 @@ export function PartiesPage({ partyType }: PartiesPageProps) {
             <TableHead>
               <TableRow>
                 <TableHeaderCell>{partyType === 'VENDOR' ? 'Vendor' : 'Customer'}</TableHeaderCell>
-                <TableHeaderCell style={numColStyle}>Debit</TableHeaderCell>
-                <TableHeaderCell style={numColStyle}>Credit</TableHeaderCell>
-                <TableHeaderCell style={numColStyle}>{copy.balanceCol}</TableHeaderCell>
+                <TableHeaderCell className={numColStyle}>Debit</TableHeaderCell>
+                <TableHeaderCell className={numColStyle}>Credit</TableHeaderCell>
+                <TableHeaderCell className={numColStyle}>{copy.balanceCol}</TableHeaderCell>
                 <TableHeaderCell>Last activity</TableHeaderCell>
-                <TableHeaderCell style={numColStyle}>Txns</TableHeaderCell>
+                <TableHeaderCell className={numColStyle}>Txns</TableHeaderCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -220,19 +220,19 @@ export function PartiesPage({ partyType }: PartiesPageProps) {
                         {p.partyDisplayName || `Party ${p.partyRefId}`}
                       </Button>
                     </TableCell>
-                    <TableCell style={numColBoldStyle}>
+                    <TableCell className={numColBoldStyle}>
                       {p.debitTurnover ? formatMoney(p.debitTurnover) : '—'}
                     </TableCell>
-                    <TableCell style={numColBoldStyle}>
+                    <TableCell className={numColBoldStyle}>
                       {p.creditTurnover ? formatMoney(p.creditTurnover) : '—'}
                     </TableCell>
-                    <TableCell style={numColBoldStyle}>{formatMoney(p.balance)}</TableCell>
+                    <TableCell className={numColBoldStyle}>{formatMoney(p.balance)}</TableCell>
                     <TableCell>
                       <Text color="secondary" variant="caption">
                         {formatDate(p.lastTxnDate)}
                       </Text>
                     </TableCell>
-                    <TableCell style={numColBoldStyle}>{p.txnCount}</TableCell>
+                    <TableCell className={numColBoldStyle}>{p.txnCount}</TableCell>
                   </TableRow>
                 ))
               )}

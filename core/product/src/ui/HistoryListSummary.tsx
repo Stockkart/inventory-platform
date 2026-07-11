@@ -1,4 +1,4 @@
-import { Text } from '@inventory-platform/ui-kit';
+import { Text, surfaceChrome } from '@inventory-platform/ui-kit';
 
 type HistoryListSummaryProps = {
   page: number;
@@ -19,7 +19,7 @@ export function HistoryListSummary({
   const start = (page - 1) * limit + 1;
   const end = Math.min(page * limit, total);
   return (
-    <Text variant="caption" color="secondary" style={{ marginBottom: '1.25rem' }}>
+    <Text variant="caption" color="secondary" className={surfaceChrome.mbMd}>
       Showing {start} – {end} of {total} {label}
       {filtered ? ' (filtered)' : ''}
     </Text>

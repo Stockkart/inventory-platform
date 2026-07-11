@@ -1,5 +1,5 @@
 import type { CreditAccountResponse } from '@inventory-platform/credit/types';
-import { Box, Button, Text } from '@inventory-platform/ui-kit';
+import { Box, Button, Text, surfaceChrome } from '@inventory-platform/ui-kit';
 import type { CreditBalanceTone } from '../model/credit-utils';
 import { presentCreditBalance } from '../model/credit-utils';
 import { accountBalHeadlineStyle, accountBalToneStyle, accountBtnStyle } from './creditStyles';
@@ -33,7 +33,7 @@ export function CreditAccountList({
       gap="sm"
       margin="none"
       padding="none"
-      style={{ listStyle: 'none' }}
+      className={surfaceChrome.listPlain}
     >
       {accounts.map((a) => {
         const active = a.id === selectedId;
@@ -55,19 +55,7 @@ export function CreditAccountList({
                   ? 'Customer — you collect from them'
                   : 'Vendor — you pay them'}
               </Text>
-              <Box
-                as="span"
-                style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  alignItems: 'baseline',
-                  justifyContent: 'space-between',
-                  gap: '0.35rem 0.75rem',
-                  marginTop: '0.15rem',
-                  paddingTop: '0.35rem',
-                  borderTop: '1px dashed var(--sk-color-border-default)',
-                }}
-              >
+              <Box as="span" className={surfaceChrome.creditBalMeta}>
                 <Text
                   as="span"
                   variant="caption"

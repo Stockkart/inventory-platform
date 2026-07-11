@@ -9,6 +9,7 @@ import {
   Stack,
   Text,
   Textarea,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 
 interface CustomReminderInputProps {
@@ -67,15 +68,7 @@ export function CustomReminderInputItem({
 
   return (
     <Box padding="md" border rounded="md" bg="surface">
-      <Inline
-        justify="between"
-        align="center"
-        style={{
-          marginBottom: '1rem',
-          paddingBottom: '0.75rem',
-          borderBottom: '1px solid var(--border-color)',
-        }}
-      >
+      <Inline justify="between" align="center" className={surfaceChrome.dividerBlock}>
         <Text variant="heading4" weight="semibold">
           Custom Reminder {index + 1}
         </Text>
@@ -162,7 +155,7 @@ export function CustomRemindersSection({
       border
       rounded="md"
       bg="elevated"
-      style={{ marginTop: '1.5rem' }}
+      className={surfaceChrome.mtLg}
     >
       <Inline justify="between" align="center" mb="md">
         <Text variant="heading3" weight="semibold">

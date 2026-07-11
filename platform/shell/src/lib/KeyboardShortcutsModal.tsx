@@ -159,14 +159,16 @@ export function KeyboardShortcutsModal({
       <Box {...{ 'data-keyboard-nav': KEYBOARD_NAV_SKIP }}>
         <Modal.Header title="Keyboard shortcuts" onClose={onClose} />
         <Modal.Body>
-          <Text color="secondary" variant="caption" mb="md">
-            Most shortcuts work when focus is not in a field. While{' '}
-            <Text as="strong">quick navigation</Text> is open (<Text as="kbd">{modLabel}</Text> +{' '}
-            <Text as="kbd">{DASHBOARD_HOTKEY.quickNavToggleModKey.toUpperCase()}</Text> or{' '}
-            <Text as="kbd">{DASHBOARD_HOTKEY.quickNavOpenSlash}</Text>), use arrows,{' '}
-            <Text as="kbd">Enter</Text>, and <Text as="kbd">Alt</Text> + <Text as="kbd">1</Text>–
-            <Text as="kbd">9</Text> there. Close any dialog with <Text as="kbd">Esc</Text> or ×.
-          </Text>
+          <Box mb="md">
+            <Text color="secondary" variant="caption">
+              Most shortcuts work when focus is not in a field. While{' '}
+              <Text as="strong">quick navigation</Text> is open (<Text as="kbd">{modLabel}</Text> +{' '}
+              <Text as="kbd">{DASHBOARD_HOTKEY.quickNavToggleModKey.toUpperCase()}</Text> or{' '}
+              <Text as="kbd">{DASHBOARD_HOTKEY.quickNavOpenSlash}</Text>), use arrows,{' '}
+              <Text as="kbd">Enter</Text>, and <Text as="kbd">Alt</Text> + <Text as="kbd">1</Text>–
+              <Text as="kbd">9</Text> there. Close any dialog with <Text as="kbd">Esc</Text> or ×.
+            </Text>
+          </Box>
           <Table>
             <TableHead>
               <TableRow>
@@ -214,7 +216,6 @@ export function KeyboardShortcutsModal({
               value={selectedPath}
               disabled={sortedNav.length === 0 || Boolean(recordingPath)}
               onChange={(e) => setSelectedPath(e.target.value)}
-              flex="1"
               className={shellChrome.kbdAssignSelect}
             >
               {sortedNav.map((r) => (

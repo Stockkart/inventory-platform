@@ -16,6 +16,8 @@ import {
   TableLoadingRow,
   TableRow,
   Text,
+  cn,
+  accountingChrome,
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import { useJournalQuery, useReverseJournalMutation } from '../queries/hooks';
@@ -162,8 +164,8 @@ export function JournalEntryDetailPage() {
                     <TableHeaderCell>Account</TableHeaderCell>
                     <TableHeaderCell>Party</TableHeaderCell>
                     <TableHeaderCell>Memo</TableHeaderCell>
-                    <TableHeaderCell style={numColStyle}>Debit</TableHeaderCell>
-                    <TableHeaderCell style={numColStyle}>Credit</TableHeaderCell>
+                    <TableHeaderCell className={numColStyle}>Debit</TableHeaderCell>
+                    <TableHeaderCell className={numColStyle}>Credit</TableHeaderCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -193,22 +195,22 @@ export function JournalEntryDetailPage() {
                           {l.memo ?? '—'}
                         </Text>
                       </TableCell>
-                      <TableCell style={numColBoldStyle}>
+                      <TableCell className={numColBoldStyle}>
                         {l.debit ? formatMoney(l.debit) : ''}
                       </TableCell>
-                      <TableCell style={numColBoldStyle}>
+                      <TableCell className={numColBoldStyle}>
                         {l.credit ? formatMoney(l.credit) : ''}
                       </TableCell>
                     </TableRow>
                   ))}
                   <TableRow>
-                    <TableCell colSpan={3} style={{ ...numColStyle, ...grandTotalCellStyle }}>
+                    <TableCell colSpan={3} className={cn(numColStyle, grandTotalCellStyle)}>
                       Totals
                     </TableCell>
-                    <TableCell style={{ ...numColBoldStyle, ...grandTotalCellStyle }}>
+                    <TableCell className={cn(numColBoldStyle, grandTotalCellStyle)}>
                       {formatMoney(entry.totalDebit)}
                     </TableCell>
-                    <TableCell style={{ ...numColBoldStyle, ...grandTotalCellStyle }}>
+                    <TableCell className={cn(numColBoldStyle, grandTotalCellStyle)}>
                       {formatMoney(entry.totalCredit)}
                     </TableCell>
                   </TableRow>
@@ -225,7 +227,7 @@ export function JournalEntryDetailPage() {
 function MetaRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <TableRow>
-      <TableHeaderCell style={{ width: '12rem' }}>{label}</TableHeaderCell>
+      <TableHeaderCell className={accountingChrome.metaLabelCell}>{label}</TableHeaderCell>
       <TableCell>{value}</TableCell>
     </TableRow>
   );

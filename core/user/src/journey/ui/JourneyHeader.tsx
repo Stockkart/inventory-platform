@@ -41,12 +41,7 @@ export function JourneyHeader() {
     >
       <Inline maxWidth="xl" mx="auto" justify="between" width="full" padding="sm" gap="md">
         <Link to="/">
-          <Box
-            as="img"
-            src="/assets/logo/STOCKKART-3x.png"
-            alt="StockKart"
-            className={journeyChrome.logo}
-          />
+          <img src="/assets/logo/STOCKKART-3x.png" alt="StockKart" className={journeyChrome.logo} />
         </Link>
 
         {!compact ? (

@@ -19,6 +19,7 @@ import {
   TableLoadingRow,
   TableRow,
   Text,
+  accountingChrome,
 } from '@inventory-platform/ui-kit';
 import { accountingApi } from '../api/accounting.api';
 import { useNotify } from '@inventory-platform/session';
@@ -197,17 +198,13 @@ export function AccountingOverviewPage() {
             <Text variant="title" weight="bold">
               Quick journal templates
             </Text>
-            <Box
-              display="grid"
-              gap="sm"
-              style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}
-            >
+            <Box display="grid" gap="sm" className={accountingChrome.quickActionsGrid}>
               {quickActions.map((action) => (
                 <Button
                   key={action.key}
                   type="button"
                   variant="ghost"
-                  style={quickActionCardStyle}
+                  className={quickActionCardStyle}
                   onClick={() => navigate(action.to)}
                 >
                   <Text weight="semibold">{action.label}</Text>
@@ -244,8 +241,8 @@ export function AccountingOverviewPage() {
                   <TableHeaderCell>Entry #</TableHeaderCell>
                   <TableHeaderCell>Source</TableHeaderCell>
                   <TableHeaderCell>Narration</TableHeaderCell>
-                  <TableHeaderCell style={numColStyle}>Debit</TableHeaderCell>
-                  <TableHeaderCell style={numColStyle}>Credit</TableHeaderCell>
+                  <TableHeaderCell className={numColStyle}>Debit</TableHeaderCell>
+                  <TableHeaderCell className={numColStyle}>Credit</TableHeaderCell>
                   <TableHeaderCell>Status</TableHeaderCell>
                 </TableRow>
               </TableHead>
@@ -279,8 +276,10 @@ export function AccountingOverviewPage() {
                           {e.narration ?? '—'}
                         </Text>
                       </TableCell>
-                      <TableCell style={numColBoldStyle}>{formatMoney(e.totalDebit)}</TableCell>
-                      <TableCell style={numColBoldStyle}>{formatMoney(e.totalCredit)}</TableCell>
+                      <TableCell className={numColBoldStyle}>{formatMoney(e.totalDebit)}</TableCell>
+                      <TableCell className={numColBoldStyle}>
+                        {formatMoney(e.totalCredit)}
+                      </TableCell>
                       <TableCell>
                         <Badge variant={statusVariant(e.status)}>{e.status}</Badge>
                       </TableCell>

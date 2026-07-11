@@ -15,6 +15,7 @@ import {
   TableLoadingRow,
   TableRow,
   Text,
+  cn,
 } from '@inventory-platform/ui-kit';
 import { accountingApi } from '../api/accounting.api';
 import { useNotify } from '@inventory-platform/session';
@@ -169,7 +170,7 @@ function BsSection({
                 <TableRow>
                   <TableHeaderCell>Code</TableHeaderCell>
                   <TableHeaderCell>Account</TableHeaderCell>
-                  <TableHeaderCell style={numColStyle}>Balance</TableHeaderCell>
+                  <TableHeaderCell className={numColStyle}>Balance</TableHeaderCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -177,14 +178,14 @@ function BsSection({
                   <TableRow key={r.accountId}>
                     <TableCell>{r.accountCode}</TableCell>
                     <TableCell>{r.accountName}</TableCell>
-                    <TableCell style={numColBoldStyle}>{formatMoney(r.amount)}</TableCell>
+                    <TableCell className={numColBoldStyle}>{formatMoney(r.amount)}</TableCell>
                   </TableRow>
                 ))}
                 <TableRow>
-                  <TableCell colSpan={2} style={subTotalCellStyle}>
+                  <TableCell colSpan={2} className={subTotalCellStyle}>
                     Total {title.toLowerCase()}
                   </TableCell>
-                  <TableCell style={{ ...numColBoldStyle, ...subTotalCellStyle }}>
+                  <TableCell className={cn(numColBoldStyle, subTotalCellStyle)}>
                     {formatMoney(total)}
                   </TableCell>
                 </TableRow>

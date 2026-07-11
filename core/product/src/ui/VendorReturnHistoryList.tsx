@@ -19,6 +19,7 @@ import {
   TableHeaderCell,
   TableRow,
   Text,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { HistoryListSummary } from './HistoryListSummary';
 import type { HistoryFilters } from './historyFilters';
@@ -28,21 +29,6 @@ import {
   paginateLocal,
   matchesRegexField,
 } from './historyFilters';
-
-const recordHeaderStyle = {
-  paddingBottom: '0.75rem',
-  borderBottom: '1px solid var(--border-color)',
-} as const;
-
-const breakdownWrapStyle = {
-  paddingTop: '1rem',
-  borderTop: '1px solid var(--border-color)',
-} as const;
-
-const breakdownLegacyStyle = {
-  paddingTop: '1rem',
-  borderTop: '1px dashed var(--border-color)',
-} as const;
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('en-IN', {
@@ -203,7 +189,12 @@ export function VendorReturnHistoryList({ refreshTrigger, filters }: VendorRetur
               <Card key={r.returnId}>
                 <CardBody>
                   <Stack gap="md">
-                    <Inline justify="between" align="start" gap="md" style={recordHeaderStyle}>
+                    <Inline
+                      justify="between"
+                      align="start"
+                      gap="md"
+                      className={surfaceChrome.recordHeader}
+                    >
                       <DetailLine
                         label="Credit note"
                         value={r.supplierCreditNoteNo ?? r.returnId}
@@ -218,17 +209,17 @@ export function VendorReturnHistoryList({ refreshTrigger, filters }: VendorRetur
                       {r.reason ? <DetailLine label="Reason" value={r.reason} /> : null}
                     </Grid>
                     {(r.lines?.length ?? 0) > 0 ? (
-                      <Stack gap="sm" style={breakdownWrapStyle}>
+                      <Stack gap="sm" className={surfaceChrome.breakdownWrap}>
                         <Text
                           variant="caption"
                           color="secondary"
                           weight="semibold"
-                          style={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}
+                          className={surfaceChrome.sectionLabelSm}
                         >
                           Line breakdown
                         </Text>
                         <Box overflow="auto">
-                          <Table style={{ minWidth: '320px' }}>
+                          <Table className={surfaceChrome.minW320}>
                             <TableHead>
                               <TableRow>
                                 <TableHeaderCell>Product</TableHeaderCell>
@@ -263,7 +254,11 @@ export function VendorReturnHistoryList({ refreshTrigger, filters }: VendorRetur
                         </Box>
                       </Stack>
                     ) : (
-                      <Text variant="caption" color="secondary" style={breakdownLegacyStyle}>
+                      <Text
+                        variant="caption"
+                        color="secondary"
+                        className={surfaceChrome.breakdownLegacy}
+                      >
                         No saved line breakdown for this debit note (often older returns).
                       </Text>
                     )}

@@ -15,10 +15,8 @@ import {
   TableHeaderCell,
   TableRow,
   Text,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
-
-const mutedCellStyle = { color: 'var(--text-secondary)', fontSize: '0.8125rem' };
-const moneyCellStyle = { fontVariantNumeric: 'tabular-nums' as const, fontWeight: 500 };
 
 function formatMoney(n: number | null | undefined): string {
   if (n == null || Number.isNaN(n)) return '—';
@@ -102,7 +100,7 @@ export function VendorInvoiceExpandedBody({
         align="start"
         gap="md"
         padding="sm"
-        style={{ borderBottom: '1px solid var(--border-color)' }}
+        className={surfaceChrome.borderBottom}
       >
         <Stack gap="xs">
           <Inline gap="sm" align="center">
@@ -121,7 +119,7 @@ export function VendorInvoiceExpandedBody({
         {detail.legacyLotId ? (
           <Text variant="caption" color="secondary" align="right">
             Legacy reference:{' '}
-            <Text as="span" style={{ fontSize: '0.8125rem', wordBreak: 'break-all' }}>
+            <Text as="span" className={surfaceChrome.breakAllSm}>
               {detail.legacyLotId}
             </Text>
           </Text>
@@ -144,14 +142,14 @@ export function VendorInvoiceExpandedBody({
           variant="caption"
           color="secondary"
           weight="bold"
-          style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}
+          className={surfaceChrome.sectionLabelMd}
         >
           Products on this invoice
         </Text>
         {inventoryLoading ? <CenteredLoader label="Loading inventory details…" size="sm" /> : null}
         {inventoryWarning ? <Alert variant="warning">{inventoryWarning}</Alert> : null}
         <Box border rounded="md" overflow="auto">
-          <Table style={{ minWidth: '1050px', fontSize: '0.875rem' }}>
+          <Table className={surfaceChrome.tableWideDense}>
             <TableHead>
               <TableRow>
                 <TableHeaderCell>#</TableHeaderCell>
@@ -176,28 +174,34 @@ export function VendorInvoiceExpandedBody({
                     : undefined;
                 return (
                   <TableRow key={`${line.lineIndex}-${line.inventoryId ?? ''}`}>
-                    <TableCell style={{ width: '2.25rem', color: 'var(--text-secondary)' }}>
+                    <TableCell className={surfaceChrome.lineIndexCell}>
                       {line.lineIndex + 1}
                     </TableCell>
                     <TableCell>{line.name}</TableCell>
-                    <TableCell style={mutedCellStyle}>{inv?.companyName ?? '—'}</TableCell>
-                    <TableCell style={mutedCellStyle}>
+                    <TableCell className={surfaceChrome.mutedCell}>
+                      {inv?.companyName ?? '—'}
+                    </TableCell>
+                    <TableCell className={surfaceChrome.mutedCell}>
                       {line.barcode ?? inv?.barcode ?? '—'}
                     </TableCell>
-                    <TableCell style={mutedCellStyle}>{inv?.batchNo ?? '—'}</TableCell>
-                    <TableCell style={mutedCellStyle}>
+                    <TableCell className={surfaceChrome.mutedCell}>{inv?.batchNo ?? '—'}</TableCell>
+                    <TableCell className={surfaceChrome.mutedCell}>
                       {formatCompactDate(inv?.expiryDate)}
                     </TableCell>
                     <TableCell>{line.count ?? '—'}</TableCell>
-                    <TableCell style={moneyCellStyle}>
+                    <TableCell className={surfaceChrome.moneyCell}>
                       {formatMoney(line.costPrice ?? inv?.costPrice)}
                     </TableCell>
-                    <TableCell style={moneyCellStyle}>
+                    <TableCell className={surfaceChrome.moneyCell}>
                       {formatMoney(inv?.maximumRetailPrice)}
                     </TableCell>
-                    <TableCell style={moneyCellStyle}>{formatMoney(inv?.priceToRetail)}</TableCell>
-                    <TableCell style={mutedCellStyle}>{formatGst(inv)}</TableCell>
-                    <TableCell style={moneyCellStyle}>{inv?.currentCount ?? '—'}</TableCell>
+                    <TableCell className={surfaceChrome.moneyCell}>
+                      {formatMoney(inv?.priceToRetail)}
+                    </TableCell>
+                    <TableCell className={surfaceChrome.mutedCell}>{formatGst(inv)}</TableCell>
+                    <TableCell className={surfaceChrome.moneyCell}>
+                      {inv?.currentCount ?? '—'}
+                    </TableCell>
                   </TableRow>
                 );
               })}

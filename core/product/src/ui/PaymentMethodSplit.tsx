@@ -10,6 +10,8 @@ import {
   Input,
   Stack,
   Text,
+  cn,
+  productChrome,
 } from '@inventory-platform/ui-kit';
 import {
   PAYMENT_METHODS,
@@ -56,10 +58,10 @@ export interface PaymentMethodSplitProps {
   hideError?: boolean;
 }
 
-const TENDER_BADGE_STYLE: Record<Tender, React.CSSProperties> = {
-  CASH: { background: 'color-mix(in srgb, #10b981 10%, transparent)', color: '#047857' },
-  ONLINE: { background: 'color-mix(in srgb, #3b82f6 10%, transparent)', color: '#1d4ed8' },
-  CREDIT: { background: 'color-mix(in srgb, #d97706 12%, transparent)', color: '#b45309' },
+const TENDER_BADGE_CLASS: Record<Tender, string> = {
+  CASH: productChrome.tenderBadgeCash,
+  ONLINE: productChrome.tenderBadgeOnline,
+  CREDIT: productChrome.tenderBadgeCredit,
 };
 
 function tenderLabel(tender: Tender, context: PaymentSplitContext): string {
@@ -214,7 +216,7 @@ export function PaymentMethodSplit({
           <Text variant="heading4" weight="semibold">
             {title ?? 'Payment'}
           </Text>
-          <Text aria-hidden style={{ color: '#dc2626', fontWeight: 600 }}>
+          <Text aria-hidden className={productChrome.requiredMark}>
             *
           </Text>
         </Inline>
@@ -226,14 +228,10 @@ export function PaymentMethodSplit({
       </Stack>
 
       <Inline justify="between" align="end">
-        <Text
-          variant="caption"
-          color="secondary"
-          style={{ textTransform: 'uppercase', letterSpacing: '0.06em' }}
-        >
+        <Text variant="caption" color="secondary" className={productChrome.sectionLabel}>
           Bill total
         </Text>
-        <Text weight="semibold" style={{ fontVariantNumeric: 'tabular-nums' }}>
+        <Text weight="semibold" className={productChrome.tabularNums}>
           {formatRupees(safeTotal)}
         </Text>
       </Inline>
@@ -260,12 +258,7 @@ export function PaymentMethodSplit({
       </Inline>
 
       {method == null ? (
-        <Box
-          padding="sm"
-          border
-          rounded="md"
-          style={{ borderStyle: 'dashed', background: 'transparent' }}
-        >
+        <Box padding="sm" border rounded="md" className={productChrome.paymentPickHint}>
           <Text variant="caption" color="secondary">
             Pick a payment method to continue.
           </Text>
@@ -279,30 +272,13 @@ export function PaymentMethodSplit({
                 <Badge variant="neutral">
                   <Text
                     as="span"
-                    style={{
-                      fontSize: '0.7rem',
-                      fontWeight: 600,
-                      letterSpacing: '0.04em',
-                      textTransform: 'uppercase',
-                      ...TENDER_BADGE_STYLE[tender],
-                    }}
+                    className={cn(productChrome.tenderBadge, TENDER_BADGE_CLASS[tender])}
                   >
                     {tender === 'CASH' ? 'Cash' : tender === 'ONLINE' ? 'Online' : 'Credit'}
                   </Text>
                 </Badge>
                 <Box position="relative" width="full">
-                  <Text
-                    aria-hidden
-                    style={{
-                      position: 'absolute',
-                      left: '0.75rem',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      fontWeight: 500,
-                      color: 'var(--text-secondary)',
-                      pointerEvents: 'none',
-                    }}
-                  >
+                  <Text aria-hidden className={productChrome.tenderPrefix}>
                     ₹
                   </Text>
                   <Input
@@ -310,7 +286,7 @@ export function PaymentMethodSplit({
                     type="text"
                     inputMode="decimal"
                     autoComplete="off"
-                    style={{ paddingLeft: '1.55rem', fontVariantNumeric: 'tabular-nums' }}
+                    className={productChrome.tenderInput}
                     value={
                       tenderAmount(value.split, tender) === 0
                         ? ''
@@ -337,14 +313,7 @@ export function PaymentMethodSplit({
           rounded="md"
           bg="muted"
           aria-live="polite"
-          style={
-            creditHighlight
-              ? {
-                  borderColor: 'color-mix(in srgb, #d97706 35%, var(--border-color, #e2e8f0))',
-                  background: 'color-mix(in srgb, #f59e0b 6%, var(--card-bg, #fff))',
-                }
-              : undefined
-          }
+          className={creditHighlight ? productChrome.paymentCreditSummary : undefined}
         >
           {summaryTenders.map((tender) => (
             <Inline key={tender} justify="between" align="end">
@@ -357,10 +326,11 @@ export function PaymentMethodSplit({
               </Text>
               <Text
                 weight="semibold"
-                style={{
-                  fontVariantNumeric: 'tabular-nums',
-                  ...(creditHighlight && tender === 'CREDIT' ? { color: '#b45309' } : undefined),
-                }}
+                className={
+                  creditHighlight && tender === 'CREDIT'
+                    ? productChrome.tenderCreditHighlight
+                    : productChrome.tabularNums
+                }
               >
                 {formatRupees(tenderAmount(value.split, tender))}
               </Text>

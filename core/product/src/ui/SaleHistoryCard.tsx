@@ -16,19 +16,10 @@ import {
   TableHeaderCell,
   TableRow,
   Text,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { PrintInvoiceModal } from './PrintInvoiceModal';
 import { formatPaymentMethod, formatPaymentSplit } from './paymentMethod';
-
-const recordHeaderStyle = {
-  paddingBottom: '0.75rem',
-  borderBottom: '1px solid var(--border-color)',
-} as const;
-
-const breakdownWrapStyle = {
-  paddingTop: '1rem',
-  borderTop: '1px solid var(--border-color)',
-} as const;
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('en-IN', {
@@ -88,7 +79,7 @@ export function SaleHistoryCard({ purchase }: { purchase: Purchase }) {
       <Card>
         <CardBody>
           <Stack gap="md">
-            <Inline justify="between" align="start" gap="md" style={recordHeaderStyle}>
+            <Inline justify="between" align="start" gap="md" className={surfaceChrome.recordHeader}>
               <DetailLine label="Invoice" value={purchase.invoiceNo} />
               <Inline gap="sm" align="center" flexShrink={0}>
                 <DetailLine label="Date" value={formatDate(purchase.soldAt)} />
@@ -132,17 +123,17 @@ export function SaleHistoryCard({ purchase }: { purchase: Purchase }) {
             </Grid>
 
             {expanded && purchase.items.length > 0 ? (
-              <Stack gap="sm" style={breakdownWrapStyle}>
+              <Stack gap="sm" className={surfaceChrome.breakdownWrap}>
                 <Text
                   variant="caption"
                   color="secondary"
                   weight="semibold"
-                  style={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}
+                  className={surfaceChrome.sectionLabelSm}
                 >
                   Line items
                 </Text>
                 <Box overflow="auto">
-                  <Table style={{ minWidth: '320px' }}>
+                  <Table className={surfaceChrome.minW320}>
                     <TableHead>
                       <TableRow>
                         <TableHeaderCell>Product</TableHeaderCell>

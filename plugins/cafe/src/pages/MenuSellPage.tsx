@@ -54,6 +54,7 @@ import {
   Stack,
   Text,
   cn,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 
 export function meta() {
@@ -716,7 +717,7 @@ export function MenuSellPage() {
                       type="button"
                       variant="ghost"
                       size="sm"
-                      flexShrink={0}
+                      className={surfaceChrome.flexShrink0}
                       onClick={() => void removeLine(ref)}
                       disabled={isSyncing}
                     >
@@ -747,7 +748,7 @@ export function MenuSellPage() {
             {customerName || customerPhone ? (
               <Text className={customerToggleValueStyle}>{customerName || customerPhone}</Text>
             ) : (
-              <Text color="secondary" flex="1">
+              <Text color="secondary" className={surfaceChrome.flexMin0}>
                 Optional
               </Text>
             )}
@@ -937,7 +938,7 @@ export function MenuSellPage() {
         <Button
           type="button"
           variant="outline"
-          flex="1"
+          className={surfaceChrome.flexMin0}
           onClick={() => void handleClearCart()}
           disabled={isSyncing || cartItems.length === 0}
         >

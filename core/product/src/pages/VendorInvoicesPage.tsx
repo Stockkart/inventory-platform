@@ -27,6 +27,8 @@ import {
   TableHeaderCell,
   TableRow,
   Text,
+  productChrome,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { isVendorReturnEnabled } from '@inventory-platform/routing';
 import {
@@ -40,18 +42,6 @@ import {
 } from '../ui';
 import type { HistoryFilters } from '../ui';
 import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/session';
-
-const recordHeaderStyle = {
-  paddingBottom: '0.75rem',
-  borderBottom: '1px solid var(--border-color)',
-} as const;
-
-const breakdownWrapStyle = {
-  paddingTop: '1rem',
-  borderTop: '1px solid var(--border-color)',
-} as const;
-
-const numericCellStyle = { textAlign: 'right' as const, whiteSpace: 'nowrap' as const };
 
 export function meta() {
   return [
@@ -162,7 +152,7 @@ function InvoiceExpansionPanel({
   }
 
   return (
-    <Stack gap="sm" style={breakdownWrapStyle}>
+    <Stack gap="sm" className={surfaceChrome.breakdownWrap}>
       {content}
     </Stack>
   );
@@ -418,7 +408,12 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
             <Card key={inv.id}>
               <CardBody>
                 <Stack gap="md">
-                  <Inline justify="between" align="start" gap="md" style={recordHeaderStyle}>
+                  <Inline
+                    justify="between"
+                    align="start"
+                    gap="md"
+                    className={surfaceChrome.recordHeader}
+                  >
                     <Inline gap="xs" align="center">
                       <DetailLine label="Invoice" value={inv.invoiceNo} />
                       {inv.synthetic ? <Badge variant="info">Auto</Badge> : null}
@@ -478,11 +473,9 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
             <TableHeaderCell>Invoice</TableHeaderCell>
             <TableHeaderCell>Vendor</TableHeaderCell>
             <TableHeaderCell>Date</TableHeaderCell>
-            <TableHeaderCell style={numericCellStyle}>Lines</TableHeaderCell>
-            <TableHeaderCell style={numericCellStyle}>Total</TableHeaderCell>
-            <TableHeaderCell style={{ width: '6.5rem', textAlign: 'right' }}>
-              Actions
-            </TableHeaderCell>
+            <TableHeaderCell className={surfaceChrome.numericCell}>Lines</TableHeaderCell>
+            <TableHeaderCell className={surfaceChrome.numericCell}>Total</TableHeaderCell>
+            <TableHeaderCell className={productChrome.tableActionHeader}>Actions</TableHeaderCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -509,13 +502,13 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
                   <TableCell>
                     <Text color="secondary">{formatDateShort(inv.invoiceDate)}</Text>
                   </TableCell>
-                  <TableCell style={numericCellStyle}>
+                  <TableCell className={surfaceChrome.numericCell}>
                     <Text color="secondary">{inv.lineCount}</Text>
                   </TableCell>
-                  <TableCell style={numericCellStyle}>
+                  <TableCell className={surfaceChrome.numericCell}>
                     <Text weight="semibold">{formatMoney(inv.invoiceTotal)}</Text>
                   </TableCell>
-                  <TableCell style={{ textAlign: 'right' }}>
+                  <TableCell className={productChrome.tableCellRight}>
                     <Button
                       type="button"
                       size="sm"
@@ -531,7 +524,7 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
                 </TableRow>
                 {isOpen ? (
                   <TableRow>
-                    <TableCell colSpan={6} style={{ padding: 0 }}>
+                    <TableCell colSpan={6} className={productChrome.tableCellFlush}>
                       <InvoiceExpansionPanel
                         inv={inv}
                         detail={detail}
@@ -579,12 +572,9 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
         <CardBody>
           <Stack gap="md">
             {!embedded ? (
-              <Stack
-                gap="sm"
-                style={{ paddingBottom: '0.25rem', borderBottom: '1px solid var(--border-color)' }}
-              >
+              <Stack gap="sm" className={productChrome.filterToolbarBottom}>
                 <Inline gap="sm" flexWrap>
-                  <Box width="full" style={{ flex: 1, minWidth: '200px' }}>
+                  <Box width="full" className={productChrome.searchGrow}>
                     <SearchInput
                       value={searchInput}
                       onChange={setSearchInput}
@@ -599,27 +589,18 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
                     </Button>
                   ) : null}
                 </Inline>
-                <Text variant="caption" color="secondary" style={{ lineHeight: 1.45 }}>
+                <Text variant="caption" color="secondary" className={productChrome.helperLine}>
                   Same pattern is tried against invoice number, vendor name, and each line&apos;s
                   product name and barcode (case-insensitive). Examples:{' '}
-                  <Text
-                    as="span"
-                    style={{ fontFamily: 'ui-monospace, monospace', fontSize: '0.875em' }}
-                  >
+                  <Text as="span" className={productChrome.monoHint}>
                     paracetamol|dolo
                   </Text>
                   ,{' '}
-                  <Text
-                    as="span"
-                    style={{ fontFamily: 'ui-monospace, monospace', fontSize: '0.875em' }}
-                  >
+                  <Text as="span" className={productChrome.monoHint}>
                     INV-712
                   </Text>
                   ,{' '}
-                  <Text
-                    as="span"
-                    style={{ fontFamily: 'ui-monospace, monospace', fontSize: '0.875em' }}
-                  >
+                  <Text as="span" className={productChrome.monoHint}>
                     ^HIMP
                   </Text>
                   . Invalid patterns return an error from the server.

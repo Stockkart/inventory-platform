@@ -11,6 +11,7 @@ import {
   Stack,
   type SelectOptionDef,
   Text,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 
 type Props = {
@@ -54,16 +55,7 @@ export function CreditManualChargeForm({ submitting, onSubmit }: Props) {
   }
 
   return (
-    <Stack
-      gap="md"
-      padding="md"
-      rounded="lg"
-      border
-      style={{
-        borderStyle: 'dashed',
-        background: 'color-mix(in srgb, var(--sk-color-bg-elevated) 94%, rgba(15, 118, 110, 0.04))',
-      }}
-    >
+    <Stack gap="md" padding="md" rounded="lg" border className={surfaceChrome.creditManualCard}>
       <Text variant="heading3" weight="bold">
         Create your first credit balance
       </Text>
@@ -130,7 +122,7 @@ export function CreditManualChargeForm({ submitting, onSubmit }: Props) {
                 onChange={(e) => setAmount(e.target.value)}
                 disabled={submitting}
                 required
-                style={{ fontSize: '1.15rem', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}
+                className={surfaceChrome.amountInputLg}
               />
             </FormField>
             <FormField label="Note (optional)" id="manual-note">

@@ -11,6 +11,7 @@ import {
   PageHeader,
   Stack,
   Text,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { getPaymentCheckout } from '../payment/index.js';
 import { useAuthStore, usePlanStatusStore } from '@inventory-platform/session';
@@ -142,7 +143,7 @@ export function PlanPaymentPage() {
                     onClick={() => void handlePay()}
                     disabled={paying}
                     loading={paying}
-                    style={{ maxWidth: '400px' }}
+                    className={surfaceChrome.maxW400}
                   >
                     {paying
                       ? 'Opening Razorpay…'

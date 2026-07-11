@@ -31,20 +31,9 @@ import {
   TableRow,
   Text,
   productChrome,
+  cn,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
-
-const impactGainStyle = { fontWeight: 600 as const, color: '#047857' };
-const impactLossStyle = { fontWeight: 600 as const, color: '#b91c1c' };
-const estPartialStyle = {
-  fontWeight: 500 as const,
-  color: 'var(--text-secondary)',
-  fontSize: '0.8125rem',
-};
-const historyCaptionStyle = {
-  fontSize: '0.8125rem',
-  color: 'var(--text-secondary)',
-  marginBottom: '0.5rem',
-};
 
 export function meta() {
   return [
@@ -196,18 +185,16 @@ function summarizeApprovedNetImpact(
   return { total: sum, partial };
 }
 
-function qtyDeltaStyle(display: string): { fontWeight: 600; color: string } | undefined {
-  if (display.startsWith('+')) return { fontWeight: 600, color: '#047857' };
-  if (display.startsWith('-')) return { fontWeight: 600, color: '#b45309' };
+function qtyDeltaClass(display: string): string | undefined {
+  if (display.startsWith('+')) return surfaceChrome.qtyDeltaPos;
+  if (display.startsWith('-')) return surfaceChrome.qtyDeltaNeg;
   return undefined;
 }
 
-function impactStyle(
-  kind: 'neutral' | 'loss' | 'gain' | 'na',
-): { fontWeight: 600; color: string } | undefined {
-  if (kind === 'loss') return impactLossStyle;
-  if (kind === 'gain') return impactGainStyle;
-  return undefined;
+function impactClass(kind: string): string {
+  if (kind === 'increase') return surfaceChrome.impactIncrease;
+  if (kind === 'decrease') return surfaceChrome.impactDecrease;
+  return surfaceChrome.impactNeutral;
 }
 
 export function StockCorrectionsPage() {
@@ -461,19 +448,17 @@ export function StockCorrectionsPage() {
       {error ? <Alert variant="danger">{error}</Alert> : null}
       {success ? <Alert variant="success">{success}</Alert> : null}
 
-      <Inline gap="none" style={{ borderBottom: '1px solid var(--border-color)' }}>
+      <Inline gap="none" className={productChrome.processTabBar}>
         <Button
           type="button"
           size="sm"
           variant="ghost"
           role="tab"
           aria-selected={activeTab === 'workbench'}
-          style={{
-            marginBottom: -1,
-            whiteSpace: 'nowrap',
-            borderBottom: activeTab === 'workbench' ? '2px solid #3b82f6' : '2px solid transparent',
-            borderRadius: 0,
-          }}
+          className={cn(
+            productChrome.processTab,
+            activeTab === 'workbench' && productChrome.processTabActive,
+          )}
           onClick={() => {
             if (activeTab !== 'workbench') setExpandedHistoryId(null);
             setActiveTab('workbench');
@@ -487,12 +472,10 @@ export function StockCorrectionsPage() {
           variant="ghost"
           role="tab"
           aria-selected={activeTab === 'history'}
-          style={{
-            marginBottom: -1,
-            whiteSpace: 'nowrap',
-            borderBottom: activeTab === 'history' ? '2px solid #3b82f6' : '2px solid transparent',
-            borderRadius: 0,
-          }}
+          className={cn(
+            productChrome.processTab,
+            activeTab === 'history' && productChrome.processTabActive,
+          )}
           onClick={() => {
             if (activeTab !== 'history') setExpandedHistoryId(null);
             setActiveTab('history');
@@ -507,7 +490,7 @@ export function StockCorrectionsPage() {
           <Card>
             <CardBody>
               <Stack gap="md">
-                <Box width="full" style={{ flex: 1, minWidth: '200px' }}>
+                <Box width="full" className={productChrome.searchGrow}>
                   <SearchInput
                     value={query}
                     onChange={setQuery}
@@ -619,7 +602,7 @@ export function StockCorrectionsPage() {
                                 <TableCell>{row.currentCount ?? '-'}</TableCell>
                                 <TableCell>
                                   <Input
-                                    style={{ width: '100px' }}
+                                    className={productChrome.qtyInputMd}
                                     value={row.requestedCount}
                                     onChange={(e) =>
                                       setDraftQtyByInventoryId((prev) => ({
@@ -634,7 +617,7 @@ export function StockCorrectionsPage() {
                                   <Text
                                     as="span"
                                     weight="semibold"
-                                    style={qtyDeltaStyle(row.qtyDeltaDisplay)}
+                                    className={qtyDeltaClass(row.qtyDeltaDisplay)}
                                   >
                                     {row.qtyDeltaDisplay}
                                   </Text>
@@ -643,7 +626,7 @@ export function StockCorrectionsPage() {
                                   <Text
                                     as="span"
                                     weight="semibold"
-                                    style={impactStyle(row.impact.kind)}
+                                    className={impactClass(row.impact.kind)}
                                   >
                                     {row.impact.text}
                                   </Text>
@@ -773,7 +756,7 @@ export function StockCorrectionsPage() {
               <Text variant="heading3" weight="semibold">
                 Correction history
               </Text>
-              <Text variant="caption" color="secondary" style={historyCaptionStyle}>
+              <Text variant="caption" color="secondary" className={surfaceChrome.historyCaption}>
                 Net impact sums{' '}
                 <Text as="span" weight="semibold">
                   approved
@@ -823,7 +806,7 @@ export function StockCorrectionsPage() {
                                   type="button"
                                   size="sm"
                                   variant="ghost"
-                                  style={{ fontSize: '0.8125rem' }}
+                                  className={productChrome.btnSmText}
                                   onClick={() => setExpandedHistoryId(open ? null : c.id)}
                                   aria-expanded={open}
                                 >
@@ -842,7 +825,7 @@ export function StockCorrectionsPage() {
                                   <Inline gap="none" align="center">
                                     <Text as="span">—</Text>
                                     {netPartial ? (
-                                      <Text as="span" style={estPartialStyle}>
+                                      <Text as="span" className={surfaceChrome.estPartial}>
                                         {' '}
                                         *
                                       </Text>
@@ -853,18 +836,18 @@ export function StockCorrectionsPage() {
                                     <Text
                                       as="span"
                                       weight="semibold"
-                                      style={
+                                      className={
                                         netTotal > 0
-                                          ? impactGainStyle
+                                          ? surfaceChrome.impactIncrease
                                           : netTotal < 0
-                                          ? impactLossStyle
+                                          ? surfaceChrome.impactDecrease
                                           : undefined
                                       }
                                     >
                                       {money(netTotal)}
                                     </Text>
                                     {netPartial ? (
-                                      <Text as="span" style={estPartialStyle}>
+                                      <Text as="span" className={surfaceChrome.estPartial}>
                                         {' '}
                                         *
                                       </Text>
@@ -876,18 +859,12 @@ export function StockCorrectionsPage() {
                             </TableRow>
                             {open ? (
                               <TableRow>
-                                <TableCell
-                                  colSpan={8}
-                                  style={{
-                                    padding: '0.75rem 0.5rem',
-                                    borderTop: '1px dashed var(--border-color)',
-                                  }}
-                                >
+                                <TableCell colSpan={8} className={productChrome.historyExpandRow}>
                                   <Stack gap="sm">
                                     <Text
                                       variant="caption"
                                       color="secondary"
-                                      style={historyCaptionStyle}
+                                      className={surfaceChrome.historyCaption}
                                     >
                                       Line breakdown: change vs quantity before correction. Impact
                                       uses the same rules as Workbench (loss at cost, gain at
@@ -956,7 +933,10 @@ export function StockCorrectionsPage() {
                                                 <TableCell>
                                                   {line.productName ?? '—'}{' '}
                                                   {inv?.batchNo ? (
-                                                    <Text as="span" style={estPartialStyle}>
+                                                    <Text
+                                                      as="span"
+                                                      className={surfaceChrome.estPartial}
+                                                    >
                                                       · batch {inv.batchNo}
                                                     </Text>
                                                   ) : null}
@@ -969,7 +949,7 @@ export function StockCorrectionsPage() {
                                                   <Text
                                                     as="span"
                                                     weight="semibold"
-                                                    style={qtyDeltaStyle(qtyDisplay)}
+                                                    className={qtyDeltaClass(qtyDisplay)}
                                                   >
                                                     {qtyDisplay}
                                                   </Text>
@@ -978,17 +958,12 @@ export function StockCorrectionsPage() {
                                                   <Text
                                                     as="span"
                                                     weight="semibold"
-                                                    style={impactStyle(impactUi.kind)}
+                                                    className={impactClass(impactUi.kind)}
                                                   >
                                                     {impactUi.text}
                                                   </Text>
                                                 </TableCell>
-                                                <TableCell
-                                                  style={{
-                                                    color: 'var(--text-secondary)',
-                                                    fontSize: '0.8125rem',
-                                                  }}
-                                                >
+                                                <TableCell className={productChrome.statusMuted}>
                                                   {line.status}
                                                   {statusHint}
                                                   {line.rejectionReason &&

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { useLocation } from 'react-router';
 import type { InventoryItem } from '@inventory-platform/product/types';
 import { InventoryAlertDetails } from '@inventory-platform/product';
@@ -15,6 +15,8 @@ import {
   PaginationBar,
   Stack,
   Text,
+  surfaceChrome,
+  cn,
 } from '@inventory-platform/ui-kit';
 import { useAuthStore, useShopAccessStore } from '@inventory-platform/session';
 import { useNotify } from '@inventory-platform/session';
@@ -25,17 +27,6 @@ import {
   useLowStockAlertsQuery,
   useUpdateThresholdMutation,
 } from '../queries/hooks';
-
-const alertBorderColor = {
-  critical: '#ef4444',
-  warning: '#fbbf24',
-} as const;
-
-const stockFillGradient = {
-  critical: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-  warning: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
-  default: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)',
-} as const;
 
 export function InventoryAlertPage() {
   const location = useLocation();
@@ -111,7 +102,7 @@ export function InventoryAlertPage() {
       {isLoading ? (
         <CenteredLoader label="Loading low stock alerts…" />
       ) : alerts.length === 0 ? (
-        <Stack align="center" justify="center" style={{ minHeight: '14rem' }}>
+        <Stack align="center" justify="center" className={surfaceChrome.minH14}>
           <Text color="secondary">No low stock alerts right now.</Text>
         </Stack>
       ) : (
@@ -119,20 +110,18 @@ export function InventoryAlertPage() {
           {alerts.map((alert: LowStockAlertRow) => (
             <Card
               key={alert.id}
-              style={{
-                borderWidth: 2,
-                borderColor: alertBorderColor[alert.status as keyof typeof alertBorderColor],
-                background:
-                  alert.status === 'critical'
-                    ? 'rgba(239, 68, 68, 0.1)'
-                    : 'rgba(251, 191, 36, 0.1)',
-              }}
+              className={cn(
+                surfaceChrome.alertCard,
+                alert.status === 'critical'
+                  ? surfaceChrome.alertCardCritical
+                  : surfaceChrome.alertCardWarning,
+              )}
             >
               <CardBody>
                 <Inline gap="lg" align="center" flexWrap>
                   <Text variant="heading2">{alert.status === 'critical' ? '🔴' : '🟡'}</Text>
 
-                  <Stack gap="sm" flex="1" style={{ minWidth: '12rem' }}>
+                  <Stack gap="sm" flex="1" className={surfaceChrome.minW12}>
                     <Text variant="heading3" weight="semibold">
                       {alert.product}
                     </Text>
@@ -152,21 +141,24 @@ export function InventoryAlertPage() {
                       </Text>
                     </Inline>
 
-                    <Box
-                      rounded="sm"
-                      overflow="hidden"
-                      style={{ height: 8, background: 'var(--sk-color-bg-canvas, #f8fafc)' }}
-                    >
+                    <Box rounded="sm" overflow="hidden" className={surfaceChrome.progressTrack}>
                       <Box
-                        style={{
-                          height: '100%',
-                          width: `${Math.min((alert.current / alert.threshold) * 100, 100)}%`,
-                          background:
-                            stockFillGradient[alert.status as keyof typeof stockFillGradient] ??
-                            stockFillGradient.default,
-                          borderRadius: 4,
-                          transition: 'width 0.3s ease',
-                        }}
+                        className={cn(
+                          surfaceChrome.progressFill,
+                          alert.status === 'critical'
+                            ? surfaceChrome.progressFillCritical
+                            : alert.status === 'warning'
+                            ? surfaceChrome.progressFillWarning
+                            : surfaceChrome.progressFillDefault,
+                        )}
+                        style={
+                          {
+                            ['--sk-progress']: `${Math.min(
+                              (alert.current / alert.threshold) * 100,
+                              100,
+                            )}%`,
+                          } as CSSProperties
+                        }
                       />
                     </Box>
                   </Stack>

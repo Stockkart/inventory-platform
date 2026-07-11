@@ -1,4 +1,4 @@
-import { Box, Inline, Stack, Text } from '@inventory-platform/ui-kit';
+import { Box, Inline, Stack, Text, surfaceChrome } from '@inventory-platform/ui-kit';
 
 export interface GstrSummaryItem {
   label: string;
@@ -16,11 +16,11 @@ export function GstrSummaryGrid({ items }: GstrSummaryGridProps) {
     <Box bg="muted" rounded="md" padding="md">
       <Inline gap="lg" flexWrap>
         {items.map((item) => (
-          <Stack key={item.label} gap="xs" style={{ minWidth: '120px' }}>
+          <Stack key={item.label} gap="xs" className={surfaceChrome.minW120}>
             <Text variant="caption" color="secondary" weight="semibold">
               {item.label}
             </Text>
-            <Text weight="semibold" style={{ fontVariantNumeric: 'tabular-nums' }}>
+            <Text weight="semibold" className={surfaceChrome.tabularNums}>
               {item.value}
             </Text>
           </Stack>

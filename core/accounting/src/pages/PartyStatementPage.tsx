@@ -202,9 +202,9 @@ export function PartyStatementPage({ partyType }: PartyStatementPageProps) {
                 <TableHeaderCell>Account</TableHeaderCell>
                 <TableHeaderCell>Source</TableHeaderCell>
                 <TableHeaderCell>Narration</TableHeaderCell>
-                <TableHeaderCell style={numColStyle}>Debit</TableHeaderCell>
-                <TableHeaderCell style={numColStyle}>Credit</TableHeaderCell>
-                <TableHeaderCell style={numColStyle}>Balance</TableHeaderCell>
+                <TableHeaderCell className={numColStyle}>Debit</TableHeaderCell>
+                <TableHeaderCell className={numColStyle}>Credit</TableHeaderCell>
+                <TableHeaderCell className={numColStyle}>Balance</TableHeaderCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -246,13 +246,13 @@ export function PartyStatementPage({ partyType }: PartyStatementPageProps) {
                         {e.narration ?? '—'}
                       </Text>
                     </TableCell>
-                    <TableCell style={numColBoldStyle}>
+                    <TableCell className={numColBoldStyle}>
                       {e.debit ? formatMoney(e.debit) : ''}
                     </TableCell>
-                    <TableCell style={numColBoldStyle}>
+                    <TableCell className={numColBoldStyle}>
                       {e.credit ? formatMoney(e.credit) : ''}
                     </TableCell>
-                    <TableCell style={numColBoldStyle}>{formatMoney(e.balanceAfter)}</TableCell>
+                    <TableCell className={numColBoldStyle}>{formatMoney(e.balanceAfter)}</TableCell>
                   </TableRow>
                 ))
               )}

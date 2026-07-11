@@ -232,7 +232,7 @@ function RowsForType({
   return (
     <>
       <TableRow>
-        <TableCell colSpan={7} style={groupHeadingCellStyle}>
+        <TableCell colSpan={7} className={groupHeadingCellStyle}>
           {TYPE_LABEL[type]}
         </TableCell>
       </TableRow>
