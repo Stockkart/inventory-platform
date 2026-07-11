@@ -16,14 +16,15 @@ import {
   CardBody,
   CenteredLoader,
   ConfirmDialog,
+  EmptyState,
   FormField,
-  Grid,
   Inline,
   Modal,
   PageHeader,
   PaginationBar,
   Stack,
   Text,
+  accountingChrome,
   surfaceChrome,
   cn,
 } from '@inventory-platform/ui-kit';
@@ -40,6 +41,7 @@ import {
 } from '../queries/hooks';
 
 const SNOOZE_OPTIONS = [1, 2, 3, 5, 7, 14, 30];
+const REMINDER_FORM_ID = 'reminders-page-form';
 
 function statusBadgeVariant(status: Reminder['status']) {
   return status === 'COMPLETED' ? 'success' : 'warning';
@@ -49,6 +51,16 @@ function priorityBadgeVariant(priority: 'high' | 'medium' | 'low') {
   if (priority === 'high') return 'danger';
   if (priority === 'medium') return 'warning';
   return 'info';
+}
+
+function statusLabel(status: Reminder['status']) {
+  return status.charAt(0) + status.slice(1).toLowerCase();
+}
+
+function typeLabel(type: ReminderType | undefined) {
+  if (type === 'EXPIRY') return 'Expiry';
+  if (type === 'CUSTOM') return 'Custom';
+  return type ?? 'Reminder';
 }
 
 export function RemindersPage() {
@@ -172,7 +184,7 @@ export function RemindersPage() {
 
   const formatDate = (dateString: string): string => {
     try {
-      return new Date(dateString).toLocaleDateString('en-US', {
+      return new Date(dateString).toLocaleDateString('en-IN', {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
@@ -190,6 +202,13 @@ export function RemindersPage() {
   };
 
   const formModalOpen = !fromNotification && (showCreateForm || !!editingReminder);
+  const isEditModal = !!editingReminder;
+
+  const dueCopy = (daysLeft: number) => {
+    if (daysLeft < 0) return `${Math.abs(daysLeft)} days overdue`;
+    if (daysLeft === 0) return 'Due today';
+    return `${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left`;
+  };
 
   return (
     <Stack gap="md" width="full" maxWidth="xl" mx="auto">
@@ -197,7 +216,7 @@ export function RemindersPage() {
         description={
           fromNotification
             ? 'Reminder details from notification'
-            : 'Manage your inventory reminders'
+            : 'Track expiry and custom reminders for your inventory.'
         }
         actions={
           !fromNotification ? (
@@ -215,68 +234,70 @@ export function RemindersPage() {
       />
 
       {!fromNotification && expiryBuckets ? (
-        <Grid columns={4} gap="md">
-          <Card>
-            <CardBody>
-              <Text variant="caption" color="secondary">
-                Expired
-              </Text>
-              <Text variant="heading2" weight="bold">
-                {expiryBuckets.expired}
-              </Text>
-            </CardBody>
-          </Card>
-          <Card>
-            <CardBody>
-              <Text variant="caption" color="secondary">
-                Within 7 days
-              </Text>
-              <Text variant="heading2" weight="bold">
-                {expiryBuckets.expiringWithin7Days}
-              </Text>
-            </CardBody>
-          </Card>
-          <Card>
-            <CardBody>
-              <Text variant="caption" color="secondary">
-                Within {expiryBuckets.expiringSoonDays} days
-              </Text>
-              <Text variant="heading2" weight="bold">
-                {expiryBuckets.expiringSoonTotal}
-              </Text>
-            </CardBody>
-          </Card>
-          <Card>
-            <CardBody>
-              <Text variant="caption" color="secondary">
-                Tracked expiry
-              </Text>
-              <Text variant="heading2" weight="bold">
-                {expiryBuckets.totalWithExpiry}
-              </Text>
-            </CardBody>
-          </Card>
-        </Grid>
+        <Box className={accountingChrome.kpiGrid4}>
+          <Box className={accountingChrome.overviewKpiCard}>
+            <Text as="span" className={accountingChrome.overviewKpiLabel}>
+              Expired
+            </Text>
+            <Text as="span" className={accountingChrome.overviewKpiValue}>
+              {expiryBuckets.expired}
+            </Text>
+          </Box>
+          <Box className={accountingChrome.overviewKpiCard}>
+            <Text as="span" className={accountingChrome.overviewKpiLabel}>
+              Within 7 days
+            </Text>
+            <Text as="span" className={accountingChrome.overviewKpiValue}>
+              {expiryBuckets.expiringWithin7Days}
+            </Text>
+          </Box>
+          <Box className={accountingChrome.overviewKpiCard}>
+            <Text as="span" className={accountingChrome.overviewKpiLabel}>
+              Within {expiryBuckets.expiringSoonDays} days
+            </Text>
+            <Text as="span" className={accountingChrome.overviewKpiValue}>
+              {expiryBuckets.expiringSoonTotal}
+            </Text>
+          </Box>
+          <Box className={accountingChrome.overviewKpiCard}>
+            <Text as="span" className={accountingChrome.overviewKpiLabel}>
+              Tracked expiry
+            </Text>
+            <Text as="span" className={accountingChrome.overviewKpiValue}>
+              {expiryBuckets.totalWithExpiry}
+            </Text>
+          </Box>
+        </Box>
       ) : null}
 
       <Modal open={formModalOpen} onClose={closeFormModal} size="md">
         <Modal.Header
-          title={editingReminder ? 'Edit Reminder' : 'Create Reminder'}
+          title={isEditModal ? 'Edit reminder' : 'Create reminder'}
           onClose={closeFormModal}
         />
         <Modal.Body>
           <ReminderForm
+            key={editingReminder?.id ?? 'create'}
+            formId={REMINDER_FORM_ID}
             reminder={editingReminder || undefined}
             onSubmit={handleSubmit}
-            onCancel={closeFormModal}
             isLoading={isSubmitting}
+            showActions={false}
           />
         </Modal.Body>
+        <Modal.Footer>
+          <Button type="button" variant="outline" onClick={closeFormModal} disabled={isSubmitting}>
+            Cancel
+          </Button>
+          <Button type="submit" form={REMINDER_FORM_ID} variant="solid" disabled={isSubmitting}>
+            {isSubmitting ? 'Saving…' : isEditModal ? 'Update reminder' : 'Create reminder'}
+          </Button>
+        </Modal.Footer>
       </Modal>
 
       <ConfirmDialog
         open={!!deletingReminderId}
-        title="Delete Reminder"
+        title="Delete reminder"
         message="Are you sure you want to delete this reminder? This action cannot be undone."
         confirmLabel="Delete"
         loading={deleteMutation.isPending}
@@ -284,288 +305,305 @@ export function RemindersPage() {
         onConfirm={handleDeleteConfirm}
       />
 
-      <Card>
-        <CardBody>
-          <Stack gap="md">
-            {!fromNotification && (
-              <Stack gap="md" padding="md" border rounded="md">
-                <Inline gap="sm" align="center" flexWrap>
-                  <Text variant="label" color="secondary">
-                    Status:
-                  </Text>
-                  {(['all', 'PENDING', 'COMPLETED'] as const).map((value) => (
-                    <Button
-                      key={value}
-                      type="button"
-                      size="sm"
-                      variant={filter === value ? 'solid' : 'outline'}
-                      onClick={() => setFilter(value)}
-                    >
-                      {value === 'all' ? 'All' : value.charAt(0) + value.slice(1).toLowerCase()}
-                    </Button>
-                  ))}
-                </Inline>
-                <Inline gap="sm" align="center" flexWrap>
-                  <Text variant="label" color="secondary">
-                    Type:
-                  </Text>
-                  {(['all', 'EXPIRY', 'CUSTOM'] as const).map((value) => (
-                    <Button
-                      key={value}
-                      type="button"
-                      size="sm"
-                      variant={typeFilter === value ? 'solid' : 'outline'}
-                      onClick={() => setTypeFilter(value)}
-                    >
-                      {value === 'all' ? 'All' : value.charAt(0) + value.slice(1).toLowerCase()}
-                    </Button>
-                  ))}
-                </Inline>
-              </Stack>
-            )}
+      {!fromNotification ? (
+        <Box className={surfaceChrome.reminderFilterBar}>
+          <Box className={surfaceChrome.reminderFilterGroup}>
+            <Text as="span" className={surfaceChrome.reminderFilterLabel}>
+              Status
+            </Text>
+            <Box
+              className={surfaceChrome.reminderSegment}
+              role="group"
+              aria-label="Filter by status"
+            >
+              {(['all', 'PENDING', 'COMPLETED'] as const).map((value) => (
+                <Button
+                  key={value}
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  aria-pressed={filter === value}
+                  className={cn(
+                    surfaceChrome.reminderSegmentBtn,
+                    filter === value && surfaceChrome.reminderSegmentBtnActive,
+                  )}
+                  onClick={() => setFilter(value)}
+                >
+                  {value === 'all' ? 'All' : statusLabel(value)}
+                </Button>
+              ))}
+            </Box>
+          </Box>
+          <Box className={surfaceChrome.reminderFilterGroup}>
+            <Text as="span" className={surfaceChrome.reminderFilterLabel}>
+              Type
+            </Text>
+            <Box className={surfaceChrome.reminderSegment} role="group" aria-label="Filter by type">
+              {(['all', 'EXPIRY', 'CUSTOM'] as const).map((value) => (
+                <Button
+                  key={value}
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  aria-pressed={typeFilter === value}
+                  className={cn(
+                    surfaceChrome.reminderSegmentBtn,
+                    typeFilter === value && surfaceChrome.reminderSegmentBtnActive,
+                  )}
+                  onClick={() => setTypeFilter(value)}
+                >
+                  {value === 'all' ? 'All' : typeLabel(value)}
+                </Button>
+              ))}
+            </Box>
+          </Box>
+        </Box>
+      ) : null}
 
-            {isLoading ? (
-              <CenteredLoader label="Loading reminders…" />
-            ) : filteredReminders.length === 0 ? (
-              <Stack gap="md" align="center" className={surfaceChrome.minH14}>
-                <Text color="secondary">No reminders found.</Text>
-                {!showCreateForm && !fromNotification ? (
-                  <Button variant="solid" onClick={() => setShowCreateForm(true)}>
-                    Create your first reminder
-                  </Button>
-                ) : null}
-              </Stack>
-            ) : (
-              <>
-                <Stack gap="md">
-                  {filteredReminders.map((reminder) => {
-                    const daysLeft = getDaysUntilReminder(reminder.reminderAt);
-                    const priority = getPriority(daysLeft);
+      {isLoading ? (
+        <CenteredLoader label="Loading reminders…" />
+      ) : filteredReminders.length === 0 ? (
+        <EmptyState
+          title="No reminders found"
+          description={
+            fromNotification
+              ? undefined
+              : 'Create a custom reminder, or let expiry tracking surface upcoming dates.'
+          }
+          action={
+            !fromNotification ? (
+              <Button variant="solid" onClick={() => setShowCreateForm(true)}>
+                Create reminder
+              </Button>
+            ) : undefined
+          }
+        />
+      ) : (
+        <Stack gap="md">
+          {filteredReminders.map((reminder) => {
+            const daysLeft = getDaysUntilReminder(reminder.reminderAt);
+            const priority = getPriority(daysLeft);
+            const title =
+              reminder.inventory?.name?.trim() ||
+              (reminder.type === 'EXPIRY' ? 'Expiry reminder' : 'Custom reminder');
 
-                    return (
-                      <Card
-                        key={reminder.id}
-                        className={cn(
-                          surfaceChrome.reminderPriority,
-                          priority === 'high' && surfaceChrome.reminderPriorityHigh,
-                          priority === 'medium' && surfaceChrome.reminderPriorityMedium,
-                          priority === 'low' && surfaceChrome.reminderPriorityLow,
-                        )}
-                      >
-                        <CardBody>
-                          <Inline gap="lg" align="start" flexWrap>
-                            <Text variant="heading2">
-                              {reminder.type === 'EXPIRY' ? '📅' : '🔔'}
-                            </Text>
-                            <Stack gap="sm" flex="1" className={surfaceChrome.minW12}>
-                              <Inline justify="between" align="start" flexWrap>
-                                <Text variant="heading3" weight="semibold">
-                                  {reminder.type === 'EXPIRY'
-                                    ? 'Expiry Reminder'
-                                    : 'Custom Reminder'}
-                                </Text>
-                                <Inline gap="sm" flexWrap>
-                                  <Badge variant={statusBadgeVariant(reminder.status)}>
-                                    {reminder.status}
-                                  </Badge>
-                                  {reminder.type ? (
-                                    <Badge variant="info">{reminder.type}</Badge>
-                                  ) : null}
-                                  <Badge variant={priorityBadgeVariant(priority)}>{priority}</Badge>
-                                </Inline>
-                              </Inline>
-                              <Stack gap="sm">
-                                <Text variant="caption">
-                                  <Text as="span" weight="semibold">
-                                    Reminder:
-                                  </Text>{' '}
-                                  {formatDate(reminder.reminderAt)}
-                                </Text>
-                                {reminder.expiryDate ? (
-                                  <Text variant="caption">
-                                    <Text as="span" weight="semibold">
-                                      End Date:
-                                    </Text>{' '}
-                                    {formatDate(reminder.expiryDate)}
-                                  </Text>
-                                ) : null}
-                                {reminder.notes ? (
-                                  <Text variant="caption">
-                                    <Text as="span" weight="semibold">
-                                      Notes:
-                                    </Text>{' '}
-                                    {reminder.notes}
-                                  </Text>
-                                ) : null}
-                                {reminder.inventory ? (
-                                  <Box
-                                    padding="sm"
-                                    rounded="md"
-                                    className={surfaceChrome.reminderInfoChip}
-                                  >
-                                    <Grid columns={3} gap="sm">
-                                      <Text variant="caption">
-                                        <Text as="span" weight="semibold">
-                                          Product:
-                                        </Text>{' '}
-                                        {reminder.inventory.name ?? '—'}
-                                      </Text>
-                                      <Text variant="caption">
-                                        <Text as="span" weight="semibold">
-                                          Company:
-                                        </Text>{' '}
-                                        {reminder.inventory.companyName ?? '—'}
-                                      </Text>
-                                      <Text variant="caption">
-                                        <Text as="span" weight="semibold">
-                                          Location:
-                                        </Text>{' '}
-                                        {reminder.inventory.location ?? '—'}
-                                      </Text>
-                                    </Grid>
-                                  </Box>
-                                ) : null}
-                                <Text variant="caption" weight="semibold">
-                                  {daysLeft < 0
-                                    ? `${Math.abs(daysLeft)} days overdue`
-                                    : daysLeft === 0
-                                    ? 'Due today'
-                                    : `${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left`}
-                                </Text>
-                              </Stack>
-                            </Stack>
-
-                            <Stack gap="sm" className={surfaceChrome.minHStretch12}>
-                              {fromNotification ? (
-                                <Stack gap="sm">
-                                  <Inline gap="sm" flexWrap>
-                                    {SNOOZE_OPTIONS.map((days) => (
-                                      <Button
-                                        key={days}
-                                        type="button"
-                                        size="sm"
-                                        variant="outline"
-                                        disabled={snoozingReminderId === reminder.id}
-                                        onClick={() => void handleSnooze(reminder.id, days)}
-                                      >
-                                        {days}d
-                                      </Button>
-                                    ))}
-                                  </Inline>
-
-                                  <Inline gap="sm" flexWrap align="end">
-                                    <FormField
-                                      label="Custom days"
-                                      type="number"
-                                      value={
-                                        customSnoozeDays === '' ? '' : String(customSnoozeDays)
-                                      }
-                                      onChange={(value) =>
-                                        setCustomSnoozeDays(value === '' ? '' : Number(value))
-                                      }
-                                    />
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      variant="solid"
-                                      disabled={
-                                        snoozingReminderId === reminder.id ||
-                                        customSnoozeDays === '' ||
-                                        Number(customSnoozeDays) <= 0
-                                      }
-                                      onClick={() =>
-                                        customSnoozeDays !== '' &&
-                                        void handleSnooze(reminder.id, Number(customSnoozeDays))
-                                      }
-                                    >
-                                      {snoozingReminderId === reminder.id ? 'Snoozing…' : 'Snooze'}
-                                    </Button>
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      variant="danger"
-                                      onClick={() => setDeletingReminderId(reminder.id)}
-                                    >
-                                      Delete
-                                    </Button>
-                                  </Inline>
-                                  {reminder.inventory ? (
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => setSelectedInventory(reminder.inventory)}
-                                    >
-                                      View Details
-                                    </Button>
-                                  ) : null}
-                                </Stack>
-                              ) : (
-                                <Stack gap="sm" align="end">
-                                  <Inline gap="sm" flexWrap>
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => setEditingReminder(reminder)}
-                                    >
-                                      Edit
-                                    </Button>
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      variant="danger"
-                                      onClick={() => setDeletingReminderId(reminder.id)}
-                                    >
-                                      Delete
-                                    </Button>
-                                  </Inline>
-                                  {reminder.inventory ? (
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => setSelectedInventory(reminder.inventory)}
-                                    >
-                                      View Details
-                                    </Button>
-                                  ) : null}
-                                </Stack>
-                              )}
-                            </Stack>
-                          </Inline>
-                        </CardBody>
-                      </Card>
-                    );
-                  })}
-                </Stack>
-                {!focusReminderId && (
-                  <PaginationBar
-                    page={page}
-                    totalPages={Math.max(totalPages, 1)}
-                    disabled={isLoading}
-                    onPageChange={setPage}
-                    pageSize={size}
-                    pageSizeOptions={[5, 10, 20, 50]}
-                    onPageSizeChange={(n) => {
-                      setPage(0);
-                      setSize(n);
-                    }}
-                    aria-label="Reminder pages"
-                  />
+            return (
+              <Card
+                key={reminder.id}
+                className={cn(
+                  surfaceChrome.reminderListCard,
+                  surfaceChrome.reminderPriority,
+                  priority === 'high' && surfaceChrome.reminderPriorityHigh,
+                  priority === 'medium' && surfaceChrome.reminderPriorityMedium,
+                  priority === 'low' && surfaceChrome.reminderPriorityLow,
                 )}
-              </>
-            )}
-          </Stack>
-        </CardBody>
-      </Card>
-      {selectedInventory && (
+              >
+                <CardBody>
+                  <Box className={surfaceChrome.reminderListMain}>
+                    <Box className={surfaceChrome.reminderListHeader}>
+                      <Box className={surfaceChrome.reminderListTitleBlock}>
+                        <Text as="p" className={surfaceChrome.reminderListKind}>
+                          {typeLabel(reminder.type)} reminder
+                        </Text>
+                        <Text as="p" className={surfaceChrome.reminderListTitle}>
+                          {title}
+                        </Text>
+                        <Inline gap="sm" flexWrap>
+                          <Badge variant={statusBadgeVariant(reminder.status)}>
+                            {statusLabel(reminder.status)}
+                          </Badge>
+                          <Badge variant={priorityBadgeVariant(priority)}>{priority}</Badge>
+                        </Inline>
+                      </Box>
+                      <Box className={surfaceChrome.reminderListActions}>
+                        <Text
+                          as="p"
+                          className={cn(
+                            surfaceChrome.reminderListDue,
+                            daysLeft < 0 && surfaceChrome.reminderListDueOverdue,
+                            daysLeft >= 0 && daysLeft <= 3 && surfaceChrome.reminderListDueSoon,
+                          )}
+                        >
+                          {dueCopy(daysLeft)}
+                        </Text>
+                        {fromNotification ? null : (
+                          <Inline gap="sm" flexWrap>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setEditingReminder(reminder)}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="danger"
+                              onClick={() => setDeletingReminderId(reminder.id)}
+                            >
+                              Delete
+                            </Button>
+                          </Inline>
+                        )}
+                        {reminder.inventory ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setSelectedInventory(reminder.inventory)}
+                          >
+                            View details
+                          </Button>
+                        ) : null}
+                      </Box>
+                    </Box>
+
+                    <Box className={surfaceChrome.reminderListGrid}>
+                      <Box className={surfaceChrome.reminderListField}>
+                        <Text as="p" className={surfaceChrome.reminderListLabel}>
+                          Reminder
+                        </Text>
+                        <Text as="p" className={surfaceChrome.reminderListValue}>
+                          {formatDate(reminder.reminderAt)}
+                        </Text>
+                      </Box>
+                      {reminder.expiryDate ? (
+                        <Box className={surfaceChrome.reminderListField}>
+                          <Text as="p" className={surfaceChrome.reminderListLabel}>
+                            End date
+                          </Text>
+                          <Text as="p" className={surfaceChrome.reminderListValue}>
+                            {formatDate(reminder.expiryDate)}
+                          </Text>
+                        </Box>
+                      ) : null}
+                      {reminder.notes ? (
+                        <Box className={surfaceChrome.reminderListField}>
+                          <Text as="p" className={surfaceChrome.reminderListLabel}>
+                            Notes
+                          </Text>
+                          <Text as="p" className={surfaceChrome.reminderListValue}>
+                            {reminder.notes}
+                          </Text>
+                        </Box>
+                      ) : null}
+                    </Box>
+
+                    {reminder.inventory ? (
+                      <Box className={surfaceChrome.reminderListInventory}>
+                        <Box className={surfaceChrome.reminderListGrid}>
+                          <Box className={surfaceChrome.reminderListField}>
+                            <Text as="p" className={surfaceChrome.reminderListLabel}>
+                              Product
+                            </Text>
+                            <Text as="p" className={surfaceChrome.reminderListValue}>
+                              {reminder.inventory.name ?? '—'}
+                            </Text>
+                          </Box>
+                          <Box className={surfaceChrome.reminderListField}>
+                            <Text as="p" className={surfaceChrome.reminderListLabel}>
+                              Company
+                            </Text>
+                            <Text as="p" className={surfaceChrome.reminderListValue}>
+                              {reminder.inventory.companyName ?? '—'}
+                            </Text>
+                          </Box>
+                          <Box className={surfaceChrome.reminderListField}>
+                            <Text as="p" className={surfaceChrome.reminderListLabel}>
+                              Location
+                            </Text>
+                            <Text as="p" className={surfaceChrome.reminderListValue}>
+                              {reminder.inventory.location ?? '—'}
+                            </Text>
+                          </Box>
+                        </Box>
+                      </Box>
+                    ) : null}
+
+                    {fromNotification ? (
+                      <Stack gap="sm">
+                        <Inline gap="sm" flexWrap>
+                          {SNOOZE_OPTIONS.map((days) => (
+                            <Button
+                              key={days}
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={snoozingReminderId === reminder.id}
+                              onClick={() => void handleSnooze(reminder.id, days)}
+                            >
+                              {days}d
+                            </Button>
+                          ))}
+                        </Inline>
+                        <Inline gap="sm" flexWrap align="end">
+                          <FormField
+                            label="Custom days"
+                            type="number"
+                            value={customSnoozeDays === '' ? '' : String(customSnoozeDays)}
+                            onChange={(value) =>
+                              setCustomSnoozeDays(value === '' ? '' : Number(value))
+                            }
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="solid"
+                            disabled={
+                              snoozingReminderId === reminder.id ||
+                              customSnoozeDays === '' ||
+                              Number(customSnoozeDays) <= 0
+                            }
+                            onClick={() =>
+                              customSnoozeDays !== '' &&
+                              void handleSnooze(reminder.id, Number(customSnoozeDays))
+                            }
+                          >
+                            {snoozingReminderId === reminder.id ? 'Snoozing…' : 'Snooze'}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="danger"
+                            onClick={() => setDeletingReminderId(reminder.id)}
+                          >
+                            Delete
+                          </Button>
+                        </Inline>
+                      </Stack>
+                    ) : null}
+                  </Box>
+                </CardBody>
+              </Card>
+            );
+          })}
+
+          {!focusReminderId ? (
+            <PaginationBar
+              page={page}
+              totalPages={Math.max(totalPages, 1)}
+              disabled={isLoading}
+              onPageChange={setPage}
+              pageSize={size}
+              pageSizeOptions={[5, 10, 20, 50]}
+              onPageSizeChange={(n) => {
+                setPage(0);
+                setSize(n);
+              }}
+              aria-label="Reminder pages"
+            />
+          ) : null}
+        </Stack>
+      )}
+
+      {selectedInventory ? (
         <InventoryAlertDetails
           open={selectedInventory !== null}
           item={selectedInventory as never}
           onClose={() => setSelectedInventory(null)}
         />
-      )}
+      ) : null}
     </Stack>
   );
 }

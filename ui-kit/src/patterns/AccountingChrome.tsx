@@ -42,6 +42,7 @@ export const accountingChrome = {
   quickActionsGrid: styles.quickActionsGrid,
   overviewKpiGrid: styles.overviewKpiGrid,
   autoKpiGrid: styles.autoKpiGrid,
+  kpiGrid4: styles.kpiGrid4,
   overviewKpiCard: styles.overviewKpiCard,
   overviewKpiLabel: styles.overviewKpiLabel,
   overviewKpiValue: styles.overviewKpiValue,

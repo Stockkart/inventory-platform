@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import type {
   CreateReminderDto,
   UpdateReminderDto,
@@ -7,9 +7,9 @@ import type {
 import { useNotify } from '@inventory-platform/session';
 import {
   Alert,
+  Box,
   Button,
   FormField,
-  Inline,
   Input,
   Select,
   Stack,
@@ -20,9 +20,12 @@ import {
 interface ReminderFormProps {
   reminder?: Reminder;
   inventoryId?: string;
+  formId?: string;
   onSubmit: (data: CreateReminderDto | UpdateReminderDto) => Promise<void>;
-  onCancel?: () => void;
   isLoading?: boolean;
+  /** When false, parent should render submit controls (e.g. Modal.Footer). */
+  showActions?: boolean;
+  onCancel?: () => void;
 }
 
 const STATUS_OPTIONS: readonly SelectOptionDef[] = [
@@ -33,9 +36,11 @@ const STATUS_OPTIONS: readonly SelectOptionDef[] = [
 export function ReminderForm({
   reminder,
   inventoryId,
+  formId = 'reminder-form',
   onSubmit,
-  onCancel,
   isLoading = false,
+  showActions = true,
+  onCancel,
 }: ReminderFormProps) {
   const isEditMode = !!reminder;
 
@@ -59,7 +64,8 @@ export function ReminderForm({
     if (error) setError(null);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (event?: FormEvent) => {
+    event?.preventDefault();
     setError(null);
 
     if (!formData.reminderAt) {
@@ -95,78 +101,77 @@ export function ReminderForm({
     }
   };
 
-  const reminderAtId = 'reminderAt';
-  const endDateId = 'endDate';
-  const notesId = 'notes';
-  const statusId = 'status';
+  const reminderAtId = `${formId}-reminderAt`;
+  const endDateId = `${formId}-endDate`;
+  const notesId = `${formId}-notes`;
+  const statusId = `${formId}-status`;
 
   return (
-    <Stack gap="md">
-      {error ? <Alert variant="danger">{error}</Alert> : null}
+    <Box as="form" id={formId} onSubmit={(e: FormEvent) => void handleSubmit(e)}>
+      <Stack gap="md">
+        {error ? <Alert variant="danger">{error}</Alert> : null}
 
-      <FormField label="Reminder Date & Time" htmlFor={reminderAtId} required>
-        <Input
-          id={reminderAtId}
-          name="reminderAt"
-          type="datetime-local"
-          value={formData.reminderAt}
-          onChange={(e) => setField('reminderAt', e.target.value)}
-          disabled={isLoading}
-          required
-        />
-      </FormField>
+        <FormField label="Reminder date & time" htmlFor={reminderAtId} required>
+          <Input
+            id={reminderAtId}
+            name="reminderAt"
+            type="datetime-local"
+            value={formData.reminderAt}
+            onChange={(e) => setField('reminderAt', e.target.value)}
+            disabled={isLoading}
+            required
+          />
+        </FormField>
 
-      <FormField label="End Date & Time (Optional)" htmlFor={endDateId}>
-        <Input
-          id={endDateId}
-          name="endDate"
-          type="datetime-local"
-          value={formData.endDate}
-          onChange={(e) => setField('endDate', e.target.value)}
-          disabled={isLoading}
-        />
-      </FormField>
-
-      <FormField label="Notes (Optional)" htmlFor={notesId}>
-        <Textarea
-          id={notesId}
-          name="notes"
-          rows={3}
-          placeholder="Add any notes about this reminder..."
-          value={formData.notes}
-          onChange={(e) => setField('notes', e.target.value)}
-          disabled={isLoading}
-        />
-      </FormField>
-
-      {isEditMode ? (
-        <FormField label="Status" htmlFor={statusId}>
-          <Select
-            id={statusId}
-            name="status"
-            options={STATUS_OPTIONS}
-            value={formData.status}
-            onChange={(e) => setField('status', e.target.value)}
+        <FormField label="End date & time" htmlFor={endDateId} hint="Optional">
+          <Input
+            id={endDateId}
+            name="endDate"
+            type="datetime-local"
+            value={formData.endDate}
+            onChange={(e) => setField('endDate', e.target.value)}
             disabled={isLoading}
           />
         </FormField>
-      ) : null}
 
-      <Inline gap="sm" flexWrap>
-        {onCancel ? (
-          <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
-            Cancel
-          </Button>
+        <FormField label="Notes" htmlFor={notesId} hint="Optional">
+          <Textarea
+            id={notesId}
+            name="notes"
+            rows={3}
+            placeholder="Add any notes about this reminder…"
+            value={formData.notes}
+            onChange={(e) => setField('notes', e.target.value)}
+            disabled={isLoading}
+          />
+        </FormField>
+
+        {isEditMode ? (
+          <FormField label="Status" htmlFor={statusId}>
+            <Select
+              id={statusId}
+              name="status"
+              options={STATUS_OPTIONS}
+              value={formData.status}
+              onChange={(e) => setField('status', e.target.value)}
+              disabled={isLoading}
+            />
+          </FormField>
         ) : null}
-        <Button
-          type="button"
-          variant="solid"
-          onClick={() => void handleSubmit()}
-          disabled={isLoading || !formData.reminderAt}
-        >
-          {isLoading ? 'Saving...' : isEditMode ? 'Update Reminder' : 'Create Reminder'}
-        </Button>
-      </Inline>
-    </Stack>
+
+        {showActions ? (
+          <Stack gap="sm">
+            {onCancel ? (
+              <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
+                Cancel
+              </Button>
+            ) : null}
+            <Button type="submit" variant="solid" disabled={isLoading || !formData.reminderAt}>
+              {isLoading ? 'Saving…' : isEditMode ? 'Update reminder' : 'Create reminder'}
+            </Button>
+          </Stack>
+        ) : null}
+      </Stack>
+    </Box>
   );
 }
