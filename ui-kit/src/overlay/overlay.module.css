@@ -22,7 +22,7 @@
   border: 1px solid var(--sk-color-border-default);
   width: 100%;
   max-height: 90vh;
-  overflow: auto;
+  overflow: hidden;
   box-shadow: var(--sk-shadow-lg);
   display: flex;
   flex-direction: column;
@@ -48,6 +48,7 @@
   gap: var(--sk-space-md);
   padding: 1.25rem 1.5rem;
   border-bottom: 1px solid var(--sk-color-border-default);
+  flex-shrink: 0;
 }
 
 .title {
@@ -59,15 +60,20 @@
 
 .body {
   padding: 1.5rem;
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .footer {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   gap: var(--sk-space-md);
   padding: 1rem 1.5rem 1.5rem;
   border-top: 1px solid var(--sk-color-border-default);
+  flex-shrink: 0;
+  background: var(--sk-color-bg-surface);
 }
 
 .drawer {

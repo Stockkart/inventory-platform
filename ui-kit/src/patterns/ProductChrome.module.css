@@ -861,3 +861,243 @@
   color: var(--sk-color-text-secondary, var(--text-secondary));
   font-size: 0.8125rem;
 }
+
+/* Product search result cards — stacked identity → stock → price → dates */
+.searchResultCard {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.searchResultCard:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--sk-color-text-primary, #0f172a) 14%,
+    var(--sk-color-border-default)
+  );
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+}
+
+.searchResultBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  flex: 1;
+  min-height: 0;
+}
+
+.searchResultIdentity {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.45rem;
+}
+
+.searchResultTitle {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--sk-color-text-primary, var(--text-primary));
+  letter-spacing: -0.015em;
+}
+
+.searchResultBadge {
+  flex-shrink: 0;
+  width: fit-content;
+  max-width: max-content;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  font-weight: 600;
+}
+
+.searchResultBadgeBasic {
+  background: var(--sk-color-bg-muted, #f1f5f9);
+  color: var(--sk-color-text-secondary, #475569);
+}
+
+.searchResultStack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.searchResultStackTight {
+  gap: 0.2rem;
+}
+
+.searchResultLine {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--sk-color-text-secondary, var(--text-secondary));
+}
+
+.searchResultLineStrong {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--sk-color-text-primary, var(--text-primary));
+  font-variant-numeric: tabular-nums;
+}
+
+.searchResultDivider {
+  width: 100%;
+  height: 1px;
+  border: 0;
+  margin: 0;
+  background: var(--sk-color-border-default, var(--border-color));
+}
+
+.searchResultChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.searchResultChip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--sk-radius-full, 999px);
+  border: 1px solid var(--sk-color-border-default, var(--border-color));
+  background: transparent;
+  color: var(--sk-color-text-secondary, #475569);
+  font-size: 0.7rem;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.searchResultDesc {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--sk-color-text-secondary, var(--text-secondary));
+  font-style: italic;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.searchResultGrow {
+  flex: 1 1 auto;
+  min-height: 0.35rem;
+}
+
+.searchResultFooter {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: auto;
+}
+
+.searchResultFooter > * {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+/* Inventory / product detail modal */
+.detailModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.15rem 1.35rem;
+  border-bottom: 1px solid var(--sk-color-border-default, var(--border-color));
+  flex-shrink: 0;
+}
+
+.detailModalHeaderMain {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.detailModalHeroIcon {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+  border-radius: var(--sk-radius-md, 10px);
+  background: color-mix(in srgb, var(--sk-color-brand, #3b82f6) 12%, transparent);
+  color: var(--sk-color-brand, #3b82f6);
+}
+
+.detailSection {
+  margin-bottom: 1.35rem;
+  padding: 1rem 1.05rem;
+  border: 1px solid var(--sk-color-border-default, var(--border-color));
+  border-radius: var(--sk-radius-lg, 12px);
+  background: var(--sk-color-bg-elevated, #fff);
+}
+
+.detailSectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.9rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--sk-color-border-default, var(--border-color));
+}
+
+.detailSectionIcon {
+  display: grid;
+  place-items: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  flex-shrink: 0;
+  border-radius: var(--sk-radius-md, 8px);
+  background: color-mix(in srgb, var(--sk-color-brand, #3b82f6) 10%, transparent);
+  color: var(--sk-color-brand, #3b82f6);
+}
+
+.detailFieldRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  min-width: 0;
+  padding: 0.35rem 0;
+}
+
+.detailFieldIcon {
+  display: grid;
+  place-items: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  margin-top: 0.1rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--sk-color-bg-muted, #f1f5f9);
+  color: var(--sk-color-text-secondary, #64748b);
+}
+
+.detailFieldBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.detailCardIcon {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--sk-color-bg-muted, #f1f5f9);
+  color: var(--sk-color-text-secondary, #64748b);
+}
+
+.detailCardPricing .detailCardIcon {
+  background: color-mix(in srgb, var(--sk-color-brand, #3b82f6) 12%, transparent);
+  color: var(--sk-color-brand, #3b82f6);
+}

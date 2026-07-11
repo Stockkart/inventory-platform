@@ -14,16 +14,16 @@ import {
   CardBody,
   CenteredLoader,
   EmptyState,
-  Inline,
+  Icon,
   PageHeader,
   PaginationBar,
   SearchInput,
-  Select,
+  SegmentedControl,
   Stack,
   Text,
-  type SelectOptionDef,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
+import { Search } from 'lucide-react';
 import { InventoryAlertDetails, ProductSearchCard, normalizedBillingMode } from '../ui';
 import { sortInventoryByExpirySoonest } from '@inventory-platform/schema';
 import {
@@ -34,11 +34,11 @@ import {
 } from '@inventory-platform/session';
 import { AddToSellQuotationPicker } from '../ui/AddToSellQuotationPicker';
 
-const BILLING_MODE_OPTIONS: readonly SelectOptionDef[] = [
-  { value: 'ALL', label: 'All Modes' },
-  { value: 'REGULAR', label: 'REGULAR' },
-  { value: 'BASIC', label: 'BASIC' },
-];
+const BILLING_MODE_OPTIONS = [
+  { value: 'ALL', label: 'All' },
+  { value: 'REGULAR', label: 'Regular' },
+  { value: 'BASIC', label: 'Basic' },
+] as const;
 
 export function meta() {
   return [
@@ -345,9 +345,13 @@ export function ProductSearchPage() {
     <Stack gap="md">
       <PageHeader description="Search by product name, barcode, or batch number" />
 
-      <Inline gap="sm" flexWrap>
-        <Box width="full" className={surfaceChrome.growMin12}>
+      <Box className={surfaceChrome.searchFilterBar}>
+        <Box className={surfaceChrome.searchFilterGrow}>
           <SearchInput
+            grow
+            flush
+            buttonVariant="solid"
+            leadingIcon={<Icon icon={Search} size="sm" />}
             value={searchQuery}
             onChange={setSearchQuery}
             onSearch={() => void handleSearch()}
@@ -357,24 +361,16 @@ export function ProductSearchPage() {
             searchLabel={isLoading ? 'Searching…' : 'Search'}
           />
         </Box>
-        {hasActiveSearch ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleClearSearch}
-            disabled={isLoading}
-          >
-            Clear
-          </Button>
-        ) : null}
-        <Select
+        <Box className={surfaceChrome.searchFilterDivider} aria-hidden />
+        <SegmentedControl
           value={billingModeFilter}
           options={BILLING_MODE_OPTIONS}
-          onChange={(e) => setBillingModeFilter(e.target.value as 'ALL' | BillingMode)}
+          onChange={(value) => setBillingModeFilter(value)}
           disabled={isLoading}
+          aria-label="Billing mode"
+          className={surfaceChrome.searchFilterSegments}
         />
-      </Inline>
+      </Box>
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
       {successMessage ? <Alert variant="success">{successMessage}</Alert> : null}

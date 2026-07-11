@@ -109,7 +109,17 @@ import {
   Icon,
   ViewModeToggle,
 } from '@inventory-platform/ui-kit';
-import { FileText, Mail, MapPin, Phone, Plus, QrCode, Receipt, Upload } from 'lucide-react';
+import {
+  ClipboardList,
+  FileText,
+  Mail,
+  MapPin,
+  Phone,
+  Plus,
+  QrCode,
+  Receipt,
+  Upload,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import {
   accordionStyles,
@@ -2922,14 +2932,9 @@ export function ProductRegistrationPage() {
                 {showReviewBanner && (
                   <Box className={pageStyles.reviewBanner}>
                     <Box className={pageStyles.reviewBannerContent}>
-                      <Text
-                        as="span"
-                        className={pageStyles.reviewBannerIcon}
-                        role="img"
-                        aria-label="Clipboard icon"
-                      >
-                        📋
-                      </Text>
+                      <Box as="span" className={pageStyles.reviewBannerIcon} aria-hidden>
+                        <Icon icon={ClipboardList} size="sm" />
+                      </Box>
                       <Box className={pageStyles.reviewBannerText}>
                         <Text as="span" weight="bold">
                           Review Required:

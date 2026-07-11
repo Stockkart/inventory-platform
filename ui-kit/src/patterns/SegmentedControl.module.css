@@ -9,17 +9,23 @@
   border: 1px solid var(--sk-color-border-default, var(--border-color));
   border-radius: var(--sk-radius-md, 8px);
   background: var(--sk-color-bg-muted, var(--bg-muted, #f1f5f9));
+  flex-shrink: 0;
+}
+
+.trackDisabled {
+  opacity: 0.65;
+  pointer-events: none;
 }
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
+  gap: 0.35rem;
   box-sizing: border-box;
   height: 100%;
   min-height: 0;
-  padding: 0 0.7rem;
+  padding: 0 0.85rem;
   border: none;
   border-radius: calc(var(--sk-radius-md, 8px) - 2px);
   background: transparent;
@@ -28,6 +34,7 @@
   font-size: 0.8125rem;
   font-weight: 500;
   line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
@@ -43,12 +50,13 @@
 }
 
 .btnActive {
-  background: var(--sk-color-bg-elevated, #fff);
-  color: var(--sk-color-text-primary, var(--text-primary));
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+  background: color-mix(in srgb, var(--sk-color-brand, #3b82f6) 14%, transparent);
+  color: var(--sk-color-brand, #3b82f6);
+  box-shadow: none;
+  font-weight: 600;
 }
 
 .btnActive:hover:not(:disabled) {
-  background: var(--sk-color-bg-elevated, #fff);
-  color: var(--sk-color-text-primary, var(--text-primary));
+  background: color-mix(in srgb, var(--sk-color-brand, #3b82f6) 18%, transparent);
+  color: var(--sk-color-brand, #3b82f6);
 }

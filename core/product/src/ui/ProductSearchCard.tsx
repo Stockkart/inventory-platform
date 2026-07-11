@@ -1,18 +1,22 @@
 import type { BillingMode, InventoryItem } from '@inventory-platform/product/types';
 import {
   Badge,
+  Box,
   Button,
   Card,
   CardBody,
-  Inline,
-  Stack,
-  Text,
-  surfaceChrome,
+  CardFooter,
+  cn,
+  productChrome,
 } from '@inventory-platform/ui-kit';
 import { formatInventoryExpiryDate } from '@inventory-platform/schema';
 
 export function normalizedBillingMode(item: InventoryItem): BillingMode {
   return item.billingMode === 'BASIC' ? 'BASIC' : 'REGULAR';
+}
+
+export function billingModeLabel(mode: BillingMode): string {
+  return mode === 'BASIC' ? 'Basic' : 'Regular';
 }
 
 function formatDisplayDate(dateString: string) {
@@ -32,7 +36,7 @@ function itemTypeLabel(item: InventoryItem) {
     return null;
   }
   if (item.itemType === 'DEGREE' && item.itemTypeDegree != null) {
-    return `Temperature (${item.itemTypeDegree}°)`;
+    return `Temp ${item.itemTypeDegree}°`;
   }
   if (item.itemType === 'COSTLY') {
     return 'Costly';
@@ -45,25 +49,25 @@ function discountLabel(item: InventoryItem) {
     return null;
   }
   if (item.discountApplicable === 'DISCOUNT') {
-    return 'Discount applicable';
+    return 'Discount';
   }
   if (item.discountApplicable === 'SCHEME') {
-    return 'Scheme applicable';
+    return 'Scheme';
   }
-  return 'Both discount and scheme applicable';
+  return 'Discount + scheme';
 }
 
 function schemeLabel(item: InventoryItem) {
   const schemeType = item.schemeType ?? 'FIXED_UNITS';
   if (schemeType === 'PERCENTAGE' && item.schemePercentage != null) {
-    return `Scheme/Deal: ${item.schemePercentage}%`;
+    return `${item.schemePercentage}% scheme`;
   }
   if (
     (schemeType === 'FIXED_UNITS' || !item.schemeType) &&
     item.scheme != null &&
     item.scheme > 0
   ) {
-    return `Scheme/Deal: ${item.scheme} free`;
+    return `${item.scheme} free`;
   }
   return null;
 }
@@ -89,6 +93,7 @@ export function ProductSearchCard({
   onViewDetails,
   onAddToSell,
 }: ProductSearchCardProps) {
+  const mode = normalizedBillingMode(item);
   const price = effectivePrice(item);
   const outOfStock = item.currentCount <= 0;
   const priceMissing = price == null;
@@ -96,138 +101,136 @@ export function ProductSearchCard({
   const discountText = discountLabel(item);
   const schemeText = schemeLabel(item);
   const purchaseDate = item.purchaseDate || item.createdAt;
-  const hasMeta =
-    typeLabel ||
-    discountText ||
-    purchaseDate ||
-    schemeText ||
-    item.itemType ||
-    item.discountApplicable ||
-    item.purchaseDate ||
-    item.createdAt ||
-    item.schemeType ||
-    item.scheme != null;
+  const chips = [typeLabel, discountText, schemeText].filter(Boolean) as string[];
 
   return (
-    <Card>
-      <CardBody>
-        <Stack gap="xs">
-          <Text variant="heading3" weight="semibold">
+    <Card className={productChrome.searchResultCard}>
+      <CardBody className={productChrome.searchResultBody}>
+        <Box className={productChrome.searchResultIdentity}>
+          <Box as="h3" className={productChrome.searchResultTitle}>
             {item.name || 'Unnamed Product'}
-          </Text>
+          </Box>
+          <Badge
+            variant={mode === 'BASIC' ? 'neutral' : 'info'}
+            className={cn(
+              productChrome.searchResultBadge,
+              mode === 'BASIC' && productChrome.searchResultBadgeBasic,
+            )}
+          >
+            {billingModeLabel(mode)}
+          </Badge>
+        </Box>
 
-          <Badge variant="info">{normalizedBillingMode(item)}</Badge>
-
-          {item.companyName ? (
-            <Text variant="caption" color="muted">
-              Company: {item.companyName}
-            </Text>
-          ) : null}
-          {item.barcode ? (
-            <Text variant="caption" color="muted">
-              Barcode: {item.barcode}
-            </Text>
-          ) : null}
-          {item.location ? (
-            <Text variant="caption" color="secondary" weight="medium">
-              Location: {item.location}
-            </Text>
-          ) : null}
-
-          <Stack gap="xs" padding="sm" className={surfaceChrome.borderTop}>
-            <Stack gap="xs">
-              <Text variant="caption" color="secondary">
-                Current: {item.currentCount}
-              </Text>
-              <Text variant="caption" color="secondary">
-                Received: {item.receivedCount} | Sold: {item.soldCount}
-              </Text>
-            </Stack>
-
-            <Stack gap="xs">
-              <Text variant="caption" color="secondary" weight="semibold">
-                Selling Price: ₹{price != null ? price.toFixed(2) : '—'}
-              </Text>
-              <Text variant="caption" color="secondary" weight="semibold">
-                MRP: ₹{item.maximumRetailPrice != null ? item.maximumRetailPrice.toFixed(2) : '—'}
-              </Text>
-              {item.saleAdditionalDiscount != null ? (
-                <Text variant="caption" color="secondary" weight="semibold">
-                  Additional Discount: {item.saleAdditionalDiscount.toFixed(2)}%
-                </Text>
-              ) : null}
-            </Stack>
-
-            <Text variant="caption" color="secondary" weight="medium">
-              Expires: {formatInventoryExpiryDate(item)}
-            </Text>
-
-            {hasMeta ? (
-              <>
-                <Inline gap="sm" flexWrap>
-                  {typeLabel ? (
-                    <Text variant="caption" color="secondary" weight="medium">
-                      Type: {typeLabel}
-                    </Text>
-                  ) : null}
-                  {discountText ? (
-                    <Text variant="caption" color="secondary" weight="medium">
-                      {discountText}
-                    </Text>
-                  ) : null}
-                  {purchaseDate ? (
-                    <Text variant="caption" color="secondary" weight="medium">
-                      Purchased: {formatDisplayDate(purchaseDate)}
-                    </Text>
-                  ) : null}
-                </Inline>
-                {schemeText ? (
-                  <Text variant="caption" color="secondary" weight="medium">
-                    {schemeText}
-                  </Text>
-                ) : null}
-              </>
+        {(item.companyName || item.barcode || item.location) && (
+          <Box
+            className={cn(productChrome.searchResultStack, productChrome.searchResultStackTight)}
+          >
+            {item.companyName ? (
+              <Box as="p" className={productChrome.searchResultLine}>
+                Company: {item.companyName}
+              </Box>
             ) : null}
-          </Stack>
+            {item.barcode ? (
+              <Box as="p" className={productChrome.searchResultLine}>
+                Barcode: {item.barcode}
+              </Box>
+            ) : null}
+            {item.location ? (
+              <Box as="p" className={productChrome.searchResultLine}>
+                Location: {item.location}
+              </Box>
+            ) : null}
+          </Box>
+        )}
 
-          {item.description ? (
-            <Text variant="caption" color="secondary" className={surfaceChrome.italic}>
-              {item.description}
-            </Text>
+        <Box as="hr" className={productChrome.searchResultDivider} />
+
+        <Box className={cn(productChrome.searchResultStack, productChrome.searchResultStackTight)}>
+          <Box as="p" className={productChrome.searchResultLine}>
+            Current: {item.currentCount}
+          </Box>
+          <Box as="p" className={productChrome.searchResultLine}>
+            Received: {item.receivedCount} | Sold: {item.soldCount}
+          </Box>
+        </Box>
+
+        <Box className={cn(productChrome.searchResultStack, productChrome.searchResultStackTight)}>
+          <Box
+            as="p"
+            className={cn(productChrome.searchResultLine, productChrome.searchResultLineStrong)}
+          >
+            Selling Price: {price != null ? `₹${price.toFixed(2)}` : '—'}
+          </Box>
+          <Box
+            as="p"
+            className={cn(productChrome.searchResultLine, productChrome.searchResultLineStrong)}
+          >
+            MRP: {item.maximumRetailPrice != null ? `₹${item.maximumRetailPrice.toFixed(2)}` : '—'}
+          </Box>
+          {item.saleAdditionalDiscount != null ? (
+            <Box
+              as="p"
+              className={cn(productChrome.searchResultLine, productChrome.searchResultLineStrong)}
+            >
+              Additional Discount: {item.saleAdditionalDiscount.toFixed(2)}%
+            </Box>
           ) : null}
+        </Box>
 
-          <Inline gap="sm" width="full">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              fullWidth
-              onClick={() => onViewDetails(item)}
-              disabled={isPageLoading || isDetailLoading}
-              loading={isDetailLoading}
-            >
-              {isDetailLoading ? 'Loading…' : 'View Details'}
-            </Button>
-            <Button
-              type="button"
-              variant="solid"
-              size="sm"
-              fullWidth
-              onClick={() => onAddToSell(item)}
-              disabled={isPageLoading || isAddingToCart || outOfStock || priceMissing}
-              loading={isAddingToCart}
-            >
-              {isAddingToCart
-                ? 'Adding...'
-                : outOfStock
-                ? 'Out of Stock'
-                : priceMissing
-                ? 'Price not set'
-                : 'Add to Sell'}
-            </Button>
-          </Inline>
-        </Stack>
+        <Box className={cn(productChrome.searchResultStack, productChrome.searchResultStackTight)}>
+          <Box as="p" className={productChrome.searchResultLine}>
+            Expires: {formatInventoryExpiryDate(item)}
+          </Box>
+          {purchaseDate ? (
+            <Box as="p" className={productChrome.searchResultLine}>
+              Purchased: {formatDisplayDate(purchaseDate)}
+            </Box>
+          ) : null}
+          {chips.length > 0 ? (
+            <Box className={productChrome.searchResultChips}>
+              {chips.map((chip) => (
+                <Box as="span" key={chip} className={productChrome.searchResultChip}>
+                  {chip}
+                </Box>
+              ))}
+            </Box>
+          ) : null}
+          {item.description ? (
+            <Box as="p" className={productChrome.searchResultDesc}>
+              {item.description}
+            </Box>
+          ) : null}
+        </Box>
+
+        <Box className={productChrome.searchResultGrow} aria-hidden />
       </CardBody>
+
+      <CardFooter className={productChrome.searchResultFooter}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => onViewDetails(item)}
+          disabled={isPageLoading || isDetailLoading}
+          loading={isDetailLoading}
+        >
+          {isDetailLoading ? 'Loading…' : 'View Details'}
+        </Button>
+        <Button
+          type="button"
+          variant="solid"
+          onClick={() => onAddToSell(item)}
+          disabled={isPageLoading || isAddingToCart || outOfStock || priceMissing}
+          loading={isAddingToCart}
+        >
+          {isAddingToCart
+            ? 'Adding...'
+            : outOfStock
+            ? 'Out of Stock'
+            : priceMissing
+            ? 'Price not set'
+            : 'Add to Sell'}
+        </Button>
+      </CardFooter>
     </Card>
   );
 }

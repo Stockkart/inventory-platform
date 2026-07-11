@@ -21,6 +21,88 @@
   min-width: 12rem;
 }
 
+.searchFilterBar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  flex-wrap: wrap;
+  box-sizing: border-box;
+  padding: 0.35rem 0.35rem 0.35rem 0.75rem;
+  border: 1px solid var(--sk-color-border-default);
+  border-radius: var(--sk-radius-lg, 12px);
+  background: var(--sk-color-bg-elevated, #fff);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.15s ease;
+}
+
+.searchFilterBar:focus-within {
+  border-color: color-mix(
+    in srgb,
+    var(--sk-color-text-primary, #0f172a) 18%,
+    var(--sk-color-border-default)
+  );
+}
+
+.searchFilterGrow {
+  flex: 1;
+  min-width: 12rem;
+}
+
+.searchFilterDivider {
+  width: 1px;
+  height: 1.5rem;
+  flex-shrink: 0;
+  background: var(--sk-color-border-default);
+  margin: 0 0.15rem;
+}
+
+.searchFilterSegments.searchFilterSegments {
+  border: none;
+  background: color-mix(in srgb, var(--sk-color-bg-muted, #f1f5f9) 90%, transparent);
+  height: 2.35rem;
+  min-height: 2.35rem;
+}
+
+.searchFilterMode {
+  flex: 0 0 10.5rem;
+  width: 10.5rem;
+  max-width: 100%;
+}
+
+.searchFilterClear {
+  flex-shrink: 0;
+}
+
+.cardActionRow {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.cardActionRow > * {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .searchFilterBar {
+    padding: 0.5rem;
+  }
+
+  .searchFilterDivider {
+    display: none;
+  }
+
+  .searchFilterMode,
+  .searchFilterSegments.searchFilterSegments {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+}
+
 .minH14 {
   min-height: 14rem;
 }

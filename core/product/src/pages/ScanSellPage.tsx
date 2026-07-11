@@ -45,7 +45,29 @@ import {
   shellChrome,
   surfaceChrome,
   ViewModeToggle,
+  Icon,
 } from '@inventory-platform/ui-kit';
+import type { LucideIcon } from 'lucide-react';
+import {
+  AlertTriangle,
+  Banknote,
+  Barcode,
+  Building2,
+  Calendar,
+  ClipboardList,
+  Gift,
+  Hash,
+  IndianRupee,
+  Loader2,
+  MapPin,
+  Package,
+  Percent,
+  Receipt,
+  Search,
+  Tag,
+  TrendingDown,
+  X,
+} from 'lucide-react';
 import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
 import { cartApi } from '../api/cart.api';
 import { sellCatalogApi } from '../api/sell-catalog.api';
@@ -571,7 +593,7 @@ function DetailField({
   children,
   pricing,
 }: {
-  icon: string;
+  icon: LucideIcon;
   label: string;
   children: ReactNode;
   pricing?: boolean;
@@ -582,7 +604,9 @@ function DetailField({
       align="start"
       className={cn(productChrome.detailCard, pricing && productChrome.detailCardPricing)}
     >
-      <Text aria-hidden>{icon}</Text>
+      <Box className={productChrome.detailCardIcon} aria-hidden>
+        <Icon icon={icon} size="sm" />
+      </Box>
       <Stack gap="xs" flex="1" minWidth="0">
         <Text variant="caption" color="secondary" weight="semibold">
           {label}
@@ -593,12 +617,14 @@ function DetailField({
   );
 }
 
-function DetailSectionHeader({ icon, title }: { icon: string; title: string }) {
+function DetailSectionHeader({ icon, title }: { icon: LucideIcon; title: string }) {
   return (
-    <Inline gap="sm" align="center">
-      <Text aria-hidden>{icon}</Text>
+    <Box className={productChrome.detailSectionHeader}>
+      <Box className={productChrome.detailSectionIcon} aria-hidden>
+        <Icon icon={icon} size="sm" />
+      </Box>
       <Text variant="heading3">{title}</Text>
-    </Inline>
+    </Box>
   );
 }
 
@@ -650,7 +676,9 @@ function ProductSearchBlock({
         width="full"
         className={cn(searchInputWrapperStyle, searchFocused && searchInputWrapperFocusedStyle)}
       >
-        <Text aria-hidden>🔍</Text>
+        <Box className={productChrome.detailFieldIcon} aria-hidden>
+          <Icon icon={Search} size="sm" />
+        </Box>
         <Input
           type="text"
           className={searchInputStyle}
@@ -3862,91 +3890,93 @@ export function ScanSellPage() {
                   width="full"
                 >
                   <Inline gap="md" align="center" flex="1">
-                    <Text aria-hidden>📦</Text>
+                    <Box className={productChrome.detailModalHeroIcon} aria-hidden>
+                      <Icon icon={Package} size="md" />
+                    </Box>
                     <Stack gap="xs">
                       <Text variant="heading3">{inv.name || 'Product'}</Text>
                       {inv.companyName ? <Text color="secondary">{inv.companyName}</Text> : null}
                     </Stack>
                   </Inline>
                   <IconButton label="Close" onClick={() => setDetailModalItem(null)}>
-                    ×
+                    <Icon icon={X} size="sm" />
                   </IconButton>
                 </Inline>
                 <Modal.Body>
                   <Stack gap="lg" className={detailModalBodyStyle}>
                     <Stack gap="md" className={detailModalSectionStyle}>
-                      <DetailSectionHeader icon="📋" title="Product Information" />
+                      <DetailSectionHeader icon={ClipboardList} title="Product Information" />
                       <Grid columns={2}>
                         {detailModalFullItemLoading ? (
-                          <DetailField icon="⏳" label="Loading full details">
+                          <DetailField icon={Loader2} label="Loading full details">
                             …
                           </DetailField>
                         ) : null}
                         {detailModalFullItemError ? (
-                          <DetailField icon="⚠️" label="Details">
+                          <DetailField icon={AlertTriangle} label="Details">
                             {detailModalFullItemError}
                           </DetailField>
                         ) : null}
-                        <DetailField icon="🏷️" label="Product name">
+                        <DetailField icon={Tag} label="Product name">
                           {inv.name || '—'}
                         </DetailField>
                         {inv.companyName ? (
-                          <DetailField icon="🏢" label="Company">
+                          <DetailField icon={Building2} label="Company">
                             {inv.companyName}
                           </DetailField>
                         ) : null}
                         {inv.barcode ? (
-                          <DetailField icon="🏷️" label="Barcode">
+                          <DetailField icon={Barcode} label="Barcode">
                             {inv.barcode}
                           </DetailField>
                         ) : null}
                         {inv.location ? (
-                          <DetailField icon="📍" label="Location">
+                          <DetailField icon={MapPin} label="Location">
                             {inv.location}
                           </DetailField>
                         ) : null}
                         {inv.hsn || inv.batchNo ? (
-                          <DetailField icon="🧾" label="HSN / Batch">
+                          <DetailField icon={Receipt} label="HSN / Batch">
                             {[inv.hsn, getExtensionFieldString(inv, 'batchNo')]
                               .filter(Boolean)
                               .join(' / ')}
                           </DetailField>
                         ) : null}
                         {hasInventoryExpiryDate(inv) ? (
-                          <DetailField icon="📅" label="Expiry">
+                          <DetailField icon={Calendar} label="Expiry">
                             {formatInventoryExpiryDate(inv)}
                           </DetailField>
                         ) : null}
                         {inv.currentCount != null || inv.currentBaseCount != null ? (
-                          <DetailField icon="📦" label="Stock (current)">
+                          <DetailField icon={Package} label="Stock (current)">
                             {inv.currentCount ?? inv.currentBaseCount ?? '—'}
                           </DetailField>
                         ) : null}
-                        <DetailField icon="🔢" label="Quantity">
+                        <DetailField icon={Hash} label="Quantity">
                           {qty}
                         </DetailField>
-                        <DetailField icon="🧾" label="Billing mode">
+                        <DetailField icon={Receipt} label="Billing mode">
                           {normalizeBillingMode(inv.billingMode)}
                         </DetailField>
                       </Grid>
                     </Stack>
                     <Stack gap="md" className={detailModalSectionFlushStyle}>
-                      <DetailSectionHeader icon="💰" title="Pricing" />
+                      <DetailSectionHeader icon={IndianRupee} title="Pricing" />
                       <Grid columns={2} gap="md">
-                        <DetailField icon="💵" label="Selling Price" pricing>
+                        <DetailField icon={Banknote} label="Selling Price" pricing>
                           <Text className={detailPriceValueStyle}>₹{price.toFixed(2)}</Text>
                         </DetailField>
-                        <DetailField icon="🏷️" label="MRP" pricing>
+                        <DetailField icon={Tag} label="MRP" pricing>
                           <Text className={detailMrpValueStyle}>₹{mrp.toFixed(2)}</Text>
                         </DetailField>
                         {mrp > 0 ? (
-                          <DetailField icon="📉" label="Discount off MRP" pricing>
+                          <DetailField icon={TrendingDown} label="Discount off MRP" pricing>
                             {(((mrp - price) / mrp) * 100).toFixed(1)}%
                           </DetailField>
                         ) : null}
                         {!hidePurchaseDetailsInSell ? (
                           <>
-                            <DetailField icon="🏷️" label="Purchase add. discount" pricing>
+                            <DetailField icon={Percent} label="Purchase add. discount" pricing>
                               {(() => {
                                 const v = getPurchaseAdditionalDiscount(
                                   detailModalItem.inventoryItem,
@@ -3954,35 +3984,35 @@ export function ScanSellPage() {
                                 return v != null ? `${v}%` : '—';
                               })()}
                             </DetailField>
-                            <DetailField icon="🎁" label="Purchase scheme/deal" pricing>
+                            <DetailField icon={Gift} label="Purchase scheme/deal" pricing>
                               {formatPurchaseSchemeLabel(detailModalItem.inventoryItem)}
                             </DetailField>
                           </>
                         ) : null}
-                        <DetailField icon="🏷️" label="Sale add. discount" pricing>
+                        <DetailField icon={Percent} label="Sale add. discount" pricing>
                           {addDisc != null ? `${addDisc}%` : '—'}
                         </DetailField>
-                        <DetailField icon="🎁" label="Sale scheme/deal" pricing>
+                        <DetailField icon={Gift} label="Sale scheme/deal" pricing>
                           {schemeLabel}
                         </DetailField>
                         {normalizeBillingMode(detailModalItem.inventoryItem.billingMode) ===
                           'REGULAR' && apiItem?.sgst != null ? (
-                          <DetailField icon="📊" label="SGST" pricing>
+                          <DetailField icon={Percent} label="SGST" pricing>
                             {apiItem.sgst}%
                           </DetailField>
                         ) : null}
                         {normalizeBillingMode(detailModalItem.inventoryItem.billingMode) ===
                           'REGULAR' && apiItem?.cgst != null ? (
-                          <DetailField icon="📊" label="CGST" pricing>
+                          <DetailField icon={Percent} label="CGST" pricing>
                             {apiItem.cgst}%
                           </DetailField>
                         ) : null}
                         {apiItem?.discount != null ? (
-                          <DetailField icon="💰" label="Discount (amount)" pricing>
+                          <DetailField icon={IndianRupee} label="Discount (amount)" pricing>
                             ₹{Number(apiItem.discount).toFixed(2)}
                           </DetailField>
                         ) : null}
-                        <DetailField icon="₹" label="Total amount" pricing>
+                        <DetailField icon={IndianRupee} label="Total amount" pricing>
                           <Text className={detailTotalValueStyle}>
                             ₹{(apiItem?.totalAmount ?? price * qty).toFixed(2)}
                           </Text>
