@@ -1,0 +1,32 @@
+---
+description: Domain module conventions for core/* packages
+globs: inventory-platform/core/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# StockKart domain modules (`core/*`)
+
+## Layout
+
+Put code in the owning domain:
+
+- `api/` — REST via `@inventory-platform/api-client`
+- `queries/` — TanStack Query keys + hooks
+- `pages/` — route screens
+- `ui/` — domain widgets only
+- `routes.ts` / `nav.ts` — register with app/registry (no god dashboard package)
+
+## Do
+
+- Read `core/<domain>/README.md` and `core/README.md` for status (migrated vs scaffold)
+- Keep cross-domain usage to **public** exports
+- Use matching ui-kit `*Chrome` for layout polish
+
+## Don’t
+
+- Import another domain’s deep relative paths
+- Add server-state Zustand stores
+- Grow `core/product` with unrelated CRM/accounting UI
+- Implement real checkout/notifications in scaffold packages without an ownership decision
+
+For journeys (login/onboarding), copy must match the active step; use `journeyChrome`.
