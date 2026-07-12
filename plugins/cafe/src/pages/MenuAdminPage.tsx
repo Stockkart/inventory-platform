@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Check, ChevronDown, ChevronRight, Search } from 'lucide-react';
 import { cartApi, shopMenuApi } from '@inventory-platform/product/api';
 import type { MenuItem, MenuSection, ShopMenu } from '@inventory-platform/plugin-cafe/types';
 import { menuSellableRef } from '@inventory-platform/product/types';
@@ -8,13 +9,9 @@ import {
   Badge,
   Box,
   Button,
-  Card,
-  CardBody,
-  CardHeader,
   CenteredLoader,
-  Divider,
   EmptyState,
-  FormField,
+  Icon,
   IconButton,
   Inline,
   Input,
@@ -23,7 +20,9 @@ import {
   Stack,
   Switch,
   Text,
-  chartChrome,
+  cn,
+  productChrome,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 
 export function meta() {
@@ -79,8 +78,6 @@ function menuItemMatchesSearch(item: MenuItem, sectionTitle: string, query: stri
     item.name.toLowerCase().includes(normalized) || sectionTitle.toLowerCase().includes(normalized)
   );
 }
-
-const unavailableCardStyle = { opacity: 0.72 };
 
 export function MenuAdminPage() {
   const { success: notifySuccess, error: notifyError } = useNotify;
@@ -320,14 +317,14 @@ export function MenuAdminPage() {
 
   if (isLoading) {
     return (
-      <Stack gap="md" width="full" maxWidth="xl" mx="auto" padding="md">
+      <Stack gap="md" className={productChrome.menuAdminShell}>
         <CenteredLoader label="Loading menu…" />
       </Stack>
     );
   }
 
   return (
-    <Stack gap="md" width="full" maxWidth="xl" mx="auto" padding="md">
+    <Stack gap="md" className={productChrome.menuAdminShell}>
       <PageHeader
         description="Organize sellable items into sections. Prices set here appear on Sell."
         actions={
@@ -353,43 +350,59 @@ export function MenuAdminPage() {
         }
       />
 
-      <Inline gap="sm" flexWrap>
-        <Badge variant="neutral">
-          📂 {sections.length} {sections.length === 1 ? 'section' : 'sections'}
-        </Badge>
-        <Badge variant="neutral">
-          🍽️ {totalItems} {totalItems === 1 ? 'item' : 'items'}
-        </Badge>
-        <Badge variant="neutral">✓ {availableItems} available</Badge>
-      </Inline>
+      <Box className={productChrome.menuAdminStats}>
+        <Box as="span" className={productChrome.menuAdminStat}>
+          <Box as="span" className={productChrome.menuAdminStatValue}>
+            {sections.length}
+          </Box>
+          {sections.length === 1 ? 'section' : 'sections'}
+        </Box>
+        <Box as="span" className={productChrome.menuAdminStat}>
+          <Box as="span" className={productChrome.menuAdminStatValue}>
+            {totalItems}
+          </Box>
+          {totalItems === 1 ? 'item' : 'items'}
+        </Box>
+        <Box as="span" className={productChrome.menuAdminStat}>
+          <Icon icon={Check} size="sm" />
+          <Box as="span" className={productChrome.menuAdminStatValue}>
+            {availableItems}
+          </Box>
+          available
+        </Box>
+      </Box>
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
       {savedMessage ? <Alert variant="success">{savedMessage}</Alert> : null}
 
-      <Card>
-        <CardBody>
-          <Stack gap="sm">
-            <Inline gap="sm" width="full" flexWrap>
-              <SearchInput
-                value={searchQuery}
-                onChange={setSearchQuery}
-                placeholder="Search menu items or sections…"
-              />
-              {hasActiveSearch ? (
-                <Button type="button" variant="outline" size="sm" onClick={handleClearSearch}>
-                  Clear
-                </Button>
-              ) : null}
-            </Inline>
-            {hasActiveSearch ? (
-              <Text variant="caption" color="secondary">
-                {searchResultCount} {searchResultCount === 1 ? 'match' : 'matches'} for &ldquo;
-                {searchQuery.trim()}&rdquo;
-              </Text>
-            ) : null}
-          </Stack>
-        </CardBody>
-      </Card>
+      <Box className={surfaceChrome.searchFilterBar}>
+        <Box className={surfaceChrome.searchFilterGrow}>
+          <SearchInput
+            grow
+            flush
+            buttonVariant="solid"
+            leadingIcon={<Icon icon={Search} size="sm" />}
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Search menu items or sections…"
+            showSearchButton={false}
+          />
+        </Box>
+        {hasActiveSearch ? (
+          <>
+            <Box className={surfaceChrome.searchFilterDivider} aria-hidden />
+            <Button type="button" variant="ghost" size="sm" onClick={handleClearSearch}>
+              Clear
+            </Button>
+          </>
+        ) : null}
+      </Box>
+      {hasActiveSearch ? (
+        <Text variant="caption" color="secondary">
+          {searchResultCount} {searchResultCount === 1 ? 'match' : 'matches'} for &ldquo;
+          {searchQuery.trim()}&rdquo;
+        </Text>
+      ) : null}
 
       {sections.length === 0 ? (
         <EmptyState
@@ -412,143 +425,145 @@ export function MenuAdminPage() {
           }
         />
       ) : (
-        <Stack gap="md">
+        <Box className={productChrome.menuAdminSections}>
           {displaySections.map((section) => {
             const isCollapsed = !hasActiveSearch && collapsedSections.has(section.id);
             const namedItems = section.items.filter((i) => i.name.trim());
+            const sectionTitle = section.title.trim() || 'section';
             return (
-              <Card key={section.id}>
-                <CardHeader>
-                  <Inline gap="sm" align="center" width="full" flexWrap>
-                    <IconButton
-                      size="sm"
-                      label={isCollapsed ? 'Expand section' : 'Collapse section'}
-                      onClick={() => toggleSectionCollapsed(section.id)}
-                    >
-                      {isCollapsed ? '▶' : '▼'}
-                    </IconButton>
-                    <Text aria-hidden>📁</Text>
-                    <Input
-                      value={section.title}
-                      onChange={(e) => updateSection(section.id, { title: e.target.value })}
-                      placeholder="Section title (e.g. Main course)"
-                    />
-                    <Badge variant="neutral">{namedItems.length || section.items.length}</Badge>
-                    <Button
-                      type="button"
-                      variant="danger"
-                      size="sm"
-                      onClick={() => removeSection(section.id)}
-                    >
-                      Delete section
-                    </Button>
-                  </Inline>
-                </CardHeader>
+              <Box key={section.id} className={productChrome.menuAdminSection}>
+                <Box className={productChrome.menuAdminSectionHeader}>
+                  <IconButton
+                    size="sm"
+                    label={isCollapsed ? 'Expand section' : 'Collapse section'}
+                    onClick={() => toggleSectionCollapsed(section.id)}
+                  >
+                    <Icon icon={isCollapsed ? ChevronRight : ChevronDown} size="sm" />
+                  </IconButton>
+                  <Input
+                    value={section.title}
+                    onChange={(e) => updateSection(section.id, { title: e.target.value })}
+                    placeholder="Section title (e.g. Main course)"
+                    className={productChrome.menuAdminSectionTitle}
+                  />
+                  <Badge variant="neutral">
+                    {namedItems.length || section.items.length}{' '}
+                    {(namedItems.length || section.items.length) === 1 ? 'item' : 'items'}
+                  </Badge>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className={productChrome.menuAdminDeleteSection}
+                    onClick={() => removeSection(section.id)}
+                  >
+                    Delete
+                  </Button>
+                </Box>
 
                 {!isCollapsed ? (
-                  <CardBody>
-                    <Stack gap="md">
-                      <Box display="grid" gap="sm" className={chartChrome.autoGridFill}>
-                        {section.items.map((item) => {
-                          const isAvailable = item.available !== false;
-                          return (
-                            <Card
-                              key={item.id}
-                              style={!isAvailable ? unavailableCardStyle : undefined}
+                  <Box className={productChrome.menuAdminSectionBody}>
+                    <Box className={productChrome.menuAdminItemGrid}>
+                      {section.items.map((item) => {
+                        const isAvailable = item.available !== false;
+                        return (
+                          <Box
+                            key={item.id}
+                            className={cn(
+                              productChrome.menuAdminItem,
+                              !isAvailable && productChrome.menuAdminItemUnavailable,
+                            )}
+                          >
+                            <Inline gap="sm" align="start" width="full">
+                              <Input
+                                value={item.name}
+                                onChange={(e) =>
+                                  updateItem(section.id, item.id, {
+                                    name: e.target.value,
+                                  })
+                                }
+                                placeholder="Item name"
+                                className={productChrome.menuAdminItemName}
+                              />
+                              <IconButton
+                                size="sm"
+                                label="Remove item"
+                                title="Remove item"
+                                onClick={() => removeItem(section.id, item.id)}
+                              >
+                                ×
+                              </IconButton>
+                            </Inline>
+
+                            <Box className={productChrome.menuAdminItemPriceRow}>
+                              <Text as="span" className={productChrome.menuAdminItemPricePrefix}>
+                                ₹
+                              </Text>
+                              <Input
+                                type="number"
+                                min={0}
+                                step="0.01"
+                                value={item.sellingPrice || ''}
+                                onChange={(e) =>
+                                  updateItem(section.id, item.id, {
+                                    sellingPrice: Number(e.target.value),
+                                  })
+                                }
+                                placeholder="0.00"
+                                className={productChrome.menuAdminItemPrice}
+                                aria-label="Price"
+                              />
+                            </Box>
+
+                            <Box className={productChrome.menuAdminItemMeta}>
+                              <Text as="span" className={productChrome.menuAdminItemMetaLabel}>
+                                {isAvailable ? 'Available' : 'Hidden'}
+                              </Text>
+                              <Switch
+                                label={isAvailable ? 'Mark unavailable' : 'Mark available'}
+                                checked={isAvailable}
+                                onChange={() =>
+                                  updateItem(section.id, item.id, {
+                                    available: !isAvailable,
+                                  })
+                                }
+                                aria-pressed={isAvailable}
+                              />
+                            </Box>
+
+                            <Button
+                              type="button"
+                              variant="solid"
+                              size="sm"
+                              fullWidth
+                              onClick={() => void handleAddToSell(item)}
+                              disabled={!canAddItemToSell(item) || addingToSell === item.id}
+                              title={addToSellDisabledReason(item) ?? undefined}
                             >
-                              <CardBody>
-                                <Stack gap="sm">
-                                  <Inline gap="sm" align="start" width="full">
-                                    <Input
-                                      value={item.name}
-                                      onChange={(e) =>
-                                        updateItem(section.id, item.id, {
-                                          name: e.target.value,
-                                        })
-                                      }
-                                      placeholder="Item name"
-                                    />
-                                    <IconButton
-                                      size="sm"
-                                      label="Remove item"
-                                      title="Remove item"
-                                      onClick={() => removeItem(section.id, item.id)}
-                                    >
-                                      ×
-                                    </IconButton>
-                                  </Inline>
+                              {addingToSell === item.id
+                                ? 'Adding…'
+                                : addToSellDisabledReason(item) ?? 'Add to Sell'}
+                            </Button>
+                          </Box>
+                        );
+                      })}
+                    </Box>
 
-                                  <FormField label="Price">
-                                    <Inline gap="sm" align="center" width="full">
-                                      <Text color="secondary">₹</Text>
-                                      <Input
-                                        type="number"
-                                        min={0}
-                                        step="0.01"
-                                        value={item.sellingPrice || ''}
-                                        onChange={(e) =>
-                                          updateItem(section.id, item.id, {
-                                            sellingPrice: Number(e.target.value),
-                                          })
-                                        }
-                                        placeholder="0"
-                                      />
-                                    </Inline>
-                                  </FormField>
-
-                                  <Divider />
-
-                                  <Inline justify="between" align="center" width="full">
-                                    <Text variant="caption" color="secondary">
-                                      {isAvailable ? 'Available to sell' : 'Hidden from sell'}
-                                    </Text>
-                                    <Switch
-                                      label={isAvailable ? 'Mark unavailable' : 'Mark available'}
-                                      checked={isAvailable}
-                                      onChange={() =>
-                                        updateItem(section.id, item.id, {
-                                          available: !isAvailable,
-                                        })
-                                      }
-                                      aria-pressed={isAvailable}
-                                    />
-                                  </Inline>
-
-                                  <Button
-                                    type="button"
-                                    variant="solid"
-                                    size="sm"
-                                    fullWidth
-                                    onClick={() => void handleAddToSell(item)}
-                                    disabled={!canAddItemToSell(item) || addingToSell === item.id}
-                                    title={addToSellDisabledReason(item) ?? undefined}
-                                  >
-                                    {addingToSell === item.id
-                                      ? 'Adding…'
-                                      : addToSellDisabledReason(item) ?? 'Add to Sell'}
-                                  </Button>
-                                </Stack>
-                              </CardBody>
-                            </Card>
-                          );
-                        })}
-                      </Box>
-
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => addItem(section.id)}
-                      >
-                        + Add item to {section.title.trim() || 'section'}
-                      </Button>
-                    </Stack>
-                  </CardBody>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className={productChrome.menuAdminAddItem}
+                      onClick={() => addItem(section.id)}
+                    >
+                      + Add item to {sectionTitle}
+                    </Button>
+                  </Box>
                 ) : null}
-              </Card>
+              </Box>
             );
           })}
-        </Stack>
+        </Box>
       )}
     </Stack>
   );
