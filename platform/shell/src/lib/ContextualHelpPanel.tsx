@@ -7,6 +7,7 @@ import {
   Drawer,
   IconButton,
   Inline,
+  Link,
   Spinner,
   Text,
   shellChrome,
@@ -143,7 +144,7 @@ export function ContextualHelpPanel({
                       >
                         Watch
                       </Button>
-                      <a
+                      <Link
                         href={video.youtubeUrl}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -151,7 +152,7 @@ export function ContextualHelpPanel({
                         className={shellChrome.helpExternalLink}
                       >
                         <ExternalLink size={15} aria-hidden />
-                      </a>
+                      </Link>
                     </Box>
                   </Box>
                 ))}
