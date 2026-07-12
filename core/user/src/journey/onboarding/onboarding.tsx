@@ -20,12 +20,13 @@ import {
   FormField,
   FormRow,
   IconButton,
-  Inline,
   Select,
   Stack,
   Text,
+  cn,
   journeyChrome,
 } from '@inventory-platform/ui-kit';
+import { CircleHelp } from 'lucide-react';
 
 const STEPS: OnboardingStep[] = [
   'name',
@@ -47,6 +48,41 @@ const STEP_LABELS: Record<OnboardingStep, string> = {
   location: 'Location Details',
   businessDetails: 'Business Details',
   tagline: 'Tagline',
+};
+
+const STEP_COPY: Record<OnboardingStep, { title: string; subtitle: string }> = {
+  name: {
+    title: 'Name your shop',
+    subtitle: 'This is how your business will appear across StockKart.',
+  },
+  vertical: {
+    title: 'Choose your vertical',
+    subtitle: 'Pick the business category that best matches your shop.',
+  },
+  shopType: {
+    title: 'Select shop type',
+    subtitle: 'Tell us how you sell so we can tailor the experience.',
+  },
+  tagline: {
+    title: 'Add a tagline',
+    subtitle: 'A short line that captures what makes your shop special. Optional.',
+  },
+  contactPhone: {
+    title: 'Add a mobile number',
+    subtitle: 'We use this to verify your identity. Your details stay private.',
+  },
+  contactEmail: {
+    title: 'Confirm contact email',
+    subtitle: 'We’ll use this for important account and shop updates.',
+  },
+  location: {
+    title: 'Where is your shop?',
+    subtitle: 'Add the address customers and partners will associate with you.',
+  },
+  businessDetails: {
+    title: 'Business details',
+    subtitle: 'Add tax and compliance info now, or skip and fill them later.',
+  },
 };
 
 const SHOP_TYPES: { value: ShopType; label: string }[] = [
@@ -335,12 +371,13 @@ export default function OnboardingPage() {
       return (
         <>
           <FormField
-            label="Primary Address *"
+            label="Primary Address"
             id="primaryAddress"
             placeholder="Shop No. 12, Main Market Road"
             value={getCurrentValue('primaryAddress')}
             onChange={(v) => updateLocationField('primaryAddress', v)}
             disabled={isLoading}
+            required
           />
           <FormField
             label="Secondary Address"
@@ -352,38 +389,42 @@ export default function OnboardingPage() {
           />
           <FormRow>
             <FormField
-              label="City *"
+              label="City"
               id="city"
               placeholder="Mumbai"
               value={getCurrentValue('city')}
               onChange={(v) => updateLocationField('city', v)}
               disabled={isLoading}
+              required
             />
             <FormField
-              label="State *"
+              label="State"
               id="state"
               placeholder="Maharashtra"
               value={getCurrentValue('state')}
               onChange={(v) => updateLocationField('state', v)}
               disabled={isLoading}
+              required
             />
           </FormRow>
           <FormRow>
             <FormField
-              label="PIN Code *"
+              label="PIN Code"
               id="pin"
               placeholder="400001"
               value={getCurrentValue('pin')}
               onChange={(v) => updateLocationField('pin', v)}
               disabled={isLoading}
+              required
             />
             <FormField
-              label="Country *"
+              label="Country"
               id="country"
               placeholder="IND"
               value={getCurrentValue('country')}
               onChange={(v) => updateLocationField('country', v)}
               disabled={isLoading}
+              required
             />
           </FormRow>
         </>
@@ -392,7 +433,7 @@ export default function OnboardingPage() {
 
     if (step === 'vertical') {
       return (
-        <FormField label="Business vertical *" id="verticalId" required>
+        <FormField label="Business vertical" id="verticalId" required>
           <Select
             id="verticalId"
             options={verticalOptions}
@@ -472,17 +513,16 @@ export default function OnboardingPage() {
 
     if (step === 'shopType') {
       return (
-        <FormField label="Shop Type *" id="shopType" required>
+        <FormField label="Shop Type" id="shopType" required>
           <Stack gap="sm" width="full">
             {SHOP_TYPES.map(({ value, label }) => (
               <Button
                 variant="outline"
                 key={value}
-                style={
-                  formData.shopType === value
-                    ? { borderColor: '#3b82f6', boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)' }
-                    : undefined
-                }
+                className={cn(
+                  journeyChrome.onboardingShopTypeBtn,
+                  formData.shopType === value && journeyChrome.onboardingShopTypeBtnActive,
+                )}
                 onClick={() => {
                   setFormData({ ...formData, shopType: value });
                   clearError();
@@ -532,7 +572,7 @@ export default function OnboardingPage() {
 
     return (
       <FormField
-        label={`${STEP_LABELS[step]} *`}
+        label={STEP_LABELS[step]}
         id="currentInput"
         type={inputType}
         placeholder={placeholder}
@@ -548,94 +588,120 @@ export default function OnboardingPage() {
           clearError();
         }}
         disabled={isLoading}
+        required
       />
     );
   };
 
+  const stepKey = STEPS[currentStep];
+  const stepCopy = STEP_COPY[stepKey];
+  const progressPct = ((currentStep + 1) / STEPS.length) * 100;
+
   return (
-    <Box display="flex" flexDirection={compactLayout ? 'column' : 'row'} minHeight="screen">
-      <Stack
-        gap="md"
-        bg="muted"
-        padding="lg"
-        border
+    <Box className={journeyChrome.onboardingLayout}>
+      <Box
         className={
           compactLayout ? journeyChrome.onboardingSidebarCompact : journeyChrome.onboardingSidebar
         }
       >
-        <Stack gap="sm" align="center">
+        <Box className={journeyChrome.onboardingProfile}>
           <Avatar name={userDisplayName} />
-          <Text weight="medium">{userDisplayName}</Text>
-        </Stack>
-        <Stack gap="md">
-          <Text variant="heading2" weight="semibold">
-            Onboarding: Shop Registration
+          <Text as="p" className={journeyChrome.onboardingUserName}>
+            {userDisplayName}
           </Text>
-          <Stack gap="xs">
-            {STEPS.map((step, index) => (
-              <Inline
+        </Box>
+
+        <Box>
+          <Text as="p" className={journeyChrome.onboardingSidebarTitle}>
+            Shop registration
+          </Text>
+          <Text as="p" className={journeyChrome.onboardingProgressMeta}>
+            Step {currentStep + 1} of {STEPS.length}
+          </Text>
+          <Box className={journeyChrome.onboardingProgressTrack} aria-hidden>
+            <Box
+              className={journeyChrome.onboardingProgressFill}
+              style={{ width: `${progressPct}%` }}
+            />
+          </Box>
+        </Box>
+
+        <Box className={journeyChrome.onboardingStepList} as="nav" aria-label="Registration steps">
+          {STEPS.map((step, index) => {
+            const done = index < currentStep;
+            const active = index === currentStep;
+            return (
+              <Box
                 key={step}
-                gap="sm"
-                padding="sm"
-                rounded="md"
-                bg={index === currentStep ? 'surface' : undefined}
-                className={index <= currentStep ? undefined : journeyChrome.stepMuted}
+                className={cn(
+                  journeyChrome.onboardingStep,
+                  active && journeyChrome.onboardingStepActive,
+                  done && journeyChrome.onboardingStepDone,
+                  !done && !active && journeyChrome.stepMuted,
+                )}
               >
-                <Text as="span" weight="semibold">
-                  {index < currentStep ? '✓' : index + 1}
+                <Text as="span" className={journeyChrome.onboardingStepIndex}>
+                  {done ? '✓' : index + 1}
                 </Text>
-                <Text as="span">{STEP_LABELS[step]}</Text>
-              </Inline>
-            ))}
-          </Stack>
-        </Stack>
-        <Inline gap="sm" justify="between" width="full">
+                <Text as="span" className={journeyChrome.onboardingStepLabel}>
+                  {STEP_LABELS[step]}
+                </Text>
+              </Box>
+            );
+          })}
+        </Box>
+
+        <Box className={journeyChrome.onboardingSidebarFooter}>
           <Button variant="ghost" onClick={() => void handleLogout()}>
             Logout
           </Button>
-          <IconButton label="Help">?</IconButton>
-        </Inline>
-      </Stack>
+          <IconButton label="Help">
+            <CircleHelp size={18} strokeWidth={1.75} />
+          </IconButton>
+        </Box>
+      </Box>
 
-      <Stack gap="md" width="full" align="center" justify="center" padding="lg" flex="1">
-        <Inline justify="between" width="full" maxWidth="md">
-          <Button variant="ghost" onClick={handleBack}>
+      <Box as="main" className={journeyChrome.onboardingMain}>
+        <Box className={journeyChrome.onboardingMainInner}>
+          <Button variant="ghost" onClick={handleBack} className={journeyChrome.onboardingBack}>
             ← Back
           </Button>
-          <Text variant="title" weight="semibold">
-            StockKart
-          </Text>
-        </Inline>
 
-        <Stack gap="md" width="full" maxWidth="md">
-          <Text variant="heading1" align="center">
-            Verify your Contact Details
-          </Text>
-          <Text color="secondary" align="center">
-            We require this to verify your identity. Your details will remain safe.
-          </Text>
+          <Box className={journeyChrome.onboardingPanel}>
+            <Box className={journeyChrome.onboardingPanelBody}>
+              <Box className={journeyChrome.onboardingPanelHeader}>
+                <Text as="h1" className={journeyChrome.onboardingPanelTitle}>
+                  {stepCopy.title}
+                </Text>
+                <Text as="p" className={journeyChrome.onboardingPanelSubtitle}>
+                  {stepCopy.subtitle}
+                </Text>
+              </Box>
 
-          {error ? <Alert variant="danger">{error}</Alert> : null}
+              {error ? <Alert variant="danger">{error}</Alert> : null}
 
-          <Stack gap="md" width="full">
-            {renderStepContent()}
+              <Box className={journeyChrome.onboardingForm}>
+                {renderStepContent()}
 
-            <Button
-              variant="solid"
-              onClick={handleContinue}
-              disabled={isLoading}
-              loading={isLoading}
-              fullWidth
-            >
-              {isLoading
-                ? 'Registering...'
-                : currentStep === STEPS.length - 1
-                ? 'Complete'
-                : 'Continue'}
-            </Button>
-          </Stack>
-        </Stack>
-      </Stack>
+                <Button
+                  variant="solid"
+                  onClick={handleContinue}
+                  disabled={isLoading}
+                  loading={isLoading}
+                  fullWidth
+                  className={journeyChrome.onboardingContinue}
+                >
+                  {isLoading
+                    ? 'Registering…'
+                    : currentStep === STEPS.length - 1
+                    ? 'Complete'
+                    : 'Continue'}
+                </Button>
+              </Box>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
     </Box>
   );
 }
