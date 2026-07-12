@@ -1,0 +1,35 @@
+# CODEOWNERS — request reviews by path when teams/users are configured.
+#
+# Replace EXAMPLE handles/teams with your GitHub org teams or usernames.
+# Until then, GitHub ignores invalid owners; keep this file as the ownership map.
+#
+# Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default fallback (set your core maintainers)
+# * @your-org/stockkart-maintainers
+
+/ui-kit/ @your-org/stockkart-frontend
+/platform/shell/ @your-org/stockkart-frontend
+/platform/session/ @your-org/stockkart-frontend
+/platform/api-client/ @your-org/stockkart-frontend
+/platform/query/ @your-org/stockkart-frontend
+/platform/routing/ @your-org/stockkart-frontend
+/platform/schema/ @your-org/stockkart-frontend
+/platform/access/ @your-org/stockkart-frontend
+/platform/contracts/ @your-org/stockkart-frontend
+
+/core/accounting/ @your-org/stockkart-frontend
+/core/analytics/ @your-org/stockkart-frontend
+/core/credit/ @your-org/stockkart-frontend
+/core/plan/ @your-org/stockkart-frontend
+/core/pricing/ @your-org/stockkart-frontend
+/core/product/ @your-org/stockkart-frontend
+/core/reminders/ @your-org/stockkart-frontend
+/core/taxation/ @your-org/stockkart-frontend
+/core/user/ @your-org/stockkart-frontend
+
+/plugins/cafe/ @your-org/stockkart-frontend
+/plugins/registry/ @your-org/stockkart-frontend
+
+/.github/ @your-org/stockkart-frontend
+/apps/inventory/ @your-org/stockkart-frontend

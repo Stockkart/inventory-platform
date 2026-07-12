@@ -1,0 +1,46 @@
+{
+  "name": "@inventory-platform/plugin-registry",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "@inventory-platform/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./routes": {
+      "@inventory-platform/source": "./src/routes/index.ts",
+      "types": "./dist/routes/index.d.ts",
+      "import": "./src/routes/index.ts",
+      "default": "./src/routes/index.ts"
+    }
+  },
+  "nx": {
+    "tags": [
+      "type:plugin",
+      "scope:registry"
+    ]
+  },
+  "dependencies": {
+    "@inventory-platform/accounting": "workspace:*",
+    "@inventory-platform/analytics": "workspace:*",
+    "@inventory-platform/credit": "workspace:*",
+    "@inventory-platform/plan": "workspace:*",
+    "@inventory-platform/pricing": "workspace:*",
+    "@inventory-platform/product": "workspace:*",
+    "@inventory-platform/reminders": "workspace:*",
+    "@inventory-platform/routing": "workspace:*",
+    "@inventory-platform/taxation": "workspace:*",
+    "@inventory-platform/user": "workspace:*",
+    "@inventory-platform/plugin-cafe": "workspace:*",
+    "@inventory-platform/shell": "workspace:*",
+    "@react-router/dev": "^7.2.0",
+    "zustand": "^5.0.8"
+  }
+}

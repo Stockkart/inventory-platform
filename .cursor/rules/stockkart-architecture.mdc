@@ -1,0 +1,32 @@
+---
+description: StockKart frontend architecture, package boundaries, and where to put code
+alwaysApply: true
+---
+
+# StockKart architecture (always)
+
+Work inside `inventory-platform` with strict package boundaries.
+
+## Topology
+
+- `apps/inventory` — compose routes/providers only
+- `platform/*` — shell, session, api-client, query, schema, routing (no domain UI except shell chrome)
+- `ui-kit` — presentation only; **never** import APIs, session, or `core/*`
+- `core/<domain>` — owns `api/`, `queries/`, `pages/`, `ui/`, `routes.ts`, `nav.ts`
+- `plugins/*` — vertical extras (cafe) via `plugin-registry`
+
+## Ownership shortcuts
+
+- Scan Sell / stock / returns → `core/product` (+ `productChrome`)
+- Auth / onboarding / shops / CRM → `core/user` (+ `journeyChrome`)
+- Dashboard chrome / notifications bell / help → `platform/shell` (+ `shellChrome`)
+- Analytics charts → `core/analytics` (+ `chartChrome.plot` fixed height)
+- Cafe menu/stock → `plugins/cafe`
+- `core/checkout` & `core/notifications` are scaffolds — don’t put real features there without migrating ownership
+
+## Hard rules
+
+- Don’t cross-import another domain’s private files; use public barrels only
+- Prefer TanStack Query in `core/*/queries`; no new Zustand for server state
+- Extend ui-kit chrome for reusable UI; don’t add domain CSS that duplicates chrome
+- Read `AGENTS.md` + the target package `README.md` before large changes

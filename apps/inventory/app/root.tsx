@@ -8,7 +8,8 @@ import {
   type LinksFunction,
 } from 'react-router';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { ThemeProvider, AuthInitializer } from '@inventory-platform/ui';
+import { ThemeProvider, AuthInitializer } from '@inventory-platform/shell';
+import { QueryProvider } from '@inventory-platform/query';
 import '../styles.css';
 
 export const meta: MetaFunction = () => [
@@ -36,7 +37,7 @@ export const links: LinksFunction = () => [
   },
   {
     rel: 'stylesheet',
-    href: 'https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap',
+    href: 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400..800;1,400..800&display=swap',
   },
 ];
 
@@ -67,12 +68,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
         />
       </head>
       <body>
-        <GoogleOAuthProvider
-          clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || ''}
-        >
-          <ThemeProvider>
-            <AuthInitializer>{children}</AuthInitializer>
-          </ThemeProvider>
+        <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || ''}>
+          <QueryProvider>
+            <ThemeProvider>
+              <AuthInitializer>{children}</AuthInitializer>
+            </ThemeProvider>
+          </QueryProvider>
         </GoogleOAuthProvider>
         <ScrollRestoration />
         <Scripts />

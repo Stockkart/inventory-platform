@@ -1,0 +1,229 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--sk-z-modal);
+  padding: var(--sk-space-md);
+}
+
+.drawerBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--sk-z-modal);
+  display: flex;
+  align-items: stretch;
+  padding: 0;
+  background: rgba(15, 23, 42, 0.28);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: drawerBackdropIn 0.22s ease-out;
+}
+
+.drawerBackdropLeft {
+  justify-content: flex-start;
+}
+
+.drawerBackdropRight {
+  justify-content: flex-end;
+}
+
+.modal {
+  background: var(--sk-color-bg-surface);
+  border-radius: var(--sk-radius-xl);
+  border: 1px solid var(--sk-color-border-default);
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: var(--sk-shadow-lg);
+  display: flex;
+  flex-direction: column;
+}
+
+.size-sm {
+  max-width: 420px;
+}
+.size-md {
+  max-width: 540px;
+}
+.size-lg {
+  max-width: 720px;
+}
+.size-full {
+  max-width: min(960px, 100%);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sk-space-md);
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--sk-color-border-default);
+  flex-shrink: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--sk-color-text-primary);
+}
+
+.body {
+  padding: 1.5rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--sk-space-md);
+  padding: 1rem 1.5rem 1.5rem;
+  border-top: 1px solid var(--sk-color-border-default);
+  flex-shrink: 0;
+  background: var(--sk-color-bg-surface);
+}
+
+.drawer {
+  width: min(400px, 100%);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(
+      180deg,
+      color-mix(in srgb, #3b82f6 5%, transparent) 0%,
+      transparent 7.5rem
+    ),
+    var(--sk-color-bg-elevated, #fff);
+  overflow: hidden;
+}
+
+.drawerLeft {
+  border-right: 1px solid
+    color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 85%, transparent);
+  border-radius: 0 18px 18px 0;
+  box-shadow: 8px 0 32px rgba(15, 23, 42, 0.1), 2px 0 8px rgba(15, 23, 42, 0.04);
+  animation: drawerSlideInLeft 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.drawerRight {
+  border-left: 1px solid
+    color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 85%, transparent);
+  border-radius: 18px 0 0 18px;
+  box-shadow: -8px 0 32px rgba(15, 23, 42, 0.1), -2px 0 8px rgba(15, 23, 42, 0.04);
+  animation: drawerSlideInRight 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes drawerBackdropIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes drawerSlideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0.96;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes drawerSlideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0.96;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawerBackdrop,
+  .drawerLeft,
+  .drawerRight {
+    animation: none;
+  }
+}
+
+.popover {
+  position: absolute;
+  z-index: var(--sk-z-dropdown);
+  min-width: 10rem;
+  padding: var(--sk-space-sm);
+  border: 1px solid var(--sk-color-border-default);
+  border-radius: var(--sk-radius-md);
+  background: var(--sk-color-bg-elevated);
+  box-shadow: var(--sk-shadow-md);
+}
+
+.popoverAnchor:hover .tooltip,
+.popoverAnchor:focus-within .tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+.tooltip {
+  position: absolute;
+  z-index: var(--sk-z-dropdown);
+  max-width: 16rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--sk-radius-sm);
+  background: #0f172a;
+  color: #fff;
+  font-size: 0.8rem;
+  pointer-events: none;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease;
+}
+
+.menu {
+  composes: popover;
+  padding: var(--sk-space-xs);
+  min-width: 12rem;
+}
+
+.menuItem {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 0.65rem;
+  border: none;
+  border-radius: var(--sk-radius-sm);
+  background: transparent;
+  color: var(--sk-color-text-primary);
+  cursor: pointer;
+  font: inherit;
+}
+
+.menuItem:hover:not(:disabled) {
+  background: var(--sk-color-hover);
+}
+
+.menuItem:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.popoverAnchor {
+  position: relative;
+  display: inline-block;
+}

@@ -49,3 +49,4 @@ Thumbs.db
 .github/instructions/nx.instructions.md
 
 vite.config.*.timestamp*
+ui-kit/storybook-static

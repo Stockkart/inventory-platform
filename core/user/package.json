@@ -1,0 +1,117 @@
+{
+  "name": "@inventory-platform/user",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "@inventory-platform/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./routes/*": {
+      "@inventory-platform/source": "./src/routes/*.tsx",
+      "import": "./src/routes/*.tsx",
+      "default": "./src/routes/*.tsx"
+    },
+    "./customers": {
+      "@inventory-platform/source": "./src/api/customers.api.ts",
+      "types": "./dist/api/customers.api.d.ts",
+      "import": "./src/api/customers.api.ts",
+      "default": "./src/api/customers.api.ts"
+    },
+    "./vendors": {
+      "@inventory-platform/source": "./src/api/vendors.api.ts",
+      "types": "./dist/api/vendors.api.d.ts",
+      "import": "./src/api/vendors.api.ts",
+      "default": "./src/api/vendors.api.ts"
+    },
+    "./shop-access": {
+      "@inventory-platform/source": "./src/api/shop-access.api.ts",
+      "types": "./dist/api/shop-access.api.d.ts",
+      "import": "./src/api/shop-access.api.ts",
+      "default": "./src/api/shop-access.api.ts"
+    },
+    "./invitations": {
+      "@inventory-platform/source": "./src/api/invitations.api.ts",
+      "types": "./dist/api/invitations.api.d.ts",
+      "import": "./src/api/invitations.api.ts",
+      "default": "./src/api/invitations.api.ts"
+    },
+    "./shops": {
+      "@inventory-platform/source": "./src/api/shops.api.ts",
+      "types": "./dist/api/shops.api.d.ts",
+      "import": "./src/api/shops.api.ts",
+      "default": "./src/api/shops.api.ts"
+    },
+    "./users": {
+      "@inventory-platform/source": "./src/api/user-lookup.api.ts",
+      "types": "./dist/api/user-lookup.api.d.ts",
+      "import": "./src/api/user-lookup.api.ts",
+      "default": "./src/api/user-lookup.api.ts"
+    },
+    "./ui": {
+      "@inventory-platform/source": "./src/ui/index.ts",
+      "types": "./dist/ui/index.d.ts",
+      "import": "./src/ui/index.ts",
+      "default": "./src/ui/index.ts"
+    },
+    "./types": {
+      "@inventory-platform/source": "./src/model/index.ts",
+      "types": "./dist/model/index.d.ts",
+      "import": "./src/model/index.ts",
+      "default": "./src/model/index.ts"
+    },
+    "./nav": {
+      "@inventory-platform/source": "./src/nav.ts",
+      "types": "./dist/nav.d.ts",
+      "import": "./src/nav.ts",
+      "default": "./src/nav.ts"
+    },
+    "./journey": {
+      "@inventory-platform/source": "./src/journey/index.ts",
+      "types": "./dist/journey/index.d.ts",
+      "import": "./src/journey/index.ts",
+      "default": "./src/journey/index.ts"
+    },
+    "./journey/auth": {
+      "@inventory-platform/source": "./src/journey/auth/index.ts",
+      "types": "./dist/journey/auth/index.d.ts",
+      "import": "./src/journey/auth/index.ts",
+      "default": "./src/journey/auth/index.ts"
+    },
+    "./journey/onboarding": {
+      "@inventory-platform/source": "./src/journey/onboarding/index.ts",
+      "types": "./dist/journey/onboarding/index.d.ts",
+      "import": "./src/journey/onboarding/index.ts",
+      "default": "./src/journey/onboarding/index.ts"
+    }
+  },
+  "nx": {
+    "tags": [
+      "type:core",
+      "scope:user"
+    ]
+  },
+  "dependencies": {
+    "@inventory-platform/access": "workspace:*",
+    "@inventory-platform/api-client": "workspace:*",
+    "@inventory-platform/query": "workspace:*",
+    "@inventory-platform/routing": "workspace:*",
+    "@inventory-platform/schema": "workspace:*",
+    "@inventory-platform/session": "workspace:*",
+    "@inventory-platform/ui-kit": "workspace:*",
+    "@inventory-platform/contracts": "workspace:*"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "^5.90.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router": "^7.2.0"
+  }
+}

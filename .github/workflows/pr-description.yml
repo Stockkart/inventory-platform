@@ -1,0 +1,59 @@
+name: PR Description
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  require-sections:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require Summary and Test plan sections
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.pull_request.body || '';
+            const title = context.payload.pull_request.title || '';
+            const labels = (context.payload.pull_request.labels || []).map((l) => l.name);
+
+            if (labels.includes('do-not-merge')) {
+              core.info('Skipping description checks (do-not-merge).');
+              return;
+            }
+
+            const missing = [];
+            if (!/##\s*Summary\b/i.test(body)) missing.push('## Summary');
+            if (!/##\s*Test plan\b/i.test(body)) missing.push('## Test plan');
+
+            // Fail if Summary is still the template placeholder only
+            const summaryMatch = body.match(/##\s*Summary\b([\s\S]*?)(?=\n##\s|\n---|\s*$)/i);
+            if (summaryMatch) {
+              const summary = summaryMatch[1]
+                .replace(/<!--[\s\S]*?-->/g, '')
+                .replace(/^\s*[-*]\s*$/gm, '')
+                .trim();
+              if (summary.length < 8) {
+                missing.push('## Summary (fill in real bullets, not the empty template)');
+              }
+            }
+
+            const uiLikely =
+              labels.some((l) =>
+                ['area:ui-kit', 'module:product', 'module:user', 'module:shell', 'module:analytics', 'module:plugin-cafe'].includes(l),
+              ) || /\b(ui|css|chrome|layout|style)\b/i.test(title);
+
+            if (uiLikely && !/##\s*Screenshots/i.test(body)) {
+              core.warning(
+                'UI-related PR detected: please add a ## Screenshots / recordings section (or explain N/A).',
+              );
+            }
+
+            if (missing.length) {
+              core.setFailed(
+                `PR description is missing required content:\n- ${missing.join('\n- ')}\n\n` +
+                  'Use the repository pull request template and fill Summary + Test plan.',
+              );
+            }

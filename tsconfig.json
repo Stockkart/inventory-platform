@@ -7,31 +7,70 @@
       "path": "./apps/inventory"
     },
     {
-      "path": "./features/product"
+      "path": "./core/product"
     },
     {
-      "path": "./features/analytics"
+      "path": "./core/analytics"
     },
     {
-      "path": "./shared/ui"
+      "path": "./ui-kit"
     },
     {
-      "path": "./shared/types"
+      "path": "./platform/contracts"
     },
     {
-      "path": "./shared/api"
+      "path": "./platform/access"
     },
     {
-      "path": "./shared/store"
+      "path": "./platform/query"
     },
     {
-      "path": "./features/dashboard"
+      "path": "./platform/routing"
     },
     {
-      "path": "./features/onboarding"
+      "path": "./core/accounting"
     },
     {
-      "path": "./features/auth"
+      "path": "./platform/api-client"
+    },
+    {
+      "path": "./core/notifications"
+    },
+    {
+      "path": "./plugins/registry"
+    },
+    {
+      "path": "./plugins/cafe"
+    },
+    {
+      "path": "./platform/session"
+    },
+    {
+      "path": "./core/reminders"
+    },
+    {
+      "path": "./core/checkout"
+    },
+    {
+      "path": "./core/taxation"
+    },
+    {
+      "path": "./core/pricing"
+    },
+    {
+      "path": "./core/credit"
+    },
+    {
+      "path": "./core/plan"
+    },
+    {
+      "path": "./core/user"
+    },
+    {
+      "path": "./platform/schema"
+    },
+    {
+      "path": "./platform/shell"
     }
   ]
 }

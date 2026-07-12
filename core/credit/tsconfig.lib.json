@@ -1,0 +1,59 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "rootDir": "src",
+    "outDir": "dist",
+    "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
+    "emitDeclarationOnly": false,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "forceConsistentCasingInFileNames": true,
+    "lib": ["es2022", "dom"],
+    "jsx": "react-jsx",
+    "types": ["node"],
+    "paths": {
+      "@inventory-platform/api-client": ["../../platform/api-client/src/index.ts"],
+      "@inventory-platform/query": ["../../platform/query/src/index.ts"],
+      "@inventory-platform/routing": ["../../platform/routing/src/index.ts"],
+      "@inventory-platform/session": ["../../platform/session/src/index.ts"],
+      "@inventory-platform/contracts": ["../../platform/contracts/src/index.ts"],
+      "@inventory-platform/access": ["../../platform/access/src/index.ts"],
+      "@inventory-platform/schema/types": ["../../platform/schema/src/types/index.ts"],
+      "@inventory-platform/session/types": ["../../platform/session/src/model/index.ts"],
+      "@inventory-platform/shell/types": ["../../platform/shell/src/model/index.ts"],
+      "@inventory-platform/user/types": ["../user/src/model/index.ts"],
+      "@inventory-platform/product/types": ["../product/src/model/index.ts"],
+      "@inventory-platform/analytics/types": ["../analytics/src/model/index.ts"],
+      "@inventory-platform/reminders/types": ["../reminders/src/model/index.ts"],
+      "@inventory-platform/credit/types": ["./src/model/index.ts"],
+      "@inventory-platform/plan/types": ["../plan/src/model/index.ts"],
+      "@inventory-platform/pricing/types": ["../pricing/src/model/index.ts"],
+      "@inventory-platform/taxation/types": ["../taxation/src/model/index.ts"],
+      "@inventory-platform/accounting/types": ["../accounting/src/model/index.ts"],
+      "@inventory-platform/plugin-cafe/types": ["../../plugins/cafe/src/types/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts", "src/**/*.spec.tsx", "src/**/*.test.tsx"],
+  "references": [
+    {
+      "path": "../../platform/contracts/tsconfig.lib.json"
+    },
+    {
+      "path": "../../ui-kit/tsconfig.lib.json"
+    },
+    {
+      "path": "../../platform/session/tsconfig.lib.json"
+    },
+    {
+      "path": "../../platform/routing/tsconfig.lib.json"
+    },
+    {
+      "path": "../../platform/query/tsconfig.lib.json"
+    },
+    {
+      "path": "../../platform/api-client/tsconfig.lib.json"
+    }
+  ]
+}

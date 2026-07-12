@@ -1,0 +1,62 @@
+.track {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 0.15rem;
+  box-sizing: border-box;
+  height: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0.15rem;
+  border: 1px solid var(--sk-color-border-default, var(--border-color));
+  border-radius: var(--sk-radius-md, 8px);
+  background: var(--sk-color-bg-muted, var(--bg-muted, #f1f5f9));
+  flex-shrink: 0;
+}
+
+.trackDisabled {
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 0;
+  padding: 0 0.85rem;
+  border: none;
+  border-radius: calc(var(--sk-radius-md, 8px) - 2px);
+  background: transparent;
+  color: var(--sk-color-text-secondary, var(--text-secondary));
+  font-family: var(--sk-font-sans);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn:hover:not(:disabled) {
+  color: var(--sk-color-text-primary, var(--text-primary));
+  background: color-mix(in srgb, var(--sk-color-text-primary, #0f172a) 4%, transparent);
+}
+
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--sk-color-focus-ring);
+}
+
+.btnActive {
+  background: color-mix(in srgb, var(--sk-color-brand, #3b82f6) 14%, transparent);
+  color: var(--sk-color-brand, #3b82f6);
+  box-shadow: none;
+  font-weight: 600;
+}
+
+.btnActive:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--sk-color-brand, #3b82f6) 18%, transparent);
+  color: var(--sk-color-brand, #3b82f6);
+}

@@ -13,15 +13,16 @@ COPY nx.json tsconfig.base.json tsconfig.json ./
 
 # Copy package.json files from workspace (Docker doesn't support glob, copy individually)
 COPY apps/inventory/package.json ./apps/inventory/
-COPY shared/api/package.json ./shared/api/
-COPY shared/store/package.json ./shared/store/
-COPY shared/types/package.json ./shared/types/
-COPY shared/ui/package.json ./shared/ui/
-COPY features/analytics/package.json ./features/analytics/
-COPY features/auth/package.json ./features/auth/
-COPY features/dashboard/package.json ./features/dashboard/
-COPY features/onboarding/package.json ./features/onboarding/
-COPY features/product/package.json ./features/product/
+COPY platform/contracts/package.json ./platform/contracts/
+COPY platform/access/package.json ./platform/access/
+COPY platform/session/package.json ./platform/session/
+COPY ui-kit/package.json ./ui-kit/
+COPY core/analytics/package.json ./core/analytics/
+COPY core/reminders/package.json ./core/reminders/
+COPY core/plan/package.json ./core/plan/
+COPY core/user/package.json ./core/user/
+COPY core/pricing/package.json ./core/pricing/
+COPY core/product/package.json ./core/product/
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile

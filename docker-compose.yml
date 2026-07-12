@@ -10,7 +10,7 @@ services:
     networks:
       - inventory-network
     ports:
-      - "8080:8080"
+      - '8080:8080'
 
   inventory-platform:
     build:
@@ -18,7 +18,7 @@ services:
       dockerfile: Dockerfile.dev
     container_name: inventory-platform
     ports:
-      - "${INVENTORY_PLATFORM_PORT:-4200}:4200"
+      - '${INVENTORY_PLATFORM_PORT:-4200}:4200'
     volumes:
       - .:/app
       - /app/node_modules

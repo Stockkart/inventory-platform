@@ -1,0 +1,44 @@
+{
+  "name": "@inventory-platform/ui-kit",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "@inventory-platform/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./form-styles": {
+      "@inventory-platform/source": "./src/form-styles.ts",
+      "import": "./src/form-styles.ts",
+      "default": "./src/form-styles.ts"
+    },
+    "./theme/tokens.css": {
+      "import": "./src/theme/tokens.css",
+      "default": "./src/theme/tokens.css"
+    }
+  },
+  "nx": {
+    "tags": [
+      "type:ui-kit"
+    ]
+  },
+  "scripts": {
+    "storybook": "storybook dev -p 6006 -c ui-kit/.storybook",
+    "build-storybook": "storybook build -c ui-kit/.storybook -o ui-kit/storybook-static"
+  },
+  "dependencies": {
+    "lucide-react": "^0.554.0"
+  },
+  "peerDependencies": {
+    "lucide-react": "^0.554.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  }
+}

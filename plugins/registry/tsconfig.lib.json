@@ -1,0 +1,67 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "rootDir": "src",
+    "outDir": "dist",
+    "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
+    "emitDeclarationOnly": false,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "forceConsistentCasingInFileNames": true,
+    "lib": ["es2022"],
+    "types": ["node"],
+    "paths": {
+      "@inventory-platform/routing": ["../../platform/routing/src/index.ts"],
+      "@inventory-platform/accounting/nav": ["../../core/accounting/src/nav.ts"],
+      "@inventory-platform/analytics/nav": ["../../core/analytics/src/nav.ts"],
+      "@inventory-platform/credit/nav": ["../../core/credit/src/nav.ts"],
+      "@inventory-platform/plan/nav": ["../../core/plan/src/nav.ts"],
+      "@inventory-platform/pricing/nav": ["../../core/pricing/src/nav.ts"],
+      "@inventory-platform/product/nav": ["../../core/product/src/nav.ts"],
+      "@inventory-platform/reminders/nav": ["../../core/reminders/src/nav.ts"],
+      "@inventory-platform/taxation/nav": ["../../core/taxation/src/nav.ts"],
+      "@inventory-platform/user/nav": ["../../core/user/src/nav.ts"]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts"],
+  "references": [
+    {
+      "path": "../../platform/shell/tsconfig.lib.json"
+    },
+    {
+      "path": "../cafe/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/user/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/taxation/tsconfig.lib.json"
+    },
+    {
+      "path": "../../platform/routing/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/reminders/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/product/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/pricing/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/plan/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/credit/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/analytics/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/accounting/tsconfig.lib.json"
+    }
+  ]
+}

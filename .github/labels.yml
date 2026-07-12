@@ -1,0 +1,122 @@
+# Canonical GitHub labels — synced by .github/workflows/sync-labels.yml
+# Colors are hex without '#'. Keep them saturated so PR sidebars stay readable.
+
+# ── Areas (layer) ──────────────────────────────────────────────
+- name: area:app
+  color: '7C3AED'
+  description: apps/inventory changes
+- name: area:ui-kit
+  color: 'EC4899'
+  description: Design system / ui-kit
+- name: area:platform
+  color: '0EA5E9'
+  description: platform/* infra
+- name: area:core
+  color: '22C55E'
+  description: core/* domain packages
+- name: area:plugins
+  color: 'F97316'
+  description: plugins/* verticals
+- name: area:ci
+  color: 'EAB308'
+  description: CI, GitHub Actions, tooling
+- name: area:docs
+  color: '6366F1'
+  description: README / docs only
+
+# ── Core modules (unique hues) ─────────────────────────────────
+- name: module:accounting
+  color: '059669'
+  description: core/accounting
+- name: module:analytics
+  color: '2563EB'
+  description: core/analytics
+- name: module:checkout
+  color: '94A3B8'
+  description: core/checkout (scaffold)
+- name: module:credit
+  color: '14B8A6'
+  description: core/credit
+- name: module:notifications
+  color: '94A3B8'
+  description: core/notifications (scaffold)
+- name: module:plan
+  color: '8B5CF6'
+  description: core/plan
+- name: module:pricing
+  color: 'CA8A04'
+  description: core/pricing
+- name: module:product
+  color: '16A34A'
+  description: core/product
+- name: module:reminders
+  color: 'F59E0B'
+  description: core/reminders
+- name: module:taxation
+  color: '0D9488'
+  description: core/taxation
+- name: module:user
+  color: 'DB2777'
+  description: core/user
+
+# ── Platform modules ───────────────────────────────────────────
+- name: module:shell
+  color: '0284C7'
+  description: platform/shell
+- name: module:session
+  color: '0369A1'
+  description: platform/session
+- name: module:api-client
+  color: '1D4ED8'
+  description: platform/api-client
+- name: module:schema
+  color: '4F46E5'
+  description: platform/schema
+- name: module:query
+  color: '4338CA'
+  description: platform/query
+- name: module:routing
+  color: '3730A3'
+  description: platform/routing
+- name: module:access
+  color: '1E40AF'
+  description: platform/access
+- name: module:contracts
+  color: '312E81'
+  description: platform/contracts
+
+# ── Plugins ────────────────────────────────────────────────────
+- name: module:plugin-cafe
+  color: 'EA580C'
+  description: plugins/cafe
+- name: module:plugin-registry
+  color: 'C2410C'
+  description: plugins/registry
+
+# ── PR size ────────────────────────────────────────────────────
+- name: size:XS
+  color: 'DCFCE7'
+  description: Very small PR
+- name: size:S
+  color: '86EFAC'
+  description: Small PR
+- name: size:M
+  color: 'FDE047'
+  description: Medium PR
+- name: size:L
+  color: 'FB923C'
+  description: Large PR — consider splitting
+- name: size:XL
+  color: 'EF4444'
+  description: Extra large PR — split before merge
+
+# ── Process ────────────────────────────────────────────────────
+- name: needs-screenshots
+  color: 'DC2626'
+  description: UI change missing screenshots
+- name: breaking
+  color: '991B1B'
+  description: Breaking public API / behavior
+- name: do-not-merge
+  color: '111827'
+  description: Block merge until ready

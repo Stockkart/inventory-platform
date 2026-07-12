@@ -2,9 +2,13 @@
 import { defineConfig, type PluginOption } from 'vite';
 import { reactRouter } from '@react-router/dev/vite';
 import * as path from 'node:path';
+import { generateInventoryWorkspaceAliases } from '../../platform/routing/vite-aliases.mts';
+
+const workspaceRoot = path.resolve(__dirname, '../..');
+const appDir = __dirname;
 
 export default defineConfig({
-  root: __dirname,
+  root: appDir,
   cacheDir: '../../node_modules/.vite/apps/inventory',
   server: {
     port: 4200,
@@ -16,22 +20,19 @@ export default defineConfig({
   },
   plugins: (!process.env.VITEST ? [reactRouter()] : []) as PluginOption[],
   resolve: {
-    alias: {
-      '@inventory-platform/ui': path.resolve(__dirname, '../../shared/ui/src/index.ts'),
-      '@inventory-platform/store': path.resolve(__dirname, '../../shared/store/src/index.ts'),
-      '@inventory-platform/api': path.resolve(__dirname, '../../shared/api/src/index.ts'),
-      '@inventory-platform/types': path.resolve(__dirname, '../../shared/types/src/index.ts'),
-      '@inventory-platform/payment': path.resolve(__dirname, '../../shared/payment/src/index.ts'),
-      '@inventory-platform/dashboard': path.resolve(__dirname, '../../features/dashboard/src/index.ts'),
-      '@inventory-platform/onboarding': path.resolve(__dirname, '../../features/onboarding/src/index.ts'),
-      '@inventory-platform/auth': path.resolve(__dirname, '../../features/auth/src/index.ts'),
-      '@inventory-platform/analytics': path.resolve(__dirname, '../../features/analytics/src/index.ts'),
+    // Prefer one React copy across workspace packages (do not hard-alias —
+    // that bypasses package exports and breaks SSR with "module is not defined").
+    dedupe: ['react', 'react-dom'],
+    alias: generateInventoryWorkspaceAliases({ workspaceRoot, appDir }),
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
+  },
+  ssr: {
+    resolve: {
+      dedupe: ['react', 'react-dom'],
     },
   },
-  // Uncomment this if you are using workers.
-  // worker: {
-  //  plugins: [],
-  // },
   build: {
     outDir: './dist',
     emptyOutDir: true,

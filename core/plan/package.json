@@ -1,0 +1,80 @@
+{
+  "name": "@inventory-platform/plan",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "@inventory-platform/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./routes/*": {
+      "@inventory-platform/source": "./src/routes/*.tsx",
+      "import": "./src/routes/*.tsx",
+      "default": "./src/routes/*.tsx"
+    },
+    "./api": {
+      "@inventory-platform/source": "./src/api/index.ts",
+      "types": "./dist/api/index.d.ts",
+      "import": "./src/api/index.ts",
+      "default": "./src/api/index.ts"
+    },
+    "./ui": {
+      "@inventory-platform/source": "./src/ui/index.ts",
+      "types": "./dist/ui/index.d.ts",
+      "import": "./src/ui/index.ts",
+      "default": "./src/ui/index.ts"
+    },
+    "./types": {
+      "@inventory-platform/source": "./src/model/index.ts",
+      "types": "./dist/model/index.d.ts",
+      "import": "./src/model/index.ts",
+      "default": "./src/model/index.ts"
+    },
+    "./payment": {
+      "@inventory-platform/source": "./src/payment/index.ts",
+      "types": "./dist/payment/index.d.ts",
+      "import": "./src/payment/index.ts",
+      "default": "./src/payment/index.ts"
+    },
+    "./nav": {
+      "@inventory-platform/source": "./src/nav.ts",
+      "types": "./dist/nav.d.ts",
+      "import": "./src/nav.ts",
+      "default": "./src/nav.ts"
+    },
+    "./marketing": {
+      "@inventory-platform/source": "./src/marketing/index.ts",
+      "types": "./dist/marketing/index.d.ts",
+      "import": "./src/marketing/index.ts",
+      "default": "./src/marketing/index.ts"
+    }
+  },
+  "nx": {
+    "tags": [
+      "type:core",
+      "scope:plan"
+    ]
+  },
+  "dependencies": {
+    "@inventory-platform/api-client": "workspace:*",
+    "@inventory-platform/query": "workspace:*",
+    "@inventory-platform/routing": "workspace:*",
+    "@inventory-platform/session": "workspace:*",
+    "@inventory-platform/shell": "workspace:*",
+    "@inventory-platform/ui-kit": "workspace:*",
+    "@inventory-platform/contracts": "workspace:*"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "^5.90.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router": "^7.2.0"
+  }
+}

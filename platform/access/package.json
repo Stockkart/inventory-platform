@@ -1,0 +1,27 @@
+{
+  "name": "@inventory-platform/access",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "@inventory-platform/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "nx": {
+    "tags": [
+      "type:platform",
+      "scope:access"
+    ]
+  },
+  "dependencies": {
+    "tslib": "^2.3.0"
+  }
+}

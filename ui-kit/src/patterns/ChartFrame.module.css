@@ -1,0 +1,300 @@
+.frame {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+}
+
+.frameTall {
+  width: 100%;
+  height: 320px;
+  min-height: 320px;
+}
+
+.plot {
+  width: 100%;
+  height: 320px;
+  min-height: 320px;
+}
+
+.card {
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 82%, transparent);
+  background: var(--sk-color-bg-elevated, #fff);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.emptyHint {
+  color: var(--sk-color-text-muted);
+  font-size: 0.875rem;
+}
+
+.chartToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 78%, transparent);
+}
+
+.chartTitle {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--sk-color-text-primary, #0f172a);
+}
+
+.chartLegendRow {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+
+/* Filters */
+.filterCard {
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 82%, transparent);
+  background: var(--sk-color-bg-elevated, #fff);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.filterBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1rem 1.15rem 1.05rem;
+}
+
+.filterGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr));
+  gap: 0.85rem 1rem;
+  align-items: end;
+}
+
+.filterGrid :global(label),
+.filterGrid label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.filterActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  padding-top: 0.85rem;
+  border-top: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 70%, transparent);
+}
+
+.filterActionsEnd {
+  justify-content: flex-end;
+}
+
+/* KPI metrics */
+.metricGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.metricCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1rem 1.05rem;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 82%, transparent);
+  background: linear-gradient(
+      165deg,
+      color-mix(in srgb, #3b82f6 6%, transparent) 0%,
+      transparent 55%
+    ),
+    var(--sk-color-bg-elevated, #fff);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  min-height: 6.5rem;
+}
+
+.metricLabel {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--sk-color-text-secondary, #64748b);
+}
+
+.metricValue {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--sk-color-text-primary, #0f172a);
+}
+
+.metricHint {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--sk-color-text-muted, #94a3b8);
+}
+
+/* Period comparison */
+.comparisonCard {
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 82%, transparent);
+  background: var(--sk-color-bg-elevated, #fff);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.comparisonHeader {
+  padding: 1rem 1.2rem 0.85rem;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 75%, transparent);
+}
+
+.comparisonTitle {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--sk-color-text-primary, #0f172a);
+}
+
+.comparisonBody {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  padding: 0.25rem 0;
+}
+
+.comparisonTile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 1rem 1.2rem 1.15rem;
+  border-right: 1px solid
+    color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 75%, transparent);
+}
+
+.comparisonTile:last-child {
+  border-right: none;
+}
+
+.comparisonMetricLabel {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  color: var(--sk-color-text-primary, #0f172a);
+}
+
+.comparisonRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.comparisonRowLabel {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--sk-color-text-secondary, #64748b);
+}
+
+.comparisonRowValue {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 650;
+  color: var(--sk-color-text-primary, #0f172a);
+}
+
+.comparisonDelta {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 650;
+}
+
+.comparisonDeltaUp {
+  color: #059669;
+}
+
+.comparisonDeltaDown {
+  color: #dc2626;
+}
+
+.collapsibleCard {
+  margin-bottom: 1rem;
+}
+
+.collapsibleTrigger {
+  width: 100%;
+  justify-content: stretch;
+  padding: 0.85rem 1.25rem;
+  border-radius: 0;
+  text-align: left;
+}
+
+.chevron {
+  transition: transform 0.3s ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.autoGridFill {
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+.autoGridFillWide {
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+@media (max-width: 1100px) {
+  .metricGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .comparisonBody {
+    grid-template-columns: 1fr;
+  }
+
+  .comparisonTile {
+    border-right: none;
+    border-bottom: 1px solid
+      color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 75%, transparent);
+  }
+
+  .comparisonTile:last-child {
+    border-bottom: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .metricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .frameTall,
+  .plot {
+    height: 280px;
+    min-height: 280px;
+  }
+}
+
+@media (max-width: 480px) {
+  .metricGrid {
+    grid-template-columns: 1fr;
+  }
+}

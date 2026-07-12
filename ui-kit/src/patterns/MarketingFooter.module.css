@@ -1,0 +1,136 @@
+.footer {
+  width: 100%;
+  padding-block: var(--sk-space-marketing-y) var(--sk-space-xl);
+  padding-inline: var(--sk-space-lg);
+  background: var(--sk-color-bg-surface);
+  border-top: 1px solid var(--sk-color-border-default);
+}
+
+.inner {
+  max-width: 1120px;
+  margin-inline: auto;
+  width: 100%;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr));
+  gap: clamp(2rem, 4vw, 3.5rem);
+  padding-bottom: var(--sk-space-xl);
+}
+
+.brandCol {
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-md);
+}
+
+.tagline {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  font-weight: 400;
+  color: var(--sk-color-text-secondary);
+  max-width: 32ch;
+}
+
+.colTitle {
+  font-family: var(--sk-font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin: 0 0 var(--sk-space-md);
+  color: var(--sk-color-text-primary);
+}
+
+.links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.links a {
+  color: var(--sk-color-text-muted);
+  font-weight: 400;
+  font-size: 0.8125rem;
+  text-decoration: none;
+  width: fit-content;
+}
+
+.links a:hover {
+  color: var(--sk-color-text-secondary);
+  text-decoration: none;
+}
+
+.bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sk-space-md);
+  flex-wrap: wrap;
+  padding-top: var(--sk-space-lg);
+  border-top: 1px solid var(--sk-color-border-default);
+}
+
+.copyright {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--sk-color-text-muted);
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-md);
+  flex-wrap: wrap;
+}
+
+.meta a {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--sk-color-text-muted);
+  text-decoration: none;
+}
+
+.meta a:hover {
+  color: var(--sk-color-text-secondary);
+  text-decoration: none;
+}
+
+@media (max-width: 968px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+
+  .brandCol {
+    grid-column: 1 / -1;
+    max-width: none;
+  }
+
+  .tagline {
+    max-width: 42ch;
+  }
+}
+
+@media (max-width: 640px) {
+  .footer {
+    padding-block: var(--sk-space-marketing-y-sm) var(--sk-space-lg);
+    padding-inline: var(--sk-space-md);
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .brandCol {
+    grid-column: 1;
+  }
+
+  .bottom {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

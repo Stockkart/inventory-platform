@@ -1,0 +1,53 @@
+.band {
+  width: 100%;
+  padding-block: var(--sk-space-marketing-y);
+  padding-inline: var(--sk-space-lg);
+  background: var(--sk-gradient-brand);
+  position: relative;
+  overflow: hidden;
+}
+
+.band::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+      ellipse 60% 80% at 10% 20%,
+      rgba(255, 255, 255, 0.18),
+      transparent 55%
+    ),
+    radial-gradient(ellipse 50% 60% at 90% 80%, rgba(255, 255, 255, 0.12), transparent 50%);
+  pointer-events: none;
+}
+
+.inner {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+  margin-inline: auto;
+  text-align: center;
+}
+
+.title {
+  font-family: var(--sk-font-display);
+  font-size: clamp(1.6rem, 3vw, 2.15rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: #ffffff;
+  margin: 0;
+}
+
+.lead {
+  margin: 0;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+@media (max-width: 768px) {
+  .band {
+    padding-block: var(--sk-space-marketing-y-sm);
+    padding-inline: var(--sk-space-md);
+  }
+}
