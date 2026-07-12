@@ -1521,6 +1521,43 @@
   min-height: 0.35rem;
 }
 
+.searchResultStock {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--sk-color-text-primary, #0f172a);
+}
+
+.searchResultStockLow {
+  color: var(--sk-color-danger, #dc2626);
+}
+
+.searchResultMetrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem 0.75rem;
+}
+
+.searchResultMetricLabel {
+  display: block;
+  margin: 0 0 0.1rem;
+  font-size: 0.65rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sk-color-text-secondary, #94a3b8);
+}
+
+.searchResultMetricValue {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--sk-color-text-primary, #0f172a);
+  line-height: 1.3;
+}
+
 .searchResultFooter {
   display: flex;
   align-items: stretch;
@@ -1533,6 +1570,18 @@
   flex: 1;
   min-width: 0;
   white-space: nowrap;
+}
+
+.searchResultFooterTriple > * {
+  flex: 1 1 calc(33.333% - 0.35rem);
+  min-width: 5.5rem;
+}
+
+.searchResultBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
 }
 
 /* Inventory / product detail modal */
