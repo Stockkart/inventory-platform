@@ -1,15 +1,33 @@
 # @inventory-platform/accounting
 
-Domain module scaffold for Phase 2a (first real extraction).
+**Status:** Migrated
 
-## Phase 2a checklist
+Double-entry accounting for a shop: chart of accounts, journal entries, ledgers, trial balance, and financial reports.
 
-1. Move `features/dashboard/src/lib/accounting/*` → `src/ui/` and `src/pages/`
-2. Move accounting routes → `src/routes.ts`
-3. Move `shared/api/src/lib/accounting.ts` → `src/api/accounting.api.ts`
-4. Add TanStack Query hooks in `src/queries/`
-5. Export public API from `src/index.ts` (`AccountPicker`, hooks, types)
-6. Register routes in `apps/inventory/app/routes.tsx`
-7. Delete old dashboard accounting files
+## Owns
 
-See `docs_stockkart/FRONTEND_MONOREPO_REDESIGN.html` for the full plan.
+- Routes under `/dashboard/accounting/*` (overview, journal, ledger, vendors/customers parties, trial balance, COA, opening balances, P&L, balance sheet)
+- Nav group **Accounting**
+- Accounting API + Query hooks
+- Domain UI (party sidebars, journal lines, report tables)
+
+## Does not own
+
+- Generic customer/vendor CRM lists (`core/user`)
+- Scan-sell / inventory stock (`core/product`)
+
+## Layout
+
+`api/` · `queries/` · `pages/` · `ui/` · `routes.ts` · `nav.ts`
+
+## UI chrome
+
+Prefer `accountingChrome` / helpers from `@inventory-platform/ui-kit` (ledger layout, journal grids, active account rows).
+
+## Related
+
+- `@inventory-platform/ui-kit` — presentation
+- `@inventory-platform/api-client` — HTTP
+- `@inventory-platform/query` — Query client
+
+This package was the Phase 2a template for domain extraction.
