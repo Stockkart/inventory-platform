@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
+import { ChevronRight, Store } from 'lucide-react';
 import { useAuthStore } from '@inventory-platform/session';
 import type { ShopMembership } from '@inventory-platform/session/types';
-import { Badge, Box, Button, Inline, Stack, Text, shellChrome } from '@inventory-platform/ui-kit';
+import { Badge, Box, Button, Stack, Text, shellChrome } from '@inventory-platform/ui-kit';
 
 export interface UserMenuShopSectionProps {
   onClose?: () => void;
@@ -46,30 +47,28 @@ export function UserMenuShopSection({ onClose }: UserMenuShopSectionProps) {
   };
 
   return (
-    <Stack gap="md" padding="md" className={shellChrome.shopSection}>
+    <Box className={shellChrome.shopSection}>
       <Stack gap="xs">
-        <Text variant="caption" color="secondary" weight="bold">
+        <Text as="p" className={shellChrome.shopSectionLabel}>
           Current shop
         </Text>
-        <Inline align="center" gap="sm" minWidth="0">
-          <Text as="span" aria-hidden>
-            🏪
-          </Text>
-          <Box flex="1" minWidth="0">
-            <Text weight="semibold" truncate>
-              {activeShopName}
-            </Text>
+        <Box className={shellChrome.shopCurrentCard}>
+          <Box as="span" className={shellChrome.shopCurrentIcon} aria-hidden>
+            <Store size={14} strokeWidth={2.25} />
           </Box>
+          <Text as="p" className={shellChrome.shopCurrentName} title={activeShopName}>
+            {activeShopName}
+          </Text>
           <Badge variant="success">Active</Badge>
-        </Inline>
+        </Box>
       </Stack>
 
       {otherShops.length > 0 ? (
         <Stack gap="xs">
-          <Text variant="caption" color="secondary" weight="bold">
+          <Text as="p" className={shellChrome.shopSectionLabel}>
             Switch shop
           </Text>
-          <Stack gap="xs" overflowY="auto" className={shellChrome.shopSwitchList}>
+          <Box className={shellChrome.shopSwitchList}>
             {otherShops.map((membership) => {
               const isSwitching = switchingId === membership.shopId;
               return (
@@ -81,36 +80,42 @@ export function UserMenuShopSection({ onClose }: UserMenuShopSectionProps) {
                   onClick={() => void handleSwitch(membership)}
                   disabled={isLoading || isSwitching}
                   className={shellChrome.shopSwitchBtn}
+                  aria-label={
+                    isSwitching
+                      ? `Switching to ${membership.shopName}`
+                      : `Switch to ${membership.shopName}`
+                  }
                 >
-                  <Text as="span" weight="semibold" variant="caption">
-                    {membership.shopName}
-                  </Text>
-                  <Text
-                    as="span"
-                    variant="caption"
-                    color="secondary"
-                    className={shellChrome.shopSwitchBtnRole}
-                  >
-                    {membership.role}
-                  </Text>
-                  <Text as="span" variant="caption" weight="medium" color="primary">
-                    {isSwitching ? 'Switching…' : 'Use this shop'}
-                  </Text>
+                  <Box as="span" className={shellChrome.shopSwitchBtnMain}>
+                    <Text as="span" className={shellChrome.shopSwitchBtnName}>
+                      {membership.shopName}
+                    </Text>
+                    <Text as="span" className={shellChrome.shopSwitchBtnRole}>
+                      {membership.role}
+                    </Text>
+                  </Box>
+                  <Box as="span" className={shellChrome.shopSwitchBtnMeta}>
+                    {isSwitching ? (
+                      'Switching…'
+                    ) : (
+                      <ChevronRight size={15} strokeWidth={2} aria-hidden />
+                    )}
+                  </Box>
                 </Button>
               );
             })}
-          </Stack>
+          </Box>
         </Stack>
       ) : null}
 
-      <Inline gap="sm">
+      <Box className={shellChrome.shopActions}>
         <Button type="button" variant="outline" fullWidth size="sm" onClick={goToShops}>
           Manage shops
         </Button>
         <Button type="button" variant="solid" fullWidth size="sm" onClick={goToAddShop}>
           + Add shop
         </Button>
-      </Inline>
-    </Stack>
+      </Box>
+    </Box>
   );
 }

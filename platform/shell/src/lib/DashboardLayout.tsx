@@ -14,7 +14,6 @@ import {
   Alert,
   AppShell,
   Avatar,
-  Badge,
   Box,
   Button,
   CenteredLoader,
@@ -40,6 +39,7 @@ import {
   shellChrome,
   Stack,
   Text,
+  cn,
 } from '@inventory-platform/ui-kit';
 import { ToastProvider } from './ToastProvider';
 import { getDashboardMenuGroupsWithCapabilities } from './capabilityNav';
@@ -78,6 +78,8 @@ import {
   Keyboard,
   Info,
   LogOut,
+  TriangleAlert,
+  CalendarClock,
   User,
 } from 'lucide-react';
 import { ContextualHelpPanel } from './ContextualHelpPanel';
@@ -160,6 +162,7 @@ export function DashboardLayout({
   );
 
   const userMenuRef = useRef<HTMLElement>(null);
+  const notificationMenuRef = useRef<HTMLElement>(null);
   const mainContentRef = useRef<HTMLElement>(null);
 
   const modLabel = useMemo(() => getDashboardModLabel(), []);
@@ -202,7 +205,9 @@ export function DashboardLayout({
     });
   }, [navRowsForPalette]);
 
-  const { notifications, unreadCount, markAsRead } = useNotifications(user?.shopId ?? undefined);
+  const { notifications, unreadCount, markAsRead, clearAll } = useNotifications(
+    user?.shopId ?? undefined,
+  );
 
   useEffect(() => {
     if (shop?.name) {
@@ -212,17 +217,21 @@ export function DashboardLayout({
 
   useEffect(() => {
     const handleOutside = (event: MouseEvent) => {
-      if (!userMenuRef.current?.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (userMenuRef.current && !userMenuRef.current.contains(target)) {
         setUserMenuOpen(false);
+      }
+      if (notificationMenuRef.current && !notificationMenuRef.current.contains(target)) {
+        setShowNotificationMenu(false);
       }
     };
 
-    if (userMenuOpen) {
+    if (userMenuOpen || showNotificationMenu) {
       document.addEventListener('mousedown', handleOutside);
     }
 
     return () => document.removeEventListener('mousedown', handleOutside);
-  }, [userMenuOpen]);
+  }, [userMenuOpen, showNotificationMenu]);
 
   const handleNotificationClick = useCallback(
     (id: string) => {
@@ -747,59 +756,116 @@ export function DashboardLayout({
                     <Info size={18} aria-hidden />
                   </IconButton>
 
-                  <Box position="relative">
+                  <Box ref={notificationMenuRef} position="relative">
                     <IconButton
                       label="Notifications"
                       size="sm"
                       shape="circle"
                       className={shellChrome.headerIconButton}
-                      onClick={() => setShowNotificationMenu((o) => !o)}
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        setShowNotificationMenu((o) => !o);
+                      }}
                     >
                       <Bell size={18} aria-hidden />
-                      {unreadCount > 0 && (
-                        <Box className={shellChrome.notificationBadge}>
-                          <Badge variant="danger">{unreadCount}</Badge>
+                      {unreadCount > 0 ? (
+                        <Box
+                          as="span"
+                          className={shellChrome.notificationBadge}
+                          aria-label={`${unreadCount} unread notifications`}
+                        >
+                          {unreadCount > 99 ? '99+' : unreadCount}
                         </Box>
-                      )}
+                      ) : null}
                     </IconButton>
 
                     {showNotificationMenu && (
                       <PopoverPanel variant="notification">
-                        {notifications.length === 0 ? (
-                          <Text
-                            variant="caption"
-                            color="secondary"
-                            align="center"
-                            className={shellChrome.notificationEmpty}
-                          >
-                            No notifications
+                        <Box className={shellChrome.notificationPanelHeader}>
+                          <Text as="h2" className={shellChrome.notificationPanelTitle}>
+                            Notifications
                           </Text>
-                        ) : (
-                          notifications.map((n) => (
-                            <Button
-                              key={n.id}
-                              type="button"
-                              variant="ghost"
-                              fullWidth
-                              align="start"
-                              className={shellChrome.notificationRow}
-                              onClick={() => handleNotificationClick(n.id)}
-                            >
-                              <Inline justify="between" align="center" width="full">
-                                <Text variant="caption" weight="semibold">
-                                  {n.title}
-                                </Text>
-                                {!n.read && <Box className={shellChrome.unreadDot} />}
-                              </Inline>
-                              <Text
-                                variant="caption"
-                                color="secondary"
-                                className={shellChrome.preLine}
+                          <Box className={shellChrome.notificationPanelMeta}>
+                            {unreadCount > 0 ? (
+                              <Box as="span" className={shellChrome.notificationUnreadCount}>
+                                {unreadCount > 99 ? '99+' : unreadCount}
+                              </Box>
+                            ) : null}
+                            {notifications.length > 0 ? (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className={shellChrome.notificationClearBtn}
+                                onClick={() => clearAll()}
                               >
-                                {n.message}
-                              </Text>
-                            </Button>
-                          ))
+                                Clear all
+                              </Button>
+                            ) : null}
+                          </Box>
+                        </Box>
+
+                        {notifications.length === 0 ? (
+                          <Box className={shellChrome.notificationEmpty}>
+                            <Text as="p" className={shellChrome.notificationEmptyTitle}>
+                              You’re all caught up
+                            </Text>
+                            <Text as="p" className={shellChrome.notificationEmptyHint}>
+                              Low-stock alerts and reminders will show up here.
+                            </Text>
+                          </Box>
+                        ) : (
+                          <Box className={shellChrome.notificationPanelList}>
+                            {notifications.map((n) => {
+                              const isLowStock = n.type === 'INVENTORY_LOW';
+                              return (
+                                <Button
+                                  key={n.id}
+                                  type="button"
+                                  variant="ghost"
+                                  fullWidth
+                                  align="start"
+                                  className={cn(
+                                    shellChrome.notificationRow,
+                                    !n.read && shellChrome.notificationRowUnread,
+                                  )}
+                                  onClick={() => handleNotificationClick(n.id)}
+                                >
+                                  <Box
+                                    as="span"
+                                    className={cn(
+                                      shellChrome.notificationTypeIcon,
+                                      isLowStock
+                                        ? shellChrome.notificationTypeIconLow
+                                        : shellChrome.notificationTypeIconReminder,
+                                    )}
+                                    aria-hidden
+                                  >
+                                    {isLowStock ? (
+                                      <TriangleAlert size={14} strokeWidth={2.25} />
+                                    ) : (
+                                      <CalendarClock size={14} strokeWidth={2.25} />
+                                    )}
+                                  </Box>
+                                  <Box className={shellChrome.notificationRowBody}>
+                                    <Box className={shellChrome.notificationRowTop}>
+                                      <Text as="span" className={shellChrome.notificationRowTitle}>
+                                        {n.title}
+                                      </Text>
+                                      {!n.read ? (
+                                        <Box className={shellChrome.unreadDot} aria-hidden />
+                                      ) : null}
+                                    </Box>
+                                    {n.message ? (
+                                      <Text as="p" className={shellChrome.notificationRowMessage}>
+                                        {n.message}
+                                      </Text>
+                                    ) : null}
+                                  </Box>
+                                </Button>
+                              );
+                            })}
+                          </Box>
                         )}
                       </PopoverPanel>
                     )}
@@ -842,18 +908,18 @@ export function DashboardLayout({
 
                     {userMenuOpen && (
                       <PopoverPanel variant="userMenu">
-                        <Box padding="md" className={shellChrome.menuSection}>
+                        <Box className={shellChrome.menuSection}>
                           <Inline gap="md" align="center">
                             <Avatar name={user?.name || user?.email || 'User'} size="md" />
-                            <Stack gap="none">
-                              <Text weight="semibold">{user?.name || 'User'}</Text>
-                              <Text
-                                variant="caption"
-                                color="secondary"
-                                className={shellChrome.breakAll}
-                              >
-                                {user?.email}
+                            <Stack gap="none" minWidth="0">
+                              <Text as="p" className={shellChrome.menuUserName}>
+                                {user?.name || 'User'}
                               </Text>
+                              {user?.email ? (
+                                <Text as="p" className={shellChrome.menuUserEmail}>
+                                  {user.email}
+                                </Text>
+                              ) : null}
                             </Stack>
                           </Inline>
                         </Box>
