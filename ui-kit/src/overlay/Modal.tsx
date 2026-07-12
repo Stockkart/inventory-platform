@@ -112,20 +112,29 @@ export interface DrawerProps {
   open: boolean;
   onClose?: () => void;
   children: ReactNode;
+  /** Which edge the drawer slides from. Default: left. */
+  side?: 'left' | 'right';
+  /** Optional labelled-by id for accessibility. */
+  labelledBy?: string;
 }
 
-export function Drawer({ open, onClose, children }: DrawerProps) {
+export function Drawer({ open, onClose, children, side = 'left', labelledBy }: DrawerProps) {
   useEffect(() => {
     if (!open) {
       return;
     }
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         onClose?.();
       }
     };
     document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', onKeyDown);
+    };
   }, [open, onClose]);
 
   if (!open) {
@@ -134,7 +143,10 @@ export function Drawer({ open, onClose, children }: DrawerProps) {
 
   return (
     <div
-      className={styles.drawerBackdrop}
+      className={cn(
+        styles.drawerBackdrop,
+        side === 'left' ? styles.drawerBackdropLeft : styles.drawerBackdropRight,
+      )}
       onClick={(event) => {
         if (event.target === event.currentTarget) {
           onClose?.();
@@ -144,7 +156,8 @@ export function Drawer({ open, onClose, children }: DrawerProps) {
       <div
         role="dialog"
         aria-modal="true"
-        className={styles.drawer}
+        aria-labelledby={labelledBy}
+        className={cn(styles.drawer, side === 'left' ? styles.drawerLeft : styles.drawerRight)}
         onClick={(event) => event.stopPropagation()}
       >
         {children}

@@ -1,19 +1,15 @@
 import { useEffect, useState } from 'react';
-import { ExternalLink, Play, X } from 'lucide-react';
+import { CircleHelp, ExternalLink, Play, X } from 'lucide-react';
 import {
   Alert,
   Box,
   Button,
-  Card,
-  CardBody,
   Drawer,
-  EmptyState,
   IconButton,
   Inline,
-  Link,
   Spinner,
-  Stack,
   Text,
+  shellChrome,
 } from '@inventory-platform/ui-kit';
 import { resourcesApi } from '../api/resources.api';
 import type { TutorialResourceResponse } from '@inventory-platform/shell/types';
@@ -71,89 +67,98 @@ export function ContextualHelpPanel({
 
   return (
     <>
-      <Drawer open={open} onClose={selectedVideo ? undefined : onClose}>
-        <Stack gap="none" height="full" overflow="auto" padding="lg">
-          <Inline align="start" justify="between" gap="md">
-            <Stack gap="xs">
-              <Text variant="caption" color="muted" weight="semibold">
-                Help for this page
-              </Text>
-              <Text id="contextual-help-title" variant="title">
-                {pageLabel}
-              </Text>
-            </Stack>
+      <Drawer
+        open={open}
+        side="right"
+        labelledBy="contextual-help-title"
+        onClose={selectedVideo ? undefined : onClose}
+      >
+        <Box className={shellChrome.helpPanel}>
+          <Box className={shellChrome.helpPanelHeader}>
+            <Box className={shellChrome.helpPanelHeaderMain}>
+              <Box className={shellChrome.helpPanelIcon} aria-hidden>
+                <CircleHelp size={20} strokeWidth={1.75} />
+              </Box>
+              <Box minWidth="0">
+                <Text as="p" className={shellChrome.helpPanelEyebrow}>
+                  Page help
+                </Text>
+                <Text as="h2" id="contextual-help-title" className={shellChrome.helpPanelTitle}>
+                  {pageLabel}
+                </Text>
+              </Box>
+            </Box>
             <IconButton label="Close help" onClick={onClose}>
-              <X size={20} />
+              <X size={18} />
             </IconButton>
-          </Inline>
-
-          <Box mt="sm">
-            <Text color="secondary" variant="caption">
-              Tutorial videos matched to <Text as="code">{currentPath}</Text>
-            </Text>
           </Box>
 
-          {loading ? (
-            <Inline gap="sm" align="center" mt="md">
-              <Spinner size="sm" aria-hidden />
-              <Text color="secondary">Loading videos…</Text>
-            </Inline>
-          ) : null}
+          <Box className={shellChrome.helpPanelBody}>
+            {loading ? (
+              <Inline gap="sm" align="center">
+                <Spinner size="sm" aria-hidden />
+                <Text color="secondary" variant="caption">
+                  Loading tutorials…
+                </Text>
+              </Inline>
+            ) : null}
 
-          {error ? (
-            <Box padding="none" mt="md">
-              <Alert variant="danger">{error}</Alert>
-            </Box>
-          ) : null}
+            {error ? <Alert variant="danger">{error}</Alert> : null}
 
-          {!loading && !error && videos.length === 0 ? (
-            <Stack gap="none" mt="md">
-              <EmptyState
-                title="No videos yet"
-                description="No videos are mapped to this page yet. Try the StockKart overview from the home page demo, or check back after your admin adds tutorials."
-              />
-            </Stack>
-          ) : null}
+            {!loading && !error && videos.length === 0 ? (
+              <Box className={shellChrome.helpEmpty}>
+                <Box className={shellChrome.helpEmptyIcon} aria-hidden>
+                  <Play size={18} strokeWidth={1.75} />
+                </Box>
+                <Text as="p" className={shellChrome.helpEmptyTitle}>
+                  No tutorials yet
+                </Text>
+                <Text as="p" className={shellChrome.helpEmptyHint}>
+                  Nothing is mapped to this page. Check the home page overview, or ask an admin to
+                  add a tutorial.
+                </Text>
+              </Box>
+            ) : null}
 
-          <Stack gap="sm" mt="md" pb="lg">
-            {videos.map((video) => (
-              <Card key={video.id}>
-                <CardBody>
-                  <Inline align="start" justify="between" gap="md">
-                    <Stack gap="xs" flex="1" minWidth="0">
-                      <Text variant="heading3" weight="semibold">
+            {!loading && !error && videos.length > 0 ? (
+              <Box className={shellChrome.helpVideoList}>
+                {videos.map((video) => (
+                  <Box key={video.id} className={shellChrome.helpVideoCard}>
+                    <Box minWidth="0" flex="1">
+                      <Text as="p" className={shellChrome.helpVideoTitle}>
                         {video.title}
                       </Text>
                       {video.description ? (
-                        <Text color="secondary" variant="caption">
+                        <Text as="p" className={shellChrome.helpVideoDesc}>
                           {video.description}
                         </Text>
                       ) : null}
-                    </Stack>
-                    <Inline gap="xs" align="center">
+                    </Box>
+                    <Box className={shellChrome.helpVideoActions}>
                       <Button
                         type="button"
                         size="sm"
-                        leftIcon={<Play size={16} aria-hidden />}
+                        leftIcon={<Play size={15} aria-hidden />}
                         onClick={() => setSelectedVideo(video)}
                       >
                         Watch
                       </Button>
-                      <Link
+                      <a
                         href={video.youtubeUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label={`Open ${video.title} on YouTube`}
+                        className={shellChrome.helpExternalLink}
                       >
-                        <ExternalLink size={16} aria-hidden />
-                      </Link>
-                    </Inline>
-                  </Inline>
-                </CardBody>
-              </Card>
-            ))}
-          </Stack>
-        </Stack>
+                        <ExternalLink size={15} aria-hidden />
+                      </a>
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
+            ) : null}
+          </Box>
+        </Box>
       </Drawer>
 
       <YouTubeHelpModal
