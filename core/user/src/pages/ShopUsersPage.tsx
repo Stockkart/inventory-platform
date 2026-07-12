@@ -17,7 +17,7 @@ export function ShopUsersPage() {
   if (user?.role === 'CASHIER') {
     return (
       <Stack gap="md" width="full" maxWidth="xl" mx="auto">
-        <Alert variant="danger">You don&apos;t have permission to view shop users.</Alert>
+        <Alert variant="danger">You don&apos;t have permission to view shop users now.</Alert>
       </Stack>
     );
   }
