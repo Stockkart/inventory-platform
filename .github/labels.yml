@@ -1,116 +1,122 @@
-# Canonical GitHub labels for this repo.
-# Synced by .github/workflows/sync-labels.yml
+# Canonical GitHub labels — synced by .github/workflows/sync-labels.yml
+# Colors are hex without '#'. Keep them saturated so PR sidebars stay readable.
 
+# ── Areas (layer) ──────────────────────────────────────────────
 - name: area:app
-  color: '5319E7'
+  color: '7C3AED'
   description: apps/inventory changes
 - name: area:ui-kit
-  color: 'F9D0C4'
+  color: 'EC4899'
   description: Design system / ui-kit
 - name: area:platform
-  color: 'BFDADC'
+  color: '0EA5E9'
   description: platform/* infra
 - name: area:core
-  color: 'C2E0C6'
+  color: '22C55E'
   description: core/* domain packages
 - name: area:plugins
-  color: 'D4C5F9'
+  color: 'F97316'
   description: plugins/* verticals
 - name: area:ci
-  color: 'FBCA04'
+  color: 'EAB308'
   description: CI, GitHub Actions, tooling
 - name: area:docs
-  color: '0075CA'
+  color: '6366F1'
   description: README / docs only
 
+# ── Core modules (unique hues) ─────────────────────────────────
 - name: module:accounting
-  color: '0E8A16'
+  color: '059669'
   description: core/accounting
 - name: module:analytics
-  color: '0E8A16'
+  color: '2563EB'
   description: core/analytics
 - name: module:checkout
-  color: 'C5DEF5'
+  color: '94A3B8'
   description: core/checkout (scaffold)
 - name: module:credit
-  color: '0E8A16'
+  color: '14B8A6'
   description: core/credit
 - name: module:notifications
-  color: 'C5DEF5'
+  color: '94A3B8'
   description: core/notifications (scaffold)
 - name: module:plan
-  color: '0E8A16'
+  color: '8B5CF6'
   description: core/plan
 - name: module:pricing
-  color: '0E8A16'
+  color: 'CA8A04'
   description: core/pricing
 - name: module:product
-  color: '0E8A16'
+  color: '16A34A'
   description: core/product
 - name: module:reminders
-  color: '0E8A16'
+  color: 'F59E0B'
   description: core/reminders
 - name: module:taxation
-  color: '0E8A16'
+  color: '0D9488'
   description: core/taxation
 - name: module:user
-  color: '0E8A16'
+  color: 'DB2777'
   description: core/user
 
+# ── Platform modules ───────────────────────────────────────────
 - name: module:shell
-  color: '1D76DB'
+  color: '0284C7'
   description: platform/shell
 - name: module:session
-  color: '1D76DB'
+  color: '0369A1'
   description: platform/session
 - name: module:api-client
-  color: '1D76DB'
+  color: '1D4ED8'
   description: platform/api-client
 - name: module:schema
-  color: '1D76DB'
+  color: '4F46E5'
   description: platform/schema
 - name: module:query
-  color: '1D76DB'
+  color: '4338CA'
   description: platform/query
 - name: module:routing
-  color: '1D76DB'
+  color: '3730A3'
   description: platform/routing
 - name: module:access
-  color: '1D76DB'
+  color: '1E40AF'
   description: platform/access
 - name: module:contracts
-  color: '1D76DB'
+  color: '312E81'
   description: platform/contracts
 
+# ── Plugins ────────────────────────────────────────────────────
 - name: module:plugin-cafe
-  color: 'D93F0B'
+  color: 'EA580C'
   description: plugins/cafe
 - name: module:plugin-registry
-  color: 'D93F0B'
+  color: 'C2410C'
   description: plugins/registry
 
+# ── PR size ────────────────────────────────────────────────────
 - name: size:XS
-  color: 'EDEDED'
+  color: 'DCFCE7'
   description: Very small PR
 - name: size:S
-  color: 'C2E0C6'
+  color: '86EFAC'
   description: Small PR
 - name: size:M
-  color: 'FEF2C0'
+  color: 'FDE047'
   description: Medium PR
 - name: size:L
-  color: 'F9D0C4'
+  color: 'FB923C'
   description: Large PR — consider splitting
 - name: size:XL
-  color: 'E99695'
+  color: 'EF4444'
   description: Extra large PR — split before merge
 
+# ── Process ────────────────────────────────────────────────────
 - name: needs-screenshots
-  color: 'B60205'
+  color: 'DC2626'
   description: UI change missing screenshots
 - name: breaking
-  color: 'B60205'
+  color: '991B1B'
   description: Breaking public API / behavior
 - name: do-not-merge
-  color: '000000'
+  color: '111827'
   description: Block merge until ready

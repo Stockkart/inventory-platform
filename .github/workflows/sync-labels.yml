@@ -7,6 +7,10 @@ on:
     paths:
       - '.github/labels.yml'
       - '.github/workflows/sync-labels.yml'
+  pull_request:
+    paths:
+      - '.github/labels.yml'
+      - '.github/workflows/sync-labels.yml'
   workflow_dispatch:
 
 permissions:
