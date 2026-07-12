@@ -493,7 +493,7 @@ export function DashboardLayout({
               }
             >
               <Link
-                to="/dashboard"
+                to="/"
                 className={
                   sidebarOpen
                     ? shellChrome.sidebarBrandLink

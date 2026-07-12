@@ -108,9 +108,6 @@ export function SignupForm() {
             <Text as="h1" className={journeyChrome.authTitle}>
               Create account
             </Text>
-            <Text as="p" className={journeyChrome.authSubtitle}>
-              Set up StockKart in a few minutes and start running your shop with confidence.
-            </Text>
           </Box>
 
           {displayError ? <Alert variant="danger">{displayError}</Alert> : null}

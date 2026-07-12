@@ -105,9 +105,6 @@ export function LoginForm() {
             <Text as="h1" className={journeyChrome.authTitle}>
               Welcome back
             </Text>
-            <Text as="p" className={journeyChrome.authSubtitle}>
-              Sign in to your StockKart account to continue managing inventory and sales.
-            </Text>
           </Box>
 
           {displayError ? <Alert variant="danger">{displayError}</Alert> : null}
