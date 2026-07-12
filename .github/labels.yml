@@ -1,0 +1,116 @@
+# Canonical GitHub labels for this repo.
+# Synced by .github/workflows/sync-labels.yml
+
+- name: area:app
+  color: '5319E7'
+  description: apps/inventory changes
+- name: area:ui-kit
+  color: 'F9D0C4'
+  description: Design system / ui-kit
+- name: area:platform
+  color: 'BFDADC'
+  description: platform/* infra
+- name: area:core
+  color: 'C2E0C6'
+  description: core/* domain packages
+- name: area:plugins
+  color: 'D4C5F9'
+  description: plugins/* verticals
+- name: area:ci
+  color: 'FBCA04'
+  description: CI, GitHub Actions, tooling
+- name: area:docs
+  color: '0075CA'
+  description: README / docs only
+
+- name: module:accounting
+  color: '0E8A16'
+  description: core/accounting
+- name: module:analytics
+  color: '0E8A16'
+  description: core/analytics
+- name: module:checkout
+  color: 'C5DEF5'
+  description: core/checkout (scaffold)
+- name: module:credit
+  color: '0E8A16'
+  description: core/credit
+- name: module:notifications
+  color: 'C5DEF5'
+  description: core/notifications (scaffold)
+- name: module:plan
+  color: '0E8A16'
+  description: core/plan
+- name: module:pricing
+  color: '0E8A16'
+  description: core/pricing
+- name: module:product
+  color: '0E8A16'
+  description: core/product
+- name: module:reminders
+  color: '0E8A16'
+  description: core/reminders
+- name: module:taxation
+  color: '0E8A16'
+  description: core/taxation
+- name: module:user
+  color: '0E8A16'
+  description: core/user
+
+- name: module:shell
+  color: '1D76DB'
+  description: platform/shell
+- name: module:session
+  color: '1D76DB'
+  description: platform/session
+- name: module:api-client
+  color: '1D76DB'
+  description: platform/api-client
+- name: module:schema
+  color: '1D76DB'
+  description: platform/schema
+- name: module:query
+  color: '1D76DB'
+  description: platform/query
+- name: module:routing
+  color: '1D76DB'
+  description: platform/routing
+- name: module:access
+  color: '1D76DB'
+  description: platform/access
+- name: module:contracts
+  color: '1D76DB'
+  description: platform/contracts
+
+- name: module:plugin-cafe
+  color: 'D93F0B'
+  description: plugins/cafe
+- name: module:plugin-registry
+  color: 'D93F0B'
+  description: plugins/registry
+
+- name: size:XS
+  color: 'EDEDED'
+  description: Very small PR
+- name: size:S
+  color: 'C2E0C6'
+  description: Small PR
+- name: size:M
+  color: 'FEF2C0'
+  description: Medium PR
+- name: size:L
+  color: 'F9D0C4'
+  description: Large PR — consider splitting
+- name: size:XL
+  color: 'E99695'
+  description: Extra large PR — split before merge
+
+- name: needs-screenshots
+  color: 'B60205'
+  description: UI change missing screenshots
+- name: breaking
+  color: 'B60205'
+  description: Breaking public API / behavior
+- name: do-not-merge
+  color: '000000'
+  description: Block merge until ready

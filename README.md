@@ -77,3 +77,10 @@ pnpm nx graph                  # dependency graph
 Shop/product UIs render **API-driven vertical fields** (no hardcoded pharmacy-only forms). Schema sources and surfaces are documented historically in older notes; canonical runtime code lives in `platform/schema` + `platform/session` (`useVerticalSchemaStore`).
 
 After API seed changes to `vertical_schemas`, restart/reseed the API so the UI picks up new labels.
+
+## Docs
+
+- [Contributing & PR process](./CONTRIBUTING.md)
+- [Frontend monorepo redesign](../docs_stockkart/FRONTEND_MONOREPO_REDESIGN.html)
+- [UI kit requirements](../docs_stockkart/UI_KIT_REQUIREMENTS.html)
+- Per-package READMEs under `core/`, `platform/`, `ui-kit/`, `plugins/`

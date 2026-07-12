@@ -1,0 +1,149 @@
+# Path → label mapping for pull requests.
+# Applied by .github/workflows/pr-labeler.yml (actions/labeler).
+# Label definitions live in .github/labels.yml (synced on main).
+
+'area:app':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'apps/**'
+
+'area:ui-kit':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'ui-kit/**'
+
+'area:platform':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'platform/**'
+
+'area:core':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'core/**'
+
+'area:plugins':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'plugins/**'
+
+'area:ci':
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+          - 'nx.json'
+          - 'eslint.config.mjs'
+          - 'pnpm-workspace.yaml'
+          - 'tsconfig*.json'
+
+'area:docs':
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/README.md'
+          - 'CONTRIBUTING.md'
+          - 'docs/**'
+
+'module:accounting':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'core/accounting/**'
+
+'module:analytics':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'core/analytics/**'
+
+'module:checkout':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'core/checkout/**'
+
+'module:credit':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'core/credit/**'
+
+'module:notifications':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'core/notifications/**'
+
+'module:plan':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'core/plan/**'
+
+'module:pricing':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'core/pricing/**'
+
+'module:product':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'core/product/**'
+
+'module:reminders':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'core/reminders/**'
+
+'module:taxation':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'core/taxation/**'
+
+'module:user':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'core/user/**'
+
+'module:shell':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'platform/shell/**'
+
+'module:session':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'platform/session/**'
+
+'module:api-client':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'platform/api-client/**'
+
+'module:schema':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'platform/schema/**'
+
+'module:query':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'platform/query/**'
+
+'module:routing':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'platform/routing/**'
+
+'module:access':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'platform/access/**'
+
+'module:contracts':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'platform/contracts/**'
+
+'module:plugin-cafe':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'plugins/cafe/**'
+
+'module:plugin-registry':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'plugins/registry/**'
