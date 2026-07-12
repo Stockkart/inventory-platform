@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { authApi } from '@inventory-platform/session/api';
-import { Alert, Button, Card, CardBody, FormField, Stack, Text } from '@inventory-platform/ui-kit';
+import { Alert, Box, Button, FormField, Text, journeyChrome } from '@inventory-platform/ui-kit';
 
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState('');
@@ -32,20 +32,25 @@ export function ForgotPasswordForm() {
   };
 
   return (
-    <Card>
-      <CardBody>
-        <Stack gap="md" width="full">
-          <Stack gap="xs" align="center">
-            <Text variant="heading1">Forgot Password</Text>
-            <Text color="secondary">
-              Enter your email and we&apos;ll send you a link to reset your password
+    <Box className={journeyChrome.authShell}>
+      <Box className={journeyChrome.authCard}>
+        <Box className={journeyChrome.authCardBody}>
+          <Box className={journeyChrome.authHeader}>
+            <Text as="p" className={journeyChrome.authEyebrow}>
+              Account recovery
             </Text>
-          </Stack>
+            <Text as="h1" className={journeyChrome.authTitle}>
+              Forgot password
+            </Text>
+            <Text as="p" className={journeyChrome.authSubtitle}>
+              Enter your email and we&apos;ll send a link to reset your password.
+            </Text>
+          </Box>
 
           {error ? <Alert variant="danger">{error}</Alert> : null}
           {success ? <Alert variant="success">{success}</Alert> : null}
 
-          <Stack gap="md" width="full">
+          <Box className={journeyChrome.authForm}>
             <FormField
               label="Email"
               id="email"
@@ -63,23 +68,22 @@ export function ForgotPasswordForm() {
             />
 
             <Button
-              variant="solid"
+              variant="brand"
+              className={journeyChrome.authSubmit}
               onClick={() => void handleSubmit()}
               disabled={isLoading}
               loading={isLoading}
               fullWidth
             >
-              {isLoading ? 'Sending...' : 'Send Reset Link'}
+              {isLoading ? 'Sending…' : 'Send reset link'}
             </Button>
-          </Stack>
+          </Box>
 
-          <Stack gap="xs" align="center">
-            <Text color="secondary">
-              Remember your password? <Link to="/login">Sign in</Link>
-            </Text>
-          </Stack>
-        </Stack>
-      </CardBody>
-    </Card>
+          <Box className={journeyChrome.authFooter}>
+            Remember your password? <Link to="/login">Sign in</Link>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 }

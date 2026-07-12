@@ -38,7 +38,7 @@ export function JourneyMain({ children, className }: JourneyMainProps) {
       align="center"
       justify="center"
       padding="lg"
-      className={className}
+      className={cn(styles.authMain, className)}
     >
       {children}
     </Box>
@@ -51,4 +51,16 @@ export const journeyChrome = {
   stepMuted: styles.stepMuted,
   onboardingSidebar: styles.onboardingSidebar,
   onboardingSidebarCompact: styles.onboardingSidebarCompact,
+  authShell: styles.authShell,
+  authCard: styles.authCard,
+  authCardBody: styles.authCardBody,
+  authHeader: styles.authHeader,
+  authEyebrow: styles.authEyebrow,
+  authTitle: styles.authTitle,
+  authSubtitle: styles.authSubtitle,
+  authForm: styles.authForm,
+  authMetaRow: styles.authMetaRow,
+  authMetaLink: styles.authMetaLink,
+  authSubmit: styles.authSubmit,
+  authFooter: styles.authFooter,
 } as const;
