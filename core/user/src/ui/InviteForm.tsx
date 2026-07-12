@@ -1,9 +1,16 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { invitationsApi } from '../api/invitations.api';
 import { useNotify } from '@inventory-platform/session';
 import type { UserRole } from '@inventory-platform/user/types';
-import { Alert, Button, FormField, Select, Stack, Text } from '@inventory-platform/ui-kit';
-const { error: notifyError, success: notifySuccess } = useNotify;
+import {
+  Alert,
+  Box,
+  Button,
+  Input,
+  Label,
+  Select,
+  surfaceChrome,
+} from '@inventory-platform/ui-kit';
 
 interface InviteFormProps {
   shopId: string;
@@ -11,25 +18,27 @@ interface InviteFormProps {
   onError?: (error: string) => void;
 }
 
-const AVAILABLE_ROLES: UserRole[] = ['ADMIN', 'MANAGER', 'CASHIER'];
-
-const ROLE_OPTIONS = AVAILABLE_ROLES.map((r) => ({ value: r, label: r }));
+const ROLE_OPTIONS = [
+  { value: 'ADMIN', label: 'Admin' },
+  { value: 'MANAGER', label: 'Manager' },
+  { value: 'CASHIER', label: 'Cashier' },
+] as const;
 
 export function InviteForm({ shopId, onInviteSent, onError }: InviteFormProps) {
   const [inviteeEmail, setInviteeEmail] = useState('');
   const [role, setRole] = useState<UserRole>('CASHIER');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const { error: notifyError, success: notifySuccess } = useNotify;
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (event?: FormEvent) => {
+    event?.preventDefault();
     setError(null);
-    setSuccess(null);
 
     if (!inviteeEmail.trim()) {
       notifyError('Email is required');
@@ -52,53 +61,46 @@ export function InviteForm({ shopId, onInviteSent, onError }: InviteFormProps) {
       notifySuccess(response.message || 'Invitation sent successfully!');
       setInviteeEmail('');
       setRole('CASHIER');
-
-      if (onInviteSent) {
-        onInviteSent();
-      }
-    } catch (err: any) {
-      const errorMessage = err?.message || 'Failed to send invitation. Please try again.';
+      onInviteSent?.();
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to send invitation. Please try again.';
       notifyError(errorMessage);
-      if (onError) {
-        onError(errorMessage);
-      }
+      onError?.(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Stack gap="md" width="full">
-      <Stack gap="xs">
-        <Text variant="title" weight="semibold">
-          Send Invitation
-        </Text>
-        <Text color="secondary">Invite a user to join your shop</Text>
-      </Stack>
-
+    <Box as="form" onSubmit={(e: FormEvent) => void handleSubmit(e)}>
       {error ? <Alert variant="danger">{error}</Alert> : null}
-      {success ? <Alert variant="success">{success}</Alert> : null}
+      <Box className={surfaceChrome.inviteFormBar}>
+        <Box className={`${surfaceChrome.inviteFormField} ${surfaceChrome.inviteFormEmail}`}>
+          <Label htmlFor="inviteeEmail" className={surfaceChrome.inviteFormLabel}>
+            Email
+          </Label>
+          <Input
+            id="inviteeEmail"
+            type="email"
+            placeholder="user@example.com"
+            value={inviteeEmail}
+            onChange={(e) => {
+              setInviteeEmail(e.target.value);
+              if (error) setError(null);
+            }}
+            disabled={isLoading}
+            required
+          />
+        </Box>
 
-      <Stack gap="md" width="full">
-        <FormField
-          label="Email Address"
-          id="inviteeEmail"
-          type="email"
-          placeholder="user@example.com"
-          value={inviteeEmail}
-          onChange={(v) => {
-            setInviteeEmail(v);
-            if (error) setError(null);
-            if (success) setSuccess(null);
-          }}
-          disabled={isLoading}
-          required
-        />
-
-        <FormField label="Role" id="role" required>
+        <Box className={`${surfaceChrome.inviteFormField} ${surfaceChrome.inviteFormRole}`}>
+          <Label htmlFor="invite-role" className={surfaceChrome.inviteFormLabel}>
+            Role
+          </Label>
           <Select
-            id="role"
-            options={ROLE_OPTIONS}
+            id="invite-role"
+            options={[...ROLE_OPTIONS]}
             value={role}
             onChange={(e) => {
               setRole(e.target.value as UserRole);
@@ -107,12 +109,12 @@ export function InviteForm({ shopId, onInviteSent, onError }: InviteFormProps) {
             disabled={isLoading}
             required
           />
-        </FormField>
+        </Box>
 
-        <Button variant="solid" onClick={handleSubmit} disabled={isLoading || !inviteeEmail.trim()}>
-          {isLoading ? 'Sending...' : 'Send Invitation'}
+        <Button type="submit" variant="solid" disabled={isLoading || !inviteeEmail.trim()}>
+          {isLoading ? 'Sending…' : 'Send invite'}
         </Button>
-      </Stack>
-    </Stack>
+      </Box>
+    </Box>
   );
 }

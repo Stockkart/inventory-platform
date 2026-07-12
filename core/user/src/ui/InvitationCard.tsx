@@ -6,12 +6,13 @@ import { RoleBadge } from './RoleBadge';
 import {
   Alert,
   Badge,
+  Box,
   Button,
   Card,
   CardBody,
   Inline,
-  Stack,
   Text,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 
@@ -19,17 +20,6 @@ interface InvitationCardProps {
   invitation: Invitation;
   onAccept?: () => void;
   showAcceptButton?: boolean;
-}
-
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <Inline justify="between" align="start" gap="sm" width="full">
-      <Text color="secondary" variant="caption">
-        {label}
-      </Text>
-      <Text variant="caption">{value}</Text>
-    </Inline>
-  );
 }
 
 function statusVariant(status: string): BadgeVariant {
@@ -44,6 +34,22 @@ function statusVariant(status: string): BadgeVariant {
       return 'neutral';
     default:
       return 'neutral';
+  }
+}
+
+function formatStatus(status: string) {
+  return status.charAt(0) + status.slice(1).toLowerCase();
+}
+
+function formatDate(value: string) {
+  try {
+    return new Date(value).toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  } catch {
+    return value;
   }
 }
 
@@ -66,11 +72,9 @@ export function InvitationCard({
 
     try {
       await invitationsApi.acceptInvitation(invitation.invitationId);
-      if (onAccept) {
-        onAccept();
-      }
-    } catch (err: any) {
-      notifyError(err?.message || 'Failed to accept invitation');
+      onAccept?.();
+    } catch (err: unknown) {
+      notifyError(err instanceof Error ? err.message : 'Failed to accept invitation');
     } finally {
       setIsAccepting(false);
     }
@@ -81,52 +85,79 @@ export function InvitationCard({
   const statusLabel = isExpired && invitation.status === 'PENDING' ? 'EXPIRED' : invitation.status;
 
   return (
-    <Card>
-      <CardBody>
-        <Stack gap="md">
-          <Stack gap="sm">
-            <Inline align="start" justify="between" gap="sm" flexWrap width="full">
-              <Text variant="heading3" weight="semibold">
-                {invitation.shopName}
-              </Text>
+    <Card className={surfaceChrome.inviteCardCompact}>
+      <CardBody className={surfaceChrome.inviteCardBody}>
+        <Box className={surfaceChrome.inviteCardHeader}>
+          <Box className={surfaceChrome.invitePrimaryCell}>
+            <Text as="p" className={surfaceChrome.invitePrimaryName}>
+              {invitation.shopName}
+            </Text>
+            <Inline gap="sm" flexWrap>
               <RoleBadge role={invitation.role as UserRole} />
+              <Badge variant={statusVariant(statusLabel)}>{formatStatus(statusLabel)}</Badge>
             </Inline>
-            <Badge variant={statusVariant(invitation.status)}>{statusLabel}</Badge>
-          </Stack>
-
-          <Stack gap="sm">
-            <DetailRow
-              label="Invited by:"
-              value={invitation.inviterName || invitation.inviterUserId}
-            />
-            <DetailRow label="Email:" value={invitation.inviteeEmail} />
-            {invitation.inviteeName ? (
-              <DetailRow label="Name:" value={invitation.inviteeName} />
-            ) : null}
-            <DetailRow
-              label="Invited:"
-              value={new Date(invitation.createdAt).toLocaleDateString()}
-            />
-            <DetailRow
-              label="Expires:"
-              value={new Date(invitation.expiresAt).toLocaleDateString()}
-            />
-            {invitation.acceptedAt ? (
-              <DetailRow
-                label="Accepted:"
-                value={new Date(invitation.acceptedAt).toLocaleDateString()}
-              />
-            ) : null}
-          </Stack>
-
-          {error ? <Alert variant="danger">{error}</Alert> : null}
-
+          </Box>
           {showAcceptButton && isPending ? (
-            <Button variant="solid" onClick={handleAccept} disabled={isAccepting} fullWidth>
-              {isAccepting ? 'Accepting...' : 'Accept Invitation'}
+            <Button
+              type="button"
+              size="sm"
+              variant="solid"
+              onClick={() => void handleAccept()}
+              disabled={isAccepting}
+            >
+              {isAccepting ? 'Accepting…' : 'Accept'}
             </Button>
           ) : null}
-        </Stack>
+        </Box>
+
+        <Box as="dl" className={surfaceChrome.inviteCardMeta}>
+          <Text as="dt" className={surfaceChrome.inviteCardMetaLabel}>
+            Invited by
+          </Text>
+          <Text as="dd" className={surfaceChrome.inviteCardMetaValue}>
+            {invitation.inviterName || invitation.inviterUserId}
+          </Text>
+          <Text as="dt" className={surfaceChrome.inviteCardMetaLabel}>
+            Email
+          </Text>
+          <Text as="dd" className={surfaceChrome.inviteCardMetaValue}>
+            {invitation.inviteeEmail}
+          </Text>
+          {invitation.inviteeName ? (
+            <>
+              <Text as="dt" className={surfaceChrome.inviteCardMetaLabel}>
+                Name
+              </Text>
+              <Text as="dd" className={surfaceChrome.inviteCardMetaValue}>
+                {invitation.inviteeName}
+              </Text>
+            </>
+          ) : null}
+          <Text as="dt" className={surfaceChrome.inviteCardMetaLabel}>
+            Invited
+          </Text>
+          <Text as="dd" className={surfaceChrome.inviteCardMetaValue}>
+            {formatDate(invitation.createdAt)}
+          </Text>
+          <Text as="dt" className={surfaceChrome.inviteCardMetaLabel}>
+            Expires
+          </Text>
+          <Text as="dd" className={surfaceChrome.inviteCardMetaValue}>
+            {formatDate(invitation.expiresAt)}
+          </Text>
+          {invitation.acceptedAt ? (
+            <>
+              <Text as="dt" className={surfaceChrome.inviteCardMetaLabel}>
+                Accepted
+              </Text>
+              <Text as="dd" className={surfaceChrome.inviteCardMetaValue}>
+                {formatDate(invitation.acceptedAt)}
+              </Text>
+            </>
+          ) : null}
+        </Box>
+
+        {error ? <Alert variant="danger">{error}</Alert> : null}
       </CardBody>
     </Card>
   );

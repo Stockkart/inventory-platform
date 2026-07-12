@@ -1,8 +1,26 @@
 import { useState, useEffect, useCallback } from 'react';
 import { invitationsApi } from '../api/invitations.api';
-import type { Invitation } from '@inventory-platform/user/types';
-import { InvitationCard } from './InvitationCard';
-import { Button, CenteredLoader, EmptyState, Grid, Stack, Text } from '@inventory-platform/ui-kit';
+import type { Invitation, UserRole } from '@inventory-platform/user/types';
+import type { BadgeVariant } from '@inventory-platform/ui-kit';
+import { RoleBadge } from './RoleBadge';
+import {
+  Badge,
+  Box,
+  Button,
+  Card,
+  CardBody,
+  CenteredLoader,
+  EmptyState,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
+  Text,
+  surfaceChrome,
+} from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 
 interface InvitationListProps {
@@ -12,39 +30,98 @@ interface InvitationListProps {
   onInvitationChange?: () => void;
 }
 
-interface InvitationSectionProps {
-  title: string;
-  invitations: Invitation[];
-  showAcceptButton: boolean;
-  onAccept?: () => void;
+function statusVariant(status: string): BadgeVariant {
+  switch (status) {
+    case 'PENDING':
+      return 'warning';
+    case 'ACCEPTED':
+      return 'success';
+    case 'REJECTED':
+      return 'danger';
+    case 'EXPIRED':
+      return 'neutral';
+    default:
+      return 'neutral';
+  }
 }
 
-function InvitationSection({
-  title,
-  invitations,
-  showAcceptButton,
-  onAccept,
-}: InvitationSectionProps) {
-  if (invitations.length === 0) {
-    return null;
+function formatStatus(status: string) {
+  return status.charAt(0) + status.slice(1).toLowerCase();
+}
+
+function formatDate(value: string) {
+  try {
+    return new Date(value).toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  } catch {
+    return value;
   }
+}
+
+function effectiveStatus(invitation: Invitation): string {
+  const isExpired = invitation.status === 'PENDING' && new Date(invitation.expiresAt) < new Date();
+  return isExpired ? 'EXPIRED' : invitation.status;
+}
+
+function sortInvitations(invitations: Invitation[]) {
+  const rank = (status: string) => {
+    switch (status) {
+      case 'PENDING':
+        return 0;
+      case 'ACCEPTED':
+        return 1;
+      case 'REJECTED':
+        return 2;
+      case 'EXPIRED':
+        return 3;
+      default:
+        return 4;
+    }
+  };
+  return [...invitations].sort((a, b) => {
+    const statusDiff = rank(effectiveStatus(a)) - rank(effectiveStatus(b));
+    if (statusDiff !== 0) return statusDiff;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+}
+
+function AcceptButton({
+  invitation,
+  onAccepted,
+}: {
+  invitation: Invitation;
+  onAccepted?: () => void;
+}) {
+  const [isAccepting, setIsAccepting] = useState(false);
+  const { error: notifyError } = useNotify;
+  const status = effectiveStatus(invitation);
+  if (status !== 'PENDING') return null;
 
   return (
-    <Stack gap="md" width="full">
-      <Text variant="heading3" weight="semibold">
-        {title}
-      </Text>
-      <Grid columns={3} gap="md" width="full">
-        {invitations.map((invitation) => (
-          <InvitationCard
-            key={invitation.invitationId}
-            invitation={invitation}
-            showAcceptButton={showAcceptButton}
-            onAccept={onAccept}
-          />
-        ))}
-      </Grid>
-    </Stack>
+    <Button
+      type="button"
+      size="sm"
+      variant="solid"
+      disabled={isAccepting}
+      onClick={() => {
+        void (async () => {
+          setIsAccepting(true);
+          try {
+            await invitationsApi.acceptInvitation(invitation.invitationId);
+            onAccepted?.();
+          } catch (err: unknown) {
+            notifyError(err instanceof Error ? err.message : 'Failed to accept invitation');
+          } finally {
+            setIsAccepting(false);
+          }
+        })();
+      }}
+    >
+      {isAccepting ? 'Accepting…' : 'Accept'}
+    </Button>
   );
 }
 
@@ -75,75 +152,137 @@ export function InvitationList({
       }
 
       setInvitations(data);
-    } catch (err: any) {
-      notifyError(err?.message || 'Failed to load invitations');
+    } catch (err: unknown) {
+      notifyError(err instanceof Error ? err.message : 'Failed to load invitations');
     } finally {
       setIsLoading(false);
     }
   }, [shopId, showMyInvitations, notifyError]);
 
   useEffect(() => {
-    fetchInvitations();
+    void fetchInvitations();
   }, [fetchInvitations]);
 
   const handleInvitationAccept = async () => {
     await fetchInvitations();
-    if (onInvitationChange) {
-      onInvitationChange();
-    }
+    onInvitationChange?.();
   };
 
   if (isLoading) {
-    return <CenteredLoader label="Loading invitations..." />;
+    return <CenteredLoader label="Loading invitations…" />;
   }
 
   if (error) {
     return (
       <Stack gap="md" align="center">
         <Text color="danger">{error}</Text>
-        <Button onClick={fetchInvitations}>Retry</Button>
+        <Button type="button" onClick={() => void fetchInvitations()}>
+          Retry
+        </Button>
       </Stack>
     );
   }
 
   if (invitations.length === 0) {
-    return <EmptyState title="No invitations found" />;
+    return (
+      <EmptyState
+        title="No invitations yet"
+        description={
+          showMyInvitations
+            ? 'When someone invites you to a shop, it will show up here.'
+            : 'Send an invite above to bring teammates into this shop.'
+        }
+      />
+    );
   }
 
-  const pending = invitations.filter(
-    (inv) => inv.status === 'PENDING' && new Date(inv.expiresAt) >= new Date(),
-  );
-  const accepted = invitations.filter((inv) => inv.status === 'ACCEPTED');
-  const expired = invitations.filter(
-    (inv) =>
-      inv.status === 'EXPIRED' ||
-      (inv.status === 'PENDING' && new Date(inv.expiresAt) < new Date()),
-  );
-  const rejected = invitations.filter((inv) => inv.status === 'REJECTED');
+  const rows = sortInvitations(invitations);
+  const pendingCount = rows.filter((inv) => effectiveStatus(inv) === 'PENDING').length;
+  const acceptedCount = rows.filter((inv) => effectiveStatus(inv) === 'ACCEPTED').length;
 
   return (
-    <Stack gap="lg" width="full">
-      <InvitationSection
-        title={`Pending (${pending.length})`}
-        invitations={pending}
-        showAcceptButton={showAcceptButton}
-        onAccept={handleInvitationAccept}
-      />
-      <InvitationSection
-        title={`Accepted (${accepted.length})`}
-        invitations={accepted}
-        showAcceptButton={false}
-      />
-      <InvitationSection
-        title={`Rejected (${rejected.length})`}
-        invitations={rejected}
-        showAcceptButton={false}
-      />
-      <InvitationSection
-        title={`Expired (${expired.length})`}
-        invitations={expired}
-        showAcceptButton={false}
-      />
+    <Stack gap="sm" width="full">
+      <Text as="h3" className={surfaceChrome.inviteSectionTitle}>
+        {showMyInvitations ? 'Your invitations' : 'Shop invitations'}
+        {` · ${pendingCount} pending · ${acceptedCount} accepted`}
+      </Text>
+
+      <Card>
+        <CardBody>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableHeaderCell>{showMyInvitations ? 'Shop' : 'Invitee'}</TableHeaderCell>
+                <TableHeaderCell>Role</TableHeaderCell>
+                <TableHeaderCell>Status</TableHeaderCell>
+                <TableHeaderCell>Invited by</TableHeaderCell>
+                <TableHeaderCell>Invited</TableHeaderCell>
+                <TableHeaderCell>Expires</TableHeaderCell>
+                <TableHeaderCell>Accepted</TableHeaderCell>
+                {showAcceptButton ? <TableHeaderCell /> : null}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {rows.map((invitation) => {
+                const status = effectiveStatus(invitation);
+                const primary = showMyInvitations
+                  ? invitation.shopName
+                  : invitation.inviteeName || invitation.inviteeEmail;
+                const secondary = showMyInvitations
+                  ? invitation.inviteeEmail
+                  : invitation.inviteeName
+                  ? invitation.inviteeEmail
+                  : null;
+
+                return (
+                  <TableRow key={invitation.invitationId}>
+                    <TableCell>
+                      <Box className={surfaceChrome.invitePrimaryCell}>
+                        <Text as="p" className={surfaceChrome.invitePrimaryName}>
+                          {primary}
+                        </Text>
+                        {secondary ? (
+                          <Text as="p" className={surfaceChrome.invitePrimaryMeta}>
+                            {secondary}
+                          </Text>
+                        ) : null}
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <RoleBadge role={invitation.role as UserRole} />
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={statusVariant(status)}>{formatStatus(status)}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Text variant="caption">
+                        {invitation.inviterName || invitation.inviterUserId}
+                      </Text>
+                    </TableCell>
+                    <TableCell className={surfaceChrome.inviteDateCell}>
+                      {formatDate(invitation.createdAt)}
+                    </TableCell>
+                    <TableCell className={surfaceChrome.inviteDateCell}>
+                      {formatDate(invitation.expiresAt)}
+                    </TableCell>
+                    <TableCell className={surfaceChrome.inviteDateCell}>
+                      {invitation.acceptedAt ? formatDate(invitation.acceptedAt) : '—'}
+                    </TableCell>
+                    {showAcceptButton ? (
+                      <TableCell className={surfaceChrome.inviteActionsCell}>
+                        <AcceptButton
+                          invitation={invitation}
+                          onAccepted={() => void handleInvitationAccept()}
+                        />
+                      </TableCell>
+                    ) : null}
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </CardBody>
+      </Card>
     </Stack>
   );
 }

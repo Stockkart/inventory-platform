@@ -20,9 +20,10 @@ function roleVariant(role: UserRole): BadgeVariant {
 }
 
 export function RoleBadge({ role, className }: RoleBadgeProps) {
+  const label = role.charAt(0) + role.slice(1).toLowerCase();
   return (
     <Badge variant={roleVariant(role)} className={className}>
-      {role}
+      {label}
     </Badge>
   );
 }

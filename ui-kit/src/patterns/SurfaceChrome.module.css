@@ -754,6 +754,302 @@
   background: color-mix(in srgb, var(--sk-color-bg-muted, #f8fafc) 70%, transparent);
 }
 
+.inviteFormBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1rem;
+  width: 100%;
+}
+
+.inviteFormField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  min-width: 0;
+}
+
+.inviteFormEmail {
+  flex: 1 1 16rem;
+  min-width: 14rem;
+}
+
+.inviteFormRole {
+  flex: 0 1 10rem;
+  min-width: 8.5rem;
+}
+
+.inviteFormLabel {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--sk-color-text-secondary, #94a3b8);
+}
+
+.inviteSectionTitle {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--sk-color-text-primary, #0f172a);
+}
+
+.invitePrimaryCell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.invitePrimaryName {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--sk-color-text-primary, #0f172a);
+}
+
+.invitePrimaryMeta {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--sk-color-text-secondary, #64748b);
+  overflow-wrap: anywhere;
+}
+
+.inviteDateCell {
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  color: var(--sk-color-text-secondary, #64748b);
+  font-variant-numeric: tabular-nums;
+}
+
+.inviteActionsCell {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.accessPolicyBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem 1.25rem;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: var(--sk-radius-md, 8px);
+  border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 92%, transparent);
+  background: var(--sk-color-bg-elevated, #fff);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.accessPolicyCopy {
+  flex: 1 1 16rem;
+  min-width: 0;
+  max-width: 36rem;
+}
+
+.accessPolicyCopy p {
+  margin: 0;
+}
+
+.accessModuleHeadShort {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--sk-color-text-primary, #0f172a);
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .accessModuleHeadShort {
+    font-size: 0.68rem;
+    white-space: normal;
+    max-width: 4.5rem;
+    line-height: 1.2;
+  }
+}
+
+.accessFieldGroups {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  width: 100%;
+}
+
+.accessFieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.accessFieldGroupHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 0.75rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
+}
+
+.accessFieldGroupTitle {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: var(--sk-color-text-primary, #0f172a);
+}
+
+.accessFieldGroupMeta {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--sk-color-text-secondary, #94a3b8);
+  font-variant-numeric: tabular-nums;
+}
+
+.accessFieldGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.accessFieldChip {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem !important;
+  height: auto !important;
+  padding: 0.3rem 0.7rem !important;
+  border-radius: 999px !important;
+  border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 95%, transparent) !important;
+  background: var(--sk-color-bg-elevated, #fff) !important;
+  color: var(--sk-color-text-secondary, #64748b) !important;
+  font-size: 0.8125rem !important;
+  font-weight: 500 !important;
+  line-height: 1.2 !important;
+  box-shadow: none !important;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.accessFieldChip:hover:not(:disabled) {
+  border-color: color-mix(in srgb, #3b82f6 35%, var(--sk-color-border-default, #e2e8f0)) !important;
+  background: var(--sk-color-bg-elevated, #fff) !important;
+  color: var(--sk-color-text-primary, #0f172a) !important;
+}
+
+.accessFieldChipActive {
+  border-color: color-mix(in srgb, #3b82f6 45%, transparent) !important;
+  background: color-mix(in srgb, #eff6ff 88%, #fff) !important;
+  color: #1d4ed8 !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #3b82f6 18%, transparent) !important;
+}
+
+.accessFieldChipActive:hover:not(:disabled) {
+  border-color: color-mix(in srgb, #3b82f6 55%, transparent) !important;
+  background: color-mix(in srgb, #eff6ff 88%, #fff) !important;
+  color: #1d4ed8 !important;
+}
+
+.accessFieldToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.65rem 1rem;
+  width: 100%;
+  padding-bottom: 0.15rem;
+}
+
+.accessFieldToolbarMain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.65rem 0.85rem;
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+.accessFieldMemberSelect {
+  flex: 1 1 14rem;
+  min-width: 12rem;
+  max-width: 20rem;
+}
+
+.accessFieldSummary {
+  margin: 0 0 0.15rem;
+  font-size: 0.8125rem;
+  color: var(--sk-color-text-secondary, #64748b);
+  font-variant-numeric: tabular-nums;
+}
+
+.accessFieldGroupAction {
+  min-height: auto !important;
+  height: auto !important;
+  padding: 0 !important;
+  font-size: 0.75rem !important;
+  font-weight: 550 !important;
+  color: #2563eb !important;
+}
+
+.accessFieldGroupAction:hover:not(:disabled) {
+  color: #1d4ed8 !important;
+  background: transparent !important;
+}
+
+.inviteCardCompact {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 92%, transparent);
+  border-radius: var(--sk-radius-md, 8px);
+  background: var(--sk-color-bg-elevated, #fff);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.inviteCardBody {
+  padding: 0.85rem 1rem !important;
+}
+
+.inviteCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.65rem;
+}
+
+.inviteCardMeta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.3rem 0.85rem;
+  margin: 0;
+}
+
+.inviteCardMetaLabel {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--sk-color-text-secondary, #94a3b8);
+}
+
+.inviteCardMetaValue {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--sk-color-text-primary, #0f172a);
+  overflow-wrap: anywhere;
+}
+
 .progressTrack {
   height: 6px;
   border-radius: 999px;
