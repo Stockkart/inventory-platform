@@ -3,10 +3,6 @@ import {
   Badge,
   Box,
   Button,
-  Card,
-  CardBody,
-  Inline,
-  Stack,
   Text,
   chartChrome,
   surfaceChrome,
@@ -15,8 +11,8 @@ import {
 
 const EXTRA_USER_PLAN = 'Extra User Plan';
 const EXTRA_SHOP_PLAN = 'Extra Shop Plan';
-
 const EXTRA_PLANS = [EXTRA_USER_PLAN, EXTRA_SHOP_PLAN];
+const POPULAR_PLAN = 'Silver';
 
 export function buildPlanFeatures(plan: PlanResponse): string[] {
   if (EXTRA_PLANS.includes(plan.planName)) {
@@ -25,7 +21,6 @@ export function buildPlanFeatures(plan: PlanResponse): string[] {
     }
 
     const price = (plan.arcPrice ?? plan.price)?.toLocaleString('en-IN') ?? '0';
-
     return [`₹${price} per year`];
   }
 
@@ -51,7 +46,7 @@ export function buildPlanFeatures(plan: PlanResponse): string[] {
   }
 
   if (plan.whatsappLimit != null && plan.whatsappLimit > 0) {
-    features.push(`${plan.whatsappLimit} WhatsApp messages/month`);
+    features.push(`${plan.whatsappLimit} WhatsApp/month`);
   } else {
     features.push('No WhatsApp');
   }
@@ -71,6 +66,93 @@ export interface PlanGridProps {
   showTrialBadge?: boolean;
 }
 
+function PlanTile({
+  plan,
+  isCurrent,
+  isPopular,
+  onSelectPlan,
+  ctaLabel,
+  showTrialBadge,
+}: {
+  plan: PlanResponse;
+  isCurrent: boolean;
+  isPopular: boolean;
+  onSelectPlan?: (plan: PlanResponse) => void;
+  ctaLabel: string;
+  showTrialBadge: boolean;
+}) {
+  const features = buildPlanFeatures(plan);
+  const isExtra = EXTRA_PLANS.includes(plan.planName);
+
+  return (
+    <Box
+      className={cn(
+        surfaceChrome.planCard,
+        isCurrent && surfaceChrome.planCardCurrent,
+        !isCurrent && isPopular && surfaceChrome.planCardHighlight,
+      )}
+    >
+      <Box className={surfaceChrome.planCardBody}>
+        <Box className={surfaceChrome.planCardTop}>
+          {isCurrent ? <Badge variant="success">Current</Badge> : null}
+          {!isCurrent && isPopular ? <Badge variant="info">Most popular</Badge> : null}
+          {showTrialBadge && !isExtra ? <Badge variant="neutral">30-day trial</Badge> : null}
+        </Box>
+
+        <Text as="h3" className={surfaceChrome.planCardName}>
+          {plan.planName}
+        </Text>
+
+        {!isExtra ? (
+          <Text as="p" className={surfaceChrome.planCardBestFor}>
+            {plan.bestFor || 'For your business'}
+          </Text>
+        ) : null}
+
+        <Box className={surfaceChrome.planCardPriceRow}>
+          <Text as="p" className={surfaceChrome.planCardPrice}>
+            ₹{(plan.arcPrice ?? plan.price)?.toLocaleString('en-IN') ?? 0}
+          </Text>
+          <Text as="span" className={surfaceChrome.planCardPeriod}>
+            {plan.planName === EXTRA_USER_PLAN ? '/user/year' : '/year'}
+          </Text>
+        </Box>
+
+        {!isExtra && plan.price != null && plan.price > 0 ? (
+          <Text as="p" className={surfaceChrome.planCardOneTime}>
+            One-time ₹{plan.price.toLocaleString('en-IN')} with support
+          </Text>
+        ) : null}
+
+        <Box className={surfaceChrome.planCardFeatures}>
+          {features.map((feature) => (
+            <Box key={feature} className={surfaceChrome.planCardFeature}>
+              <Text as="span" className={surfaceChrome.planCardCheck} aria-hidden>
+                ✓
+              </Text>
+              <Text as="span">{feature}</Text>
+            </Box>
+          ))}
+        </Box>
+
+        {onSelectPlan ? (
+          <Box className={surfaceChrome.planCardCta}>
+            <Button
+              type="button"
+              variant={isCurrent ? 'outline' : isPopular ? 'solid' : 'outline'}
+              fullWidth
+              disabled={isCurrent}
+              onClick={() => onSelectPlan(plan)}
+            >
+              {isCurrent ? 'Current plan' : ctaLabel}
+            </Button>
+          </Box>
+        ) : null}
+      </Box>
+    </Box>
+  );
+}
+
 export function PlanGrid({
   plans,
   currentPlanId,
@@ -78,100 +160,45 @@ export function PlanGrid({
   ctaLabel = 'Get Started',
   showTrialBadge = true,
 }: PlanGridProps) {
-  const sortedPlans = [...plans].sort((a, b) => {
-    const aExtra = EXTRA_PLANS.includes(a.planName);
-    const bExtra = EXTRA_PLANS.includes(b.planName);
-
-    if (aExtra && !bExtra) return 1;
-    if (!aExtra && bExtra) return -1;
-
-    return 0;
-  });
+  const corePlans = plans.filter((plan) => !EXTRA_PLANS.includes(plan.planName));
+  const addonPlans = plans.filter((plan) => EXTRA_PLANS.includes(plan.planName));
 
   return (
-    <Box display="grid" gap="lg" width="full" className={chartChrome.autoGridFillWide}>
-      {sortedPlans.map((plan, idx) => {
-        const features = buildPlanFeatures(plan);
-        const highlight =
-          plan.planName === 'Silver' || idx === 2 || plan.planName === 'Gold' || idx === 3;
-        const isCurrent = currentPlanId != null && plan.id === currentPlanId;
-
-        return (
-          <Card
+    <Box className={surfaceChrome.planGridWrap}>
+      <Box display="grid" gap="md" width="full" className={chartChrome.autoGridFillWide}>
+        {corePlans.map((plan) => (
+          <PlanTile
             key={plan.id}
-            className={cn(
-              isCurrent && surfaceChrome.planCardCurrent,
-              !isCurrent && highlight && surfaceChrome.planCardHighlight,
-            )}
-          >
-            <CardBody>
-              <Box position="relative">
-                {highlight ? (
-                  <Box position="absolute" className={surfaceChrome.planBadgeCenter}>
-                    <Badge variant="info">Most Popular</Badge>
-                  </Box>
-                ) : null}
-                {isCurrent ? (
-                  <Box position="absolute" className={surfaceChrome.planBadgeRight}>
-                    <Badge variant="success">Current</Badge>
-                  </Box>
-                ) : null}
+            plan={plan}
+            isCurrent={currentPlanId != null && plan.id === currentPlanId}
+            isPopular={plan.planName === POPULAR_PLAN}
+            onSelectPlan={onSelectPlan}
+            ctaLabel={ctaLabel}
+            showTrialBadge={showTrialBadge}
+          />
+        ))}
+      </Box>
 
-                <Stack gap="md" className={surfaceChrome.planCardMin} justify="between">
-                  <Stack gap="sm">
-                    {showTrialBadge && !EXTRA_PLANS.includes(plan.planName) ? (
-                      <Badge variant="success">Free 30-day trial</Badge>
-                    ) : null}
-                    <Text variant="heading3" weight="semibold">
-                      {plan.planName}
-                    </Text>
-                    {!EXTRA_PLANS.includes(plan.planName) ? (
-                      <Text color="secondary">{plan.bestFor || 'For your business'}</Text>
-                    ) : null}
-
-                    <Inline gap="xs" align="end">
-                      <Text variant="heading1" weight="bold">
-                        ₹{(plan.arcPrice ?? plan.price)?.toLocaleString('en-IN') ?? 0}
-                      </Text>
-                      <Text color="secondary">
-                        {plan.planName === EXTRA_USER_PLAN ? '/user/year' : '/year'}
-                      </Text>
-                    </Inline>
-                    {!EXTRA_PLANS.includes(plan.planName) &&
-                      plan.price != null &&
-                      plan.price > 0 && (
-                        <Text variant="caption" color="secondary">
-                          One-time ₹{plan.price?.toLocaleString('en-IN')} if taking support
-                        </Text>
-                      )}
-
-                    <Stack gap="sm">
-                      {features.map((feature) => (
-                        <Inline key={feature} gap="sm" align="start">
-                          <Text color="success">✓</Text>
-                          <Text color="secondary">{feature}</Text>
-                        </Inline>
-                      ))}
-                    </Stack>
-                  </Stack>
-
-                  {onSelectPlan ? (
-                    <Button
-                      type="button"
-                      variant={highlight ? 'solid' : 'outline'}
-                      fullWidth
-                      onClick={() => onSelectPlan(plan)}
-                      disabled={isCurrent}
-                    >
-                      {isCurrent ? 'Current Plan' : ctaLabel}
-                    </Button>
-                  ) : null}
-                </Stack>
-              </Box>
-            </CardBody>
-          </Card>
-        );
-      })}
+      {addonPlans.length > 0 ? (
+        <Box className={surfaceChrome.planGridWrap}>
+          <Text as="h4" className={surfaceChrome.planGridAddonsTitle}>
+            Add-ons
+          </Text>
+          <Box display="grid" gap="md" width="full" className={chartChrome.autoGridFillWide}>
+            {addonPlans.map((plan) => (
+              <PlanTile
+                key={plan.id}
+                plan={plan}
+                isCurrent={currentPlanId != null && plan.id === currentPlanId}
+                isPopular={false}
+                onSelectPlan={onSelectPlan}
+                ctaLabel={ctaLabel === 'Upgrade' ? 'Add' : ctaLabel}
+                showTrialBadge={false}
+              />
+            ))}
+          </Box>
+        </Box>
+      ) : null}
     </Box>
   );
 }
