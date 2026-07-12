@@ -62,7 +62,9 @@ In GitHub → Settings → Branches → rules for `main`, enable:
 | Require conversation resolution       | On                                                                   |
 | Do not allow bypassing the above      | On for everyone except emergency admins                              |
 
-After the first merge of `.github/labels.yml`, run **Actions → Sync labels → Run workflow** once so module labels exist, then open a test PR to confirm auto-labeling.
+After the first merge of `.github/labels.yml`, run **Actions → Sync labels → Run workflow** once so module labels exist, then push an empty commit or “Re-run jobs” on the PR so auto-labeling can apply them.
+
+**Note:** `PR Labeler` uses the `pull_request` event so it runs from the PR branch (needed the first time the workflow is introduced). After it is on `main`, it keeps working for subsequent PRs.
 
 ## CODEOWNERS
 

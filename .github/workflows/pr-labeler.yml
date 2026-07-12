@@ -1,7 +1,10 @@
 name: PR Labeler
 
+# Use pull_request (not only pull_request_target) so this runs from the PR
+# branch itself. pull_request_target only loads workflows already on the base
+# branch (usually main) — so a new labeler never runs until it is merged.
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, edited, synchronize, reopened]
 
 permissions:
@@ -12,11 +15,14 @@ jobs:
   path-labels:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: Apply path-based labels
         uses: actions/labeler@v5
         with:
           configuration-path: .github/labeler.yml
-          sync-labels: true
+          # Do not remove labels that no longer match (avoids fighting size labels)
+          sync-labels: false
 
   size-labels:
     runs-on: ubuntu-latest
