@@ -14,7 +14,16 @@ import {
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { CustomerProductHistoryHint } from './CustomerProductHistoryHint';
-import { cartLineMenuStyle, cartLineMetaStyle, cartLineStyle } from './scanSellStyles';
+import {
+  cartLineActionsStyle,
+  cartLineFooterStyle,
+  cartLineMenuStyle,
+  cartLineMetaStyle,
+  cartLineRemoveStyle,
+  cartLineStyle,
+  cartLineTitleStyle,
+  cartLineTotalStyle,
+} from './scanSellStyles';
 
 function money(n: number): string {
   return `₹${n.toFixed(2)}`;
@@ -43,49 +52,51 @@ export function ScanSellMenuCartLine({
   const lineTotal = line.totalAmount ?? line.priceToRetail * line.quantity;
 
   return (
-    <Inline
-      className={cn(cartLineStyle, cartLineMenuStyle)}
-      justify="between"
-      align="start"
-      width="full"
-    >
-      <Stack gap="xs" className={surfaceChrome.flexMin0}>
-        <Inline justify="between" align="center" width="full">
-          <Text weight="semibold" truncate>
-            {line.name || 'Menu item'}
+    <Stack className={cn(cartLineStyle, cartLineMenuStyle)} gap="xs" width="full">
+      <Inline justify="between" align="start" width="full" gap="sm">
+        <Stack gap="xs" className={surfaceChrome.flexMin0}>
+          <Inline gap="sm" align="center" flexWrap>
+            <Text as="span" className={cartLineTitleStyle} truncate>
+              {line.name || 'Menu item'}
+            </Text>
+            <Badge variant="info">Menu</Badge>
+          </Inline>
+          {ref ? (
+            <CustomerProductHistoryHint
+              sellableRef={ref}
+              history={customerProductHistory ?? null}
+              loading={customerProductHistoryLoading}
+            />
+          ) : null}
+          <Text variant="caption" className={cartLineMetaStyle}>
+            {money(line.priceToRetail)} each
           </Text>
-          <Badge variant="info">Menu</Badge>
-        </Inline>
-        {ref ? (
-          <CustomerProductHistoryHint
-            sellableRef={ref}
-            history={customerProductHistory ?? null}
-            loading={customerProductHistoryLoading}
+        </Stack>
+        <Stack className={cartLineActionsStyle}>
+          <CartQtyStepper
+            value={line.quantity}
+            disabled={disabled}
+            onDecrement={() => onChangeQty(ref, -1)}
+            onIncrement={() => onChangeQty(ref, 1)}
+            onCommit={(newQty) => onSetQuantity(ref, newQty)}
           />
-        ) : null}
-        <Text variant="caption" color="secondary" className={cartLineMetaStyle}>
-          {money(line.priceToRetail)} each · {money(lineTotal)}
-        </Text>
-      </Stack>
-      <Stack gap="sm" align="end" flexShrink={0}>
-        <CartQtyStepper
-          value={line.quantity}
-          disabled={disabled}
-          onDecrement={() => onChangeQty(ref, -1)}
-          onIncrement={() => onChangeQty(ref, 1)}
-          onCommit={(newQty) => onSetQuantity(ref, newQty)}
-        />
+        </Stack>
+      </Inline>
+      <Inline className={cartLineFooterStyle} justify="between" align="center" width="full">
         <Button
           type="button"
           variant="ghost"
           size="sm"
-          className={surfaceChrome.flexShrink0}
+          className={cartLineRemoveStyle}
           onClick={() => onRemove(ref)}
           disabled={disabled}
         >
           Remove
         </Button>
-      </Stack>
-    </Inline>
+        <Text as="span" className={cartLineTotalStyle}>
+          {money(lineTotal)}
+        </Text>
+      </Inline>
+    </Stack>
   );
 }

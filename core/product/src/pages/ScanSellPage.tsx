@@ -63,7 +63,6 @@ import {
   Package,
   Percent,
   Receipt,
-  Search,
   Tag,
   TrendingDown,
   X,
@@ -134,7 +133,9 @@ import {
   cafePickerSectionStyle,
   cafeOrderColumnStyle,
   cafeOrderPanelStyle,
+  cafeOrderPanelBodyStyle,
   cafeOrderHeaderStyle,
+  cafeOrderHeaderTitleStyle,
   cafeOrderListStyle,
   cafeOrderEmptyStyle,
   cafeAnalyticsStyle,
@@ -573,16 +574,22 @@ function CartSchemeInput({
 function SummaryRow({ label, value, total }: { label: string; value: string; total?: boolean }) {
   if (total) {
     return (
-      <Inline justify="between" width="full" className={productChrome.summaryRowTotal}>
-        <Text weight="bold">{label}</Text>
-        <Text weight="bold">{value}</Text>
+      <Inline justify="between" align="end" width="full" className={productChrome.summaryRowTotal}>
+        <Text as="span" className={productChrome.summaryRowTotalLabel}>
+          {label}
+        </Text>
+        <Text as="span" className={productChrome.summaryRowTotalValue}>
+          {value}
+        </Text>
       </Inline>
     );
   }
   return (
     <Inline justify="between" width="full" className={productChrome.summaryRow}>
-      <Text color="secondary">{label}</Text>
-      <Text color="secondary">{value}</Text>
+      <Text variant="caption" color="secondary">
+        {label}
+      </Text>
+      <Text weight="medium">{value}</Text>
     </Inline>
   );
 }
@@ -676,9 +683,6 @@ function ProductSearchBlock({
         width="full"
         className={cn(searchInputWrapperStyle, searchFocused && searchInputWrapperFocusedStyle)}
       >
-        <Box className={productChrome.detailFieldIcon} aria-hidden>
-          <Icon icon={Search} size="sm" />
-        </Box>
         <Input
           type="text"
           className={searchInputStyle}
@@ -3008,21 +3012,22 @@ export function ScanSellPage() {
                     />
 
                     <Card className={cafeOrderPanelStyle}>
-                      <CardBody>
+                      <CardBody className={cafeOrderPanelBodyStyle}>
                         <Inline
                           justify="between"
                           align="center"
                           width="full"
-                          padding="sm"
                           className={cafeOrderHeaderStyle}
                         >
-                          <Text variant="heading3">Current order</Text>
+                          <Text as="h3" className={cafeOrderHeaderTitleStyle}>
+                            Current order
+                          </Text>
                           <Badge variant="neutral">
                             {cafeOrderItemCount} item
                             {cafeOrderItemCount === 1 ? '' : 's'}
                           </Badge>
                         </Inline>
-                        <Stack gap="sm" className={cafeOrderListStyle}>
+                        <Stack gap="md" className={cafeOrderListStyle}>
                           {renderCafeOrderLines()}
                         </Stack>
                       </CardBody>
@@ -3372,7 +3377,7 @@ export function ScanSellPage() {
                               : cartItem.quantity;
                             return (
                               <Card key={cartItem.inventoryItem.id} className={cartLineFlushStyle}>
-                                <CardBody>
+                                <CardBody className={productChrome.cartLineBody}>
                                   <Stack gap="md" flex="1" minWidth="0">
                                     <Stack gap="xs">
                                       <Inline
@@ -3385,6 +3390,7 @@ export function ScanSellPage() {
                                         <Button
                                           type="button"
                                           variant="ghost"
+                                          className={productChrome.cartLineName}
                                           onClick={() => setDetailModalItem(cartItem)}
                                           aria-label="View pricing details"
                                         >
@@ -3425,14 +3431,7 @@ export function ScanSellPage() {
                                       ) : null}
                                     </Stack>
                                     <Inline align="start" gap="lg" width="full" flexWrap>
-                                      <Stack
-                                        gap="md"
-                                        padding="md"
-                                        bg="muted"
-                                        border
-                                        rounded="md"
-                                        className={itemEditFieldsStyle}
-                                      >
+                                      <Stack gap="md" className={itemEditFieldsStyle}>
                                         <FormField
                                           label="Price"
                                           id={`price-${cartItem.inventoryItem.id}`}
@@ -3716,7 +3715,23 @@ export function ScanSellPage() {
                 </Box>
               }
               aside={
-                <Stack as="aside" gap="md" bg="elevated" border rounded="lg" padding="lg">
+                <Stack
+                  as="aside"
+                  gap="md"
+                  bg="elevated"
+                  border
+                  rounded="lg"
+                  padding="lg"
+                  className={productChrome.billingAside}
+                >
+                  <Box className={productChrome.billingAsideHeader}>
+                    <Text as="h3" className={productChrome.billingAsideTitle}>
+                      Bill summary
+                    </Text>
+                    <Text as="p" className={productChrome.billingAsideHint}>
+                      Customer, totals, and checkout
+                    </Text>
+                  </Box>
                   <CustomerSectionBlock
                     idPrefix="sidebar"
                     customerSectionOpen={customerSectionOpen}
@@ -3797,6 +3812,9 @@ export function ScanSellPage() {
                       cartData.totalProfit != null ||
                       cartData.marginPercent != null) && (
                       <Stack gap="xs" className={productChrome.sectionDivider}>
+                        <Text as="p" className={productChrome.billingAnalyticsLabel}>
+                          Margins
+                        </Text>
                         <SummaryRow
                           label="Total Cost"
                           value={`₹${(cartData.totalCost ?? 0).toFixed(2)}`}
