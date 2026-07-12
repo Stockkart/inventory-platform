@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
+  Box,
   Button,
   Card,
   CardBody,
   CenteredLoader,
   Checkbox,
   FormField,
-  Inline,
   Input,
   Select,
   Stack,
@@ -105,11 +105,15 @@ export function SalesAnalytics() {
     void refetch();
   };
 
+  const salesByProduct = data?.salesByProduct ?? [];
+  const salesByLotId = data?.salesByLotId ?? [];
+  const salesByCompany = data?.salesByCompany ?? [];
+
   return (
     <Stack gap="md">
-      <Card>
-        <CardBody>
-          <Inline gap="md">
+      <Box className={chartChrome.filterCard}>
+        <Box className={chartChrome.filterBody}>
+          <Box className={chartChrome.filterGrid}>
             <FormField label="Start Date" htmlFor="startDate">
               <Input
                 id="startDate"
@@ -187,20 +191,21 @@ export function SalesAnalytics() {
                 onChange={(e) => handleFilterChange('topN', parseInt(e.target.value, 10))}
               />
             </FormField>
+          </Box>
 
+          <Box className={chartChrome.filterActions}>
             <Checkbox
               id="compare"
-              label="Compare with Previous Period"
+              label="Compare with previous period"
               checked={localFilters.compare}
               onChange={(e) => handleFilterChange('compare', e.target.checked)}
             />
-
             <Button variant="solid" onClick={handleApplyFilters}>
               Apply Filters
             </Button>
-          </Inline>
-        </CardBody>
-      </Card>
+          </Box>
+        </Box>
+      </Box>
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
@@ -218,52 +223,66 @@ export function SalesAnalytics() {
                 </CardBody>
               </Card>
             ) : null}
-            <Card className={chartChrome.card}>
-              <CardBody>
-                <TopProductsChart data={data.topProducts} />
-              </CardBody>
-            </Card>
-            <Card className={chartChrome.card}>
-              <CardBody>
-                <SalesByGroupChart data={data.salesByProduct} groupBy="product" />
-              </CardBody>
-            </Card>
-            <Card className={chartChrome.card}>
-              <CardBody>
-                <SalesByGroupChart data={data.salesByLotId} groupBy="lotId" />
-              </CardBody>
-            </Card>
-            <Card className={chartChrome.card}>
-              <CardBody>
-                <SalesByGroupChart data={data.salesByCompany} groupBy="company" />
-              </CardBody>
-            </Card>
+            {(data.topProducts?.length ?? 0) > 0 ? (
+              <Card className={chartChrome.card}>
+                <CardBody>
+                  <TopProductsChart data={data.topProducts} />
+                </CardBody>
+              </Card>
+            ) : null}
+            {salesByProduct.length > 0 ? (
+              <Card className={chartChrome.card}>
+                <CardBody>
+                  <SalesByGroupChart data={salesByProduct} groupBy="product" />
+                </CardBody>
+              </Card>
+            ) : null}
+            {salesByLotId.length > 0 ? (
+              <Card className={chartChrome.card}>
+                <CardBody>
+                  <SalesByGroupChart data={salesByLotId} groupBy="lotId" />
+                </CardBody>
+              </Card>
+            ) : null}
+            {salesByCompany.length > 0 ? (
+              <Card className={chartChrome.card}>
+                <CardBody>
+                  <SalesByGroupChart data={salesByCompany} groupBy="company" />
+                </CardBody>
+              </Card>
+            ) : null}
           </Stack>
 
           <Stack gap="md">
-            <Card className={chartChrome.card}>
-              <CardBody>
-                <SalesByGroupPieChart
-                  data={data.salesByProduct}
-                  groupBy="product"
-                  showRevenue={true}
-                />
-              </CardBody>
-            </Card>
-            <Card className={chartChrome.card}>
-              <CardBody>
-                <SalesByGroupPieChart data={data.salesByLotId} groupBy="lotId" showRevenue={true} />
-              </CardBody>
-            </Card>
-            <Card className={chartChrome.card}>
-              <CardBody>
-                <SalesByGroupPieChart
-                  data={data.salesByCompany}
-                  groupBy="company"
-                  showRevenue={true}
-                />
-              </CardBody>
-            </Card>
+            {salesByProduct.length > 0 ? (
+              <Card className={chartChrome.card}>
+                <CardBody>
+                  <SalesByGroupPieChart
+                    data={salesByProduct}
+                    groupBy="product"
+                    showRevenue={true}
+                  />
+                </CardBody>
+              </Card>
+            ) : null}
+            {salesByLotId.length > 0 ? (
+              <Card className={chartChrome.card}>
+                <CardBody>
+                  <SalesByGroupPieChart data={salesByLotId} groupBy="lotId" showRevenue={true} />
+                </CardBody>
+              </Card>
+            ) : null}
+            {salesByCompany.length > 0 ? (
+              <Card className={chartChrome.card}>
+                <CardBody>
+                  <SalesByGroupPieChart
+                    data={salesByCompany}
+                    groupBy="company"
+                    showRevenue={true}
+                  />
+                </CardBody>
+              </Card>
+            ) : null}
           </Stack>
         </>
       ) : null}

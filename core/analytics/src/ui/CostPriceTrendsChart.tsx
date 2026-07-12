@@ -30,7 +30,7 @@ export function CostPriceTrendsChart({ data }: CostPriceTrendsChartProps) {
   const [showSelling, setShowSelling] = useState(true);
   const [showMargin, setShowMargin] = useState(true);
 
-  const chartData = data.map((item) => ({
+  const chartData = (data ?? []).map((item) => ({
     period: item.period,
     costPrice: item.averageCostPrice,
     priceToRetail: item.averagePriceToRetail,
@@ -72,7 +72,7 @@ export function CostPriceTrendsChart({ data }: CostPriceTrendsChartProps) {
           />
         </Inline>
       </Inline>
-      <Box flex="1" className={chartChrome.frameTall}>
+      <Box className={chartChrome.plot}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />

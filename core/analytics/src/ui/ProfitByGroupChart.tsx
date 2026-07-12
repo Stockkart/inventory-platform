@@ -30,7 +30,7 @@ export function ProfitByGroupChart({ data, groupBy }: ProfitByGroupChartProps) {
   const [showCost, setShowCost] = useState(true);
   const [showProfit, setShowProfit] = useState(true);
 
-  const chartData = data
+  const chartData = (data ?? [])
     .map((item) => ({
       name: item.groupKey || 'No Lot ID',
       revenue: item.totalRevenue,
@@ -88,7 +88,7 @@ export function ProfitByGroupChart({ data, groupBy }: ProfitByGroupChartProps) {
           />
         </Inline>
       </Inline>
-      <Box flex="1" className={chartChrome.frameTall}>
+      <Box className={chartChrome.plot}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 50 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />

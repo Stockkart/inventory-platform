@@ -14,19 +14,18 @@ interface SalesByGroupPieChartProps {
 }
 
 const COLORS = [
-  '#8884d8',
-  '#82ca9d',
-  '#ffc658',
-  '#ff7300',
-  '#00ff00',
-  '#0088fe',
-  '#00c49f',
-  '#ffbb28',
-  '#ff8042',
+  '#3b82f6',
+  '#06b6d4',
+  '#f59e0b',
+  '#10b981',
+  '#6366f1',
+  '#ec4899',
+  '#14b8a6',
+  '#8b5cf6',
 ];
 
 export function SalesByGroupPieChart({ data, groupBy, showRevenue }: SalesByGroupPieChartProps) {
-  const chartData = data
+  const chartData = (data ?? [])
     .map((item) => ({
       name: item.groupKey || 'No Lot ID',
       revenue: item.totalRevenue,
@@ -78,13 +77,7 @@ export function SalesByGroupPieChart({ data, groupBy, showRevenue }: SalesByGrou
       <Text variant="heading4" weight="semibold" className={chartChrome.chartToolbar}>
         {getTitle()}
       </Text>
-      <Box
-        display="flex"
-        flex="1"
-        align="center"
-        justify="center"
-        className={chartChrome.frameTall}
-      >
+      <Box className={chartChrome.plot}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie

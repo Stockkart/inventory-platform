@@ -82,7 +82,7 @@ export const analyticsApi = {
         startDate: params.startDate,
         endDate: params.endDate,
         groupBy: params.groupBy ?? undefined,
-        timeSeriesGranularity: params.timeSeries ?? undefined,
+        timeSeries: params.timeSeries ?? undefined,
         lowMarginThreshold: params.lowMarginThreshold,
       }),
     );

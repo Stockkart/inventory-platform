@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Checkbox, Inline, Stack, Text, chartChrome } from '@inventory-platform/ui-kit';
+import { Box, Checkbox, Stack, Text, chartChrome } from '@inventory-platform/ui-kit';
 import {
   BarChart,
   Bar,
@@ -10,6 +10,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+
 interface TopProduct {
   inventoryId: string;
   productName: string;
@@ -28,7 +29,7 @@ export function TopProductsChart({ data }: TopProductsChartProps) {
   const [showRevenue, setShowRevenue] = useState(true);
   const [showQuantity, setShowQuantity] = useState(true);
 
-  const chartData = data
+  const chartData = (data ?? [])
     .slice(0, 10)
     .map((item) => ({
       name:
@@ -50,11 +51,11 @@ export function TopProductsChart({ data }: TopProductsChartProps) {
 
   return (
     <Stack gap="sm" className={chartChrome.frame}>
-      <Inline align="center" justify="between" className={chartChrome.chartToolbar}>
-        <Text variant="heading4" weight="semibold">
+      <Box className={chartChrome.chartToolbar}>
+        <Text as="h3" className={chartChrome.chartTitle}>
           Top Products by Revenue
         </Text>
-        <Inline gap="md">
+        <Box className={chartChrome.chartLegendRow}>
           <Checkbox
             label="Revenue"
             checked={showRevenue}
@@ -65,22 +66,41 @@ export function TopProductsChart({ data }: TopProductsChartProps) {
             checked={showQuantity}
             onChange={(e) => setShowQuantity(e.target.checked)}
           />
-        </Inline>
-      </Inline>
-      <Box flex="1" className={chartChrome.frameTall}>
+        </Box>
+      </Box>
+      <Box className={chartChrome.plot}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 50 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+          <BarChart data={chartData} margin={{ top: 10, right: 24, left: 4, bottom: 48 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
             <XAxis
               dataKey="name"
-              angle={-45}
+              angle={-35}
               textAnchor="end"
-              height={60}
-              tick={{ fontSize: 11 }}
-              stroke="#6b7280"
+              height={58}
+              tick={{ fontSize: 11, fill: '#64748b' }}
+              stroke="#94a3b8"
+              tickLine={false}
+              axisLine={{ stroke: '#e2e8f0' }}
             />
-            {showRevenue && <YAxis yAxisId="left" stroke="#8884d8" />}
-            {showQuantity && <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />}
+            {showRevenue ? (
+              <YAxis
+                yAxisId="left"
+                stroke="#94a3b8"
+                tick={{ fontSize: 11, fill: '#64748b' }}
+                tickLine={false}
+                axisLine={false}
+              />
+            ) : null}
+            {showQuantity ? (
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                stroke="#94a3b8"
+                tick={{ fontSize: 11, fill: '#64748b' }}
+                tickLine={false}
+                axisLine={false}
+              />
+            ) : null}
             <Tooltip
               formatter={(value: number | undefined, name: string | undefined) => {
                 if (value === undefined) return '';
@@ -90,18 +110,33 @@ export function TopProductsChart({ data }: TopProductsChartProps) {
                 return value;
               }}
               contentStyle={{
-                backgroundColor: 'white',
-                border: '1px solid #e5e7eb',
-                borderRadius: '6px',
-                padding: '8px',
+                backgroundColor: '#fff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '10px',
+                padding: '10px 12px',
+                boxShadow: '0 8px 24px rgba(15, 23, 42, 0.08)',
               }}
             />
-            <Legend wrapperStyle={{ paddingTop: '10px' }} />
+            <Legend wrapperStyle={{ paddingTop: '12px' }} />
             {showRevenue ? (
-              <Bar yAxisId="left" dataKey="revenue" fill="#8884d8" name="Revenue" />
+              <Bar
+                yAxisId="left"
+                dataKey="revenue"
+                fill="#3b82f6"
+                name="Revenue"
+                radius={[6, 6, 0, 0]}
+                maxBarSize={36}
+              />
             ) : null}
             {showQuantity ? (
-              <Bar yAxisId="right" dataKey="quantity" fill="#82ca9d" name="Quantity Sold" />
+              <Bar
+                yAxisId="right"
+                dataKey="quantity"
+                fill="#06b6d4"
+                name="Quantity Sold"
+                radius={[6, 6, 0, 0]}
+                maxBarSize={36}
+              />
             ) : null}
           </BarChart>
         </ResponsiveContainer>
