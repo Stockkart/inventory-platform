@@ -80,6 +80,7 @@ After API seed changes to `vertical_schemas`, restart/reseed the API so the UI p
 
 ## Docs
 
+- [Agent context (AI)](./AGENTS.md) — boundaries, ui-kit, design principles
 - [Contributing & PR process](./CONTRIBUTING.md)
 - [Frontend monorepo redesign](../docs_stockkart/FRONTEND_MONOREPO_REDESIGN.html)
 - [UI kit requirements](../docs_stockkart/UI_KIT_REQUIREMENTS.html)

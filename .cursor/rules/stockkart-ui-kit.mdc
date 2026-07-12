@@ -1,0 +1,36 @@
+---
+description: ui-kit primitives, chrome maps, buttons, and form label rules
+globs: inventory-platform/ui-kit/**/*.{ts,tsx,css},inventory-platform/core/**/*.{ts,tsx,css},inventory-platform/platform/shell/**/*.{ts,tsx,css},inventory-platform/plugins/**/*.{ts,tsx,css}
+alwaysApply: false
+---
+
+# StockKart UI kit & design
+
+## Primitives
+
+Use `@inventory-platform/ui-kit` (`Box`, `Stack`, `Text`, `Button`, `FormField`, `Link`, …). Avoid raw `<div>`, `<a>`, `<button>` when a primitive exists.
+
+## Chrome (prefer over new CSS systems)
+
+| Chrome | Use |
+| ------ | --- |
+| `shellChrome` | header, sidebar, notifications, help |
+| `journeyChrome` | login/signup/onboarding |
+| `chartChrome` | analytics; plots need `chartChrome.plot` (fixed height) |
+| `productChrome` / `registrationChrome` | Scan Sell, registration |
+| `accountingChrome` | ledger/journal |
+| `surfaceChrome` | generic dashboard / profile surfaces |
+
+## Buttons & forms
+
+- In-app: `Button variant="solid"` — not `brand` (marketing only)
+- Required: `FormField required` only — do **not** also put `*` in the label text
+
+## UX
+
+- Match existing StockKart chrome; no new purple-gradient / generic AI themes
+- Soft borders + light elevation; avoid deep nested cards
+- One purpose per section; keep step titles in sync with onboarding steps
+- Tokens: prefer `--sk-*`
+
+ui-kit must remain presentation-only (no fetch, no session).
