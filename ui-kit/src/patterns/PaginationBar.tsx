@@ -131,19 +131,30 @@ export function EmptyState({ title, description, action, className }: EmptyState
 }
 
 export interface PageHeaderProps {
-  title: string;
+  /** Prefer the shell navbar title on dashboard routes; omit here to avoid a duplicate H1. */
+  title?: string;
   description?: string;
   actions?: ReactNode;
   className?: string;
 }
 
 export function PageHeader({ title, description, actions, className }: PageHeaderProps) {
+  if (!title && !description && !actions) {
+    return null;
+  }
+
   return (
-    <div className={cn(styles.pageHeader, className)}>
-      <Stack gap="xs">
-        <Text variant="heading2">{title}</Text>
-        {description ? <Text color="secondary">{description}</Text> : null}
-      </Stack>
+    <div className={cn(styles.pageHeader, !title && styles.pageHeaderCompact, className)}>
+      {title || description ? (
+        <Stack gap="xs">
+          {title ? <Text variant="heading2">{title}</Text> : null}
+          {description ? (
+            <Text color="secondary" variant={title ? 'body' : 'caption'}>
+              {description}
+            </Text>
+          ) : null}
+        </Stack>
+      ) : null}
       {actions ? <div className={styles.pageHeaderActions}>{actions}</div> : null}
     </div>
   );
@@ -156,6 +167,14 @@ export interface SearchInputProps {
   placeholder?: string;
   searchLabel?: string;
   showSearchButton?: boolean;
+  /** Fill available width in a toolbar (drops the default max-width). */
+  grow?: boolean;
+  /** Search action button style. Defaults to outline. */
+  buttonVariant?: 'solid' | 'outline' | 'ghost' | 'brand';
+  /** Optional leading icon inside the field. */
+  leadingIcon?: ReactNode;
+  /** Borderless field for use inside a shared filter shell. */
+  flush?: boolean;
   className?: string;
   disabled?: boolean;
 }
@@ -167,6 +186,10 @@ export function SearchInput({
   placeholder = 'Search…',
   searchLabel = 'Search',
   showSearchButton = false,
+  grow = false,
+  buttonVariant = 'outline',
+  leadingIcon,
+  flush = false,
   className,
   disabled,
 }: SearchInputProps) {
@@ -177,8 +200,11 @@ export function SearchInput({
     }
   };
 
-  if (!showSearchButton) {
-    return (
+  const input = leadingIcon ? (
+    <div className={styles.searchField}>
+      <span className={styles.searchFieldIcon} aria-hidden>
+        {leadingIcon}
+      </span>
       <Input
         type="search"
         value={value}
@@ -186,26 +212,39 @@ export function SearchInput({
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         disabled={disabled}
-        className={cn(styles.searchInput, className)}
+        className={styles.searchFieldInput}
       />
-    );
+    </div>
+  ) : (
+    <Input
+      type="search"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      onKeyDown={handleKeyDown}
+      placeholder={placeholder}
+      disabled={disabled}
+      className={cn(styles.searchInput, grow && !showSearchButton && styles.searchToolbarGrow)}
+    />
+  );
+
+  if (!showSearchButton) {
+    return <div className={cn(grow && styles.searchToolbarGrow, className)}>{input}</div>;
   }
 
   return (
-    <Inline className={cn(styles.searchToolbar, className)} gap="sm">
-      <Input
-        type="search"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder={placeholder}
-        disabled={disabled}
-        className={styles.searchInput}
-      />
-      <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={onSearch}>
+    <div
+      className={cn(
+        styles.searchToolbar,
+        grow && styles.searchToolbarGrow,
+        flush && styles.searchToolbarFlush,
+        className,
+      )}
+    >
+      {input}
+      <Button type="button" variant={buttonVariant} disabled={disabled} onClick={onSearch}>
         {searchLabel}
       </Button>
-    </Inline>
+    </div>
   );
 }
 

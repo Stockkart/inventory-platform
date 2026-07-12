@@ -3,17 +3,26 @@ import { useLocation } from 'react-router';
 import type { InventoryItem } from '@inventory-platform/product/types';
 import { InventoryAlertDetails } from '@inventory-platform/product';
 import {
+  Badge,
   Box,
   Button,
   Card,
   CardBody,
   CenteredLoader,
+  EmptyState,
   FormField,
   Inline,
+  Input,
   Modal,
   PageHeader,
   PaginationBar,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
   Text,
   surfaceChrome,
   cn,
@@ -27,6 +36,11 @@ import {
   useLowStockAlertsQuery,
   useUpdateThresholdMutation,
 } from '../queries/hooks';
+
+function fillPercent(current: number, threshold: number) {
+  if (threshold <= 0) return 0;
+  return Math.min(Math.max((current / threshold) * 100, 0), 100);
+}
 
 export function InventoryAlertPage() {
   const location = useLocation();
@@ -67,6 +81,12 @@ export function InventoryAlertPage() {
   const totalItems = lowStockData?.page?.totalItems ?? alerts.length;
   const selected = detailItem ?? detailFallback;
 
+  const criticalCount = useMemo(
+    () => alerts.filter((a) => a.status === 'critical').length,
+    [alerts],
+  );
+  const lowCount = alerts.length - criticalCount;
+
   const openInventoryDetails = (raw: InventoryItem) => {
     const id = resolveInventoryDocumentId(raw);
     if (!id) return;
@@ -85,114 +105,117 @@ export function InventoryAlertPage() {
   }, [inventoryIdFromNotification, alerts]);
 
   const productLabel = thresholdModal.item?.name ?? thresholdModal.item?.barcode ?? 'Unknown';
+  const attentionCopy = isLoading
+    ? 'Loading alerts…'
+    : alerts.length === 0
+    ? 'Nothing needs attention right now.'
+    : `${alerts.length} item${alerts.length === 1 ? '' : 's'} need attention` +
+      (alerts.length > 0 ? ` · ${criticalCount} critical · ${lowCount} low` : '');
 
   return (
     <Stack gap="md" width="full" maxWidth="xl" mx="auto">
-      <PageHeader
-        title="Inventory Low Alert"
-        description="Monitor products with low stock levels"
-      />
-
-      <Text color="secondary" variant="caption">
-        {isLoading
-          ? 'Loading alerts…'
-          : `${alerts.length} item${alerts.length === 1 ? '' : 's'} need attention`}
-      </Text>
+      <PageHeader description={`Monitor products with low stock levels. ${attentionCopy}`} />
 
       {isLoading ? (
         <CenteredLoader label="Loading low stock alerts…" />
       ) : alerts.length === 0 ? (
-        <Stack align="center" justify="center" className={surfaceChrome.minH14}>
-          <Text color="secondary">No low stock alerts right now.</Text>
-        </Stack>
+        <EmptyState
+          title="No low stock alerts"
+          description="All tracked products are above their thresholds."
+        />
       ) : (
-        <Stack gap="md">
-          {alerts.map((alert: LowStockAlertRow) => (
-            <Card
-              key={alert.id}
-              className={cn(
-                surfaceChrome.alertCard,
-                alert.status === 'critical'
-                  ? surfaceChrome.alertCardCritical
-                  : surfaceChrome.alertCardWarning,
-              )}
-            >
-              <CardBody>
-                <Inline gap="lg" align="center" flexWrap>
-                  <Text variant="heading2">{alert.status === 'critical' ? '🔴' : '🟡'}</Text>
-
-                  <Stack gap="sm" flex="1" className={surfaceChrome.minW12}>
-                    <Text variant="heading3" weight="semibold">
-                      {alert.product}
-                    </Text>
-
-                    <Inline gap="md" flexWrap>
-                      <Text variant="caption">
-                        Current Stock:{' '}
-                        <Text as="span" weight="semibold">
-                          {alert.current}
-                        </Text>
-                      </Text>
-                      <Text variant="caption">
-                        Threshold:{' '}
-                        <Text as="span" weight="semibold">
-                          {alert.threshold}
-                        </Text>
-                      </Text>
-                    </Inline>
-
-                    <Box rounded="sm" overflow="hidden" className={surfaceChrome.progressTrack}>
-                      <Box
-                        className={cn(
-                          surfaceChrome.progressFill,
-                          alert.status === 'critical'
-                            ? surfaceChrome.progressFillCritical
-                            : alert.status === 'warning'
-                            ? surfaceChrome.progressFillWarning
-                            : surfaceChrome.progressFillDefault,
-                        )}
-                        style={
-                          {
-                            ['--sk-progress']: `${Math.min(
-                              (alert.current / alert.threshold) * 100,
-                              100,
-                            )}%`,
-                          } as CSSProperties
-                        }
-                      />
-                    </Box>
-                  </Stack>
-
-                  <Inline gap="sm" flexWrap>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => openInventoryDetails(alert.raw)}
-                      disabled={detailLoading}
-                    >
-                      View Details
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="solid"
-                      onClick={() =>
-                        setThresholdModal({
-                          open: true,
-                          item: alert.raw,
-                          threshold: alert.raw?.thresholdCount ?? alert.threshold ?? 10,
-                        })
-                      }
-                    >
-                      Configure Threshold
-                    </Button>
-                  </Inline>
-                </Inline>
-              </CardBody>
-            </Card>
-          ))}
-        </Stack>
+        <Card>
+          <CardBody>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableHeaderCell>Status</TableHeaderCell>
+                  <TableHeaderCell>Product</TableHeaderCell>
+                  <TableHeaderCell>Stock</TableHeaderCell>
+                  <TableHeaderCell>Threshold</TableHeaderCell>
+                  <TableHeaderCell>Level</TableHeaderCell>
+                  <TableHeaderCell />
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {alerts.map((alert: LowStockAlertRow) => {
+                  const fillPct = fillPercent(alert.current, alert.threshold);
+                  return (
+                    <TableRow key={alert.id}>
+                      <TableCell>
+                        <Badge variant={alert.status === 'critical' ? 'danger' : 'warning'}>
+                          {alert.status === 'critical' ? 'Critical' : 'Low'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Box className={surfaceChrome.stockAlertProductCell}>
+                          <Text as="p" className={surfaceChrome.stockAlertProductName}>
+                            {alert.product}
+                          </Text>
+                        </Box>
+                      </TableCell>
+                      <TableCell className={surfaceChrome.stockAlertNumCell}>
+                        {alert.current}
+                      </TableCell>
+                      <TableCell className={surfaceChrome.stockAlertNumCell}>
+                        {alert.threshold}
+                      </TableCell>
+                      <TableCell>
+                        <Box className={surfaceChrome.stockAlertTableProgress}>
+                          <Box className={surfaceChrome.stockAlertTableProgressTrack}>
+                            <Box
+                              className={cn(
+                                surfaceChrome.progressFill,
+                                alert.status === 'critical'
+                                  ? surfaceChrome.progressFillCritical
+                                  : surfaceChrome.progressFillWarning,
+                              )}
+                              style={
+                                {
+                                  ['--sk-progress']: `${fillPct}%`,
+                                } as CSSProperties
+                              }
+                            />
+                          </Box>
+                          <Text as="span" className={surfaceChrome.stockAlertTablePct}>
+                            {Math.round(fillPct)}%
+                          </Text>
+                        </Box>
+                      </TableCell>
+                      <TableCell className={surfaceChrome.stockAlertActionsCell}>
+                        <Inline gap="xs" justify="end">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => openInventoryDetails(alert.raw)}
+                            disabled={detailLoading}
+                          >
+                            Details
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              setThresholdModal({
+                                open: true,
+                                item: alert.raw,
+                                threshold: alert.raw?.thresholdCount ?? alert.threshold ?? 10,
+                              })
+                            }
+                          >
+                            Threshold
+                          </Button>
+                        </Inline>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </CardBody>
+        </Card>
       )}
 
       {!isLoading && alerts.length > 0 ? (
@@ -228,39 +251,50 @@ export function InventoryAlertPage() {
       />
 
       <Modal open={thresholdModal.open} onClose={closeThresholdModal} size="sm">
-        <Modal.Header title="Configure Threshold" onClose={closeThresholdModal} />
+        <Modal.Header title="Set threshold" onClose={closeThresholdModal} />
         <Modal.Body>
           <Stack gap="md">
-            <Text>
-              <Text as="span" weight="semibold">
-                Product:
-              </Text>{' '}
-              {productLabel}
-            </Text>
-            <Text>
-              <Text as="span" weight="semibold">
-                Current Stock:
-              </Text>{' '}
-              {thresholdModal.item?.currentCount ?? 0}
-            </Text>
-            <Text>
-              <Text as="span" weight="semibold">
-                Current Threshold:
-              </Text>{' '}
-              {thresholdModal.item?.thresholdCount ?? 10}
-            </Text>
-            <FormField
-              label="New Threshold Count"
-              type="number"
-              value={String(thresholdModal.threshold)}
-              disabled={updateThresholdMutation.isPending}
-              onChange={(value) =>
-                setThresholdModal({
-                  ...thresholdModal,
-                  threshold: Math.max(1, parseInt(value, 10) || 1),
-                })
-              }
-            />
+            <Box className={surfaceChrome.stockAlertModalMeta}>
+              <Box className={surfaceChrome.stockAlertModalMetaCard}>
+                <Text as="p" className={surfaceChrome.stockAlertLabel}>
+                  Product
+                </Text>
+                <Text as="p" className={surfaceChrome.stockAlertValue}>
+                  {productLabel}
+                </Text>
+              </Box>
+              <Box className={surfaceChrome.stockAlertModalMetaCard}>
+                <Text as="p" className={surfaceChrome.stockAlertLabel}>
+                  Current stock
+                </Text>
+                <Text as="p" className={surfaceChrome.stockAlertValue}>
+                  {thresholdModal.item?.currentCount ?? 0}
+                </Text>
+              </Box>
+              <Box className={surfaceChrome.stockAlertModalMetaCard}>
+                <Text as="p" className={surfaceChrome.stockAlertLabel}>
+                  Current threshold
+                </Text>
+                <Text as="p" className={surfaceChrome.stockAlertValue}>
+                  {thresholdModal.item?.thresholdCount ?? 10}
+                </Text>
+              </Box>
+            </Box>
+            <FormField label="New threshold" htmlFor="stock-alert-threshold">
+              <Input
+                id="stock-alert-threshold"
+                type="number"
+                min={1}
+                value={String(thresholdModal.threshold)}
+                disabled={updateThresholdMutation.isPending}
+                onChange={(e) =>
+                  setThresholdModal({
+                    ...thresholdModal,
+                    threshold: Math.max(1, parseInt(e.target.value, 10) || 1),
+                  })
+                }
+              />
+            </FormField>
           </Stack>
         </Modal.Body>
         <Modal.Footer>
@@ -286,7 +320,7 @@ export function InventoryAlertPage() {
                 .then(closeThresholdModal);
             }}
           >
-            Update Threshold
+            Update threshold
           </Button>
         </Modal.Footer>
       </Modal>

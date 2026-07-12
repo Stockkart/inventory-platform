@@ -44,7 +44,29 @@ import {
   productChrome,
   shellChrome,
   surfaceChrome,
+  ViewModeToggle,
+  Icon,
 } from '@inventory-platform/ui-kit';
+import type { LucideIcon } from 'lucide-react';
+import {
+  AlertTriangle,
+  Banknote,
+  Barcode,
+  Building2,
+  Calendar,
+  ClipboardList,
+  Gift,
+  Hash,
+  IndianRupee,
+  Loader2,
+  MapPin,
+  Package,
+  Percent,
+  Receipt,
+  Tag,
+  TrendingDown,
+  X,
+} from 'lucide-react';
 import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
 import { cartApi } from '../api/cart.api';
 import { sellCatalogApi } from '../api/sell-catalog.api';
@@ -82,7 +104,6 @@ import {
   dropdownItemNameStyle,
   cartSectionStyle,
   cartItemsStyle,
-  viewToggleActiveStyle,
   itemEditFieldsStyle,
   itemPriceBlockStyle,
   itemSellingPriceInputStyle,
@@ -112,7 +133,9 @@ import {
   cafePickerSectionStyle,
   cafeOrderColumnStyle,
   cafeOrderPanelStyle,
+  cafeOrderPanelBodyStyle,
   cafeOrderHeaderStyle,
+  cafeOrderHeaderTitleStyle,
   cafeOrderListStyle,
   cafeOrderEmptyStyle,
   cafeAnalyticsStyle,
@@ -551,16 +574,22 @@ function CartSchemeInput({
 function SummaryRow({ label, value, total }: { label: string; value: string; total?: boolean }) {
   if (total) {
     return (
-      <Inline justify="between" width="full" className={productChrome.summaryRowTotal}>
-        <Text weight="bold">{label}</Text>
-        <Text weight="bold">{value}</Text>
+      <Inline justify="between" align="end" width="full" className={productChrome.summaryRowTotal}>
+        <Text as="span" className={productChrome.summaryRowTotalLabel}>
+          {label}
+        </Text>
+        <Text as="span" className={productChrome.summaryRowTotalValue}>
+          {value}
+        </Text>
       </Inline>
     );
   }
   return (
     <Inline justify="between" width="full" className={productChrome.summaryRow}>
-      <Text color="secondary">{label}</Text>
-      <Text color="secondary">{value}</Text>
+      <Text variant="caption" color="secondary">
+        {label}
+      </Text>
+      <Text weight="medium">{value}</Text>
     </Inline>
   );
 }
@@ -571,7 +600,7 @@ function DetailField({
   children,
   pricing,
 }: {
-  icon: string;
+  icon: LucideIcon;
   label: string;
   children: ReactNode;
   pricing?: boolean;
@@ -582,7 +611,9 @@ function DetailField({
       align="start"
       className={cn(productChrome.detailCard, pricing && productChrome.detailCardPricing)}
     >
-      <Text aria-hidden>{icon}</Text>
+      <Box className={productChrome.detailCardIcon} aria-hidden>
+        <Icon icon={icon} size="sm" />
+      </Box>
       <Stack gap="xs" flex="1" minWidth="0">
         <Text variant="caption" color="secondary" weight="semibold">
           {label}
@@ -593,12 +624,14 @@ function DetailField({
   );
 }
 
-function DetailSectionHeader({ icon, title }: { icon: string; title: string }) {
+function DetailSectionHeader({ icon, title }: { icon: LucideIcon; title: string }) {
   return (
-    <Inline gap="sm" align="center">
-      <Text aria-hidden>{icon}</Text>
+    <Box className={productChrome.detailSectionHeader}>
+      <Box className={productChrome.detailSectionIcon} aria-hidden>
+        <Icon icon={icon} size="sm" />
+      </Box>
       <Text variant="heading3">{title}</Text>
-    </Inline>
+    </Box>
   );
 }
 
@@ -650,7 +683,6 @@ function ProductSearchBlock({
         width="full"
         className={cn(searchInputWrapperStyle, searchFocused && searchInputWrapperFocusedStyle)}
       >
-        <Text aria-hidden>🔍</Text>
         <Input
           type="text"
           className={searchInputStyle}
@@ -2891,7 +2923,6 @@ export function ScanSellPage() {
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
       <PageHeader
-        title={isCafeSell ? 'Sell' : 'Scan and Sell'}
         description={
           isCafeSell
             ? 'Tap menu items or direct stock to build the order'
@@ -2981,21 +3012,22 @@ export function ScanSellPage() {
                     />
 
                     <Card className={cafeOrderPanelStyle}>
-                      <CardBody>
+                      <CardBody className={cafeOrderPanelBodyStyle}>
                         <Inline
                           justify="between"
                           align="center"
                           width="full"
-                          padding="sm"
                           className={cafeOrderHeaderStyle}
                         >
-                          <Text variant="heading3">Current order</Text>
+                          <Text as="h3" className={cafeOrderHeaderTitleStyle}>
+                            Current order
+                          </Text>
                           <Badge variant="neutral">
                             {cafeOrderItemCount} item
                             {cafeOrderItemCount === 1 ? '' : 's'}
                           </Badge>
                         </Inline>
-                        <Stack gap="sm" className={cafeOrderListStyle}>
+                        <Stack gap="md" className={cafeOrderListStyle}>
                           {renderCafeOrderLines()}
                         </Stack>
                       </CardBody>
@@ -3075,37 +3107,14 @@ export function ScanSellPage() {
 
                     {cartItems.length > 0 ? (
                       <Inline gap="sm" align="center" mb="md" flexShrink={0}>
-                        <Text color="secondary">View:</Text>
-                        <Inline gap="xs">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className={cartViewMode === 'list' ? viewToggleActiveStyle : undefined}
-                            onClick={() => {
-                              setCartViewMode('list');
-                              localStorage.setItem('scan-sell-view-mode', 'list');
-                            }}
-                            title="List view"
-                            aria-pressed={cartViewMode === 'list'}
-                          >
-                            <Text aria-hidden>☰</Text> List
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className={cartViewMode === 'grid' ? viewToggleActiveStyle : undefined}
-                            onClick={() => {
-                              setCartViewMode('grid');
-                              localStorage.setItem('scan-sell-view-mode', 'grid');
-                            }}
-                            title="Grid view"
-                            aria-pressed={cartViewMode === 'grid'}
-                          >
-                            <Text aria-hidden>⊞</Text> Grid
-                          </Button>
-                        </Inline>
+                        <ViewModeToggle
+                          value={cartViewMode}
+                          aria-label="Cart view mode"
+                          onChange={(mode) => {
+                            setCartViewMode(mode);
+                            localStorage.setItem('scan-sell-view-mode', mode);
+                          }}
+                        />
                       </Inline>
                     ) : null}
 
@@ -3368,7 +3377,7 @@ export function ScanSellPage() {
                               : cartItem.quantity;
                             return (
                               <Card key={cartItem.inventoryItem.id} className={cartLineFlushStyle}>
-                                <CardBody>
+                                <CardBody className={productChrome.cartLineBody}>
                                   <Stack gap="md" flex="1" minWidth="0">
                                     <Stack gap="xs">
                                       <Inline
@@ -3381,6 +3390,7 @@ export function ScanSellPage() {
                                         <Button
                                           type="button"
                                           variant="ghost"
+                                          className={productChrome.cartLineName}
                                           onClick={() => setDetailModalItem(cartItem)}
                                           aria-label="View pricing details"
                                         >
@@ -3421,14 +3431,7 @@ export function ScanSellPage() {
                                       ) : null}
                                     </Stack>
                                     <Inline align="start" gap="lg" width="full" flexWrap>
-                                      <Stack
-                                        gap="md"
-                                        padding="md"
-                                        bg="muted"
-                                        border
-                                        rounded="md"
-                                        className={itemEditFieldsStyle}
-                                      >
+                                      <Stack gap="md" className={itemEditFieldsStyle}>
                                         <FormField
                                           label="Price"
                                           id={`price-${cartItem.inventoryItem.id}`}
@@ -3712,7 +3715,23 @@ export function ScanSellPage() {
                 </Box>
               }
               aside={
-                <Stack as="aside" gap="md" bg="elevated" border rounded="lg" padding="lg">
+                <Stack
+                  as="aside"
+                  gap="md"
+                  bg="elevated"
+                  border
+                  rounded="lg"
+                  padding="lg"
+                  className={productChrome.billingAside}
+                >
+                  <Box className={productChrome.billingAsideHeader}>
+                    <Text as="h3" className={productChrome.billingAsideTitle}>
+                      Bill summary
+                    </Text>
+                    <Text as="p" className={productChrome.billingAsideHint}>
+                      Customer, totals, and checkout
+                    </Text>
+                  </Box>
                   <CustomerSectionBlock
                     idPrefix="sidebar"
                     customerSectionOpen={customerSectionOpen}
@@ -3793,6 +3812,9 @@ export function ScanSellPage() {
                       cartData.totalProfit != null ||
                       cartData.marginPercent != null) && (
                       <Stack gap="xs" className={productChrome.sectionDivider}>
+                        <Text as="p" className={productChrome.billingAnalyticsLabel}>
+                          Margins
+                        </Text>
                         <SummaryRow
                           label="Total Cost"
                           value={`₹${(cartData.totalCost ?? 0).toFixed(2)}`}
@@ -3886,91 +3908,93 @@ export function ScanSellPage() {
                   width="full"
                 >
                   <Inline gap="md" align="center" flex="1">
-                    <Text aria-hidden>📦</Text>
+                    <Box className={productChrome.detailModalHeroIcon} aria-hidden>
+                      <Icon icon={Package} size="md" />
+                    </Box>
                     <Stack gap="xs">
                       <Text variant="heading3">{inv.name || 'Product'}</Text>
                       {inv.companyName ? <Text color="secondary">{inv.companyName}</Text> : null}
                     </Stack>
                   </Inline>
                   <IconButton label="Close" onClick={() => setDetailModalItem(null)}>
-                    ×
+                    <Icon icon={X} size="sm" />
                   </IconButton>
                 </Inline>
                 <Modal.Body>
                   <Stack gap="lg" className={detailModalBodyStyle}>
                     <Stack gap="md" className={detailModalSectionStyle}>
-                      <DetailSectionHeader icon="📋" title="Product Information" />
+                      <DetailSectionHeader icon={ClipboardList} title="Product Information" />
                       <Grid columns={2}>
                         {detailModalFullItemLoading ? (
-                          <DetailField icon="⏳" label="Loading full details">
+                          <DetailField icon={Loader2} label="Loading full details">
                             …
                           </DetailField>
                         ) : null}
                         {detailModalFullItemError ? (
-                          <DetailField icon="⚠️" label="Details">
+                          <DetailField icon={AlertTriangle} label="Details">
                             {detailModalFullItemError}
                           </DetailField>
                         ) : null}
-                        <DetailField icon="🏷️" label="Product name">
+                        <DetailField icon={Tag} label="Product name">
                           {inv.name || '—'}
                         </DetailField>
                         {inv.companyName ? (
-                          <DetailField icon="🏢" label="Company">
+                          <DetailField icon={Building2} label="Company">
                             {inv.companyName}
                           </DetailField>
                         ) : null}
                         {inv.barcode ? (
-                          <DetailField icon="🏷️" label="Barcode">
+                          <DetailField icon={Barcode} label="Barcode">
                             {inv.barcode}
                           </DetailField>
                         ) : null}
                         {inv.location ? (
-                          <DetailField icon="📍" label="Location">
+                          <DetailField icon={MapPin} label="Location">
                             {inv.location}
                           </DetailField>
                         ) : null}
                         {inv.hsn || inv.batchNo ? (
-                          <DetailField icon="🧾" label="HSN / Batch">
+                          <DetailField icon={Receipt} label="HSN / Batch">
                             {[inv.hsn, getExtensionFieldString(inv, 'batchNo')]
                               .filter(Boolean)
                               .join(' / ')}
                           </DetailField>
                         ) : null}
                         {hasInventoryExpiryDate(inv) ? (
-                          <DetailField icon="📅" label="Expiry">
+                          <DetailField icon={Calendar} label="Expiry">
                             {formatInventoryExpiryDate(inv)}
                           </DetailField>
                         ) : null}
                         {inv.currentCount != null || inv.currentBaseCount != null ? (
-                          <DetailField icon="📦" label="Stock (current)">
+                          <DetailField icon={Package} label="Stock (current)">
                             {inv.currentCount ?? inv.currentBaseCount ?? '—'}
                           </DetailField>
                         ) : null}
-                        <DetailField icon="🔢" label="Quantity">
+                        <DetailField icon={Hash} label="Quantity">
                           {qty}
                         </DetailField>
-                        <DetailField icon="🧾" label="Billing mode">
+                        <DetailField icon={Receipt} label="Billing mode">
                           {normalizeBillingMode(inv.billingMode)}
                         </DetailField>
                       </Grid>
                     </Stack>
                     <Stack gap="md" className={detailModalSectionFlushStyle}>
-                      <DetailSectionHeader icon="💰" title="Pricing" />
+                      <DetailSectionHeader icon={IndianRupee} title="Pricing" />
                       <Grid columns={2} gap="md">
-                        <DetailField icon="💵" label="Selling Price" pricing>
+                        <DetailField icon={Banknote} label="Selling Price" pricing>
                           <Text className={detailPriceValueStyle}>₹{price.toFixed(2)}</Text>
                         </DetailField>
-                        <DetailField icon="🏷️" label="MRP" pricing>
+                        <DetailField icon={Tag} label="MRP" pricing>
                           <Text className={detailMrpValueStyle}>₹{mrp.toFixed(2)}</Text>
                         </DetailField>
                         {mrp > 0 ? (
-                          <DetailField icon="📉" label="Discount off MRP" pricing>
+                          <DetailField icon={TrendingDown} label="Discount off MRP" pricing>
                             {(((mrp - price) / mrp) * 100).toFixed(1)}%
                           </DetailField>
                         ) : null}
                         {!hidePurchaseDetailsInSell ? (
                           <>
-                            <DetailField icon="🏷️" label="Purchase add. discount" pricing>
+                            <DetailField icon={Percent} label="Purchase add. discount" pricing>
                               {(() => {
                                 const v = getPurchaseAdditionalDiscount(
                                   detailModalItem.inventoryItem,
@@ -3978,35 +4002,35 @@ export function ScanSellPage() {
                                 return v != null ? `${v}%` : '—';
                               })()}
                             </DetailField>
-                            <DetailField icon="🎁" label="Purchase scheme/deal" pricing>
+                            <DetailField icon={Gift} label="Purchase scheme/deal" pricing>
                               {formatPurchaseSchemeLabel(detailModalItem.inventoryItem)}
                             </DetailField>
                           </>
                         ) : null}
-                        <DetailField icon="🏷️" label="Sale add. discount" pricing>
+                        <DetailField icon={Percent} label="Sale add. discount" pricing>
                           {addDisc != null ? `${addDisc}%` : '—'}
                         </DetailField>
-                        <DetailField icon="🎁" label="Sale scheme/deal" pricing>
+                        <DetailField icon={Gift} label="Sale scheme/deal" pricing>
                           {schemeLabel}
                         </DetailField>
                         {normalizeBillingMode(detailModalItem.inventoryItem.billingMode) ===
                           'REGULAR' && apiItem?.sgst != null ? (
-                          <DetailField icon="📊" label="SGST" pricing>
+                          <DetailField icon={Percent} label="SGST" pricing>
                             {apiItem.sgst}%
                           </DetailField>
                         ) : null}
                         {normalizeBillingMode(detailModalItem.inventoryItem.billingMode) ===
                           'REGULAR' && apiItem?.cgst != null ? (
-                          <DetailField icon="📊" label="CGST" pricing>
+                          <DetailField icon={Percent} label="CGST" pricing>
                             {apiItem.cgst}%
                           </DetailField>
                         ) : null}
                         {apiItem?.discount != null ? (
-                          <DetailField icon="💰" label="Discount (amount)" pricing>
+                          <DetailField icon={IndianRupee} label="Discount (amount)" pricing>
                             ₹{Number(apiItem.discount).toFixed(2)}
                           </DetailField>
                         ) : null}
-                        <DetailField icon="₹" label="Total amount" pricing>
+                        <DetailField icon={IndianRupee} label="Total amount" pricing>
                           <Text className={detailTotalValueStyle}>
                             ₹{(apiItem?.totalAmount ?? price * qty).toFixed(2)}
                           </Text>

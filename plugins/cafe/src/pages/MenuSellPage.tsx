@@ -962,7 +962,7 @@ export function MenuSellPage() {
     <Stack gap="md" maxWidth="xl" mx="auto" className={menuSellPageShell}>
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
-      <PageHeader title="Sell" description="Search and add menu items to the cart" />
+      <PageHeader description="Search and add menu items to the cart" />
 
       <AsideLayout main={cartMain} aside={cartAside} />
     </Stack>

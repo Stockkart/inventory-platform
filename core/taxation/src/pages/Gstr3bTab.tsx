@@ -12,12 +12,21 @@ import {
   TableHeaderCell,
   TableRow,
   Text,
+  accountingChrome,
 } from '@inventory-platform/ui-kit';
 import { triggerBlobDownload } from '../api/download';
 import { gstr3bApi } from '../api/gstr3b.api';
 import { useGstr3bReportQuery } from '../queries/hooks';
 import { formatCurrency, getDefaultPeriod, GstrReportHeader, GstrSummaryGrid } from '../ui';
 import { numColStyle } from '../ui/tabNav';
+
+function SectionTitle({ children }: { children: string }) {
+  return (
+    <Text as="h3" className={accountingChrome.overviewSectionTitle}>
+      {children}
+    </Text>
+  );
+}
 
 export function Gstr3bTab() {
   const [period, setPeriod] = useState(getDefaultPeriod);
@@ -54,20 +63,14 @@ export function Gstr3bTab() {
   return (
     <Stack gap="md">
       <GstrReportHeader
-        title="GSTR-3B Report"
-        description="Monthly summary return – outward supplies, ITC, and tax payment"
-        shopInfo={
-          data
-            ? `GSTIN: ${data.shopGstin || '—'} · ${data.legalName || '—'} · Period: ${data.period}`
-            : undefined
-        }
+        description="Monthly summary — outward supplies, ITC, and tax payment for GSTR-3B."
         periodId="gstr3b-period"
         period={period}
         onPeriodChange={setPeriod}
         periodDisabled={isLoading}
         downloads={[
           {
-            label: '📥 Download Excel',
+            label: 'Download Excel',
             loadingLabel: 'Downloading…',
             onClick: handleDownload,
             disabled: isLoading || isDownloading,
@@ -81,40 +84,40 @@ export function Gstr3bTab() {
       {isLoading ? (
         <CenteredLoader label="Loading GSTR-3B report…" />
       ) : data ? (
-        <Card>
-          <CardBody>
-            <Stack gap="lg">
-              <Stack gap="md">
-                <Text variant="heading3">3.1 Outward & Inward Supplies</Text>
-                <GstrSummaryGrid
-                  items={[
-                    {
-                      label: 'Outward Taxable Value',
-                      value: formatCurrency(s31?.outwardTaxableValue),
-                    },
-                    {
-                      label: 'Outward IGST',
-                      value: formatCurrency(s31?.outwardTaxableIgst),
-                    },
-                    {
-                      label: 'Outward CGST',
-                      value: formatCurrency(s31?.outwardTaxableCgst),
-                    },
-                    {
-                      label: 'Outward SGST',
-                      value: formatCurrency(s31?.outwardTaxableSgst),
-                    },
-                    {
-                      label: 'Zero Rated (Export)',
-                      value: formatCurrency(s31?.zeroRatedValue),
-                    },
-                  ]}
-                />
-              </Stack>
+        <Stack gap="lg">
+          <Stack gap="md">
+            <SectionTitle>3.1 Outward & Inward Supplies</SectionTitle>
+            <GstrSummaryGrid
+              items={[
+                {
+                  label: 'Outward Taxable Value',
+                  value: formatCurrency(s31?.outwardTaxableValue),
+                },
+                {
+                  label: 'Outward IGST',
+                  value: formatCurrency(s31?.outwardTaxableIgst),
+                },
+                {
+                  label: 'Outward CGST',
+                  value: formatCurrency(s31?.outwardTaxableCgst),
+                },
+                {
+                  label: 'Outward SGST',
+                  value: formatCurrency(s31?.outwardTaxableSgst),
+                },
+                {
+                  label: 'Zero Rated (Export)',
+                  value: formatCurrency(s31?.zeroRatedValue),
+                },
+              ]}
+            />
+          </Stack>
 
-              {interState.length > 0 ? (
-                <Stack gap="md">
-                  <Text variant="heading3">3.2 Inter-State Supplies</Text>
+          {interState.length > 0 ? (
+            <Stack gap="md">
+              <SectionTitle>3.2 Inter-State Supplies</SectionTitle>
+              <Card>
+                <CardBody>
                   <Table>
                     <TableHead>
                       <TableRow>
@@ -137,49 +140,61 @@ export function Gstr3bTab() {
                       ))}
                     </TableBody>
                   </Table>
-                </Stack>
-              ) : null}
+                </CardBody>
+              </Card>
+            </Stack>
+          ) : null}
 
-              <Stack gap="md">
-                <Text variant="heading3">4. Eligible ITC</Text>
-                <GstrSummaryGrid
-                  items={[
-                    {
-                      label: 'ITC Available (Other)',
-                      value: `IGST: ${formatCurrency(s4?.itcOtherIgst)} · CGST: ${formatCurrency(
-                        s4?.itcOtherCgst,
-                      )} · SGST: ${formatCurrency(s4?.itcOtherSgst)}`,
-                    },
-                    {
-                      label: 'ITC Reversed',
-                      value: `CGST: ${formatCurrency(
-                        s4?.itcReversedOthersCgst,
-                      )} · SGST: ${formatCurrency(s4?.itcReversedOthersSgst)}`,
-                    },
-                  ]}
-                />
-              </Stack>
+          <Stack gap="md">
+            <SectionTitle>4. Eligible ITC</SectionTitle>
+            <GstrSummaryGrid
+              items={[
+                {
+                  label: 'ITC Available · IGST',
+                  value: formatCurrency(s4?.itcOtherIgst),
+                },
+                {
+                  label: 'ITC Available · CGST',
+                  value: formatCurrency(s4?.itcOtherCgst),
+                },
+                {
+                  label: 'ITC Available · SGST',
+                  value: formatCurrency(s4?.itcOtherSgst),
+                },
+                {
+                  label: 'ITC Reversed · CGST',
+                  value: formatCurrency(s4?.itcReversedOthersCgst),
+                },
+                {
+                  label: 'ITC Reversed · SGST',
+                  value: formatCurrency(s4?.itcReversedOthersSgst),
+                },
+              ]}
+            />
+          </Stack>
 
-              {s5?.compExemptInterState != null || s5?.compExemptIntraState != null ? (
-                <Stack gap="md">
-                  <Text variant="heading3">5. Exempt / Nil / Non-GST Inward</Text>
-                  <GstrSummaryGrid
-                    items={[
-                      {
-                        label: 'Inter-State',
-                        value: formatCurrency(s5.compExemptInterState),
-                      },
-                      {
-                        label: 'Intra-State',
-                        value: formatCurrency(s5.compExemptIntraState),
-                      },
-                    ]}
-                  />
-                </Stack>
-              ) : null}
+          {s5?.compExemptInterState != null || s5?.compExemptIntraState != null ? (
+            <Stack gap="md">
+              <SectionTitle>5. Exempt / Nil / Non-GST Inward</SectionTitle>
+              <GstrSummaryGrid
+                items={[
+                  {
+                    label: 'Inter-State',
+                    value: formatCurrency(s5.compExemptInterState),
+                  },
+                  {
+                    label: 'Intra-State',
+                    value: formatCurrency(s5.compExemptIntraState),
+                  },
+                ]}
+              />
+            </Stack>
+          ) : null}
 
-              <Stack gap="md">
-                <Text variant="heading3">6.1 Payment of Tax</Text>
+          <Stack gap="md">
+            <SectionTitle>6.1 Payment of Tax</SectionTitle>
+            <Card>
+              <CardBody>
                 <Table>
                   <TableHead>
                     <TableRow>
@@ -236,10 +251,10 @@ export function Gstr3bTab() {
                     </TableRow>
                   </TableBody>
                 </Table>
-              </Stack>
-            </Stack>
-          </CardBody>
-        </Card>
+              </CardBody>
+            </Card>
+          </Stack>
+        </Stack>
       ) : null}
     </Stack>
   );

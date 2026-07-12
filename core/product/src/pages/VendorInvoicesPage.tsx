@@ -14,7 +14,6 @@ import {
   CardBody,
   CenteredLoader,
   EmptyState,
-  Grid,
   Inline,
   PageHeader,
   PaginationBar,
@@ -27,6 +26,7 @@ import {
   TableHeaderCell,
   TableRow,
   Text,
+  cn,
   productChrome,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
@@ -65,10 +65,12 @@ function formatMoney(n: number | null | undefined): string {
 function formatDateShort(iso: string | null | undefined): string {
   if (!iso) return '—';
   try {
-    return new Date(iso).toLocaleDateString(undefined, {
+    return new Date(iso).toLocaleDateString('en-IN', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   } catch {
     return iso;
@@ -90,19 +92,6 @@ function vendorDisplay(row: { vendorName?: string | null }): string {
   const n = row.vendorName?.trim();
   if (n) return n;
   return 'Unknown vendor';
-}
-
-function DetailLine({ label, value }: { label: string; value: string }) {
-  return (
-    <Inline gap="xs">
-      <Text variant="caption" color="secondary" weight="semibold">
-        {label}:
-      </Text>
-      <Text variant="caption" color="secondary">
-        {value}
-      </Text>
-    </Inline>
-  );
 }
 
 function InvoiceExpansionPanel({
@@ -403,52 +392,89 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
           const detail = detailsById[inv.id];
           const rowBusy = fetchingId === inv.id;
           const err = rowError[inv.id];
+          const invoiceNo = inv.invoiceNo?.trim() || null;
 
           return (
-            <Card key={inv.id}>
+            <Card key={inv.id} className={productChrome.historyRecordCard}>
               <CardBody>
-                <Stack gap="md">
-                  <Inline
-                    justify="between"
-                    align="start"
-                    gap="md"
-                    className={surfaceChrome.recordHeader}
-                  >
-                    <Inline gap="xs" align="center">
-                      <DetailLine label="Invoice" value={inv.invoiceNo} />
+                <Box className={productChrome.salePickMain}>
+                  <Box className={productChrome.historyRecordHeader}>
+                    <Box className={productChrome.salePickTitleRow}>
+                      <Text as="p" className={productChrome.salePickInvoiceHint}>
+                        Invoice
+                      </Text>
+                      <Text
+                        as="p"
+                        className={cn(
+                          productChrome.salePickTitle,
+                          !invoiceNo && productChrome.salePickValueMuted,
+                        )}
+                      >
+                        {invoiceNo ?? 'No invoice number'}
+                      </Text>
                       {inv.synthetic ? <Badge variant="info">Auto</Badge> : null}
-                    </Inline>
-                    <Inline gap="sm" align="center" flexShrink={0}>
-                      <DetailLine label="Date" value={formatDateShort(inv.invoiceDate)} />
+                    </Box>
+                    <Box className={productChrome.historyRecordActions}>
+                      <Text as="p" className={productChrome.historyRecordAmount}>
+                        {formatMoney(inv.invoiceTotal)}
+                      </Text>
                       <Button
                         type="button"
                         size="sm"
-                        variant="outline"
+                        variant="ghost"
                         onClick={() => toggleExpanded(inv)}
                         aria-expanded={isOpen}
                       >
                         {isOpen ? 'Hide details' : 'View details'}
                       </Button>
-                    </Inline>
-                  </Inline>
-                  <Grid columns={2} gap="sm">
-                    <DetailLine label="Vendor" value={vendorDisplay(inv)} />
-                    <DetailLine label="Lines" value={String(inv.lineCount)} />
-                    <DetailLine label="Total" value={formatMoney(inv.invoiceTotal)} />
-                  </Grid>
-                  {isOpen ? (
-                    <InvoiceExpansionPanel
-                      inv={inv}
-                      detail={detail}
-                      rowBusy={rowBusy}
-                      err={err}
-                      inventoryById={inventoryById}
-                      inventoryLoadingByInvoice={inventoryLoadingByInvoice}
-                      inventoryWarningByInvoice={inventoryWarningByInvoice}
-                    />
-                  ) : null}
-                </Stack>
+                    </Box>
+                  </Box>
+
+                  <Box className={productChrome.salePickGrid}>
+                    <Box className={productChrome.salePickField}>
+                      <Text as="p" className={productChrome.salePickLabel}>
+                        Date
+                      </Text>
+                      <Text as="p" className={productChrome.salePickValue}>
+                        {formatDateShort(inv.invoiceDate)}
+                      </Text>
+                    </Box>
+                    <Box className={productChrome.salePickField}>
+                      <Text as="p" className={productChrome.salePickLabel}>
+                        Vendor
+                      </Text>
+                      <Text as="p" className={productChrome.salePickValue}>
+                        {vendorDisplay(inv)}
+                      </Text>
+                    </Box>
+                    <Box className={productChrome.salePickField}>
+                      <Text as="p" className={productChrome.salePickLabel}>
+                        Lines
+                      </Text>
+                      <Text as="p" className={productChrome.salePickValue}>
+                        {String(inv.lineCount)}
+                      </Text>
+                    </Box>
+                  </Box>
+                </Box>
               </CardBody>
+
+              {isOpen ? (
+                <Box className={productChrome.historyItemsPanel}>
+                  <Text as="p" className={productChrome.historyItemsTitle}>
+                    Invoice details
+                  </Text>
+                  <InvoiceExpansionPanel
+                    inv={inv}
+                    detail={detail}
+                    rowBusy={rowBusy}
+                    err={err}
+                    inventoryById={inventoryById}
+                    inventoryLoadingByInvoice={inventoryLoadingByInvoice}
+                    inventoryWarningByInvoice={inventoryWarningByInvoice}
+                  />
+                </Box>
+              ) : null}
             </Card>
           );
         })}
@@ -555,78 +581,76 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
     </Stack>
   );
 
+  const listBody = loading ? (
+    <CenteredLoader label={embedded ? 'Loading purchase history…' : 'Loading invoices…'} />
+  ) : invoices.length === 0 ? (
+    embedded ? (
+      <EmptyState
+        title={filtering ? 'No purchases match these filters.' : 'No vendor invoices yet.'}
+      />
+    ) : (
+      <EmptyState title={emptyMessage} />
+    )
+  ) : embedded ? (
+    renderEmbeddedCards()
+  ) : (
+    renderStandaloneTable()
+  );
+
+  if (embedded) {
+    return (
+      <Stack gap="md" width="full">
+        {error ? <Alert variant="danger">{error}</Alert> : null}
+        {listBody}
+      </Stack>
+    );
+  }
+
   return (
-    <Stack
-      gap="md"
-      width="full"
-      maxWidth={embedded ? undefined : 'xl'}
-      mx={embedded ? undefined : 'auto'}
-    >
-      {!embedded ? (
-        <PageHeader title="Vendor purchase invoices" description={pageDescription} />
-      ) : null}
+    <Stack gap="md" width="full" maxWidth="xl" mx="auto">
+      <PageHeader description={pageDescription} />
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
       <Card>
         <CardBody>
           <Stack gap="md">
-            {!embedded ? (
-              <Stack gap="sm" className={productChrome.filterToolbarBottom}>
-                <Inline gap="sm" flexWrap>
-                  <Box width="full" className={productChrome.searchGrow}>
-                    <SearchInput
-                      value={searchInput}
-                      onChange={setSearchInput}
-                      onSearch={runSearch}
-                      showSearchButton
-                      placeholder="Product, barcode, invoice no, or vendor"
-                    />
-                  </Box>
-                  {listQuery ? (
-                    <Button type="button" variant="outline" size="sm" onClick={clearSearch}>
-                      Clear
-                    </Button>
-                  ) : null}
-                </Inline>
-                <Text variant="caption" color="secondary" className={productChrome.helperLine}>
-                  Same pattern is tried against invoice number, vendor name, and each line&apos;s
-                  product name and barcode (case-insensitive). Examples:{' '}
-                  <Text as="span" className={productChrome.monoHint}>
-                    paracetamol|dolo
-                  </Text>
-                  ,{' '}
-                  <Text as="span" className={productChrome.monoHint}>
-                    INV-712
-                  </Text>
-                  ,{' '}
-                  <Text as="span" className={productChrome.monoHint}>
-                    ^HIMP
-                  </Text>
-                  . Invalid patterns return an error from the server.
+            <Stack gap="sm" className={productChrome.filterToolbarBottom}>
+              <Inline gap="sm" flexWrap>
+                <Box width="full" className={productChrome.searchGrow}>
+                  <SearchInput
+                    value={searchInput}
+                    onChange={setSearchInput}
+                    onSearch={runSearch}
+                    showSearchButton
+                    placeholder="Product, barcode, invoice no, or vendor"
+                  />
+                </Box>
+                {listQuery ? (
+                  <Button type="button" variant="outline" size="sm" onClick={clearSearch}>
+                    Clear
+                  </Button>
+                ) : null}
+              </Inline>
+              <Text variant="caption" color="secondary" className={productChrome.helperLine}>
+                Same pattern is tried against invoice number, vendor name, and each line&apos;s
+                product name and barcode (case-insensitive). Examples:{' '}
+                <Text as="span" className={productChrome.monoHint}>
+                  paracetamol|dolo
                 </Text>
-              </Stack>
-            ) : null}
+                ,{' '}
+                <Text as="span" className={productChrome.monoHint}>
+                  INV-712
+                </Text>
+                ,{' '}
+                <Text as="span" className={productChrome.monoHint}>
+                  ^HIMP
+                </Text>
+                . Invalid patterns return an error from the server.
+              </Text>
+            </Stack>
 
-            {loading ? (
-              <CenteredLoader
-                label={embedded ? 'Loading purchase history…' : 'Loading invoices…'}
-              />
-            ) : invoices.length === 0 ? (
-              embedded ? (
-                <EmptyState
-                  title={
-                    filtering ? 'No purchases match these filters.' : 'No vendor invoices yet.'
-                  }
-                />
-              ) : (
-                <EmptyState title={emptyMessage} />
-              )
-            ) : embedded ? (
-              renderEmbeddedCards()
-            ) : (
-              renderStandaloneTable()
-            )}
+            {listBody}
           </Stack>
         </CardBody>
       </Card>

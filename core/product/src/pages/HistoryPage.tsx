@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router';
-import { Card, CardBody, PageHeader, Stack, Tabs } from '@inventory-platform/ui-kit';
+import {
+  Box,
+  Button,
+  Inline,
+  PageHeader,
+  Stack,
+  accountingChrome,
+  cn,
+} from '@inventory-platform/ui-kit';
 import {
   PurchaseList,
   RefundHistoryList,
@@ -114,48 +122,59 @@ export function HistoryPage() {
     });
   }
 
-  const renderTabPanel = (tab: HistoryTab) => (
-    <Card>
-      <CardBody>
-        <Stack gap="md">
-          <HistoryFiltersBar
-            filters={draftFilters}
-            onChange={setDraftFilters}
-            onApply={() => setAppliedFilters({ ...draftFilters })}
-            onClear={() => {
-              setDraftFilters(EMPTY_HISTORY_FILTERS);
-              setAppliedFilters(EMPTY_HISTORY_FILTERS);
-            }}
-            activeTab={tab}
-            hasAppliedFilters={hasActiveHistoryFilters(appliedFilters, tab)}
-          />
-
-          {tab === 'saleHistory' && <PurchaseList filters={appliedFilters} />}
-          {tab === 'purchaseHistory' && <VendorInvoicesPage embedded filters={appliedFilters} />}
-          {customerReturnEnabled && tab === 'customerReturnHistory' && (
-            <RefundHistoryList filters={appliedFilters} />
-          )}
-          {vendorReturnEnabled && tab === 'vendorReturnHistory' && (
-            <VendorReturnHistoryList filters={appliedFilters} />
-          )}
-        </Stack>
-      </CardBody>
-    </Card>
-  );
-
   return (
     <Stack gap="md">
-      <PageHeader title="History" description={subtitle} />
+      <Box
+        as="nav"
+        aria-label="History sections"
+        overflow="auto"
+        className={accountingChrome.navTabBar}
+      >
+        <Inline gap="none">
+          {tabs.map((tab) => {
+            const active = activeTab === tab.id;
+            return (
+              <Button
+                key={tab.id}
+                type="button"
+                size="sm"
+                variant="ghost"
+                role="tab"
+                aria-selected={active}
+                className={cn(accountingChrome.navTab, active && accountingChrome.navTabActive)}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                {tab.label}
+              </Button>
+            );
+          })}
+        </Inline>
+      </Box>
 
-      <Tabs
-        value={activeTab}
-        onChange={(value) => setActiveTab(value as HistoryTab)}
-        items={tabs.map((tab) => ({
-          value: tab.id,
-          label: tab.label,
-          panel: renderTabPanel(tab.id),
-        }))}
+      <PageHeader description={subtitle} />
+
+      <HistoryFiltersBar
+        filters={draftFilters}
+        onChange={setDraftFilters}
+        onApply={() => setAppliedFilters({ ...draftFilters })}
+        onClear={() => {
+          setDraftFilters(EMPTY_HISTORY_FILTERS);
+          setAppliedFilters(EMPTY_HISTORY_FILTERS);
+        }}
+        activeTab={activeTab}
+        hasAppliedFilters={hasActiveHistoryFilters(appliedFilters, activeTab)}
       />
+
+      {activeTab === 'saleHistory' ? <PurchaseList filters={appliedFilters} /> : null}
+      {activeTab === 'purchaseHistory' ? (
+        <VendorInvoicesPage embedded filters={appliedFilters} />
+      ) : null}
+      {customerReturnEnabled && activeTab === 'customerReturnHistory' ? (
+        <RefundHistoryList filters={appliedFilters} />
+      ) : null}
+      {vendorReturnEnabled && activeTab === 'vendorReturnHistory' ? (
+        <VendorReturnHistoryList filters={appliedFilters} />
+      ) : null}
     </Stack>
   );
 }

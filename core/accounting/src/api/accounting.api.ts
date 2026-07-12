@@ -24,7 +24,11 @@ function unwrap<T>(raw: unknown): T | undefined {
   if (raw == null) return undefined;
   if (typeof raw !== 'object') return raw as T;
   const o = raw as Record<string, unknown>;
-  if ('success' in o && 'data' in o) return o.data as T;
+  // ApiResponse uses NON_NULL — null `data` is omitted, so `{ success: true }` means no payload.
+  if ('success' in o) {
+    if ('data' in o) return o.data as T;
+    return undefined;
+  }
   return raw as T;
 }
 
@@ -384,7 +388,7 @@ export const accountingApi = {
   openingBalanceStatus: async (): Promise<JournalEntryResponse | null> => {
     const raw = await apiClient.get<unknown>(ACCOUNTING_ENDPOINTS.OPENING_BALANCES_STATUS);
     const inner = unwrap<JournalEntryResponse | null>(raw);
-    if (!inner) return null;
+    if (!inner || typeof inner !== 'object' || !inner.id) return null;
     return normalizeJournalEntry(inner);
   },
 

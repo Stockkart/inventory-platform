@@ -1,7 +1,40 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router';
 import { authApi } from '@inventory-platform/session/api';
-import { Alert, Button, Card, CardBody, FormField, Stack, Text } from '@inventory-platform/ui-kit';
+import { Alert, Box, Button, FormField, Text, journeyChrome } from '@inventory-platform/ui-kit';
+
+function AuthMessageCard({
+  eyebrow,
+  title,
+  subtitle,
+  children,
+}: {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  children?: ReactNode;
+}) {
+  return (
+    <Box className={journeyChrome.authShell}>
+      <Box className={journeyChrome.authCard}>
+        <Box className={journeyChrome.authCardBody}>
+          <Box className={journeyChrome.authHeader}>
+            <Text as="p" className={journeyChrome.authEyebrow}>
+              {eyebrow}
+            </Text>
+            <Text as="h1" className={journeyChrome.authTitle}>
+              {title}
+            </Text>
+            <Text as="p" className={journeyChrome.authSubtitle}>
+              {subtitle}
+            </Text>
+          </Box>
+          {children}
+        </Box>
+      </Box>
+    </Box>
+  );
+}
 
 export function ResetPasswordForm() {
   const navigate = useNavigate();
@@ -62,61 +95,52 @@ export function ResetPasswordForm() {
 
   if (!token) {
     return (
-      <Card>
-        <CardBody>
-          <Stack gap="md" width="full">
-            <Stack gap="xs" align="center">
-              <Text variant="heading1">Invalid Reset Link</Text>
-              <Text color="secondary">
-                This password reset link is invalid or has expired. Please request a new one.
-              </Text>
-            </Stack>
-            {error ? <Alert variant="danger">{error}</Alert> : null}
-            <Stack gap="xs" align="center">
-              <Text color="secondary">
-                <Link to="/forgot-password">Request a new reset link</Link>
-              </Text>
-            </Stack>
-          </Stack>
-        </CardBody>
-      </Card>
+      <AuthMessageCard
+        eyebrow="Account recovery"
+        title="Invalid reset link"
+        subtitle="This password reset link is invalid or has expired. Please request a new one."
+      >
+        {error ? <Alert variant="danger">{error}</Alert> : null}
+        <Box className={journeyChrome.authFooter}>
+          <Link to="/forgot-password">Request a new reset link</Link>
+        </Box>
+      </AuthMessageCard>
     );
   }
 
   if (success) {
     return (
-      <Card>
-        <CardBody>
-          <Stack gap="md" width="full">
-            <Stack gap="xs" align="center">
-              <Text variant="heading1">Password Reset</Text>
-              <Text color="secondary">
-                Your password has been reset successfully. Redirecting you to sign in...
-              </Text>
-            </Stack>
-            <Stack gap="xs" align="center">
-              <Text color="secondary">
-                <Link to="/login">Sign in now</Link>
-              </Text>
-            </Stack>
-          </Stack>
-        </CardBody>
-      </Card>
+      <AuthMessageCard
+        eyebrow="Account recovery"
+        title="Password reset"
+        subtitle="Your password has been reset successfully. Redirecting you to sign in…"
+      >
+        <Box className={journeyChrome.authFooter}>
+          <Link to="/login">Sign in now</Link>
+        </Box>
+      </AuthMessageCard>
     );
   }
 
   return (
-    <Card>
-      <CardBody>
-        <Stack gap="md" width="full">
-          <Stack gap="xs" align="center">
-            <Text variant="heading1">Reset Password</Text>
-            <Text color="secondary">Enter your new password below</Text>
-          </Stack>
+    <Box className={journeyChrome.authShell}>
+      <Box className={journeyChrome.authCard}>
+        <Box className={journeyChrome.authCardBody}>
+          <Box className={journeyChrome.authHeader}>
+            <Text as="p" className={journeyChrome.authEyebrow}>
+              Account recovery
+            </Text>
+            <Text as="h1" className={journeyChrome.authTitle}>
+              Reset password
+            </Text>
+            <Text as="p" className={journeyChrome.authSubtitle}>
+              Choose a new password for your StockKart account.
+            </Text>
+          </Box>
 
           {error ? <Alert variant="danger">{error}</Alert> : null}
 
-          <Stack gap="md" width="full">
+          <Box className={journeyChrome.authForm}>
             <FormField
               label="New Password"
               id="newPassword"
@@ -144,23 +168,22 @@ export function ResetPasswordForm() {
             />
 
             <Button
-              variant="solid"
+              variant="brand"
+              className={journeyChrome.authSubmit}
               onClick={() => void handleSubmit()}
               disabled={isLoading}
               loading={isLoading}
               fullWidth
             >
-              {isLoading ? 'Resetting...' : 'Reset Password'}
+              {isLoading ? 'Resetting…' : 'Reset password'}
             </Button>
-          </Stack>
+          </Box>
 
-          <Stack gap="xs" align="center">
-            <Text color="secondary">
-              <Link to="/login">Back to sign in</Link>
-            </Text>
-          </Stack>
-        </Stack>
-      </CardBody>
-    </Card>
+          <Box className={journeyChrome.authFooter}>
+            <Link to="/login">Back to sign in</Link>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 }

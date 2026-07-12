@@ -1,19 +1,21 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import {
   Badge,
+  Box,
   Button,
   Card,
   CardBody,
+  CenteredLoader,
+  FormField,
   Inline,
-  PageHeader,
+  Modal,
   Stack,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeaderCell,
-  TableLoadingRow,
   TableRow,
   Text,
   cn,
@@ -22,9 +24,14 @@ import {
 import { useNotify } from '@inventory-platform/session';
 import { useJournalQuery, useReverseJournalMutation } from '../queries/hooks';
 import { AccountingTabs } from '../ui/AccountingTabs';
-import { formatDateTime, formatDate, formatMoney } from '../model/format';
-import { grandTotalCellStyle } from '../ui/accountingStyles';
-import { numColBoldStyle, numColStyle } from '../ui/tabNav';
+import {
+  formatDateShort,
+  formatDateTime,
+  formatJournalSource,
+  formatJournalStatus,
+  formatMoney,
+  formatPartyLabel,
+} from '../model/format';
 
 function statusVariant(
   status: 'POSTED' | 'REVERSED' | 'VOID',
@@ -34,14 +41,37 @@ function statusVariant(
   return 'danger';
 }
 
+function MetaItem({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <Box className={accountingChrome.detailMetaItem}>
+      <Text as="span" className={accountingChrome.detailMetaLabel}>
+        {label}
+      </Text>
+      <Text as="span" className={accountingChrome.detailMetaValue}>
+        {value}
+      </Text>
+    </Box>
+  );
+}
+
+function formatLineParty(partyType?: string | null, partyDisplayName?: string | null): string {
+  if (!partyType) return '—';
+  const kind = formatPartyLabel(partyType);
+  return partyDisplayName ? `${kind} · ${partyDisplayName}` : kind;
+}
+
 export function JournalEntryDetailPage() {
   const params = useParams();
   const navigate = useNavigate();
   const entryId = params.entryId ?? '';
   const { error: notifyError, success: notifySuccess } = useNotify;
   const { data: entry, isLoading } = useJournalQuery(entryId);
+  const [reverseOpen, setReverseOpen] = useState(false);
+  const [reverseReason, setReverseReason] = useState('');
   const reverseMutation = useReverseJournalMutation({
     onSuccess: (reversal) => {
+      setReverseOpen(false);
+      setReverseReason('');
       notifySuccess(`Reversal posted: ${reversal.entryNo}`);
       navigate(`/dashboard/accounting/journal/${reversal.id}`);
     },
@@ -50,34 +80,28 @@ export function JournalEntryDetailPage() {
     },
   });
 
-  async function reverse() {
+  function openReverseModal() {
+    setReverseReason('');
+    setReverseOpen(true);
+  }
+
+  function closeReverseModal() {
+    if (reverseMutation.isPending) return;
+    setReverseOpen(false);
+    setReverseReason('');
+  }
+
+  function confirmReverse() {
     if (!entry) return;
-    const reason = window.prompt(
-      'Reason for reversal (optional). The original entry will be marked REVERSED and a mirroring reversal entry will be posted.',
-    );
-    if (reason == null) return;
-    reverseMutation.mutate({ id: entry.id, body: { reason } });
+    const reason = reverseReason.trim();
+    reverseMutation.mutate({ id: entry.id, body: reason ? { reason } : {} });
   }
 
   return (
     <Stack gap="md">
-      <Stack gap="md">
-        <AccountingTabs />
-        <PageHeader
-          title="Journal Entry"
-          actions={
-            entry && entry.status === 'POSTED' ? (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={reverse}
-                disabled={reverseMutation.isPending}
-              >
-                {reverseMutation.isPending ? 'Reversing…' : 'Reverse entry'}
-              </Button>
-            ) : undefined
-          }
-        />
+      <AccountingTabs />
+
+      <Inline justify="between" align="center" gap="md" className={accountingChrome.detailToolbar}>
         <Button
           type="button"
           variant="ghost"
@@ -86,149 +110,263 @@ export function JournalEntryDetailPage() {
         >
           ← Back to journal
         </Button>
-      </Stack>
+        {entry && entry.status === 'POSTED' ? (
+          <Button
+            type="button"
+            variant="solid"
+            size="sm"
+            onClick={openReverseModal}
+            disabled={reverseMutation.isPending}
+          >
+            Reverse entry
+          </Button>
+        ) : null}
+      </Inline>
+
+      <Modal open={reverseOpen} onClose={closeReverseModal} size="sm">
+        <Modal.Header title="Reverse entry" onClose={closeReverseModal} />
+        <Modal.Body>
+          <Stack gap="md">
+            {entry ? (
+              <Box className={accountingChrome.reverseSummary}>
+                <Box className={accountingChrome.reverseSummaryRow}>
+                  <Text as="span" className={accountingChrome.reverseSummaryLabel}>
+                    Entry
+                  </Text>
+                  <Text as="span" className={accountingChrome.reverseSummaryValue}>
+                    {entry.entryNo}
+                  </Text>
+                </Box>
+                <Box className={accountingChrome.reverseSummaryRow}>
+                  <Text as="span" className={accountingChrome.reverseSummaryLabel}>
+                    Amount
+                  </Text>
+                  <Text as="span" className={accountingChrome.reverseSummaryValue}>
+                    ₹{formatMoney(entry.totalDebit)}
+                  </Text>
+                </Box>
+                <Box className={accountingChrome.reverseSummaryRow}>
+                  <Text as="span" className={accountingChrome.reverseSummaryLabel}>
+                    Source
+                  </Text>
+                  <Text as="span" className={accountingChrome.reverseSummaryValue}>
+                    {formatJournalSource(entry.sourceType)}
+                  </Text>
+                </Box>
+              </Box>
+            ) : null}
+
+            <Text as="p" className={accountingChrome.reverseHint}>
+              The original entry will be marked reversed, and a new mirroring entry will be posted.
+            </Text>
+
+            <FormField
+              id="reverse-reason"
+              label="Reason"
+              hint="Optional — helps explain this reversal later."
+              multiline
+              rows={3}
+              value={reverseReason}
+              onChange={setReverseReason}
+              placeholder="e.g. Duplicate posting, incorrect amount…"
+              disabled={reverseMutation.isPending}
+            />
+          </Stack>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={closeReverseModal}
+            disabled={reverseMutation.isPending}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="danger"
+            loading={reverseMutation.isPending}
+            onClick={confirmReverse}
+          >
+            {reverseMutation.isPending ? 'Reversing…' : 'Reverse'}
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
       <Card>
         <CardBody>
-          {isLoading || !entry ? (
-            <Table>
-              <TableBody>
-                <TableLoadingRow colSpan={2} label={isLoading ? 'Loading…' : 'Entry not found'} />
-              </TableBody>
-            </Table>
+          {isLoading ? (
+            <CenteredLoader label="Loading journal entry…" />
+          ) : !entry ? (
+            <Stack gap="sm" align="center">
+              <Text color="secondary">Entry not found.</Text>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/dashboard/accounting/journal')}
+              >
+                Back to journal
+              </Button>
+            </Stack>
           ) : (
-            <Stack gap="md">
-              <Table>
-                <TableBody>
-                  <MetaRow label="Entry #" value={entry.entryNo} />
-                  <MetaRow label="Transaction Date" value={formatDate(entry.txnDate)} />
-                  <MetaRow label="Posted At" value={formatDateTime(entry.postedAt)} />
-                  <MetaRow
-                    label="Source"
-                    value={
-                      <Inline gap="xs" align="center">
-                        <Badge variant="info">{entry.sourceType}</Badge>
-                        {entry.sourceId ? (
-                          <Text variant="caption" color="secondary">
-                            {entry.sourceId}
-                          </Text>
-                        ) : null}
-                      </Inline>
-                    }
-                  />
-                  <MetaRow
-                    label="Status"
-                    value={<Badge variant={statusVariant(entry.status)}>{entry.status}</Badge>}
-                  />
+            <Stack gap="lg">
+              <Stack gap="sm" className={accountingChrome.detailHeader}>
+                <Inline justify="between" align="start" gap="md">
+                  <Stack gap="xs">
+                    <Text as="h2" className={accountingChrome.detailEntryNo}>
+                      {entry.entryNo}
+                    </Text>
+                    {entry.narration ? (
+                      <Text as="p" className={accountingChrome.detailNarration}>
+                        {entry.narration}
+                      </Text>
+                    ) : null}
+                  </Stack>
+                  <Inline gap="sm" align="center" flexShrink={0}>
+                    <Badge variant={statusVariant(entry.status)}>
+                      {formatJournalStatus(entry.status)}
+                    </Badge>
+                    <Badge variant="info">{formatJournalSource(entry.sourceType)}</Badge>
+                  </Inline>
+                </Inline>
+
+                <Box className={accountingChrome.detailMetaGrid}>
+                  <MetaItem label="Date" value={formatDateShort(entry.txnDate)} />
+                  <MetaItem label="Posted" value={formatDateTime(entry.postedAt)} />
                   {entry.reversesEntryId ? (
-                    <MetaRow
+                    <MetaItem
                       label="Reverses"
                       value={
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
+                          className={accountingChrome.entryLink}
                           onClick={() =>
                             navigate(`/dashboard/accounting/journal/${entry.reversesEntryId}`)
                           }
                         >
-                          {entry.reversesEntryId}
+                          View original
                         </Button>
                       }
                     />
                   ) : null}
                   {entry.reversedByEntryId ? (
-                    <MetaRow
-                      label="Reversed By"
+                    <MetaItem
+                      label="Reversed by"
                       value={
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
+                          className={accountingChrome.entryLink}
                           onClick={() =>
                             navigate(`/dashboard/accounting/journal/${entry.reversedByEntryId}`)
                           }
                         >
-                          {entry.reversedByEntryId}
+                          View reversal
                         </Button>
                       }
                     />
                   ) : null}
-                  <MetaRow label="Narration" value={entry.narration ?? '—'} />
-                </TableBody>
-              </Table>
+                </Box>
+              </Stack>
 
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableHeaderCell>Account</TableHeaderCell>
-                    <TableHeaderCell>Party</TableHeaderCell>
-                    <TableHeaderCell>Memo</TableHeaderCell>
-                    <TableHeaderCell className={numColStyle}>Debit</TableHeaderCell>
-                    <TableHeaderCell className={numColStyle}>Credit</TableHeaderCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {entry.lines.map((l) => (
-                    <TableRow key={l.lineIndex}>
-                      <TableCell>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/dashboard/accounting/ledger/${l.accountId}`)}
+              <Stack gap="sm">
+                <Text as="h3" className={accountingChrome.detailSectionTitle}>
+                  Lines
+                </Text>
+                <Table className={accountingChrome.detailLinesTable}>
+                  <TableHead>
+                    <TableRow>
+                      <TableHeaderCell>Account</TableHeaderCell>
+                      <TableHeaderCell>Party</TableHeaderCell>
+                      <TableHeaderCell>Memo</TableHeaderCell>
+                      <TableHeaderCell className={accountingChrome.detailAmountCol}>
+                        Debit
+                      </TableHeaderCell>
+                      <TableHeaderCell className={accountingChrome.detailAmountCol}>
+                        Credit
+                      </TableHeaderCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {entry.lines.map((l) => (
+                      <TableRow key={l.lineIndex}>
+                        <TableCell>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className={accountingChrome.entryLink}
+                            onClick={() => navigate(`/dashboard/accounting/ledger/${l.accountId}`)}
+                          >
+                            {l.accountCode} · {l.accountName}
+                          </Button>
+                        </TableCell>
+                        <TableCell>
+                          <Text as="span" className={accountingChrome.detailParty}>
+                            {formatLineParty(l.partyType, l.partyDisplayName)}
+                          </Text>
+                        </TableCell>
+                        <TableCell>
+                          <Text as="span" className={accountingChrome.detailMemo}>
+                            {l.memo?.trim() ? l.memo : '—'}
+                          </Text>
+                        </TableCell>
+                        <TableCell
+                          className={cn(
+                            accountingChrome.detailAmountCol,
+                            !l.debit && accountingChrome.detailAmountMuted,
+                          )}
                         >
-                          {l.accountCode} · {l.accountName}
-                        </Button>
+                          {l.debit ? formatMoney(l.debit) : '—'}
+                        </TableCell>
+                        <TableCell
+                          className={cn(
+                            accountingChrome.detailAmountCol,
+                            !l.credit && accountingChrome.detailAmountMuted,
+                          )}
+                        >
+                          {l.credit ? formatMoney(l.credit) : '—'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow>
+                      <TableCell
+                        colSpan={3}
+                        className={cn(
+                          accountingChrome.detailTotalsCell,
+                          accountingChrome.detailAmountCol,
+                        )}
+                      >
+                        Totals
                       </TableCell>
-                      <TableCell>
-                        <Text color="secondary" variant="caption">
-                          {l.partyType
-                            ? `${l.partyType}${
-                                l.partyDisplayName ? ` · ${l.partyDisplayName}` : ''
-                              }`
-                            : '—'}
-                        </Text>
+                      <TableCell
+                        className={cn(
+                          accountingChrome.detailAmountCol,
+                          accountingChrome.detailTotalsCell,
+                        )}
+                      >
+                        {formatMoney(entry.totalDebit)}
                       </TableCell>
-                      <TableCell>
-                        <Text color="secondary" variant="caption">
-                          {l.memo ?? '—'}
-                        </Text>
-                      </TableCell>
-                      <TableCell className={numColBoldStyle}>
-                        {l.debit ? formatMoney(l.debit) : ''}
-                      </TableCell>
-                      <TableCell className={numColBoldStyle}>
-                        {l.credit ? formatMoney(l.credit) : ''}
+                      <TableCell
+                        className={cn(
+                          accountingChrome.detailAmountCol,
+                          accountingChrome.detailTotalsCell,
+                        )}
+                      >
+                        {formatMoney(entry.totalCredit)}
                       </TableCell>
                     </TableRow>
-                  ))}
-                  <TableRow>
-                    <TableCell colSpan={3} className={cn(numColStyle, grandTotalCellStyle)}>
-                      Totals
-                    </TableCell>
-                    <TableCell className={cn(numColBoldStyle, grandTotalCellStyle)}>
-                      {formatMoney(entry.totalDebit)}
-                    </TableCell>
-                    <TableCell className={cn(numColBoldStyle, grandTotalCellStyle)}>
-                      {formatMoney(entry.totalCredit)}
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
+                  </TableBody>
+                </Table>
+              </Stack>
             </Stack>
           )}
         </CardBody>
       </Card>
     </Stack>
-  );
-}
-
-function MetaRow({ label, value }: { label: string; value: ReactNode }) {
-  return (
-    <TableRow>
-      <TableHeaderCell className={accountingChrome.metaLabelCell}>{label}</TableHeaderCell>
-      <TableCell>{value}</TableCell>
-    </TableRow>
   );
 }

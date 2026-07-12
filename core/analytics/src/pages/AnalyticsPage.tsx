@@ -12,10 +12,7 @@ export function AnalyticsPage() {
 
   return (
     <Stack gap="md" width="full" maxWidth="xl" mx="auto">
-      <PageHeader
-        title="Analytics Dashboard"
-        description="Comprehensive insights on sales and profit performance"
-      />
+      <PageHeader description="Comprehensive insights on sales and profit performance" />
       <AnalyticsTabs activeTab={activeTab} onTabChange={setActiveTab} />
       {activeTab === 'sales' && <SalesAnalytics />}
       {activeTab === 'profit' && <ProfitAnalytics />}

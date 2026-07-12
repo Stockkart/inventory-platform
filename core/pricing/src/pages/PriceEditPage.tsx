@@ -5,11 +5,15 @@ import { useNotify } from '@inventory-platform/session';
 import type { PricingRate } from '@inventory-platform/pricing/types';
 import {
   Alert,
+  Box,
   Button,
   Card,
   CardBody,
+  CardFooter,
   CenteredLoader,
+  Divider,
   FormField,
+  Grid,
   IconButton,
   Inline,
   Input,
@@ -40,9 +44,9 @@ function normalizeDefaultRate(value: string): string {
 
 const SYSTEM_DEFAULT_RATE_OPTIONS: readonly SelectOptionDef[] = [
   { value: '', label: '— None —' },
-  { value: 'maximumRetailPrice', label: 'maximumRetailPrice (MRP)' },
-  { value: 'priceToRetail', label: 'priceToRetail (PTR)' },
-  { value: 'costPrice', label: 'costPrice' },
+  { value: 'priceToRetail', label: 'PTR (Price to Retailer)' },
+  { value: 'maximumRetailPrice', label: 'MRP (Maximum Retail Price)' },
+  { value: 'costPrice', label: 'Cost price' },
 ];
 
 interface LocationState {
@@ -215,10 +219,9 @@ export function PriceEditPage() {
   if (!pricingId) {
     return (
       <PageShell>
-        <PageHeader title="Edit Price" />
         <Alert variant="danger">No pricing ID provided.</Alert>
         <Button type="button" variant="ghost" onClick={() => navigate('/dashboard/pricing')}>
-          ← Back to Pricing
+          Back to Pricing
         </Button>
       </PageShell>
     );
@@ -227,7 +230,6 @@ export function PriceEditPage() {
   if (loading) {
     return (
       <PageShell>
-        <PageHeader title="Edit Price" />
         <Card>
           <CardBody>
             <CenteredLoader label="Loading pricing…" />
@@ -237,119 +239,148 @@ export function PriceEditPage() {
     );
   }
 
+  const productTitle = state?.productName?.trim() || null;
+
   return (
     <PageShell>
-      <PageHeader
-        title="Edit Price"
-        description={state?.productName ? `Product: ${state.productName}` : undefined}
-      />
-
-      <Text color="secondary" variant="caption">
-        Pricing ID:{' '}
-        <Text as="span" className={surfaceChrome.monoPad}>
-          {pricingId}
-        </Text>
-      </Text>
+      <PageHeader description="Update PTR, MRP, and custom rate tiers for this product." />
 
       <Card>
         <CardBody>
-          <Stack gap="md">
+          <Stack gap="lg">
+            <Text as="h2" weight="semibold">
+              {productTitle ?? 'Pricing'}
+            </Text>
+
             {error ? <Alert variant="danger">{error}</Alert> : null}
 
-            <FormField label="Price to Retailer (PTR)" htmlFor="priceToRetail">
-              <Input
-                id="priceToRetail"
-                type="number"
-                step="0.01"
-                min="0"
-                value={priceToRetail}
-                onChange={(e) => setPriceToRetail(e.target.value)}
-                placeholder="e.g. 29.99"
-              />
-            </FormField>
+            <Divider />
 
-            <FormField label="Maximum Retail Price (MRP)" htmlFor="maximumRetailPrice">
-              <Input
-                id="maximumRetailPrice"
-                type="number"
-                step="0.01"
-                min="0"
-                value={maximumRetailPrice}
-                onChange={(e) => setMaximumRetailPrice(e.target.value)}
-                placeholder="e.g. 40.00"
-              />
-            </FormField>
-
-            <Stack gap="sm">
-              <Inline justify="between" align="center" flexWrap>
-                <Text variant="label" weight="medium">
-                  Rates
-                </Text>
-                <Button type="button" variant="outline" size="sm" onClick={addRate}>
-                  + Add rate
-                </Button>
-              </Inline>
-              <Text variant="caption" color="secondary">
-                Sending rates replaces the entire list. Include all rates you want to keep; any
-                omitted will be removed.
+            <Box className={surfaceChrome.priceEditSection}>
+              <Text as="h3" className={surfaceChrome.priceEditSectionTitle}>
+                Base prices
               </Text>
-              {rates.map((rate, i) => (
-                <Inline key={i} gap="sm" align="center">
+              <Grid columns={2} gap="md" width="full">
+                <FormField label="PTR" htmlFor="priceToRetail" hint="Price to retailer">
                   <Input
-                    type="text"
-                    value={rate.name}
-                    onChange={(e) => updateRate(i, 'name', e.target.value)}
-                    className={surfaceChrome.flexMin0}
-                    placeholder="Rate name"
-                  />
-                  <Input
+                    id="priceToRetail"
                     type="number"
                     step="0.01"
                     min="0"
-                    value={rate.price || ''}
-                    onChange={(e) => updateRate(i, 'price', e.target.value)}
-                    className={surfaceChrome.inputW6}
-                    placeholder="Price"
+                    value={priceToRetail}
+                    onChange={(e) => setPriceToRetail(e.target.value)}
+                    placeholder="0.00"
                   />
-                  <IconButton type="button" onClick={() => removeRate(i)} label="Remove rate">
-                    ×
-                  </IconButton>
-                </Inline>
-              ))}
-            </Stack>
+                </FormField>
+                <FormField label="MRP" htmlFor="maximumRetailPrice" hint="Maximum retail price">
+                  <Input
+                    id="maximumRetailPrice"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={maximumRetailPrice}
+                    onChange={(e) => setMaximumRetailPrice(e.target.value)}
+                    placeholder="0.00"
+                  />
+                </FormField>
+              </Grid>
+            </Box>
 
-            <FormField
-              label="Default rate"
-              htmlFor="defaultRate"
-              hint="System rates (PTR, MRP) or one of the custom rate names above."
-            >
-              <Select
-                id="defaultRate"
-                value={defaultRate}
-                onChange={(e) => setDefaultRate(e.target.value)}
-                options={defaultRateOptions}
-              />
-            </FormField>
+            <Divider />
 
-            <Text variant="caption" color="secondary">
-              At least one field is required. When changing rates, always send the full list.
-            </Text>
+            <Box className={surfaceChrome.priceEditSection}>
+              <Box className={surfaceChrome.priceEditSectionHead}>
+                <Text as="h3" className={surfaceChrome.priceEditSectionTitle}>
+                  Custom rates
+                </Text>
+                <Button type="button" variant="outline" size="sm" onClick={addRate}>
+                  Add rate
+                </Button>
+              </Box>
+              <Text as="p" className={surfaceChrome.priceEditHint}>
+                Saving replaces the full rate list—keep every rate you still need.
+              </Text>
 
-            <Inline gap="md">
-              <Button
-                type="button"
-                variant="solid"
-                disabled={saving}
-                onClick={() => void handleSubmit()}
+              {rates.length === 0 ? (
+                <Box className={surfaceChrome.priceEditEmptyRates}>
+                  No custom rates yet. Add one if this product uses named price tiers.
+                </Box>
+              ) : (
+                <Stack gap="sm">
+                  <Box className={surfaceChrome.priceEditRateHead} aria-hidden>
+                    <Text as="span">Name</Text>
+                    <Text as="span">Price</Text>
+                    <Box as="span" />
+                  </Box>
+                  {rates.map((rate, i) => (
+                    <Box key={i} className={surfaceChrome.priceEditRateRow}>
+                      <Input
+                        type="text"
+                        value={rate.name}
+                        onChange={(e) => updateRate(i, 'name', e.target.value)}
+                        placeholder="e.g. RATE-A"
+                        aria-label={`Rate ${i + 1} name`}
+                      />
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={rate.price || ''}
+                        onChange={(e) => updateRate(i, 'price', e.target.value)}
+                        className={surfaceChrome.priceEditRatePrice}
+                        placeholder="0.00"
+                        aria-label={`Rate ${i + 1} price`}
+                      />
+                      <IconButton
+                        type="button"
+                        size="sm"
+                        onClick={() => removeRate(i)}
+                        label={`Remove rate ${rate.name || i + 1}`}
+                      >
+                        ×
+                      </IconButton>
+                    </Box>
+                  ))}
+                </Stack>
+              )}
+            </Box>
+
+            <Divider />
+
+            <Box className={surfaceChrome.priceEditSection}>
+              <Text as="h3" className={surfaceChrome.priceEditSectionTitle}>
+                Default rate
+              </Text>
+              <FormField
+                label="Applied by default"
+                htmlFor="defaultRate"
+                hint="Choose PTR, MRP, cost, or a custom rate name above."
               >
-                {saving ? 'Saving...' : 'Save'}
-              </Button>
-              <Button type="button" variant="ghost" onClick={() => navigate('/dashboard/pricing')}>
-                Cancel
-              </Button>
-            </Inline>
+                <Select
+                  id="defaultRate"
+                  value={defaultRate}
+                  onChange={(e) => setDefaultRate(e.target.value)}
+                  options={defaultRateOptions}
+                />
+              </FormField>
+            </Box>
           </Stack>
         </CardBody>
+        <CardFooter>
+          <Inline gap="sm" align="center">
+            <Button
+              type="button"
+              variant="solid"
+              disabled={saving}
+              onClick={() => void handleSubmit()}
+            >
+              {saving ? 'Saving…' : 'Save'}
+            </Button>
+            <Button type="button" variant="ghost" onClick={() => navigate('/dashboard/pricing')}>
+              Cancel
+            </Button>
+          </Inline>
+        </CardFooter>
       </Card>
     </PageShell>
   );

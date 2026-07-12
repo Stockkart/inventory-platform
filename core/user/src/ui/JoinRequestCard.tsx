@@ -6,11 +6,11 @@ import { RoleBadge } from './RoleBadge';
 import {
   Alert,
   Badge,
+  Box,
   Button,
   Card,
   CardBody,
   Inline,
-  Stack,
   Text,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
@@ -20,17 +20,6 @@ interface JoinRequestCardProps {
   joinRequest: JoinRequest;
   onProcess?: () => void;
   showActions?: boolean;
-}
-
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <Inline align="start" gap="sm" width="full">
-      <Text color="secondary" variant="caption" className={surfaceChrome.minW7_5}>
-        {label}
-      </Text>
-      <Text variant="caption">{value}</Text>
-    </Inline>
-  );
 }
 
 function statusVariant(status: string): BadgeVariant {
@@ -46,6 +35,23 @@ function statusVariant(status: string): BadgeVariant {
   }
 }
 
+function formatStatus(status: string) {
+  return status.charAt(0) + status.slice(1).toLowerCase();
+}
+
+function formatDate(value: string) {
+  try {
+    return new Date(value).toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  } catch {
+    return value;
+  }
+}
+
+/** Compact card kept for reuse outside the admin table list. */
 export function JoinRequestCard({
   joinRequest,
   onProcess,
@@ -65,11 +71,9 @@ export function JoinRequestCard({
 
     try {
       await shopsApi.processJoinRequest(joinRequest.requestId, { action });
-      if (onProcess) {
-        onProcess();
-      }
-    } catch (err: any) {
-      notifyError(err?.message || `Failed to ${action.toLowerCase()} request`);
+      onProcess?.();
+    } catch (err: unknown) {
+      notifyError(err instanceof Error ? err.message : `Failed to ${action.toLowerCase()} request`);
     } finally {
       setIsProcessing(false);
     }
@@ -78,63 +82,83 @@ export function JoinRequestCard({
   const isPending = joinRequest.status === 'PENDING';
 
   return (
-    <Card>
-      <CardBody>
-        <Stack gap="md">
-          <Stack gap="sm">
-            <Inline align="start" gap="sm" width="full">
-              <Stack gap="xs">
-                <Text variant="heading3" weight="semibold">
-                  {joinRequest.userName}
-                </Text>
-                <Text color="secondary" variant="caption">
-                  {joinRequest.userEmail}
-                </Text>
-              </Stack>
+    <Card className={surfaceChrome.inviteCardCompact}>
+      <CardBody className={surfaceChrome.inviteCardBody}>
+        <Box className={surfaceChrome.inviteCardHeader}>
+          <Box className={surfaceChrome.invitePrimaryCell}>
+            <Text as="p" className={surfaceChrome.invitePrimaryName}>
+              {joinRequest.userName}
+            </Text>
+            <Text as="p" className={surfaceChrome.invitePrimaryMeta}>
+              {joinRequest.userEmail}
+            </Text>
+            <Inline gap="sm" flexWrap>
               <RoleBadge role={joinRequest.requestedRole as UserRole} />
+              <Badge variant={statusVariant(joinRequest.status)}>
+                {formatStatus(joinRequest.status)}
+              </Badge>
             </Inline>
-            <Badge variant={statusVariant(joinRequest.status)}>{joinRequest.status}</Badge>
-          </Stack>
-
-          <Stack gap="sm">
-            <DetailRow label="Shop:" value={joinRequest.shopName} />
-            <DetailRow label="Requested Role:" value={joinRequest.requestedRole} />
-            {joinRequest.message ? (
-              <DetailRow label="Message:" value={joinRequest.message} />
-            ) : null}
-            <DetailRow
-              label="Requested:"
-              value={new Date(joinRequest.createdAt).toLocaleDateString()}
-            />
-            {joinRequest.reviewedAt ? (
-              <DetailRow
-                label="Reviewed:"
-                value={new Date(joinRequest.reviewedAt).toLocaleDateString()}
-              />
-            ) : null}
-          </Stack>
-
-          {error ? <Alert variant="danger">{error}</Alert> : null}
-
+          </Box>
           {showActions && isPending ? (
-            <Inline gap="sm" justify="end" width="full">
+            <Inline gap="xs">
               <Button
+                type="button"
+                size="sm"
                 variant="outline"
-                onClick={() => handleProcess('REJECT')}
+                onClick={() => void handleProcess('REJECT')}
                 disabled={isProcessing}
               >
-                {isProcessing ? 'Processing...' : 'Reject'}
+                Reject
               </Button>
               <Button
+                type="button"
+                size="sm"
                 variant="solid"
-                onClick={() => handleProcess('ACCEPT')}
+                onClick={() => void handleProcess('ACCEPT')}
                 disabled={isProcessing}
               >
-                {isProcessing ? 'Processing...' : 'Accept'}
+                {isProcessing ? 'Saving…' : 'Approve'}
               </Button>
             </Inline>
           ) : null}
-        </Stack>
+        </Box>
+
+        <Box as="dl" className={surfaceChrome.inviteCardMeta}>
+          <Text as="dt" className={surfaceChrome.inviteCardMetaLabel}>
+            Shop
+          </Text>
+          <Text as="dd" className={surfaceChrome.inviteCardMetaValue}>
+            {joinRequest.shopName}
+          </Text>
+          {joinRequest.message ? (
+            <>
+              <Text as="dt" className={surfaceChrome.inviteCardMetaLabel}>
+                Message
+              </Text>
+              <Text as="dd" className={surfaceChrome.inviteCardMetaValue}>
+                {joinRequest.message}
+              </Text>
+            </>
+          ) : null}
+          <Text as="dt" className={surfaceChrome.inviteCardMetaLabel}>
+            Requested
+          </Text>
+          <Text as="dd" className={surfaceChrome.inviteCardMetaValue}>
+            {formatDate(joinRequest.createdAt)}
+          </Text>
+          {joinRequest.reviewedAt ? (
+            <>
+              <Text as="dt" className={surfaceChrome.inviteCardMetaLabel}>
+                Reviewed
+              </Text>
+              <Text as="dd" className={surfaceChrome.inviteCardMetaValue}>
+                {formatDate(joinRequest.reviewedAt)}
+              </Text>
+            </>
+          ) : null}
+        </Box>
+
+        {error ? <Alert variant="danger">{error}</Alert> : null}
       </CardBody>
     </Card>
   );

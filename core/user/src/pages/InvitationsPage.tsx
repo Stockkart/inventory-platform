@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Card, CardBody, PageHeader, Stack, Text } from '@inventory-platform/ui-kit';
+import { Alert, PageHeader, Stack } from '@inventory-platform/ui-kit';
 import { useAuthStore } from '@inventory-platform/session';
 import { InvitationList, InviteForm } from '../ui';
 
@@ -27,29 +27,11 @@ export function InvitationsPage() {
 
   return (
     <Stack gap="md" width="full" maxWidth="xl" mx="auto">
-      <PageHeader
-        title="Manage Invitations"
-        description="Send invitations to users to join your shop and manage existing invitations"
-      />
+      <PageHeader description="Invite teammates to your shop and track pending or accepted invites." />
 
-      <Stack gap="lg" width="full">
-        <Card>
-          <CardBody>
-            <InviteForm shopId={shopId} onInviteSent={() => setRefreshKey((prev) => prev + 1)} />
-          </CardBody>
-        </Card>
+      <InviteForm shopId={shopId} onInviteSent={() => setRefreshKey((prev) => prev + 1)} />
 
-        <Card>
-          <CardBody>
-            <Stack gap="md" width="full">
-              <Text variant="title" weight="semibold">
-                Shop Invitations
-              </Text>
-              <InvitationList key={refreshKey} shopId={shopId} />
-            </Stack>
-          </CardBody>
-        </Card>
-      </Stack>
+      <InvitationList key={refreshKey} shopId={shopId} />
     </Stack>
   );
 }

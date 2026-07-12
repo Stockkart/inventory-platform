@@ -1,4 +1,4 @@
-import { Alert, Card, CardBody, PageHeader, Stack } from '@inventory-platform/ui-kit';
+import { Alert, PageHeader, Stack } from '@inventory-platform/ui-kit';
 import { useAuthStore } from '@inventory-platform/session';
 import { JoinRequestList } from '../ui';
 
@@ -32,16 +32,8 @@ export function JoinRequestsPage() {
 
   return (
     <Stack gap="md" width="full" maxWidth="xl" mx="auto">
-      <PageHeader
-        title="Join Requests"
-        description="Review and manage requests from users who want to join your shop"
-      />
-
-      <Card>
-        <CardBody>
-          <JoinRequestList shopId={shopId} />
-        </CardBody>
-      </Card>
+      <PageHeader description="Review and manage requests from users who want to join your shop." />
+      <JoinRequestList shopId={shopId} />
     </Stack>
   );
 }

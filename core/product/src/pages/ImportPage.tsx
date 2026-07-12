@@ -280,10 +280,7 @@ export function ImportPage() {
 
   return (
     <Stack gap="md">
-      <PageHeader
-        title="Import from Excel"
-        description="Upload your stock snapshot Excel file, review and import items"
-      />
+      <PageHeader description="Upload your stock snapshot Excel file, review and import items" />
 
       <Card>
         <CardBody>

@@ -4,10 +4,10 @@ import type {
   CreateJournalLineRequest,
 } from '@inventory-platform/accounting/types';
 import {
+  Badge,
   Box,
   Button,
   IconButton,
-  Inline,
   Input,
   Stack,
   Text,
@@ -25,14 +25,7 @@ import {
 import { JOURNAL_TEMPLATES, type JournalTemplateId, getTemplate } from '../model/journalTemplates';
 import { needsPartyOnLine } from '../model/accountingConstants';
 import { formatMoney } from '../model/format';
-import {
-  balanceBalancedStyle,
-  balanceFooterStyle,
-  balanceUnbalancedStyle,
-  journalHeaderLineGridStyle,
-  journalLineGridStyle,
-  templateChipStyle,
-} from './accountingStyles';
+import { templateChipStyle } from './accountingStyles';
 
 export type JournalEntryEditorProps = {
   accounts: AccountResponse[];
@@ -89,7 +82,7 @@ export function JournalEntryEditor({
     initialTemplateId ?? null,
   );
 
-  const { totalDebit, totalCredit, balanced } = useMemo(() => {
+  const { totalDebit, totalCredit, balanced, difference } = useMemo(() => {
     let d = 0;
     let c = 0;
     for (const l of lines) {
@@ -99,6 +92,7 @@ export function JournalEntryEditor({
     return {
       totalDebit: d,
       totalCredit: c,
+      difference: Math.abs(d - c),
       balanced: Math.abs(d - c) < 0.005 && d > 0,
     };
   }, [lines]);
@@ -143,7 +137,7 @@ export function JournalEntryEditor({
   return (
     <Stack gap="md">
       {showTemplates ? (
-        <Inline gap="sm" flexWrap>
+        <Box className={accountingChrome.partiesFilterBar}>
           {JOURNAL_TEMPLATES.filter((t) => t.id !== 'BLANK').map((t) => (
             <Button
               key={t.id}
@@ -168,154 +162,173 @@ export function JournalEntryEditor({
           >
             Blank
           </Button>
-        </Inline>
+        </Box>
       ) : null}
 
-      <Inline gap="sm" flexWrap>
-        <Text variant="label" color="secondary">
-          Date
-        </Text>
-        <Input
-          type="date"
-          value={txnDate}
-          onChange={(e) => onTxnDateChange(e.target.value)}
-          disabled={disabled}
-        />
-        <Text variant="label" color="secondary">
-          Narration
-        </Text>
-        <Input
-          type="text"
-          value={narration}
-          onChange={(e) => onNarrationChange(e.target.value)}
-          placeholder="What is this entry about?"
-          className={accountingChrome.growMin14}
-          disabled={disabled}
-        />
-      </Inline>
-
-      <Box className={journalHeaderLineGridStyle}>
-        <Text variant="label" color="secondary">
-          Account
-        </Text>
-        <Text variant="label" color="secondary" align="right">
-          Debit
-        </Text>
-        <Text variant="label" color="secondary" align="right">
-          Credit
-        </Text>
-        <Text variant="label" color="secondary">
-          Memo
-        </Text>
-        <Box />
-      </Box>
-      {lines.map((line, idx) => (
-        <Box key={idx} className={journalLineGridStyle}>
-          <Stack gap="xs">
-            <AccountPicker
-              accounts={accounts}
-              value={line.accountCode}
-              onChange={(code) =>
-                patchLine(idx, {
-                  accountCode: code,
-                  partyType: undefined,
-                  partyRefId: undefined,
-                  partyDisplayName: undefined,
-                })
-              }
-              disabled={disabled || accountsLoading}
-            />
-            {needsPartyOnLine(line.accountCode) ? (
-              <PartyLineFields
-                accountCode={line.accountCode}
-                partyType={line.partyType}
-                partyRefId={line.partyRefId}
-                partyDisplayName={line.partyDisplayName}
-                onChange={(p) => patchLine(idx, p)}
-                disabled={disabled}
-              />
-            ) : null}
-          </Stack>
+      <Box className={accountingChrome.journalMetaBar}>
+        <Box className={accountingChrome.partiesFilterField}>
+          <Text as="span" className={accountingChrome.partiesFilterLabel}>
+            Date
+          </Text>
           <Input
-            className={accountingChrome.inputNumRight}
-            type="number"
-            inputMode="decimal"
-            min="0"
-            step="0.01"
-            value={line.debit}
-            onChange={(e) =>
-              patchLine(idx, {
-                debit: e.target.value,
-                credit: e.target.value ? '' : line.credit,
-              })
-            }
-            placeholder="0.00"
+            aria-label="Transaction date"
+            type="date"
+            value={txnDate}
+            onChange={(e) => onTxnDateChange(e.target.value)}
+            className={accountingChrome.tbAsOfInput}
             disabled={disabled}
           />
-          <Input
-            className={accountingChrome.inputNumRight}
-            type="number"
-            inputMode="decimal"
-            min="0"
-            step="0.01"
-            value={line.credit}
-            onChange={(e) =>
-              patchLine(idx, {
-                credit: e.target.value,
-                debit: e.target.value ? '' : line.debit,
-              })
-            }
-            placeholder="0.00"
-            disabled={disabled}
-          />
+        </Box>
+        <Box
+          className={cn(accountingChrome.partiesFilterField, accountingChrome.journalMetaNarration)}
+        >
+          <Text as="span" className={accountingChrome.partiesFilterLabel}>
+            Narration
+          </Text>
           <Input
             type="text"
-            value={line.memo}
-            onChange={(e) => patchLine(idx, { memo: e.target.value })}
-            placeholder="Optional"
+            value={narration}
+            onChange={(e) => onNarrationChange(e.target.value)}
+            placeholder="What is this entry about?"
             disabled={disabled}
           />
-          <IconButton
-            type="button"
-            label="Remove line"
-            onClick={() => removeLine(idx)}
-            disabled={lines.length <= 2 || disabled}
-          >
-            ×
-          </IconButton>
         </Box>
-      ))}
-      <Button type="button" variant="ghost" onClick={addLine} disabled={disabled}>
-        + Add line
-      </Button>
+      </Box>
 
-      <Inline
-        gap="md"
-        className={cn(balanceFooterStyle, balanced ? balanceBalancedStyle : balanceUnbalancedStyle)}
-      >
-        <Text weight="semibold">Total Debit: ₹ {formatMoney(totalDebit)}</Text>
-        <Text weight="semibold">Total Credit: ₹ {formatMoney(totalCredit)}</Text>
-        <Text weight="semibold">
-          Difference: ₹ {formatMoney(Math.abs(totalDebit - totalCredit))}{' '}
-          {balanced ? '✓ Balanced' : '· Must be 0 to save'}
-        </Text>
-      </Inline>
-      <Inline gap="sm">
-        <Button
-          type="button"
-          variant="solid"
-          onClick={handleSubmit}
-          disabled={submitting || !balanced || disabled}
-          loading={submitting}
-        >
-          {submitting ? 'Posting…' : submitLabel}
-        </Button>
-        {onCancel ? (
-          <Button type="button" variant="ghost" onClick={onCancel} disabled={submitting}>
-            Cancel
+      <Stack gap="sm">
+        <Box className={accountingChrome.journalHeaderLineGrid}>
+          <Text as="span" className={accountingChrome.journalColLabel}>
+            Account
+          </Text>
+          <Text
+            as="span"
+            className={cn(accountingChrome.journalColLabel, accountingChrome.journalColLabelRight)}
+          >
+            Debit
+          </Text>
+          <Text
+            as="span"
+            className={cn(accountingChrome.journalColLabel, accountingChrome.journalColLabelRight)}
+          >
+            Credit
+          </Text>
+          <Text as="span" className={accountingChrome.journalColLabel}>
+            Memo
+          </Text>
+          <Box />
+        </Box>
+
+        {lines.map((line, idx) => (
+          <Box key={idx} className={accountingChrome.journalLineGrid}>
+            <Stack gap="xs">
+              <AccountPicker
+                accounts={accounts}
+                value={line.accountCode}
+                onChange={(code) =>
+                  patchLine(idx, {
+                    accountCode: code,
+                    partyType: undefined,
+                    partyRefId: undefined,
+                    partyDisplayName: undefined,
+                  })
+                }
+                disabled={disabled || accountsLoading}
+              />
+              {needsPartyOnLine(line.accountCode) ? (
+                <PartyLineFields
+                  accountCode={line.accountCode}
+                  partyType={line.partyType}
+                  partyRefId={line.partyRefId}
+                  partyDisplayName={line.partyDisplayName}
+                  onChange={(p) => patchLine(idx, p)}
+                  disabled={disabled}
+                />
+              ) : null}
+            </Stack>
+            <Input
+              className={accountingChrome.inputNumRight}
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="0.01"
+              value={line.debit}
+              onChange={(e) =>
+                patchLine(idx, {
+                  debit: e.target.value,
+                  credit: e.target.value ? '' : line.credit,
+                })
+              }
+              placeholder="0.00"
+              disabled={disabled}
+            />
+            <Input
+              className={accountingChrome.inputNumRight}
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="0.01"
+              value={line.credit}
+              onChange={(e) =>
+                patchLine(idx, {
+                  credit: e.target.value,
+                  debit: e.target.value ? '' : line.debit,
+                })
+              }
+              placeholder="0.00"
+              disabled={disabled}
+            />
+            <Input
+              type="text"
+              value={line.memo}
+              onChange={(e) => patchLine(idx, { memo: e.target.value })}
+              placeholder="Optional"
+              disabled={disabled}
+            />
+            <IconButton
+              type="button"
+              label="Remove line"
+              onClick={() => removeLine(idx)}
+              disabled={lines.length <= 2 || disabled}
+            >
+              ×
+            </IconButton>
+          </Box>
+        ))}
+
+        <Box>
+          <Button type="button" variant="outline" size="sm" onClick={addLine} disabled={disabled}>
+            + Add line
           </Button>
-        ) : null}
-      </Inline>
+        </Box>
+      </Stack>
+
+      <Box className={accountingChrome.journalBalanceBar}>
+        <Box className={accountingChrome.journalBalanceMeta}>
+          <Badge variant={balanced ? 'success' : 'warning'}>
+            {balanced ? 'Balanced' : 'Out of balance'}
+          </Badge>
+          <Text as="span" className={accountingChrome.journalBalanceFigures}>
+            Debit ₹{formatMoney(totalDebit)} · Credit ₹{formatMoney(totalCredit)}
+            {!balanced ? ` · Diff ₹${formatMoney(difference)}` : ''}
+          </Text>
+        </Box>
+        <Box className={accountingChrome.journalActions}>
+          {onCancel ? (
+            <Button type="button" variant="ghost" onClick={onCancel} disabled={submitting}>
+              Cancel
+            </Button>
+          ) : null}
+          <Button
+            type="button"
+            variant="solid"
+            onClick={handleSubmit}
+            disabled={submitting || !balanced || disabled}
+            loading={submitting}
+          >
+            {submitting ? 'Posting…' : submitLabel}
+          </Button>
+        </Box>
+      </Box>
     </Stack>
   );
 }

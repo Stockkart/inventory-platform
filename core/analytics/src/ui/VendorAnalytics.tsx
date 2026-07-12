@@ -2,13 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Badge,
+  Box,
   Button,
   Card,
   CardBody,
   CenteredLoader,
   FormField,
   Grid,
-  Inline,
   Input,
   Stack,
   Table,
@@ -18,6 +18,8 @@ import {
   TableHeaderCell,
   TableRow,
   Text,
+  chartChrome,
+  cn,
 } from '@inventory-platform/ui-kit';
 import { useVendorAnalyticsQuery } from '../queries/hooks';
 import { AnalyticsCollapsibleSection, riskLevelBadgeVariant } from './AnalyticsCollapsibleSection';
@@ -114,9 +116,9 @@ export function VendorAnalytics() {
 
   return (
     <Stack gap="md">
-      <Card>
-        <CardBody>
-          <Inline gap="md">
+      <Box className={chartChrome.filterCard}>
+        <Box className={chartChrome.filterBody}>
+          <Box className={chartChrome.filterGrid}>
             <FormField label="Start Date" htmlFor="vendorStartDate">
               <Input
                 id="vendorStartDate"
@@ -153,13 +155,15 @@ export function VendorAnalytics() {
                 }}
               />
             </FormField>
+          </Box>
 
+          <Box className={cn(chartChrome.filterActions, chartChrome.filterActionsEnd)}>
             <Button variant="solid" onClick={handleApplyFilters}>
               Apply Filters
             </Button>
-          </Inline>
-        </CardBody>
-      </Card>
+          </Box>
+        </Box>
+      </Box>
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
 

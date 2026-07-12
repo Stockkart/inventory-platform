@@ -6,15 +6,14 @@ import { inventorySellableRef } from '@inventory-platform/product/types';
 import { InventoryAlertDetails } from '@inventory-platform/product';
 import {
   Alert,
-  Badge,
+  Box,
   Button,
   Card,
   CardBody,
   CenteredLoader,
   EmptyState,
   FormField,
-  Grid,
-  Inline,
+  Icon,
   Input,
   Modal,
   PageHeader,
@@ -23,14 +22,16 @@ import {
   Stack,
   Text,
   Textarea,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
-import { getExtensionFieldString, isSellDirectInventory } from '@inventory-platform/schema';
+import { Search } from 'lucide-react';
 import {
   useNotify,
   useVerticalSchemaStore,
   useAuthStore,
   useShopAccessStore,
 } from '@inventory-platform/session';
+import { IngredientSearchCard } from './IngredientSearchCard';
 
 export function meta() {
   return [
@@ -62,12 +63,6 @@ function sellPrice(item: InventoryItem): number {
   const selling = item.sellingPrice;
   if (selling != null && selling > 0) return selling;
   return item.priceToRetail ?? 0;
-}
-
-function isLowStock(item: InventoryItem): boolean {
-  const stock = stockQty(item);
-  const threshold = item.thresholdCount ?? 0;
-  return threshold > 0 && stock <= threshold;
 }
 
 function formatDelta(current: number, next: number): string {
@@ -373,40 +368,45 @@ export function ManualStockPage() {
 
   return (
     <Stack gap="md">
-      <PageHeader title="Ingredient Search" description="Search ingredients by name or barcode." />
+      <PageHeader description="Search ingredients by name or barcode" />
 
-      <Text color="secondary">
-        Register new stock via{' '}
-        <Link to="/dashboard/product-registration">Ingredient Registration</Link>. Adjust counts
-        with{' '}
-        <Text as="span" weight="semibold">
-          Correct stock
-        </Text>{' '}
-        or review <Link to="/dashboard/stock-corrections">correction history</Link>.
-      </Text>
-
-      <Inline gap="sm" width="full" flexWrap>
-        <SearchInput
-          value={searchQuery}
-          onChange={setSearchQuery}
-          onSearch={() => void handleSearch()}
-          showSearchButton
-          placeholder="Name or barcode"
-          disabled={isLoading}
-          searchLabel={isLoading ? 'Searching…' : 'Search'}
-        />
-        {hasActiveSearch ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleClearSearch}
+      <Box className={surfaceChrome.searchFilterBar}>
+        <Box className={surfaceChrome.searchFilterGrow}>
+          <SearchInput
+            grow
+            flush
+            buttonVariant="solid"
+            leadingIcon={<Icon icon={Search} size="sm" />}
+            value={searchQuery}
+            onChange={setSearchQuery}
+            onSearch={() => void handleSearch()}
+            showSearchButton
+            placeholder="Name or barcode"
             disabled={isLoading}
-          >
-            Clear
-          </Button>
+            searchLabel={isLoading ? 'Searching…' : 'Search'}
+          />
+        </Box>
+        {hasActiveSearch ? (
+          <>
+            <Box className={surfaceChrome.searchFilterDivider} aria-hidden />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleClearSearch}
+              disabled={isLoading}
+            >
+              Clear
+            </Button>
+          </>
         ) : null}
-      </Inline>
+      </Box>
+
+      <Text variant="caption" color="secondary">
+        Register stock via <Link to="/dashboard/product-registration">Ingredient Registration</Link>
+        {' · '}
+        Review <Link to="/dashboard/stock-corrections">correction history</Link>
+      </Text>
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
@@ -434,108 +434,23 @@ export function ManualStockPage() {
               />
             ) : (
               <>
-                <Grid columns={3} gap="md" width="full">
+                <Box display="grid" gap="lg" width="full" className={surfaceChrome.autoGrid280}>
                   {inventory.map((item) => {
-                    const ingredientType = getExtensionFieldString(item, 'ingredientType');
-                    const stock = stockQty(item);
-                    const unit = stockUnit(item);
-                    const low = isLowStock(item);
                     const itemId = resolveInventoryDocumentId(item);
-                    const sellDirect = isSellDirectInventory(item);
-                    const price = sellPrice(item);
                     return (
-                      <Card key={item.id || item.lotId}>
-                        <CardBody>
-                          <Stack gap="sm">
-                            <Inline gap="sm" align="center" flexWrap>
-                              <Text variant="heading3">{item.name || 'Unnamed ingredient'}</Text>
-                              {ingredientType ? (
-                                <Badge variant="neutral">{ingredientType}</Badge>
-                              ) : null}
-                              {sellDirect ? <Badge variant="success">Sell direct</Badge> : null}
-                            </Inline>
-
-                            {item.barcode ? (
-                              <Text variant="caption" color="secondary">
-                                Barcode: {item.barcode}
-                              </Text>
-                            ) : null}
-                            {item.location ? (
-                              <Text variant="caption" color="secondary">
-                                Location: {item.location}
-                              </Text>
-                            ) : null}
-
-                            <Stack gap="xs">
-                              <Text variant="caption" color={low ? 'danger' : 'secondary'}>
-                                Stock: {stock} {unit}
-                                {low ? ' (low)' : ''}
-                              </Text>
-                              {(item.thresholdCount ?? 0) > 0 ? (
-                                <Text variant="caption" color="secondary">
-                                  Threshold: {item.thresholdCount}
-                                </Text>
-                              ) : null}
-                              <Text variant="caption" color="secondary">
-                                Received: {item.receivedCount ?? 0} | Used: {item.soldCount ?? 0}
-                              </Text>
-                              {item.costPrice != null ? (
-                                <Text variant="caption" color="secondary">
-                                  Cost: ₹{item.costPrice.toFixed(2)} / {unit}
-                                </Text>
-                              ) : null}
-                              {sellDirect && price > 0 ? (
-                                <Text variant="caption" color="secondary">
-                                  Sell: ₹{price.toFixed(2)}
-                                </Text>
-                              ) : null}
-                            </Stack>
-
-                            {item.description ? (
-                              <Text variant="caption" color="secondary">
-                                {item.description}
-                              </Text>
-                            ) : null}
-
-                            <Inline gap="sm" flexWrap>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => void openIngredientDetails(item)}
-                                disabled={isLoading || detailLoadingId === itemId}
-                              >
-                                {detailLoadingId === itemId ? 'Loading…' : 'View Details'}
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setCorrectionItem(item)}
-                                disabled={!itemId}
-                              >
-                                Correct stock
-                              </Button>
-                              {sellDirect ? (
-                                <Button
-                                  type="button"
-                                  variant="solid"
-                                  size="sm"
-                                  onClick={() => void handleAddToCart(item)}
-                                  disabled={
-                                    !itemId || addingToCartId === itemId || stock <= 0 || price <= 0
-                                  }
-                                >
-                                  {addingToCartId === itemId ? 'Adding…' : 'Add to cart'}
-                                </Button>
-                              ) : null}
-                            </Inline>
-                          </Stack>
-                        </CardBody>
-                      </Card>
+                      <IngredientSearchCard
+                        key={item.id || item.lotId}
+                        item={item}
+                        isPageLoading={isLoading}
+                        isDetailLoading={detailLoadingId === itemId}
+                        isAddingToCart={addingToCartId === itemId}
+                        onViewDetails={(row) => void openIngredientDetails(row)}
+                        onCorrectStock={setCorrectionItem}
+                        onAddToCart={(row) => void handleAddToCart(row)}
+                      />
                     );
                   })}
-                </Grid>
+                </Box>
                 <PaginationBar
                   page={searchPage}
                   totalPages={Math.max(searchTotalPages, 1)}

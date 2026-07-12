@@ -6,7 +6,6 @@ import {
   Button,
   Card,
   CardBody,
-  Grid,
   Inline,
   PageHeader,
   Stack,
@@ -30,9 +29,13 @@ import type {
 import { AccountingTabs } from '../ui/AccountingTabs';
 import { ACCOUNT_CODES } from '../model/accountingConstants';
 import { JOURNAL_TEMPLATES } from '../model/journalTemplates';
-import { formatDate, formatMoney } from '../model/format';
+import {
+  formatDateShort,
+  formatJournalSource,
+  formatJournalStatus,
+  formatMoney,
+} from '../model/format';
 import { quickActionCardStyle } from '../ui/accountingStyles';
-import { numColBoldStyle, numColStyle } from '../ui/tabNav';
 
 const CODES = ACCOUNT_CODES;
 
@@ -159,56 +162,53 @@ export function AccountingOverviewPage() {
       <Stack gap="md">
         <AccountingTabs />
         <PageHeader
-          title="Accounting"
-          description="Every business event is recorded as a balanced journal entry. Browse the journal, drill into per-account ledgers, and view the trial balance."
+          description="Browse journals, ledgers, and the trial balance. Post manual entries when you need a one-off adjustment."
           actions={
             <Inline gap="sm">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleRebuild}
-                disabled={reposting}
-                title="Re-post every vendor purchase invoice using current shop settings (GST %, payment routing, etc.)"
-              >
-                {reposting ? 'Rebuilding…' : 'Rebuild Books'}
+              <Button type="button" variant="outline" onClick={handleRebuild} disabled={reposting}>
+                {reposting ? 'Rebuilding…' : 'Rebuild books'}
               </Button>
               <Button
                 type="button"
                 variant="solid"
                 onClick={() => navigate('/dashboard/accounting/journal/new')}
               >
-                + Manual Entry
+                Manual entry
               </Button>
             </Inline>
           }
         />
       </Stack>
 
-      <Grid gap="md">
-        <KpiCard label="Cash in Hand" value={cash} loading={loading} />
+      <Box className={accountingChrome.overviewKpiGrid}>
+        <KpiCard label="Cash in hand" value={cash} loading={loading} />
         <KpiCard label="Bank" value={bank} loading={loading} />
-        <KpiCard label="Inventory (Cost)" value={inventory} loading={loading} />
-        <KpiCard label="Receivable (Customers)" value={debtors} tone="positive" loading={loading} />
-        <KpiCard label="Payable (Vendors)" value={creditors} tone="warning" loading={loading} />
-      </Grid>
+        <KpiCard label="Inventory (cost)" value={inventory} loading={loading} />
+        <KpiCard label="Receivable" value={debtors} tone="positive" loading={loading} />
+        <KpiCard label="Payable" value={creditors} tone="warning" loading={loading} />
+      </Box>
 
       <Card>
         <CardBody>
-          <Stack gap="sm">
-            <Text variant="title" weight="bold">
+          <Stack gap="md">
+            <Text as="h3" className={accountingChrome.overviewSectionTitle}>
               Quick journal templates
             </Text>
-            <Box display="grid" gap="sm" className={accountingChrome.quickActionsGrid}>
+            <Box className={accountingChrome.quickActionsGrid}>
               {quickActions.map((action) => (
                 <Button
                   key={action.key}
                   type="button"
                   variant="ghost"
+                  align="start"
+                  fullWidth
                   className={quickActionCardStyle}
                   onClick={() => navigate(action.to)}
                 >
-                  <Text weight="semibold">{action.label}</Text>
-                  <Text variant="caption" color="secondary">
+                  <Text as="span" weight="semibold">
+                    {action.label}
+                  </Text>
+                  <Text as="span" variant="caption" color="secondary">
                     {action.description}
                   </Text>
                 </Button>
@@ -220,10 +220,10 @@ export function AccountingOverviewPage() {
 
       <Card>
         <CardBody>
-          <Stack gap="sm">
+          <Stack gap="md">
             <Inline align="center" justify="between" flexWrap>
-              <Text variant="title" weight="bold">
-                Recent Journal Entries
+              <Text as="h3" className={accountingChrome.overviewSectionTitle}>
+                Recent journal entries
               </Text>
               <Button
                 type="button"
@@ -234,54 +234,63 @@ export function AccountingOverviewPage() {
                 View all
               </Button>
             </Inline>
-            <Table>
+            <Table className={accountingChrome.recentEntriesTable}>
               <TableHead>
                 <TableRow>
-                  <TableHeaderCell>Date</TableHeaderCell>
-                  <TableHeaderCell>Entry #</TableHeaderCell>
+                  <TableHeaderCell className={accountingChrome.recentEntriesDate}>
+                    Date
+                  </TableHeaderCell>
+                  <TableHeaderCell>Entry</TableHeaderCell>
                   <TableHeaderCell>Source</TableHeaderCell>
                   <TableHeaderCell>Narration</TableHeaderCell>
-                  <TableHeaderCell className={numColStyle}>Debit</TableHeaderCell>
-                  <TableHeaderCell className={numColStyle}>Credit</TableHeaderCell>
-                  <TableHeaderCell>Status</TableHeaderCell>
+                  <TableHeaderCell className={accountingChrome.recentEntriesAmount}>
+                    Amount
+                  </TableHeaderCell>
+                  <TableHeaderCell className={accountingChrome.recentEntriesStatus}>
+                    Status
+                  </TableHeaderCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {loading ? (
-                  <TableLoadingRow colSpan={7} label="Loading journal entries…" />
+                  <TableLoadingRow colSpan={6} label="Loading journal entries…" />
                 ) : recent.length === 0 ? (
                   <TableEmptyRow
-                    colSpan={7}
+                    colSpan={6}
                     message="No journal entries yet. Register a stock purchase or post a manual entry to get started."
                   />
                 ) : (
                   recent.map((e) => (
                     <TableRow key={e.id}>
-                      <TableCell>{formatDate(e.txnDate)}</TableCell>
+                      <TableCell className={accountingChrome.recentEntriesDate}>
+                        {formatDateShort(e.txnDate)}
+                      </TableCell>
                       <TableCell>
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
+                          className={accountingChrome.entryLink}
                           onClick={() => navigate(`/dashboard/accounting/journal/${e.id}`)}
                         >
                           {e.entryNo}
                         </Button>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="info">{e.sourceType}</Badge>
+                        <Badge variant="info">{formatJournalSource(e.sourceType)}</Badge>
                       </TableCell>
                       <TableCell>
-                        <Text color="secondary" variant="caption">
+                        <Text as="span" color="secondary" variant="caption">
                           {e.narration ?? '—'}
                         </Text>
                       </TableCell>
-                      <TableCell className={numColBoldStyle}>{formatMoney(e.totalDebit)}</TableCell>
-                      <TableCell className={numColBoldStyle}>
-                        {formatMoney(e.totalCredit)}
+                      <TableCell className={accountingChrome.recentEntriesAmount}>
+                        ₹{formatMoney(e.totalDebit)}
                       </TableCell>
-                      <TableCell>
-                        <Badge variant={statusVariant(e.status)}>{e.status}</Badge>
+                      <TableCell className={accountingChrome.recentEntriesStatus}>
+                        <Badge variant={statusVariant(e.status)}>
+                          {formatJournalStatus(e.status)}
+                        </Badge>
                       </TableCell>
                     </TableRow>
                   ))
@@ -306,20 +315,22 @@ function KpiCard({
   loading: boolean;
   tone?: 'positive' | 'warning';
 }) {
-  const color = tone === 'positive' ? 'success' : tone === 'warning' ? 'danger' : 'primary';
+  const valueClass = loading
+    ? accountingChrome.overviewKpiValueMuted
+    : tone === 'positive'
+    ? accountingChrome.overviewKpiValuePositive
+    : tone === 'warning'
+    ? accountingChrome.overviewKpiValueWarning
+    : undefined;
 
   return (
-    <Card>
-      <CardBody>
-        <Stack gap="xs">
-          <Text variant="caption" color="secondary">
-            {label}
-          </Text>
-          <Text variant="heading2" weight="bold" color={loading ? 'secondary' : color}>
-            {loading ? '…' : `₹ ${formatMoney(value)}`}
-          </Text>
-        </Stack>
-      </CardBody>
-    </Card>
+    <Box className={accountingChrome.overviewKpiCard}>
+      <Text as="p" className={accountingChrome.overviewKpiLabel}>
+        {label}
+      </Text>
+      <Text as="p" className={`${accountingChrome.overviewKpiValue} ${valueClass ?? ''}`.trim()}>
+        {loading ? '…' : `₹${formatMoney(value)}`}
+      </Text>
+    </Box>
   );
 }

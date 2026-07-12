@@ -109,10 +109,6 @@ export function CreditPartyActions({
   }
 
   const partyKindLabel = account.partyType === 'VENDOR' ? 'Vendor' : 'Customer';
-  const sub =
-    account.partyType === 'CUSTOMER'
-      ? 'Money others need to pay you'
-      : 'Money you need to pay suppliers';
 
   return (
     <Stack gap="md">
@@ -124,27 +120,17 @@ export function CreditPartyActions({
         aria-live="polite"
         className={surfaceChrome.creditContextCard}
       >
-        <Inline justify="between" align="start" flexWrap>
+        <Inline justify="between" align="center" flexWrap>
           <Badge variant={account.partyType === 'VENDOR' ? 'info' : 'success'}>
             {partyKindLabel}
           </Badge>
-          <Text
-            variant="caption"
-            color="secondary"
-            align="right"
-            className={surfaceChrome.growMin8}
-          >
-            {sub}
-          </Text>
+          <Text weight="semibold">{account.partyDisplayName}</Text>
         </Inline>
-        <Stack gap="xs">
-          <Text weight="bold">{account.partyDisplayName}</Text>
-          {account.partyPhone ? (
-            <Text variant="caption" color="secondary">
-              {account.partyPhone}
-            </Text>
-          ) : null}
-        </Stack>
+        {account.partyPhone ? (
+          <Text as="p" variant="caption" color="secondary">
+            {account.partyPhone}
+          </Text>
+        ) : null}
         <Inline
           justify="between"
           align="end"
@@ -197,40 +183,38 @@ export function CreditPartyActions({
         </Button>
       </Inline>
 
-      <Text variant="caption" color="secondary">
-        {mode === 'charge' ? copy.hintIncrease : copy.hintReduce}
-      </Text>
-
       <Box as="form" onSubmit={handleSubmit}>
         <Stack gap="md">
-          <FormField label="Amount (₹)" id="credit-party-amount" required>
-            <Input
-              id="credit-party-amount"
-              type="text"
-              inputMode="decimal"
-              autoComplete="off"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0.00"
-              disabled={submitting}
-              required
-              className={surfaceChrome.amountInputLg}
-            />
-          </FormField>
+          <Grid columns={2} gap="md" width="full">
+            <FormField label="Amount (₹)" id="credit-party-amount" required>
+              <Input
+                id="credit-party-amount"
+                type="text"
+                inputMode="decimal"
+                autoComplete="off"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="0.00"
+                disabled={submitting}
+                required
+                className={surfaceChrome.amountInputLg}
+              />
+            </FormField>
 
-          <FormField label="Date" id="credit-party-txn-date" required>
-            <Input
-              id="credit-party-txn-date"
-              type="date"
-              value={txnDate}
-              onChange={(e) => setTxnDate(e.target.value)}
-              disabled={submitting}
-              required
-            />
-          </FormField>
+            <FormField label="Date" id="credit-party-txn-date" required>
+              <Input
+                id="credit-party-txn-date"
+                type="date"
+                value={txnDate}
+                onChange={(e) => setTxnDate(e.target.value)}
+                disabled={submitting}
+                required
+              />
+            </FormField>
+          </Grid>
 
           {mode === 'settlement' ? (
-            <>
+            <Grid columns={2} gap="md" width="full">
               <FormField label="Payment method" id="credit-party-method" required>
                 <Select
                   id="credit-party-method"
@@ -253,7 +237,7 @@ export function CreditPartyActions({
                   disabled={submitting}
                 />
               </FormField>
-            </>
+            </Grid>
           ) : null}
 
           <FormField label="Note (optional)" id="credit-party-note">

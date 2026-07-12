@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Checkbox, Inline, Stack, Text, chartChrome } from '@inventory-platform/ui-kit';
+import { Box, Checkbox, Stack, Text, chartChrome } from '@inventory-platform/ui-kit';
 import {
   LineChart,
   Line,
@@ -10,6 +10,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+
 interface TimeSeriesData {
   period: string;
   startTime: string;
@@ -46,11 +47,11 @@ export function RevenueChart({ data }: RevenueChartProps) {
 
   return (
     <Stack gap="sm" className={chartChrome.frame}>
-      <Inline align="center" justify="between" className={chartChrome.chartToolbar}>
-        <Text variant="heading4" weight="semibold">
+      <Box className={chartChrome.chartToolbar}>
+        <Text as="h3" className={chartChrome.chartTitle}>
           Revenue Over Time
         </Text>
-        <Inline gap="md">
+        <Box className={chartChrome.chartLegendRow}>
           <Checkbox
             label="Revenue"
             checked={showRevenue}
@@ -62,15 +63,38 @@ export function RevenueChart({ data }: RevenueChartProps) {
             checked={showPurchases}
             onChange={(e) => setShowPurchases(e.target.checked)}
           />
-        </Inline>
-      </Inline>
-      <Box flex="1" className={chartChrome.frameTall}>
+        </Box>
+      </Box>
+      <Box className={chartChrome.plot}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis dataKey="period" stroke="#6b7280" tick={{ fontSize: 11 }} />
-            {(showRevenue || showAOV) && <YAxis yAxisId="left" stroke="#8884d8" />}
-            {showPurchases && <YAxis yAxisId="right" orientation="right" stroke="#ffc658" />}
+          <LineChart data={chartData} margin={{ top: 10, right: 24, left: 4, bottom: 8 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+            <XAxis
+              dataKey="period"
+              stroke="#94a3b8"
+              tick={{ fontSize: 11, fill: '#64748b' }}
+              tickLine={false}
+              axisLine={{ stroke: '#e2e8f0' }}
+            />
+            {(showRevenue || showAOV) && (
+              <YAxis
+                yAxisId="left"
+                stroke="#94a3b8"
+                tick={{ fontSize: 11, fill: '#64748b' }}
+                tickLine={false}
+                axisLine={false}
+              />
+            )}
+            {showPurchases ? (
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                stroke="#94a3b8"
+                tick={{ fontSize: 11, fill: '#64748b' }}
+                tickLine={false}
+                axisLine={false}
+              />
+            ) : null}
             <Tooltip
               formatter={(value: number | undefined, name: string | undefined) => {
                 if (value === undefined) return '';
@@ -80,23 +104,24 @@ export function RevenueChart({ data }: RevenueChartProps) {
                 return value;
               }}
               contentStyle={{
-                backgroundColor: 'white',
-                border: '1px solid #e5e7eb',
-                borderRadius: '6px',
-                padding: '8px',
+                backgroundColor: '#fff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '10px',
+                padding: '10px 12px',
+                boxShadow: '0 8px 24px rgba(15, 23, 42, 0.08)',
               }}
             />
-            <Legend wrapperStyle={{ paddingTop: '10px' }} />
+            <Legend wrapperStyle={{ paddingTop: '12px' }} />
             {showRevenue ? (
               <Line
                 yAxisId="left"
                 type="monotone"
                 dataKey="revenue"
-                stroke="#8884d8"
-                strokeWidth={2}
+                stroke="#3b82f6"
+                strokeWidth={2.5}
                 name="Revenue"
-                dot={{ r: 4 }}
-                activeDot={{ r: 6 }}
+                dot={{ r: 3.5, fill: '#3b82f6', strokeWidth: 0 }}
+                activeDot={{ r: 5 }}
               />
             ) : null}
             {showAOV ? (
@@ -104,11 +129,11 @@ export function RevenueChart({ data }: RevenueChartProps) {
                 yAxisId="left"
                 type="monotone"
                 dataKey="aov"
-                stroke="#82ca9d"
-                strokeWidth={2}
+                stroke="#06b6d4"
+                strokeWidth={2.5}
                 name="Avg Order Value"
-                dot={{ r: 4 }}
-                activeDot={{ r: 6 }}
+                dot={{ r: 3.5, fill: '#06b6d4', strokeWidth: 0 }}
+                activeDot={{ r: 5 }}
               />
             ) : null}
             {showPurchases ? (
@@ -116,11 +141,11 @@ export function RevenueChart({ data }: RevenueChartProps) {
                 yAxisId="right"
                 type="monotone"
                 dataKey="purchases"
-                stroke="#ffc658"
-                strokeWidth={2}
+                stroke="#f59e0b"
+                strokeWidth={2.5}
                 name="Purchases"
-                dot={{ r: 4 }}
-                activeDot={{ r: 6 }}
+                dot={{ r: 3.5, fill: '#f59e0b', strokeWidth: 0 }}
+                activeDot={{ r: 5 }}
               />
             ) : null}
           </LineChart>

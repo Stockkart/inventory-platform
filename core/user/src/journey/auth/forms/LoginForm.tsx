@@ -4,16 +4,14 @@ import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
 import { useAuthStore } from '@inventory-platform/session';
 import {
   Alert,
+  Box,
   Button,
-  Card,
-  CardBody,
   Checkbox,
   Divider,
   FormField,
-  Inline,
   SocialAuthSlot,
-  Stack,
   Text,
+  journeyChrome,
 } from '@inventory-platform/ui-kit';
 
 export function LoginForm() {
@@ -100,17 +98,18 @@ export function LoginForm() {
   const displayError = localError || error;
 
   return (
-    <Card>
-      <CardBody>
-        <Stack gap="md" width="full">
-          <Stack gap="xs" align="center">
-            <Text variant="heading1">Welcome Back</Text>
-            <Text color="secondary">Sign in to your StockKart account</Text>
-          </Stack>
+    <Box className={journeyChrome.authShell}>
+      <Box className={journeyChrome.authCard}>
+        <Box className={journeyChrome.authCardBody}>
+          <Box className={journeyChrome.authHeader}>
+            <Text as="h1" className={journeyChrome.authTitle}>
+              Welcome back
+            </Text>
+          </Box>
 
           {displayError ? <Alert variant="danger">{displayError}</Alert> : null}
 
-          <Stack gap="md" width="full">
+          <Box className={journeyChrome.authForm}>
             <FormField
               label="Email"
               id="email"
@@ -137,13 +136,16 @@ export function LoginForm() {
               disabled={isLoading}
             />
 
-            <Inline justify="between" width="full">
+            <Box className={journeyChrome.authMetaRow}>
               <Checkbox label="Remember me" />
-              <Link to="/forgot-password">Forgot password?</Link>
-            </Inline>
+              <Link to="/forgot-password" className={journeyChrome.authMetaLink}>
+                Forgot password?
+              </Link>
+            </Box>
 
             <Button
-              variant="solid"
+              variant="brand"
+              className={journeyChrome.authSubmit}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -153,7 +155,7 @@ export function LoginForm() {
               loading={isLoading}
               fullWidth
             >
-              {isLoading ? 'Signing In...' : 'Sign In'}
+              {isLoading ? 'Signing in…' : 'Sign In'}
             </Button>
 
             <Divider label="or" />
@@ -171,15 +173,13 @@ export function LoginForm() {
                 ux_mode="popup"
               />
             </SocialAuthSlot>
-          </Stack>
+          </Box>
 
-          <Stack gap="xs" align="center">
-            <Text color="secondary">
-              Don&apos;t have an account? <Link to="/signup">Sign up</Link>
-            </Text>
-          </Stack>
-        </Stack>
-      </CardBody>
-    </Card>
+          <Box className={journeyChrome.authFooter}>
+            Don&apos;t have an account? <Link to="/signup">Sign up</Link>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 }

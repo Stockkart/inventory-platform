@@ -1,4 +1,4 @@
-import { Card, CardBody, Grid, Stack, Text } from '@inventory-platform/ui-kit';
+import { Box, Text, chartChrome } from '@inventory-platform/ui-kit';
 
 interface SummaryCardsProps {
   data: {
@@ -12,23 +12,19 @@ interface SummaryCardsProps {
   };
 }
 
-function MetricCard({ label, value, period }: { label: string; value: string; period: string }) {
+function MetricCard({ label, value, hint }: { label: string; value: string; hint: string }) {
   return (
-    <Card>
-      <CardBody>
-        <Stack gap="xs">
-          <Text variant="caption" color="secondary">
-            {label}
-          </Text>
-          <Text variant="heading2" weight="bold">
-            {value}
-          </Text>
-          <Text variant="caption" color="muted">
-            {period}
-          </Text>
-        </Stack>
-      </CardBody>
-    </Card>
+    <Box className={chartChrome.metricCard}>
+      <Text as="p" className={chartChrome.metricLabel}>
+        {label}
+      </Text>
+      <Text as="p" className={chartChrome.metricValue}>
+        {value}
+      </Text>
+      <Text as="p" className={chartChrome.metricHint}>
+        {hint}
+      </Text>
+    </Box>
   );
 }
 
@@ -41,32 +37,32 @@ export function SummaryCards({ data }: SummaryCardsProps) {
   };
 
   return (
-    <Grid columns={4} gap="md">
+    <Box className={chartChrome.metricGrid}>
       <MetricCard
         label="Total Revenue"
         value={formatCurrency(data.summary.totalRevenue)}
-        period="Total Revenue"
+        hint="Gross sales in period"
       />
       <MetricCard
         label="Total Purchases"
         value={String(data.summary.totalPurchases)}
-        period="Number of Orders"
+        hint="Number of orders"
       />
       <MetricCard
         label="Average Order Value"
         value={formatCurrency(data.summary.averageOrderValue)}
-        period="Per Order"
+        hint="Per order"
       />
       <MetricCard
         label="Total Tax"
         value={formatCurrency(data.summary.totalTax)}
-        period="Tax Collected"
+        hint="Tax collected"
       />
       <MetricCard
         label="Total Discount"
         value={formatCurrency(data.summary.totalDiscount)}
-        period="Discounts Applied"
+        hint="Discounts applied"
       />
-    </Grid>
+    </Box>
   );
 }

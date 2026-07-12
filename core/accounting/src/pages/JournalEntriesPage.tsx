@@ -20,27 +20,32 @@ import {
   TableLoadingRow,
   TableRow,
   Text,
+  accountingChrome,
   type SelectOptionDef,
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import type { JournalEntryResponse, JournalSource } from '@inventory-platform/accounting/types';
 import { useJournalsQuery } from '../queries/hooks';
 import { AccountingTabs } from '../ui/AccountingTabs';
-import { numColBoldStyle, numColStyle } from '../ui/tabNav';
-import { formatDate, formatMoney } from '../model/format';
+import {
+  formatDateShort,
+  formatJournalSource,
+  formatJournalStatus,
+  formatMoney,
+} from '../model/format';
 
 const SOURCE_OPTIONS: readonly SelectOptionDef[] = [
   { value: '', label: 'All sources' },
-  { value: 'VENDOR_PURCHASE_INVOICE', label: 'Vendor Purchase' },
-  { value: 'VENDOR_PURCHASE_RETURN', label: 'Vendor Return' },
+  { value: 'VENDOR_PURCHASE_INVOICE', label: 'Vendor purchase' },
+  { value: 'VENDOR_PURCHASE_RETURN', label: 'Vendor return' },
   { value: 'SALE', label: 'Sale' },
-  { value: 'SALES_RETURN', label: 'Sales Return' },
-  { value: 'CUSTOMER_SETTLEMENT', label: 'Customer Settlement' },
-  { value: 'VENDOR_PAYMENT', label: 'Vendor Payment' },
-  { value: 'INVENTORY_CORRECTION', label: 'Inventory Correction' },
+  { value: 'SALES_RETURN', label: 'Sales return' },
+  { value: 'CUSTOMER_SETTLEMENT', label: 'Customer settlement' },
+  { value: 'VENDOR_PAYMENT', label: 'Vendor payment' },
+  { value: 'INVENTORY_CORRECTION', label: 'Stock correction' },
   { value: 'MANUAL', label: 'Manual' },
   { value: 'REVERSAL', label: 'Reversal' },
-  { value: 'OPENING_BALANCE', label: 'Opening Balance' },
+  { value: 'OPENING_BALANCE', label: 'Opening balance' },
 ];
 
 function statusVariant(
@@ -78,8 +83,8 @@ export function JournalEntriesPage() {
   return (
     <Stack gap="md">
       <Stack gap="md">
+        <AccountingTabs />
         <PageHeader
-          title="Journal Entries"
           description="Every business event creates a balanced journal entry. Filter, drill in, or post a manual entry."
           actions={
             <Button variant="solid" onClick={() => navigate('/dashboard/accounting/journal/new')}>
@@ -87,7 +92,6 @@ export function JournalEntriesPage() {
             </Button>
           }
         />
-        <AccountingTabs />
         <Inline gap="sm">
           <Inline gap="sm" align="center">
             <Text variant="label" color="secondary">
@@ -150,53 +154,60 @@ export function JournalEntriesPage() {
 
       <Card>
         <CardBody>
-          <Table>
+          <Table className={accountingChrome.recentEntriesTable}>
             <TableHead>
               <TableRow>
-                <TableHeaderCell>Date</TableHeaderCell>
-                <TableHeaderCell>Entry #</TableHeaderCell>
+                <TableHeaderCell className={accountingChrome.recentEntriesDate}>
+                  Date
+                </TableHeaderCell>
+                <TableHeaderCell>Entry</TableHeaderCell>
                 <TableHeaderCell>Source</TableHeaderCell>
                 <TableHeaderCell>Narration</TableHeaderCell>
-                <TableHeaderCell className={numColStyle}>Debit</TableHeaderCell>
-                <TableHeaderCell className={numColStyle}>Credit</TableHeaderCell>
-                <TableHeaderCell>Status</TableHeaderCell>
+                <TableHeaderCell className={accountingChrome.recentEntriesAmount}>
+                  Amount
+                </TableHeaderCell>
+                <TableHeaderCell className={accountingChrome.recentEntriesStatus}>
+                  Status
+                </TableHeaderCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {isLoading ? (
-                <TableLoadingRow colSpan={7} label="Loading journal entries…" />
+                <TableLoadingRow colSpan={6} label="Loading journal entries…" />
               ) : entries.length === 0 ? (
-                <TableEmptyRow colSpan={7} message="No journal entries match your filters." />
+                <TableEmptyRow colSpan={6} message="No journal entries match your filters." />
               ) : (
                 entries.map((entry) => (
                   <TableRow key={entry.id}>
-                    <TableCell>{formatDate(entry.txnDate)}</TableCell>
+                    <TableCell className={accountingChrome.recentEntriesDate}>
+                      {formatDateShort(entry.txnDate)}
+                    </TableCell>
                     <TableCell>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
+                        className={accountingChrome.entryLink}
                         onClick={() => navigate(`/dashboard/accounting/journal/${entry.id}`)}
                       >
                         {entry.entryNo}
                       </Button>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="info">{entry.sourceType}</Badge>
+                      <Badge variant="info">{formatJournalSource(entry.sourceType)}</Badge>
                     </TableCell>
                     <TableCell>
-                      <Text color="secondary" variant="caption">
+                      <Text as="span" color="secondary" variant="caption">
                         {entry.narration ?? '—'}
                       </Text>
                     </TableCell>
-                    <TableCell className={numColBoldStyle}>
-                      {formatMoney(entry.totalDebit)}
+                    <TableCell className={accountingChrome.recentEntriesAmount}>
+                      ₹{formatMoney(entry.totalDebit)}
                     </TableCell>
-                    <TableCell className={numColBoldStyle}>
-                      {formatMoney(entry.totalCredit)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={statusVariant(entry.status)}>{entry.status}</Badge>
+                    <TableCell className={accountingChrome.recentEntriesStatus}>
+                      <Badge variant={statusVariant(entry.status)}>
+                        {formatJournalStatus(entry.status)}
+                      </Badge>
                     </TableCell>
                   </TableRow>
                 ))

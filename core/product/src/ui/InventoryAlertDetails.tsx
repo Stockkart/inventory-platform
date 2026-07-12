@@ -28,6 +28,7 @@ import {
   CenteredLoader,
   EmptyState,
   Grid,
+  Icon,
   Inline,
   Input,
   Link,
@@ -37,8 +38,39 @@ import {
   Text,
   Textarea,
   type SelectOptionDef,
+  productChrome,
   surfaceChrome,
+  cn,
 } from '@inventory-platform/ui-kit';
+import type { LucideIcon } from 'lucide-react';
+import {
+  AlertTriangle,
+  Banknote,
+  Barcode,
+  Building2,
+  Calendar,
+  CalendarClock,
+  ClipboardList,
+  Factory,
+  FileText,
+  Gift,
+  Hash,
+  IndianRupee,
+  Mail,
+  MapPin,
+  Package,
+  PackageMinus,
+  PackagePlus,
+  Percent,
+  Phone,
+  Receipt,
+  Ruler,
+  ShoppingCart,
+  Tag,
+  Thermometer,
+  User,
+  X,
+} from 'lucide-react';
 const SCHEME_TYPE_OPTIONS: readonly SelectOptionDef[] = [
   { value: 'FIXED_UNITS', label: 'Free units' },
   { value: 'PERCENTAGE', label: 'Percentage' },
@@ -57,12 +89,14 @@ const DISCOUNT_OPTIONS: readonly SelectOptionDef[] = [
   { value: 'DISCOUNT_AND_SCHEME', label: 'Both' },
 ];
 
-function SectionHeader({ icon, title }: { icon: string; title: string }) {
+function SectionHeader({ icon, title }: { icon: LucideIcon; title: string }) {
   return (
-    <Inline gap="sm" align="center" mb="md">
-      <Text>{icon}</Text>
+    <Box className={productChrome.detailSectionHeader}>
+      <Box className={productChrome.detailSectionIcon} aria-hidden>
+        <Icon icon={icon} size="sm" />
+      </Box>
       <Text variant="heading4">{title}</Text>
-    </Inline>
+    </Box>
   );
 }
 
@@ -72,21 +106,30 @@ function DetailField({
   fullWidth,
   children,
 }: {
-  icon?: string;
+  icon?: LucideIcon;
   label: string;
   fullWidth?: boolean;
   children: ReactNode;
 }) {
   return (
-    <Inline gap="sm" align="start" className={fullWidth ? surfaceChrome.gridSpanFull : undefined}>
-      {icon ? <Text className={surfaceChrome.flexShrink0}>{icon}</Text> : null}
-      <Stack gap="xs" flex="1" minWidth="0">
+    <Box
+      className={cn(
+        productChrome.detailFieldRow,
+        fullWidth ? surfaceChrome.gridSpanFull : undefined,
+      )}
+    >
+      {icon ? (
+        <Box className={productChrome.detailFieldIcon} aria-hidden>
+          <Icon icon={icon} size="sm" />
+        </Box>
+      ) : null}
+      <Box className={productChrome.detailFieldBody}>
         <Text variant="caption" color="secondary">
           {label}
         </Text>
         {children}
-      </Stack>
-    </Inline>
+      </Box>
+    </Box>
   );
 }
 
@@ -586,14 +629,16 @@ export function InventoryAlertDetails({
 
   return (
     <Modal open onClose={onClose} size="lg">
-      <Inline justify="between" align="center" gap="md" padding="lg" borderBottom>
-        <Inline gap="md" align="center" flex="1" minWidth="0">
-          <Text className={surfaceChrome.emojiLg}>📦</Text>
-          <Stack gap="xs">
+      <Box className={productChrome.detailModalHeader}>
+        <Box className={productChrome.detailModalHeaderMain}>
+          <Box className={productChrome.detailModalHeroIcon} aria-hidden>
+            <Icon icon={Package} size="md" />
+          </Box>
+          <Stack gap="xs" minWidth="0">
             <Text variant="heading3">{item?.name ?? item?.barcode ?? 'Item Details'}</Text>
             {item?.companyName ? <Text color="secondary">{item.companyName}</Text> : null}
           </Stack>
-        </Inline>
+        </Box>
         <Inline gap="sm" align="center">
           {allowEditMode && !isEditing ? (
             <Button
@@ -606,17 +651,17 @@ export function InventoryAlertDetails({
             </Button>
           ) : null}
           <Button type="button" variant="ghost" onClick={onClose} aria-label="Close">
-            ✕
+            <Icon icon={X} size="sm" />
           </Button>
         </Inline>
-      </Inline>
+      </Box>
 
       <Modal.Body>
-        <Box padding="lg" overflow="auto" className={surfaceChrome.maxH70vh}>
-          <Box mb="lg">
-            <SectionHeader icon="📋" title="Product Information" />
+        <Box padding="lg">
+          <Box className={productChrome.detailSection}>
+            <SectionHeader icon={ClipboardList} title="Product Information" />
             <Grid columns={2} gap="sm">
-              <DetailField icon="🏷️" label="Product Name">
+              <DetailField icon={Tag} label="Product Name">
                 {showEditor('name') ? (
                   <Input
                     type="text"
@@ -628,10 +673,10 @@ export function InventoryAlertDetails({
                   <DetailValue>{item?.name ?? '—'}</DetailValue>
                 )}
               </DetailField>
-              <DetailField icon="🧾" label="Billing Mode">
-                <DetailValue>{item?.billingMode === 'BASIC' ? 'BASIC' : 'REGULAR'}</DetailValue>
+              <DetailField icon={Receipt} label="Billing Mode">
+                <DetailValue>{item?.billingMode === 'BASIC' ? 'Basic' : 'Regular'}</DetailValue>
               </DetailField>
-              <DetailField icon="🏢" label="Company">
+              <DetailField icon={Building2} label="Company">
                 {showEditor('companyName') ? (
                   <Input
                     type="text"
@@ -643,7 +688,7 @@ export function InventoryAlertDetails({
                   <DetailValue>{item?.companyName ?? '—'}</DetailValue>
                 )}
               </DetailField>
-              <DetailField icon="🔖" label="Barcode">
+              <DetailField icon={Barcode} label="Barcode">
                 {showEditor('barcode') ? (
                   <Input
                     type="text"
@@ -656,11 +701,11 @@ export function InventoryAlertDetails({
                 )}
               </DetailField>
               {item?.lotId ? (
-                <DetailField icon="📦" label="Lot ID">
+                <DetailField icon={Package} label="Lot ID">
                   <DetailValue>{item.lotId}</DetailValue>
                 </DetailField>
               ) : null}
-              <DetailField icon="📍" label="Location">
+              <DetailField icon={MapPin} label="Location">
                 {isEditing ? (
                   <Input
                     type="text"
@@ -672,7 +717,7 @@ export function InventoryAlertDetails({
                   <DetailValue>{item?.location ?? '—'}</DetailValue>
                 )}
               </DetailField>
-              <DetailField icon="🔢" label="HSN">
+              <DetailField icon={Hash} label="HSN">
                 {isEditing ? (
                   <Input
                     type="text"
@@ -685,11 +730,11 @@ export function InventoryAlertDetails({
                 )}
               </DetailField>
               {item?.sac ? (
-                <DetailField icon="🔢" label="SAC">
+                <DetailField icon={Hash} label="SAC">
                   <DetailValue>{item.sac}</DetailValue>
                 </DetailField>
               ) : null}
-              <DetailField icon="🏭" label="Batch No">
+              <DetailField icon={Factory} label="Batch No">
                 {isEditing ? (
                   <Input
                     type="text"
@@ -702,7 +747,7 @@ export function InventoryAlertDetails({
                 )}
               </DetailField>
               {item?.createdAt ? (
-                <DetailField icon="📅" label="Created At">
+                <DetailField icon={Calendar} label="Created At">
                   <DetailValue>
                     {new Date(item.createdAt).toLocaleDateString('en-IN', {
                       year: 'numeric',
@@ -714,7 +759,7 @@ export function InventoryAlertDetails({
                   </DetailValue>
                 </DetailField>
               ) : null}
-              <DetailField icon="📝" label="Description" fullWidth>
+              <DetailField icon={FileText} label="Description" fullWidth>
                 {isEditing ? (
                   <Textarea
                     rows={2}
@@ -729,10 +774,10 @@ export function InventoryAlertDetails({
             </Grid>
           </Box>
 
-          <Box mb="lg">
-            <SectionHeader icon="📦" title="Stock & packaging" />
+          <Box className={productChrome.detailSection}>
+            <SectionHeader icon={Package} title="Stock & packaging" />
             <Grid columns={2} gap="sm">
-              <DetailField icon="🔢" label="Current stock">
+              <DetailField icon={Hash} label="Current stock">
                 <DetailValue>
                   {item.currentCount}
                   {isEditing ? (
@@ -742,13 +787,13 @@ export function InventoryAlertDetails({
                   ) : null}
                 </DetailValue>
               </DetailField>
-              <DetailField icon="📥" label="Received">
+              <DetailField icon={PackagePlus} label="Received">
                 <DetailValue>{item.receivedCount}</DetailValue>
               </DetailField>
-              <DetailField icon="📤" label="Sold">
+              <DetailField icon={PackageMinus} label="Sold">
                 <DetailValue>{item.soldCount}</DetailValue>
               </DetailField>
-              <DetailField icon="📐" label="Packaging">
+              <DetailField icon={Ruler} label="Packaging">
                 {isEditing ? (
                   <Inline gap="sm" align="center">
                     <Text aria-hidden className={surfaceChrome.flexShrink0}>
@@ -768,7 +813,7 @@ export function InventoryAlertDetails({
                   <DetailValue>{packagingFactorDisplay(item)}</DetailValue>
                 )}
               </DetailField>
-              <DetailField icon="📅" label="Expiry date">
+              <DetailField icon={CalendarClock} label="Expiry date">
                 {isEditing ? (
                   <Input
                     type="date"
@@ -779,7 +824,7 @@ export function InventoryAlertDetails({
                   <DetailValue>{formatInventoryExpiryDate(item)}</DetailValue>
                 )}
               </DetailField>
-              <DetailField icon="🛒" label="Purchase date">
+              <DetailField icon={ShoppingCart} label="Purchase date">
                 {isEditing ? (
                   <Input
                     type="date"
@@ -794,7 +839,7 @@ export function InventoryAlertDetails({
                   </DetailValue>
                 )}
               </DetailField>
-              <DetailField icon="⚠️" label="Low-stock threshold">
+              <DetailField icon={AlertTriangle} label="Low-stock threshold">
                 {isEditing ? (
                   <Input
                     type="number"
@@ -815,10 +860,10 @@ export function InventoryAlertDetails({
             </Grid>
           </Box>
 
-          <Box mb="lg">
-            <SectionHeader icon="🎁" title="Schemes & attributes" />
+          <Box className={productChrome.detailSection}>
+            <SectionHeader icon={Gift} title="Schemes & attributes" />
             <Grid columns={2} gap="sm">
-              <DetailField label="Sale deal type">
+              <DetailField icon={Gift} label="Sale deal type">
                 {isEditing ? (
                   <Select
                     options={SCHEME_TYPE_OPTIONS}
@@ -833,7 +878,7 @@ export function InventoryAlertDetails({
                   </DetailValue>
                 )}
               </DetailField>
-              <DetailField label="Sale scheme">
+              <DetailField icon={Percent} label="Sale scheme">
                 {isEditing ? (
                   <Input
                     type="text"
@@ -845,7 +890,7 @@ export function InventoryAlertDetails({
                   <DetailValue>{formatSaleSchemeDisplay(item) || '—'}</DetailValue>
                 )}
               </DetailField>
-              <DetailField label="Purchase deal type">
+              <DetailField icon={ShoppingCart} label="Purchase deal type">
                 {isEditing ? (
                   <Select
                     options={SCHEME_TYPE_OPTIONS}
@@ -860,7 +905,7 @@ export function InventoryAlertDetails({
                   </DetailValue>
                 )}
               </DetailField>
-              <DetailField label="Purchase scheme">
+              <DetailField icon={Percent} label="Purchase scheme">
                 {isEditing ? (
                   <Input
                     type="text"
@@ -872,7 +917,7 @@ export function InventoryAlertDetails({
                   <DetailValue>{formatPurchaseSchemeDisplay(item) || '—'}</DetailValue>
                 )}
               </DetailField>
-              <DetailField label="Purchase add. discount (%)">
+              <DetailField icon={Percent} label="Purchase add. discount (%)">
                 {isEditing ? (
                   <Input
                     type="text"
@@ -892,7 +937,7 @@ export function InventoryAlertDetails({
                   </DetailValue>
                 )}
               </DetailField>
-              <DetailField label="Item type">
+              <DetailField icon={Tag} label="Item type">
                 {isEditing ? (
                   <Select
                     options={ITEM_TYPE_OPTIONS}
@@ -908,7 +953,7 @@ export function InventoryAlertDetails({
                 )}
               </DetailField>
               {isEditing || item.itemType === 'DEGREE' || editForm.itemType === 'DEGREE' ? (
-                <DetailField label="Temperature (°)">
+                <DetailField icon={Thermometer} label="Temperature (°)">
                   {isEditing ? (
                     <Input
                       type="number"
@@ -923,7 +968,7 @@ export function InventoryAlertDetails({
                   )}
                 </DetailField>
               ) : null}
-              <DetailField label="Discount applicable">
+              <DetailField icon={Percent} label="Discount applicable">
                 {isEditing ? (
                   <Select
                     options={DISCOUNT_OPTIONS}
@@ -937,10 +982,10 @@ export function InventoryAlertDetails({
             </Grid>
           </Box>
 
-          <Box mb="lg">
-            <SectionHeader icon="💰" title="Pricing" />
+          <Box className={productChrome.detailSection}>
+            <SectionHeader icon={IndianRupee} title="Pricing" />
             <Grid columns={2} gap="sm">
-              <DetailField icon="💵" label="Selling Price (PTR)">
+              <DetailField icon={Banknote} label="Selling Price (PTR)">
                 {isEditing ? (
                   <Input
                     type="text"
@@ -960,7 +1005,7 @@ export function InventoryAlertDetails({
                   </DetailValue>
                 )}
               </DetailField>
-              <DetailField icon="🏷️" label="MRP">
+              <DetailField icon={Tag} label="MRP">
                 {isEditing ? (
                   <Input
                     type="text"
@@ -977,7 +1022,7 @@ export function InventoryAlertDetails({
                   </DetailValue>
                 )}
               </DetailField>
-              <DetailField icon="₹" label="Price to stockist (PTS)">
+              <DetailField icon={IndianRupee} label="Price to stockist (PTS)">
                 {isEditing ? (
                   <Input
                     type="text"
@@ -993,7 +1038,7 @@ export function InventoryAlertDetails({
                 )}
               </DetailField>
               {item?.billingMode !== 'BASIC' ? (
-                <DetailField icon="📊" label="SGST (%)">
+                <DetailField icon={Percent} label="SGST (%)">
                   {isEditing ? (
                     <Input
                       type="text"
@@ -1008,7 +1053,7 @@ export function InventoryAlertDetails({
                 </DetailField>
               ) : null}
               {item?.billingMode !== 'BASIC' ? (
-                <DetailField icon="📊" label="CGST (%)">
+                <DetailField icon={Percent} label="CGST (%)">
                   {isEditing ? (
                     <Input
                       type="text"
@@ -1022,7 +1067,7 @@ export function InventoryAlertDetails({
                   )}
                 </DetailField>
               ) : null}
-              <DetailField icon="🎯" label="Sale add. discount (%)">
+              <DetailField icon={Percent} label="Sale add. discount (%)">
                 {isEditing ? (
                   <Input
                     type="text"
@@ -1060,43 +1105,43 @@ export function InventoryAlertDetails({
           </Box>
 
           {item?.vendorId ? (
-            <Box mb="lg">
-              <SectionHeader icon="👤" title="Vendor Information" />
+            <Box className={productChrome.detailSection}>
+              <SectionHeader icon={User} title="Vendor Information" />
               {loadingVendor ? (
                 <CenteredLoader label="Loading vendor details..." />
               ) : vendorError ? (
                 <Alert variant="danger">{vendorError}</Alert>
               ) : vendor ? (
                 <Grid columns={2} gap="sm">
-                  <DetailField icon="👤" label="Vendor Name">
+                  <DetailField icon={User} label="Vendor Name">
                     <DetailValue>{vendor.name}</DetailValue>
                   </DetailField>
                   {vendor.companyName ? (
-                    <DetailField icon="🏢" label="Company">
+                    <DetailField icon={Building2} label="Company">
                       <DetailValue>{vendor.companyName}</DetailValue>
                     </DetailField>
                   ) : null}
                   {vendor.contactEmail ? (
-                    <DetailField icon="📧" label="Email">
+                    <DetailField icon={Mail} label="Email">
                       <DetailValue>
                         <Link href={`mailto:${vendor.contactEmail}`}>{vendor.contactEmail}</Link>
                       </DetailValue>
                     </DetailField>
                   ) : null}
                   {vendor.contactPhone ? (
-                    <DetailField icon="📞" label="Phone">
+                    <DetailField icon={Phone} label="Phone">
                       <DetailValue>
                         <Link href={`tel:${vendor.contactPhone}`}>{vendor.contactPhone}</Link>
                       </DetailValue>
                     </DetailField>
                   ) : null}
                   {vendor.address ? (
-                    <DetailField icon="📍" label="Address" fullWidth>
+                    <DetailField icon={MapPin} label="Address" fullWidth>
                       <DetailValue>{vendor.address}</DetailValue>
                     </DetailField>
                   ) : null}
                   {vendor.businessType ? (
-                    <DetailField icon="🏭" label="Business Type">
+                    <DetailField icon={Factory} label="Business Type">
                       <DetailValue>{vendor.businessType}</DetailValue>
                     </DetailField>
                   ) : null}

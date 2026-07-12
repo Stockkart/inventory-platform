@@ -3,14 +3,12 @@ import type { InventoryItemAnalytics } from '@inventory-platform/analytics/types
 import {
   Alert,
   Badge,
+  Box,
   Button,
-  Card,
-  CardBody,
   CenteredLoader,
   Checkbox,
   FormField,
   Grid,
-  Inline,
   Input,
   Stack,
   Table,
@@ -19,6 +17,7 @@ import {
   TableHead,
   TableHeaderCell,
   TableRow,
+  chartChrome,
 } from '@inventory-platform/ui-kit';
 import { useExpiryBucketsQuery, useInventoryAnalyticsQuery } from '../queries/hooks';
 import { AnalyticsCollapsibleSection } from './AnalyticsCollapsibleSection';
@@ -227,10 +226,10 @@ export function InventoryAnalytics() {
 
   return (
     <Stack gap="md">
-      <Card>
-        <CardBody>
-          <Inline gap="md">
-            <FormField label="Low Stock Threshold (%)" htmlFor="lowStockThreshold">
+      <Box className={chartChrome.filterCard}>
+        <Box className={chartChrome.filterBody}>
+          <Box className={chartChrome.filterGrid}>
+            <FormField label="Low Stock %" htmlFor="lowStockThreshold">
               <Input
                 id="lowStockThreshold"
                 type="number"
@@ -266,20 +265,21 @@ export function InventoryAnalytics() {
                 }
               />
             </FormField>
+          </Box>
 
+          <Box className={chartChrome.filterActions}>
             <Checkbox
               id="includeAllInventory"
-              label="Include All Items"
+              label="Include all items"
               checked={localFilters.includeAll}
               onChange={(e) => handleFilterChange('includeAll', e.target.checked)}
             />
-
             <Button variant="solid" onClick={handleApplyFilters}>
               Apply Filters
             </Button>
-          </Inline>
-        </CardBody>
-      </Card>
+          </Box>
+        </Box>
+      </Box>
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
 

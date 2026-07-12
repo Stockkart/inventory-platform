@@ -28,6 +28,7 @@
 
 .control {
   width: 100%;
+  min-height: 2.5rem;
   padding: 0.6rem 0.75rem;
   font-size: 1rem;
   font-family: var(--sk-font-sans);
@@ -37,6 +38,36 @@
   color: var(--sk-color-text-primary);
   box-sizing: border-box;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+select.control {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2.35rem;
+  background-image: linear-gradient(
+      45deg,
+      transparent 50%,
+      var(--sk-color-text-secondary, #64748b) 50%
+    ),
+    linear-gradient(135deg, var(--sk-color-text-secondary, #64748b) 50%, transparent 50%);
+  background-position: calc(100% - 1.05rem) calc(50% - 0.12rem),
+    calc(100% - 0.7rem) calc(50% - 0.12rem);
+  background-size: 0.35rem 0.35rem, 0.35rem 0.35rem;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+select.control:hover:not(:disabled) {
+  border-color: color-mix(
+    in srgb,
+    var(--sk-color-accent, #2563eb) 40%,
+    var(--sk-color-border-default)
+  );
+}
+
+select.control:focus {
+  background-image: linear-gradient(45deg, transparent 50%, var(--sk-color-accent, #2563eb) 50%),
+    linear-gradient(135deg, var(--sk-color-accent, #2563eb) 50%, transparent 50%);
 }
 
 .control:focus {
@@ -105,6 +136,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--sk-space-sm);
+  box-sizing: border-box;
   font-family: var(--sk-font-sans);
   font-weight: 500;
   border-radius: var(--sk-radius-md);
@@ -124,18 +156,24 @@
 }
 
 .size-sm {
-  padding: 0.35rem 0.75rem;
-  font-size: 0.875rem;
+  min-height: 2.25rem;
+  padding: 0 0.75rem;
+  font-size: 0.8125rem;
+  line-height: 1;
 }
 
 .size-md {
-  padding: 0.5rem 1rem;
-  font-size: 0.95rem;
+  min-height: 2.5rem;
+  padding: 0 1rem;
+  font-size: 0.875rem;
+  line-height: 1;
 }
 
 .size-lg {
-  padding: 0.85rem 1.6rem;
-  font-size: 1.05rem;
+  min-height: 2.75rem;
+  padding: 0 1.35rem;
+  font-size: 1rem;
+  line-height: 1;
 }
 
 .variant-brand.size-lg,
@@ -260,8 +298,8 @@
 }
 
 .iconButton-sm {
-  width: 2rem;
-  height: 2rem;
+  width: 2.25rem;
+  height: 2.25rem;
   padding: 0;
 }
 

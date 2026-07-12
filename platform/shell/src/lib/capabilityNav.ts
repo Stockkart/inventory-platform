@@ -3,6 +3,7 @@ import type {
   VerticalPlugin,
   DashboardMenuGroup,
   DashboardMenuItem,
+  NavIconName,
 } from '@inventory-platform/routing';
 import { resolveSellPath } from '@inventory-platform/routing';
 import { isCustomerReturnEnabled, isVendorReturnEnabled } from '@inventory-platform/routing';
@@ -18,6 +19,22 @@ const SKU_ONLY_PRODUCT_PATHS = new Set([
 
 const CUSTOMER_RETURN_PATH = '/dashboard/refund';
 const VENDOR_RETURN_PATH = '/dashboard/vendor-return';
+
+/** Icons for capability-driven nav when the vertical plugin is not loaded yet. */
+const CAPABILITY_PATH_ICONS: Partial<Record<string, NavIconName>> = {
+  '/dashboard/product-registration': 'package',
+  '/dashboard/manual-stock': 'search',
+  '/dashboard/menu': 'clipboard-list',
+  '/dashboard/menu-sell': 'shopping-cart',
+  '/dashboard/product-search': 'search',
+  '/dashboard/scan-sell': 'smartphone',
+  '/dashboard/stock-corrections': 'wrench',
+  '/dashboard/pricing': 'circle-dollar-sign',
+};
+
+function iconForCapabilityPath(path: string): NavIconName {
+  return CAPABILITY_PATH_ICONS[path] ?? 'circle';
+}
 
 function filterReturnsGroup(
   groups: DashboardMenuGroup[],
@@ -60,7 +77,7 @@ function pluginNavItemsForCapabilities(
         items.push({
           path: item.path,
           label: apiLabels.get(item.path) ?? item.label,
-          icon: item.icon,
+          icon: item.icon ?? iconForCapabilityPath(item.path),
         });
       }
     }
@@ -72,7 +89,7 @@ function capabilityNavItems(capabilities: ShopUiCapabilities): DashboardMenuItem
   return capabilities.navigation.map((n) => ({
     path: n.path,
     label: n.label,
-    icon: 'circle' as const,
+    icon: iconForCapabilityPath(n.path),
   }));
 }
 

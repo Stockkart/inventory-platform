@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Store } from 'lucide-react';
 import {
   Alert,
+  Box,
   Button,
-  Card,
-  CardBody,
-  CardHeader,
   CenteredLoader,
-  Grid,
   Inline,
   PageHeader,
   Stack,
   Text,
+  cn,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { shopsApi } from '../api/shops.api';
 import { ShopProfileForm } from '../ui';
@@ -43,14 +43,16 @@ function formatAddress(location: LocationType) {
     .join(' · ');
 }
 
-function ProfileField({ label, value }: { label: string; value: string }) {
+function ProfileField({ label, value, wide }: { label: string; value: string; wide?: boolean }) {
   return (
-    <Stack gap="xs">
-      <Text variant="label" color="secondary">
+    <Box className={cn(surfaceChrome.profileField, wide && surfaceChrome.profileFieldWide)}>
+      <Text as="p" className={surfaceChrome.profileFieldLabel}>
         {label}
       </Text>
-      <Text>{value}</Text>
-    </Stack>
+      <Text as="p" className={surfaceChrome.profileFieldValue}>
+        {value}
+      </Text>
+    </Box>
   );
 }
 
@@ -155,7 +157,7 @@ export function ProfilePage() {
 
   if (loading) {
     return (
-      <Stack gap="md" width="full" maxWidth="sm" mx="auto">
+      <Stack gap="md" className={surfaceChrome.profileShell}>
         <CenteredLoader label="Loading profile…" />
       </Stack>
     );
@@ -163,61 +165,99 @@ export function ProfilePage() {
 
   if (error || !shop) {
     return (
-      <Stack gap="md" width="full" maxWidth="sm" mx="auto">
+      <Stack gap="md" className={surfaceChrome.profileShell}>
         <Alert variant="danger">{error ?? 'Shop not found'}</Alert>
       </Stack>
     );
   }
 
+  const contactFields = [
+    shop.contactEmail ? { label: 'Email', value: shop.contactEmail } : null,
+    shop.contactPhone ? { label: 'Phone', value: shop.contactPhone } : null,
+  ].filter(Boolean) as { label: string; value: string }[];
+
+  const businessFields = [
+    shop.gstinNo ? { label: 'GSTIN', value: shop.gstinNo } : null,
+    shop.panNo ? { label: 'PAN', value: shop.panNo } : null,
+    shop.dlNo ? { label: 'DL No', value: shop.dlNo } : null,
+  ].filter(Boolean) as { label: string; value: string }[];
+
   return (
-    <Stack gap="md" width="full" maxWidth="sm" mx="auto">
-      <PageHeader title="Shop Profile" description="View and edit your active shop information" />
+    <Stack gap="md" className={surfaceChrome.profileShell}>
+      <PageHeader description="View and edit your active shop information" />
 
       {!editing ? (
-        <Card>
-          <CardHeader>
-            <Inline justify="between" gap="md" width="full">
-              <Text variant="title" weight="semibold">
-                {shop.name}
-              </Text>
-              <Button type="button" variant="outline" size="sm" onClick={handleStartEdit}>
-                Edit
-              </Button>
-            </Inline>
-          </CardHeader>
-          <CardBody>
-            <Stack gap="md">
-              <ProfileField label="Shop Name" value={shop.name} />
+        <Box className={surfaceChrome.profileCard}>
+          <Box className={surfaceChrome.profileHero}>
+            <Box className={surfaceChrome.profileHeroMain}>
+              <Box as="span" className={surfaceChrome.profileHeroIcon} aria-hidden>
+                <Store size={20} strokeWidth={2.1} />
+              </Box>
+              <Box className={surfaceChrome.profileHeroText}>
+                <Text as="h2" className={surfaceChrome.profileHeroTitle}>
+                  {shop.name}
+                </Text>
+                <Text as="p" className={surfaceChrome.profileHeroTagline}>
+                  {shop.tagline?.trim() || 'No tagline yet'}
+                </Text>
+              </Box>
+            </Box>
+            <Button type="button" variant="solid" size="sm" onClick={handleStartEdit}>
+              Edit profile
+            </Button>
+          </Box>
 
-              <Grid columns={2} gap="md" width="full">
-                {shop.contactEmail ? (
-                  <ProfileField label="Email" value={shop.contactEmail} />
-                ) : null}
-                {shop.contactPhone ? (
-                  <ProfileField label="Phone" value={shop.contactPhone} />
-                ) : null}
-              </Grid>
+          <Box className={surfaceChrome.profileBody}>
+            {contactFields.length > 0 ? (
+              <Box className={surfaceChrome.profileSection}>
+                <Text as="p" className={surfaceChrome.profileSectionLabel}>
+                  Contact
+                </Text>
+                <Box className={surfaceChrome.profileFieldGrid}>
+                  {contactFields.map((field) => (
+                    <ProfileField key={field.label} label={field.label} value={field.value} />
+                  ))}
+                </Box>
+              </Box>
+            ) : null}
 
-              <Grid columns={2} gap="md" width="full">
-                {shop.gstinNo ? <ProfileField label="GSTIN" value={shop.gstinNo} /> : null}
-                {shop.panNo ? <ProfileField label="PAN" value={shop.panNo} /> : null}
-              </Grid>
+            {businessFields.length > 0 ? (
+              <Box className={surfaceChrome.profileSection}>
+                <Text as="p" className={surfaceChrome.profileSectionLabel}>
+                  Business details
+                </Text>
+                <Box className={surfaceChrome.profileFieldGrid}>
+                  {businessFields.map((field) => (
+                    <ProfileField key={field.label} label={field.label} value={field.value} />
+                  ))}
+                </Box>
+              </Box>
+            ) : null}
 
-              {shop.dlNo ? <ProfileField label="DL No" value={shop.dlNo} /> : null}
-              {shop.tagline ? <ProfileField label="Tagline" value={shop.tagline} /> : null}
-              {shop.location ? (
-                <ProfileField label="Address" value={formatAddress(shop.location)} />
-              ) : null}
-            </Stack>
-          </CardBody>
-        </Card>
+            {shop.location ? (
+              <Box className={surfaceChrome.profileSection}>
+                <Text as="p" className={surfaceChrome.profileSectionLabel}>
+                  Address
+                </Text>
+                <Box className={surfaceChrome.profileFieldGrid}>
+                  <ProfileField label="Location" value={formatAddress(shop.location)} wide />
+                </Box>
+              </Box>
+            ) : null}
+          </Box>
+        </Box>
       ) : (
-        <Card>
-          <CardBody>
+        <Box className={surfaceChrome.profileCard}>
+          <Box className={surfaceChrome.profileEditHeader}>
+            <Text as="h2" className={surfaceChrome.profileEditTitle}>
+              Edit shop
+            </Text>
+            <Text variant="caption" color="secondary">
+              {shop.name}
+            </Text>
+          </Box>
+          <Box className={surfaceChrome.profileEditBody}>
             <Stack gap="md">
-              <Text variant="title" weight="semibold">
-                Edit shop
-              </Text>
               {saveError ? <Alert variant="danger">{saveError}</Alert> : null}
               <ShopProfileForm
                 tagline={editTagline}
@@ -226,17 +266,22 @@ export function ProfilePage() {
                 onLocationChange={setEditLocation}
                 disabled={saving}
               />
-              <Inline gap="sm" justify="end">
-                <Button type="button" variant="outline" onClick={handleCancelEdit}>
+              <Inline gap="sm" className={surfaceChrome.profileEditActions}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancelEdit}
+                  disabled={saving}
+                >
                   Cancel
                 </Button>
                 <Button type="button" variant="solid" onClick={handleSave} disabled={saving}>
-                  {saving ? 'Saving…' : 'Save'}
+                  {saving ? 'Saving…' : 'Save changes'}
                 </Button>
               </Inline>
             </Stack>
-          </CardBody>
-        </Card>
+          </Box>
+        </Box>
       )}
     </Stack>
   );

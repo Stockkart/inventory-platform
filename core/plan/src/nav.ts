@@ -7,6 +7,5 @@ export const planNav: NavContribution = {
   items: [
     { path: '/dashboard/plan-payment', label: 'Payment', icon: 'credit-card' },
     { path: '/dashboard/plan-status', label: 'My Plan', icon: 'clipboard-list' },
-    { path: '/dashboard/payment-billing', label: 'Payment & Billing', icon: 'receipt' },
   ],
 };

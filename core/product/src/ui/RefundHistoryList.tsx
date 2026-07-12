@@ -8,8 +8,6 @@ import {
   CardBody,
   CenteredLoader,
   EmptyState,
-  Grid,
-  Inline,
   PaginationBar,
   Stack,
   Table,
@@ -19,6 +17,8 @@ import {
   TableHeaderCell,
   TableRow,
   Text,
+  cn,
+  productChrome,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { HistoryListSummary } from './HistoryListSummary';
@@ -61,16 +61,38 @@ function formatDate(dateString: string): string {
   }
 }
 
-function DetailLine({ label, value }: { label: string; value: string }) {
+function creditNoteLabel(refund: Refund): string {
+  const note = refund.creditNoteNo?.trim();
+  return note || 'No credit note number';
+}
+
+function HistoryField({
+  label,
+  value,
+  strong,
+  muted,
+}: {
+  label: string;
+  value: string;
+  strong?: boolean;
+  muted?: boolean;
+}) {
   return (
-    <Inline gap="xs">
-      <Text variant="caption" color="secondary" weight="semibold">
-        {label}:
+    <Box className={productChrome.salePickField}>
+      <Text as="p" className={productChrome.salePickLabel}>
+        {label}
       </Text>
-      <Text variant="caption" color="secondary">
+      <Text
+        as="p"
+        className={cn(
+          productChrome.salePickValue,
+          strong && productChrome.salePickValueStrong,
+          muted && productChrome.salePickValueMuted,
+        )}
+      >
         {value}
       </Text>
-    </Inline>
+    </Box>
   );
 }
 
@@ -174,75 +196,108 @@ export function RefundHistoryList({ refreshTrigger, filters }: RefundHistoryList
         label="returns"
       />
       <Stack gap="md">
-        {refunds.map((refund) => (
-          <Card key={refund.refundId}>
-            <CardBody>
-              <Stack gap="md">
-                <Inline
-                  justify="between"
-                  align="start"
-                  gap="md"
-                  className={surfaceChrome.recordHeader}
-                >
-                  <DetailLine label="Credit note" value={refund.creditNoteNo ?? refund.refundId} />
-                  <DetailLine label="Date" value={formatDate(refund.createdAt)} />
-                </Inline>
-                <Grid columns={2} gap="sm">
-                  <DetailLine label="Invoice No" value={refund.invoiceNo} />
-                  <DetailLine label="Customer" value={refund.customerName} />
-                  <DetailLine label="Phone" value={refund.customerPhone} />
-                  <DetailLine label="Items Returned" value={String(refund.totalItemsRefunded)} />
-                  <DetailLine label="Return Amount" value={formatCurrency(refund.refundAmount)} />
-                  {refund.reason ? <DetailLine label="Reason" value={refund.reason} /> : null}
-                </Grid>
-                {refund.refundedItems && refund.refundedItems.length > 0 ? (
-                  <Stack gap="sm" className={surfaceChrome.breakdownWrap}>
-                    <Text
-                      variant="caption"
-                      color="secondary"
-                      weight="semibold"
-                      className={surfaceChrome.sectionLabelSm}
-                    >
-                      Returned items
-                    </Text>
-                    <Box overflow="auto">
-                      <Table className={surfaceChrome.minW320}>
-                        <TableHead>
-                          <TableRow>
-                            <TableHeaderCell>Product</TableHeaderCell>
-                            <TableHeaderCell>Qty</TableHeaderCell>
-                            <TableHeaderCell>Unit price</TableHeaderCell>
-                            <TableHeaderCell>Line refund</TableHeaderCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {refund.refundedItems.map((row, idx) => (
-                            <TableRow key={`${row.inventoryId}-${idx}`}>
-                              <TableCell>
-                                {row.name?.trim() ? row.name : row.inventoryId ?? '—'}
-                              </TableCell>
-                              <TableCell>{row.quantity}</TableCell>
-                              <TableCell>{moneyOrDash(row.priceToRetail)}</TableCell>
-                              <TableCell>{moneyOrDash(row.itemRefundAmount)}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+        {refunds.map((refund) => {
+          const note = creditNoteLabel(refund);
+          const hasNote = Boolean(refund.creditNoteNo?.trim());
+          const invoice = refund.invoiceNo?.trim() || '—';
+          const customer = refund.customerName?.trim() || 'Walk-in customer';
+          const phone = refund.customerPhone?.trim() || '—';
+          const hasLines = Boolean(refund.refundedItems && refund.refundedItems.length > 0);
+
+          return (
+            <Card key={refund.refundId} className={productChrome.historyRecordCard}>
+              <CardBody>
+                <Box className={productChrome.salePickMain}>
+                  <Box className={productChrome.historyRecordHeader}>
+                    <Box className={productChrome.salePickTitleRow}>
+                      <Text as="p" className={productChrome.salePickInvoiceHint}>
+                        Credit note
+                      </Text>
+                      <Text
+                        as="p"
+                        className={cn(
+                          productChrome.salePickTitle,
+                          !hasNote && productChrome.salePickValueMuted,
+                        )}
+                      >
+                        {note}
+                      </Text>
                     </Box>
-                  </Stack>
-                ) : (
-                  <Text
-                    variant="caption"
-                    color="secondary"
-                    className={surfaceChrome.breakdownLegacy}
-                  >
+                    <Text as="p" className={productChrome.historyRecordAmount}>
+                      {formatCurrency(refund.refundAmount)}
+                    </Text>
+                  </Box>
+
+                  <Box className={productChrome.salePickGrid}>
+                    <HistoryField label="Date" value={formatDate(refund.createdAt)} />
+                    <HistoryField label="Invoice" value={invoice} muted={invoice === '—'} />
+                    <HistoryField label="Customer" value={customer} />
+                    <HistoryField label="Phone" value={phone} muted={phone === '—'} />
+                    <HistoryField
+                      label="Items returned"
+                      value={String(refund.totalItemsRefunded ?? 0)}
+                    />
+                    {refund.reason?.trim() ? (
+                      <HistoryField label="Reason" value={refund.reason.trim()} />
+                    ) : null}
+                  </Box>
+                </Box>
+              </CardBody>
+
+              {hasLines ? (
+                <Box className={productChrome.historyItemsPanel}>
+                  <Text as="p" className={productChrome.historyItemsTitle}>
+                    Returned items
+                  </Text>
+                  <Box overflow="auto">
+                    <Table className={cn(surfaceChrome.minW320, productChrome.historyItemsTable)}>
+                      <TableHead>
+                        <TableRow>
+                          <TableHeaderCell>Product</TableHeaderCell>
+                          <TableHeaderCell className={surfaceChrome.numericCell}>
+                            Qty
+                          </TableHeaderCell>
+                          <TableHeaderCell className={surfaceChrome.numericCell}>
+                            Unit price
+                          </TableHeaderCell>
+                          <TableHeaderCell className={surfaceChrome.numericCell}>
+                            Line refund
+                          </TableHeaderCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {(refund.refundedItems ?? []).map((row, idx) => (
+                          <TableRow key={`${row.inventoryId}-${idx}`}>
+                            <TableCell>
+                              <Text weight="medium">
+                                {row.name?.trim() ? row.name : row.inventoryId ?? '—'}
+                              </Text>
+                            </TableCell>
+                            <TableCell className={surfaceChrome.numericCell}>
+                              {row.quantity}
+                            </TableCell>
+                            <TableCell className={surfaceChrome.numericCell}>
+                              {moneyOrDash(row.priceToRetail)}
+                            </TableCell>
+                            <TableCell className={surfaceChrome.numericCell}>
+                              <Text weight="semibold">{moneyOrDash(row.itemRefundAmount)}</Text>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </Box>
+                </Box>
+              ) : (
+                <Box className={productChrome.historyItemsPanel}>
+                  <Text variant="caption" color="secondary">
                     No line-by-line breakdown saved for this return (often older records).
                   </Text>
-                )}
-              </Stack>
-            </CardBody>
-          </Card>
-        ))}
+                </Box>
+              )}
+            </Card>
+          );
+        })}
       </Stack>
 
       <PaginationBar

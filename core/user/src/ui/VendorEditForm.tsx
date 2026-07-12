@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react';
 import type { UpdateVendorDto } from '@inventory-platform/user/types';
-import { FormField, Select, Stack, type SelectOptionDef } from '@inventory-platform/ui-kit';
+import {
+  FormField,
+  FormRow,
+  Select,
+  Stack,
+  Text,
+  surfaceChrome,
+  type SelectOptionDef,
+} from '@inventory-platform/ui-kit';
 
 interface VendorEditFormProps {
   value: UpdateVendorDto;
@@ -35,82 +43,92 @@ export function VendorEditForm({ value, onChange, disabled = false }: VendorEdit
   }, [value.businessType]);
 
   return (
-    <Stack gap="md">
-      <FormField
-        label="Name"
-        value={value.name ?? ''}
-        onChange={(v) => onChange({ ...value, name: v })}
-        disabled={disabled}
-      />
-
-      <FormField
-        label="Contact Phone"
-        type="tel"
-        value={value.contactPhone ?? ''}
-        onChange={(v) => onChange({ ...value, contactPhone: v })}
-        disabled={disabled}
-      />
-
-      <FormField
-        label="Email"
-        type="email"
-        value={value.contactEmail ?? ''}
-        onChange={(v) => onChange({ ...value, contactEmail: v })}
-        disabled={disabled}
-      />
-
-      <FormField
-        label="Address"
-        value={value.address ?? ''}
-        onChange={(v) => onChange({ ...value, address: v })}
-        multiline
-        rows={3}
-        disabled={disabled}
-      />
-
-      <FormField label="Business Type">
-        <Select
-          value={showCustom ? 'OTHER' : value.businessType ?? 'RETAIL'}
-          disabled={disabled}
-          options={BUSINESS_TYPE_OPTIONS}
-          onChange={(e) => {
-            const selected = e.target.value;
-
-            if (selected === 'OTHER') {
-              setShowCustom(true);
-              setCustomType('');
-              onChange({ ...value, businessType: 'OTHER' });
-            } else {
-              setShowCustom(false);
-              setCustomType('');
-              onChange({ ...value, businessType: selected });
-            }
-          }}
-        />
-      </FormField>
-
-      {showCustom ? (
+    <Stack gap="lg">
+      <Stack gap="md">
         <FormField
-          label="Custom business type"
-          value={customType}
-          placeholder="Custom business type"
+          label="Name"
+          value={value.name ?? ''}
+          onChange={(v) => onChange({ ...value, name: v })}
+          placeholder="Vendor name"
           disabled={disabled}
-          onChange={(v) => {
-            setCustomType(v);
-            onChange({
-              ...value,
-              businessType: v.toUpperCase(),
-            });
-          }}
+          required
         />
-      ) : null}
+        <FormRow>
+          <FormField
+            label="Phone"
+            type="tel"
+            value={value.contactPhone ?? ''}
+            onChange={(v) => onChange({ ...value, contactPhone: v })}
+            placeholder="Mobile number"
+            disabled={disabled}
+          />
+          <FormField
+            label="Email"
+            type="email"
+            value={value.contactEmail ?? ''}
+            onChange={(v) => onChange({ ...value, contactEmail: v })}
+            placeholder="name@example.com"
+            disabled={disabled}
+          />
+        </FormRow>
+        <FormField
+          label="Address"
+          value={value.address ?? ''}
+          onChange={(v) => onChange({ ...value, address: v })}
+          multiline
+          rows={2}
+          placeholder="Street, area, city, state"
+          disabled={disabled}
+        />
+      </Stack>
 
-      <FormField
-        label="GSTIN"
-        value={value.gstinUin ?? ''}
-        onChange={(v) => onChange({ ...value, gstinUin: v })}
-        disabled={disabled}
-      />
+      <Stack gap="md">
+        <Text as="h3" className={surfaceChrome.priceEditSectionTitle}>
+          Business
+        </Text>
+        <FormField label="Business type">
+          <Select
+            value={showCustom ? 'OTHER' : value.businessType ?? 'RETAIL'}
+            disabled={disabled}
+            options={BUSINESS_TYPE_OPTIONS}
+            onChange={(e) => {
+              const selected = e.target.value;
+
+              if (selected === 'OTHER') {
+                setShowCustom(true);
+                setCustomType('');
+                onChange({ ...value, businessType: 'OTHER' });
+              } else {
+                setShowCustom(false);
+                setCustomType('');
+                onChange({ ...value, businessType: selected });
+              }
+            }}
+          />
+        </FormField>
+        {showCustom ? (
+          <FormField
+            label="Custom business type"
+            value={customType}
+            placeholder="Enter business type"
+            disabled={disabled}
+            onChange={(v) => {
+              setCustomType(v);
+              onChange({
+                ...value,
+                businessType: v.toUpperCase(),
+              });
+            }}
+          />
+        ) : null}
+        <FormField
+          label="GSTIN"
+          value={value.gstinUin ?? ''}
+          onChange={(v) => onChange({ ...value, gstinUin: v })}
+          placeholder="15-character GSTIN"
+          disabled={disabled}
+        />
+      </Stack>
     </Stack>
   );
 }

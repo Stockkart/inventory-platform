@@ -4,16 +4,15 @@ import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
 import { useAuthStore } from '@inventory-platform/session';
 import {
   Alert,
+  Box,
   Button,
-  Card,
-  CardBody,
   Checkbox,
   Divider,
   FormField,
   Link as UiLink,
   SocialAuthSlot,
-  Stack,
   Text,
+  journeyChrome,
 } from '@inventory-platform/ui-kit';
 
 export function SignupForm() {
@@ -102,17 +101,18 @@ export function SignupForm() {
   const displayError = localError || error;
 
   return (
-    <Card>
-      <CardBody>
-        <Stack gap="md" width="full">
-          <Stack gap="xs" align="center">
-            <Text variant="heading1">Create Account</Text>
-            <Text color="secondary">Get started with StockKart today</Text>
-          </Stack>
+    <Box className={journeyChrome.authShell}>
+      <Box className={journeyChrome.authCard}>
+        <Box className={journeyChrome.authCardBody}>
+          <Box className={journeyChrome.authHeader}>
+            <Text as="h1" className={journeyChrome.authTitle}>
+              Create account
+            </Text>
+          </Box>
 
           {displayError ? <Alert variant="danger">{displayError}</Alert> : null}
 
-          <Stack gap="md" width="full">
+          <Box className={journeyChrome.authForm}>
             <FormField
               label="Full Name"
               id="name"
@@ -179,39 +179,38 @@ export function SignupForm() {
             />
 
             <Button
-              variant="solid"
+              variant="brand"
+              className={journeyChrome.authSubmit}
               onClick={() => void handleSubmit()}
               disabled={isLoading}
               loading={isLoading}
               fullWidth
             >
-              {isLoading ? 'Creating Account...' : 'Create Account'}
+              {isLoading ? 'Creating account…' : 'Create Account'}
             </Button>
-          </Stack>
 
-          <Divider label="or" />
+            <Divider label="or" />
 
-          <SocialAuthSlot>
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={handleGoogleError}
-              useOneTap={false}
-              auto_select={false}
-              theme="outline"
-              size="large"
-              type="standard"
-              shape="pill"
-              ux_mode="popup"
-            />
-          </SocialAuthSlot>
+            <SocialAuthSlot>
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                useOneTap={false}
+                auto_select={false}
+                theme="outline"
+                size="large"
+                type="standard"
+                shape="pill"
+                ux_mode="popup"
+              />
+            </SocialAuthSlot>
+          </Box>
 
-          <Stack gap="xs" align="center">
-            <Text color="secondary">
-              Already have an account? <Link to="/login">Sign in</Link>
-            </Text>
-          </Stack>
-        </Stack>
-      </CardBody>
-    </Card>
+          <Box className={journeyChrome.authFooter}>
+            Already have an account? <Link to="/login">Sign in</Link>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 }

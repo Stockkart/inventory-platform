@@ -86,9 +86,6 @@ export function ScanSellQuotationStack({
             <Inline
               key={q.purchaseId}
               align="stretch"
-              border
-              rounded="lg"
-              bg={isActive ? 'muted' : 'surface'}
               className={cn(
                 productChrome.quotationTab,
                 isActive && productChrome.quotationTabActive,

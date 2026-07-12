@@ -2,14 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Badge,
+  Box,
   Button,
-  Card,
-  CardBody,
   CenteredLoader,
   Checkbox,
   FormField,
   Grid,
-  Inline,
   Input,
   Stack,
   Table,
@@ -18,6 +16,7 @@ import {
   TableHead,
   TableHeaderCell,
   TableRow,
+  chartChrome,
 } from '@inventory-platform/ui-kit';
 import { useCustomerAnalyticsQuery } from '../queries/hooks';
 import { AnalyticsCollapsibleSection } from './AnalyticsCollapsibleSection';
@@ -165,9 +164,9 @@ export function CustomerAnalytics() {
 
   return (
     <Stack gap="md">
-      <Card>
-        <CardBody>
-          <Inline gap="md">
+      <Box className={chartChrome.filterCard}>
+        <Box className={chartChrome.filterBody}>
+          <Box className={chartChrome.filterGrid}>
             <FormField label="Start Date" htmlFor="customerStartDate">
               <Input
                 id="customerStartDate"
@@ -215,20 +214,21 @@ export function CustomerAnalytics() {
                 onChange={(e) => handleFilterChange('topN', parseInt(e.target.value, 10) || 10)}
               />
             </FormField>
+          </Box>
 
+          <Box className={chartChrome.filterActions}>
             <Checkbox
               id="includeAll"
-              label="Include All Customers"
+              label="Include all customers"
               checked={localFilters.includeAll}
               onChange={(e) => handleFilterChange('includeAll', e.target.checked)}
             />
-
             <Button variant="solid" onClick={handleApplyFilters}>
               Apply Filters
             </Button>
-          </Inline>
-        </CardBody>
-      </Card>
+          </Box>
+        </Box>
+      </Box>
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
 

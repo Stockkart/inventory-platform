@@ -1,4 +1,4 @@
-import { Button, FormField, Inline, Input, Stack, Text } from '@inventory-platform/ui-kit';
+import { Button, Inline, Input, PageHeader, accountingChrome } from '@inventory-platform/ui-kit';
 
 export interface GstrDownloadAction {
   label: string;
@@ -11,9 +11,7 @@ export interface GstrDownloadAction {
 }
 
 export interface GstrReportHeaderProps {
-  title: string;
   description: string;
-  shopInfo?: string;
   periodId: string;
   period: string;
   onPeriodChange: (period: string) => void;
@@ -22,9 +20,7 @@ export interface GstrReportHeaderProps {
 }
 
 export function GstrReportHeader({
-  title,
   description,
-  shopInfo,
   periodId,
   period,
   onPeriodChange,
@@ -32,44 +28,33 @@ export function GstrReportHeader({
   downloads = [],
 }: GstrReportHeaderProps) {
   return (
-    <Inline gap="md" align="start" justify="between" flexWrap>
-      <Stack gap="xs" flex="1" minWidth="0">
-        <Text variant="heading2">{title}</Text>
-        <Text color="secondary">{description}</Text>
-        {shopInfo ? (
-          <Text variant="caption" color="secondary">
-            {shopInfo}
-          </Text>
-        ) : null}
-      </Stack>
-      <Inline gap="md" align="center" flexWrap flexShrink={0}>
-        <FormField label="Period" htmlFor={periodId}>
+    <PageHeader
+      description={description}
+      actions={
+        <Inline gap="sm" align="center">
           <Input
             id={periodId}
+            aria-label="Report period"
             type="month"
             value={period}
             onChange={(e) => onPeriodChange(e.target.value)}
             disabled={periodDisabled}
+            className={accountingChrome.tbAsOfInput}
           />
-        </FormField>
-        {downloads.length > 0 ? (
-          <Inline gap="sm" flexWrap>
-            {downloads.map((action) => (
-              <Button
-                key={action.label}
-                type="button"
-                variant={action.variant ?? 'solid'}
-                size="sm"
-                onClick={action.onClick}
-                disabled={action.disabled}
-                title={action.title}
-              >
-                {action.loading ? action.loadingLabel : action.label}
-              </Button>
-            ))}
-          </Inline>
-        ) : null}
-      </Inline>
-    </Inline>
+          {downloads.map((action) => (
+            <Button
+              key={action.label}
+              type="button"
+              variant={action.variant ?? 'solid'}
+              onClick={action.onClick}
+              disabled={action.disabled}
+              title={action.title}
+            >
+              {action.loading ? action.loadingLabel : action.label}
+            </Button>
+          ))}
+        </Inline>
+      }
+    />
   );
 }

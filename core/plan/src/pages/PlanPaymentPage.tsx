@@ -101,10 +101,7 @@ export function PlanPaymentPage() {
 
   return (
     <Stack gap="md" width="full" maxWidth="xl" mx="auto">
-      <PageHeader
-        title="Payment"
-        description="Review your plan and pay with Razorpay (UPI, card, net banking, and more)"
-      />
+      <PageHeader description="Review your plan and pay with Razorpay (UPI, card, net banking, and more)" />
 
       <Stack gap="md">
         {selectedPlan ? (

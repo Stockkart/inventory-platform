@@ -1,12 +1,9 @@
-import { useState } from 'react';
-import { Alert, Card, CardBody, PageHeader, Stack } from '@inventory-platform/ui-kit';
+import { Alert, PageHeader, Stack } from '@inventory-platform/ui-kit';
 import { useAuthStore } from '@inventory-platform/session';
 import { ShopUsersList } from '../ui';
 
 export function ShopUsersPage() {
   const { user } = useAuthStore();
-  const [refreshKey, setRefreshKey] = useState(0);
-
   const shopId = user?.shopId;
 
   if (!shopId) {
@@ -27,17 +24,8 @@ export function ShopUsersPage() {
 
   return (
     <Stack gap="md" width="full" maxWidth="xl" mx="auto">
-      <PageHeader title="Shop Users" description="View all users associated with your shop" />
-
-      <Card>
-        <CardBody>
-          <ShopUsersList
-            key={refreshKey}
-            shopId={shopId}
-            onUserChange={() => setRefreshKey((prev) => prev + 1)}
-          />
-        </CardBody>
-      </Card>
+      <PageHeader description="View everyone associated with your shop — owners, members, and invites." />
+      <ShopUsersList shopId={shopId} />
     </Stack>
   );
 }

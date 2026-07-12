@@ -18,7 +18,8 @@ import {
   EmptyState,
   FormField,
   FormRow,
-  Grid,
+  Icon,
+  IconButton,
   Inline,
   Input,
   PageHeader,
@@ -36,6 +37,7 @@ import {
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { useCapabilityFeatureGuard } from '@inventory-platform/routing';
+import { ChevronRight, Minus, Plus } from 'lucide-react';
 import {
   PaymentMethodSplit,
   VendorReturnHistoryList,
@@ -265,17 +267,40 @@ function buildInvoiceSearchPattern(
   return escapeRegExp(ven);
 }
 
-function DetailLine({ label, value }: { label: string; value: string }) {
+function InvoicePickField({
+  label,
+  value,
+  strong,
+  muted,
+}: {
+  label: string;
+  value: string;
+  strong?: boolean;
+  muted?: boolean;
+}) {
   return (
-    <Inline gap="xs">
-      <Text variant="caption" color="secondary" weight="semibold">
-        {label}:
+    <Box className={productChrome.salePickField}>
+      <Text as="p" className={productChrome.salePickLabel}>
+        {label}
       </Text>
-      <Text variant="caption" color="secondary">
+      <Text
+        as="p"
+        className={cn(
+          productChrome.salePickValue,
+          strong && productChrome.salePickValueStrong,
+          muted && productChrome.salePickValueMuted,
+        )}
+      >
         {value}
       </Text>
-    </Inline>
+    </Box>
   );
+}
+
+function invoiceLabel(inv: { invoiceNo?: string | null; synthetic?: boolean | null }): string {
+  const no = inv.invoiceNo?.trim();
+  if (no) return inv.synthetic ? `${no} (auto)` : no;
+  return 'No invoice number';
 }
 
 export function VendorReturnPage() {
@@ -456,7 +481,8 @@ export function VendorReturnPage() {
     let grand = 0;
     let linesWithQty = 0;
     for (const line of stockLines) {
-      const id = line.inventoryId!;
+      const id = line.inventoryId;
+      if (!id) continue;
       const raw = (qtyByInventoryId[id] ?? '').trim();
       if (raw === '') continue;
       const n = Number.parseInt(raw, 10);
@@ -492,7 +518,8 @@ export function VendorReturnPage() {
 
     const items: { inventoryId: string; baseQuantityReturned: number }[] = [];
     for (const line of stockLines) {
-      const id = line.inventoryId!;
+      const id = line.inventoryId;
+      if (!id) continue;
       const raw = (qtyByInventoryId[id] ?? '').trim();
       if (raw === '') continue;
       const n = Number.parseInt(raw, 10);
@@ -581,12 +608,7 @@ export function VendorReturnPage() {
 
   return (
     <Stack gap="md" maxWidth="xl" mx="auto">
-      <PageHeader
-        title="Return stock to supplier"
-        description="Find a supplier purchase invoice, then enter how many selling units you are sending back—the same counting unit as stock on the shelf (like “Return to customer”). Credit notes appear in GSTR‑2 CDNR / CDNUR when applicable."
-      />
-
-      <Inline gap="none" borderBottom>
+      <Inline gap="none" className={productChrome.processTabBar}>
         <Button
           type="button"
           size="sm"
@@ -617,15 +639,12 @@ export function VendorReturnPage() {
         </Button>
       </Inline>
 
+      <PageHeader description="Find a supplier purchase invoice, then enter how many selling units you are sending back—the same counting unit as stock on the shelf (like “Return to customer”). Credit notes appear in GSTR‑2 CDNR / CDNUR when applicable." />
+
       {activeTab === 'history' ? (
         <Card>
           <CardBody>
-            <Stack gap="md">
-              <Text variant="heading3" weight="semibold">
-                Supplier return history
-              </Text>
-              <VendorReturnHistoryList refreshTrigger={historyRefreshTrigger} />
-            </Stack>
+            <VendorReturnHistoryList refreshTrigger={historyRefreshTrigger} />
           </CardBody>
         </Card>
       ) : null}
@@ -671,7 +690,12 @@ export function VendorReturnPage() {
                     />
                   </FormRow>
                   <Inline gap="sm">
-                    <Button type="button" disabled={searchLoading} onClick={handleSearch}>
+                    <Button
+                      type="button"
+                      variant="solid"
+                      disabled={searchLoading}
+                      onClick={handleSearch}
+                    >
                       {searchLoading ? 'Searching…' : 'Search invoices'}
                     </Button>
                     {hasActiveSearch ? (
@@ -711,73 +735,98 @@ export function VendorReturnPage() {
                 ) : (
                   <>
                     <Stack gap="md">
-                      {invoices.map((inv) => (
-                        <Stack key={inv.id} gap="sm">
+                      {invoices.map((inv) => {
+                        const isSelected = selected?.id === inv.id;
+                        const invNo = invoiceLabel(inv);
+                        const vendorNameLabel = inv.vendorName?.trim() || '—';
+                        return (
                           <Card
+                            key={inv.id}
                             className={cn(
-                              productChrome.clickableCard,
-                              selected?.id === inv.id && productChrome.selectedCard,
+                              !isSelected && productChrome.clickableCard,
+                              isSelected && productChrome.selectedCard,
                             )}
-                            onClick={() => void selectInvoice(inv)}
-                            role="button"
-                            tabIndex={0}
-                            onKeyDown={(ev) => {
-                              if (ev.key === 'Enter' || ev.key === ' ') {
-                                ev.preventDefault();
-                                void selectInvoice(inv);
-                              }
-                            }}
                           >
-                            <CardBody>
-                              <Inline justify="between" mb="sm">
-                                <Inline gap="xs">
-                                  <Text variant="caption" weight="semibold">
-                                    Invoice:
-                                  </Text>
-                                  <Text variant="caption">{inv.invoiceNo}</Text>
-                                  {inv.synthetic ? (
-                                    <Text variant="caption" color="secondary">
-                                      (auto no.)
-                                    </Text>
-                                  ) : null}
-                                </Inline>
-                                <Inline gap="xs">
-                                  <Text variant="caption" weight="semibold">
-                                    Date:
-                                  </Text>
-                                  <Text variant="caption" color="secondary">
-                                    {formatDate(inv.invoiceDate)}
-                                  </Text>
-                                </Inline>
-                              </Inline>
-                              <Grid columns={2} gap="sm">
-                                <DetailLine label="Vendor" value={inv.vendorName?.trim() || '—'} />
-                                <DetailLine label="Lines" value={String(inv.lineCount)} />
-                                <DetailLine label="Total" value={formatMoney(inv.invoiceTotal)} />
-                              </Grid>
-                            </CardBody>
-                          </Card>
-
-                          {selected?.id === inv.id && detail ? (
-                            <Card className={productChrome.mtXs}>
+                            <Box
+                              className={productChrome.salePickHeader}
+                              role="button"
+                              tabIndex={0}
+                              aria-pressed={isSelected}
+                              aria-label={`Select invoice ${invNo}`}
+                              onClick={() => void selectInvoice(inv)}
+                              onKeyDown={(ev) => {
+                                if (ev.key === 'Enter' || ev.key === ' ') {
+                                  ev.preventDefault();
+                                  void selectInvoice(inv);
+                                }
+                              }}
+                            >
                               <CardBody>
-                                <Stack gap="md">
-                                  <Text variant="heading3" weight="semibold">
-                                    Select items to return
-                                  </Text>
-                                  <Box padding="md" bg="surface" rounded="md">
-                                    <Grid columns={3} gap="sm">
-                                      <DetailLine label="Invoice" value={detail.invoiceNo} />
-                                      <DetailLine
-                                        label="Vendor"
-                                        value={detail.vendorName?.trim() || '—'}
+                                <Box className={productChrome.salePickRow}>
+                                  <Box className={productChrome.salePickMain}>
+                                    <Box className={productChrome.salePickTitleRow}>
+                                      <Text as="p" className={productChrome.salePickInvoiceHint}>
+                                        Invoice
+                                      </Text>
+                                      <Text
+                                        as="p"
+                                        className={cn(
+                                          productChrome.salePickTitle,
+                                          !inv.invoiceNo?.trim() &&
+                                            productChrome.salePickValueMuted,
+                                        )}
+                                      >
+                                        {invNo}
+                                      </Text>
+                                    </Box>
+                                    <Box className={productChrome.salePickGrid}>
+                                      <InvoicePickField
+                                        label="Date"
+                                        value={formatDate(inv.invoiceDate)}
                                       />
-                                      <DetailLine
-                                        label="Dated"
-                                        value={formatDate(detail.invoiceDate)}
+                                      <InvoicePickField label="Vendor" value={vendorNameLabel} />
+                                      <InvoicePickField
+                                        label="Lines"
+                                        value={String(inv.lineCount)}
                                       />
-                                    </Grid>
+                                      <InvoicePickField
+                                        label="Total"
+                                        value={formatMoney(inv.invoiceTotal)}
+                                        strong
+                                      />
+                                    </Box>
                                   </Box>
+                                  <Box
+                                    className={cn(
+                                      productChrome.salePickAction,
+                                      isSelected && productChrome.salePickActionMuted,
+                                    )}
+                                  >
+                                    <Text as="span" variant="caption" weight="semibold">
+                                      {isSelected ? 'Selected' : 'Select'}
+                                    </Text>
+                                    <Icon icon={ChevronRight} size="sm" />
+                                  </Box>
+                                </Box>
+                              </CardBody>
+                            </Box>
+
+                            {isSelected && detail ? (
+                              <Box
+                                className={productChrome.returnDetailPanel}
+                                onClick={(ev) => ev.stopPropagation()}
+                                onKeyDown={(ev) => ev.stopPropagation()}
+                              >
+                                <Stack gap="md">
+                                  <Stack gap="xs" align="start">
+                                    <Text variant="heading3" weight="semibold">
+                                      Select items to return
+                                    </Text>
+                                    <Text variant="caption" color="secondary">
+                                      Quantities use the same selling unit as current stock.
+                                      Estimated debit note updates as you go.
+                                    </Text>
+                                  </Stack>
 
                                   {stockLines.length === 0 ? (
                                     <Text
@@ -799,162 +848,191 @@ export function VendorReturnPage() {
                                           color="secondary"
                                           className={productChrome.helperLine}
                                         >
-                                          Quantities use the same{' '}
-                                          <Text as="span" weight="semibold">
-                                            selling unit
-                                          </Text>{' '}
-                                          as{' '}
-                                          <Text as="span" weight="semibold">
-                                            Current qty
-                                          </Text>{' '}
-                                          (shelf / POS). Return qty cannot exceed current qty when
-                                          that figure is loaded; if base stock on the lot is
-                                          tighter, the allowed maximum is lower than current qty.{' '}
-                                          <Text as="span" weight="semibold">
-                                            Est. debit note
-                                          </Text>{' '}
-                                          follows cost × return qty (ex-GST), with CGST/SGST added
-                                          on top — matching the supplier credit note logic.
+                                          Return qty cannot exceed current qty when that figure is
+                                          loaded. Est. debit note follows cost × return qty
+                                          (ex-GST), with CGST/SGST added on top.
                                         </Text>
                                       )}
-                                      <Table>
-                                        <TableHead>
-                                          <TableRow>
-                                            <TableHeaderCell>Item name</TableHeaderCell>
-                                            <TableHeaderCell>MRP</TableHeaderCell>
-                                            <TableHeaderCell>Cost</TableHeaderCell>
-                                            <TableHeaderCell>Qty on bill</TableHeaderCell>
-                                            <TableHeaderCell>Current qty</TableHeaderCell>
-                                            <TableHeaderCell>GST rates</TableHeaderCell>
-                                            <TableHeaderCell className={surfaceChrome.numericCell}>
-                                              Est. debit note
-                                            </TableHeaderCell>
-                                            <TableHeaderCell>Return qty</TableHeaderCell>
-                                          </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                          {stockLines.map((line) => {
-                                            const id = line.inventoryId!;
-                                            const invRow = inventoryById[id];
-                                            const maxSell = maxReturnableSellUnits(
-                                              invRow,
-                                              line.count,
-                                            );
-                                            const rqRaw = (qtyByInventoryId[id] ?? '').trim();
-                                            const rqParsed = Number.parseInt(rqRaw, 10);
-                                            const rq =
-                                              rqRaw !== '' &&
-                                              Number.isFinite(rqParsed) &&
-                                              rqParsed > 0
-                                                ? rqParsed
-                                                : 0;
-                                            const unitCostRaw = Number(
-                                              line.costPrice ?? invRow?.costPrice,
-                                            );
-                                            const debitEst =
-                                              rq > 0 &&
-                                              Number.isFinite(unitCostRaw) &&
-                                              unitCostRaw >= 0
-                                                ? estimateDebitNoteLine(rq, unitCostRaw, invRow)
-                                                : null;
-                                            const debitTitle =
-                                              debitEst != null
-                                                ? [
-                                                    `Taxable ${formatMoney(debitEst.taxable)}`,
-                                                    debitEst.cgst > 0 || debitEst.sgst > 0
-                                                      ? `CGST ${formatMoney(
-                                                          debitEst.cgst,
-                                                        )}, SGST ${formatMoney(debitEst.sgst)}`
-                                                      : 'No GST on row',
-                                                    `Total ${formatMoney(debitEst.total)}`,
-                                                  ].join(' · ')
-                                                : undefined;
-                                            return (
-                                              <TableRow key={`${line.lineIndex}-${id}`}>
-                                                <TableCell>{line.name}</TableCell>
-                                                <TableCell>
-                                                  {formatMoney(invRow?.maximumRetailPrice)}
-                                                </TableCell>
-                                                <TableCell>
-                                                  {formatMoney(line.costPrice ?? invRow?.costPrice)}
-                                                </TableCell>
-                                                <TableCell>{line.count ?? '—'}</TableCell>
-                                                <TableCell>
-                                                  {formatCurrentSellQtyDisplay(invRow)}
-                                                </TableCell>
-                                                <TableCell>{formatGstRatesLabel(invRow)}</TableCell>
-                                                <TableCell
-                                                  className={surfaceChrome.numericCell}
-                                                  title={debitTitle}
-                                                >
-                                                  {debitEst != null
-                                                    ? formatMoney(debitEst.total)
-                                                    : '—'}
-                                                </TableCell>
-                                                <TableCell>
-                                                  <Input
-                                                    type="number"
-                                                    min={0}
-                                                    max={maxSell > 0 ? maxSell : undefined}
-                                                    className={productChrome.qtyInputNarrow}
-                                                    inputMode="numeric"
-                                                    placeholder="0"
-                                                    title={
-                                                      maxSell > 0
-                                                        ? `Maximum return: ${maxSell} (≤ current qty / stock)`
-                                                        : undefined
-                                                    }
-                                                    disabled={
-                                                      returnRecording || detailBusy || maxSell <= 0
-                                                    }
-                                                    value={qtyByInventoryId[id] ?? ''}
-                                                    onChange={(ev) => {
-                                                      const raw = ev.target.value.trim();
-                                                      if (raw === '') {
-                                                        setQtyByInventoryId((prev) => ({
-                                                          ...prev,
-                                                          [id]: '',
-                                                        }));
-                                                        return;
-                                                      }
-                                                      const num = Number.parseInt(raw, 10);
-                                                      if (!Number.isFinite(num)) {
-                                                        return;
-                                                      }
-                                                      const clampedLow = Math.max(0, num);
-                                                      const capped =
-                                                        maxSell > 0
-                                                          ? Math.min(clampedLow, maxSell)
-                                                          : clampedLow;
-                                                      setQtyByInventoryId((prev) => ({
-                                                        ...prev,
-                                                        [id]: String(capped),
-                                                      }));
-                                                    }}
-                                                    aria-label={`Return quantity selling units for ${line.name}; maximum ${maxSell}`}
-                                                  />
-                                                </TableCell>
-                                              </TableRow>
-                                            );
-                                          })}
-                                        </TableBody>
-                                      </Table>
+                                      <Box overflow="auto">
+                                        <Table>
+                                          <TableHead>
+                                            <TableRow>
+                                              <TableHeaderCell>Item</TableHeaderCell>
+                                              <TableHeaderCell>MRP</TableHeaderCell>
+                                              <TableHeaderCell>Cost</TableHeaderCell>
+                                              <TableHeaderCell>On bill</TableHeaderCell>
+                                              <TableHeaderCell>Current qty</TableHeaderCell>
+                                              <TableHeaderCell>GST</TableHeaderCell>
+                                              <TableHeaderCell
+                                                className={surfaceChrome.numericCell}
+                                              >
+                                                Est. debit note
+                                              </TableHeaderCell>
+                                              <TableHeaderCell>Return qty</TableHeaderCell>
+                                            </TableRow>
+                                          </TableHead>
+                                          <TableBody>
+                                            {stockLines.map((line) => {
+                                              const id = line.inventoryId;
+                                              if (!id) return null;
+                                              const invRow = inventoryById[id];
+                                              const maxSell = maxReturnableSellUnits(
+                                                invRow,
+                                                line.count,
+                                              );
+                                              const rqRaw = (qtyByInventoryId[id] ?? '').trim();
+                                              const rqParsed = Number.parseInt(rqRaw, 10);
+                                              const rq =
+                                                rqRaw !== '' &&
+                                                Number.isFinite(rqParsed) &&
+                                                rqParsed > 0
+                                                  ? rqParsed
+                                                  : 0;
+                                              const unitCostRaw = Number(
+                                                line.costPrice ?? invRow?.costPrice,
+                                              );
+                                              const debitEst =
+                                                rq > 0 &&
+                                                Number.isFinite(unitCostRaw) &&
+                                                unitCostRaw >= 0
+                                                  ? estimateDebitNoteLine(rq, unitCostRaw, invRow)
+                                                  : null;
+                                              const debitTitle =
+                                                debitEst != null
+                                                  ? [
+                                                      `Taxable ${formatMoney(debitEst.taxable)}`,
+                                                      debitEst.cgst > 0 || debitEst.sgst > 0
+                                                        ? `CGST ${formatMoney(
+                                                            debitEst.cgst,
+                                                          )}, SGST ${formatMoney(debitEst.sgst)}`
+                                                        : 'No GST on row',
+                                                      `Total ${formatMoney(debitEst.total)}`,
+                                                    ].join(' · ')
+                                                  : undefined;
+
+                                              const setQty = (next: number) => {
+                                                const clampedLow = Math.max(0, Math.floor(next));
+                                                const capped =
+                                                  maxSell > 0
+                                                    ? Math.min(clampedLow, maxSell)
+                                                    : clampedLow;
+                                                setQtyByInventoryId((prev) => ({
+                                                  ...prev,
+                                                  [id]: capped === 0 ? '' : String(capped),
+                                                }));
+                                              };
+
+                                              return (
+                                                <TableRow key={`${line.lineIndex}-${id}`}>
+                                                  <TableCell>
+                                                    <Text weight="medium">{line.name}</Text>
+                                                  </TableCell>
+                                                  <TableCell>
+                                                    {formatMoney(invRow?.maximumRetailPrice)}
+                                                  </TableCell>
+                                                  <TableCell>
+                                                    {formatMoney(
+                                                      line.costPrice ?? invRow?.costPrice,
+                                                    )}
+                                                  </TableCell>
+                                                  <TableCell>{line.count ?? '—'}</TableCell>
+                                                  <TableCell>
+                                                    {formatCurrentSellQtyDisplay(invRow)}
+                                                  </TableCell>
+                                                  <TableCell>
+                                                    {formatGstRatesLabel(invRow)}
+                                                  </TableCell>
+                                                  <TableCell
+                                                    className={surfaceChrome.numericCell}
+                                                    title={debitTitle}
+                                                  >
+                                                    {debitEst != null
+                                                      ? formatMoney(debitEst.total)
+                                                      : '—'}
+                                                  </TableCell>
+                                                  <TableCell>
+                                                    <Box className={productChrome.qtyStepper}>
+                                                      <IconButton
+                                                        type="button"
+                                                        size="sm"
+                                                        label={`Decrease return qty for ${line.name}`}
+                                                        className={productChrome.qtyStepperBtn}
+                                                        disabled={
+                                                          returnRecording || detailBusy || rq <= 0
+                                                        }
+                                                        onClick={() => setQty(rq - 1)}
+                                                      >
+                                                        <Icon icon={Minus} size="sm" />
+                                                      </IconButton>
+                                                      <Input
+                                                        type="number"
+                                                        min={0}
+                                                        max={maxSell > 0 ? maxSell : undefined}
+                                                        className={productChrome.qtyStepperInput}
+                                                        inputMode="numeric"
+                                                        placeholder="0"
+                                                        title={
+                                                          maxSell > 0
+                                                            ? `Maximum return: ${maxSell}`
+                                                            : undefined
+                                                        }
+                                                        disabled={
+                                                          returnRecording ||
+                                                          detailBusy ||
+                                                          maxSell <= 0
+                                                        }
+                                                        value={qtyByInventoryId[id] ?? ''}
+                                                        onChange={(ev) => {
+                                                          const raw = ev.target.value.trim();
+                                                          if (raw === '') {
+                                                            setQtyByInventoryId((prev) => ({
+                                                              ...prev,
+                                                              [id]: '',
+                                                            }));
+                                                            return;
+                                                          }
+                                                          const num = Number.parseInt(raw, 10);
+                                                          if (!Number.isFinite(num)) return;
+                                                          setQty(num);
+                                                        }}
+                                                        aria-label={`Return quantity for ${line.name}; maximum ${maxSell}`}
+                                                      />
+                                                      <IconButton
+                                                        type="button"
+                                                        size="sm"
+                                                        label={`Increase return qty for ${line.name}`}
+                                                        className={productChrome.qtyStepperBtn}
+                                                        disabled={
+                                                          returnRecording ||
+                                                          detailBusy ||
+                                                          maxSell <= 0 ||
+                                                          rq >= maxSell
+                                                        }
+                                                        onClick={() => setQty(rq + 1)}
+                                                      >
+                                                        <Icon icon={Plus} size="sm" />
+                                                      </IconButton>
+                                                    </Box>
+                                                  </TableCell>
+                                                </TableRow>
+                                              );
+                                            })}
+                                          </TableBody>
+                                        </Table>
+                                      </Box>
                                       {returnDebitNoteEstimate.linesWithQty > 0 ? (
-                                        <Box mt="sm">
-                                          <Alert variant="info" role="status">
-                                            <Text as="span" weight="semibold">
-                                              Estimated debit note total (incl. GST):
-                                            </Text>{' '}
-                                            {formatMoney(returnDebitNoteEstimate.grandTotal)}
-                                            <Text
-                                              variant="caption"
-                                              color="secondary"
-                                              className={productChrome.blockHint}
-                                            >
-                                              Per-line breakdown on hover · final amount set when
-                                              you record the return.
+                                        <Box
+                                          padding="md"
+                                          bg="surface"
+                                          rounded="md"
+                                          className={productChrome.estimateBar}
+                                        >
+                                          <Inline justify="between" align="center">
+                                            <Text>Estimated debit note total</Text>
+                                            <Text weight="semibold" variant="title">
+                                              {formatMoney(returnDebitNoteEstimate.grandTotal)}
                                             </Text>
-                                          </Alert>
+                                          </Inline>
                                         </Box>
                                       ) : null}
                                     </Stack>
@@ -1005,6 +1083,7 @@ export function VendorReturnPage() {
 
                                   <Button
                                     type="button"
+                                    variant="solid"
                                     fullWidth
                                     disabled={!canRecordReturn || stockLines.length === 0}
                                     onClick={() => void submitReturn()}
@@ -1012,11 +1091,11 @@ export function VendorReturnPage() {
                                     {returnRecording ? 'Recording…' : 'Record return to supplier'}
                                   </Button>
                                 </Stack>
-                              </CardBody>
-                            </Card>
-                          ) : null}
-                        </Stack>
-                      ))}
+                              </Box>
+                            ) : null}
+                          </Card>
+                        );
+                      })}
                     </Stack>
                     <PaginationBar
                       page={page}

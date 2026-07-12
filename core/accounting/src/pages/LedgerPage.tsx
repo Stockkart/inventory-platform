@@ -22,6 +22,7 @@ import {
   TableLoadingRow,
   TableRow,
   Text,
+  cn,
   accountingChrome,
 } from '@inventory-platform/ui-kit';
 import { accountingApi } from '../api/accounting.api';
@@ -33,7 +34,7 @@ import type {
   TrialBalanceRow,
 } from '@inventory-platform/accounting/types';
 import { AccountingTabs } from '../ui/AccountingTabs';
-import { formatDate, formatMoney } from '../model/format';
+import { formatDateShort, formatJournalSource, formatMoney, formatTurnover } from '../model/format';
 import {
   acctItemActiveStyle,
   acctItemBalanceMutedStyle,
@@ -43,7 +44,6 @@ import {
   acctItemStyle,
   ledgerLayoutStyle,
 } from '../ui/accountingStyles';
-import { numColBoldStyle, numColStyle } from '../ui/tabNav';
 
 const TYPE_ORDER: AccountType[] = ['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE'];
 
@@ -172,16 +172,13 @@ export function LedgerPage() {
 
   const selected = data?.account;
   const selectedBalance = selected ? balances.get(selected.id) : undefined;
+  const closing = selectedBalance ? netBalance(selectedBalance) : 0;
 
   return (
     <Stack gap="md">
-      <Stack gap="md">
-        <PageHeader
-          title="Ledger"
-          description="Every account in your books. Pick one to see its postings with a running balance on its normal side."
-        />
-        <AccountingTabs />
-      </Stack>
+      <AccountingTabs />
+
+      <PageHeader description="Pick an account to see its running balance and every posting that touched it." />
 
       <Box className={ledgerLayoutStyle(compactLayout)}>
         <Card className={accountingChrome.sidebarScrollCard}>
@@ -213,8 +210,8 @@ export function LedgerPage() {
                     const rows = grouped[t];
                     if (rows.length === 0) return null;
                     return (
-                      <Stack key={t} gap="xs">
-                        <Text variant="label" weight="semibold">
+                      <Stack key={t} gap="none">
+                        <Text as="h3" className={accountingChrome.ledgerGroupTitle}>
                           {TYPE_LABEL[t]}
                         </Text>
                         {rows.map((account) => {
@@ -223,6 +220,7 @@ export function LedgerPage() {
                           const hasActivity =
                             !!bal && (bal.debitTurnover > 0 || bal.creditTurnover > 0);
                           const active = account.id === accountId;
+                          const balanceMuted = !hasActivity || net === 0;
                           return (
                             <Button
                               key={account.id}
@@ -230,22 +228,25 @@ export function LedgerPage() {
                               variant="ghost"
                               size="sm"
                               fullWidth
-                              className={active ? acctItemActiveStyle : acctItemStyle}
+                              align="start"
+                              title={`${account.code} · ${account.name}`}
+                              className={cn(acctItemStyle, active && acctItemActiveStyle)}
                               onClick={() => openAccount(account.id)}
                             >
-                              <Stack gap="none" minWidth="0">
+                              <Box className={accountingChrome.acctItemMain}>
                                 <Text as="span" className={acctItemCodeStyle}>
                                   {account.code}
                                 </Text>
                                 <Text as="span" className={acctItemLabelStyle}>
                                   {account.name}
                                 </Text>
-                              </Stack>
+                              </Box>
                               <Text
                                 as="span"
-                                className={
-                                  hasActivity ? acctItemBalanceStyle : acctItemBalanceMutedStyle
-                                }
+                                className={cn(
+                                  balanceMuted ? acctItemBalanceMutedStyle : acctItemBalanceStyle,
+                                  hasActivity && net < 0 && accountingChrome.acctItemBalanceNeg,
+                                )}
                               >
                                 {hasActivity ? formatMoney(net) : '—'}
                               </Text>
@@ -255,7 +256,7 @@ export function LedgerPage() {
                       </Stack>
                     );
                   })}
-                  <Inline justify="between">
+                  <Inline justify="between" align="center">
                     <Text variant="caption" color="secondary">
                       {accounts.length} accounts
                     </Text>
@@ -279,18 +280,35 @@ export function LedgerPage() {
             <CardBody>
               {selected ? (
                 <Stack gap="md">
-                  <Stack gap="xs">
-                    <Text variant="heading3" weight="semibold">
-                      {selected.code} · {selected.name}
-                    </Text>
-                    <Text color="secondary" variant="caption">
-                      {TYPE_LABEL[selected.type]} · Normal balance {selected.normalBalance}
-                      {selectedBalance
-                        ? ` · Closing ${formatMoney(netBalance(selectedBalance))}`
-                        : ''}
-                    </Text>
-                  </Stack>
-                  <Inline gap="sm">
+                  <Inline justify="between" align="start" gap="md">
+                    <Stack gap="sm">
+                      <Text as="h2" className={accountingChrome.ledgerAccountTitle}>
+                        {selected.code} · {selected.name}
+                      </Text>
+                      <Inline gap="sm" align="center">
+                        <Badge variant="neutral">{TYPE_LABEL[selected.type]}</Badge>
+                        <Badge variant="info">
+                          Normal {selected.normalBalance === 'DEBIT' ? 'debit' : 'credit'}
+                        </Badge>
+                      </Inline>
+                    </Stack>
+                    <Box className={accountingChrome.ledgerClosing}>
+                      <Text as="span" className={accountingChrome.ledgerClosingLabel}>
+                        Closing
+                      </Text>
+                      <Text
+                        as="span"
+                        className={cn(
+                          accountingChrome.ledgerClosingValue,
+                          closing < 0 && accountingChrome.ledgerClosingValueNeg,
+                        )}
+                      >
+                        ₹{formatMoney(closing)}
+                      </Text>
+                    </Box>
+                  </Inline>
+
+                  <Inline gap="sm" align="end" flexWrap>
                     <Inline gap="sm" align="center">
                       <Text variant="label" color="secondary">
                         From
@@ -341,68 +359,88 @@ export function LedgerPage() {
           {selected ? (
             <Card>
               <CardBody>
-                <Table>
+                <Table className={accountingChrome.ledgerTable}>
                   <TableHead>
                     <TableRow>
-                      <TableHeaderCell>Date</TableHeaderCell>
-                      <TableHeaderCell>Entry #</TableHeaderCell>
-                      <TableHeaderCell>Source</TableHeaderCell>
-                      <TableHeaderCell>Party</TableHeaderCell>
+                      <TableHeaderCell className={accountingChrome.ledgerDateCol}>
+                        Date
+                      </TableHeaderCell>
+                      <TableHeaderCell className={accountingChrome.ledgerEntryCol}>
+                        Entry
+                      </TableHeaderCell>
+                      <TableHeaderCell className={accountingChrome.ledgerSourceCol}>
+                        Source
+                      </TableHeaderCell>
                       <TableHeaderCell>Narration</TableHeaderCell>
-                      <TableHeaderCell className={numColStyle}>Debit</TableHeaderCell>
-                      <TableHeaderCell className={numColStyle}>Credit</TableHeaderCell>
-                      <TableHeaderCell className={numColStyle}>Balance</TableHeaderCell>
+                      <TableHeaderCell className={accountingChrome.ledgerAmountCol}>
+                        Debit
+                      </TableHeaderCell>
+                      <TableHeaderCell className={accountingChrome.ledgerAmountCol}>
+                        Credit
+                      </TableHeaderCell>
+                      <TableHeaderCell className={accountingChrome.ledgerBalanceCol}>
+                        Balance
+                      </TableHeaderCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {loading ? (
-                      <TableLoadingRow colSpan={8} label="Loading ledger…" />
+                      <TableLoadingRow colSpan={7} label="Loading ledger…" />
                     ) : (data?.entries.length ?? 0) === 0 ? (
-                      <TableEmptyRow colSpan={8} message="No postings in this range." />
+                      <TableEmptyRow colSpan={7} message="No postings in this range." />
                     ) : (
-                      (data?.entries ?? []).map((row) => (
-                        <TableRow key={row.id}>
-                          <TableCell>{formatDate(row.txnDate)}</TableCell>
-                          <TableCell>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                navigate(`/dashboard/accounting/journal/${row.journalEntryId}`)
-                              }
+                      (data?.entries ?? []).map((row) => {
+                        const debitLabel = formatTurnover(row.debit);
+                        const creditLabel = formatTurnover(row.credit);
+                        return (
+                          <TableRow key={row.id}>
+                            <TableCell className={accountingChrome.ledgerDateCol}>
+                              {formatDateShort(row.txnDate)}
+                            </TableCell>
+                            <TableCell className={accountingChrome.ledgerEntryCol}>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className={accountingChrome.entryLink}
+                                onClick={() =>
+                                  navigate(`/dashboard/accounting/journal/${row.journalEntryId}`)
+                                }
+                              >
+                                {row.journalEntryNo}
+                              </Button>
+                            </TableCell>
+                            <TableCell className={accountingChrome.ledgerSourceCol}>
+                              <Badge variant="info">{formatJournalSource(row.sourceType)}</Badge>
+                            </TableCell>
+                            <TableCell
+                              className={accountingChrome.ledgerNarrationCol}
+                              title={row.narration ?? undefined}
                             >
-                              {row.journalEntryNo}
-                            </Button>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="info">{row.sourceType}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Text color="secondary" variant="caption">
-                              {row.partyType
-                                ? `${row.partyType}${
-                                    row.partyDisplayName ? ` · ${row.partyDisplayName}` : ''
-                                  }`
-                                : '—'}
-                            </Text>
-                          </TableCell>
-                          <TableCell>
-                            <Text color="secondary" variant="caption">
-                              {row.narration ?? '—'}
-                            </Text>
-                          </TableCell>
-                          <TableCell className={numColBoldStyle}>
-                            {row.debit ? formatMoney(row.debit) : '—'}
-                          </TableCell>
-                          <TableCell className={numColBoldStyle}>
-                            {row.credit ? formatMoney(row.credit) : '—'}
-                          </TableCell>
-                          <TableCell className={numColBoldStyle}>
-                            {formatMoney(row.balanceAfter)}
-                          </TableCell>
-                        </TableRow>
-                      ))
+                              {row.narration?.trim() ? row.narration : '—'}
+                            </TableCell>
+                            <TableCell
+                              className={cn(
+                                accountingChrome.ledgerAmountCol,
+                                debitLabel === '—' && accountingChrome.ledgerAmountMuted,
+                              )}
+                            >
+                              {debitLabel}
+                            </TableCell>
+                            <TableCell
+                              className={cn(
+                                accountingChrome.ledgerAmountCol,
+                                creditLabel === '—' && accountingChrome.ledgerAmountMuted,
+                              )}
+                            >
+                              {creditLabel}
+                            </TableCell>
+                            <TableCell className={accountingChrome.ledgerBalanceCol}>
+                              {formatMoney(row.balanceAfter)}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
                     )}
                   </TableBody>
                 </Table>

@@ -164,10 +164,7 @@ export function WhatsAppMarketingPage() {
 
   return (
     <Stack gap="md" width="full" maxWidth="xl" mx="auto">
-      <PageHeader
-        title="WhatsApp Marketing"
-        description="Select a template and customers to send WhatsApp messages"
-      />
+      <PageHeader description="Select a template and customers to send WhatsApp messages" />
 
       <Grid columns={2} gap="md" width="full">
         <Card>

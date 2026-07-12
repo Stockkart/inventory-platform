@@ -15,7 +15,7 @@ export type AppShellProps = {
 };
 
 /**
- * Dashboard chrome: collapsible fixed sidebar + sticky main header + mobile drawer.
+ * Dashboard chrome: collapsible fixed sidebar + fixed main header + mobile drawer.
  * Owns the shell layout CSS so domains/shell don't need local modules.
  */
 export function AppShell({
@@ -45,7 +45,6 @@ export function AppShell({
           <Box
             className={cn(styles.sidebar, mobileOpen ? styles.sidebarOpen : styles.sidebarClosed)}
             bg="surface"
-            border
           >
             {sidebar}
           </Box>
@@ -126,14 +125,44 @@ export const shellChrome = {
   headerUserTrigger: styles.headerUserTrigger,
   notificationBadge: styles.notificationBadge,
   notificationEmpty: styles.notificationEmpty,
+  notificationEmptyTitle: styles.notificationEmptyTitle,
+  notificationEmptyHint: styles.notificationEmptyHint,
+  notificationPanelHeader: styles.notificationPanelHeader,
+  notificationPanelTitle: styles.notificationPanelTitle,
+  notificationPanelMeta: styles.notificationPanelMeta,
+  notificationUnreadCount: styles.notificationUnreadCount,
+  notificationClearBtn: styles.notificationClearBtn,
+  notificationPanelList: styles.notificationPanelList,
   notificationRow: styles.notificationRow,
+  notificationRowUnread: styles.notificationRowUnread,
+  notificationTypeIcon: styles.notificationTypeIcon,
+  notificationTypeIconLow: styles.notificationTypeIconLow,
+  notificationTypeIconReminder: styles.notificationTypeIconReminder,
+  notificationRowBody: styles.notificationRowBody,
+  notificationRowTop: styles.notificationRowTop,
+  notificationRowTitle: styles.notificationRowTitle,
+  notificationRowMessage: styles.notificationRowMessage,
   unreadDot: styles.unreadDot,
   preLine: styles.preLine,
   breakAll: styles.breakAll,
   menuSection: styles.menuSection,
+  menuUserName: styles.menuUserName,
+  menuUserEmail: styles.menuUserEmail,
   menuItem: styles.menuItem,
   menuItemBordered: styles.menuItemBordered,
   menuItemDanger: styles.menuItemDanger,
+  shopSection: styles.shopSection,
+  shopSectionLabel: styles.shopSectionLabel,
+  shopCurrentCard: styles.shopCurrentCard,
+  shopCurrentIcon: styles.shopCurrentIcon,
+  shopCurrentName: styles.shopCurrentName,
+  shopSwitchList: styles.shopSwitchList,
+  shopSwitchBtn: styles.shopSwitchBtn,
+  shopSwitchBtnMain: styles.shopSwitchBtnMain,
+  shopSwitchBtnName: styles.shopSwitchBtnName,
+  shopSwitchBtnRole: styles.shopSwitchBtnRole,
+  shopSwitchBtnMeta: styles.shopSwitchBtnMeta,
+  shopActions: styles.shopActions,
   mainSurface: styles.mainSurface,
   videoFrame: styles.videoFrame,
   videoIframe: styles.videoIframe,
@@ -161,10 +190,6 @@ export const shellChrome = {
   kbdAssignSelect: styles.kbdAssignSelect,
   kbdHeaderCellAction: styles.kbdHeaderCellAction,
   kbdActionCell: styles.kbdActionCell,
-  shopSection: styles.shopSection,
-  shopSwitchList: styles.shopSwitchList,
-  shopSwitchBtn: styles.shopSwitchBtn,
-  shopSwitchBtnRole: styles.shopSwitchBtnRole,
   shopChevron: styles.shopChevron,
   shopChevronOpen: styles.shopChevronOpen,
   shopDropdown: styles.shopDropdown,
@@ -172,6 +197,24 @@ export const shellChrome = {
   shopDropdownItem: styles.shopDropdownItem,
   shopDropdownItemActive: styles.shopDropdownItemActive,
   shopDropdownAdd: styles.shopDropdownAdd,
+  helpPanel: styles.helpPanel,
+  helpPanelHeader: styles.helpPanelHeader,
+  helpPanelHeaderMain: styles.helpPanelHeaderMain,
+  helpPanelIcon: styles.helpPanelIcon,
+  helpPanelEyebrow: styles.helpPanelEyebrow,
+  helpPanelTitle: styles.helpPanelTitle,
+  helpPanelPath: styles.helpPanelPath,
+  helpPanelBody: styles.helpPanelBody,
+  helpEmpty: styles.helpEmpty,
+  helpEmptyIcon: styles.helpEmptyIcon,
+  helpEmptyTitle: styles.helpEmptyTitle,
+  helpEmptyHint: styles.helpEmptyHint,
+  helpVideoList: styles.helpVideoList,
+  helpVideoCard: styles.helpVideoCard,
+  helpVideoTitle: styles.helpVideoTitle,
+  helpVideoDesc: styles.helpVideoDesc,
+  helpVideoActions: styles.helpVideoActions,
+  helpExternalLink: styles.helpExternalLink,
 } as const;
 
 export type PopoverPanelVariant = 'default' | 'notification' | 'userMenu';
@@ -203,5 +246,5 @@ export function PopoverPanel({
 }
 
 export function NotificationDot({ className }: { className?: string }) {
-  return <Box className={cn(styles.notificationBadge, className)} aria-hidden />;
+  return <Box className={cn(styles.notificationDot, className)} aria-hidden />;
 }

@@ -109,9 +109,7 @@ export function formatCreditLedgerEntry(
       entry.referenceType === 'VENDOR_RETURN' || isVendor ? 'Purchase return' : 'Sales return';
     return {
       title: viaReturn,
-      subtitle: isVendor
-        ? 'Credit applied — you owe this vendor less (same as recording a payment on account).'
-        : 'Credit applied — customer owes you less.',
+      subtitle: isVendor ? 'Vendor credit applied' : 'Customer credit applied',
     };
   }
 

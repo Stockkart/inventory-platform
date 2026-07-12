@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { PageHeader, Stack } from '@inventory-platform/ui-kit';
+import { Stack } from '@inventory-platform/ui-kit';
 import { Gstr1Tab } from './Gstr1Tab';
 import { Gstr2Tab } from './Gstr2Tab';
 import { Gstr3bTab } from './Gstr3bTab';
@@ -10,7 +10,6 @@ export function TaxesPage() {
 
   return (
     <Stack gap="md" width="full" maxWidth="xl" mx="auto">
-      <PageHeader title="Taxes" description="View tax reports and GST filings for your business" />
       <TaxTabs activeTab={activeTab} onTabChange={setActiveTab} />
       {activeTab === 'gstr1' && <Gstr1Tab />}
       {activeTab === 'gstr2' && <Gstr2Tab />}

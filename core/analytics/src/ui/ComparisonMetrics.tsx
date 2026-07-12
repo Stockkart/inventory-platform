@@ -1,14 +1,4 @@
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Grid,
-  Inline,
-  Stack,
-  Text,
-  cn,
-  surfaceChrome,
-} from '@inventory-platform/ui-kit';
+import { Box, Text, cn, chartChrome } from '@inventory-platform/ui-kit';
 
 interface ComparisonMetricsProps {
   data: {
@@ -60,6 +50,7 @@ export function ComparisonMetrics({ data }: ComparisonMetricsProps) {
       previous: data.periodComparison.previousPeriod.totalRevenue,
       change: data.periodComparison.revenueChange,
       changePercent: data.periodComparison.revenueChangePercent,
+      isCurrency: true,
     },
     {
       label: 'Purchases',
@@ -67,6 +58,7 @@ export function ComparisonMetrics({ data }: ComparisonMetricsProps) {
       previous: data.periodComparison.previousPeriod.totalPurchases,
       change: data.periodComparison.purchaseCountChange,
       changePercent: data.periodComparison.purchaseCountChangePercent,
+      isCurrency: false,
     },
     {
       label: 'Average Order Value',
@@ -74,66 +66,55 @@ export function ComparisonMetrics({ data }: ComparisonMetricsProps) {
       previous: data.periodComparison.previousPeriod.averageOrderValue,
       change: data.periodComparison.aovChange,
       changePercent: data.periodComparison.aovChangePercent,
+      isCurrency: true,
     },
   ];
 
   return (
-    <Card>
-      <CardHeader>
-        <Text variant="heading4" weight="semibold">
+    <Box className={chartChrome.comparisonCard}>
+      <Box className={chartChrome.comparisonHeader}>
+        <Text as="h3" className={chartChrome.comparisonTitle}>
           Period Comparison
         </Text>
-      </CardHeader>
-      <CardBody>
-        <Grid columns={3} gap="md">
-          {metrics.map((metric) => (
-            <Card key={metric.label}>
-              <CardBody>
-                <Stack gap="sm">
-                  <Text variant="heading4" weight="semibold">
-                    {metric.label}
-                  </Text>
-                  <Stack gap="xs">
-                    <Inline align="center" justify="between">
-                      <Text variant="caption" color="secondary">
-                        Current:
-                      </Text>
-                      <Text weight="semibold">
-                        {metric.label === 'Purchases'
-                          ? metric.current
-                          : formatCurrency(metric.current)}
-                      </Text>
-                    </Inline>
-                    <Inline align="center" justify="between">
-                      <Text variant="caption" color="secondary">
-                        Previous:
-                      </Text>
-                      <Text weight="semibold">
-                        {metric.label === 'Purchases'
-                          ? metric.previous
-                          : formatCurrency(metric.previous)}
-                      </Text>
-                    </Inline>
-                  </Stack>
-                  <Text
-                    variant="caption"
-                    weight="semibold"
-                    className={cn(
-                      metric.changePercent > 0 && surfaceChrome.metricUp,
-                      metric.changePercent < 0 && surfaceChrome.metricDown,
-                    )}
-                  >
-                    {metric.label === 'Purchases'
-                      ? `${metric.change >= 0 ? '+' : ''}${metric.change}`
-                      : formatCurrency(metric.change)}{' '}
-                    ({formatPercent(metric.changePercent)})
-                  </Text>
-                </Stack>
-              </CardBody>
-            </Card>
-          ))}
-        </Grid>
-      </CardBody>
-    </Card>
+      </Box>
+      <Box className={chartChrome.comparisonBody}>
+        {metrics.map((metric) => (
+          <Box key={metric.label} className={chartChrome.comparisonTile}>
+            <Text as="p" className={chartChrome.comparisonMetricLabel}>
+              {metric.label}
+            </Text>
+            <Box className={chartChrome.comparisonRow}>
+              <Text as="p" className={chartChrome.comparisonRowLabel}>
+                Current
+              </Text>
+              <Text as="p" className={chartChrome.comparisonRowValue}>
+                {metric.isCurrency ? formatCurrency(metric.current) : metric.current}
+              </Text>
+            </Box>
+            <Box className={chartChrome.comparisonRow}>
+              <Text as="p" className={chartChrome.comparisonRowLabel}>
+                Previous
+              </Text>
+              <Text as="p" className={chartChrome.comparisonRowValue}>
+                {metric.isCurrency ? formatCurrency(metric.previous) : metric.previous}
+              </Text>
+            </Box>
+            <Text
+              as="p"
+              className={cn(
+                chartChrome.comparisonDelta,
+                metric.changePercent > 0 && chartChrome.comparisonDeltaUp,
+                metric.changePercent < 0 && chartChrome.comparisonDeltaDown,
+              )}
+            >
+              {metric.isCurrency
+                ? formatCurrency(metric.change)
+                : `${metric.change >= 0 ? '+' : ''}${metric.change}`}{' '}
+              ({formatPercent(metric.changePercent)})
+            </Text>
+          </Box>
+        ))}
+      </Box>
+    </Box>
   );
 }

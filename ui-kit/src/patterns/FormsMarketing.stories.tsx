@@ -8,6 +8,8 @@ import { Box, Stack, Text } from '../layout';
 import { Button, Label } from '../forms';
 import { Badge } from '../feedback';
 import { Card, CardBody } from '../data-display';
+import { Icon } from '../icons';
+import { Upload } from 'lucide-react';
 
 const meta: Meta = {
   title: 'Patterns/Forms & marketing',
@@ -62,9 +64,9 @@ export const FileDropzone: StoryObj = {
         <Box className={fileDropzone.controls}>
           <Label className={fileDropzone.fileInputLabel}>
             <Box className={fileDropzone.placeholder}>
-              <Text as="span" className={fileDropzone.placeholderIcon}>
-                📤
-              </Text>
+              <Box className={fileDropzone.placeholderIcon} aria-hidden>
+                <Icon icon={Upload} size="md" />
+              </Box>
               <Text as="span">Click to browse images</Text>
             </Box>
           </Label>

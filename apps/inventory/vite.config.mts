@@ -20,7 +20,18 @@ export default defineConfig({
   },
   plugins: (!process.env.VITEST ? [reactRouter()] : []) as PluginOption[],
   resolve: {
+    // Prefer one React copy across workspace packages (do not hard-alias —
+    // that bypasses package exports and breaks SSR with "module is not defined").
+    dedupe: ['react', 'react-dom'],
     alias: generateInventoryWorkspaceAliases({ workspaceRoot, appDir }),
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
+  },
+  ssr: {
+    resolve: {
+      dedupe: ['react', 'react-dom'],
+    },
   },
   build: {
     outDir: './dist',

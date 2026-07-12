@@ -1,18 +1,24 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { invitationsApi } from '../api/invitations.api';
 import type { ShopUser, UserRole } from '@inventory-platform/user/types';
 import { RoleBadge } from './RoleBadge';
 import {
   Badge,
+  Box,
   Button,
   Card,
   CardBody,
   CenteredLoader,
   EmptyState,
-  Grid,
-  Inline,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
   Text,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 
@@ -21,83 +27,35 @@ interface ShopUsersListProps {
   onUserChange?: () => void;
 }
 
-interface ShopUserCardProps {
-  user: ShopUser;
-  showUserId?: boolean;
-}
-
-function ShopUserCard({ user, showUserId = false }: ShopUserCardProps) {
-  return (
-    <Card>
-      <CardBody>
-        <Stack gap="md">
-          <Inline justify="between" align="start" gap="sm" flexWrap width="full">
-            <Stack gap="xs">
-              <Text weight="semibold">{user.name}</Text>
-              <Text color="secondary" variant="caption">
-                {user.email}
-              </Text>
-            </Stack>
-            <RoleBadge role={user.role as UserRole} />
-          </Inline>
-          <Stack gap="xs">
-            {showUserId ? (
-              <Inline justify="between" gap="sm" width="full">
-                <Text color="secondary" variant="caption">
-                  User ID:
-                </Text>
-                <Text variant="caption">{user.userId}</Text>
-              </Inline>
-            ) : null}
-            <Inline justify="between" gap="sm" width="full">
-              <Text color="secondary" variant="caption">
-                Joined:
-              </Text>
-              <Text variant="caption">
-                {user.joinedAt ? new Date(user.joinedAt).toLocaleDateString() : 'N/A'}
-              </Text>
-            </Inline>
-            <Inline justify="between" gap="sm" width="full" align="center">
-              <Text color="secondary" variant="caption">
-                Status:
-              </Text>
-              <Badge variant={user.active ? 'success' : 'neutral'}>
-                {user.active ? 'Active' : 'Inactive'}
-              </Badge>
-            </Inline>
-          </Stack>
-        </Stack>
-      </CardBody>
-    </Card>
-  );
-}
-
-interface UserSectionProps {
-  title: string;
-  users: ShopUser[];
-  showUserId?: boolean;
-}
-
-function UserSection({ title, users, showUserId = false }: UserSectionProps) {
-  if (users.length === 0) {
-    return null;
+function formatDate(value: string | null | undefined) {
+  if (!value) return '—';
+  try {
+    return new Date(value).toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  } catch {
+    return value;
   }
-
-  return (
-    <Stack gap="md" width="full">
-      <Text variant="heading3" weight="semibold">
-        {title}
-      </Text>
-      <Grid columns={3} gap="md" width="full">
-        {users.map((user) => (
-          <ShopUserCard key={user.userId} user={user} showUserId={showUserId} />
-        ))}
-      </Grid>
-    </Stack>
-  );
 }
 
-export function ShopUsersList({ shopId, onUserChange }: ShopUsersListProps) {
+function relationshipLabel(user: ShopUser) {
+  if (user.relationship === 'OWNER' || (user.relationship === null && user.role === 'OWNER')) {
+    return 'Owner';
+  }
+  if (user.relationship === 'INVITED') return 'Invited';
+  return 'Member';
+}
+
+function relationshipRank(user: ShopUser) {
+  const label = relationshipLabel(user);
+  if (label === 'Owner') return 0;
+  if (label === 'Invited') return 1;
+  return 2;
+}
+
+export function ShopUsersList({ shopId }: ShopUsersListProps) {
   const [users, setUsers] = useState<ShopUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -110,50 +68,110 @@ export function ShopUsersList({ shopId, onUserChange }: ShopUsersListProps) {
     try {
       const data = await invitationsApi.getShopUsers(shopId);
       setUsers(data);
-    } catch (err: any) {
-      notifyError(err?.message || 'Failed to load shop users');
+    } catch (err: unknown) {
+      notifyError(err instanceof Error ? err.message : 'Failed to load shop users');
     } finally {
       setIsLoading(false);
     }
   }, [shopId, notifyError]);
 
   useEffect(() => {
-    fetchUsers();
+    void fetchUsers();
   }, [fetchUsers]);
 
+  const rows = useMemo(
+    () =>
+      [...users].sort((a, b) => {
+        const rel = relationshipRank(a) - relationshipRank(b);
+        if (rel !== 0) return rel;
+        const activeDiff = Number(b.active) - Number(a.active);
+        if (activeDiff !== 0) return activeDiff;
+        return a.name.localeCompare(b.name);
+      }),
+    [users],
+  );
+
+  const ownerCount = rows.filter((u) => relationshipLabel(u) === 'Owner').length;
+  const activeCount = rows.filter((u) => u.active).length;
+
   if (isLoading) {
-    return <CenteredLoader label="Loading users..." />;
+    return <CenteredLoader label="Loading users…" />;
   }
 
   if (error) {
     return (
       <Stack gap="md" align="center">
         <Text color="danger">{error}</Text>
-        <Button onClick={fetchUsers}>Retry</Button>
+        <Button type="button" onClick={() => void fetchUsers()}>
+          Retry
+        </Button>
       </Stack>
     );
   }
 
   if (users.length === 0) {
-    return <EmptyState title="No users found for this shop" />;
+    return (
+      <EmptyState
+        title="No users in this shop"
+        description="Invite teammates or approve join requests to grow your team."
+      />
+    );
   }
 
-  const owners = users.filter(
-    (u) => u.relationship === 'OWNER' || (u.relationship === null && u.role === 'OWNER'),
-  );
-  const invited = users.filter((u) => u.relationship === 'INVITED');
-  const otherUsers = users.filter((u) => !owners.includes(u) && !invited.includes(u));
-  const active = users.filter((u) => u.active);
-  const inactive = users.filter((u) => !u.active);
-
   return (
-    <Stack gap="lg" width="full">
-      <UserSection title={`Owners (${owners.length})`} users={owners} />
-      <UserSection title={`Invited Users (${invited.length})`} users={invited} />
-      <UserSection title={`Users (${otherUsers.length})`} users={otherUsers} />
-      {active.length === 0 && inactive.length > 0 ? (
-        <UserSection title={`Inactive Users (${inactive.length})`} users={inactive} showUserId />
-      ) : null}
+    <Stack gap="sm" width="full">
+      <Text as="h3" className={surfaceChrome.inviteSectionTitle}>
+        Team
+        {` · ${rows.length} total · ${ownerCount} owner${
+          ownerCount === 1 ? '' : 's'
+        } · ${activeCount} active`}
+      </Text>
+
+      <Card>
+        <CardBody>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableHeaderCell>User</TableHeaderCell>
+                <TableHeaderCell>Role</TableHeaderCell>
+                <TableHeaderCell>Type</TableHeaderCell>
+                <TableHeaderCell>Joined</TableHeaderCell>
+                <TableHeaderCell>Status</TableHeaderCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {rows.map((user) => (
+                <TableRow key={user.userId}>
+                  <TableCell>
+                    <Box className={surfaceChrome.invitePrimaryCell}>
+                      <Text as="p" className={surfaceChrome.invitePrimaryName}>
+                        {user.name}
+                      </Text>
+                      <Text as="p" className={surfaceChrome.invitePrimaryMeta}>
+                        {user.email}
+                      </Text>
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <RoleBadge role={user.role as UserRole} />
+                  </TableCell>
+                  <TableCell>
+                    <Text variant="caption">{relationshipLabel(user)}</Text>
+                  </TableCell>
+                  <TableCell className={surfaceChrome.inviteDateCell}>
+                    {formatDate(user.joinedAt)}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={user.active ? 'success' : 'neutral'}>
+                      {user.active ? 'Active' : 'Inactive'}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardBody>
+      </Card>
     </Stack>
   );
 }

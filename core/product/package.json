@@ -60,6 +60,7 @@
     "@inventory-platform/user": "workspace:*",
     "@inventory-platform/schema": "workspace:*",
     "axios": "^1.7.9",
+    "lucide-react": "^0.554.0",
     "qrcode.react": "^3.1.0",
     "@inventory-platform/contracts": "workspace:*"
   },

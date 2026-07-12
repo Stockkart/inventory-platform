@@ -85,6 +85,7 @@ import {
   Button,
   Card,
   CardBody,
+  FormField,
   Inline,
   Input,
   Label,
@@ -105,13 +106,55 @@ import {
   fileDropzone,
   productChrome,
   cn,
+  Icon,
+  ViewModeToggle,
 } from '@inventory-platform/ui-kit';
+import {
+  ClipboardList,
+  FileText,
+  Mail,
+  MapPin,
+  Phone,
+  Plus,
+  QrCode,
+  Receipt,
+  Upload,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import {
   accordionStyles,
   pageStyles,
   uploadLayoutStyles,
   vendorStyles,
 } from '../ui/registration-layout-styles';
+
+function VendorDetailField({
+  icon,
+  label,
+  value,
+  wide,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  wide?: boolean;
+}) {
+  return (
+    <Box className={cn(vendorStyles.detailItem, wide && vendorStyles.detailItemWide)}>
+      <Box className={vendorStyles.detailIcon} aria-hidden>
+        <Icon icon={icon} size="sm" />
+      </Box>
+      <Box className={vendorStyles.detailBody}>
+        <Text as="span" className={vendorStyles.detailLabel}>
+          {label}
+        </Text>
+        <Text as="span" className={vendorStyles.detailValue}>
+          {value}
+        </Text>
+      </Box>
+    </Box>
+  );
+}
 
 function optionalNumFromString(s: string): number | undefined {
   const t = s.trim();
@@ -2400,59 +2443,51 @@ export function ProductRegistrationPage() {
   };
 
   return (
-    <Stack gap="lg" maxWidth="xl" mx="auto">
-      <PageHeader
-        title="Product Registration"
-        description="Register multiple products at once with shared vendor and stock-in (invoice) information"
-      />
+    <Stack gap="md" maxWidth="xl" mx="auto">
+      <PageHeader description="Register multiple products at once with shared vendor and stock-in (invoice) information" />
 
       <Card>
         <CardBody>
-          <Stack gap="lg">
+          <Stack gap="md">
             {error ? <Alert variant="danger">{error}</Alert> : null}
             {success ? <Alert variant="success">{success}</Alert> : null}
 
-            <Stack gap="lg">
+            <Stack gap="md">
               <Box className={uploadLayoutStyles.uploadSection}>
                 <Box className={uploadLayoutStyles.uploadHeader}>
-                  <Text variant="heading3">Upload Invoice Image (Optional)</Text>
-                  <Box as="ul" className={pageStyles.helperText}>
-                    <Box as="li">Upload invoice image to auto-parse product details</Box>
-                    <Box as="li">Review and edit parsed products before bulk save</Box>
-                  </Box>
-                </Box>
-                <Box className={uploadLayoutStyles.uploadOptionsHeader}>
-                  <Text as="span" className={uploadLayoutStyles.uploadOptionsLabel}>
-                    Choose upload method:
+                  <Text variant="heading4" weight="semibold">
+                    Upload invoice image
+                  </Text>
+                  <Text variant="caption" color="secondary">
+                    Optional — parse product details from a photo, then review before saving.
                   </Text>
                 </Box>
                 <Box className={uploadLayoutStyles.uploadOptionsGrid}>
                   <Button
                     type="button"
+                    variant="ghost"
                     className={uploadLayoutStyles.qrUploadBtn}
                     onClick={handleCreateQrCode}
                     disabled={isUploading || isLoading || isPolling}
                   >
-                    <Box className={uploadLayoutStyles.qrBtnIcon}>
-                      <Text as="span" role="img" aria-label="QR Code icon">
-                        📱
-                      </Text>
+                    <Box className={uploadLayoutStyles.qrBtnIcon} aria-hidden>
+                      <Icon icon={QrCode} size="md" />
                     </Box>
                     <Box className={uploadLayoutStyles.qrBtnContent}>
                       <Text as="span" className={uploadLayoutStyles.qrBtnTitle}>
                         Upload via QR Code
                       </Text>
                       <Text as="span" className={uploadLayoutStyles.qrBtnSubtitle}>
-                        Use mobile device to scan & upload
+                        Scan with your phone to upload
                       </Text>
                     </Box>
                   </Button>
                   <Box className={uploadLayoutStyles.uploadOptionsOr}>
-                    <Box className={uploadLayoutStyles.uploadOptionsOrLine}></Box>
+                    <Box className={uploadLayoutStyles.uploadOptionsOrLine} />
                     <Text as="span" className={uploadLayoutStyles.uploadOptionsOrText}>
                       OR
                     </Text>
-                    <Box className={uploadLayoutStyles.uploadOptionsOrLine}></Box>
+                    <Box className={uploadLayoutStyles.uploadOptionsOrLine} />
                   </Box>
                   <Box className={fileDropzone.container}>
                     <Box className={fileDropzone.optionLabel}>
@@ -2460,7 +2495,7 @@ export function ProductRegistrationPage() {
                         Upload from this device
                       </Text>
                       <Text as="span" className={fileDropzone.optionSubtitle}>
-                        Choose one or more photos (multi-page invoice)
+                        One or more photos (multi-page invoice)
                       </Text>
                     </Box>
                     <Input
@@ -2477,14 +2512,9 @@ export function ProductRegistrationPage() {
                       <Label htmlFor="invoice-upload" className={fileDropzone.fileInputLabel}>
                         {selectedFiles.length > 0 ? (
                           <Box className={fileDropzone.fileListSummary}>
-                            <Text
-                              as="span"
-                              className={fileDropzone.fileIcon}
-                              role="img"
-                              aria-label="Files selected"
-                            >
-                              📄
-                            </Text>
+                            <Box className={fileDropzone.fileIcon} aria-hidden>
+                              <Icon icon={FileText} size="md" />
+                            </Box>
                             <Text as="span" className={fileDropzone.fileListCount}>
                               {selectedFiles.length} image
                               {selectedFiles.length === 1 ? '' : 's'} selected
@@ -2495,14 +2525,9 @@ export function ProductRegistrationPage() {
                           </Box>
                         ) : (
                           <Box className={fileDropzone.placeholder}>
-                            <Text
-                              as="span"
-                              className={fileDropzone.placeholderIcon}
-                              role="img"
-                              aria-label="Upload icon"
-                            >
-                              📤
-                            </Text>
+                            <Box className={fileDropzone.placeholderIcon} aria-hidden>
+                              <Icon icon={Upload} size="md" />
+                            </Box>
                             <Text as="span">Click to browse images</Text>
                           </Box>
                         )}
@@ -2602,7 +2627,7 @@ export function ProductRegistrationPage() {
                   <Box className={pageStyles.formGroup}>
                     <Label htmlFor="vendorSearch">Vendor Search *</Label>
                     <Box position="relative">
-                      <Box className={productChrome.inlineFlexGap}>
+                      <Box className={vendorStyles.searchRow}>
                         <Input
                           type="text"
                           id="vendorSearch"
@@ -2616,35 +2641,34 @@ export function ProductRegistrationPage() {
                           disabled={isLoading || isSearchingVendor}
                           className={productChrome.searchGrow}
                         />
-                        <Button
-                          type="button"
-                          variant="solid"
-                          size="sm"
-                          onClick={handleVendorSearch}
-                          disabled={isLoading || isSearchingVendor || !vendorSearchQuery.trim()}
-                        >
-                          {isSearchingVendor ? 'Searching...' : 'Search'}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="solid"
-                          size="sm"
-                          onClick={() => setShowVendorModal(true)}
-                          disabled={isLoading || isCreatingVendor}
-                        >
-                          Create New
-                        </Button>
-                        {selectedVendor && (
+                        <Box className={vendorStyles.searchActions}>
                           <Button
                             type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={handleClearVendor}
-                            disabled={isLoading}
+                            variant="solid"
+                            onClick={handleVendorSearch}
+                            disabled={isLoading || isSearchingVendor || !vendorSearchQuery.trim()}
                           >
-                            Clear
+                            {isSearchingVendor ? 'Searching...' : 'Search'}
                           </Button>
-                        )}
+                          <Button
+                            type="button"
+                            variant="solid"
+                            onClick={() => setShowVendorModal(true)}
+                            disabled={isLoading || isCreatingVendor}
+                          >
+                            Create New
+                          </Button>
+                          {selectedVendor ? (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={handleClearVendor}
+                              disabled={isLoading}
+                            >
+                              Clear
+                            </Button>
+                          ) : null}
+                        </Box>
                       </Box>
                       {showVendorDropdown && vendorSearchResults.length > 0 && (
                         <Box className={vendorStyles.dropdown}>
@@ -2690,50 +2714,64 @@ export function ProductRegistrationPage() {
                         )}
                     </Box>
                   </Box>
-                  {selectedVendor && (
+                  {selectedVendor ? (
                     <Box className={vendorStyles.vendorInfo}>
                       <Box className={vendorStyles.vendorCard}>
-                        {selectedVendor.userId && <Badge variant="success">StockKart user</Badge>}
-                        <Text variant="heading4">{selectedVendor.name}</Text>
-                        <Text>
-                          <Text as="span" weight="bold">
-                            Phone:
-                          </Text>{' '}
-                          {selectedVendor.contactPhone}
-                        </Text>
-                        {selectedVendor.contactEmail && (
-                          <Text>
-                            <Text as="span" weight="bold">
-                              Email:
-                            </Text>{' '}
-                            {selectedVendor.contactEmail}
-                          </Text>
-                        )}
-                        {selectedVendor.address && (
-                          <Text>
-                            <Text as="span" weight="bold">
-                              Address:
-                            </Text>{' '}
-                            {selectedVendor.address}
-                          </Text>
-                        )}
-                        {selectedVendor.gstinUin && (
-                          <Text>
-                            <Text as="span" weight="bold">
-                              GSTIN / UIN:
-                            </Text>{' '}
-                            {selectedVendor.gstinUin}
-                          </Text>
-                        )}
-                        <Text>
-                          <Text as="span" weight="bold">
-                            Business Type:
-                          </Text>{' '}
-                          {selectedVendor.businessType}
-                        </Text>
+                        <Box className={vendorStyles.cardHeader}>
+                          <Box className={vendorStyles.avatar} aria-hidden>
+                            {(selectedVendor.name?.trim().charAt(0) || 'V').toUpperCase()}
+                          </Box>
+                          <Box className={vendorStyles.cardTitleBlock}>
+                            <Inline gap="sm" align="center" flexWrap>
+                              <Text variant="heading4" weight="semibold">
+                                {selectedVendor.name}
+                              </Text>
+                              {selectedVendor.userId ? (
+                                <Badge variant="success">StockKart user</Badge>
+                              ) : null}
+                            </Inline>
+                            {selectedVendor.businessType ? (
+                              <Text variant="caption" color="secondary">
+                                {selectedVendor.businessType}
+                              </Text>
+                            ) : null}
+                          </Box>
+                        </Box>
+
+                        <Box className={vendorStyles.detailGrid}>
+                          {selectedVendor.contactPhone ? (
+                            <VendorDetailField
+                              icon={Phone}
+                              label="Phone"
+                              value={selectedVendor.contactPhone}
+                            />
+                          ) : null}
+                          {selectedVendor.contactEmail ? (
+                            <VendorDetailField
+                              icon={Mail}
+                              label="Email"
+                              value={selectedVendor.contactEmail}
+                            />
+                          ) : null}
+                          {selectedVendor.gstinUin ? (
+                            <VendorDetailField
+                              icon={Receipt}
+                              label="GSTIN / UIN"
+                              value={selectedVendor.gstinUin}
+                            />
+                          ) : null}
+                          {selectedVendor.address ? (
+                            <VendorDetailField
+                              icon={MapPin}
+                              label="Address"
+                              value={selectedVendor.address}
+                              wide
+                            />
+                          ) : null}
+                        </Box>
                       </Box>
                     </Box>
-                  )}
+                  ) : null}
 
                   <Box className={vendorStyles.vendorSection}>
                     <Text variant="heading4">Vendor purchase invoice (optional)</Text>
@@ -2894,14 +2932,9 @@ export function ProductRegistrationPage() {
                 {showReviewBanner && (
                   <Box className={pageStyles.reviewBanner}>
                     <Box className={pageStyles.reviewBannerContent}>
-                      <Text
-                        as="span"
-                        className={pageStyles.reviewBannerIcon}
-                        role="img"
-                        aria-label="Clipboard icon"
-                      >
-                        📋
-                      </Text>
+                      <Box as="span" className={pageStyles.reviewBannerIcon} aria-hidden>
+                        <Icon icon={ClipboardList} size="sm" />
+                      </Box>
                       <Box className={pageStyles.reviewBannerText}>
                         <Text as="span" weight="bold">
                           Review Required:
@@ -2928,50 +2961,21 @@ export function ProductRegistrationPage() {
                 >
                   <Text variant="heading3">Products</Text>
                   <Inline gap="md" align="center">
-                    {products.length > 0 && (
-                      <Inline gap="sm" align="center">
-                        <Text variant="caption" color="secondary">
-                          View:
-                        </Text>
-                        <Inline gap="xs" role="group" aria-label="Product view mode">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant={productViewMode === 'list' ? 'solid' : 'outline'}
-                            onClick={() => {
-                              setProductViewMode('list');
-                              localStorage.setItem('product-registration-view-mode', 'list');
-                            }}
-                            title="List view"
-                            aria-pressed={productViewMode === 'list'}
-                          >
-                            <Text as="span" aria-hidden>
-                              ☰
-                            </Text>{' '}
-                            List
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant={productViewMode === 'grid' ? 'solid' : 'outline'}
-                            onClick={() => {
-                              setProductViewMode('grid');
-                              localStorage.setItem('product-registration-view-mode', 'grid');
-                            }}
-                            title="Grid view"
-                            aria-pressed={productViewMode === 'grid'}
-                          >
-                            <Text as="span" aria-hidden>
-                              ⊞
-                            </Text>{' '}
-                            Grid
-                          </Button>
-                        </Inline>
-                      </Inline>
-                    )}
+                    {products.length > 0 ? (
+                      <ViewModeToggle
+                        value={productViewMode}
+                        aria-label="Product view mode"
+                        onChange={(mode) => {
+                          setProductViewMode(mode);
+                          localStorage.setItem('product-registration-view-mode', mode);
+                        }}
+                      />
+                    ) : null}
                     <Button
                       type="button"
                       variant="solid"
+                      size="sm"
+                      leftIcon={<Icon icon={Plus} size="sm" />}
                       onClick={handleAddProduct}
                       disabled={isLoading || !registrationSchemaReady}
                       title={
@@ -2980,7 +2984,7 @@ export function ProductRegistrationPage() {
                           : 'Waiting for shop product schema to load'
                       }
                     >
-                      + Add Product
+                      Add Product
                     </Button>
                   </Inline>
                 </Inline>
@@ -4023,171 +4027,176 @@ export function ProductRegistrationPage() {
           onClose={isCreatingVendor ? undefined : handleCloseVendorModal}
         />
         <Modal.Body>
-          <Box className={pageStyles.formGroup}>
-            <Label htmlFor="vendorName">Vendor Name *</Label>
-            <Input
-              type="text"
-              id="vendorName"
-              placeholder="Enter vendor name"
-              value={vendorFormData.name}
-              onChange={(e) =>
-                setVendorFormData((prev) => ({
-                  ...prev,
-                  name: e.target.value,
-                }))
-              }
-              disabled={isCreatingVendor}
-              required
-            />
-          </Box>
-          <Box className={pageStyles.formGroup}>
-            <Label htmlFor="vendorContactPhone">Contact Phone *</Label>
-            <Input
-              type="tel"
-              id="vendorContactPhone"
-              placeholder="Enter contact phone"
-              value={vendorFormData.contactPhone}
-              onChange={(e) =>
-                setVendorFormData((prev) => ({
-                  ...prev,
-                  contactPhone: e.target.value,
-                }))
-              }
-              disabled={isCreatingVendor}
-              required
-            />
-          </Box>
-          <Box className={pageStyles.formGroup}>
-            <Label htmlFor="vendorContactEmail">Contact Email</Label>
-            <Input
-              type="email"
-              id="vendorContactEmail"
-              placeholder="Enter contact email"
-              value={vendorFormData.contactEmail}
-              onChange={(e) =>
-                setVendorFormData((prev) => ({
-                  ...prev,
-                  contactEmail: e.target.value,
-                }))
-              }
-              disabled={isCreatingVendor}
-            />
-          </Box>
-          <Box className={pageStyles.formGroup}>
-            <Label>Link to registered user</Label>
-            <Text className={`${pageStyles.helperText} ${pageStyles.helperTextLinkHint}`}>
-              If this vendor is a registered user, search by their email to link the vendor record
-              to their account.
-            </Text>
-            <Box className={productChrome.inlineFlexGap}>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleSearchUserForLink}
-                disabled={
-                  isCreatingVendor || isSearchingUser || !vendorFormData.contactEmail?.trim()
-                }
-              >
-                {isSearchingUser ? 'Checking...' : 'Check'}
-              </Button>
-              {linkedUser && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleUnlinkUser}
-                  disabled={isCreatingVendor}
-                >
-                  Unlink
-                </Button>
-              )}
-            </Box>
-            {userSearchMessage && (
-              <Text
-                className={
-                  linkedUser ? pageStyles.userLinkMessageSuccess : pageStyles.userLinkMessage
-                }
-              >
-                {userSearchMessage}
-              </Text>
-            )}
-          </Box>
-          <Box className={pageStyles.formGroup}>
-            <Label htmlFor="vendorAddress">Address</Label>
-            <Input
-              type="text"
-              id="vendorAddress"
-              placeholder="Enter address"
-              value={vendorFormData.address}
-              onChange={(e) =>
-                setVendorFormData((prev) => ({
-                  ...prev,
-                  address: e.target.value,
-                }))
-              }
-              disabled={isCreatingVendor}
-            />
-          </Box>
-          <Box className={pageStyles.formGroup}>
-            <Label htmlFor="vendorGstinUin">GSTIN / UIN</Label>
-            <Input
-              type="text"
-              id="vendorGstinUin"
-              placeholder="Enter GSTIN / UIN number"
-              value={vendorFormData.gstinUin ?? ''}
-              onChange={(e) =>
-                setVendorFormData((prev) => ({
-                  ...prev,
-                  gstinUin: e.target.value,
-                }))
-              }
-              disabled={isCreatingVendor}
-            />
-          </Box>
-          <Box className={pageStyles.formGroup}>
-            <Label htmlFor="vendorBusinessType">Business Type *</Label>
-            <Select
-              id="vendorBusinessType"
-              value={showCustomBusinessType ? 'OTHER' : vendorFormData.businessType}
-              onChange={(e) => {
-                if (e.target.value === 'OTHER') {
-                  setShowCustomBusinessType(true);
-                  setCustomBusinessType('');
-                } else {
-                  setShowCustomBusinessType(false);
-                  setCustomBusinessType('');
-                  setVendorFormData((prev) => ({
-                    ...prev,
-                    businessType: e.target.value as VendorBusinessType,
-                  }));
-                }
-              }}
-              disabled={isCreatingVendor}
-              required
-            >
-              <option value="WHOLESALE">Wholesale</option>
-              <option value="RETAIL">Retail</option>
-              <option value="MANUFACTURER">Manufacturer</option>
-              <option value="DISTRIBUTOR">Distributor</option>
-              <option value="C&F">C&F</option>
-              <option value="OTHER">Other</option>
-            </Select>
-          </Box>
-          {showCustomBusinessType && (
-            <Box className={pageStyles.formGroup}>
-              <Label htmlFor="customBusinessType">Custom Business Type *</Label>
+          <Stack gap="md">
+            <FormField label="Vendor Name" htmlFor="vendorName" required>
               <Input
                 type="text"
-                id="customBusinessType"
-                placeholder="Enter custom business type"
-                value={customBusinessType}
-                onChange={(e) => setCustomBusinessType(e.target.value)}
+                id="vendorName"
+                placeholder="Enter vendor name"
+                value={vendorFormData.name}
+                onChange={(e) =>
+                  setVendorFormData((prev) => ({
+                    ...prev,
+                    name: e.target.value,
+                  }))
+                }
                 disabled={isCreatingVendor}
                 required
               />
+            </FormField>
+
+            <Box className={vendorStyles.modalFormGrid}>
+              <FormField label="Contact Phone" htmlFor="vendorContactPhone" required>
+                <Input
+                  type="tel"
+                  id="vendorContactPhone"
+                  placeholder="Enter contact phone"
+                  value={vendorFormData.contactPhone}
+                  onChange={(e) =>
+                    setVendorFormData((prev) => ({
+                      ...prev,
+                      contactPhone: e.target.value,
+                    }))
+                  }
+                  disabled={isCreatingVendor}
+                  required
+                />
+              </FormField>
+              <FormField label="Business Type" htmlFor="vendorBusinessType" required>
+                <Select
+                  id="vendorBusinessType"
+                  value={showCustomBusinessType ? 'OTHER' : vendorFormData.businessType}
+                  onChange={(e) => {
+                    if (e.target.value === 'OTHER') {
+                      setShowCustomBusinessType(true);
+                      setCustomBusinessType('');
+                    } else {
+                      setShowCustomBusinessType(false);
+                      setCustomBusinessType('');
+                      setVendorFormData((prev) => ({
+                        ...prev,
+                        businessType: e.target.value as VendorBusinessType,
+                      }));
+                    }
+                  }}
+                  disabled={isCreatingVendor}
+                  required
+                >
+                  <option value="WHOLESALE">Wholesale</option>
+                  <option value="RETAIL">Retail</option>
+                  <option value="MANUFACTURER">Manufacturer</option>
+                  <option value="DISTRIBUTOR">Distributor</option>
+                  <option value="C&F">C&F</option>
+                  <option value="OTHER">Other</option>
+                </Select>
+              </FormField>
             </Box>
-          )}
+
+            {showCustomBusinessType ? (
+              <FormField label="Custom Business Type" htmlFor="customBusinessType" required>
+                <Input
+                  type="text"
+                  id="customBusinessType"
+                  placeholder="Enter custom business type"
+                  value={customBusinessType}
+                  onChange={(e) => setCustomBusinessType(e.target.value)}
+                  disabled={isCreatingVendor}
+                  required
+                />
+              </FormField>
+            ) : null}
+
+            <FormField
+              label="Contact Email"
+              htmlFor="vendorContactEmail"
+              hint="If this vendor is a registered user, check their email to link the account."
+            >
+              <Box className={vendorStyles.searchRow}>
+                <Input
+                  type="email"
+                  id="vendorContactEmail"
+                  placeholder="Enter contact email"
+                  value={vendorFormData.contactEmail}
+                  onChange={(e) => {
+                    setVendorFormData((prev) => ({
+                      ...prev,
+                      contactEmail: e.target.value,
+                    }));
+                    if (linkedUser || userSearchMessage) {
+                      setLinkedUser(null);
+                      setUserSearchMessage(null);
+                    }
+                  }}
+                  disabled={isCreatingVendor}
+                  className={productChrome.searchGrow}
+                />
+                <Box className={vendorStyles.searchActions}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleSearchUserForLink}
+                    disabled={
+                      isCreatingVendor || isSearchingUser || !vendorFormData.contactEmail?.trim()
+                    }
+                    loading={isSearchingUser}
+                  >
+                    {isSearchingUser ? 'Checking…' : 'Check'}
+                  </Button>
+                  {linkedUser ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleUnlinkUser}
+                      disabled={isCreatingVendor}
+                    >
+                      Unlink
+                    </Button>
+                  ) : null}
+                </Box>
+              </Box>
+            </FormField>
+
+            {userSearchMessage ? (
+              <Box className={vendorStyles.linkStatus}>
+                {linkedUser ? <Badge variant="success">Linked</Badge> : null}
+                <Text variant="caption" color={linkedUser ? 'success' : 'secondary'}>
+                  {userSearchMessage}
+                </Text>
+              </Box>
+            ) : null}
+
+            <FormField label="Address" htmlFor="vendorAddress">
+              <Textarea
+                id="vendorAddress"
+                placeholder="Enter address"
+                value={vendorFormData.address}
+                onChange={(e) =>
+                  setVendorFormData((prev) => ({
+                    ...prev,
+                    address: e.target.value,
+                  }))
+                }
+                disabled={isCreatingVendor}
+                rows={2}
+              />
+            </FormField>
+
+            <FormField label="GSTIN / UIN" htmlFor="vendorGstinUin">
+              <Input
+                type="text"
+                id="vendorGstinUin"
+                placeholder="Enter GSTIN / UIN number"
+                value={vendorFormData.gstinUin ?? ''}
+                onChange={(e) =>
+                  setVendorFormData((prev) => ({
+                    ...prev,
+                    gstinUin: e.target.value,
+                  }))
+                }
+                disabled={isCreatingVendor}
+              />
+            </FormField>
+          </Stack>
         </Modal.Body>
         <Modal.Footer>
           <Button

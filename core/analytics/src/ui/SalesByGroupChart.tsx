@@ -26,7 +26,7 @@ export function SalesByGroupChart({ data, groupBy }: SalesByGroupChartProps) {
   const [showRevenue, setShowRevenue] = useState(true);
   const [showQuantity, setShowQuantity] = useState(true);
 
-  const chartData = data
+  const chartData = (data ?? [])
     .map((item) => ({
       name: item.groupKey || 'No Lot ID',
       revenue: item.totalRevenue,
@@ -77,7 +77,7 @@ export function SalesByGroupChart({ data, groupBy }: SalesByGroupChartProps) {
           />
         </Inline>
       </Inline>
-      <Box flex="1" className={chartChrome.frameTall}>
+      <Box className={chartChrome.plot}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 50 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />

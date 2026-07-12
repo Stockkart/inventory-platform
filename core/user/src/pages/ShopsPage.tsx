@@ -3,15 +3,17 @@ import { useNavigate } from 'react-router';
 import {
   Alert,
   Badge,
+  Box,
   Button,
   Card,
   CardBody,
   CenteredLoader,
-  Grid,
   Inline,
   PageHeader,
   Stack,
   Text,
+  cn,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { useAuthStore } from '@inventory-platform/session';
 import { usersApi } from '@inventory-platform/session/api';
@@ -22,6 +24,37 @@ export function meta() {
     { title: 'Shops - StockKart' },
     { name: 'description', content: 'Manage your shops and switch between them' },
   ];
+}
+
+function titleCase(value: string): string {
+  return value
+    .toLowerCase()
+    .split(/[_\s]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+/** One label only — role and relationship often both say OWNER. */
+function membershipLabel(shop: ShopMembership): string {
+  const role = shop.role?.trim();
+  const relationship = shop.relationship;
+
+  if (relationship === 'OWNER') return 'Owner';
+  if (relationship === 'INVITED') {
+    if (role && role.toUpperCase() !== 'INVITED' && role.toUpperCase() !== 'OWNER') {
+      return titleCase(role);
+    }
+    return 'Invited';
+  }
+  if (role) return titleCase(role);
+  return 'Member';
+}
+
+function membershipBadgeVariant(shop: ShopMembership): 'info' | 'success' | 'neutral' | 'warning' {
+  if (shop.relationship === 'OWNER' || shop.role?.toUpperCase() === 'OWNER') return 'info';
+  if (shop.relationship === 'INVITED') return 'warning';
+  return 'neutral';
 }
 
 export function ShopsPage() {
@@ -77,53 +110,72 @@ export function ShopsPage() {
   }
 
   return (
-    <Stack gap="md" width="full" maxWidth="lg" mx="auto">
-      <PageHeader title="Your Shops" description="Switch between your shops or add a new one" />
+    <Stack gap="lg" width="full" maxWidth="lg" mx="auto">
+      <PageHeader description="Switch between your shops or add a new one" />
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
-      <Stack gap="lg" width="full">
-        <Grid columns={3} gap="md" width="full">
-          {shops.map((s) => {
-            const isActive = s.shopId === activeShopId;
-            return (
-              <Card key={s.shopId} selected={isActive}>
-                <CardBody>
-                  <Stack gap="md">
-                    <Inline gap="sm" align="start" width="full">
-                      <Text>🏪</Text>
-                      <Text variant="title" weight="semibold">
-                        {s.shopName}
-                      </Text>
-                    </Inline>
-                    <Inline gap="sm" align="center">
-                      <Badge variant="info">{s.role}</Badge>
-                      {s.relationship ? <Text color="secondary">{s.relationship}</Text> : null}
-                    </Inline>
-                    {isActive ? (
-                      <Badge variant="info">Current shop</Badge>
-                    ) : (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleSwitch(s.shopId)}
-                        disabled={!!switchingId}
-                      >
-                        {switchingId === s.shopId ? 'Switching…' : 'Use this shop'}
-                      </Button>
+      <Box display="grid" gap="md" width="full" className={surfaceChrome.autoGrid280}>
+        {shops.map((s) => {
+          const isActive = s.shopId === activeShopId;
+          const isSwitching = switchingId === s.shopId;
+          return (
+            <Card key={s.shopId} selected={isActive} className={surfaceChrome.shopTile}>
+              <CardBody className={surfaceChrome.shopTileBody}>
+                <Inline gap="md" align="start" width="full">
+                  <Box
+                    className={cn(
+                      surfaceChrome.shopTileIcon,
+                      isActive && surfaceChrome.shopTileActiveIcon,
                     )}
-                  </Stack>
-                </CardBody>
-              </Card>
-            );
-          })}
-        </Grid>
+                    aria-hidden
+                  >
+                    🏪
+                  </Box>
+                  <Box className={surfaceChrome.shopTileMeta}>
+                    <Text variant="heading4" weight="semibold" truncate>
+                      {s.shopName}
+                    </Text>
+                    <Badge variant={membershipBadgeVariant(s)}>{membershipLabel(s)}</Badge>
+                  </Box>
+                </Inline>
 
-        <Button type="button" variant="outline" onClick={handleAddShop}>
-          + Add another shop
+                <Box className={surfaceChrome.shopTileFooter}>
+                  {isActive ? (
+                    <Badge variant="success">Current shop</Badge>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className={surfaceChrome.shopTileAction}
+                      onClick={() => void handleSwitch(s.shopId)}
+                      disabled={!!switchingId}
+                      loading={isSwitching}
+                    >
+                      {isSwitching ? 'Switching…' : 'Switch to shop'}
+                    </Button>
+                  )}
+                </Box>
+              </CardBody>
+            </Card>
+          );
+        })}
+
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={handleAddShop}
+          className={surfaceChrome.shopTileAdd}
+        >
+          <Box as="span" className={surfaceChrome.shopTileAddIcon} aria-hidden>
+            +
+          </Box>
+          <Text as="span" weight="semibold">
+            Add another shop
+          </Text>
         </Button>
-      </Stack>
+      </Box>
     </Stack>
   );
 }

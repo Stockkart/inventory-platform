@@ -4,19 +4,24 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  background: var(--bg-card);
-  border: 2px dashed var(--border-color);
-  border-radius: 12px;
-  padding: 1rem;
-  transition: all 0.3s ease;
+  background: var(--sk-color-bg-elevated, var(--bg-card));
+  border: 1.5px dashed var(--sk-color-border-default, var(--border-color));
+  border-radius: var(--sk-radius-lg, 12px);
+  padding: 1rem 1.1rem;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
   position: relative;
   height: 100%;
-  min-height: 110px;
+  min-height: 6.5rem;
 }
 
 .container:hover {
-  border-color: #3b82f6;
-  background: var(--hover-bg);
+  border-color: var(--sk-color-brand, #3b82f6);
+  background: color-mix(
+    in srgb,
+    var(--sk-color-brand, #3b82f6) 5%,
+    var(--sk-color-bg-elevated, #fff)
+  );
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--sk-color-brand, #3b82f6) 12%, transparent);
 }
 
 .optionLabel {
@@ -147,7 +152,10 @@
 }
 
 .fileIcon {
-  font-size: 1.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--sk-color-brand, #3b82f6);
 }
 
 .fileName {
@@ -234,8 +242,11 @@
 }
 
 .placeholderIcon {
-  font-size: 2rem;
-  opacity: 0.7;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--sk-color-text-secondary, var(--text-secondary));
+  opacity: 0.9;
 }
 
 .progress {

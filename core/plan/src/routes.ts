@@ -14,19 +14,4 @@ export const planPaymentRoutes: RouteModule = {
   ],
 };
 
-export const paymentBillingRoutes: RouteModule = {
-  path: 'payment-billing',
-  children: [
-    {
-      path: '',
-      file: 'routes/payment-billing.tsx',
-      lazy: () => import('./routes/payment-billing'),
-    },
-  ],
-};
-
-export const planDashboardRoutes: RouteModule[] = [
-  paymentBillingRoutes,
-  planPaymentRoutes,
-  planStatusRoutes,
-];
+export const planDashboardRoutes: RouteModule[] = [planPaymentRoutes, planStatusRoutes];

@@ -10,12 +10,14 @@ import type {
 } from '@inventory-platform/product/types';
 import {
   Alert,
+  Badge,
   Box,
   Button,
   Card,
   CardBody,
   CenteredLoader,
   EmptyState,
+  Icon,
   Inline,
   Input,
   PageHeader,
@@ -33,7 +35,9 @@ import {
   productChrome,
   cn,
   surfaceChrome,
+  type BadgeVariant,
 } from '@inventory-platform/ui-kit';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 export function meta() {
   return [
@@ -57,9 +61,51 @@ function money(n: number | null | undefined): string {
 function dt(v: string | null | undefined): string {
   if (!v) return '-';
   try {
-    return new Date(v).toLocaleString();
+    return new Date(v).toLocaleString(undefined, {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   } catch {
     return v;
+  }
+}
+
+function formatStatusLabel(status: string): string {
+  return status
+    .toLowerCase()
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function correctionStatusVariant(status: string): BadgeVariant {
+  switch (status) {
+    case 'APPLIED':
+      return 'success';
+    case 'PENDING':
+      return 'warning';
+    case 'PARTIALLY_APPROVED':
+      return 'info';
+    case 'REJECTED':
+      return 'danger';
+    default:
+      return 'neutral';
+  }
+}
+
+function lineStatusVariant(status: string): BadgeVariant {
+  switch (status) {
+    case 'APPROVED':
+      return 'success';
+    case 'REJECTED':
+      return 'danger';
+    case 'PENDING':
+      return 'warning';
+    default:
+      return 'neutral';
   }
 }
 
@@ -228,6 +274,7 @@ export function StockCorrectionsPage() {
   const searchInvoices = useCallback(async () => {
     setSearching(true);
     setError(null);
+    setSuccess(null);
     try {
       const res = await inventoryApi.listVendorPurchaseInvoices(0, 20, query);
       setInvoiceResults(res.invoices ?? []);
@@ -406,8 +453,11 @@ export function StockCorrectionsPage() {
         vendorName: selectedInvoice.vendorName ?? null,
         lines,
       });
-      setSuccess('Correction submitted to pending for approval.');
+      setSelectedInvoice(null);
       setDraftQtyByInventoryId({});
+      setInventoryById({});
+      setSuccess('Correction submitted to pending for approval.');
+      window.setTimeout(() => setSuccess(null), 3000);
       await Promise.all([loadPending(), loadHistory()]);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to create correction');
@@ -440,10 +490,7 @@ export function StockCorrectionsPage() {
 
   return (
     <Stack gap="md" maxWidth="xl" mx="auto">
-      <PageHeader
-        title="Correct stock / price"
-        description="Search invoices by product, barcode, invoice no, or vendor name; propose quantity corrections and approve lines; and review correction history."
-      />
+      <PageHeader description="Search invoices by product, barcode, invoice no, or vendor name; propose quantity corrections and approve lines; and review correction history." />
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
       {success ? <Alert variant="success">{success}</Alert> : null}
@@ -496,6 +543,7 @@ export function StockCorrectionsPage() {
                     onChange={setQuery}
                     onSearch={searchInvoices}
                     showSearchButton
+                    buttonVariant="solid"
                     placeholder="Product, barcode, invoice no, or vendor"
                   />
                 </Box>
@@ -753,142 +801,186 @@ export function StockCorrectionsPage() {
         <Card>
           <CardBody>
             <Stack gap="md">
-              <Text variant="heading3" weight="semibold">
-                Correction history
-              </Text>
-              <Text variant="caption" color="secondary" className={surfaceChrome.historyCaption}>
-                Net impact sums{' '}
-                <Text as="span" weight="semibold">
-                  approved
-                </Text>{' '}
-                lines only — shrinkage valued at{' '}
-                <Text as="span" weight="semibold">
-                  cost
+              <Stack gap="xs">
+                <Text variant="heading3" weight="semibold">
+                  Correction history
                 </Text>
-                , extras at{' '}
-                <Text as="span" weight="semibold">
-                  selling price
-                </Text>{' '}
-                (from current inventory pricing when you open this tab).
-              </Text>
+                <Box className={surfaceChrome.historyHint}>
+                  Net impact includes{' '}
+                  <Text as="span" weight="semibold">
+                    approved
+                  </Text>{' '}
+                  lines only. Shrinkage is valued at{' '}
+                  <Text as="span" weight="semibold">
+                    cost
+                  </Text>
+                  ; extras at{' '}
+                  <Text as="span" weight="semibold">
+                    selling price
+                  </Text>
+                  . An asterisk (*) means some approved lines are missing pricing.
+                </Box>
+              </Stack>
               {historyLoading ? (
                 <CenteredLoader label="Loading history…" />
               ) : history.length === 0 ? (
                 <EmptyState title="No correction history yet." />
               ) : (
-                <Box overflow="auto">
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableHeaderCell></TableHeaderCell>
-                        <TableHeaderCell>Invoice</TableHeaderCell>
-                        <TableHeaderCell>Vendor</TableHeaderCell>
-                        <TableHeaderCell>Status</TableHeaderCell>
-                        <TableHeaderCell>Lines</TableHeaderCell>
-                        <TableHeaderCell>Approved</TableHeaderCell>
-                        <TableHeaderCell>Net impact</TableHeaderCell>
-                        <TableHeaderCell>Created</TableHeaderCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {history.map((c) => {
-                        const approvedCount = c.lines.filter((l) => l.status === 'APPROVED').length;
-                        const { total: netTotal, partial: netPartial } = summarizeApprovedNetImpact(
-                          c,
-                          historyInventoryById,
-                        );
-                        const open = expandedHistoryId === c.id;
-                        return (
-                          <Fragment key={c.id}>
+                <Table className={surfaceChrome.historyTable}>
+                  <TableHead>
+                    <TableRow>
+                      <TableHeaderCell className={surfaceChrome.historyActionCell}>
+                        {' '}
+                      </TableHeaderCell>
+                      <TableHeaderCell>Invoice</TableHeaderCell>
+                      <TableHeaderCell>Vendor</TableHeaderCell>
+                      <TableHeaderCell>Status</TableHeaderCell>
+                      <TableHeaderCell className={surfaceChrome.historyNumCell}>
+                        Lines
+                      </TableHeaderCell>
+                      <TableHeaderCell className={surfaceChrome.historyNumCell}>
+                        Approved
+                      </TableHeaderCell>
+                      <TableHeaderCell className={surfaceChrome.historyImpactCell}>
+                        Net impact
+                      </TableHeaderCell>
+                      <TableHeaderCell className={surfaceChrome.historyDateCell}>
+                        Created
+                      </TableHeaderCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {history.map((c) => {
+                      const approvedCount = c.lines.filter((l) => l.status === 'APPROVED').length;
+                      const { total: netTotal, partial: netPartial } = summarizeApprovedNetImpact(
+                        c,
+                        historyInventoryById,
+                      );
+                      const open = expandedHistoryId === c.id;
+                      return (
+                        <Fragment key={c.id}>
+                          <TableRow>
+                            <TableCell className={surfaceChrome.historyActionCell}>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setExpandedHistoryId(open ? null : c.id)}
+                                aria-expanded={open}
+                                rightIcon={<Icon icon={open ? ChevronUp : ChevronDown} size="sm" />}
+                              >
+                                {open ? 'Hide' : 'Details'}
+                              </Button>
+                            </TableCell>
+                            <TableCell>
+                              <Text weight="semibold">{c.invoiceNo ?? '—'}</Text>
+                            </TableCell>
+                            <TableCell>{c.vendorName ?? '—'}</TableCell>
+                            <TableCell>
+                              <Badge variant={correctionStatusVariant(c.status)}>
+                                {formatStatusLabel(c.status)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className={surfaceChrome.historyNumCell}>
+                              {c.lines.length}
+                            </TableCell>
+                            <TableCell className={surfaceChrome.historyNumCell}>
+                              {approvedCount}
+                            </TableCell>
+                            <TableCell className={surfaceChrome.historyImpactCell}>
+                              {approvedCount === 0 ? (
+                                '—'
+                              ) : netTotal == null ? (
+                                <Inline gap="none" align="center" justify="end">
+                                  <Text as="span">—</Text>
+                                  {netPartial ? (
+                                    <Text as="span" className={surfaceChrome.estPartial}>
+                                      *
+                                    </Text>
+                                  ) : null}
+                                </Inline>
+                              ) : (
+                                <Inline gap="none" align="center" justify="end">
+                                  <Text
+                                    as="span"
+                                    weight="semibold"
+                                    className={
+                                      netTotal > 0
+                                        ? surfaceChrome.impactIncrease
+                                        : netTotal < 0
+                                        ? surfaceChrome.impactDecrease
+                                        : undefined
+                                    }
+                                  >
+                                    {money(netTotal)}
+                                  </Text>
+                                  {netPartial ? (
+                                    <Text as="span" className={surfaceChrome.estPartial}>
+                                      *
+                                    </Text>
+                                  ) : null}
+                                </Inline>
+                              )}
+                            </TableCell>
+                            <TableCell className={surfaceChrome.historyDateCell}>
+                              {dt(c.createdAt)}
+                            </TableCell>
+                          </TableRow>
+                          {open ? (
                             <TableRow>
-                              <TableCell>
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="ghost"
-                                  className={productChrome.btnSmText}
-                                  onClick={() => setExpandedHistoryId(open ? null : c.id)}
-                                  aria-expanded={open}
-                                >
-                                  {open ? 'Hide' : 'Details'}
-                                </Button>
-                              </TableCell>
-                              <TableCell>{c.invoiceNo ?? '-'}</TableCell>
-                              <TableCell>{c.vendorName ?? '-'}</TableCell>
-                              <TableCell>{c.status}</TableCell>
-                              <TableCell>{c.lines.length}</TableCell>
-                              <TableCell>{approvedCount}</TableCell>
-                              <TableCell className={productChrome.fontSemibold}>
-                                {approvedCount === 0 ? (
-                                  '—'
-                                ) : netTotal == null ? (
-                                  <Inline gap="none" align="center">
-                                    <Text as="span">—</Text>
-                                    {netPartial ? (
-                                      <Text as="span" className={surfaceChrome.estPartial}>
-                                        {' '}
-                                        *
+                              <TableCell colSpan={8} className={productChrome.historyExpandRow}>
+                                <Box className={surfaceChrome.historyExpandPanel}>
+                                  <Stack gap="md">
+                                    <Stack gap="xs">
+                                      <Text as="p" className={surfaceChrome.historyExpandTitle}>
+                                        Line breakdown
                                       </Text>
-                                    ) : null}
-                                  </Inline>
-                                ) : (
-                                  <Inline gap="none" align="center">
-                                    <Text
-                                      as="span"
-                                      weight="semibold"
-                                      className={
-                                        netTotal > 0
-                                          ? surfaceChrome.impactIncrease
-                                          : netTotal < 0
-                                          ? surfaceChrome.impactDecrease
-                                          : undefined
-                                      }
-                                    >
-                                      {money(netTotal)}
-                                    </Text>
-                                    {netPartial ? (
-                                      <Text as="span" className={surfaceChrome.estPartial}>
-                                        {' '}
-                                        *
+                                      <Text
+                                        variant="caption"
+                                        color="secondary"
+                                        className={surfaceChrome.historyExpandHint}
+                                      >
+                                        Change = requested − previous. Impact uses cost for loss and
+                                        selling price for gain. Rejected lines were not applied.
+                                        {netPartial && approvedCount > 0
+                                          ? ' Some impacts show “—” until pricing is available.'
+                                          : null}
                                       </Text>
-                                    ) : null}
-                                  </Inline>
-                                )}
-                              </TableCell>
-                              <TableCell>{dt(c.createdAt)}</TableCell>
-                            </TableRow>
-                            {open ? (
-                              <TableRow>
-                                <TableCell colSpan={8} className={productChrome.historyExpandRow}>
-                                  <Stack gap="sm">
-                                    <Text
-                                      variant="caption"
-                                      color="secondary"
-                                      className={surfaceChrome.historyCaption}
-                                    >
-                                      Line breakdown: change vs quantity before correction. Impact
-                                      uses the same rules as Workbench (loss at cost, gain at
-                                      selling price). Rejected lines were not applied. An asterisk
-                                      on net impact means some approved lines lack pricing on file
-                                      or were excluded from the total.
-                                      {netPartial && approvedCount > 0 ? (
-                                        <>
-                                          {' '}
-                                          Some rows above may show “—” for impact until pricing
-                                          loads or is filled in.
-                                        </>
-                                      ) : null}
-                                    </Text>
+                                    </Stack>
                                     <Box overflow="auto">
-                                      <Table>
+                                      <Table className={surfaceChrome.historyNestedTable}>
                                         <TableHead>
                                           <TableRow>
-                                            <TableHeaderCell>Product</TableHeaderCell>
-                                            <TableHeaderCell>Prev qty</TableHeaderCell>
-                                            <TableHeaderCell>Requested</TableHeaderCell>
-                                            <TableHeaderCell>Change</TableHeaderCell>
-                                            <TableHeaderCell>Impact</TableHeaderCell>
-                                            <TableHeaderCell>Status</TableHeaderCell>
+                                            <TableHeaderCell
+                                              className={surfaceChrome.historyProductCell}
+                                            >
+                                              Product
+                                            </TableHeaderCell>
+                                            <TableHeaderCell
+                                              className={surfaceChrome.historyNumCell}
+                                            >
+                                              Prev
+                                            </TableHeaderCell>
+                                            <TableHeaderCell
+                                              className={surfaceChrome.historyNumCell}
+                                            >
+                                              Req
+                                            </TableHeaderCell>
+                                            <TableHeaderCell
+                                              className={surfaceChrome.historyNumCell}
+                                            >
+                                              Change
+                                            </TableHeaderCell>
+                                            <TableHeaderCell
+                                              className={surfaceChrome.historyImpactCell}
+                                            >
+                                              Impact
+                                            </TableHeaderCell>
+                                            <TableHeaderCell
+                                              className={surfaceChrome.historyStatusCell}
+                                            >
+                                              Status
+                                            </TableHeaderCell>
                                           </TableRow>
                                         </TableHead>
                                         <TableBody>
@@ -922,30 +1014,32 @@ export function StockCorrectionsPage() {
                                                   kind: 'neutral' as const,
                                                 };
 
-                                            const statusHint =
-                                              line.status === 'REJECTED'
-                                                ? ' (not applied)'
-                                                : line.status !== 'APPROVED'
-                                                ? ''
-                                                : '';
                                             return (
                                               <TableRow key={line.lineId}>
-                                                <TableCell>
-                                                  {line.productName ?? '—'}{' '}
-                                                  {inv?.batchNo ? (
-                                                    <Text
-                                                      as="span"
-                                                      className={surfaceChrome.estPartial}
-                                                    >
-                                                      · batch {inv.batchNo}
+                                                <TableCell
+                                                  className={surfaceChrome.historyProductCell}
+                                                >
+                                                  <Stack gap="xs" align="start">
+                                                    <Text as="span" weight="semibold">
+                                                      {line.productName ?? '—'}
                                                     </Text>
-                                                  ) : null}
+                                                    {inv?.batchNo ? (
+                                                      <Text
+                                                        as="span"
+                                                        className={surfaceChrome.historyBatch}
+                                                      >
+                                                        Batch {inv.batchNo}
+                                                      </Text>
+                                                    ) : null}
+                                                  </Stack>
                                                 </TableCell>
-                                                <TableCell>
+                                                <TableCell className={surfaceChrome.historyNumCell}>
                                                   {line.previousCurrentCount ?? '—'}
                                                 </TableCell>
-                                                <TableCell>{line.requestedCurrentCount}</TableCell>
-                                                <TableCell>
+                                                <TableCell className={surfaceChrome.historyNumCell}>
+                                                  {line.requestedCurrentCount}
+                                                </TableCell>
+                                                <TableCell className={surfaceChrome.historyNumCell}>
                                                   <Text
                                                     as="span"
                                                     weight="semibold"
@@ -954,7 +1048,9 @@ export function StockCorrectionsPage() {
                                                     {qtyDisplay}
                                                   </Text>
                                                 </TableCell>
-                                                <TableCell>
+                                                <TableCell
+                                                  className={surfaceChrome.historyImpactCell}
+                                                >
                                                   <Text
                                                     as="span"
                                                     weight="semibold"
@@ -963,13 +1059,23 @@ export function StockCorrectionsPage() {
                                                     {impactUi.text}
                                                   </Text>
                                                 </TableCell>
-                                                <TableCell className={productChrome.statusMuted}>
-                                                  {line.status}
-                                                  {statusHint}
-                                                  {line.rejectionReason &&
-                                                  line.status === 'REJECTED' ? (
-                                                    <> — {line.rejectionReason}</>
-                                                  ) : null}
+                                                <TableCell
+                                                  className={surfaceChrome.historyStatusCell}
+                                                >
+                                                  <Stack gap="xs" align="start">
+                                                    <Badge
+                                                      variant={lineStatusVariant(line.status)}
+                                                      className={surfaceChrome.historyStatusBadge}
+                                                    >
+                                                      {formatStatusLabel(line.status)}
+                                                    </Badge>
+                                                    {line.status === 'REJECTED' &&
+                                                    line.rejectionReason ? (
+                                                      <Text variant="caption" color="secondary">
+                                                        {line.rejectionReason}
+                                                      </Text>
+                                                    ) : null}
+                                                  </Stack>
                                                 </TableCell>
                                               </TableRow>
                                             );
@@ -978,15 +1084,15 @@ export function StockCorrectionsPage() {
                                       </Table>
                                     </Box>
                                   </Stack>
-                                </TableCell>
-                              </TableRow>
-                            ) : null}
-                          </Fragment>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </Box>
+                                </Box>
+                              </TableCell>
+                            </TableRow>
+                          ) : null}
+                        </Fragment>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
               )}
             </Stack>
           </CardBody>
