@@ -15,12 +15,25 @@ import {
   journeyChrome,
 } from '@inventory-platform/ui-kit';
 
+/** Normalize to 10-digit Indian mobile; accepts 10 digits or +91 / 91 prefix. */
+function normalizePhone(raw: string): string | null {
+  const digitsOnly = raw.replace(/\D/g, '');
+  if (/^\d{10}$/.test(digitsOnly)) {
+    return digitsOnly;
+  }
+  if (/^91\d{10}$/.test(digitsOnly)) {
+    return digitsOnly.slice(2);
+  }
+  return null;
+}
+
 export function SignupForm() {
   const navigate = useNavigate();
   const { signup, isAuthenticated, isLoading, error, clearError } = useAuthStore();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     password: '',
     confirmPassword: '',
   });
@@ -42,8 +55,20 @@ export function SignupForm() {
     setLocalError(null);
     clearError();
 
-    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
+    if (
+      !formData.name ||
+      !formData.email ||
+      !formData.phone ||
+      !formData.password ||
+      !formData.confirmPassword
+    ) {
       setLocalError('Please fill in all required fields');
+      return;
+    }
+
+    const phone = normalizePhone(formData.phone);
+    if (!phone) {
+      setLocalError('Phone must be a valid Indian number (10 digits or +91 format)');
       return;
     }
 
@@ -56,6 +81,7 @@ export function SignupForm() {
       await signup({
         name: formData.name,
         email: formData.email,
+        phone,
         password: formData.password,
         role: 'CASHIER',
       });
@@ -134,6 +160,20 @@ export function SignupForm() {
               value={formData.email}
               onChange={(v) => {
                 setFormData({ ...formData, email: v });
+                clearErrors();
+              }}
+              required
+              disabled={isLoading}
+            />
+
+            <FormField
+              label="Phone"
+              id="phone"
+              type="tel"
+              placeholder="10-digit mobile or +91…"
+              value={formData.phone}
+              onChange={(v) => {
+                setFormData({ ...formData, phone: v });
                 clearErrors();
               }}
               required

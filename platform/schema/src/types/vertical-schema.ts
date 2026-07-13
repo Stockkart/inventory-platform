@@ -2,7 +2,7 @@
 
 export type VerticalSchemaFieldType = 'string' | 'number' | 'date' | 'enum';
 
-export type SchemaDisplayMode = 'regular' | 'basic' | 'invoice';
+export type SchemaDisplayMode = 'regular' | 'basic' | 'invoice' | 'onboarding';
 
 export type VerticalSchemaSurface = 'registration' | 'scan-sell' | 'onboarding' | 'invoice';
 

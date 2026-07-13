@@ -13,6 +13,8 @@ export interface User {
   shopId: string | null;
   email?: string;
   name?: string;
+  /** 10-digit Indian mobile when set at signup */
+  phone?: string;
   active?: boolean;
   createdAt?: string;
   /** All shops the user can access (multi-shop support) */
@@ -36,6 +38,8 @@ export interface SignupDto {
   name?: string; // Required if idToken is not provided
   email?: string; // Required if idToken is not provided
   password?: string; // Required if idToken is not provided
+  /** Required for email/password signup; 10 digits or +91… */
+  phone?: string;
   shopId?: string;
   role?: string; // Default role if not provided
 }

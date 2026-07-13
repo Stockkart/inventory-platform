@@ -290,10 +290,10 @@ function computeVendorInvoiceTotalFromFields(
 
 export function meta() {
   return [
-    { title: 'Product Registration - StockKart' },
+    { title: 'Product Entry - StockKart' },
     {
       name: 'description',
-      content: 'Register and manage your product inventory',
+      content: 'Entry and manage your product inventory',
     },
   ];
 }
@@ -3077,9 +3077,7 @@ export function ProductRegistrationPage() {
                               <VerticalRegistrationGridHeaders
                                 fields={verticalRegistrationFields}
                               />
-                              <TableHeaderCell className={denseDataGrid.th}>
-                                Count *
-                              </TableHeaderCell>
+                              <TableHeaderCell className={denseDataGrid.th}>Qty *</TableHeaderCell>
                               <TableHeaderCell className={denseDataGrid.th}>
                                 Packaging
                               </TableHeaderCell>
@@ -3134,15 +3132,6 @@ export function ProductRegistrationPage() {
                                   </TableHeaderCell>
                                   <TableHeaderCell className={denseDataGrid.th}>
                                     Purchase disc %
-                                  </TableHeaderCell>
-                                  <TableHeaderCell className={denseDataGrid.th}>
-                                    Item type
-                                  </TableHeaderCell>
-                                  <TableHeaderCell
-                                    className={denseDataGrid.th}
-                                    title="Required when item type is Temperature for the item"
-                                  >
-                                    ° *
                                   </TableHeaderCell>
                                   <TableHeaderCell className={denseDataGrid.th}>
                                     Disc appl.
@@ -3768,80 +3757,6 @@ export function ProductRegistrationPage() {
                                     <TableCell className={denseDataGrid.td}>
                                       <Label
                                         className={denseDataGrid.srOnly}
-                                        htmlFor={`grid-item-type-${product.id}`}
-                                      >
-                                        Item type
-                                      </Label>
-                                      <Select
-                                        id={`grid-item-type-${product.id}`}
-                                        className={denseDataGrid.select}
-                                        value={product.itemType ?? 'NORMAL'}
-                                        onChange={(e) => {
-                                          const val = e.target.value as ItemType | '';
-                                          const itemType =
-                                            val === '' ? 'NORMAL' : (val as ItemType);
-                                          handleProductChange(product.id, 'itemType', itemType);
-                                          if (itemType !== 'DEGREE') {
-                                            handleProductChange(
-                                              product.id,
-                                              'itemTypeDegree',
-                                              undefined,
-                                            );
-                                          }
-                                        }}
-                                        disabled={isLoading}
-                                      >
-                                        <option value="NORMAL">Normal</option>
-                                        <option value="COSTLY">Costly</option>
-                                        <option value="DEGREE">Temp / °</option>
-                                      </Select>
-                                    </TableCell>
-                                    <TableCell className={denseDataGrid.td}>
-                                      {product.itemType === 'DEGREE' ? (
-                                        <Input
-                                          id={`grid-item-degree-${product.id}`}
-                                          aria-label="Temperature or degree value"
-                                          type="number"
-                                          className={denseDataGrid.inputNarrow}
-                                          placeholder="°"
-                                          min={1}
-                                          step={1}
-                                          value={
-                                            product.itemTypeDegree != null
-                                              ? product.itemTypeDegree
-                                              : ''
-                                          }
-                                          required
-                                          onChange={(e) => {
-                                            const val = e.target.value;
-                                            if (val === '') {
-                                              handleProductChange(
-                                                product.id,
-                                                'itemTypeDegree',
-                                                undefined,
-                                              );
-                                            } else {
-                                              const num = parseInt(val, 10);
-                                              if (!isNaN(num) && num > 0 && Number.isInteger(num)) {
-                                                handleProductChange(
-                                                  product.id,
-                                                  'itemTypeDegree',
-                                                  num,
-                                                );
-                                              }
-                                            }
-                                          }}
-                                          disabled={isLoading}
-                                        />
-                                      ) : (
-                                        <Text as="span" className={denseDataGrid.cellDash}>
-                                          —
-                                        </Text>
-                                      )}
-                                    </TableCell>
-                                    <TableCell className={denseDataGrid.td}>
-                                      <Label
-                                        className={denseDataGrid.srOnly}
                                         htmlFor={`grid-discount-applicable-${product.id}`}
                                       >
                                         Discount applicable
@@ -4357,7 +4272,7 @@ function GridBulkFillRow({
           type="text"
           inputMode="numeric"
           className={denseDataGrid.inputNarrow}
-          placeholder="Count"
+          placeholder="Qty"
           value={bulk.count ?? ''}
           onChange={(e) => onBulkChange('count', e.target.value)}
           disabled={isLoading}
@@ -4516,31 +4431,6 @@ function GridBulkFillRow({
               max={100}
               value={bulk.purchaseAdditionalDiscount ?? ''}
               onChange={(e) => onBulkChange('purchaseAdditionalDiscount', e.target.value)}
-              disabled={isLoading}
-            />
-          </TableHeaderCell>
-          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
-            <Select
-              className={denseDataGrid.select}
-              value={bulk.itemType ?? ''}
-              onChange={(e) => onBulkChange('itemType', e.target.value as ItemType | '')}
-              disabled={isLoading}
-            >
-              <option value="">—</option>
-              <option value="NORMAL">Normal</option>
-              <option value="COSTLY">Costly</option>
-              <option value="DEGREE">Temp / °</option>
-            </Select>
-          </TableHeaderCell>
-          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
-            <Input
-              type="number"
-              className={denseDataGrid.inputNarrow}
-              placeholder="°"
-              min={1}
-              step={1}
-              value={bulk.itemTypeDegree ?? ''}
-              onChange={(e) => onBulkChange('itemTypeDegree', e.target.value)}
               disabled={isLoading}
             />
           </TableHeaderCell>
@@ -4852,7 +4742,7 @@ function ProductAccordion({
               />
             </Box>
             <Box className={pageStyles.formGroup}>
-              <Label htmlFor={`count-${product.id}`}>Count *</Label>
+              <Label htmlFor={`count-${product.id}`}>Qty *</Label>
               <Input
                 type="text"
                 inputMode="numeric"

@@ -150,8 +150,9 @@ export function pickRegistrationField(
 export function getShopOnboardingFields(
   entities: Record<string, { fields?: VerticalSchemaFieldDef[] }> | undefined,
 ): VerticalSchemaFieldDef[] {
-  return getEntityFields(entities, 'shop').filter((field) =>
-    isVisibleOnSurface(field, 'onboarding'),
+  // Match backend SchemaFieldFilter ONBOARDING: only fields with showIn containing "onboarding".
+  return getEntityFields(entities, 'shop').filter(
+    (field) => field.showIn != null && field.showIn.includes('onboarding'),
   );
 }
 
