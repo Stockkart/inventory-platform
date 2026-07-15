@@ -40,12 +40,14 @@
   },
   "dependencies": {
     "@inventory-platform/api-client": "workspace:*",
+    "@inventory-platform/product": "workspace:*",
     "@inventory-platform/query": "workspace:*",
     "@inventory-platform/routing": "workspace:*",
     "@inventory-platform/session": "workspace:*",
     "@inventory-platform/ui-kit": "workspace:*",
     "@inventory-platform/user": "workspace:*",
-    "@inventory-platform/contracts": "workspace:*"
+    "@inventory-platform/contracts": "workspace:*",
+    "axios": "^1.13.2"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.90.0",

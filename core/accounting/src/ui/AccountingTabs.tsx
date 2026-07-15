@@ -10,6 +10,7 @@ const TABS: ReadonlyArray<{ to: string; label: string; end?: boolean }> = [
   { to: '/dashboard/accounting/trial-balance', label: 'Trial Balance' },
   { to: '/dashboard/accounting/reports/profit-and-loss', label: 'P&L' },
   { to: '/dashboard/accounting/reports/balance-sheet', label: 'Balance Sheet' },
+  { to: '/dashboard/accounting/reports/vendor-money-mis', label: 'Vendor Money MIS' },
   { to: '/dashboard/accounting/opening-balances', label: 'Opening' },
   { to: '/dashboard/accounting/chart-of-accounts', label: 'Chart of Accounts' },
 ];

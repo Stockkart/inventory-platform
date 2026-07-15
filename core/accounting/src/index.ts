@@ -9,7 +9,7 @@ export { ACCOUNTING_ENDPOINTS } from './api/endpoints';
 export { accountingKeys, ACCOUNTING_MODULE_VERSION } from './queries/keys';
 export * from './queries/hooks';
 export { accountingRoutes } from './routes';
-export { accountingNav } from './nav';
+export { accountingNav, accountingReportsNav } from './nav';
 
 export { AccountPicker } from './ui/AccountPicker';
 export { AccountingTabs } from './ui/AccountingTabs';
@@ -24,6 +24,7 @@ export { LedgerPage } from './pages/LedgerPage';
 export { ChartOfAccountsPage } from './pages/ChartOfAccountsPage';
 export { TrialBalancePage } from './pages/TrialBalancePage';
 export { ProfitAndLossPage } from './pages/ProfitAndLossPage';
+export { VendorMoneyMisPage } from './pages/VendorMoneyMisPage';
 export { BalanceSheetPage } from './pages/BalanceSheetPage';
 export { OpeningBalanceWizardPage } from './pages/OpeningBalanceWizardPage';
 export {

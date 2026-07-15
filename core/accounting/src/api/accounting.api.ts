@@ -11,6 +11,8 @@ import type {
   JournalSource,
   LedgerPageResponse,
   OpeningBalanceRequest,
+  PartyMoneyMisParams,
+  PartyMoneyMisResponse,
   PartyStatementResponse,
   PartySummariesResponse,
   ProfitAndLossResponse,
@@ -19,6 +21,7 @@ import type {
   UpdateAccountRequest,
 } from '@inventory-platform/accounting/types';
 import { ACCOUNTING_ENDPOINTS } from './endpoints';
+import { downloadAccountingBlob } from './download';
 
 function unwrap<T>(raw: unknown): T | undefined {
   if (raw == null) return undefined;
@@ -143,6 +146,49 @@ function normalizePartyStatement(st: PartyStatementResponse): PartyStatementResp
       balanceAfter: asNum(e.balanceAfter),
     })),
   };
+}
+
+function normalizePartyMoneyMis(res: PartyMoneyMisResponse): PartyMoneyMisResponse {
+  const summary = res.summary;
+  return {
+    ...res,
+    rows: (res.rows ?? []).map((r) => ({
+      ...r,
+      totalAmount: asNum(r.totalAmount),
+      cashAmount: asNum(r.cashAmount),
+      onlineAmount: asNum(r.onlineAmount),
+      creditAmount: asNum(r.creditAmount),
+      balanceAfter: asNum(r.balanceAfter),
+      opening: Boolean(r.opening),
+    })),
+    summary: {
+      openingBalanceTotal: asNum(summary?.openingBalanceTotal),
+      periodCashTotal: asNum(summary?.periodCashTotal),
+      periodOnlineTotal: asNum(summary?.periodOnlineTotal),
+      periodCreditTotal: asNum(summary?.periodCreditTotal),
+      periodPurchaseTotal: asNum(summary?.periodPurchaseTotal),
+      currentPayableTotal: asNum(summary?.currentPayableTotal),
+      partySummaries: (summary?.partySummaries ?? []).map((p) => ({
+        ...p,
+        openingBalance: asNum(p.openingBalance),
+        closingBalanceInPeriod: asNum(p.closingBalanceInPeriod),
+        currentBalance: asNum(p.currentBalance),
+      })),
+    },
+  };
+}
+
+function partyMoneyMisQuery(params: PartyMoneyMisParams): Record<string, string> {
+  const txnTypes = Array.isArray(params.txnTypes) ? params.txnTypes.join(',') : params.txnTypes;
+  return toQuery({
+    side: params.side ?? 'VENDOR',
+    from: params.from,
+    to: params.to,
+    partyId: params.partyId,
+    txnTypes,
+    moneyFilter: params.moneyFilter,
+    q: params.q,
+  });
 }
 
 export interface JournalListParams {
@@ -405,5 +451,55 @@ export const accountingApi = {
     );
     const inner = unwrap<BackfillResult>(raw);
     return inner ?? { processed: 0, posted: 0, reposted: 0, skipped: 0, failed: 0 };
+  },
+
+  partyMoneyMis: async (params: PartyMoneyMisParams = {}): Promise<PartyMoneyMisResponse> => {
+    const query = partyMoneyMisQuery(params);
+    const raw = await apiClient.get<unknown>(ACCOUNTING_ENDPOINTS.PARTY_MONEY_MIS, query);
+    const inner = unwrap<PartyMoneyMisResponse>(raw);
+    if (!inner) {
+      return {
+        side: params.side ?? 'VENDOR',
+        from: params.from ?? '',
+        to: params.to ?? '',
+        rows: [],
+        summary: {
+          openingBalanceTotal: 0,
+          periodCashTotal: 0,
+          periodOnlineTotal: 0,
+          periodCreditTotal: 0,
+          periodPurchaseTotal: 0,
+          currentPayableTotal: 0,
+          partySummaries: [],
+        },
+      };
+    }
+    return normalizePartyMoneyMis(inner);
+  },
+
+  partyMoneyMisExcel: async (
+    params: PartyMoneyMisParams = {},
+  ): Promise<{ blob: Blob; filename: string }> => {
+    const query = partyMoneyMisQuery(params);
+    const from = query.from ?? 'from';
+    const to = query.to ?? 'to';
+    return downloadAccountingBlob(
+      ACCOUNTING_ENDPOINTS.PARTY_MONEY_MIS_EXCEL,
+      query,
+      `vendor-money-mis-${from}-${to}.xlsx`,
+    );
+  },
+
+  partyMoneyMisPdf: async (
+    params: PartyMoneyMisParams = {},
+  ): Promise<{ blob: Blob; filename: string }> => {
+    const query = partyMoneyMisQuery(params);
+    const from = query.from ?? 'from';
+    const to = query.to ?? 'to';
+    return downloadAccountingBlob(
+      ACCOUNTING_ENDPOINTS.PARTY_MONEY_MIS_PDF,
+      query,
+      `vendor-money-mis-${from}-${to}.pdf`,
+    );
   },
 };

@@ -247,3 +247,78 @@ export interface PartyStatementResponse {
   totalItems: number;
   totalPages: number;
 }
+
+/** Vendor / customer party-money MIS (v1: VENDOR side only). */
+export type PartyMoneyMisSide = 'VENDOR' | 'CUSTOMER';
+
+export type PartyMoneyMisTxnType =
+  | 'VENDOR_PURCHASE'
+  | 'VENDOR_PAYMENT'
+  | 'VENDOR_RETURN'
+  | 'VENDOR_CREDIT_CHARGE';
+
+export type PartyMoneyMisMoneyFilter =
+  | 'ALL'
+  | 'HAS_CASH'
+  | 'HAS_ONLINE'
+  | 'HAS_CREDIT'
+  | 'FULLY_PAID'
+  | 'MIXED';
+
+export interface PartyMoneyMisRow {
+  txnId: string;
+  txnType: PartyMoneyMisTxnType | string;
+  txnTypeLabel: string;
+  partyId: string;
+  partyName: string;
+  txnDate: string;
+  postedAt: string | null;
+  refNo: string | null;
+  againstTxnId: string | null;
+  againstRefNo: string | null;
+  totalAmount: number;
+  cashAmount: number;
+  onlineAmount: number;
+  creditAmount: number;
+  balanceAfter: number;
+  sourceType: string | null;
+  sourceId: string | null;
+  opening: boolean;
+}
+
+export interface PartyMoneyMisPartySummary {
+  partyId: string;
+  partyName: string;
+  openingBalance: number;
+  closingBalanceInPeriod: number;
+  currentBalance: number;
+}
+
+export interface PartyMoneyMisSummary {
+  openingBalanceTotal: number;
+  periodCashTotal: number;
+  periodOnlineTotal: number;
+  periodCreditTotal: number;
+  periodPurchaseTotal: number;
+  currentPayableTotal: number;
+  partySummaries: PartyMoneyMisPartySummary[];
+}
+
+export interface PartyMoneyMisResponse {
+  side: PartyMoneyMisSide | string;
+  from: string;
+  to: string;
+  rows: PartyMoneyMisRow[];
+  summary: PartyMoneyMisSummary;
+}
+
+export interface PartyMoneyMisParams {
+  side?: PartyMoneyMisSide;
+  from?: string;
+  to?: string;
+  partyId?: string;
+  /** Comma-separated txn types, or an array joined by the API client. */
+  txnTypes?: string | PartyMoneyMisTxnType[];
+  moneyFilter?: PartyMoneyMisMoneyFilter;
+  q?: string;
+}
