@@ -6,7 +6,7 @@ export const productNav: NavContribution = {
   icon: 'package',
   items: [
     {
-      path: '/dashboard/product-registration',
+      path: '/dashboard/product-entry',
       label: 'Product Entry',
       icon: 'package',
     },

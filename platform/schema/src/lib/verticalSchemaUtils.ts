@@ -31,6 +31,9 @@ export function isVisibleOnSurface(
   field: VerticalSchemaFieldDef,
   surface: VerticalSchemaSurface,
 ): boolean {
+  if (surface === 'onboarding' || surface === 'invoice') {
+    return field.showIn != null && field.showIn.includes(surface);
+  }
   if (field.required) {
     return true;
   }
@@ -150,9 +153,8 @@ export function pickRegistrationField(
 export function getShopOnboardingFields(
   entities: Record<string, { fields?: VerticalSchemaFieldDef[] }> | undefined,
 ): VerticalSchemaFieldDef[] {
-  // Match backend SchemaFieldFilter ONBOARDING: only fields with showIn containing "onboarding".
-  return getEntityFields(entities, 'shop').filter(
-    (field) => field.showIn != null && field.showIn.includes('onboarding'),
+  return getEntityFields(entities, 'shop').filter((field) =>
+    isVisibleOnSurface(field, 'onboarding'),
   );
 }
 

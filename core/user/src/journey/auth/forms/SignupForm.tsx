@@ -32,8 +32,8 @@ export function SignupForm() {
   const { signup, isAuthenticated, isLoading, error, clearError } = useAuthStore();
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
     phone: '',
+    email: '',
     password: '',
     confirmPassword: '',
   });
@@ -57,8 +57,8 @@ export function SignupForm() {
 
     if (
       !formData.name ||
-      !formData.email ||
       !formData.phone ||
+      !formData.email ||
       !formData.password ||
       !formData.confirmPassword
     ) {
@@ -80,8 +80,8 @@ export function SignupForm() {
     try {
       await signup({
         name: formData.name,
-        email: formData.email,
         phone,
+        email: formData.email,
         password: formData.password,
         role: 'CASHIER',
       });
@@ -153,20 +153,6 @@ export function SignupForm() {
             />
 
             <FormField
-              label="Email"
-              id="email"
-              type="email"
-              placeholder="Enter your email"
-              value={formData.email}
-              onChange={(v) => {
-                setFormData({ ...formData, email: v });
-                clearErrors();
-              }}
-              required
-              disabled={isLoading}
-            />
-
-            <FormField
               label="Phone"
               id="phone"
               type="tel"
@@ -174,6 +160,20 @@ export function SignupForm() {
               value={formData.phone}
               onChange={(v) => {
                 setFormData({ ...formData, phone: v });
+                clearErrors();
+              }}
+              required
+              disabled={isLoading}
+            />
+
+            <FormField
+              label="Email"
+              id="email"
+              type="email"
+              placeholder="Enter your email"
+              value={formData.email}
+              onChange={(v) => {
+                setFormData({ ...formData, email: v });
                 clearErrors();
               }}
               required
