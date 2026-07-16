@@ -31,6 +31,9 @@ export function isVisibleOnSurface(
   field: VerticalSchemaFieldDef,
   surface: VerticalSchemaSurface,
 ): boolean {
+  if (surface === 'onboarding' || surface === 'invoice') {
+    return field.showIn != null && field.showIn.includes(surface);
+  }
   if (field.required) {
     return true;
   }

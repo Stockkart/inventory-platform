@@ -27,7 +27,7 @@ interface FeatureItem {
 const features: FeatureItem[] = [
   {
     icon: Package,
-    title: 'Product Registration',
+    title: 'Product Entry',
     description:
       'Easily register and manage your product inventory with detailed information and categorization.',
   },
