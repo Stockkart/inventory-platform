@@ -235,7 +235,7 @@ export function OverviewPage() {
                 variant="outline"
                 fullWidth
                 leftIcon={<Icon icon={Package} size="sm" />}
-                onClick={() => navigate('/dashboard/product-registration')}
+                onClick={() => navigate('/dashboard/product-entry')}
               >
                 Add Product
               </Button>

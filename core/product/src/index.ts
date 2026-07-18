@@ -16,7 +16,7 @@ export {
 export { productKeys, PRODUCT_MODULE_VERSION } from './queries/keys';
 export * from './queries/hooks';
 export {
-  productRegistrationRoutes,
+  productEntryRoutes,
   importRoutes,
   productSearchRoutes,
   stockCorrectionsRoutes,
@@ -31,7 +31,7 @@ export {
 } from './routes';
 export { productNav, productReturnsNav, productHistoryNav } from './nav';
 
-export { ProductRegistrationPage } from './pages/ProductRegistrationPage';
+export { ProductEntryPage } from './pages/ProductEntryPage';
 export { ImportPage } from './pages/ImportPage';
 export { ProductSearchPage } from './pages/ProductSearchPage';
 export { StockCorrectionsPage } from './pages/StockCorrectionsPage';

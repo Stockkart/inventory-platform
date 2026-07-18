@@ -1,12 +1,12 @@
 import type { RouteModule } from '@inventory-platform/routing';
 
-export const productRegistrationRoutes: RouteModule = {
-  path: 'product-registration',
+export const productEntryRoutes: RouteModule = {
+  path: 'product-entry',
   children: [
     {
       path: '',
-      file: 'routes/product-registration.tsx',
-      lazy: () => import('./routes/product-registration'),
+      file: 'routes/product-entry.tsx',
+      lazy: () => import('./routes/product-entry'),
     },
   ],
 };
@@ -80,7 +80,7 @@ export const mobileUploadRoutes: RouteModule = {
 };
 
 export const productDashboardRoutes: RouteModule[] = [
-  productRegistrationRoutes,
+  productEntryRoutes,
   importRoutes,
   productSearchRoutes,
   stockCorrectionsRoutes,

@@ -6,7 +6,7 @@ export const cafeNav: NavContribution = {
   icon: 'coffee',
   items: [
     {
-      path: '/dashboard/product-registration',
+      path: '/dashboard/product-entry',
       label: 'Ingredient Registration',
       icon: 'package',
     },

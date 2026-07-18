@@ -403,7 +403,7 @@ export function ManualStockPage() {
       </Box>
 
       <Text variant="caption" color="secondary">
-        Register stock via <Link to="/dashboard/product-registration">Ingredient Registration</Link>
+        Register stock via <Link to="/dashboard/product-entry">Ingredient Registration</Link>
         {' · '}
         Review <Link to="/dashboard/stock-corrections">correction history</Link>
       </Text>
