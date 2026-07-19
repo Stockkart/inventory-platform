@@ -64,5 +64,10 @@ export const accountingRoutes: RouteModule = {
       file: 'routes/vendor-money-mis.tsx',
       lazy: () => import('./routes/vendor-money-mis'),
     },
+    {
+      path: 'reports/sales-mis',
+      file: 'routes/sales-mis.tsx',
+      lazy: () => import('./routes/sales-mis'),
+    },
   ],
 };
