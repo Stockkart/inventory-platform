@@ -25,6 +25,7 @@ export { ChartOfAccountsPage } from './pages/ChartOfAccountsPage';
 export { TrialBalancePage } from './pages/TrialBalancePage';
 export { ProfitAndLossPage } from './pages/ProfitAndLossPage';
 export { VendorMoneyMisPage } from './pages/VendorMoneyMisPage';
+export { SalesMisPage } from './pages/SalesMisPage';
 export { BalanceSheetPage } from './pages/BalanceSheetPage';
 export { OpeningBalanceWizardPage } from './pages/OpeningBalanceWizardPage';
 export {

@@ -33,5 +33,10 @@ export const accountingReportsNav: NavContribution = {
       label: 'Vendor Money MIS',
       icon: 'circle-dollar-sign',
     },
+    {
+      path: '/dashboard/accounting/reports/sales-mis',
+      label: 'Sales MIS',
+      icon: 'receipt',
+    },
   ],
 };

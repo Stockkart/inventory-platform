@@ -11,6 +11,8 @@ import type {
   JournalSource,
   LedgerPageResponse,
   OpeningBalanceRequest,
+  SalesMisParams,
+  SalesMisResponse,
   VendorMoneyMisParams,
   VendorMoneyMisResponse,
   PartyStatementResponse,
@@ -184,6 +186,18 @@ function vendorMoneyMisQuery(params: VendorMoneyMisParams): Record<string, strin
     from: params.from,
     to: params.to,
     vendorId: params.vendorId,
+    txnTypes,
+    moneyFilter: params.moneyFilter,
+    q: params.q,
+  });
+}
+
+function salesMisQuery(params: SalesMisParams): Record<string, string> {
+  const txnTypes = Array.isArray(params.txnTypes) ? params.txnTypes.join(',') : params.txnTypes;
+  return toQuery({
+    from: params.from,
+    to: params.to,
+    customerId: params.customerId,
     txnTypes,
     moneyFilter: params.moneyFilter,
     q: params.q,
@@ -498,6 +512,57 @@ export const accountingApi = {
       ACCOUNTING_ENDPOINTS.VENDOR_MONEY_MIS_PDF,
       query,
       `vendor-money-mis-${from}-${to}.pdf`,
+    );
+  },
+
+  /**
+   * Sales (customer-side) MIS.
+   *
+   * Its own endpoint rather than the vendor one with a `side` flag: that flag was dropped
+   * backend-side as speculative, and the two ledgers return different shapes.
+   */
+  salesMis: async (params: SalesMisParams = {}): Promise<SalesMisResponse> => {
+    const query = salesMisQuery(params);
+    const raw = await apiClient.get<unknown>(ACCOUNTING_ENDPOINTS.SALES_MIS, query);
+    const inner = unwrap<SalesMisResponse>(raw);
+    if (!inner) {
+      return {
+        from: params.from ?? '',
+        to: params.to ?? '',
+        rows: [],
+        summary: {
+          openingBalanceTotal: 0,
+          periodCashTotal: 0,
+          periodOnlineTotal: 0,
+          periodCreditTotal: 0,
+          periodSalesTotal: 0,
+          currentReceivableTotal: 0,
+          customerSummaries: [],
+        },
+      };
+    }
+    return inner;
+  },
+
+  salesMisExcel: async (params: SalesMisParams = {}): Promise<{ blob: Blob; filename: string }> => {
+    const query = salesMisQuery(params);
+    const from = query.from ?? 'from';
+    const to = query.to ?? 'to';
+    return downloadAccountingBlob(
+      ACCOUNTING_ENDPOINTS.SALES_MIS_EXCEL,
+      query,
+      `sales-mis-${from}-${to}.xlsx`,
+    );
+  },
+
+  salesMisPdf: async (params: SalesMisParams = {}): Promise<{ blob: Blob; filename: string }> => {
+    const query = salesMisQuery(params);
+    const from = query.from ?? 'from';
+    const to = query.to ?? 'to';
+    return downloadAccountingBlob(
+      ACCOUNTING_ENDPOINTS.SALES_MIS_PDF,
+      query,
+      `sales-mis-${from}-${to}.pdf`,
     );
   },
 };

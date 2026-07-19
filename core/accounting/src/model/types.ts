@@ -369,3 +369,96 @@ export interface VendorMoneyMisParams {
   moneyFilter?: VendorMoneyMisMoneyFilter;
   q?: string;
 }
+
+/**
+ * Sales (customer-side) MIS — receivable counterpart of the vendor report.
+ *
+ * Served by its own `/reports/sales-mis` endpoint rather than the vendor one with a `side` flag:
+ * that flag was dropped backend-side as speculative, and the two ledgers return different shapes.
+ */
+export const SALES_MIS_TXN_TYPE = {
+  SALE: 'SALE',
+  CUSTOMER_RECEIPT: 'CUSTOMER_RECEIPT',
+  SALES_RETURN: 'SALES_RETURN',
+  CUSTOMER_CREDIT_CHARGE: 'CUSTOMER_CREDIT_CHARGE',
+  /** Synthetic carried-forward balance row. Returned by the API, never filtered on. */
+  OPENING: 'OPENING',
+} as const;
+
+export type SalesMisTxnType = (typeof SALES_MIS_TXN_TYPE)[keyof typeof SALES_MIS_TXN_TYPE];
+
+/** Display labels, matching `SalesMisTxnType.label()` on the backend. */
+export const SALES_MIS_TXN_TYPE_LABEL: Record<SalesMisTxnType, string> = {
+  SALE: 'Sale',
+  CUSTOMER_RECEIPT: 'Receipt',
+  SALES_RETURN: 'Return',
+  CUSTOMER_CREDIT_CHARGE: 'Credit charge',
+  OPENING: 'Opening',
+};
+
+/** Types a user can filter by. Excludes OPENING, which explains the running balance. */
+export const FILTERABLE_SALES_MIS_TXN_TYPES: readonly SalesMisTxnType[] = [
+  SALES_MIS_TXN_TYPE.SALE,
+  SALES_MIS_TXN_TYPE.CUSTOMER_RECEIPT,
+  SALES_MIS_TXN_TYPE.SALES_RETURN,
+  SALES_MIS_TXN_TYPE.CUSTOMER_CREDIT_CHARGE,
+];
+
+/** Money-column filters are identical on both sides of the ledger. */
+export type SalesMisMoneyFilter = VendorMoneyMisMoneyFilter;
+
+export interface SalesMisRow {
+  txnId: string;
+  txnType: SalesMisTxnType;
+  txnTypeLabel: string;
+  customerId: string;
+  customerName: string;
+  txnDate: string;
+  postedAt: string | null;
+  refNo: string | null;
+  againstTxnId: string | null;
+  againstRefNo: string | null;
+  totalAmount: number;
+  cashAmount: number;
+  onlineAmount: number;
+  creditAmount: number;
+  balanceAfter: number;
+  sourceType: string | null;
+  sourceId: string | null;
+  opening: boolean;
+}
+
+export interface SalesMisCustomerSummary {
+  customerId: string;
+  customerName: string;
+  openingBalance: number;
+  closingBalanceInPeriod: number;
+  currentBalance: number;
+}
+
+export interface SalesMisSummary {
+  openingBalanceTotal: number;
+  periodCashTotal: number;
+  periodOnlineTotal: number;
+  periodCreditTotal: number;
+  periodSalesTotal: number;
+  currentReceivableTotal: number;
+  customerSummaries: SalesMisCustomerSummary[];
+}
+
+export interface SalesMisResponse {
+  from: string;
+  to: string;
+  rows: SalesMisRow[];
+  summary: SalesMisSummary;
+}
+
+export interface SalesMisParams {
+  from?: string;
+  to?: string;
+  customerId?: string;
+  /** Comma-separated txn types, or an array joined by the API client. */
+  txnTypes?: string | SalesMisTxnType[];
+  moneyFilter?: SalesMisMoneyFilter;
+  q?: string;
+}
