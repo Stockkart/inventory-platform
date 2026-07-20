@@ -38,7 +38,24 @@ export interface PackagingUnit {
   sellHint: string;
 }
 
+/** Shop-scoped catalog identity returned by product suggest / get-by-id (prefill source). */
+export interface ProductSuggestion {
+  id: string;
+  barcode?: string | null;
+  name: string;
+  description?: string | null;
+  companyName?: string | null;
+  businessType?: string | null;
+  itemType?: ItemType | null;
+  itemTypeDegree?: number | null;
+  baseUnit?: string | null;
+  unitConversions?: UnitConversion | null;
+  hsn?: string | null;
+}
+
 export interface CreateInventoryDto {
+  /** Existing catalog product selected in the UI; server reuses or forks on identity edits. */
+  productId?: string;
   barcode?: string;
   name: string;
   companyName: string;
@@ -89,6 +106,8 @@ export interface InventoryResponse {
 }
 
 export interface BulkCreateInventoryItem {
+  /** Existing catalog product selected in the UI; server reuses or forks on identity edits. */
+  productId?: string;
   barcode?: string;
   name: string;
   description?: string;
