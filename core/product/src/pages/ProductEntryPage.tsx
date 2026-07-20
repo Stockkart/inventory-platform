@@ -1535,7 +1535,10 @@ export function ProductEntryPage() {
       if (lastLot) {
         handleApplyPurchasePatch(
           rowId,
-          mapLastInventoryToRegistrationPatch(lastLot, registrationFields),
+          mapLastInventoryToRegistrationPatch(
+            lastLot,
+            registrationFields,
+          ) as Partial<ProductFormData>,
         );
       }
     } catch {
@@ -3278,7 +3281,7 @@ export function ProductEntryPage() {
                                   }
                                 />
                                 <TableCell className={denseDataGrid.td}>
-                                  <div className={productChrome.typeaheadWrap}>
+                                  <Box className={productChrome.typeaheadWrap}>
                                     <Input
                                       type="text"
                                       className={denseDataGrid.input}
@@ -3292,20 +3295,20 @@ export function ProductEntryPage() {
                                     />
                                     {suggestionRowId === product.id &&
                                     productSuggestions.length > 0 ? (
-                                      <ul className={productChrome.typeaheadMenu}>
+                                      <Box as="ul" className={productChrome.typeaheadMenu}>
                                         {productSuggestions.map((s) => (
-                                          <li key={s.id}>
+                                          <Box as="li" key={s.id}>
                                             <ProductSuggestionOption
                                               suggestion={s}
                                               onSelect={() =>
                                                 void applyProductPrefill(product.id, s)
                                               }
                                             />
-                                          </li>
+                                          </Box>
                                         ))}
-                                      </ul>
+                                      </Box>
                                     ) : null}
-                                  </div>
+                                  </Box>
                                 </TableCell>
                                 <VerticalRegistrationGridCells
                                   fields={verticalRegistrationFields}
@@ -4622,24 +4625,33 @@ function ProductSuggestionOption({
     : '';
   const hasMeta = meta.length > 0 || Boolean(unitLabel);
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
       className={productChrome.typeaheadItem}
       onMouseDown={(e) => {
         e.preventDefault();
         onSelect();
       }}
     >
-      <span className={productChrome.typeaheadItemName}>{suggestion.name}</span>
+      <Text as="span" className={productChrome.typeaheadItemName}>
+        {suggestion.name}
+      </Text>
       {hasMeta ? (
-        <span className={productChrome.typeaheadItemMeta}>
+        <Box className={productChrome.typeaheadItemMeta}>
           {meta.length > 0 ? (
-            <span className={productChrome.typeaheadItemMetaText}>{meta.join(' · ')}</span>
+            <Text as="span" className={productChrome.typeaheadItemMetaText}>
+              {meta.join(' · ')}
+            </Text>
           ) : null}
-          {unitLabel ? <span className={productChrome.typeaheadUnitChip}>{unitLabel}</span> : null}
-        </span>
+          {unitLabel ? (
+            <Text as="span" className={productChrome.typeaheadUnitChip}>
+              {unitLabel}
+            </Text>
+          ) : null}
+        </Box>
       ) : null}
-    </button>
+    </Button>
   );
 }
 
@@ -4901,16 +4913,16 @@ function ProductAccordion({
                   disabled={isLoading}
                 />
                 {suggestionRowId === product.id && productSuggestions.length > 0 ? (
-                  <ul className={productChrome.typeaheadMenu}>
+                  <Box as="ul" className={productChrome.typeaheadMenu}>
                     {productSuggestions.map((s) => (
-                      <li key={s.id}>
+                      <Box as="li" key={s.id}>
                         <ProductSuggestionOption
                           suggestion={s}
                           onSelect={() => void onApplyProductPrefill(product.id, s)}
                         />
-                      </li>
+                      </Box>
                     ))}
-                  </ul>
+                  </Box>
                 ) : null}
               </Box>
             </Box>
