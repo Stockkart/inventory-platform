@@ -13,6 +13,13 @@ export const INVENTORY_ENDPOINTS = {
   BY_ID: (id: string) => `/inventory/${id}`,
 } as const;
 
+/** Catalog product paths (shop-scoped identity for registration prefill). */
+export const PRODUCT_ENDPOINTS = {
+  SUGGEST: '/products/suggest',
+  BY_ID: (id: string) => `/products/${id}`,
+  LAST_INVENTORY: (id: string) => `/products/${id}/last-inventory`,
+} as const;
+
 /** Vendor purchase invoice paths. */
 export const VENDOR_PURCHASE_INVOICES_ENDPOINTS = {
   BASE: '/vendor-purchase-invoices',

@@ -1,10 +1,12 @@
 export { inventoryApi, resolveInventoryDocumentId } from './api/inventory.api';
+export { productApi } from './api/product.api';
 export { cartApi } from './api/cart.api';
 export { checkoutApi } from './api/checkout.api';
 export { shopMenuApi } from './api/menu.api';
 export { sellCatalogApi } from './api/sell-catalog.api';
 export {
   INVENTORY_ENDPOINTS,
+  PRODUCT_ENDPOINTS,
   VENDOR_PURCHASE_INVOICES_ENDPOINTS,
   VENDOR_PURCHASE_RETURNS_ENDPOINTS,
   INVENTORY_CORRECTIONS_ENDPOINTS,

@@ -151,6 +151,97 @@
   font-weight: 650;
   letter-spacing: -0.01em;
 }
+
+/* --- Catalog typeahead (product name prefill on registration) --- */
+.typeaheadWrap {
+  position: relative;
+}
+.typeaheadMenu {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 0.25rem;
+  list-style: none;
+  min-width: 240px;
+  max-height: 264px;
+  overflow-y: auto;
+  background: var(--sk-color-bg-elevated, #fff);
+  border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 85%, transparent);
+  border-radius: var(--sk-radius-lg, 12px);
+  box-shadow: var(--sk-shadow-lg, 0 12px 32px rgba(15, 23, 42, 0.12));
+  animation: skTypeaheadIn 0.12s ease-out;
+}
+@keyframes skTypeaheadIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.typeaheadItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+  padding: 0.5rem 0.65rem;
+  border: none;
+  background: transparent;
+  border-radius: var(--sk-radius-md, 8px);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.typeaheadItem:hover,
+.typeaheadItem:focus-visible {
+  background: var(--sk-color-brand-soft, rgba(59, 130, 246, 0.12));
+  outline: none;
+}
+.typeaheadItemName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: -0.01em;
+  color: var(--sk-color-text-primary, #0f172a);
+}
+.typeaheadItemMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  overflow: hidden;
+  font-size: 0.76rem;
+  color: var(--sk-color-text-muted, #64748b);
+}
+.typeaheadItemMetaText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.typeaheadUnitChip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.05rem 0.45rem;
+  border-radius: var(--sk-radius-full, 9999px);
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  color: var(--sk-color-brand-hover, #2563eb);
+  background: var(--sk-color-brand-soft, rgba(59, 130, 246, 0.12));
+}
+.typeaheadEmpty {
+  padding: 0.6rem 0.7rem;
+  font-size: 0.8rem;
+  color: var(--sk-color-text-muted, #64748b);
+}
 .cartSection {
   flex: 1;
   min-height: 0;

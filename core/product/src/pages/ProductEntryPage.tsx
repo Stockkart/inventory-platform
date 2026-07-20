@@ -5,6 +5,8 @@ import { uploadApi } from '@inventory-platform/product/api';
 import { apiClient } from '@inventory-platform/api-client';
 import { userLookupApi } from '@inventory-platform/user/users';
 import { inventoryApi } from '../api/inventory.api';
+import { productApi } from '../api/product.api';
+import { mapLastInventoryToRegistrationPatch } from '../lib/registrationPrefill';
 import { vendorsApi } from '@inventory-platform/user/vendors';
 import type {
   CreateInventoryDto,
@@ -19,6 +21,7 @@ import type {
   PurchaseSchemeInputType,
   PackagingUnit,
   BillingMode,
+  ProductSuggestion,
 } from '@inventory-platform/product/types';
 import type { CustomReminderInput } from '@inventory-platform/contracts';
 import type {
@@ -1466,6 +1469,92 @@ export function ProductEntryPage() {
     setSuccess(null);
   };
 
+  // --- Catalog product typeahead (prefill identity from an existing product) ---
+  const [productSuggestions, setProductSuggestions] = useState<ProductSuggestion[]>([]);
+  const [suggestionRowId, setSuggestionRowId] = useState<string | null>(null);
+  const suggestTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearProductSuggestions = useCallback(() => {
+    if (suggestTimerRef.current) {
+      clearTimeout(suggestTimerRef.current);
+      suggestTimerRef.current = null;
+    }
+    setProductSuggestions([]);
+    setSuggestionRowId(null);
+  }, []);
+
+  const handleNameChange = (rowId: string, value: string) => {
+    // Editing the name breaks the link to a previously selected product; the
+    // server will fork a new product if identity fields differ on submit.
+    handleProductChange(rowId, 'name', value);
+    handleProductChange(rowId, 'productId', undefined);
+    setSuggestionRowId(rowId);
+    if (suggestTimerRef.current) clearTimeout(suggestTimerRef.current);
+    const q = value.trim();
+    if (q.length < 2) {
+      setProductSuggestions([]);
+      return;
+    }
+    suggestTimerRef.current = setTimeout(() => {
+      void productApi
+        .suggest(q)
+        .then((rows) => {
+          setSuggestionRowId((current) => {
+            if (current === rowId) setProductSuggestions(rows);
+            return current;
+          });
+        })
+        .catch(() => setProductSuggestions([]));
+    }, 250);
+  };
+
+  const applyProductPrefill = async (rowId: string, suggestion: ProductSuggestion) => {
+    // Catalog identity first; then load the most recent lot for pricing + extension defaults.
+    handleApplyPurchasePatch(rowId, {
+      productId: suggestion.id,
+      name: suggestion.name,
+      barcode: suggestion.barcode ?? '',
+      description: suggestion.description ?? '',
+      companyName: suggestion.companyName ?? '',
+      businessType: suggestion.businessType ?? shopSchema?.verticalId ?? 'medical',
+      hsn: suggestion.hsn ?? '',
+      baseUnit: suggestion.baseUnit ?? '',
+      ...(suggestion.unitConversions?.factor
+        ? {
+            unitsPerPack: suggestion.unitConversions.factor,
+            conversionFactor: suggestion.unitConversions.factor,
+          }
+        : {}),
+      ...(suggestion.itemType ? { itemType: suggestion.itemType } : {}),
+      ...(suggestion.itemTypeDegree != null ? { itemTypeDegree: suggestion.itemTypeDegree } : {}),
+    });
+    clearProductSuggestions();
+
+    try {
+      const lastLot = await productApi.getLastInventory(suggestion.id);
+      if (lastLot) {
+        handleApplyPurchasePatch(
+          rowId,
+          mapLastInventoryToRegistrationPatch(
+            lastLot,
+            registrationFields,
+          ) as Partial<ProductFormData>,
+        );
+      }
+    } catch {
+      // Identity prefill already applied; ignore missing/failed last-lot lookup.
+    }
+  };
+
+  const handleNameBlur = (rowId: string) => {
+    // Delay so a suggestion's onMouseDown can fire before the list unmounts.
+    setTimeout(() => {
+      setSuggestionRowId((current) => (current === rowId ? null : current));
+    }, 150);
+  };
+
+  useEffect(() => () => clearProductSuggestions(), [clearProductSuggestions]);
+
   const handleIntegerChange = (productId: string, field: string, value: string) => {
     if (value === '') {
       handleProductChange(productId, field as keyof ProductFormData, 0);
@@ -1991,6 +2080,7 @@ export function ProductEntryPage() {
         const batchOnExtension = batchField?.storage === 'extension';
 
         const coreItem = {
+          ...(product.productId ? { productId: product.productId } : {}),
           ...(product.barcode?.trim() ? { barcode: product.barcode.trim() } : {}),
           name: product.name,
           description: product.description || undefined,
@@ -3191,17 +3281,34 @@ export function ProductEntryPage() {
                                   }
                                 />
                                 <TableCell className={denseDataGrid.td}>
-                                  <Input
-                                    type="text"
-                                    className={denseDataGrid.input}
-                                    placeholder="Product name"
-                                    value={product.name}
-                                    onChange={(e) =>
-                                      handleProductChange(product.id, 'name', e.target.value)
-                                    }
-                                    disabled={isLoading}
-                                    required
-                                  />
+                                  <Box className={productChrome.typeaheadWrap}>
+                                    <Input
+                                      type="text"
+                                      className={denseDataGrid.input}
+                                      placeholder="Product name"
+                                      value={product.name}
+                                      autoComplete="off"
+                                      onChange={(e) => handleNameChange(product.id, e.target.value)}
+                                      onBlur={() => handleNameBlur(product.id)}
+                                      disabled={isLoading}
+                                      required
+                                    />
+                                    {suggestionRowId === product.id &&
+                                    productSuggestions.length > 0 ? (
+                                      <Box as="ul" className={productChrome.typeaheadMenu}>
+                                        {productSuggestions.map((s) => (
+                                          <Box as="li" key={s.id}>
+                                            <ProductSuggestionOption
+                                              suggestion={s}
+                                              onSelect={() =>
+                                                void applyProductPrefill(product.id, s)
+                                              }
+                                            />
+                                          </Box>
+                                        ))}
+                                      </Box>
+                                    ) : null}
+                                  </Box>
                                 </TableCell>
                                 <VerticalRegistrationGridCells
                                   fields={verticalRegistrationFields}
@@ -3860,6 +3967,11 @@ export function ProductEntryPage() {
                             onCustomRemindersChange={(reminders) =>
                               handleProductChange(product.id, 'customReminders', reminders)
                             }
+                            productSuggestions={productSuggestions}
+                            suggestionRowId={suggestionRowId}
+                            onNameChange={handleNameChange}
+                            onApplyProductPrefill={applyProductPrefill}
+                            onNameBlur={handleNameBlur}
                             isLoading={isLoading}
                             isoToLocalDateTime={isoToLocalDateTime}
                             localDateTimeToIso={localDateTimeToIso}
@@ -4496,6 +4608,53 @@ function FormRowSpacer() {
 }
 
 // Product Accordion Component
+function ProductSuggestionOption({
+  suggestion,
+  onSelect,
+}: {
+  suggestion: ProductSuggestion;
+  onSelect: () => void;
+}) {
+  const meta: string[] = [];
+  if (suggestion.companyName) meta.push(suggestion.companyName);
+  if (suggestion.hsn) meta.push(`HSN ${suggestion.hsn}`);
+  const unitLabel = suggestion.baseUnit
+    ? `${suggestion.baseUnit}${
+        suggestion.unitConversions?.factor ? ` ×${suggestion.unitConversions.factor}` : ''
+      }`
+    : '';
+  const hasMeta = meta.length > 0 || Boolean(unitLabel);
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      className={productChrome.typeaheadItem}
+      onMouseDown={(e) => {
+        e.preventDefault();
+        onSelect();
+      }}
+    >
+      <Text as="span" className={productChrome.typeaheadItemName}>
+        {suggestion.name}
+      </Text>
+      {hasMeta ? (
+        <Box className={productChrome.typeaheadItemMeta}>
+          {meta.length > 0 ? (
+            <Text as="span" className={productChrome.typeaheadItemMetaText}>
+              {meta.join(' · ')}
+            </Text>
+          ) : null}
+          {unitLabel ? (
+            <Text as="span" className={productChrome.typeaheadUnitChip}>
+              {unitLabel}
+            </Text>
+          ) : null}
+        </Box>
+      ) : null}
+    </Button>
+  );
+}
+
 interface ProductAccordionProps {
   product: ProductFormData;
   companyField: VerticalSchemaFieldDef | null;
@@ -4517,6 +4676,11 @@ interface ProductAccordionProps {
   onIntegerChange: (productId: string, field: string, value: string) => void;
   onDecimalChange: (productId: string, field: string, value: string) => void;
   onCustomRemindersChange: (reminders: CustomReminderInput[]) => void;
+  productSuggestions: ProductSuggestion[];
+  suggestionRowId: string | null;
+  onNameChange: (rowId: string, value: string) => void;
+  onApplyProductPrefill: (rowId: string, suggestion: ProductSuggestion) => void | Promise<void>;
+  onNameBlur: (rowId: string) => void;
   isLoading: boolean;
   isoToLocalDateTime: (iso: string) => string;
   localDateTimeToIso: (local: string) => string;
@@ -4539,6 +4703,11 @@ function ProductAccordion({
   onIntegerChange,
   onDecimalChange,
   onCustomRemindersChange,
+  productSuggestions,
+  suggestionRowId,
+  onNameChange,
+  onApplyProductPrefill,
+  onNameBlur,
   isLoading,
   isoToLocalDateTime,
   localDateTimeToIso,
@@ -4731,15 +4900,31 @@ function ProductAccordion({
           <Box className={accordionStyles.formRow}>
             <Box className={pageStyles.formGroup}>
               <Label htmlFor={`name-${product.id}`}>Product Name *</Label>
-              <Input
-                type="text"
-                id={`name-${product.id}`}
-                placeholder="Enter product name"
-                value={product.name}
-                onChange={(e) => onChange(product.id, 'name', e.target.value)}
-                required
-                disabled={isLoading}
-              />
+              <Box className={productChrome.typeaheadWrap}>
+                <Input
+                  type="text"
+                  id={`name-${product.id}`}
+                  placeholder="Enter product name"
+                  value={product.name}
+                  autoComplete="off"
+                  onChange={(e) => onNameChange(product.id, e.target.value)}
+                  onBlur={() => onNameBlur(product.id)}
+                  required
+                  disabled={isLoading}
+                />
+                {suggestionRowId === product.id && productSuggestions.length > 0 ? (
+                  <Box as="ul" className={productChrome.typeaheadMenu}>
+                    {productSuggestions.map((s) => (
+                      <Box as="li" key={s.id}>
+                        <ProductSuggestionOption
+                          suggestion={s}
+                          onSelect={() => void onApplyProductPrefill(product.id, s)}
+                        />
+                      </Box>
+                    ))}
+                  </Box>
+                ) : null}
+              </Box>
             </Box>
             <Box className={pageStyles.formGroup}>
               <Label htmlFor={`count-${product.id}`}>Qty *</Label>
