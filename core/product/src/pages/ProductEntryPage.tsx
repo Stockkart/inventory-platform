@@ -6,6 +6,7 @@ import { apiClient } from '@inventory-platform/api-client';
 import { userLookupApi } from '@inventory-platform/user/users';
 import { inventoryApi } from '../api/inventory.api';
 import { productApi } from '../api/product.api';
+import { mapLastInventoryToRegistrationPatch } from '../lib/registrationPrefill';
 import { vendorsApi } from '@inventory-platform/user/vendors';
 import type {
   CreateInventoryDto,
@@ -1507,9 +1508,8 @@ export function ProductEntryPage() {
     }, 250);
   };
 
-  const applyProductPrefill = (rowId: string, suggestion: ProductSuggestion) => {
-    // Prefill catalog identity only; pricing and lot fields stay untouched so the
-    // user must enter a fresh price for this stock-in.
+  const applyProductPrefill = async (rowId: string, suggestion: ProductSuggestion) => {
+    // Catalog identity first; then load the most recent lot for pricing + extension defaults.
     handleApplyPurchasePatch(rowId, {
       productId: suggestion.id,
       name: suggestion.name,
@@ -1529,6 +1529,18 @@ export function ProductEntryPage() {
       ...(suggestion.itemTypeDegree != null ? { itemTypeDegree: suggestion.itemTypeDegree } : {}),
     });
     clearProductSuggestions();
+
+    try {
+      const lastLot = await productApi.getLastInventory(suggestion.id);
+      if (lastLot) {
+        handleApplyPurchasePatch(
+          rowId,
+          mapLastInventoryToRegistrationPatch(lastLot, registrationFields),
+        );
+      }
+    } catch {
+      // Identity prefill already applied; ignore missing/failed last-lot lookup.
+    }
   };
 
   const handleNameBlur = (rowId: string) => {
@@ -3285,7 +3297,9 @@ export function ProductEntryPage() {
                                           <li key={s.id}>
                                             <ProductSuggestionOption
                                               suggestion={s}
-                                              onSelect={() => applyProductPrefill(product.id, s)}
+                                              onSelect={() =>
+                                                void applyProductPrefill(product.id, s)
+                                              }
                                             />
                                           </li>
                                         ))}
@@ -4653,7 +4667,7 @@ interface ProductAccordionProps {
   productSuggestions: ProductSuggestion[];
   suggestionRowId: string | null;
   onNameChange: (rowId: string, value: string) => void;
-  onApplyProductPrefill: (rowId: string, suggestion: ProductSuggestion) => void;
+  onApplyProductPrefill: (rowId: string, suggestion: ProductSuggestion) => void | Promise<void>;
   onNameBlur: (rowId: string) => void;
   isLoading: boolean;
   isoToLocalDateTime: (iso: string) => string;
@@ -4892,7 +4906,7 @@ function ProductAccordion({
                       <li key={s.id}>
                         <ProductSuggestionOption
                           suggestion={s}
-                          onSelect={() => onApplyProductPrefill(product.id, s)}
+                          onSelect={() => void onApplyProductPrefill(product.id, s)}
                         />
                       </li>
                     ))}

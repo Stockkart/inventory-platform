@@ -17,6 +17,7 @@ export const INVENTORY_ENDPOINTS = {
 export const PRODUCT_ENDPOINTS = {
   SUGGEST: '/products/suggest',
   BY_ID: (id: string) => `/products/${id}`,
+  LAST_INVENTORY: (id: string) => `/products/${id}/last-inventory`,
 } as const;
 
 /** Vendor purchase invoice paths. */

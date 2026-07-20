@@ -1,7 +1,7 @@
 import { apiClient } from '@inventory-platform/api-client';
 import { PRODUCT_ENDPOINTS } from './endpoints';
 import type { ApiResponse } from '@inventory-platform/contracts';
-import type { ProductSuggestion } from '@inventory-platform/product/types';
+import type { ProductSuggestion, InventoryItem } from '@inventory-platform/product/types';
 
 export const productApi = {
   /** Typeahead for registration: existing catalog products for the current shop. */
@@ -21,5 +21,13 @@ export const productApi = {
       PRODUCT_ENDPOINTS.BY_ID(id.trim()),
     );
     return response.data;
+  },
+
+  /** Latest inventory lot for a catalog product (registration prefill). Null when none exists. */
+  getLastInventory: async (productId: string): Promise<InventoryItem | null> => {
+    const response = await apiClient.get<ApiResponse<InventoryItem | null>>(
+      PRODUCT_ENDPOINTS.LAST_INVENTORY(productId.trim()),
+    );
+    return response.data ?? null;
   },
 };
