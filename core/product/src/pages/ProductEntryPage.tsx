@@ -4626,7 +4626,6 @@ function ProductSuggestionOption({
   return (
     <Box
       as="button"
-      type="button"
       className={productChrome.typeaheadItem}
       onMouseDown={(e) => {
         e.preventDefault();
