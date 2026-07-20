@@ -4615,19 +4615,18 @@ function ProductSuggestionOption({
   suggestion: ProductSuggestion;
   onSelect: () => void;
 }) {
-  const meta: string[] = [];
-  if (suggestion.companyName) meta.push(suggestion.companyName);
-  if (suggestion.hsn) meta.push(`HSN ${suggestion.hsn}`);
+  const company = suggestion.companyName?.trim() || '';
+  const hsn = suggestion.hsn?.trim() || '';
+  const metaParts = [company, hsn ? `HSN ${hsn}` : ''].filter(Boolean);
   const unitLabel = suggestion.baseUnit
     ? `${suggestion.baseUnit}${
         suggestion.unitConversions?.factor ? ` ×${suggestion.unitConversions.factor}` : ''
       }`
     : '';
-  const hasMeta = meta.length > 0 || Boolean(unitLabel);
   return (
-    <Button
+    <Box
+      as="button"
       type="button"
-      variant="ghost"
       className={productChrome.typeaheadItem}
       onMouseDown={(e) => {
         e.preventDefault();
@@ -4637,21 +4636,19 @@ function ProductSuggestionOption({
       <Text as="span" className={productChrome.typeaheadItemName}>
         {suggestion.name}
       </Text>
-      {hasMeta ? (
+      {metaParts.length > 0 ? (
         <Box className={productChrome.typeaheadItemMeta}>
-          {meta.length > 0 ? (
-            <Text as="span" className={productChrome.typeaheadItemMetaText}>
-              {meta.join(' · ')}
-            </Text>
-          ) : null}
-          {unitLabel ? (
-            <Text as="span" className={productChrome.typeaheadUnitChip}>
-              {unitLabel}
-            </Text>
-          ) : null}
+          <Text as="span" className={productChrome.typeaheadItemMetaText}>
+            {metaParts.join(' · ')}
+          </Text>
         </Box>
       ) : null}
-    </Button>
+      {unitLabel ? (
+        <Text as="span" className={productChrome.typeaheadUnitChip}>
+          {unitLabel}
+        </Text>
+      ) : null}
+    </Box>
   );
 }
 
