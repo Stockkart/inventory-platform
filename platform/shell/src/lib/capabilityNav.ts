@@ -22,7 +22,7 @@ const VENDOR_RETURN_PATH = '/dashboard/vendor-return';
 
 /** Icons for capability-driven nav when the vertical plugin is not loaded yet. */
 const CAPABILITY_PATH_ICONS: Partial<Record<string, NavIconName>> = {
-  '/dashboard/product-registration': 'package',
+  '/dashboard/product-entry': 'package',
   '/dashboard/manual-stock': 'search',
   '/dashboard/menu': 'clipboard-list',
   '/dashboard/menu-sell': 'shopping-cart',

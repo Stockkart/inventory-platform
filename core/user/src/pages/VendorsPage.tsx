@@ -181,7 +181,7 @@ export function VendorsPage() {
   };
 
   const goRegisterPurchaseFromVendor = (vendor: VendorResponse) => {
-    navigate('/dashboard/product-registration', {
+    navigate('/dashboard/product-entry', {
       state: { prefillVendor: vendor },
     });
   };

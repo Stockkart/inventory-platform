@@ -719,7 +719,7 @@ function computeVendorInvoiceTotalsFromProducts(
   };
 }
 
-export function ProductRegistrationPage() {
+export function ProductEntryPage() {
   const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
   const activeShopId = useAuthStore((s) => s.user?.shopId ?? null) ?? apiClient.getShopId();
   const fetchCapabilities = useShopCapabilitiesStore((s) => s.fetchCapabilities);

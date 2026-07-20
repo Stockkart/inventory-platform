@@ -32,6 +32,10 @@ function useModalContext() {
 export function Modal({ open, onClose, size = 'md', children, className, style }: ModalProps) {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) {
@@ -39,13 +43,13 @@ export function Modal({ open, onClose, size = 'md', children, className, style }
     }
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        onClose?.();
+        onCloseRef.current?.();
       }
     };
     document.addEventListener('keydown', onKeyDown);
     panelRef.current?.focus();
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) {
     return null;
@@ -119,6 +123,11 @@ export interface DrawerProps {
 }
 
 export function Drawer({ open, onClose, children, side = 'left', labelledBy }: DrawerProps) {
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     if (!open) {
       return;
@@ -127,7 +136,7 @@ export function Drawer({ open, onClose, children, side = 'left', labelledBy }: D
     document.body.style.overflow = 'hidden';
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        onClose?.();
+        onCloseRef.current?.();
       }
     };
     document.addEventListener('keydown', onKeyDown);
@@ -135,7 +144,7 @@ export function Drawer({ open, onClose, children, side = 'left', labelledBy }: D
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', onKeyDown);
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) {
     return null;
