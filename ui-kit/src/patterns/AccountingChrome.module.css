@@ -971,6 +971,55 @@
   font-weight: 500;
 }
 
+/**
+ * Wide ledger tables (Vendor Money MIS): keep a floor width so sidebar squeeze
+ * scrolls horizontally instead of overlapping header labels like Transaction/Invoice.
+ */
+.misTable {
+  width: 100%;
+  min-width: 72rem;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.misTable :global(thead) {
+  background: transparent;
+}
+
+.misTable :global(th),
+.misTable :global(td) {
+  padding: 0.75rem 0.65rem !important;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 70%, transparent);
+}
+
+.misTable :global(thead th) {
+  padding-bottom: 0.65rem !important;
+  font-weight: 600 !important;
+  font-size: 0.75rem !important;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sk-color-text-secondary, #64748b) !important;
+  border-bottom-color: color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 95%, transparent);
+  background: transparent !important;
+}
+
+.misTable :global(tbody tr:last-child td) {
+  border-bottom: none;
+}
+
+.misTxnTypeCol {
+  width: 7.5rem;
+}
+
+.misInvoiceCol {
+  width: 7rem;
+}
+
 .tbGroupRow {
   font-size: 0.9375rem !important;
   font-weight: 700 !important;

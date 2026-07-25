@@ -1,11 +1,9 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
-  Alert,
   Box,
   Button,
   Card,
   CardBody,
-  CenteredLoader,
   Checkbox,
   FormField,
   Inline,
@@ -23,20 +21,17 @@ import {
   Text,
   accountingChrome,
 } from '@inventory-platform/ui-kit';
-import { inventoryApi } from '@inventory-platform/product';
-import type { VendorPurchaseInvoiceDetail } from '@inventory-platform/product/types';
 import { useNotify } from '@inventory-platform/session';
 import type {
   VendorMoneyMisMoneyFilter,
   VendorMoneyMisParams,
   VendorMoneyMisResponse,
-  VendorMoneyMisRow,
   VendorMoneyMisTxnType,
 } from '@inventory-platform/accounting/types';
 import { accountingApi } from '../api/accounting.api';
 import { openOrDownloadPdf, triggerBlobDownload } from '../api/download';
 import { AccountingTabs } from '../ui/AccountingTabs';
-import { formatDateShort, formatDateTime, formatMoney, todayLocalDate } from '../model/format';
+import { formatDateShort, formatMoney, todayLocalDate } from '../model/format';
 
 type PeriodPreset = 'today' | 'week' | 'month' | 'custom';
 
@@ -55,8 +50,6 @@ const MONEY_FILTER_OPTIONS: ReadonlyArray<{ value: VendorMoneyMisMoneyFilter; la
   { value: 'FULLY_PAID', label: 'Fully paid' },
   { value: 'MIXED', label: 'Mixed' },
 ];
-
-const COL_COUNT = 11;
 
 function monthStart(d = new Date()): string {
   const y = d.getFullYear();
@@ -84,12 +77,6 @@ function rangeForPreset(preset: PeriodPreset): { from: string; to: string } {
   return { from: monthStart(), to };
 }
 
-function againstLabel(row: VendorMoneyMisRow): string {
-  if (row.againstRefNo) return row.againstRefNo;
-  if (row.againstTxnId) return row.againstTxnId;
-  return '—';
-}
-
 export function VendorMoneyMisPage() {
   const { error: notifyError, success: notifySuccess } = useNotify;
   const initial = rangeForPreset('month');
@@ -111,11 +98,6 @@ export function VendorMoneyMisPage() {
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState<'excel' | 'pdf' | null>(null);
 
-  const [expandedTxnId, setExpandedTxnId] = useState<string | null>(null);
-  const [purchaseDetail, setPurchaseDetail] = useState<VendorPurchaseInvoiceDetail | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [detailError, setDetailError] = useState<string | null>(null);
-
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -124,9 +106,6 @@ export function VendorMoneyMisPage() {
         const res = await accountingApi.vendorMoneyMis(applied);
         if (!cancelled) {
           setData(res);
-          setExpandedTxnId(null);
-          setPurchaseDetail(null);
-          setDetailError(null);
         }
       } catch (e) {
         if (!cancelled) {
@@ -198,37 +177,6 @@ export function VendorMoneyMisPage() {
       notifyError(e instanceof Error ? e.message : `Failed to download ${kind.toUpperCase()}`);
     } finally {
       setDownloading(null);
-    }
-  }
-
-  async function handleRowClick(row: VendorMoneyMisRow) {
-    if (expandedTxnId === row.txnId) {
-      setExpandedTxnId(null);
-      setPurchaseDetail(null);
-      setDetailError(null);
-      return;
-    }
-
-    setExpandedTxnId(row.txnId);
-    setPurchaseDetail(null);
-    setDetailError(null);
-
-    if (row.txnType !== 'VENDOR_PURCHASE') return;
-
-    const invoiceId = row.sourceId?.trim() || row.txnId;
-    if (!invoiceId) {
-      setDetailError('No invoice id available for this purchase.');
-      return;
-    }
-
-    setDetailLoading(true);
-    try {
-      const detail = await inventoryApi.getVendorPurchaseInvoice(invoiceId);
-      setPurchaseDetail(detail);
-    } catch (e) {
-      setDetailError(e instanceof Error ? e.message : 'Failed to load purchase invoice');
-    } finally {
-      setDetailLoading(false);
     }
   }
 
@@ -368,7 +316,7 @@ export function VendorMoneyMisPage() {
           <CardBody>
             <Table>
               <TableBody>
-                <TableLoadingRow colSpan={COL_COUNT} label="Loading Vendor Money MIS…" />
+                <TableLoadingRow colSpan={10} label="Loading Vendor Money MIS…" />
               </TableBody>
             </Table>
           </CardBody>
@@ -423,15 +371,18 @@ export function VendorMoneyMisPage() {
                   No transactions in this period.
                 </Text>
               ) : (
-                <Table className={accountingChrome.tbTable}>
+                <Table className={accountingChrome.misTable}>
                   <TableHead>
                     <TableRow>
                       <TableHeaderCell>Date</TableHeaderCell>
                       <TableHeaderCell>Supplier</TableHeaderCell>
                       <TableHeaderCell>Txn ID</TableHeaderCell>
-                      <TableHeaderCell>Transaction</TableHeaderCell>
-                      <TableHeaderCell>Invoice</TableHeaderCell>
-                      <TableHeaderCell>Against</TableHeaderCell>
+                      <TableHeaderCell className={accountingChrome.misTxnTypeCol}>
+                        Transaction
+                      </TableHeaderCell>
+                      <TableHeaderCell className={accountingChrome.misInvoiceCol}>
+                        Invoice
+                      </TableHeaderCell>
                       <TableHeaderCell className={accountingChrome.tbNumCol}>
                         Bill Amount
                       </TableHeaderCell>
@@ -448,54 +399,34 @@ export function VendorMoneyMisPage() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {rows.map((row) => {
-                      const open = expandedTxnId === row.txnId;
-                      return (
-                        <Fragment key={row.txnId}>
-                          <TableRow
-                            onClick={() => void handleRowClick(row)}
-                            style={{ cursor: 'pointer' }}
-                            aria-expanded={open}
-                          >
-                            <TableCell>{formatDateShort(row.txnDate)}</TableCell>
-                            <TableCell>{row.vendorName || '—'}</TableCell>
-                            <TableCell>{row.txnId}</TableCell>
-                            <TableCell>
-                              {row.opening ? 'Opening' : row.txnTypeLabel || row.txnType}
-                            </TableCell>
-                            <TableCell>{row.refNo || '—'}</TableCell>
-                            <TableCell>{againstLabel(row)}</TableCell>
-                            <TableCell className={accountingChrome.tbNumCol}>
-                              {formatMoney(row.totalAmount)}
-                            </TableCell>
-                            <TableCell className={accountingChrome.tbNumCol}>
-                              {formatMoney(row.cashAmount)}
-                            </TableCell>
-                            <TableCell className={accountingChrome.tbNumCol}>
-                              {formatMoney(row.onlineAmount)}
-                            </TableCell>
-                            <TableCell className={accountingChrome.tbNumCol}>
-                              {formatMoney(row.creditAmount)}
-                            </TableCell>
-                            <TableCell className={accountingChrome.tbNumCol}>
-                              {formatMoney(row.balanceAfter)}
-                            </TableCell>
-                          </TableRow>
-                          {open ? (
-                            <TableRow>
-                              <TableCell colSpan={COL_COUNT}>
-                                <RowDetails
-                                  row={row}
-                                  detail={purchaseDetail}
-                                  loading={detailLoading}
-                                  error={detailError}
-                                />
-                              </TableCell>
-                            </TableRow>
-                          ) : null}
-                        </Fragment>
-                      );
-                    })}
+                    {rows.map((row) => (
+                      <TableRow key={row.txnId}>
+                        <TableCell>{formatDateShort(row.txnDate)}</TableCell>
+                        <TableCell>{row.vendorName || '—'}</TableCell>
+                        <TableCell>{row.txnId}</TableCell>
+                        <TableCell className={accountingChrome.misTxnTypeCol}>
+                          {row.opening ? 'Opening' : row.txnTypeLabel || row.txnType}
+                        </TableCell>
+                        <TableCell className={accountingChrome.misInvoiceCol}>
+                          {row.refNo || '—'}
+                        </TableCell>
+                        <TableCell className={accountingChrome.tbNumCol}>
+                          {formatMoney(row.totalAmount)}
+                        </TableCell>
+                        <TableCell className={accountingChrome.tbNumCol}>
+                          {formatMoney(row.cashAmount)}
+                        </TableCell>
+                        <TableCell className={accountingChrome.tbNumCol}>
+                          {formatMoney(row.onlineAmount)}
+                        </TableCell>
+                        <TableCell className={accountingChrome.tbNumCol}>
+                          {formatMoney(row.creditAmount)}
+                        </TableCell>
+                        <TableCell className={accountingChrome.tbNumCol}>
+                          {formatMoney(row.balanceAfter)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               )}
@@ -509,95 +440,5 @@ export function VendorMoneyMisPage() {
         </Stack>
       )}
     </Stack>
-  );
-}
-
-function RowDetails({
-  row,
-  detail,
-  loading,
-  error,
-}: {
-  row: VendorMoneyMisRow;
-  detail: VendorPurchaseInvoiceDetail | null;
-  loading: boolean;
-  error: string | null;
-}) {
-  if (row.txnType === 'VENDOR_PURCHASE') {
-    return (
-      <Stack gap="sm" padding="sm">
-        {loading ? <CenteredLoader label="Loading invoice…" size="sm" /> : null}
-        {error ? <Alert variant="danger">{error}</Alert> : null}
-        {detail ? (
-          <Stack gap="sm">
-            <Text as="h4" className={accountingChrome.overviewSectionTitle}>
-              Purchase invoice
-            </Text>
-            <Inline gap="lg" flexWrap>
-              <DetailField label="Invoice no" value={detail.invoiceNo || '—'} />
-              <DetailField label="Vendor" value={detail.vendorName || row.vendorName || '—'} />
-              <DetailField
-                label="Invoice date"
-                value={formatDateShort(
-                  detail.invoiceDate ? String(detail.invoiceDate).slice(0, 10) : null,
-                )}
-              />
-              <DetailField label="Invoice total" value={`₹${formatMoney(detail.invoiceTotal)}`} />
-              <DetailField label="Tax total" value={`₹${formatMoney(detail.taxTotal)}`} />
-              <DetailField label="Lines" value={String(detail.lines?.length ?? 0)} />
-            </Inline>
-            <Inline gap="lg" flexWrap>
-              <DetailField label="Cash (row)" value={`₹${formatMoney(row.cashAmount)}`} />
-              <DetailField label="Online (row)" value={`₹${formatMoney(row.onlineAmount)}`} />
-              <DetailField label="Credit (row)" value={`₹${formatMoney(row.creditAmount)}`} />
-              <DetailField label="Posted" value={formatDateTime(row.postedAt)} />
-            </Inline>
-          </Stack>
-        ) : !loading && !error ? (
-          <RowKeyFields row={row} />
-        ) : null}
-      </Stack>
-    );
-  }
-
-  return (
-    <Stack gap="sm" padding="sm">
-      <RowKeyFields row={row} />
-    </Stack>
-  );
-}
-
-function RowKeyFields({ row }: { row: VendorMoneyMisRow }) {
-  return (
-    <Stack gap="sm">
-      <Text as="h4" className={accountingChrome.overviewSectionTitle}>
-        {row.txnTypeLabel || row.txnType}
-      </Text>
-      <Inline gap="lg" flexWrap>
-        <DetailField label="Txn ID" value={row.txnId} />
-        <DetailField label="Vendor" value={row.vendorName || '—'} />
-        <DetailField label="Date" value={formatDateShort(row.txnDate)} />
-        <DetailField label="Posted" value={formatDateTime(row.postedAt)} />
-        <DetailField label="Ref no" value={row.refNo || '—'} />
-        <DetailField label="Against" value={againstLabel(row)} />
-        <DetailField label="Total" value={`₹${formatMoney(row.totalAmount)}`} />
-        <DetailField label="Cash" value={`₹${formatMoney(row.cashAmount)}`} />
-        <DetailField label="Online" value={`₹${formatMoney(row.onlineAmount)}`} />
-        <DetailField label="Credit" value={`₹${formatMoney(row.creditAmount)}`} />
-        <DetailField label="Balance after" value={`₹${formatMoney(row.balanceAfter)}`} />
-        <DetailField label="Source" value={row.sourceType || '—'} />
-      </Inline>
-    </Stack>
-  );
-}
-
-function DetailField({ label, value }: { label: string; value: string }) {
-  return (
-    <Box>
-      <Text as="span" variant="caption" color="secondary">
-        {label}
-      </Text>
-      <Text as="p">{value}</Text>
-    </Box>
   );
 }
