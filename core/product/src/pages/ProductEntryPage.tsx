@@ -1926,9 +1926,7 @@ export function ProductEntryPage() {
         if (isRetailPricing) {
           if (!Number.isFinite(cost) || cost <= 0) {
             notifyError(
-              `Product "${
-                product.name || 'Unnamed'
-              }": PTS (cost) is required and must be greater than 0`,
+              `Product "${product.name || 'Unnamed'}": Rate is required and must be greater than 0`,
             );
             setIsLoading(false);
             return;
@@ -3413,20 +3411,18 @@ export function ProductEntryPage() {
                                   </TableCell>
                                 )}
                                 {billingMode !== 'BASIC' && (
-                                  <>
-                                    <TableCell className={denseDataGrid.td}>
-                                      <Input
-                                        type="text"
-                                        className={denseDataGrid.input}
-                                        placeholder="HSN"
-                                        value={product.hsn || ''}
-                                        onChange={(e) =>
-                                          handleProductChange(product.id, 'hsn', e.target.value)
-                                        }
-                                        disabled={isLoading}
-                                      />
-                                    </TableCell>
-                                  </>
+                                  <TableCell className={denseDataGrid.td}>
+                                    <Input
+                                      type="text"
+                                      className={denseDataGrid.input}
+                                      placeholder="HSN"
+                                      value={product.hsn || ''}
+                                      onChange={(e) =>
+                                        handleProductChange(product.id, 'hsn', e.target.value)
+                                      }
+                                      disabled={isLoading}
+                                    />
+                                  </TableCell>
                                 )}
                                 {isTwoPricePricing ? (
                                   <>
@@ -3965,7 +3961,7 @@ export function ProductEntryPage() {
                           you type in are updated). Packaging is optional in grid view (defaults to
                           1× on save). Columns marked * match required fields.
                           {isRetailPricing
-                            ? ' Enter PTS (cost) and Selling Price; MRP and PTR are set automatically. Use list view for reminders.'
+                            ? ' Enter Rate and Selling Price; MRP and PTR are set automatically. Use list view for reminders.'
                             : isSimplePricing
                             ? ' Customer price is set on the Menu; sell price here is optional reference only. Use list view for custom reminders.'
                             : ' Use list view for rate tiers, description, and reminders.'}
@@ -5419,7 +5415,7 @@ function ProductAccordion({
             <Box className={accordionStyles.formRow}>
               <Box className={pageStyles.formGroup}>
                 <Label htmlFor={`costPrice-${product.id}`}>
-                  {retailPricing ? 'PTS (cost) *' : 'Rate (cost) *'}
+                  {retailPricing ? 'Rate *' : 'Rate (cost) *'}
                 </Label>
                 <Input
                   type="text"
@@ -5650,33 +5646,31 @@ function ProductAccordion({
           <Box className={accordionStyles.reminderSection}>
             <Text variant="heading4">Reminders</Text>
             {showExpiryReminder && (
-              <>
-                <Box className={accordionStyles.formRow}>
-                  <Box className={pageStyles.formGroup}>
-                    <Label htmlFor={`reminderAt-${product.id}`}>
-                      Expiry Reminder Date & Time (Optional)
-                    </Label>
-                    <Input
-                      type="datetime-local"
-                      id={`reminderAt-${product.id}`}
-                      value={product.reminderAt ? isoToLocalDateTime(product.reminderAt) : ''}
-                      onChange={(e) => {
-                        const dateValue = e.target.value;
-                        if (dateValue) {
-                          const isoDate = localDateTimeToIso(dateValue);
-                          onChange(product.id, 'reminderAt', isoDate);
-                        } else {
-                          onChange(product.id, 'reminderAt', undefined);
-                        }
-                      }}
-                      disabled={isLoading}
-                    />
-                    <Text className={pageStyles.helperText}>
-                      Set a reminder date to be notified before this inventory item expires
-                    </Text>
-                  </Box>
+              <Box className={accordionStyles.formRow}>
+                <Box className={pageStyles.formGroup}>
+                  <Label htmlFor={`reminderAt-${product.id}`}>
+                    Expiry Reminder Date & Time (Optional)
+                  </Label>
+                  <Input
+                    type="datetime-local"
+                    id={`reminderAt-${product.id}`}
+                    value={product.reminderAt ? isoToLocalDateTime(product.reminderAt) : ''}
+                    onChange={(e) => {
+                      const dateValue = e.target.value;
+                      if (dateValue) {
+                        const isoDate = localDateTimeToIso(dateValue);
+                        onChange(product.id, 'reminderAt', isoDate);
+                      } else {
+                        onChange(product.id, 'reminderAt', undefined);
+                      }
+                    }}
+                    disabled={isLoading}
+                  />
+                  <Text className={pageStyles.helperText}>
+                    Set a reminder date to be notified before this inventory item expires
+                  </Text>
                 </Box>
-              </>
+              </Box>
             )}
 
             <CustomRemindersSection
