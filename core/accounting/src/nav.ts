@@ -14,11 +14,6 @@ export const accountingNav: NavContribution = {
     { path: '/dashboard/accounting/customers', label: 'Customers', icon: 'users' },
     { path: '/dashboard/accounting/trial-balance', label: 'Trial Balance', icon: 'scale' },
     {
-      path: '/dashboard/accounting/reports/vendor-money-mis',
-      label: 'Vendor Money MIS',
-      icon: 'circle-dollar-sign',
-    },
-    {
       path: '/dashboard/accounting/chart-of-accounts',
       label: 'Chart of Accounts',
       icon: 'clipboard-list',
