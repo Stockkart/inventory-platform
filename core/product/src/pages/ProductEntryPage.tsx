@@ -730,6 +730,10 @@ export function ProductEntryPage() {
     activeShopId ? s.byShopId[activeShopId] ?? null : null,
   );
   const isSimplePricing = shopCapabilities?.features?.simplePricing === true;
+  const isRetailPricing = shopCapabilities?.features?.retailPricing === true;
+  // Both modes collapse pricing to two fields (cost + selling). MRP/PTR/rates/schemes are hidden and
+  // derived on the backend. Retail differs only in labels (PTS / Selling Price) and requiring selling.
+  const isTwoPricePricing = isSimplePricing || isRetailPricing;
   const navigate = useNavigate();
   const location = useLocation();
   const vendorPrefillConsumedRef = useRef(false);
@@ -975,9 +979,9 @@ export function ProductEntryPage() {
     () =>
       filterRegistrationFieldsForSimplePricing(
         registrationFieldsForBilling(shopSchema, billingMode, activeShopId),
-        isSimplePricing,
+        isTwoPricePricing,
       ),
-    [shopSchema, billingMode, activeShopId, isSimplePricing],
+    [shopSchema, billingMode, activeShopId, isTwoPricePricing],
   );
 
   const {
@@ -1639,18 +1643,18 @@ export function ProductEntryPage() {
           const n = parseFloat(trim(b.sellingPrice));
           if (!isNaN(n) && n >= 0) next = { ...next, sellingPrice: n };
         }
-        if (!isSimplePricing && hasText(b.priceToRetail)) {
+        if (!isTwoPricePricing && hasText(b.priceToRetail)) {
           const n = parseFloat(trim(b.priceToRetail));
           if (!isNaN(n) && n > 0) next = { ...next, priceToRetail: n };
         }
-        if (!isSimplePricing && hasText(b.maximumRetailPrice)) {
+        if (!isTwoPricePricing && hasText(b.maximumRetailPrice)) {
           const n = parseFloat(trim(b.maximumRetailPrice));
           if (!isNaN(n) && n > 0) {
             next = { ...next, maximumRetailPrice: n };
           }
         }
 
-        if (!isSimplePricing && b.schemeType) {
+        if (!isTwoPricePricing && b.schemeType) {
           next = {
             ...next,
             schemeType: b.schemeType,
@@ -1659,13 +1663,13 @@ export function ProductEntryPage() {
               : { schemePercentage: null }),
           };
         }
-        if (!isSimplePricing && appliedSaleScheme) {
+        if (!isTwoPricePricing && appliedSaleScheme) {
           const parsed = parseSaleSchemeDraft(trim(b.saleScheme));
           if (parsed) next = { ...next, ...parsed };
         }
 
         if (
-          !isSimplePricing &&
+          !isTwoPricePricing &&
           b.saleAdditionalDiscount !== undefined &&
           b.saleAdditionalDiscount !== ''
         ) {
@@ -1675,7 +1679,7 @@ export function ProductEntryPage() {
           }
         }
 
-        if (!isSimplePricing && b.purchaseSchemeType) {
+        if (!isTwoPricePricing && b.purchaseSchemeType) {
           next = {
             ...next,
             purchaseSchemeType: b.purchaseSchemeType,
@@ -1684,7 +1688,7 @@ export function ProductEntryPage() {
               : { purchaseSchemePercentage: null }),
           };
         }
-        if (!isSimplePricing && appliedPurchaseScheme) {
+        if (!isTwoPricePricing && appliedPurchaseScheme) {
           const parsed = parsePurchaseSchemeDraft(trim(b.purchaseScheme));
           if (parsed) {
             next = {
@@ -1698,7 +1702,7 @@ export function ProductEntryPage() {
         }
 
         if (
-          !isSimplePricing &&
+          !isTwoPricePricing &&
           b.purchaseAdditionalDiscount !== undefined &&
           b.purchaseAdditionalDiscount !== ''
         ) {
@@ -1708,20 +1712,20 @@ export function ProductEntryPage() {
           }
         }
 
-        if (!isSimplePricing && b.itemType) {
+        if (!isTwoPricePricing && b.itemType) {
           next = { ...next, itemType: b.itemType };
           if (b.itemType !== 'DEGREE') {
             next = { ...next, itemTypeDegree: undefined };
           }
         }
-        if (!isSimplePricing && hasText(b.itemTypeDegree)) {
+        if (!isTwoPricePricing && hasText(b.itemTypeDegree)) {
           const deg = parseInt(trim(b.itemTypeDegree), 10);
           if (!isNaN(deg) && deg > 0 && Number.isInteger(deg)) {
             next = { ...next, itemType: 'DEGREE', itemTypeDegree: deg };
           }
         }
 
-        if (!isSimplePricing && b.discountApplicable) {
+        if (!isTwoPricePricing && b.discountApplicable) {
           next = { ...next, discountApplicable: b.discountApplicable };
         }
 
@@ -1919,7 +1923,27 @@ export function ProductEntryPage() {
         const ptr = Number(product.priceToRetail);
         const cost = Number(product.costPrice);
         const mrp = Number(product.maximumRetailPrice);
-        if (isSimplePricing) {
+        if (isRetailPricing) {
+          if (!Number.isFinite(cost) || cost <= 0) {
+            notifyError(
+              `Product "${
+                product.name || 'Unnamed'
+              }": PTS (cost) is required and must be greater than 0`,
+            );
+            setIsLoading(false);
+            return;
+          }
+          const sell = Number(product.sellingPrice);
+          if (!Number.isFinite(sell) || sell <= 0) {
+            notifyError(
+              `Product "${
+                product.name || 'Unnamed'
+              }": Selling Price is required and must be greater than 0`,
+            );
+            setIsLoading(false);
+            return;
+          }
+        } else if (isSimplePricing) {
           if (!Number.isFinite(cost) || cost <= 0) {
             notifyError(
               `Product "${
@@ -1965,7 +1989,7 @@ export function ProductEntryPage() {
         }
 
         if (
-          !isSimplePricing &&
+          !isTwoPricePricing &&
           product.itemType === 'DEGREE' &&
           (product.itemTypeDegree == null ||
             product.itemTypeDegree <= 0 ||
@@ -1994,7 +2018,7 @@ export function ProductEntryPage() {
         }
 
         const schemeType = product.schemeType ?? 'FIXED_UNITS';
-        if (!isSimplePricing && schemeType === 'PERCENTAGE') {
+        if (!isTwoPricePricing && schemeType === 'PERCENTAGE') {
           if (
             product.schemePercentage == null ||
             product.schemePercentage === undefined ||
@@ -2085,7 +2109,7 @@ export function ProductEntryPage() {
           name: product.name,
           description: product.description || undefined,
           companyName: product.companyName,
-          ...(isSimplePricing
+          ...(isTwoPricePricing
             ? {
                 maximumRetailPrice: 0,
                 costPrice: Number(product.costPrice) || 0,
@@ -2113,7 +2137,7 @@ export function ProductEntryPage() {
           customReminders: customReminders,
           hsn: product.hsn || null,
           ...(resolvedBatchNo && !batchOnExtension ? { batchNo: resolvedBatchNo } : {}),
-          ...(!isSimplePricing
+          ...(!isTwoPricePricing
             ? (product.schemeType ?? 'FIXED_UNITS') === 'PERCENTAGE'
               ? {
                   schemeType: 'PERCENTAGE' as const,
@@ -2138,12 +2162,12 @@ export function ProductEntryPage() {
           ...(billingMode !== 'BASIC' && product.cgst && product.cgst.trim()
             ? { cgst: product.cgst.trim() }
             : {}),
-          ...(!isSimplePricing &&
+          ...(!isTwoPricePricing &&
           product.saleAdditionalDiscount !== null &&
           product.saleAdditionalDiscount !== undefined
             ? { saleAdditionalDiscount: product.saleAdditionalDiscount }
             : {}),
-          ...(!isSimplePricing &&
+          ...(!isTwoPricePricing &&
           (product.purchaseSchemeType != null ||
             product.purchaseSchemePayFor != null ||
             product.purchaseSchemeFree != null ||
@@ -2163,25 +2187,25 @@ export function ProductEntryPage() {
                   purchaseSchemePercentage: null,
                 }
             : {}),
-          ...(!isSimplePricing &&
+          ...(!isTwoPricePricing &&
           product.purchaseAdditionalDiscount !== null &&
           product.purchaseAdditionalDiscount !== undefined
             ? {
                 purchaseAdditionalDiscount: product.purchaseAdditionalDiscount,
               }
             : {}),
-          ...(!isSimplePricing && product.itemType != null ? { itemType: product.itemType } : {}),
-          ...(!isSimplePricing &&
+          ...(!isTwoPricePricing && product.itemType != null ? { itemType: product.itemType } : {}),
+          ...(!isTwoPricePricing &&
           product.itemType === 'DEGREE' &&
           product.itemTypeDegree != null &&
           product.itemTypeDegree > 0
             ? { itemTypeDegree: product.itemTypeDegree }
             : {}),
-          ...(product.discountApplicable != null && !isSimplePricing
+          ...(product.discountApplicable != null && !isTwoPricePricing
             ? { discountApplicable: product.discountApplicable }
             : {}),
           ...(purchaseDateFromInvoice ? { purchaseDate: purchaseDateFromInvoice } : {}),
-          ...(!isSimplePricing && validRates.length > 0
+          ...(!isTwoPricePricing && validRates.length > 0
             ? {
                 rates: validRates.map((r) => ({
                   name: r.name.trim(),
@@ -2189,7 +2213,7 @@ export function ProductEntryPage() {
                 })),
               }
             : {}),
-          ...(!isSimplePricing && hasValidDefaultRate && product.defaultRate
+          ...(!isTwoPricePricing && hasValidDefaultRate && product.defaultRate
             ? { defaultRate: product.defaultRate.trim() }
             : {}),
         };
@@ -3182,13 +3206,13 @@ export function ProductEntryPage() {
                               {billingMode !== 'BASIC' && (
                                 <TableHeaderCell className={denseDataGrid.th}>HSN</TableHeaderCell>
                               )}
-                              {isSimplePricing ? (
+                              {isTwoPricePricing ? (
                                 <>
                                   <TableHeaderCell className={denseDataGrid.th}>
-                                    Rate *
+                                    {isRetailPricing ? 'PTS *' : 'Rate *'}
                                   </TableHeaderCell>
                                   <TableHeaderCell className={denseDataGrid.th}>
-                                    Sell price
+                                    {isRetailPricing ? 'Selling Price *' : 'Sell price'}
                                   </TableHeaderCell>
                                 </>
                               ) : (
@@ -3245,7 +3269,7 @@ export function ProductEntryPage() {
                             <GridBulkFillRow
                               bulk={gridBulkFill}
                               billingMode={billingMode}
-                              simplePricing={isSimplePricing}
+                              simplePricing={isTwoPricePricing}
                               companyField={companyField}
                               sellDirectField={sellDirectField}
                               schemaFields={verticalRegistrationFields}
@@ -3404,7 +3428,7 @@ export function ProductEntryPage() {
                                     </TableCell>
                                   </>
                                 )}
-                                {isSimplePricing ? (
+                                {isTwoPricePricing ? (
                                   <>
                                     <TableCell className={denseDataGrid.td}>
                                       <Input
@@ -3412,7 +3436,7 @@ export function ProductEntryPage() {
                                         inputMode="decimal"
                                         pattern="[0-9]*\.?[0-9]*"
                                         className={denseDataGrid.inputNarrow}
-                                        placeholder="Rate"
+                                        placeholder={isRetailPricing ? 'PTS' : 'Rate'}
                                         value={product.costPrice === 0 ? '' : product.costPrice}
                                         onChange={(e) =>
                                           handleDecimalChange(
@@ -3431,7 +3455,7 @@ export function ProductEntryPage() {
                                         inputMode="decimal"
                                         pattern="[0-9]*\.?[0-9]*"
                                         className={denseDataGrid.inputNarrow}
-                                        placeholder="Optional"
+                                        placeholder={isRetailPricing ? 'Selling Price' : 'Optional'}
                                         value={
                                           product.sellingPrice === 0 || product.sellingPrice == null
                                             ? ''
@@ -3445,6 +3469,7 @@ export function ProductEntryPage() {
                                           )
                                         }
                                         disabled={isLoading}
+                                        required={isRetailPricing}
                                       />
                                     </TableCell>
                                   </>
@@ -3939,7 +3964,9 @@ export function ProductEntryPage() {
                           Use the fill row above to copy the same value into every row (only columns
                           you type in are updated). Packaging is optional in grid view (defaults to
                           1× on save). Columns marked * match required fields.
-                          {isSimplePricing
+                          {isRetailPricing
+                            ? ' Enter PTS (cost) and Selling Price; MRP and PTR are set automatically. Use list view for reminders.'
+                            : isSimplePricing
                             ? ' Customer price is set on the Menu; sell price here is optional reference only. Use list view for custom reminders.'
                             : ' Use list view for rate tiers, description, and reminders.'}
                         </Text>
@@ -3955,7 +3982,8 @@ export function ProductEntryPage() {
                             schemaFields={verticalRegistrationFields}
                             packagingUnits={packagingUnits}
                             billingMode={billingMode}
-                            simplePricing={isSimplePricing}
+                            simplePricing={isTwoPricePricing}
+                            retailPricing={isRetailPricing}
                             index={index}
                             onToggle={() => handleToggleProduct(product.id)}
                             onRemove={() => handleRemoveProduct(product.id)}
@@ -4659,6 +4687,7 @@ interface ProductAccordionProps {
   packagingUnits: PackagingUnit[];
   billingMode: BillingMode;
   simplePricing: boolean;
+  retailPricing: boolean;
   index: number;
   onToggle: () => void;
   onRemove: () => void;
@@ -4690,6 +4719,7 @@ function ProductAccordion({
   packagingUnits,
   billingMode,
   simplePricing,
+  retailPricing,
   index,
   onToggle,
   onRemove,
@@ -5388,7 +5418,9 @@ function ProductAccordion({
           {simplePricing ? (
             <Box className={accordionStyles.formRow}>
               <Box className={pageStyles.formGroup}>
-                <Label htmlFor={`costPrice-${product.id}`}>Rate (cost) *</Label>
+                <Label htmlFor={`costPrice-${product.id}`}>
+                  {retailPricing ? 'PTS (cost) *' : 'Rate (cost) *'}
+                </Label>
                 <Input
                   type="text"
                   inputMode="decimal"
@@ -5402,19 +5434,22 @@ function ProductAccordion({
                 />
               </Box>
               <Box className={pageStyles.formGroup}>
-                <Label htmlFor={`sellingPrice-${product.id}`}>Sell price (optional)</Label>
+                <Label htmlFor={`sellingPrice-${product.id}`}>
+                  {retailPricing ? 'Selling Price *' : 'Sell price (optional)'}
+                </Label>
                 <Input
                   type="text"
                   inputMode="decimal"
                   pattern="[0-9]*\.?[0-9]*"
                   id={`sellingPrice-${product.id}`}
-                  placeholder="Menu sets customer price"
+                  placeholder={retailPricing ? '0.00' : 'Menu sets customer price'}
                   value={
                     product.sellingPrice === 0 || product.sellingPrice == null
                       ? ''
                       : product.sellingPrice
                   }
                   onChange={(e) => onDecimalChange(product.id, 'sellingPrice', e.target.value)}
+                  required={retailPricing}
                   disabled={isLoading}
                 />
               </Box>
