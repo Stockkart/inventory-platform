@@ -11,8 +11,8 @@ import type {
   JournalSource,
   LedgerPageResponse,
   OpeningBalanceRequest,
-  PartyMoneyMisParams,
-  PartyMoneyMisResponse,
+  VendorMoneyMisParams,
+  VendorMoneyMisResponse,
   PartyStatementResponse,
   PartySummariesResponse,
   ProfitAndLossResponse,
@@ -148,7 +148,7 @@ function normalizePartyStatement(st: PartyStatementResponse): PartyStatementResp
   };
 }
 
-function normalizePartyMoneyMis(res: PartyMoneyMisResponse): PartyMoneyMisResponse {
+function normalizeVendorMoneyMis(res: VendorMoneyMisResponse): VendorMoneyMisResponse {
   const summary = res.summary;
   return {
     ...res,
@@ -168,7 +168,7 @@ function normalizePartyMoneyMis(res: PartyMoneyMisResponse): PartyMoneyMisRespon
       periodCreditTotal: asNum(summary?.periodCreditTotal),
       periodPurchaseTotal: asNum(summary?.periodPurchaseTotal),
       currentPayableTotal: asNum(summary?.currentPayableTotal),
-      partySummaries: (summary?.partySummaries ?? []).map((p) => ({
+      vendorSummaries: (summary?.vendorSummaries ?? []).map((p) => ({
         ...p,
         openingBalance: asNum(p.openingBalance),
         closingBalanceInPeriod: asNum(p.closingBalanceInPeriod),
@@ -178,13 +178,12 @@ function normalizePartyMoneyMis(res: PartyMoneyMisResponse): PartyMoneyMisRespon
   };
 }
 
-function partyMoneyMisQuery(params: PartyMoneyMisParams): Record<string, string> {
+function vendorMoneyMisQuery(params: VendorMoneyMisParams): Record<string, string> {
   const txnTypes = Array.isArray(params.txnTypes) ? params.txnTypes.join(',') : params.txnTypes;
   return toQuery({
-    side: params.side ?? 'VENDOR',
     from: params.from,
     to: params.to,
-    partyId: params.partyId,
+    vendorId: params.vendorId,
     txnTypes,
     moneyFilter: params.moneyFilter,
     q: params.q,
@@ -453,13 +452,12 @@ export const accountingApi = {
     return inner ?? { processed: 0, posted: 0, reposted: 0, skipped: 0, failed: 0 };
   },
 
-  partyMoneyMis: async (params: PartyMoneyMisParams = {}): Promise<PartyMoneyMisResponse> => {
-    const query = partyMoneyMisQuery(params);
-    const raw = await apiClient.get<unknown>(ACCOUNTING_ENDPOINTS.PARTY_MONEY_MIS, query);
-    const inner = unwrap<PartyMoneyMisResponse>(raw);
+  vendorMoneyMis: async (params: VendorMoneyMisParams = {}): Promise<VendorMoneyMisResponse> => {
+    const query = vendorMoneyMisQuery(params);
+    const raw = await apiClient.get<unknown>(ACCOUNTING_ENDPOINTS.VENDOR_MONEY_MIS, query);
+    const inner = unwrap<VendorMoneyMisResponse>(raw);
     if (!inner) {
       return {
-        side: params.side ?? 'VENDOR',
         from: params.from ?? '',
         to: params.to ?? '',
         rows: [],
@@ -470,34 +468,34 @@ export const accountingApi = {
           periodCreditTotal: 0,
           periodPurchaseTotal: 0,
           currentPayableTotal: 0,
-          partySummaries: [],
+          vendorSummaries: [],
         },
       };
     }
-    return normalizePartyMoneyMis(inner);
+    return normalizeVendorMoneyMis(inner);
   },
 
-  partyMoneyMisExcel: async (
-    params: PartyMoneyMisParams = {},
+  vendorMoneyMisExcel: async (
+    params: VendorMoneyMisParams = {},
   ): Promise<{ blob: Blob; filename: string }> => {
-    const query = partyMoneyMisQuery(params);
+    const query = vendorMoneyMisQuery(params);
     const from = query.from ?? 'from';
     const to = query.to ?? 'to';
     return downloadAccountingBlob(
-      ACCOUNTING_ENDPOINTS.PARTY_MONEY_MIS_EXCEL,
+      ACCOUNTING_ENDPOINTS.VENDOR_MONEY_MIS_EXCEL,
       query,
       `vendor-money-mis-${from}-${to}.xlsx`,
     );
   },
 
-  partyMoneyMisPdf: async (
-    params: PartyMoneyMisParams = {},
+  vendorMoneyMisPdf: async (
+    params: VendorMoneyMisParams = {},
   ): Promise<{ blob: Blob; filename: string }> => {
-    const query = partyMoneyMisQuery(params);
+    const query = vendorMoneyMisQuery(params);
     const from = query.from ?? 'from';
     const to = query.to ?? 'to';
     return downloadAccountingBlob(
-      ACCOUNTING_ENDPOINTS.PARTY_MONEY_MIS_PDF,
+      ACCOUNTING_ENDPOINTS.VENDOR_MONEY_MIS_PDF,
       query,
       `vendor-money-mis-${from}-${to}.pdf`,
     );

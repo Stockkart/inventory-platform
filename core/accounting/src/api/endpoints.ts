@@ -13,10 +13,10 @@ export const ACCOUNTING_ENDPOINTS = {
   TRIAL_BALANCE: '/accounting/reports/trial-balance',
   PROFIT_AND_LOSS: '/accounting/reports/profit-and-loss',
   BALANCE_SHEET: '/accounting/reports/balance-sheet',
-  /** Party money MIS lives under `/reports` (analytics backend), owned in FE by accounting. */
-  PARTY_MONEY_MIS: '/reports/party-money-mis',
-  PARTY_MONEY_MIS_EXCEL: '/reports/party-money-mis/excel',
-  PARTY_MONEY_MIS_PDF: '/reports/party-money-mis/pdf',
+  /** Vendor money MIS lives under `/reports` (analytics backend), owned in FE by accounting. */
+  VENDOR_MONEY_MIS: '/reports/vendor-money-mis',
+  VENDOR_MONEY_MIS_EXCEL: '/reports/vendor-money-mis/excel',
+  VENDOR_MONEY_MIS_PDF: '/reports/vendor-money-mis/pdf',
   OPENING_BALANCES: '/accounting/opening-balances',
   OPENING_BALANCES_STATUS: '/accounting/opening-balances/status',
   BACKFILL: '/accounting/admin/backfill',

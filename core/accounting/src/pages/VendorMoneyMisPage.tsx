@@ -27,11 +27,11 @@ import { inventoryApi } from '@inventory-platform/product';
 import type { VendorPurchaseInvoiceDetail } from '@inventory-platform/product/types';
 import { useNotify } from '@inventory-platform/session';
 import type {
-  PartyMoneyMisMoneyFilter,
-  PartyMoneyMisParams,
-  PartyMoneyMisResponse,
-  PartyMoneyMisRow,
-  PartyMoneyMisTxnType,
+  VendorMoneyMisMoneyFilter,
+  VendorMoneyMisParams,
+  VendorMoneyMisResponse,
+  VendorMoneyMisRow,
+  VendorMoneyMisTxnType,
 } from '@inventory-platform/accounting/types';
 import { accountingApi } from '../api/accounting.api';
 import { openOrDownloadPdf, triggerBlobDownload } from '../api/download';
@@ -40,14 +40,14 @@ import { formatDateShort, formatDateTime, formatMoney, todayLocalDate } from '..
 
 type PeriodPreset = 'today' | 'week' | 'month' | 'custom';
 
-const TXN_TYPE_OPTIONS: ReadonlyArray<{ value: PartyMoneyMisTxnType; label: string }> = [
+const TXN_TYPE_OPTIONS: ReadonlyArray<{ value: VendorMoneyMisTxnType; label: string }> = [
   { value: 'VENDOR_PURCHASE', label: 'Purchase' },
   { value: 'VENDOR_PAYMENT', label: 'Payment' },
   { value: 'VENDOR_RETURN', label: 'Return' },
   { value: 'VENDOR_CREDIT_CHARGE', label: 'Credit charge' },
 ];
 
-const MONEY_FILTER_OPTIONS: ReadonlyArray<{ value: PartyMoneyMisMoneyFilter; label: string }> = [
+const MONEY_FILTER_OPTIONS: ReadonlyArray<{ value: VendorMoneyMisMoneyFilter; label: string }> = [
   { value: 'ALL', label: 'All money types' },
   { value: 'HAS_CASH', label: 'Has cash' },
   { value: 'HAS_ONLINE', label: 'Has online' },
@@ -84,7 +84,7 @@ function rangeForPreset(preset: PeriodPreset): { from: string; to: string } {
   return { from: monthStart(), to };
 }
 
-function againstLabel(row: PartyMoneyMisRow): string {
+function againstLabel(row: VendorMoneyMisRow): string {
   if (row.againstRefNo) return row.againstRefNo;
   if (row.againstTxnId) return row.againstTxnId;
   return '—';
@@ -97,18 +97,17 @@ export function VendorMoneyMisPage() {
   const [preset, setPreset] = useState<PeriodPreset>('month');
   const [fromInput, setFromInput] = useState(initial.from);
   const [toInput, setToInput] = useState(initial.to);
-  const [txnTypes, setTxnTypes] = useState<PartyMoneyMisTxnType[]>([]);
-  const [moneyFilter, setMoneyFilter] = useState<PartyMoneyMisMoneyFilter>('ALL');
+  const [txnTypes, setTxnTypes] = useState<VendorMoneyMisTxnType[]>([]);
+  const [moneyFilter, setMoneyFilter] = useState<VendorMoneyMisMoneyFilter>('ALL');
   const [qInput, setQInput] = useState('');
 
-  const [applied, setApplied] = useState<PartyMoneyMisParams>({
-    side: 'VENDOR',
+  const [applied, setApplied] = useState<VendorMoneyMisParams>({
     from: initial.from,
     to: initial.to,
     moneyFilter: 'ALL',
   });
 
-  const [data, setData] = useState<PartyMoneyMisResponse | null>(null);
+  const [data, setData] = useState<VendorMoneyMisResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState<'excel' | 'pdf' | null>(null);
 
@@ -122,7 +121,7 @@ export function VendorMoneyMisPage() {
     (async () => {
       setLoading(true);
       try {
-        const res = await accountingApi.partyMoneyMis(applied);
+        const res = await accountingApi.vendorMoneyMis(applied);
         if (!cancelled) {
           setData(res);
           setExpandedTxnId(null);
@@ -142,9 +141,8 @@ export function VendorMoneyMisPage() {
     };
   }, [applied, notifyError]);
 
-  const queryParams = useMemo((): PartyMoneyMisParams => {
+  const queryParams = useMemo((): VendorMoneyMisParams => {
     return {
-      side: 'VENDOR',
       from: fromInput,
       to: toInput,
       txnTypes: txnTypes.length > 0 ? txnTypes : undefined,
@@ -160,7 +158,6 @@ export function VendorMoneyMisPage() {
     setFromInput(range.from);
     setToInput(range.to);
     setApplied({
-      side: 'VENDOR',
       from: range.from,
       to: range.to,
       txnTypes: txnTypes.length > 0 ? txnTypes : undefined,
@@ -171,7 +168,6 @@ export function VendorMoneyMisPage() {
 
   function handleSearch() {
     setApplied({
-      side: 'VENDOR',
       from: fromInput,
       to: toInput,
       txnTypes: txnTypes.length > 0 ? txnTypes : undefined,
@@ -180,7 +176,7 @@ export function VendorMoneyMisPage() {
     });
   }
 
-  function toggleTxnType(value: PartyMoneyMisTxnType) {
+  function toggleTxnType(value: VendorMoneyMisTxnType) {
     setTxnTypes((prev) =>
       prev.includes(value) ? prev.filter((t) => t !== value) : [...prev, value],
     );
@@ -190,11 +186,11 @@ export function VendorMoneyMisPage() {
     setDownloading(kind);
     try {
       if (kind === 'excel') {
-        const result = await accountingApi.partyMoneyMisExcel(queryParams);
+        const result = await accountingApi.vendorMoneyMisExcel(queryParams);
         triggerBlobDownload(result.blob, result.filename);
         notifySuccess('Excel downloaded');
       } else {
-        const result = await accountingApi.partyMoneyMisPdf(queryParams);
+        const result = await accountingApi.vendorMoneyMisPdf(queryParams);
         openOrDownloadPdf(result.blob, result.filename);
         notifySuccess('PDF ready');
       }
@@ -205,7 +201,7 @@ export function VendorMoneyMisPage() {
     }
   }
 
-  async function handleRowClick(row: PartyMoneyMisRow) {
+  async function handleRowClick(row: VendorMoneyMisRow) {
     if (expandedTxnId === row.txnId) {
       setExpandedTxnId(null);
       setPurchaseDetail(null);
@@ -307,7 +303,7 @@ export function VendorMoneyMisPage() {
                 id="vendor-mis-money-filter"
                 value={moneyFilter}
                 options={MONEY_FILTER_OPTIONS}
-                onChange={(e) => setMoneyFilter(e.target.value as PartyMoneyMisMoneyFilter)}
+                onChange={(e) => setMoneyFilter(e.target.value as VendorMoneyMisMoneyFilter)}
                 disabled={loading}
               />
             </FormField>
@@ -315,7 +311,7 @@ export function VendorMoneyMisPage() {
               <Input
                 id="vendor-mis-q"
                 type="search"
-                placeholder="Party, ref, txn id…"
+                placeholder="Vendor, ref, txn id…"
                 value={qInput}
                 onChange={(e) => setQInput(e.target.value)}
                 disabled={loading}
@@ -431,7 +427,7 @@ export function VendorMoneyMisPage() {
                   <TableHead>
                     <TableRow>
                       <TableHeaderCell>Date</TableHeaderCell>
-                      <TableHeaderCell>Party</TableHeaderCell>
+                      <TableHeaderCell>Vendor</TableHeaderCell>
                       <TableHeaderCell>Txn ID</TableHeaderCell>
                       <TableHeaderCell>Type</TableHeaderCell>
                       <TableHeaderCell>Ref No</TableHeaderCell>
@@ -460,7 +456,7 @@ export function VendorMoneyMisPage() {
                             aria-expanded={open}
                           >
                             <TableCell>{formatDateShort(row.txnDate)}</TableCell>
-                            <TableCell>{row.partyName || '—'}</TableCell>
+                            <TableCell>{row.vendorName || '—'}</TableCell>
                             <TableCell>{row.txnId}</TableCell>
                             <TableCell>
                               {row.opening ? 'Opening' : row.txnTypeLabel || row.txnType}
@@ -520,7 +516,7 @@ function RowDetails({
   loading,
   error,
 }: {
-  row: PartyMoneyMisRow;
+  row: VendorMoneyMisRow;
   detail: VendorPurchaseInvoiceDetail | null;
   loading: boolean;
   error: string | null;
@@ -537,7 +533,7 @@ function RowDetails({
             </Text>
             <Inline gap="lg" flexWrap>
               <DetailField label="Invoice no" value={detail.invoiceNo || '—'} />
-              <DetailField label="Vendor" value={detail.vendorName || row.partyName || '—'} />
+              <DetailField label="Vendor" value={detail.vendorName || row.vendorName || '—'} />
               <DetailField
                 label="Invoice date"
                 value={formatDateShort(
@@ -569,7 +565,7 @@ function RowDetails({
   );
 }
 
-function RowKeyFields({ row }: { row: PartyMoneyMisRow }) {
+function RowKeyFields({ row }: { row: VendorMoneyMisRow }) {
   return (
     <Stack gap="sm">
       <Text as="h4" className={accountingChrome.overviewSectionTitle}>
@@ -577,7 +573,7 @@ function RowKeyFields({ row }: { row: PartyMoneyMisRow }) {
       </Text>
       <Inline gap="lg" flexWrap>
         <DetailField label="Txn ID" value={row.txnId} />
-        <DetailField label="Party" value={row.partyName || '—'} />
+        <DetailField label="Vendor" value={row.vendorName || '—'} />
         <DetailField label="Date" value={formatDateShort(row.txnDate)} />
         <DetailField label="Posted" value={formatDateTime(row.postedAt)} />
         <DetailField label="Ref no" value={row.refNo || '—'} />

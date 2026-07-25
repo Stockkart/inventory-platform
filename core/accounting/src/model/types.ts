@@ -248,16 +248,14 @@ export interface PartyStatementResponse {
   totalPages: number;
 }
 
-/** Vendor / customer party-money MIS (v1: VENDOR side only). */
-export type PartyMoneyMisSide = 'VENDOR' | 'CUSTOMER';
-
-export type PartyMoneyMisTxnType =
+/** Vendor money MIS. */
+export type VendorMoneyMisTxnType =
   | 'VENDOR_PURCHASE'
   | 'VENDOR_PAYMENT'
   | 'VENDOR_RETURN'
   | 'VENDOR_CREDIT_CHARGE';
 
-export type PartyMoneyMisMoneyFilter =
+export type VendorMoneyMisMoneyFilter =
   | 'ALL'
   | 'HAS_CASH'
   | 'HAS_ONLINE'
@@ -265,12 +263,12 @@ export type PartyMoneyMisMoneyFilter =
   | 'FULLY_PAID'
   | 'MIXED';
 
-export interface PartyMoneyMisRow {
+export interface VendorMoneyMisRow {
   txnId: string;
-  txnType: PartyMoneyMisTxnType | string;
+  txnType: VendorMoneyMisTxnType | string;
   txnTypeLabel: string;
-  partyId: string;
-  partyName: string;
+  vendorId: string;
+  vendorName: string;
   txnDate: string;
   postedAt: string | null;
   refNo: string | null;
@@ -286,39 +284,37 @@ export interface PartyMoneyMisRow {
   opening: boolean;
 }
 
-export interface PartyMoneyMisPartySummary {
-  partyId: string;
-  partyName: string;
+export interface VendorMoneyMisVendorSummary {
+  vendorId: string;
+  vendorName: string;
   openingBalance: number;
   closingBalanceInPeriod: number;
   currentBalance: number;
 }
 
-export interface PartyMoneyMisSummary {
+export interface VendorMoneyMisSummary {
   openingBalanceTotal: number;
   periodCashTotal: number;
   periodOnlineTotal: number;
   periodCreditTotal: number;
   periodPurchaseTotal: number;
   currentPayableTotal: number;
-  partySummaries: PartyMoneyMisPartySummary[];
+  vendorSummaries: VendorMoneyMisVendorSummary[];
 }
 
-export interface PartyMoneyMisResponse {
-  side: PartyMoneyMisSide | string;
+export interface VendorMoneyMisResponse {
   from: string;
   to: string;
-  rows: PartyMoneyMisRow[];
-  summary: PartyMoneyMisSummary;
+  rows: VendorMoneyMisRow[];
+  summary: VendorMoneyMisSummary;
 }
 
-export interface PartyMoneyMisParams {
-  side?: PartyMoneyMisSide;
+export interface VendorMoneyMisParams {
   from?: string;
   to?: string;
-  partyId?: string;
+  vendorId?: string;
   /** Comma-separated txn types, or an array joined by the API client. */
-  txnTypes?: string | PartyMoneyMisTxnType[];
-  moneyFilter?: PartyMoneyMisMoneyFilter;
+  txnTypes?: string | VendorMoneyMisTxnType[];
+  moneyFilter?: VendorMoneyMisMoneyFilter;
   q?: string;
 }
