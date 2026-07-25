@@ -36,13 +36,7 @@ import type {
 import { accountingApi } from '../api/accounting.api';
 import { openOrDownloadPdf, triggerBlobDownload } from '../api/download';
 import { AccountingTabs } from '../ui/AccountingTabs';
-import {
-  formatDateShort,
-  formatDateTime,
-  formatMoney,
-  formatMoneyOrDash,
-  todayLocalDate,
-} from '../model/format';
+import { formatDateShort, formatDateTime, formatMoney, todayLocalDate } from '../model/format';
 
 type PeriodPreset = 'today' | 'week' | 'month' | 'custom';
 
@@ -62,7 +56,7 @@ const MONEY_FILTER_OPTIONS: ReadonlyArray<{ value: VendorMoneyMisMoneyFilter; la
   { value: 'MIXED', label: 'Mixed' },
 ];
 
-const COL_COUNT = 9;
+const COL_COUNT = 11;
 
 function monthStart(d = new Date()): string {
   const y = d.getFullYear();
@@ -94,27 +88,6 @@ function againstLabel(row: VendorMoneyMisRow): string {
   if (row.againstRefNo) return row.againstRefNo;
   if (row.againstTxnId) return row.againstTxnId;
   return '—';
-}
-
-/** Cash + online paid on this row (credit is shown separately as "Credit Created"). */
-function paymentAmount(row: VendorMoneyMisRow): number {
-  return (row.cashAmount || 0) + (row.onlineAmount || 0);
-}
-
-/** Human label for how the row was paid, e.g. "Cash", "Online", "Cash + Online", "Credit". */
-function paymentMode(row: VendorMoneyMisRow): string {
-  const hasCash = row.cashAmount !== 0;
-  const hasOnline = row.onlineAmount !== 0;
-  if (hasCash && hasOnline) return 'Cash + Online';
-  if (hasCash) return 'Cash';
-  if (hasOnline) return 'Online';
-  if (row.creditAmount !== 0) return 'Credit';
-  return '—';
-}
-
-/** Invoice/bill total — only meaningful for purchases; blank for payments/returns/charges. */
-function billAmount(row: VendorMoneyMisRow): number | null {
-  return row.txnType === 'VENDOR_PURCHASE' ? row.totalAmount : null;
 }
 
 export function VendorMoneyMisPage() {
@@ -455,17 +428,19 @@ export function VendorMoneyMisPage() {
                     <TableRow>
                       <TableHeaderCell>Date</TableHeaderCell>
                       <TableHeaderCell>Supplier</TableHeaderCell>
+                      <TableHeaderCell>Txn ID</TableHeaderCell>
                       <TableHeaderCell>Transaction</TableHeaderCell>
-                      <TableHeaderCell>Ref No.</TableHeaderCell>
+                      <TableHeaderCell>Invoice</TableHeaderCell>
+                      <TableHeaderCell>Against</TableHeaderCell>
                       <TableHeaderCell className={accountingChrome.tbNumCol}>
                         Bill Amount
                       </TableHeaderCell>
-                      <TableHeaderCell>Payment Mode</TableHeaderCell>
+                      <TableHeaderCell className={accountingChrome.tbNumCol}>Cash</TableHeaderCell>
                       <TableHeaderCell className={accountingChrome.tbNumCol}>
-                        Payment Amount
+                        Online
                       </TableHeaderCell>
                       <TableHeaderCell className={accountingChrome.tbNumCol}>
-                        Credit Created
+                        Credit
                       </TableHeaderCell>
                       <TableHeaderCell className={accountingChrome.tbNumCol}>
                         Outstanding
@@ -484,19 +459,23 @@ export function VendorMoneyMisPage() {
                           >
                             <TableCell>{formatDateShort(row.txnDate)}</TableCell>
                             <TableCell>{row.vendorName || '—'}</TableCell>
+                            <TableCell>{row.txnId}</TableCell>
                             <TableCell>
                               {row.opening ? 'Opening' : row.txnTypeLabel || row.txnType}
                             </TableCell>
                             <TableCell>{row.refNo || '—'}</TableCell>
+                            <TableCell>{againstLabel(row)}</TableCell>
                             <TableCell className={accountingChrome.tbNumCol}>
-                              {formatMoneyOrDash(billAmount(row))}
-                            </TableCell>
-                            <TableCell>{paymentMode(row)}</TableCell>
-                            <TableCell className={accountingChrome.tbNumCol}>
-                              {formatMoneyOrDash(paymentAmount(row))}
+                              {formatMoney(row.totalAmount)}
                             </TableCell>
                             <TableCell className={accountingChrome.tbNumCol}>
-                              {formatMoneyOrDash(row.creditAmount)}
+                              {formatMoney(row.cashAmount)}
+                            </TableCell>
+                            <TableCell className={accountingChrome.tbNumCol}>
+                              {formatMoney(row.onlineAmount)}
+                            </TableCell>
+                            <TableCell className={accountingChrome.tbNumCol}>
+                              {formatMoney(row.creditAmount)}
                             </TableCell>
                             <TableCell className={accountingChrome.tbNumCol}>
                               {formatMoney(row.balanceAfter)}
