@@ -3218,7 +3218,7 @@ export function ProductEntryPage() {
                               {isCompactPriceUi ? (
                                 <>
                                   <TableHeaderCell className={denseDataGrid.th}>
-                                    {isRetailPricing ? 'PTS *' : 'Rate *'}
+                                    Rate *
                                   </TableHeaderCell>
                                   <TableHeaderCell className={denseDataGrid.th}>
                                     {isRetailPricing ? 'Selling Price *' : 'Sell price'}
@@ -3448,7 +3448,7 @@ export function ProductEntryPage() {
                                         inputMode="decimal"
                                         pattern="[0-9]*\.?[0-9]*"
                                         className={denseDataGrid.inputNarrow}
-                                        placeholder={isRetailPricing ? 'PTS' : 'Rate'}
+                                        placeholder="Rate"
                                         value={product.costPrice === 0 ? '' : product.costPrice}
                                         onChange={(e) =>
                                           handleDecimalChange(
