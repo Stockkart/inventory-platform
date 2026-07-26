@@ -2,7 +2,7 @@
 .formGroup {
   display: flex;
   flex-direction: column;
-  gap: var(--sk-space-xs);
+  gap: 0.625rem;
 }
 
 .label {
@@ -98,8 +98,9 @@ select.control:focus {
 
 .formRow {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--sk-space-md);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
 }
 
 .formActions {
