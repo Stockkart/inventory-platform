@@ -53,10 +53,8 @@ export interface PlanResponse {
   userLimit: number | null;
   unlimited: boolean;
   /**
-   * Legacy association between catalog rows. Its meaning was never settled —
-   * it may point at a parent plan, a successor tier, or a related add-on.
-   * Nothing reads it. Prefer `upgradeToPlanId` for the tier ladder and
-   * `appliesToPlanIds` for add-on scoping; both are explicit about direction.
+   * ID of the next higher plan — the forward pointer of the tier ladder.
+   * `null` on the top tier. Walk it with `upgradePath()` to offer an upgrade.
    */
   linkedId: string | null;
   bestFor: string | null;
@@ -71,12 +69,6 @@ export interface PlanResponse {
   tier?: PlanTier | null;
   /** Position on the ladder, ascending. Drives ordering and upgrade/downgrade comparisons. */
   tierRank?: number | null;
-  /**
-   * The next tier up — the "linked list" pointer used to offer an upgrade.
-   * `null` on the highest tier. Kept as an explicit forward link so the chain
-   * can be walked without assuming rank arithmetic.
-   */
-  upgradeToPlanId?: string | null;
   /** Roles this tier covers, e.g. `['Owner', 'Manager', 'Cashier']`. */
   userRoles?: string[] | null;
   /** Invoices per month included in the tier's OCR allowance. `null` = none. */
