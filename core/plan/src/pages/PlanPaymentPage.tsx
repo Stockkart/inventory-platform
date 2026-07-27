@@ -13,6 +13,7 @@ import {
   Text,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
+import { planPeriodLabel, planPerUnitLabel } from '@inventory-platform/contracts';
 import { getPaymentCheckout } from '../payment/index.js';
 import { useAuthStore, usePlanStatusStore } from '@inventory-platform/session';
 import {
@@ -116,10 +117,10 @@ export function PlanPaymentPage() {
                     {selectedPlan.planName}
                   </Text>
                   <Text variant="title" weight="bold">
-                    ₹{selectedPlan.arcPrice?.toLocaleString('en-IN')} /{' '}
-                    {selectedPlan.planName === 'Extra User Plan' ? 'user/year' : 'year'}
+                    ₹{selectedPlan.arcPrice?.toLocaleString('en-IN')}
+                    {planPeriodLabel(selectedPlan)}
                   </Text>
-                  {selectedPlan.planName !== 'Extra User Plan' &&
+                  {planPerUnitLabel(selectedPlan) == null &&
                     selectedPlan.price != null &&
                     selectedPlan.price > 0 && (
                       <Text variant="caption" color="secondary">
@@ -144,9 +145,9 @@ export function PlanPaymentPage() {
                   >
                     {paying
                       ? 'Opening Razorpay…'
-                      : `Pay ₹${selectedPlan.arcPrice?.toLocaleString('en-IN')}${
-                          selectedPlan.planName === 'Extra User Plan' ? ' per user/year' : '/year'
-                        }`}
+                      : `Pay ₹${selectedPlan.arcPrice?.toLocaleString('en-IN')}${planPeriodLabel(
+                          selectedPlan,
+                        )}`}
                   </Button>
                   <Text variant="caption" color="secondary">
                     Secured by Razorpay. Choose your payment method in the checkout window.

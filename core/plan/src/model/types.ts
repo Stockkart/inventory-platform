@@ -4,6 +4,11 @@ export type {
   PlanResponse,
   UsageResponse,
   ShopPlanStatusResponse,
+  PlanKind,
+  PlanTier,
+  PlanBillingPeriod,
+  PlanFeatureEntry,
+  FeatureAvailability,
 } from '@inventory-platform/contracts';
 
 export interface AssignPlanRequest {
