@@ -522,7 +522,7 @@ function parseSaleSchemeDraft(raw: string): SaleSchemeFields | null {
   if (!t) return null;
   if (t.endsWith('%')) {
     const num = parseFloat(t.slice(0, -1));
-    if (!isNaN(num) && num >= 0 && num <= 100) {
+    if (!isNaN(num) && num >= -100 && num <= 100) {
       return {
         schemeType: 'PERCENTAGE',
         schemePercentage: num,
@@ -1679,7 +1679,7 @@ export function ProductEntryPage() {
           b.saleAdditionalDiscount !== ''
         ) {
           const n = parseFloat(trim(b.saleAdditionalDiscount));
-          if (!isNaN(n) && n >= 0 && n <= 100) {
+          if (!isNaN(n) && n >= -100 && n <= 100) {
             next = { ...next, saleAdditionalDiscount: n };
           }
         }
@@ -2025,13 +2025,13 @@ export function ProductEntryPage() {
             if (
               product.schemePercentage == null ||
               product.schemePercentage === undefined ||
-              product.schemePercentage <= 0 ||
+              product.schemePercentage < -100 ||
               product.schemePercentage > 100
             ) {
               notifyError(
                 `Product "${
                   product.name || 'Unnamed'
-                }": when schemeType is PERCENTAGE, schemePercentage is required and must be greater than 0 and not more than 100`,
+                }": when schemeType is PERCENTAGE, schemePercentage is required and must be between -100 and 100`,
               );
               setIsLoading(false);
               return;
@@ -3427,18 +3427,20 @@ export function ProductEntryPage() {
                                   </TableCell>
                                 )}
                                 {billingMode !== 'BASIC' && (
-                                  <TableCell className={denseDataGrid.td}>
-                                    <Input
-                                      type="text"
-                                      className={denseDataGrid.input}
-                                      placeholder="HSN"
-                                      value={product.hsn || ''}
-                                      onChange={(e) =>
-                                        handleProductChange(product.id, 'hsn', e.target.value)
-                                      }
-                                      disabled={isLoading}
-                                    />
-                                  </TableCell>
+                                  <>
+                                    <TableCell className={denseDataGrid.td}>
+                                      <Input
+                                        type="text"
+                                        className={denseDataGrid.input}
+                                        placeholder="HSN"
+                                        value={product.hsn || ''}
+                                        onChange={(e) =>
+                                          handleProductChange(product.id, 'hsn', e.target.value)
+                                        }
+                                        disabled={isLoading}
+                                      />
+                                    </TableCell>
+                                  </>
                                 )}
                                 {isCompactPriceUi ? (
                                   <>
@@ -3652,7 +3654,7 @@ export function ProductEntryPage() {
                                           }
                                           if (raw.endsWith('%')) {
                                             const num = parseFloat(raw.slice(0, -1));
-                                            if (!isNaN(num) && num > 0 && num <= 100) {
+                                            if (!isNaN(num) && num >= -100 && num <= 100) {
                                               handleProductChange(
                                                 product.id,
                                                 'schemeType',
@@ -3705,7 +3707,7 @@ export function ProductEntryPage() {
                                         className={denseDataGrid.inputNarrow}
                                         placeholder="—"
                                         step="0.01"
-                                        min={0}
+                                        min={-100}
                                         max={100}
                                         value={
                                           product.saleAdditionalDiscount === null ||
@@ -3723,7 +3725,7 @@ export function ProductEntryPage() {
                                             );
                                           } else {
                                             const n = parseFloat(v);
-                                            if (!isNaN(n) && n >= 0 && n <= 100) {
+                                            if (!isNaN(n) && n >= -100 && n <= 100) {
                                               handleProductChange(
                                                 product.id,
                                                 'saleAdditionalDiscount',
@@ -4554,7 +4556,7 @@ function GridBulkFillRow({
               className={denseDataGrid.inputNarrow}
               placeholder="—"
               step="0.01"
-              min={0}
+              min={-100}
               max={100}
               value={bulk.saleAdditionalDiscount ?? ''}
               onChange={(e) => onBulkChange('saleAdditionalDiscount', e.target.value)}
@@ -5204,8 +5206,8 @@ function ProductAccordion({
                     <Input
                       type="number"
                       id={`schemePercentage-${product.id}`}
-                      placeholder="e.g. 10 for 10%"
-                      min={0.01}
+                      placeholder="e.g. 10 or -5 for markup"
+                      min={-100}
                       max={100}
                       step={0.01}
                       value={product.schemePercentage != null ? product.schemePercentage : ''}
@@ -5215,7 +5217,7 @@ function ProductAccordion({
                           onChange(product.id, 'schemePercentage', null);
                         } else {
                           const num = parseFloat(val);
-                          if (!isNaN(num) && num > 0 && num <= 100) {
+                          if (!isNaN(num) && num >= -100 && num <= 100) {
                             onChange(product.id, 'schemePercentage', num);
                           }
                         }
@@ -5258,8 +5260,8 @@ function ProductAccordion({
                       <Input
                         type="number"
                         id={`schemePercentage-${product.id}`}
-                        placeholder="e.g. 10 for 10%"
-                        min={0.01}
+                        placeholder="e.g. 10 or -5 for markup"
+                        min={-100}
                         max={100}
                         step={0.01}
                         value={product.schemePercentage != null ? product.schemePercentage : ''}
@@ -5269,7 +5271,7 @@ function ProductAccordion({
                             onChange(product.id, 'schemePercentage', null);
                           } else {
                             const num = parseFloat(val);
-                            if (!isNaN(num) && num > 0 && num <= 100) {
+                            if (!isNaN(num) && num >= -100 && num <= 100) {
                               onChange(product.id, 'schemePercentage', num);
                             }
                           }
@@ -5286,10 +5288,10 @@ function ProductAccordion({
                     <Input
                       type="number"
                       id={`saleAdditionalDiscount-${product.id}`}
-                      placeholder="Enter discount percentage"
+                      placeholder="Discount or negative markup"
                       step="0.01"
-                      min="0"
-                      max="100"
+                      min={-100}
+                      max={100}
                       value={
                         product.saleAdditionalDiscount === null ||
                         product.saleAdditionalDiscount === undefined
@@ -5302,7 +5304,7 @@ function ProductAccordion({
                           onChange(product.id, 'saleAdditionalDiscount', null);
                         } else {
                           const numValue = parseFloat(value);
-                          if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
+                          if (!isNaN(numValue) && numValue >= -100 && numValue <= 100) {
                             onChange(product.id, 'saleAdditionalDiscount', numValue);
                           }
                         }
@@ -5319,10 +5321,10 @@ function ProductAccordion({
                     <Input
                       type="number"
                       id={`saleAdditionalDiscount-${product.id}`}
-                      placeholder="Enter discount percentage"
+                      placeholder="Discount or negative markup"
                       step="0.01"
-                      min="0"
-                      max="100"
+                      min={-100}
+                      max={100}
                       value={
                         product.saleAdditionalDiscount === null ||
                         product.saleAdditionalDiscount === undefined
@@ -5335,7 +5337,7 @@ function ProductAccordion({
                           onChange(product.id, 'saleAdditionalDiscount', null);
                         } else {
                           const numValue = parseFloat(value);
-                          if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
+                          if (!isNaN(numValue) && numValue >= -100 && numValue <= 100) {
                             onChange(product.id, 'saleAdditionalDiscount', numValue);
                           }
                         }
@@ -5769,31 +5771,33 @@ function ProductAccordion({
           <Box className={accordionStyles.reminderSection}>
             <Text variant="heading4">Reminders</Text>
             {showExpiryReminder && (
-              <Box className={accordionStyles.formRow}>
-                <Box className={pageStyles.formGroup}>
-                  <Label htmlFor={`reminderAt-${product.id}`}>
-                    Expiry Reminder Date & Time (Optional)
-                  </Label>
-                  <Input
-                    type="datetime-local"
-                    id={`reminderAt-${product.id}`}
-                    value={product.reminderAt ? isoToLocalDateTime(product.reminderAt) : ''}
-                    onChange={(e) => {
-                      const dateValue = e.target.value;
-                      if (dateValue) {
-                        const isoDate = localDateTimeToIso(dateValue);
-                        onChange(product.id, 'reminderAt', isoDate);
-                      } else {
-                        onChange(product.id, 'reminderAt', undefined);
-                      }
-                    }}
-                    disabled={isLoading}
-                  />
-                  <Text className={pageStyles.helperText}>
-                    Set a reminder date to be notified before this inventory item expires
-                  </Text>
+              <>
+                <Box className={accordionStyles.formRow}>
+                  <Box className={pageStyles.formGroup}>
+                    <Label htmlFor={`reminderAt-${product.id}`}>
+                      Expiry Reminder Date & Time (Optional)
+                    </Label>
+                    <Input
+                      type="datetime-local"
+                      id={`reminderAt-${product.id}`}
+                      value={product.reminderAt ? isoToLocalDateTime(product.reminderAt) : ''}
+                      onChange={(e) => {
+                        const dateValue = e.target.value;
+                        if (dateValue) {
+                          const isoDate = localDateTimeToIso(dateValue);
+                          onChange(product.id, 'reminderAt', isoDate);
+                        } else {
+                          onChange(product.id, 'reminderAt', undefined);
+                        }
+                      }}
+                      disabled={isLoading}
+                    />
+                    <Text className={pageStyles.helperText}>
+                      Set a reminder date to be notified before this inventory item expires
+                    </Text>
+                  </Box>
                 </Box>
-              </Box>
+              </>
             )}
 
             <CustomRemindersSection
