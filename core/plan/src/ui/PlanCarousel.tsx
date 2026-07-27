@@ -1,8 +1,17 @@
 import type { PlanResponse } from '@inventory-platform/plan/types';
+import {
+  isAddon,
+  isSubscriptionPlan,
+  isUsagePriced,
+  planPeriodLabel,
+  planPrice,
+  planTierRank,
+} from '@inventory-platform/contracts';
 import { PlanCard, PlanCarousel3D } from '@inventory-platform/ui-kit';
-import { buildPlanFeatures } from './PlanGrid';
+import { buildPlanFeatures, popularPlanId } from './PlanGrid';
 
-const EXTRA_PLANS = ['Extra User Plan', 'Extra Shop Plan'];
+/** Trial length used until the backend sends `trialDays` on the plan. */
+const DEFAULT_TRIAL_DAYS = 3;
 
 function planCardProps(
   plan: PlanResponse,
@@ -12,29 +21,29 @@ function planCardProps(
     onSelectPlan?: (plan: PlanResponse) => void;
     ctaLabel: string;
     showTrialBadge: boolean;
+    popularId: string | null;
   },
 ) {
+  const extra = isAddon(plan);
   const allFeatures = buildPlanFeatures(plan);
   const features =
-    plan.bestFor && !EXTRA_PLANS.includes(plan.planName)
-      ? allFeatures.filter((f) => f !== plan.bestFor)
-      : allFeatures;
+    plan.bestFor && !extra ? allFeatures.filter((f) => f !== plan.bestFor) : allFeatures;
 
-  const highlight = plan.planName === 'Silver';
+  const highlight = plan.id === options.popularId;
   const showPopular = highlight && (options.isCenter ?? true);
-  const showTrial = options.showTrialBadge && !EXTRA_PLANS.includes(plan.planName);
+  const showOneTime = !extra && !isUsagePriced(plan) && plan.price != null && plan.price > 0;
 
   return {
     name: plan.planName,
-    bestFor: !EXTRA_PLANS.includes(plan.planName) ? plan.bestFor : null,
-    priceLabel: `₹${(plan.arcPrice ?? plan.price)?.toLocaleString('en-IN') ?? 0}`,
-    periodLabel: '/year',
-    oneTimeLabel:
-      !EXTRA_PLANS.includes(plan.planName) && plan.price && plan.price > 0
-        ? `One-time ₹${plan.price.toLocaleString('en-IN')}`
-        : null,
+    bestFor: !extra ? plan.bestFor : null,
+    priceLabel: isUsagePriced(plan)
+      ? 'Pay per use'
+      : `₹${planPrice(plan)?.toLocaleString('en-IN') ?? 0}`,
+    periodLabel: planPeriodLabel(plan),
+    oneTimeLabel: showOneTime ? `One-time ₹${plan.price.toLocaleString('en-IN')}` : null,
     features,
-    showTrialBadge: showTrial,
+    showTrialBadge: options.showTrialBadge && !extra,
+    trialDays: plan.trialDays ?? DEFAULT_TRIAL_DAYS,
     highlighted: Boolean(options.isCenter),
     showPopularBadge: showPopular,
     ctaLabel: options.ctaLabel,
@@ -56,15 +65,18 @@ export function PlanCarousel({
   ctaLabel = 'Get Started',
   showTrialBadge = true,
 }: PlanCarouselProps) {
+  // Subscription tiers lead, cheapest first; add-ons and top-ups trail behind.
   const sortedPlans = [...plans].sort((a, b) => {
-    const aExtra = EXTRA_PLANS.includes(a.planName);
-    const bExtra = EXTRA_PLANS.includes(b.planName);
+    const aCore = isSubscriptionPlan(a);
+    const bCore = isSubscriptionPlan(b);
 
-    if (aExtra && !bExtra) return 1;
-    if (!aExtra && bExtra) return -1;
+    if (aCore !== bCore) {
+      return aCore ? -1 : 1;
+    }
 
-    return 0;
+    return planTierRank(a) - planTierRank(b);
   });
+  const popularId = popularPlanId(plans);
 
   return (
     <PlanCarousel3D
@@ -79,6 +91,7 @@ export function PlanCarousel({
             onSelectPlan,
             ctaLabel,
             showTrialBadge,
+            popularId,
           })}
         />
       )}
@@ -86,4 +99,4 @@ export function PlanCarousel({
   );
 }
 
-export { EXTRA_PLANS, planCardProps };
+export { planCardProps };

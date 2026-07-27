@@ -7,5 +7,6 @@ export { planNav } from './nav';
 
 export { PlanStatusPage } from './pages/PlanStatusPage';
 export { PlanPaymentPage } from './pages/PlanPaymentPage';
-export { PlanGrid, buildPlanFeatures } from './ui/PlanGrid';
+export { PlanGrid, buildPlanFeatures, popularPlanId } from './ui/PlanGrid';
+export { PlanComparison } from './ui/PlanComparison';
 export { Header, Hero, Stats, Features, Pricing, PlanCarousel, CTA, Footer } from './ui';

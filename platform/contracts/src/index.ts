@@ -53,7 +53,40 @@ export interface ApiError {
   errors?: Record<string, string[]>;
 }
 
-export type { PlanResponse, UsageResponse, ShopPlanStatusResponse } from './plan.types.js';
+export type {
+  PlanResponse,
+  UsageResponse,
+  ShopPlanStatusResponse,
+  PlanKind,
+  PlanTier,
+  PlanBillingPeriod,
+  PlanFeatureEntry,
+  FeatureAvailability,
+} from './plan.types.js';
+export {
+  planKind,
+  isSubscriptionPlan,
+  isAddon,
+  isOcrTopup,
+  planBillingPeriod,
+  isUsagePriced,
+  planPerUnitLabel,
+  planPeriodLabel,
+  planPrice,
+  planTierRank,
+  sortedSubscriptionPlans,
+  addonPlans,
+  ocrTopupPlans,
+  upgradePath,
+  nextUpgrade,
+  isUpgradeFrom,
+  addonsForPlan,
+  featureMatrixRows,
+  featureAvailability,
+  isFeatureIncluded,
+  includedFeatures,
+  hasFeatureMatrix,
+} from './plan-catalog.js';
 export { PLAN_EXPIRY_ALLOWED_PATHS, isPlanExpiryAllowedPath } from './plan-guards.js';
 export type { MenuItem, MenuSection, ShopMenu, MenuSellMode } from './cafe-menu.types.js';
 export type { PricingRate, PricingResponse } from './pricing.types.js';
