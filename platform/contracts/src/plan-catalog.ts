@@ -112,17 +112,18 @@ export function ocrTopupPlans(plans: PlanResponse[]): PlanResponse[] {
 }
 
 /**
- * Walks `upgradeToPlanId` from `plan` to the top of the ladder.
+ * Walks `linkedId` from `plan` to the top of the ladder.
  *
  * Guards against a catalog whose links form a cycle — a self-referential or
- * looped chain would otherwise hang the render.
+ * looped chain would otherwise hang the render. Stops on a dangling link too,
+ * since a catalog edit can leave `linkedId` pointing at a deleted plan.
  */
 export function upgradePath(plan: PlanResponse, plans: PlanResponse[]): PlanResponse[] {
   const byId = new Map(plans.map((p) => [p.id, p]));
   const path: PlanResponse[] = [];
   const seen = new Set<string>([plan.id]);
 
-  let nextId = plan.upgradeToPlanId ?? null;
+  let nextId = plan.linkedId ?? null;
   while (nextId && !seen.has(nextId)) {
     const next = byId.get(nextId);
     if (!next) {
@@ -130,7 +131,7 @@ export function upgradePath(plan: PlanResponse, plans: PlanResponse[]): PlanResp
     }
     path.push(next);
     seen.add(nextId);
-    nextId = next.upgradeToPlanId ?? null;
+    nextId = next.linkedId ?? null;
   }
 
   return path;
