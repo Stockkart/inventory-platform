@@ -263,4 +263,12 @@ export const productChrome = {
   softDivider: styles.softDivider,
   priceGrandRow: styles.priceGrandRow,
   priceGrandValue: styles.priceGrandValue,
+  printOptionList: styles.printOptionList,
+  printOption: styles.printOption,
+  printOptionSelected: styles.printOptionSelected,
+  printOptionIcon: styles.printOptionIcon,
+  printOptionBody: styles.printOptionBody,
+  printOptionTitle: styles.printOptionTitle,
+  printOptionDesc: styles.printOptionDesc,
+  printOptionRadio: styles.printOptionRadio,
 } as const;

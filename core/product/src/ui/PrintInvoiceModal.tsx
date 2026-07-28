@@ -1,18 +1,23 @@
 import { useState } from 'react';
+import type { LucideIcon } from 'lucide-react';
+import { FileText, Printer, Receipt } from 'lucide-react';
 import { cartApi } from '../api/cart.api';
+import type { PrinterType } from '../api/endpoints';
 import {
   Box,
   Button,
+  Icon,
   Inline,
   Modal,
-  RadioGroup,
   Spinner,
   Stack,
   Text,
+  cn,
+  productChrome,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
 
-export type PrinterType = 'NORMAL' | 'DOT_MATRIX';
+export type { PrinterType };
 
 interface PrintInvoiceModalProps {
   isOpen: boolean;
@@ -21,6 +26,32 @@ interface PrintInvoiceModalProps {
   invoiceNo?: string;
   onError?: (message: string) => void;
 }
+
+const PRINTER_OPTIONS: Array<{
+  value: PrinterType;
+  title: string;
+  description: string;
+  icon: LucideIcon;
+}> = [
+  {
+    value: 'NORMAL',
+    title: 'Normal',
+    description: 'Standard A4 for laser or inkjet printers',
+    icon: FileText,
+  },
+  {
+    value: 'DOT_MATRIX',
+    title: 'Dot Matrix',
+    description: 'Compact monospace layout on A4',
+    icon: Printer,
+  },
+  {
+    value: 'THERMAL_3INCH',
+    title: 'Thermal (3-inch)',
+    description: 'Narrow 80mm receipt-roll format',
+    icon: Receipt,
+  },
+];
 
 export function PrintInvoiceModal({
   isOpen,
@@ -65,41 +96,49 @@ export function PrintInvoiceModal({
       <Modal.Header title="Print Invoice" onClose={handleClose} />
       <Modal.Body>
         <Stack gap="md">
-          <Text color="secondary">Select printer type for this invoice:</Text>
-          <Box className={isGenerating ? surfaceChrome.busyDim : undefined}>
-            <RadioGroup
-              name="printerType"
-              value={printerType}
-              onChange={(value) => {
-                if (!isGenerating) {
-                  setPrinterType(value as PrinterType);
-                }
-              }}
-              options={[
-                {
-                  value: 'NORMAL',
-                  label: (
-                    <Stack gap="xs">
-                      <Text weight="semibold">Normal</Text>
-                      <Text variant="caption" color="secondary">
-                        Standard A4, laser/inkjet
-                      </Text>
-                    </Stack>
-                  ),
-                },
-                {
-                  value: 'DOT_MATRIX',
-                  label: (
-                    <Stack gap="xs">
-                      <Text weight="semibold">Dot Matrix</Text>
-                      <Text variant="caption" color="secondary">
-                        Thermal / dot matrix compatible
-                      </Text>
-                    </Stack>
-                  ),
-                },
-              ]}
-            />
+          <Text color="secondary">Choose a print layout for this invoice.</Text>
+          <Box
+            className={cn(productChrome.printOptionList, isGenerating && surfaceChrome.busyDim)}
+            role="radiogroup"
+            aria-label="Printer type"
+          >
+            {PRINTER_OPTIONS.map((option) => {
+              const selected = printerType === option.value;
+              return (
+                <Button
+                  key={option.value}
+                  type="button"
+                  variant="ghost"
+                  fullWidth
+                  align="start"
+                  role="radio"
+                  aria-checked={selected}
+                  disabled={isGenerating}
+                  className={cn(
+                    productChrome.printOption,
+                    selected && productChrome.printOptionSelected,
+                  )}
+                  onClick={() => {
+                    if (!isGenerating) {
+                      setPrinterType(option.value);
+                    }
+                  }}
+                >
+                  <Box className={productChrome.printOptionIcon} aria-hidden>
+                    <Icon icon={option.icon} size="md" />
+                  </Box>
+                  <Box className={productChrome.printOptionBody}>
+                    <Text as="span" className={productChrome.printOptionTitle}>
+                      {option.title}
+                    </Text>
+                    <Text as="span" className={productChrome.printOptionDesc}>
+                      {option.description}
+                    </Text>
+                  </Box>
+                  <Box className={productChrome.printOptionRadio} aria-hidden />
+                </Button>
+              );
+            })}
           </Box>
         </Stack>
       </Modal.Body>

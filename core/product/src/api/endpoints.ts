@@ -61,9 +61,12 @@ export const SHOP_SELL_ENDPOINTS = {
   ME_SELL_CATALOG: '/shops/me/sell-catalog',
 } as const;
 
+/** Invoice printer layout for PDF generation. */
+export type PrinterType = 'NORMAL' | 'DOT_MATRIX' | 'THERMAL_3INCH';
+
 /** Invoice PDF paths. */
 export const INVOICE_ENDPOINTS = {
-  PDF: (purchaseId: string, printerType?: 'NORMAL' | 'DOT_MATRIX') =>
+  PDF: (purchaseId: string, printerType?: PrinterType) =>
     printerType != null
       ? `/invoices/${purchaseId}/pdf?printerType=${printerType}`
       : `/invoices/${purchaseId}/pdf`,

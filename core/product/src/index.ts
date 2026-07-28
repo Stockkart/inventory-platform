@@ -77,4 +77,5 @@ export type {
   CustomerProductHistoryHintProps,
   RefundHistoryListProps,
   VendorReturnHistoryListProps,
+  PrinterType,
 } from './ui';
