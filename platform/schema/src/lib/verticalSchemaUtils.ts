@@ -50,9 +50,11 @@ export function getEntityFields(
   return entities?.[entityName]?.fields ?? [];
 }
 
-/** Vertical-owned inventory fields for dynamic UI (extension storage + companyName layout). */
+/** Vertical-owned inventory fields for dynamic UI (extension + selected core keys). */
+const DYNAMIC_CORE_INVENTORY_KEYS = new Set(['companyName', 'itemType', 'itemTypeDegree']);
+
 function isDynamicInventoryField(field: VerticalSchemaFieldDef): boolean {
-  if (field.key === 'companyName') {
+  if (DYNAMIC_CORE_INVENTORY_KEYS.has(field.key)) {
     return true;
   }
   return field.storage === 'extension';
@@ -220,7 +222,10 @@ export function setVerticalFieldPatch(
       [prop]: '',
     };
   }
-  return { [prop]: value };
+  if (value === '') {
+    return { [prop]: field.type === 'number' ? undefined : '' };
+  }
+  return { [prop]: coerceFieldValue(field, value) };
 }
 
 function coerceFieldValue(

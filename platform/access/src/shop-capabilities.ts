@@ -12,9 +12,12 @@ export interface FeatureFlags {
   manualStock?: boolean;
   customerReturn?: boolean;
   vendorReturn?: boolean;
-  /** Ingredient registration: cost + optional sell price only (no PTR/MRP/rates). */
+  /** Ingredient registration: cost + optional sell price only (no PTR/MRP/rates/schemes). */
   simplePricing?: boolean;
-  /** Retailer shops: registration shows Rate + Selling Price only; backend sets MRP = PTR = Selling Price. */
+  /**
+   * Retailer shops: Rate (cost) + Selling Price instead of PTR/MRP; schemes, item type, and
+   * discount-applicable still show. Backend sets MRP = PTR = Selling Price.
+   */
   retailPricing?: boolean;
 }
 

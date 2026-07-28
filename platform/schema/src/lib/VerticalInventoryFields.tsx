@@ -1,5 +1,5 @@
 import type { VerticalSchemaFieldDef } from '@inventory-platform/schema/types';
-import { FormRow, Stack } from '@inventory-platform/ui-kit';
+import { Box, FormRow, Stack } from '@inventory-platform/ui-kit';
 import { VerticalSchemaFieldInput } from './VerticalSchemaFieldInput';
 import { getVerticalFieldValue, type VerticalFieldProduct } from './verticalSchemaUtils';
 
@@ -13,6 +13,8 @@ export interface VerticalInventoryFieldsProps {
   layout?: 'row' | 'stack';
   inputClassName?: string;
   labelClassName?: string;
+  /** Optional class for each two-column row (e.g. registration accordion row). */
+  rowClassName?: string;
 }
 
 export function VerticalInventoryFields({
@@ -24,6 +26,7 @@ export function VerticalInventoryFields({
   layout = 'row',
   inputClassName,
   labelClassName,
+  rowClassName,
 }: VerticalInventoryFieldsProps) {
   if (fields.length === 0) {
     return null;
@@ -56,23 +59,38 @@ export function VerticalInventoryFields({
   }
 
   return (
-    <Stack gap="md">
+    <>
       {rows.map((pair, rowIdx) => (
-        <FormRow key={`vr-${rowIdx}`}>
-          {pair.map((field) => (
-            <VerticalSchemaFieldInput
-              key={field.key}
-              field={field}
-              value={getVerticalFieldValue(product, field)}
-              onChange={(value) => onFieldChange(field, value)}
-              disabled={disabled}
-              idPrefix={idBase}
-              inputClassName={inputClassName}
-              labelClassName={labelClassName}
-            />
-          ))}
+        <FormRow key={`vr-${rowIdx}`} className={rowClassName}>
+          {pair.map((field) => {
+            if (field.key === 'itemTypeDegree') {
+              const itemType =
+                getVerticalFieldValue(product, {
+                  key: 'itemType',
+                  storage: 'core',
+                } as VerticalSchemaFieldDef) ||
+                String((product as { itemType?: string }).itemType ?? '');
+              if (itemType !== 'DEGREE') {
+                // Box, not <span>: the schema package's no-restricted-syntax rule
+                // bans native elements, and this placeholder must hold a grid cell.
+                return <Box key={field.key} aria-hidden="true" />;
+              }
+            }
+            return (
+              <VerticalSchemaFieldInput
+                key={field.key}
+                field={field}
+                value={getVerticalFieldValue(product, field)}
+                onChange={(value) => onFieldChange(field, value)}
+                disabled={disabled}
+                idPrefix={idBase}
+                inputClassName={inputClassName}
+                labelClassName={labelClassName}
+              />
+            );
+          })}
         </FormRow>
       ))}
-    </Stack>
+    </>
   );
 }

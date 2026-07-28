@@ -45,6 +45,9 @@ function dateInputValue(value: string): string {
 function enumOptionLabel(value: string): string {
   if (value === 'yes') return 'Yes';
   if (value === 'no') return 'No';
+  if (value === 'NORMAL') return 'Normal';
+  if (value === 'COSTLY') return 'Costly';
+  if (value === 'DEGREE') return 'Temperature for the item';
   return value;
 }
 
