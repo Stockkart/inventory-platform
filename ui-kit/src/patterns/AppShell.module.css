@@ -32,11 +32,12 @@
   display: flex;
   flex-direction: column;
   border: none;
-  border-right: 1px solid rgba(148, 163, 184, 0.14);
+  border-right: 1px solid rgba(15, 23, 42, 0.35);
   box-sizing: border-box;
-  color: #cbd5e1;
-  background: radial-gradient(90% 55% at 0% 0%, rgba(59, 130, 246, 0.22) 0%, transparent 58%),
-    linear-gradient(180deg, #1a2d4d 0%, #15233b 48%, #101a2e 100%);
+  color: #e2e8f0;
+  /* Strong depth: lighter navy top-left → deep navy bottom-right */
+  background: radial-gradient(110% 75% at 0% 0%, rgba(59, 130, 246, 0.32) 0%, transparent 52%),
+    linear-gradient(160deg, #1e3a5f 0%, #15233b 42%, #0b1220 100%);
 }
 
 .shellHeader {
@@ -48,12 +49,12 @@
   flex-shrink: 0;
   height: var(--header-height, 64px);
   box-sizing: border-box;
-  border-bottom: 1px solid color-mix(in srgb, #15233b 12%, var(--sk-color-border-default, #e2e8f0));
+  border-bottom: 1px solid color-mix(in srgb, #1e3a5f 14%, var(--sk-color-border-default, #e2e8f0));
   background: linear-gradient(
     90deg,
-    color-mix(in srgb, #15233b 7%, var(--sk-color-bg-header, #f3f6fb)) 0%,
+    color-mix(in srgb, #1e3a5f 8%, var(--sk-color-bg-header, #f3f6fb)) 0%,
     var(--sk-color-bg-header, #f3f6fb) 28%,
-    color-mix(in srgb, var(--sk-color-brand, #3b82f6) 4%, #f8fafc) 100%
+    color-mix(in srgb, var(--sk-color-brand, #1e3a5f) 4%, #f8fafc) 100%
   );
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) inset, 0 1px 2px rgba(15, 35, 59, 0.04);
   overflow: visible;
@@ -124,12 +125,12 @@
   display: flex;
   align-items: center;
   gap: 0.55rem;
-  padding: 0.4rem 0.55rem;
+  padding: 0.45rem 0.6rem;
   text-decoration: none;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   line-height: 1.4;
-  font-weight: 400;
-  color: #94a3b8;
+  font-weight: 500;
+  color: #cbd5e1;
   border-radius: 8px;
   box-sizing: border-box;
   border-left: 3px solid transparent;
@@ -137,16 +138,16 @@
 }
 
 .navLink:hover {
-  background: rgba(148, 163, 184, 0.1);
-  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
 }
 
 .navLinkActive {
-  background: rgba(59, 130, 246, 0.22);
-  color: #93c5fd;
-  font-weight: 600;
-  border-left-color: #60a5fa;
-  box-shadow: none;
+  background: rgba(59, 130, 246, 0.28);
+  color: #ffffff;
+  font-weight: 650;
+  border-left-color: #3b82f6;
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.2);
 }
 
 .navLinkCollapsed {
@@ -162,7 +163,7 @@
   align-items: center;
   justify-content: center;
   color: inherit;
-  opacity: 0.7;
+  opacity: 0.85;
 }
 
 .navItemIconActive {
@@ -177,8 +178,8 @@
 
 .navItemLabel {
   white-space: nowrap;
-  font-size: inherit;
-  font-weight: inherit;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
   line-height: inherit;
   color: inherit !important;
 }
@@ -191,9 +192,9 @@
   gap: 0.5rem;
   padding: 0.45rem 0.45rem 0.45rem 0.5rem;
   margin: 0.5rem 0.15rem 0.1rem;
-  color: #e2e8f0 !important;
-  font-size: 0.8125rem;
-  font-weight: 600;
+  color: #f8fafc !important;
+  font-size: 0.875rem;
+  font-weight: 650;
   text-transform: none;
   letter-spacing: -0.01em;
   line-height: 1.35;
@@ -204,8 +205,8 @@
 }
 
 .navGroup:hover {
-  color: #f8fafc;
-  background: rgba(148, 163, 184, 0.1);
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.08) !important;
 }
 
 .navGroupIcon {
@@ -234,8 +235,8 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: inherit;
-  font-weight: inherit;
+  font-size: 0.875rem !important;
+  font-weight: 650 !important;
   letter-spacing: inherit;
   text-transform: none;
   color: inherit !important;
@@ -244,8 +245,8 @@
 
 .navGroupChevron {
   flex-shrink: 0;
-  opacity: 0.45;
-  color: #94a3b8;
+  opacity: 0.85;
+  color: #e2e8f0;
   transition: transform 0.2s ease;
 }
 
@@ -260,10 +261,11 @@
 .navSubList {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
-  padding: 0.15rem 0.2rem 0.55rem;
+  gap: 0.2rem;
+  padding: 0.2rem 0.2rem 0.55rem;
   margin: 0 0.15rem 0.1rem 0.55rem;
-  padding-left: 1.35rem;
+  padding-left: 1.15rem;
+  border-left: 1px solid rgba(148, 163, 184, 0.2);
 }
 
 /* Sidebar chrome */
@@ -288,10 +290,10 @@
   min-height: var(--header-height, 64px);
   max-height: var(--header-height, 64px);
   padding: 0 1rem;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
   flex-shrink: 0;
   overflow: hidden;
-  background: rgba(15, 23, 42, 0.22);
+  background: rgba(15, 23, 42, 0.18);
 }
 
 .sidebarHeaderCollapsed {
@@ -464,7 +466,7 @@
   width: 3px;
   height: 1.15em;
   border-radius: 999px;
-  background: linear-gradient(180deg, #60a5fa 0%, #2563eb 100%);
+  background: linear-gradient(180deg, #3d5a80 0%, #355a82 100%);
 }
 
 .headerActions {
@@ -477,23 +479,23 @@
   width: 2.25rem;
   height: 2.25rem;
   border-radius: var(--sk-radius-full);
-  border: 1px solid color-mix(in srgb, #15233b 10%, var(--sk-color-border-default, #e2e8f0));
+  border: 1px solid color-mix(in srgb, #2a4a6e 10%, var(--sk-color-border-default, #e2e8f0));
   background: color-mix(in srgb, #fff 82%, #e8eef8);
   color: #475569;
   box-shadow: 0 1px 1px rgba(15, 35, 59, 0.04);
 }
 
 .headerIconButton:hover {
-  color: #1d4ed8;
-  border-color: color-mix(in srgb, var(--sk-color-brand, #3b82f6) 35%, transparent);
-  background: color-mix(in srgb, var(--sk-color-brand, #3b82f6) 8%, #fff);
+  color: #355a82;
+  border-color: color-mix(in srgb, var(--sk-color-brand, #355a82) 35%, transparent);
+  background: color-mix(in srgb, var(--sk-color-brand, #355a82) 8%, #fff);
 }
 
 .headerDivider {
   width: 1px;
   height: 1.625rem;
   margin: 0 0.75rem;
-  background: color-mix(in srgb, #15233b 14%, transparent);
+  background: color-mix(in srgb, #2a4a6e 14%, transparent);
   flex-shrink: 0;
 }
 
@@ -504,7 +506,7 @@
   border-radius: var(--sk-radius-full);
   font-size: 0.8125rem;
   white-space: nowrap;
-  border: 1px solid color-mix(in srgb, #15233b 10%, var(--sk-color-border-default, #e2e8f0));
+  border: 1px solid color-mix(in srgb, #2a4a6e 10%, var(--sk-color-border-default, #e2e8f0));
   background: color-mix(in srgb, #fff 82%, #e8eef8);
 }
 
@@ -514,7 +516,7 @@
   gap: 0.5rem;
   height: 2.25rem;
   background: color-mix(in srgb, #fff 78%, #e2eaf6);
-  border: 1px solid color-mix(in srgb, #15233b 12%, var(--sk-color-border-default, #e2e8f0));
+  border: 1px solid color-mix(in srgb, #2a4a6e 12%, var(--sk-color-border-default, #e2e8f0));
   color: var(--sk-color-text-primary, var(--text-primary));
   padding: 0 0.75rem 0 0.25rem;
   border-radius: var(--sk-radius-full);
@@ -589,8 +591,8 @@
   height: 1.2rem;
   padding: 0 0.4rem;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--sk-color-brand, #3b82f6) 12%, transparent);
-  color: #1d4ed8;
+  background: color-mix(in srgb, var(--sk-color-brand, #355a82) 12%, transparent);
+  color: #355a82;
   font-size: 0.6875rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -663,11 +665,11 @@
 }
 
 .notificationRowUnread {
-  background: color-mix(in srgb, var(--sk-color-brand, #3b82f6) 5%, #fff) !important;
+  background: color-mix(in srgb, var(--sk-color-brand, #355a82) 5%, #fff) !important;
 }
 
 .notificationRowUnread:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--sk-color-brand, #3b82f6) 9%, #fff) !important;
+  background: color-mix(in srgb, var(--sk-color-brand, #355a82) 9%, #fff) !important;
 }
 
 .notificationTypeIcon {
@@ -687,8 +689,8 @@
 }
 
 .notificationTypeIconReminder {
-  background: color-mix(in srgb, #3b82f6 12%, transparent);
-  color: #1d4ed8;
+  background: color-mix(in srgb, #355a82 12%, transparent);
+  color: #355a82;
 }
 
 .notificationRowBody {
@@ -732,9 +734,9 @@
   width: 0.45rem;
   height: 0.45rem;
   border-radius: 999px;
-  background-color: var(--sk-color-brand, #3b82f6);
+  background-color: var(--sk-color-brand, #355a82);
   flex-shrink: 0;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sk-color-brand, #3b82f6) 16%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sk-color-brand, #355a82) 16%, transparent);
 }
 
 .preLine {
@@ -1070,8 +1072,8 @@
   height: 1.85rem;
   flex-shrink: 0;
   border-radius: 8px;
-  background: color-mix(in srgb, var(--sk-color-brand, #3b82f6) 12%, transparent);
-  color: #1d4ed8;
+  background: color-mix(in srgb, var(--sk-color-brand, #355a82) 12%, transparent);
+  color: #355a82;
 }
 
 .shopCurrentName {
@@ -1115,8 +1117,8 @@
 }
 
 .shopSwitchBtn:hover:not(:disabled) {
-  border-color: color-mix(in srgb, var(--sk-color-brand, #3b82f6) 28%, transparent) !important;
-  background: color-mix(in srgb, var(--sk-color-brand, #3b82f6) 4%, #fff) !important;
+  border-color: color-mix(in srgb, var(--sk-color-brand, #355a82) 28%, transparent) !important;
+  background: color-mix(in srgb, var(--sk-color-brand, #355a82) 4%, #fff) !important;
 }
 
 .shopSwitchBtnMain {
@@ -1263,8 +1265,8 @@
   height: 2.35rem;
   flex-shrink: 0;
   border-radius: 11px;
-  color: #2563eb;
-  background: color-mix(in srgb, #3b82f6 12%, transparent);
+  color: #355a82;
+  background: color-mix(in srgb, #355a82 12%, transparent);
 }
 
 .helpPanelEyebrow {
@@ -1373,7 +1375,7 @@
 }
 
 .helpVideoCard:hover {
-  border-color: color-mix(in srgb, #3b82f6 35%, var(--sk-color-border-default, #e2e8f0));
+  border-color: color-mix(in srgb, #355a82 35%, var(--sk-color-border-default, #e2e8f0));
   box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
 }
 
@@ -1411,8 +1413,8 @@
 }
 
 .helpExternalLink:hover {
-  color: #2563eb;
-  background: color-mix(in srgb, #3b82f6 10%, transparent);
+  color: #355a82;
+  background: color-mix(in srgb, #355a82 10%, transparent);
 }
 
 /* ──────────────────────────────────────────────────────

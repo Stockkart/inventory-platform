@@ -292,9 +292,9 @@
   padding: 0.15rem 0 0.35rem;
 }
 .viewToggleActive {
-  border-color: color-mix(in srgb, var(--sk-color-brand, #3b82f6) 40%, transparent);
+  border-color: color-mix(in srgb, var(--sk-color-brand, #355a82) 40%, transparent);
   background: color-mix(in srgb, #eff6ff 85%, #fff);
-  color: #1d4ed8;
+  color: #355a82;
   font-weight: 600;
 }
 .itemEditFields {
@@ -338,7 +338,7 @@
 .itemSellingPriceInput:focus,
 .itemSellingPriceInput:focus-visible {
   outline: none !important;
-  border-color: color-mix(in srgb, #3b82f6 40%, transparent) !important;
+  border-color: color-mix(in srgb, #355a82 40%, transparent) !important;
   box-shadow: none !important;
 }
 .itemAdditionalInput {
@@ -358,7 +358,7 @@
 .itemAdditionalInput:focus,
 .itemAdditionalInput:focus-visible {
   outline: none !important;
-  border-color: color-mix(in srgb, #3b82f6 40%, transparent) !important;
+  border-color: color-mix(in srgb, #355a82 40%, transparent) !important;
   box-shadow: none !important;
 }
 .itemRateSelect {
@@ -375,7 +375,7 @@
 .itemRateSelect:focus,
 .itemRateSelect:focus-visible {
   outline: none !important;
-  border-color: color-mix(in srgb, #3b82f6 40%, transparent) !important;
+  border-color: color-mix(in srgb, #355a82 40%, transparent) !important;
   box-shadow: none !important;
 }
 .itemUnitSelect {
@@ -392,7 +392,7 @@
 .itemUnitSelect:focus,
 .itemUnitSelect:focus-visible {
   outline: none !important;
-  border-color: color-mix(in srgb, #3b82f6 40%, transparent) !important;
+  border-color: color-mix(in srgb, #355a82 40%, transparent) !important;
   box-shadow: none !important;
 }
 .itemSaleRowInline {
@@ -502,7 +502,7 @@
 }
 .cartLineName:hover:not(:disabled) {
   background: transparent !important;
-  color: #1d4ed8 !important;
+  color: #355a82 !important;
 }
 .cartLineTitle {
   font-size: 0.9375rem;
@@ -802,7 +802,7 @@
 .cafeCatalogTile {
   min-height: 92px;
   text-align: left;
-  border-left: 3px solid #3b82f6;
+  border-left: 3px solid #355a82;
 }
 
 .cafeCatalogTileStock {
@@ -819,7 +819,7 @@
   height: 22px;
   border-radius: 50%;
   background: rgba(59, 130, 246, 0.12);
-  color: var(--primary-color, #2563eb);
+  color: var(--primary-color, #355a82);
   font-size: 1rem;
   font-weight: 600;
   line-height: 1;
@@ -1059,8 +1059,8 @@
 }
 
 .tenderBadgeOnline {
-  background: color-mix(in srgb, #3b82f6 10%, transparent);
-  color: #1d4ed8;
+  background: color-mix(in srgb, #355a82 10%, transparent);
+  color: #355a82;
 }
 
 .tenderBadgeCredit {
@@ -1185,7 +1185,7 @@
 }
 
 .quotationTabActive {
-  border-color: color-mix(in srgb, #2563eb 45%, transparent) !important;
+  border-color: color-mix(in srgb, #355a82 45%, transparent) !important;
   background: color-mix(in srgb, #eff6ff 85%, #fff) !important;
   box-shadow: none;
 }
@@ -1253,7 +1253,7 @@
 }
 
 .processTabActive {
-  border-bottom-color: #3b82f6;
+  border-bottom-color: #355a82;
 }
 
 .helperLine {
@@ -1272,9 +1272,9 @@
 
 .selectedCard {
   cursor: pointer;
-  border-color: #2563eb !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, #2563eb 18%, transparent);
-  background: color-mix(in srgb, #2563eb 4%, var(--sk-color-bg-elevated, #fff));
+  border-color: #355a82 !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #355a82 18%, transparent);
+  background: color-mix(in srgb, #355a82 4%, var(--sk-color-bg-elevated, #fff));
 }
 
 .clickableCard {
@@ -1284,15 +1284,15 @@
 }
 
 .clickableCard:hover {
-  border-color: color-mix(in srgb, #2563eb 45%, var(--sk-color-border-default, #e2e8f0));
+  border-color: color-mix(in srgb, #355a82 45%, var(--sk-color-border-default, #e2e8f0));
   box-shadow: 0 4px 14px color-mix(in srgb, #0f172a 6%, transparent);
-  background: color-mix(in srgb, #2563eb 2.5%, var(--sk-color-bg-elevated, #fff));
+  background: color-mix(in srgb, #355a82 2.5%, var(--sk-color-bg-elevated, #fff));
 }
 
 .clickableCard:focus-visible {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px color-mix(in srgb, #2563eb 22%, transparent);
+  border-color: #355a82;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #355a82 22%, transparent);
 }
 
 .clickableCard:active {
@@ -1410,7 +1410,7 @@
   align-self: center;
   gap: 0.35rem;
   flex-shrink: 0;
-  color: #2563eb;
+  color: #355a82;
   font-size: 0.8125rem;
   font-weight: 600;
 }
@@ -1466,8 +1466,8 @@
 .returnDetailPanel {
   margin: 0;
   padding: 1.15rem 1.25rem 1.25rem;
-  border-top: 1px solid color-mix(in srgb, #2563eb 18%, var(--sk-color-border-default, #e2e8f0));
-  background: color-mix(in srgb, #2563eb 3.5%, var(--sk-color-bg-elevated, #fff));
+  border-top: 1px solid color-mix(in srgb, #355a82 18%, var(--sk-color-border-default, #e2e8f0));
+  background: color-mix(in srgb, #355a82 3.5%, var(--sk-color-bg-elevated, #fff));
   border-radius: 0 0 var(--sk-radius-md, 8px) var(--sk-radius-md, 8px);
 }
 
@@ -1476,7 +1476,7 @@
 }
 
 .salePickHeader:focus-visible {
-  outline: 2px solid color-mix(in srgb, #2563eb 45%, transparent);
+  outline: 2px solid color-mix(in srgb, #355a82 45%, transparent);
   outline-offset: -2px;
 }
 
@@ -1918,8 +1918,8 @@
   height: 2.75rem;
   flex-shrink: 0;
   border-radius: var(--sk-radius-md, 10px);
-  background: color-mix(in srgb, var(--sk-color-brand, #3b82f6) 12%, transparent);
-  color: var(--sk-color-brand, #3b82f6);
+  background: color-mix(in srgb, var(--sk-color-brand, #355a82) 12%, transparent);
+  color: var(--sk-color-brand, #355a82);
 }
 
 .detailSection {
@@ -1946,8 +1946,8 @@
   height: 1.85rem;
   flex-shrink: 0;
   border-radius: var(--sk-radius-md, 8px);
-  background: color-mix(in srgb, var(--sk-color-brand, #3b82f6) 10%, transparent);
-  color: var(--sk-color-brand, #3b82f6);
+  background: color-mix(in srgb, var(--sk-color-brand, #355a82) 10%, transparent);
+  color: var(--sk-color-brand, #355a82);
 }
 
 .detailFieldRow {
@@ -1990,8 +1990,8 @@
 }
 
 .detailCardPricing .detailCardIcon {
-  background: color-mix(in srgb, var(--sk-color-brand, #3b82f6) 12%, transparent);
-  color: var(--sk-color-brand, #3b82f6);
+  background: color-mix(in srgb, var(--sk-color-brand, #355a82) 12%, transparent);
+  color: var(--sk-color-brand, #355a82);
 }
 
 /* Print invoice — printer type choice cards */
@@ -2021,21 +2021,21 @@
 .printOption:hover:not(:disabled) {
   border-color: color-mix(
     in srgb,
-    var(--sk-color-brand, #2563eb) 40%,
+    var(--sk-color-brand, #355a82) 40%,
     var(--sk-color-border-default, #e2e8f0)
   );
   box-shadow: 0 4px 14px color-mix(in srgb, #0f172a 5%, transparent);
   background: color-mix(
     in srgb,
-    var(--sk-color-brand, #2563eb) 2.5%,
+    var(--sk-color-brand, #355a82) 2.5%,
     var(--sk-color-bg-elevated, #fff)
   );
 }
 
 .printOption:focus-visible {
   outline: none;
-  border-color: var(--sk-color-brand, #2563eb);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sk-color-brand, #2563eb) 22%, transparent);
+  border-color: var(--sk-color-brand, #355a82);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sk-color-brand, #355a82) 22%, transparent);
 }
 
 .printOption:disabled {
@@ -2044,20 +2044,20 @@
 }
 
 .printOptionSelected {
-  border-color: var(--sk-color-brand, #2563eb);
+  border-color: var(--sk-color-brand, #355a82);
   background: color-mix(
     in srgb,
-    var(--sk-color-brand, #2563eb) 6%,
+    var(--sk-color-brand, #355a82) 6%,
     var(--sk-color-bg-elevated, #fff)
   );
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sk-color-brand, #2563eb) 16%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sk-color-brand, #355a82) 16%, transparent);
 }
 
 .printOptionSelected:hover:not(:disabled) {
-  border-color: var(--sk-color-brand, #2563eb);
+  border-color: var(--sk-color-brand, #355a82);
   background: color-mix(
     in srgb,
-    var(--sk-color-brand, #2563eb) 7%,
+    var(--sk-color-brand, #355a82) 7%,
     var(--sk-color-bg-elevated, #fff)
   );
 }
@@ -2074,8 +2074,8 @@
 }
 
 .printOptionSelected .printOptionIcon {
-  background: color-mix(in srgb, var(--sk-color-brand, #2563eb) 14%, transparent);
-  color: var(--sk-color-brand, #2563eb);
+  background: color-mix(in srgb, var(--sk-color-brand, #355a82) 14%, transparent);
+  color: var(--sk-color-brand, #355a82);
 }
 
 .printOptionBody {
@@ -2111,7 +2111,7 @@
 }
 
 .printOptionSelected .printOptionRadio {
-  border-color: var(--sk-color-brand, #2563eb);
-  background: var(--sk-color-brand, #2563eb);
+  border-color: var(--sk-color-brand, #355a82);
+  background: var(--sk-color-brand, #355a82);
   box-shadow: inset 0 0 0 3px var(--sk-color-bg-elevated, #fff);
 }
