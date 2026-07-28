@@ -44,7 +44,6 @@ export function AppShell({
         <Box className={styles.sidebarColumn}>
           <Box
             className={cn(styles.sidebar, mobileOpen ? styles.sidebarOpen : styles.sidebarClosed)}
-            bg="surface"
           >
             {sidebar}
           </Box>

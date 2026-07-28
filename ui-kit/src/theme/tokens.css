@@ -8,7 +8,9 @@
   --sk-color-bg-surface: #f8fafc;
   --sk-color-bg-elevated: #ffffff;
   --sk-color-bg-muted: #f1f5f9;
-  --sk-color-bg-sidebar: #f8fafc;
+  /* Deep slate-navy nav rail */
+  --sk-color-bg-sidebar: #15233b;
+  --sk-color-bg-header: #f3f6fb;
   --sk-color-text-primary: #0f172a;
   --sk-color-text-secondary: #475569;
   --sk-color-text-muted: #64748b;
@@ -91,12 +93,12 @@
   --border-hover: var(--sk-color-border-strong);
   --link: var(--sk-color-accent);
   --link-hover: var(--sk-color-accent-hover);
-  --bg-header: var(--sk-color-bg-canvas);
+  --bg-header: var(--sk-color-bg-header);
   --btn-primary: var(--sk-color-accent);
   --btn-text: #ffffff;
   --shadow: rgba(15, 23, 42, 0.08);
   --header-height: 64px;
-  --header-blur: rgba(255, 255, 255, 0.92);
+  --header-blur: rgba(243, 246, 251, 0.92);
 }
 
 [data-theme='dark'] {
@@ -104,7 +106,8 @@
   --sk-color-bg-surface: #111827;
   --sk-color-bg-elevated: #1e293b;
   --sk-color-bg-muted: #263349;
-  --sk-color-bg-sidebar: #111827;
+  --sk-color-bg-sidebar: #0b1220;
+  --sk-color-bg-header: #111827;
   --sk-color-text-primary: #f8fafc;
   --sk-color-text-secondary: #cbd5e1;
   --sk-color-text-muted: #94a3b8;
@@ -137,7 +140,7 @@
   --border-hover: var(--sk-color-border-strong);
   --link: var(--sk-color-brand);
   --link-hover: var(--sk-color-brand-hover);
-  --bg-header: var(--sk-color-bg-canvas);
+  --bg-header: var(--sk-color-bg-header);
   --btn-primary: var(--sk-color-accent);
   --btn-text: #ffffff;
   --shadow: rgba(0, 0, 0, 0.35);
