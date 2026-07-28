@@ -105,10 +105,12 @@ export function PrintInvoiceModal({
             {PRINTER_OPTIONS.map((option) => {
               const selected = printerType === option.value;
               return (
-                <Box
+                <Button
                   key={option.value}
-                  as="button"
                   type="button"
+                  variant="ghost"
+                  fullWidth
+                  align="start"
                   role="radio"
                   aria-checked={selected}
                   disabled={isGenerating}
@@ -134,7 +136,7 @@ export function PrintInvoiceModal({
                     </Text>
                   </Box>
                   <Box className={productChrome.printOptionRadio} aria-hidden />
-                </Box>
+                </Button>
               );
             })}
           </Box>
