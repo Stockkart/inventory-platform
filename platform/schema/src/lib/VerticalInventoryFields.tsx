@@ -1,5 +1,5 @@
 import type { VerticalSchemaFieldDef } from '@inventory-platform/schema/types';
-import { FormRow, Stack } from '@inventory-platform/ui-kit';
+import { Box, FormRow, Stack } from '@inventory-platform/ui-kit';
 import { VerticalSchemaFieldInput } from './VerticalSchemaFieldInput';
 import { getVerticalFieldValue, type VerticalFieldProduct } from './verticalSchemaUtils';
 
@@ -71,7 +71,9 @@ export function VerticalInventoryFields({
                 } as VerticalSchemaFieldDef) ||
                 String((product as { itemType?: string }).itemType ?? '');
               if (itemType !== 'DEGREE') {
-                return <span key={field.key} aria-hidden="true" />;
+                // Box, not <span>: the schema package's no-restricted-syntax rule
+                // bans native elements, and this placeholder must hold a grid cell.
+                return <Box key={field.key} aria-hidden="true" />;
               }
             }
             return (
