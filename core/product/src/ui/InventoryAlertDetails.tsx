@@ -700,11 +700,6 @@ export function InventoryAlertDetails({
                   <DetailValue>{item?.barcode ?? '—'}</DetailValue>
                 )}
               </DetailField>
-              {item?.lotId ? (
-                <DetailField icon={Package} label="Lot ID">
-                  <DetailValue>{item.lotId}</DetailValue>
-                </DetailField>
-              ) : null}
               <DetailField icon={MapPin} label="Location">
                 {isEditing ? (
                   <Input

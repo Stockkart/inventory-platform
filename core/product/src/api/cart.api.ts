@@ -8,7 +8,7 @@ import type {
   UpdateCartStatusDto,
 } from '@inventory-platform/product/types';
 import type { ApiResponse } from '@inventory-platform/contracts';
-import { CART_ENDPOINTS, INVOICE_ENDPOINTS } from './endpoints';
+import { CART_ENDPOINTS, INVOICE_ENDPOINTS, type PrinterType } from './endpoints';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
@@ -54,10 +54,7 @@ export const cartApi = {
     return response.data;
   },
 
-  getInvoicePdf: async (
-    purchaseId: string,
-    printerType?: 'NORMAL' | 'DOT_MATRIX',
-  ): Promise<Blob> => {
+  getInvoicePdf: async (purchaseId: string, printerType?: PrinterType): Promise<Blob> => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
 
     const response = await axios.get(
