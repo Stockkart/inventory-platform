@@ -33,6 +33,7 @@ export {
   CustomerEditForm,
   VendorEditForm,
   ShopProfileForm,
+  InvoiceSettingsSection,
   InviteForm,
   RoleBadge,
   InvitationList,

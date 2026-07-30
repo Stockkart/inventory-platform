@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { apiClient } from '@inventory-platform/api-client';
 import type { ApiResponse } from '@inventory-platform/contracts';
 import type {
@@ -12,8 +13,24 @@ import type {
   ProcessJoinRequestResponse,
   ShopDetailResponse,
   UpdateShopDto,
+  InvoiceSettingsResponse,
+  UpdateInvoiceSettingsDto,
+  PreviewInvoiceSettingsDto,
 } from '@inventory-platform/user/types';
 import { SHOP_ENDPOINTS } from './endpoints';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+
+function blobAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {};
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('auth_token');
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const shopId = localStorage.getItem('x_shop_id');
+    if (shopId) headers['X-Shop-Id'] = shopId;
+  }
+  return headers;
+}
 
 export const shopsApi = {
   register: async (data: RegisterShopDto): Promise<RegisterShopResponse> => {
@@ -88,5 +105,48 @@ export const shopsApi = {
       data,
     );
     return response.data;
+  },
+
+  getInvoiceSettings: async (): Promise<InvoiceSettingsResponse> => {
+    const response = await apiClient.get<ApiResponse<InvoiceSettingsResponse>>(
+      SHOP_ENDPOINTS.INVOICE_SETTINGS,
+    );
+    return response.data;
+  },
+
+  updateInvoiceSettings: async (
+    data: UpdateInvoiceSettingsDto,
+  ): Promise<InvoiceSettingsResponse> => {
+    const response = await apiClient.put<ApiResponse<InvoiceSettingsResponse>>(
+      SHOP_ENDPOINTS.INVOICE_SETTINGS,
+      data,
+    );
+    return response.data;
+  },
+
+  previewInvoiceSettings: async (data: PreviewInvoiceSettingsDto): Promise<string> => {
+    const response = await axios.post(
+      `${API_BASE_URL}${SHOP_ENDPOINTS.INVOICE_SETTINGS_PREVIEW}`,
+      data,
+      {
+        responseType: 'text',
+        headers: {
+          ...blobAuthHeaders(),
+          'Content-Type': 'application/json',
+          Accept: 'text/html',
+        },
+      },
+    );
+    const html = typeof response.data === 'string' ? response.data : String(response.data);
+    const trimmed = html.trimStart();
+    if (trimmed.startsWith('%PDF')) {
+      throw new Error(
+        'Preview returned a PDF from an outdated API. Restart inventory-api and try again.',
+      );
+    }
+    if (!trimmed.toLowerCase().includes('<html') && !trimmed.toLowerCase().includes('<!doctype')) {
+      throw new Error('Preview response was not HTML. Check the API is running the latest build.');
+    }
+    return html;
   },
 };

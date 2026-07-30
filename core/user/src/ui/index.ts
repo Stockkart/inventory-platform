@@ -1,6 +1,7 @@
 export { CustomerEditForm } from './CustomerEditForm';
 export { VendorEditForm } from './VendorEditForm';
 export { ShopProfileForm } from './ShopProfileForm';
+export { InvoiceSettingsSection } from './InvoiceSettingsSection';
 export { InviteForm } from './InviteForm';
 export { RoleBadge } from './RoleBadge';
 export { InvitationList } from './InvitationList';

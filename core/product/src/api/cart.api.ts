@@ -56,6 +56,7 @@ export const cartApi = {
 
   getInvoicePdf: async (purchaseId: string, printerType?: PrinterType): Promise<Blob> => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    const shopId = typeof window !== 'undefined' ? localStorage.getItem('x_shop_id') : null;
 
     const response = await axios.get(
       `${API_BASE_URL}${INVOICE_ENDPOINTS.PDF(purchaseId, printerType)}`,
@@ -63,6 +64,7 @@ export const cartApi = {
         responseType: 'blob',
         headers: {
           Authorization: token ? `Bearer ${token}` : '',
+          ...(shopId ? { 'X-Shop-Id': shopId } : {}),
         },
       },
     );
