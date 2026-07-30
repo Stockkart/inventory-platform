@@ -6,6 +6,7 @@ import {
   Button,
   Card,
   CardBody,
+  Checkbox,
   FormField,
   Icon,
   Inline,
@@ -207,7 +208,7 @@ export function BarcodesPage() {
                 </Text>
               </Stack>
 
-              <Inline gap="sm" align="end" wrap className={productChrome.historyFiltersBar}>
+              <Inline gap="sm" align="end" flexWrap className={productChrome.historyFiltersBar}>
                 <Box className={productChrome.historyFilterField} style={{ maxWidth: 120 }}>
                   <FormField label="How many" htmlFor="generate-count">
                     <Input
@@ -253,8 +254,8 @@ export function BarcodesPage() {
         <Card>
           <CardBody>
             <Stack gap="md">
-              <Inline gap="sm" align="end" justify="between" wrap>
-                <Inline gap="sm" align="end" wrap style={{ flex: 1 }}>
+              <Inline gap="sm" align="end" justify="between" flexWrap>
+                <Inline gap="sm" align="end" flexWrap flex="1">
                   <Box style={{ minWidth: 140 }}>
                     <FormField label="Status" htmlFor="pool-status">
                       <Select
@@ -272,9 +273,8 @@ export function BarcodesPage() {
                     </FormField>
                   </Box>
                   <Box style={{ flex: 1, minWidth: 200 }}>
-                    <FormField label="Search" htmlFor="pool-q">
+                    <FormField label="Search">
                       <SearchInput
-                        id="pool-q"
                         value={poolQuery}
                         onChange={setPoolQuery}
                         onSearch={() => void loadPool()}
@@ -309,11 +309,10 @@ export function BarcodesPage() {
                   <TableHead>
                     <TableRow>
                       <TableHeaderCell>
-                        <input
-                          type="checkbox"
+                        <Checkbox
+                          label="Select all"
                           checked={allVisibleSelected}
                           onChange={toggleAllVisible}
-                          aria-label="Select all barcodes"
                           disabled={poolItems.length === 0}
                         />
                       </TableHeaderCell>
@@ -336,11 +335,10 @@ export function BarcodesPage() {
                       poolItems.map((item) => (
                         <TableRow key={item.id}>
                           <TableCell>
-                            <input
-                              type="checkbox"
+                            <Checkbox
+                              label="Select"
                               checked={selectedCodes.has(item.code)}
                               onChange={() => toggleCode(item.code)}
-                              aria-label={`Select ${item.code}`}
                             />
                           </TableCell>
                           <TableCell>
@@ -420,11 +418,9 @@ export function BarcodesPage() {
 
             <FormField
               label="Find product"
-              htmlFor="attach-q"
               hint="Type at least 2 characters, then choose a product below."
             >
               <SearchInput
-                id="attach-q"
                 value={attachQuery}
                 onChange={(q) => void searchAttachProducts(q)}
                 placeholder="Search by product name"
@@ -470,12 +466,13 @@ export function BarcodesPage() {
                       <Box
                         key={s.id}
                         as="button"
-                        type="button"
                         role="option"
                         aria-selected={selected}
                         className={productChrome.typeaheadItem}
-                        disabled={isAttaching}
-                        onClick={() => setAttachProduct(s)}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          if (!isAttaching) setAttachProduct(s);
+                        }}
                         style={
                           selected
                             ? {
