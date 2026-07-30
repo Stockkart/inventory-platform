@@ -15,15 +15,18 @@ export type PackagingUnitOption = {
 };
 
 /** Map free-text or datalist selection to a UQC code (catalog or legacy). */
-export function resolvePackagingUqc(raw: string, catalog: PackagingUnitOption[]): string {
-  const trimmed = raw.trim();
+export function resolvePackagingUqc(
+  raw: string | null | undefined,
+  catalog: PackagingUnitOption[],
+): string {
+  const trimmed = (raw ?? '').trim();
   if (!trimmed) return '';
   const upper = trimmed.toUpperCase();
   const byUqc = catalog.find((u) => u.uqc === upper);
   if (byUqc) return byUqc.uqc;
-  const byFull = catalog.find((u) => `${u.uqc} — ${u.label}`.toUpperCase() === upper);
+  const byFull = catalog.find((u) => formatUnitOption(u).toUpperCase() === upper);
   if (byFull) return byFull.uqc;
-  const byLabel = catalog.find((u) => u.label.toUpperCase() === upper);
+  const byLabel = catalog.find((u) => (u.label ?? '').toUpperCase() === upper);
   if (byLabel) return byLabel.uqc;
   const codePart = trimmed.split(/[—–-]/)[0]?.trim().toUpperCase();
   if (codePart && catalog.some((u) => u.uqc === codePart)) {
@@ -34,11 +37,13 @@ export function resolvePackagingUqc(raw: string, catalog: PackagingUnitOption[])
 }
 
 function formatUnitOption(u: PackagingUnitOption): string {
-  return `${u.uqc} — ${u.label}`;
+  const code = u.uqc ?? '';
+  const label = u.label ?? '';
+  return label ? `${code} — ${label}` : code;
 }
 
-function displayUnitValue(uqc: string, catalog: PackagingUnitOption[]): string {
-  const code = uqc.trim();
+function displayUnitValue(uqc: string | null | undefined, catalog: PackagingUnitOption[]): string {
+  const code = (uqc ?? '').trim();
   if (!code) return '';
   const upper = code.toUpperCase();
   const def = catalog.find((u) => u.uqc === upper);
@@ -47,16 +52,15 @@ function displayUnitValue(uqc: string, catalog: PackagingUnitOption[]): string {
 
 function filterPackagingUnits(
   catalog: PackagingUnitOption[],
-  query: string,
+  query: string | null | undefined,
 ): PackagingUnitOption[] {
-  const q = query.trim().toLowerCase();
+  const q = (query ?? '').trim().toLowerCase();
   if (!q) return catalog;
-  return catalog.filter(
-    (u) =>
-      u.uqc.toLowerCase().includes(q) ||
-      u.label.toLowerCase().includes(q) ||
-      formatUnitOption(u).toLowerCase().includes(q),
-  );
+  return catalog.filter((u) => {
+    const code = (u.uqc ?? '').toLowerCase();
+    const label = (u.label ?? '').toLowerCase();
+    return code.includes(q) || label.includes(q) || formatUnitOption(u).toLowerCase().includes(q);
+  });
 }
 
 /** unitsPerPack stored on product; 0 means "1 × unit" with no pack conversion. */
@@ -142,10 +146,10 @@ export function PackagingFactorField({
     });
   }, [packagingUnits.length, baseUnit, packagingUnits]);
 
-  const filteredUnits = useMemo(
-    () => filterPackagingUnits(packagingUnits, unitDraft),
-    [packagingUnits, unitDraft],
-  );
+  const filteredUnits = useMemo(() => {
+    const catalog = Array.isArray(packagingUnits) ? packagingUnits : [];
+    return filterPackagingUnits(catalog, unitDraft);
+  }, [packagingUnits, unitDraft]);
 
   useEffect(() => {
     setHighlightIdx(0);
