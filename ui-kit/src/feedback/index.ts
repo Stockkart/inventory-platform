@@ -8,5 +8,6 @@ export {
   ProgressBar,
   type AlertProps,
   type ToastProps,
+  type ToastVariant,
   type ProgressBarProps,
 } from './Alert';

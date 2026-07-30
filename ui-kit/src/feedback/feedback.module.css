@@ -183,28 +183,119 @@
 .toast {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--sk-space-md);
-  min-width: 280px;
-  max-width: 420px;
-  padding: 0.875rem 1rem;
-  border-radius: var(--sk-radius-md);
-  border: 1px solid var(--sk-color-border-default);
-  background: var(--sk-color-bg-elevated);
-  box-shadow: var(--sk-shadow-md);
+  gap: 0.75rem;
+  width: min(100vw - 2rem, 26rem);
+  padding: 0.875rem 0.875rem 0.875rem 0.75rem;
+  border-radius: var(--sk-radius-xl, 14px);
+  border: 1px solid color-mix(in srgb, var(--sk-color-border-default) 80%, transparent);
+  background: color-mix(in srgb, var(--sk-color-bg-elevated) 92%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 28px rgba(15, 23, 42, 0.12);
+  color: var(--sk-color-text-primary);
+  animation: skToastIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes skToastIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.toastIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--sk-radius-lg, 12px);
+  background: var(--sk-color-info-soft);
+  color: var(--sk-color-info);
+}
+
+.toastBody {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-top: 0.2rem;
+}
+
+.toastMessage {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
   color: var(--sk-color-text-primary);
 }
 
+.toastClose {
+  flex-shrink: 0;
+  margin-top: -0.1rem;
+  color: var(--sk-color-text-muted);
+  background: transparent;
+  border-color: transparent;
+}
+
+.toastClose:hover {
+  color: var(--sk-color-text-primary);
+  background: var(--sk-color-hover);
+}
+
+.toastDefault {
+  border-color: color-mix(in srgb, var(--sk-color-brand) 18%, var(--sk-color-border-default));
+}
+
+.toastDefault .toastIcon {
+  background: var(--sk-color-brand-soft);
+  color: var(--sk-color-brand);
+}
+
 .toastSuccess {
-  border-color: rgba(5, 150, 105, 0.35);
+  border-color: color-mix(in srgb, var(--sk-color-success) 28%, var(--sk-color-border-default));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--sk-color-success-soft) 55%, var(--sk-color-bg-elevated)) 0%,
+    var(--sk-color-bg-elevated) 100%
+  );
+}
+
+.toastSuccess .toastIcon {
+  background: var(--sk-color-success-soft);
+  color: var(--sk-color-success);
 }
 
 .toastError {
-  border-color: rgba(220, 38, 38, 0.35);
+  border-color: color-mix(in srgb, var(--sk-color-danger) 32%, var(--sk-color-border-default));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--sk-color-danger-soft) 65%, var(--sk-color-bg-elevated)) 0%,
+    var(--sk-color-bg-elevated) 100%
+  );
+}
+
+.toastError .toastIcon {
+  background: var(--sk-color-danger-soft);
+  color: var(--sk-color-danger);
 }
 
 .toastWarning {
-  border-color: rgba(217, 119, 6, 0.35);
+  border-color: color-mix(in srgb, var(--sk-color-warning) 32%, var(--sk-color-border-default));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--sk-color-warning-soft) 60%, var(--sk-color-bg-elevated)) 0%,
+    var(--sk-color-bg-elevated) 100%
+  );
+}
+
+.toastWarning .toastIcon {
+  background: var(--sk-color-warning-soft);
+  color: var(--sk-color-warning);
 }
 
 .progress {

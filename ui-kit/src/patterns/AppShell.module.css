@@ -881,9 +881,15 @@
 ────────────────────────────────────────────────────── */
 .toastStack {
   position: fixed;
-  top: 18px;
-  right: 18px;
-  z-index: 99999;
+  top: max(1rem, env(safe-area-inset-top, 0px));
+  right: max(1rem, env(safe-area-inset-right, 0px));
+  z-index: var(--sk-z-toast, 9500);
+  width: min(100vw - 2rem, 26rem);
+  pointer-events: none;
+}
+
+.toastStack > * {
+  pointer-events: auto;
 }
 
 /* ──────────────────────────────────────────────────────
