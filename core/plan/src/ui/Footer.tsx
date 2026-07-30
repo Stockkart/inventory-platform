@@ -1,23 +1,9 @@
-import { Box, Link, MarketingFooter, type BoxProps } from '@inventory-platform/ui-kit';
-
-const brandLogoStyle = {
-  height: 40,
-  width: 'auto',
-  maxWidth: 160,
-  objectFit: 'contain' as const,
-};
-
-const brandLogoProps = {
-  as: 'img',
-  src: '/assets/logo/STOCKKART-3x.png',
-  alt: 'StockKart',
-  style: brandLogoStyle,
-} as unknown as BoxProps;
+import { MarketingFooter, Link } from '@inventory-platform/ui-kit';
 
 export function Footer() {
   return (
     <MarketingFooter
-      brand={<Box {...brandLogoProps} />}
+      brand={<img src="/assets/logo/STOCKKART-3x.png" alt="StockKart" height={40} width={150} />}
       tagline="Complete inventory management solution for modern businesses."
       copyright="© 2026 StockKart. All rights reserved."
       meta={

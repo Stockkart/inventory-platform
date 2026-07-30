@@ -17,11 +17,19 @@
   object-fit: contain;
 }
 
+[data-theme='dark'] .logo {
+  filter: brightness(0) invert(1);
+}
+
 .logoSm {
   height: 32px;
   width: auto;
   max-width: 140px;
   object-fit: contain;
+}
+
+[data-theme='dark'] .logoSm {
+  filter: brightness(0) invert(1);
 }
 
 .stepMuted {

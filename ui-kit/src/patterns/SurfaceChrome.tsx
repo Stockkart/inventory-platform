@@ -74,6 +74,7 @@ export const surfaceChrome = {
   reminderInfoChip: styles.reminderInfoChip,
   planHeader: styles.planHeader,
   planHeaderInner: styles.planHeaderInner,
+  planBrandLogo: styles.planBrandLogo,
   planCardMin: styles.planCardMin,
   planBadgeCenter: styles.planBadgeCenter,
   planBadgeRight: styles.planBadgeRight,
