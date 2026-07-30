@@ -53,16 +53,17 @@
   "dependencies": {
     "@inventory-platform/access": "workspace:*",
     "@inventory-platform/api-client": "workspace:*",
+    "@inventory-platform/contracts": "workspace:*",
     "@inventory-platform/query": "workspace:*",
     "@inventory-platform/routing": "workspace:*",
+    "@inventory-platform/schema": "workspace:*",
     "@inventory-platform/session": "workspace:*",
     "@inventory-platform/ui-kit": "workspace:*",
     "@inventory-platform/user": "workspace:*",
-    "@inventory-platform/schema": "workspace:*",
     "axios": "^1.7.9",
+    "jsbarcode": "^3.12.3",
     "lucide-react": "^0.554.0",
-    "qrcode.react": "^3.1.0",
-    "@inventory-platform/contracts": "workspace:*"
+    "qrcode.react": "^3.1.0"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.90.0",

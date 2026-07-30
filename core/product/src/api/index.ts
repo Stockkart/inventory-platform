@@ -1,3 +1,4 @@
+export { barcodesApi } from './barcodes.api';
 export { inventoryApi, resolveInventoryDocumentId } from './inventory.api';
 export { cartApi } from './cart.api';
 export { checkoutApi } from './checkout.api';
@@ -8,6 +9,7 @@ export { refundsApi } from './refunds.api';
 export { uploadApi } from './upload.api';
 export {
   INVENTORY_ENDPOINTS,
+  BARCODE_ENDPOINTS,
   VENDOR_PURCHASE_INVOICES_ENDPOINTS,
   VENDOR_PURCHASE_RETURNS_ENDPOINTS,
   INVENTORY_CORRECTIONS_ENDPOINTS,

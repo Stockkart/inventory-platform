@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback, type ReactNode } from 'react';
 import { Link as RouterLink } from 'react-router';
 import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
+import { barcodesApi } from '../api/barcodes.api';
+import { openLocalBarcodeLabelPrint } from '../lib/printBarcodeLabels';
 import { vendorsApi } from '@inventory-platform/user/vendors';
 import type { VendorResponse } from '@inventory-platform/user/types';
 import type {
@@ -34,6 +36,7 @@ import {
   Link,
   Modal,
   Select,
+  Spinner,
   Stack,
   Text,
   Textarea,
@@ -63,12 +66,14 @@ import {
   PackagePlus,
   Percent,
   Phone,
+  Printer,
   Receipt,
   Ruler,
   ShoppingCart,
   Tag,
   Thermometer,
   User,
+  Wand2,
   X,
 } from 'lucide-react';
 const SCHEME_TYPE_OPTIONS: readonly SelectOptionDef[] = [
@@ -274,6 +279,7 @@ export function InventoryAlertDetails({
   const [vendorError, setVendorError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isGeneratingBarcode, setIsGeneratingBarcode] = useState(false);
   const [editForm, setEditForm] = useState<Record<string, string | number | null>>({});
   const { success: notifySuccess, error: notifyError } = useNotify;
 
@@ -690,14 +696,71 @@ export function InventoryAlertDetails({
               </DetailField>
               <DetailField icon={Barcode} label="Barcode">
                 {showEditor('barcode') ? (
-                  <Input
-                    type="text"
-                    value={String(editForm.barcode ?? '')}
-                    onChange={(e) => updateEditField('barcode', e.target.value)}
-                    placeholder="Barcode"
-                  />
+                  <Inline gap="sm" align="center">
+                    <Input
+                      type="text"
+                      value={String(editForm.barcode ?? '')}
+                      onChange={(e) => updateEditField('barcode', e.target.value)}
+                      placeholder="Barcode"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isGeneratingBarcode || isSaving}
+                      aria-label="Generate barcode"
+                      onClick={() => {
+                        void (async () => {
+                          setIsGeneratingBarcode(true);
+                          try {
+                            const code = await barcodesApi.generateOne();
+                            updateEditField('barcode', code);
+                          } catch (err) {
+                            notifyError(
+                              err instanceof Error ? err.message : 'Failed to generate barcode',
+                            );
+                          } finally {
+                            setIsGeneratingBarcode(false);
+                          }
+                        })();
+                      }}
+                    >
+                      {isGeneratingBarcode ? (
+                        <Spinner size="sm" />
+                      ) : (
+                        <Icon icon={Wand2} size="sm" />
+                      )}
+                    </Button>
+                  </Inline>
                 ) : (
-                  <DetailValue>{item?.barcode ?? '—'}</DetailValue>
+                  <Inline gap="sm" align="center">
+                    <DetailValue>{item?.barcode ?? '—'}</DetailValue>
+                    {item?.barcode ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        aria-label="Print barcode sticker"
+                        onClick={() => {
+                          try {
+                            openLocalBarcodeLabelPrint([
+                              {
+                                code: item.barcode!,
+                                name: item.name,
+                                companyName: item.companyName,
+                              },
+                            ]);
+                          } catch (err) {
+                            notifyError(
+                              err instanceof Error ? err.message : 'Failed to print barcode',
+                            );
+                          }
+                        }}
+                      >
+                        <Icon icon={Printer} size="sm" />
+                      </Button>
+                    ) : null}
+                  </Inline>
                 )}
               </DetailField>
               <DetailField icon={MapPin} label="Location">

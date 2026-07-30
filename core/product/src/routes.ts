@@ -72,6 +72,11 @@ export const vendorReturnRoutes: RouteModule = {
   ],
 };
 
+export const barcodesRoutes: RouteModule = {
+  path: 'barcodes',
+  children: [{ path: '', file: 'routes/barcodes.tsx', lazy: () => import('./routes/barcodes') }],
+};
+
 export const mobileUploadRoutes: RouteModule = {
   path: 'm/upload',
   children: [
@@ -83,6 +88,7 @@ export const productDashboardRoutes: RouteModule[] = [
   productEntryRoutes,
   importRoutes,
   productSearchRoutes,
+  barcodesRoutes,
   stockCorrectionsRoutes,
   vendorInvoicesRoutes,
   scanSellRoutes,

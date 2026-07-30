@@ -1022,3 +1022,48 @@ export interface ParsedItemsResponse {
   totalItems: number;
   vendorPurchaseInvoice?: ParsedVendorInvoiceDto | null;
 }
+
+/** Shop barcode pool / label types. */
+export type BarcodePoolStatus = 'UNUSED' | 'ATTACHED';
+
+export interface BarcodePoolItem {
+  id: string;
+  code: string;
+  status: BarcodePoolStatus;
+  productId?: string | null;
+  batchId?: string | null;
+  labelName?: string | null;
+  labelCompany?: string | null;
+  labelPrice?: number | null;
+  createdAt?: string | null;
+}
+
+export interface GenerateBarcodesRequest {
+  count?: number;
+  batchId?: string;
+}
+
+export interface GenerateBarcodesResponse {
+  items: BarcodePoolItem[];
+}
+
+export interface BarcodePoolListResponse {
+  items: BarcodePoolItem[];
+}
+
+export interface AttachBarcodeRequest {
+  productId: string;
+}
+
+export interface BarcodeLabelsRequest {
+  productIds?: string[];
+  codes?: string[];
+}
+
+export interface BarcodeLabelDto {
+  code: string;
+  name?: string | null;
+  companyName?: string | null;
+  price?: number | null;
+  productId?: string | null;
+}

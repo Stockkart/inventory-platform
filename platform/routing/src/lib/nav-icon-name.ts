@@ -33,6 +33,7 @@ export const NAV_ICON_NAMES = [
   'scale',
   'lock',
   'circle',
+  'barcode',
 ] as const;
 
 export type NavIconName = (typeof NAV_ICON_NAMES)[number];

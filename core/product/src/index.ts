@@ -1,5 +1,6 @@
 export { inventoryApi, resolveInventoryDocumentId } from './api/inventory.api';
 export { productApi } from './api/product.api';
+export { barcodesApi } from './api/barcodes.api';
 export { cartApi } from './api/cart.api';
 export { checkoutApi } from './api/checkout.api';
 export { shopMenuApi } from './api/menu.api';
@@ -7,6 +8,7 @@ export { sellCatalogApi } from './api/sell-catalog.api';
 export {
   INVENTORY_ENDPOINTS,
   PRODUCT_ENDPOINTS,
+  BARCODE_ENDPOINTS,
   VENDOR_PURCHASE_INVOICES_ENDPOINTS,
   VENDOR_PURCHASE_RETURNS_ENDPOINTS,
   INVENTORY_CORRECTIONS_ENDPOINTS,
@@ -21,6 +23,7 @@ export {
   productEntryRoutes,
   importRoutes,
   productSearchRoutes,
+  barcodesRoutes,
   stockCorrectionsRoutes,
   vendorInvoicesRoutes,
   scanSellRoutes,
@@ -34,6 +37,7 @@ export {
 export { productNav, productReturnsNav, productHistoryNav } from './nav';
 
 export { ProductEntryPage } from './pages/ProductEntryPage';
+export { BarcodesPage } from './pages/BarcodesPage';
 export { ImportPage } from './pages/ImportPage';
 export { ProductSearchPage } from './pages/ProductSearchPage';
 export { StockCorrectionsPage } from './pages/StockCorrectionsPage';
@@ -50,6 +54,7 @@ export {
   HistoryFiltersBar,
   PaymentMethodSplit,
   PrintInvoiceModal,
+  PrintBarcodeLabelsModal,
   InventoryAlertDetails,
   CustomerProductHistoryHint,
   useCustomerProductHistory,
