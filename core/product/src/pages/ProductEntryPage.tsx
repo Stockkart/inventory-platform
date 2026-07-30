@@ -880,7 +880,13 @@ export function ProductEntryPage() {
   useEffect(() => {
     inventoryApi
       .listPackagingUnits()
-      .then(setPackagingUnits)
+      .then((units) =>
+        setPackagingUnits(
+          (Array.isArray(units) ? units : []).filter((u): u is PackagingUnit =>
+            Boolean(u && typeof u.uqc === 'string' && u.uqc.trim()),
+          ),
+        ),
+      )
       .catch(() => setPackagingUnits([]));
   }, []);
 

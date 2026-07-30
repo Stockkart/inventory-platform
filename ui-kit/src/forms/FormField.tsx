@@ -42,7 +42,8 @@ function isWrapperProps(props: FormFieldProps): props is FormFieldWrapperProps {
 
 export function FormField(props: FormFieldProps) {
   if (isWrapperProps(props)) {
-    const fieldId = props.htmlFor ?? props.id ?? props.label.toLowerCase().replace(/\s+/g, '-');
+    const fieldId =
+      props.htmlFor ?? props.id ?? (props.label ?? 'field').toLowerCase().replace(/\s+/g, '-');
     const hintId = props.hint ? `${fieldId}-hint` : undefined;
     const errorId = props.error ? `${fieldId}-error` : undefined;
 
@@ -66,7 +67,7 @@ export function FormField(props: FormFieldProps) {
     );
   }
 
-  const fieldId = props.id ?? props.label.toLowerCase().replace(/\s+/g, '-');
+  const fieldId = props.id ?? (props.label ?? 'field').toLowerCase().replace(/\s+/g, '-');
   const hintId = props.hint ? `${fieldId}-hint` : undefined;
   const errorId = props.error ? `${fieldId}-error` : undefined;
   const describedBy = [hintId, errorId].filter(Boolean).join(' ') || undefined;
