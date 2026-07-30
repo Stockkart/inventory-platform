@@ -32,6 +32,8 @@ export const INVITATION_ENDPOINTS = {
 export const SHOP_ENDPOINTS = {
   REGISTER: '/shops/register',
   ACTIVE_SHOP: '/shops/active-shop',
+  INVOICE_SETTINGS: '/shops/active-shop/invoice-settings',
+  INVOICE_SETTINGS_PREVIEW: '/shops/active-shop/invoice-settings/preview',
   BY_ID: (shopId: string) => `/shops/${shopId}`,
   BY_OWNER_EMAIL: '/shops/by-owner-email',
   JOIN_REQUEST: '/shops/join-request',

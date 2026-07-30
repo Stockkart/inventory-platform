@@ -13,7 +13,7 @@ import {
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { shopsApi } from '../api/shops.api';
-import { ShopProfileForm } from '../ui';
+import { ShopProfileForm, InvoiceSettingsSection } from '../ui';
 import type { Location as LocationType } from '@inventory-platform/user/types';
 
 export function meta() {
@@ -157,7 +157,7 @@ export function ProfilePage() {
 
   if (loading) {
     return (
-      <Stack gap="md" className={surfaceChrome.profileShell}>
+      <Stack gap="md" className={surfaceChrome.profileShellWide}>
         <CenteredLoader label="Loading profile…" />
       </Stack>
     );
@@ -165,7 +165,7 @@ export function ProfilePage() {
 
   if (error || !shop) {
     return (
-      <Stack gap="md" className={surfaceChrome.profileShell}>
+      <Stack gap="md" className={surfaceChrome.profileShellWide}>
         <Alert variant="danger">{error ?? 'Shop not found'}</Alert>
       </Stack>
     );
@@ -183,11 +183,11 @@ export function ProfilePage() {
   ].filter(Boolean) as { label: string; value: string }[];
 
   return (
-    <Stack gap="md" className={surfaceChrome.profileShell}>
+    <Stack gap="md" className={surfaceChrome.profileShellWide}>
       <PageHeader description="View and edit your active shop information" />
 
       {!editing ? (
-        <Box className={surfaceChrome.profileCard}>
+        <Box className={cn(surfaceChrome.profileCard, surfaceChrome.profileCardNarrow)}>
           <Box className={surfaceChrome.profileHero}>
             <Box className={surfaceChrome.profileHeroMain}>
               <Box as="span" className={surfaceChrome.profileHeroIcon} aria-hidden>
@@ -247,7 +247,7 @@ export function ProfilePage() {
           </Box>
         </Box>
       ) : (
-        <Box className={surfaceChrome.profileCard}>
+        <Box className={cn(surfaceChrome.profileCard, surfaceChrome.profileCardNarrow)}>
           <Box className={surfaceChrome.profileEditHeader}>
             <Text as="h2" className={surfaceChrome.profileEditTitle}>
               Edit shop
@@ -283,6 +283,8 @@ export function ProfilePage() {
           </Box>
         </Box>
       )}
+
+      <InvoiceSettingsSection />
     </Stack>
   );
 }

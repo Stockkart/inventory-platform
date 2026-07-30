@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { FileText, Printer, Receipt } from 'lucide-react';
 import { cartApi } from '../api/cart.api';
+import { invoiceSettingsApi } from '../api/invoice-settings.api';
 import type { PrinterType } from '../api/endpoints';
 import {
   Box,
@@ -61,7 +62,30 @@ export function PrintInvoiceModal({
   onError,
 }: PrintInvoiceModalProps) {
   const [printerType, setPrinterType] = useState<PrinterType>('NORMAL');
+  const [shopDefault, setShopDefault] = useState<PrinterType | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const settings = await invoiceSettingsApi.get();
+        if (cancelled) return;
+        const next = settings.defaultPrinterType;
+        setShopDefault(next);
+        setPrinterType(next);
+      } catch {
+        if (!cancelled) {
+          setShopDefault(null);
+          setPrinterType('NORMAL');
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -104,6 +128,7 @@ export function PrintInvoiceModal({
           >
             {PRINTER_OPTIONS.map((option) => {
               const selected = printerType === option.value;
+              const isDefault = shopDefault === option.value;
               return (
                 <Button
                   key={option.value}
@@ -130,6 +155,7 @@ export function PrintInvoiceModal({
                   <Box className={productChrome.printOptionBody}>
                     <Text as="span" className={productChrome.printOptionTitle}>
                       {option.title}
+                      {isDefault ? ' (Shop default)' : ''}
                     </Text>
                     <Text as="span" className={productChrome.printOptionDesc}>
                       {option.description}
