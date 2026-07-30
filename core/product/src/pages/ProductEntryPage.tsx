@@ -2323,23 +2323,14 @@ export function ProductEntryPage() {
         const failedCount = response?.totalFailed ?? 0;
         const itemErrors = response?.itemErrors ?? [];
         const items = response?.items ?? [];
-        const savedVendorInvoiceId = response?.vendorPurchaseInvoiceId ?? response?.lotId;
 
         // If we have items or a positive createdCount, consider it successful
         if (createdCount > 0 || items.length > 0) {
-          const itemDetails =
-            items.length > 0
-              ? items
-                  .map(
-                    (item, index) =>
-                      `${products[index]?.name || 'Product'}: ${item.id || 'Created'}`,
-                  )
-                  .join('; ')
-              : '';
+          const count = createdCount || items.length;
           notifySuccess(
-            `Successfully registered ${createdCount || items.length} product(s)! ${
-              savedVendorInvoiceId ? `Stock-in ID: ${savedVendorInvoiceId}. ` : ''
-            }${itemDetails ? `Details: ${itemDetails}` : ''}`,
+            count === 1
+              ? 'Product registered successfully'
+              : `Successfully registered ${count} products`,
           );
 
           const createdBarcodes = items
@@ -2373,12 +2364,11 @@ export function ProductEntryPage() {
               : `${failedCount} product(s) failed validation or save.`;
           notifyError(`No products were saved. ${detail}${itemErrors.length > 3 ? ' …' : ''}`);
         } else if (response) {
+          const count = products.length;
           notifySuccess(
-            `Successfully registered ${products.length} product(s)! ${
-              response?.vendorPurchaseInvoiceId ?? response?.lotId
-                ? `Stock-in ID: ${response.vendorPurchaseInvoiceId ?? response.lotId}. `
-                : ''
-            }`,
+            count === 1
+              ? 'Product registered successfully'
+              : `Successfully registered ${count} products`,
           );
           setTimeout(() => {
             setProducts([]);
@@ -3187,23 +3177,23 @@ export function ProductEntryPage() {
                         <Text as="span" className={pageStyles.keyboardNavHintLabel}>
                           Keyboard:
                         </Text>{' '}
-                        <Text as="kbd" className={pageStyles.kbdInline}>
+                        <Text as="kbd" color="primary" className={pageStyles.kbdInline}>
                           Enter
                         </Text>{' '}
                         next field ·{' '}
-                        <Text as="kbd" className={pageStyles.kbdInline}>
+                        <Text as="kbd" color="primary" className={pageStyles.kbdInline}>
                           ↑
                         </Text>
-                        <Text as="kbd" className={pageStyles.kbdInline}>
+                        <Text as="kbd" color="primary" className={pageStyles.kbdInline}>
                           ↓
                         </Text>{' '}
                         {productViewMode === 'grid' ? 'same column' : 'previous / next'}
                         {' · '}
-                        <Text as="kbd" className={pageStyles.kbdInline}>
+                        <Text as="kbd" color="primary" className={pageStyles.kbdInline}>
                           Shift
                         </Text>
                         +
-                        <Text as="kbd" className={pageStyles.kbdInline}>
+                        <Text as="kbd" color="primary" className={pageStyles.kbdInline}>
                           Enter
                         </Text>{' '}
                         back
@@ -5777,9 +5767,13 @@ function ProductAccordion({
             <>
               <Box className={accordionStyles.ratesSection}>
                 <Box className={accordionStyles.ratesHeader}>
-                  <Label>Rates (optional)</Label>
+                  <Text as="span" className={accordionStyles.ratesTitle}>
+                    Rates (optional)
+                  </Text>
                   <Button
                     type="button"
+                    variant="outline"
+                    size="sm"
                     onClick={() =>
                       onChange(product.id, 'rates', [
                         ...(product.rates ?? []),
