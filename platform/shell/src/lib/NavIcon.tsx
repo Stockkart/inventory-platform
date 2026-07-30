@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import {
+  Barcode,
   BookOpen,
   Calendar,
   Circle,
@@ -71,6 +72,7 @@ const NAV_ICON_REGISTRY: Record<NavIconName, LucideIcon> = {
   scale: Scale,
   lock: Lock,
   circle: Circle,
+  barcode: Barcode,
 };
 
 export interface NavIconProps extends Omit<IconProps, 'icon'> {

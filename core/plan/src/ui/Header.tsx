@@ -6,25 +6,9 @@ import {
   Link,
   ThemeToggle,
   useMatchMedia,
-  type BoxProps,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { useAuthStore } from '@inventory-platform/session';
-
-const logoStyle = {
-  height: 36,
-  width: 'auto',
-  maxWidth: 160,
-  objectFit: 'contain' as const,
-  flexShrink: 0,
-};
-
-const logoImgProps = {
-  as: 'img',
-  src: '/assets/logo/STOCKKART-3x.png',
-  alt: 'StockKart',
-  style: logoStyle,
-} as unknown as BoxProps;
 
 export function Header() {
   const { isAuthenticated } = useAuthStore();
@@ -42,7 +26,11 @@ export function Header() {
         className={surfaceChrome.planHeaderInner}
       >
         <RouterLink to="/">
-          <Box {...logoImgProps} />
+          <img
+            src="/assets/logo/STOCKKART-3x.png"
+            alt="StockKart"
+            className={surfaceChrome.planBrandLogo}
+          />
         </RouterLink>
 
         {!isMobile ? (

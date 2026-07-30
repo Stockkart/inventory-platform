@@ -20,6 +20,14 @@ export const PRODUCT_ENDPOINTS = {
   LAST_INVENTORY: (id: string) => `/products/${id}/last-inventory`,
 } as const;
 
+/** Shop barcode generate / pool / label paths. */
+export const BARCODE_ENDPOINTS = {
+  BASE: '/barcodes',
+  GENERATE: '/barcodes/generate',
+  LABELS: '/barcodes/labels',
+  ATTACH: (code: string) => `/barcodes/${encodeURIComponent(code)}/attach`,
+} as const;
+
 /** Vendor purchase invoice paths. */
 export const VENDOR_PURCHASE_INVOICES_ENDPOINTS = {
   BASE: '/vendor-purchase-invoices',

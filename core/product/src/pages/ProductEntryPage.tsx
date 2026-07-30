@@ -6,7 +6,10 @@ import { apiClient } from '@inventory-platform/api-client';
 import { userLookupApi } from '@inventory-platform/user/users';
 import { inventoryApi } from '../api/inventory.api';
 import { productApi } from '../api/product.api';
+import { barcodesApi } from '../api/barcodes.api';
 import { mapLastInventoryToRegistrationPatch } from '../lib/registrationPrefill';
+import { PrintBarcodeLabelsModal } from '../ui/PrintBarcodeLabelsModal';
+import { openLocalBarcodeLabelPrint } from '../lib/printBarcodeLabels';
 import { vendorsApi } from '@inventory-platform/user/vendors';
 import type {
   CreateInventoryDto,
@@ -119,9 +122,11 @@ import {
   MapPin,
   Phone,
   Plus,
+  Printer,
   QrCode,
   Receipt,
   Upload,
+  Wand2,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import {
@@ -742,6 +747,8 @@ export function ProductEntryPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [generatingBarcodeId, setGeneratingBarcodeId] = useState<string | null>(null);
+  const [printLabelCodes, setPrintLabelCodes] = useState<string[] | null>(null);
   const { success: notifySuccess, error: notifyError } = useNotify;
 
   // QR Code Upload state
@@ -1476,6 +1483,36 @@ export function ProductEntryPage() {
     setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, ...patch } : p)));
     setError(null);
     setSuccess(null);
+  };
+
+  const handleGenerateBarcode = async (productId: string) => {
+    setGeneratingBarcodeId(productId);
+    setError(null);
+    try {
+      const code = await barcodesApi.generateOne();
+      handleProductChange(productId, 'barcode', code);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to generate barcode';
+      notifyError(message);
+    } finally {
+      setGeneratingBarcodeId(null);
+    }
+  };
+
+  const handlePrintRowBarcode = (product: ProductFormData) => {
+    const code = product.barcode?.trim();
+    if (!code) return;
+    try {
+      openLocalBarcodeLabelPrint([
+        {
+          code,
+          name: product.name,
+          companyName: product.companyName,
+        },
+      ]);
+    } catch (err) {
+      notifyError(err instanceof Error ? err.message : 'Failed to print barcode');
+    }
   };
 
   // --- Catalog product typeahead (prefill identity from an existing product) ---
@@ -2286,24 +2323,22 @@ export function ProductEntryPage() {
         const failedCount = response?.totalFailed ?? 0;
         const itemErrors = response?.itemErrors ?? [];
         const items = response?.items ?? [];
-        const savedVendorInvoiceId = response?.vendorPurchaseInvoiceId ?? response?.lotId;
 
         // If we have items or a positive createdCount, consider it successful
         if (createdCount > 0 || items.length > 0) {
-          const itemDetails =
-            items.length > 0
-              ? items
-                  .map(
-                    (item, index) =>
-                      `${products[index]?.name || 'Product'}: ${item.id || 'Created'}`,
-                  )
-                  .join('; ')
-              : '';
+          const count = createdCount || items.length;
           notifySuccess(
-            `Successfully registered ${createdCount || items.length} product(s)! ${
-              savedVendorInvoiceId ? `Stock-in ID: ${savedVendorInvoiceId}. ` : ''
-            }${itemDetails ? `Details: ${itemDetails}` : ''}`,
+            count === 1
+              ? 'Product registered successfully'
+              : `Successfully registered ${count} products`,
           );
+
+          const createdBarcodes = items
+            .map((item) => item.barcode)
+            .filter((code): code is string => Boolean(code?.trim()));
+          if (createdBarcodes.length > 0) {
+            setPrintLabelCodes(createdBarcodes);
+          }
 
           // Clear form after 5 seconds
           setTimeout(() => {
@@ -2329,12 +2364,11 @@ export function ProductEntryPage() {
               : `${failedCount} product(s) failed validation or save.`;
           notifyError(`No products were saved. ${detail}${itemErrors.length > 3 ? ' …' : ''}`);
         } else if (response) {
+          const count = products.length;
           notifySuccess(
-            `Successfully registered ${products.length} product(s)! ${
-              response?.vendorPurchaseInvoiceId ?? response?.lotId
-                ? `Stock-in ID: ${response.vendorPurchaseInvoiceId ?? response.lotId}. `
-                : ''
-            }`,
+            count === 1
+              ? 'Product registered successfully'
+              : `Successfully registered ${count} products`,
           );
           setTimeout(() => {
             setProducts([]);
@@ -3143,23 +3177,23 @@ export function ProductEntryPage() {
                         <Text as="span" className={pageStyles.keyboardNavHintLabel}>
                           Keyboard:
                         </Text>{' '}
-                        <Text as="kbd" className={pageStyles.kbdInline}>
+                        <Text as="kbd" color="primary" className={pageStyles.kbdInline}>
                           Enter
                         </Text>{' '}
                         next field ·{' '}
-                        <Text as="kbd" className={pageStyles.kbdInline}>
+                        <Text as="kbd" color="primary" className={pageStyles.kbdInline}>
                           ↑
                         </Text>
-                        <Text as="kbd" className={pageStyles.kbdInline}>
+                        <Text as="kbd" color="primary" className={pageStyles.kbdInline}>
                           ↓
                         </Text>{' '}
                         {productViewMode === 'grid' ? 'same column' : 'previous / next'}
                         {' · '}
-                        <Text as="kbd" className={pageStyles.kbdInline}>
+                        <Text as="kbd" color="primary" className={pageStyles.kbdInline}>
                           Shift
                         </Text>
                         +
-                        <Text as="kbd" className={pageStyles.kbdInline}>
+                        <Text as="kbd" color="primary" className={pageStyles.kbdInline}>
                           Enter
                         </Text>{' '}
                         back
@@ -3298,16 +3332,46 @@ export function ProductEntryPage() {
                               <TableRow key={product.id} className={denseDataGrid.tr}>
                                 <TableCell className={denseDataGrid.td}>{idx + 1}</TableCell>
                                 <TableCell className={denseDataGrid.td}>
-                                  <Input
-                                    type="text"
-                                    className={denseDataGrid.input}
-                                    placeholder="Barcode"
-                                    value={product.barcode}
-                                    onChange={(e) =>
-                                      handleProductChange(product.id, 'barcode', e.target.value)
-                                    }
-                                    disabled={isLoading}
-                                  />
+                                  <Inline gap="xs" align="center">
+                                    <Input
+                                      type="text"
+                                      className={denseDataGrid.input}
+                                      placeholder="Barcode"
+                                      value={product.barcode}
+                                      onChange={(e) =>
+                                        handleProductChange(product.id, 'barcode', e.target.value)
+                                      }
+                                      disabled={isLoading}
+                                    />
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      aria-label="Generate barcode"
+                                      title="Generate barcode"
+                                      disabled={isLoading || generatingBarcodeId === product.id}
+                                      onClick={() => void handleGenerateBarcode(product.id)}
+                                    >
+                                      {generatingBarcodeId === product.id ? (
+                                        <Spinner size="sm" />
+                                      ) : (
+                                        <Icon icon={Wand2} size="sm" />
+                                      )}
+                                    </Button>
+                                    {product.barcode?.trim() ? (
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        aria-label="Print barcode sticker"
+                                        title="Print sticker"
+                                        disabled={isLoading}
+                                        onClick={() => handlePrintRowBarcode(product)}
+                                      >
+                                        <Icon icon={Printer} size="sm" />
+                                      </Button>
+                                    ) : null}
+                                  </Inline>
                                 </TableCell>
                                 <VerticalRegistrationGridCompanyCell
                                   field={companyField}
@@ -4021,6 +4085,9 @@ export function ProductEntryPage() {
                             onApplyProductPrefill={applyProductPrefill}
                             onNameBlur={handleNameBlur}
                             isLoading={isLoading}
+                            generatingBarcode={generatingBarcodeId === product.id}
+                            onGenerateBarcode={() => void handleGenerateBarcode(product.id)}
+                            onPrintBarcode={() => handlePrintRowBarcode(product)}
                             isoToLocalDateTime={isoToLocalDateTime}
                             localDateTimeToIso={localDateTimeToIso}
                           />
@@ -4340,6 +4407,13 @@ export function ProductEntryPage() {
           </Button>
         </Modal.Footer>
       </Modal>
+
+      <PrintBarcodeLabelsModal
+        isOpen={printLabelCodes != null && printLabelCodes.length > 0}
+        onClose={() => setPrintLabelCodes(null)}
+        codes={printLabelCodes ?? undefined}
+        onError={(message) => notifyError(message)}
+      />
     </Stack>
   );
 }
@@ -4744,6 +4818,9 @@ interface ProductAccordionProps {
   onApplyProductPrefill: (rowId: string, suggestion: ProductSuggestion) => void | Promise<void>;
   onNameBlur: (rowId: string) => void;
   isLoading: boolean;
+  generatingBarcode: boolean;
+  onGenerateBarcode: () => void;
+  onPrintBarcode: () => void;
   isoToLocalDateTime: (iso: string) => string;
   localDateTimeToIso: (local: string) => string;
 }
@@ -4774,6 +4851,9 @@ function ProductAccordion({
   onApplyProductPrefill,
   onNameBlur,
   isLoading,
+  generatingBarcode,
+  onGenerateBarcode,
+  onPrintBarcode,
   isoToLocalDateTime,
   localDateTimeToIso,
 }: ProductAccordionProps) {
@@ -5014,14 +5094,35 @@ function ProductAccordion({
           <Box className={accordionStyles.formRow}>
             <Box className={pageStyles.formGroup}>
               <Label htmlFor={`barcode-${product.id}`}>Barcode</Label>
-              <Input
-                type="text"
-                id={`barcode-${product.id}`}
-                placeholder="Enter barcode (optional)"
-                value={product.barcode}
-                onChange={(e) => onChange(product.id, 'barcode', e.target.value)}
-                disabled={isLoading}
-              />
+              <Inline gap="sm" align="center" width="full">
+                <Input
+                  type="text"
+                  id={`barcode-${product.id}`}
+                  placeholder="Enter barcode (optional)"
+                  value={product.barcode}
+                  onChange={(e) => onChange(product.id, 'barcode', e.target.value)}
+                  disabled={isLoading}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isLoading || generatingBarcode}
+                  onClick={onGenerateBarcode}
+                >
+                  {generatingBarcode ? <Spinner size="sm" /> : 'Generate'}
+                </Button>
+                {product.barcode?.trim() ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    disabled={isLoading}
+                    onClick={onPrintBarcode}
+                    aria-label="Print barcode sticker"
+                  >
+                    <Icon icon={Printer} size="sm" />
+                  </Button>
+                ) : null}
+              </Inline>
             </Box>
             {companyField ? (
               <VerticalSchemaFieldInput
@@ -5666,9 +5767,13 @@ function ProductAccordion({
             <>
               <Box className={accordionStyles.ratesSection}>
                 <Box className={accordionStyles.ratesHeader}>
-                  <Label>Rates (optional)</Label>
+                  <Text as="span" className={accordionStyles.ratesTitle}>
+                    Rates (optional)
+                  </Text>
                   <Button
                     type="button"
+                    variant="outline"
+                    size="sm"
                     onClick={() =>
                       onChange(product.id, 'rates', [
                         ...(product.rates ?? []),

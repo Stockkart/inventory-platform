@@ -417,6 +417,19 @@
   min-height: var(--header-height);
 }
 
+.planBrandLogo {
+  height: 36px;
+  width: auto;
+  max-width: 160px;
+  object-fit: contain;
+  flex-shrink: 0;
+  display: block;
+}
+
+[data-theme='dark'] .planBrandLogo {
+  filter: brightness(0) invert(1);
+}
+
 .planCardMin {
   min-height: 0;
   height: 100%;

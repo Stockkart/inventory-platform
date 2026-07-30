@@ -1,6 +1,9 @@
 import type { ReactNode } from 'react';
+import { AlertCircle, AlertTriangle, CheckCircle2, Info, X } from 'lucide-react';
 import { cn } from '../utils/cn';
 import type { AlertVariant } from '../utils/types';
+import { Icon } from '../icons/Icon';
+import { IconButton } from '../forms/IconButton';
 import styles from './feedback.module.css';
 
 const alertClass: Record<AlertVariant, string> = {
@@ -25,32 +28,62 @@ export function Alert({ variant = 'info', children, className, role = 'alert' }:
   );
 }
 
+export type ToastVariant = 'default' | 'success' | 'error' | 'warning';
+
 export interface ToastProps {
   message: ReactNode;
-  variant?: 'default' | 'success' | 'error' | 'warning';
+  variant?: ToastVariant;
   onClose?: () => void;
   className?: string;
 }
 
+const toastIcon = {
+  default: Info,
+  success: CheckCircle2,
+  error: AlertCircle,
+  warning: AlertTriangle,
+} as const;
+
+const toastVariantClass: Record<ToastVariant, string | undefined> = {
+  default: styles.toastDefault,
+  success: styles.toastSuccess,
+  error: styles.toastError,
+  warning: styles.toastWarning,
+};
+
 export function Toast({ message, variant = 'default', onClose, className }: ToastProps) {
+  const role = variant === 'error' || variant === 'warning' ? 'alert' : 'status';
+
   return (
     <div
-      className={cn(
-        styles.toast,
-        variant === 'success' && styles.toastSuccess,
-        variant === 'error' && styles.toastError,
-        variant === 'warning' && styles.toastWarning,
-        className,
-      )}
-      role="status"
+      className={cn(styles.toast, toastVariantClass[variant], className)}
+      role={role}
+      aria-live={variant === 'error' ? 'assertive' : 'polite'}
     >
-      <div>{message}</div>
+      <BoxIcon variant={variant} />
+      <div className={styles.toastBody}>
+        <p className={styles.toastMessage}>{message}</p>
+      </div>
       {onClose ? (
-        <button type="button" aria-label="Dismiss" onClick={onClose}>
-          ×
-        </button>
+        <IconButton
+          label="Dismiss"
+          size="sm"
+          shape="circle"
+          className={styles.toastClose}
+          onClick={onClose}
+        >
+          <Icon icon={X} size="sm" />
+        </IconButton>
       ) : null}
     </div>
+  );
+}
+
+function BoxIcon({ variant }: { variant: ToastVariant }) {
+  return (
+    <span className={styles.toastIcon} aria-hidden>
+      <Icon icon={toastIcon[variant]} size="sm" />
+    </span>
   );
 }
 

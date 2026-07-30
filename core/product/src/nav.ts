@@ -16,6 +16,11 @@ export const productNav: NavContribution = {
       icon: 'search',
     },
     {
+      path: '/dashboard/barcodes',
+      label: 'Barcodes',
+      icon: 'barcode',
+    },
+    {
       path: '/dashboard/stock-corrections',
       label: 'Stock corrections',
       icon: 'wrench',

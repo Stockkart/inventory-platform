@@ -41,12 +41,12 @@ export const ToastPlayground: StoryObj<typeof Toast> = {
     message: { control: 'text' },
   },
   args: {
-    variant: 'success',
-    message: 'Vendor updated successfully.',
+    variant: 'error',
+    message: 'Vendor information is required. Please search and select a vendor.',
   },
   render: (args) => (
-    <div style={{ width: 360 }}>
-      <Toast {...args} />
+    <div style={{ width: 400 }}>
+      <Toast {...args} onClose={() => undefined} />
     </div>
   ),
 };
