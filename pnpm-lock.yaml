@@ -238,6 +238,9 @@ importers:
       '@inventory-platform/contracts':
         specifier: workspace:*
         version: link:../../platform/contracts
+      '@inventory-platform/product':
+        specifier: workspace:*
+        version: link:../product
       '@inventory-platform/query':
         specifier: workspace:*
         version: link:../../platform/query
@@ -256,6 +259,9 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.90.0
         version: 5.101.2(react@19.2.0)
+      axios:
+        specifier: ^1.13.2
+        version: 1.13.2
       react:
         specifier: ^19.0.0
         version: 19.2.0

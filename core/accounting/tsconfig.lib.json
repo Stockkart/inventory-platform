@@ -11,8 +11,9 @@
     "forceConsistentCasingInFileNames": true,
     "lib": ["es2022", "dom"],
     "jsx": "react-jsx",
-    "types": ["node"],
+    "types": ["node", "vite/client"],
     "paths": {
+      "@inventory-platform/product/api": ["../../core/product/src/api/index.ts"],
       "@inventory-platform/user/customers": ["../../core/user/src/api/customers.api.ts"],
       "@inventory-platform/user/vendors": ["../../core/user/src/api/vendors.api.ts"],
       "@inventory-platform/api-client": ["../../platform/api-client/src/index.ts"],
@@ -56,6 +57,9 @@
     },
     {
       "path": "../../platform/query/tsconfig.lib.json"
+    },
+    {
+      "path": "../product/tsconfig.lib.json"
     },
     {
       "path": "../../platform/api-client/tsconfig.lib.json"

@@ -11,6 +11,8 @@ import type {
   JournalSource,
   LedgerPageResponse,
   OpeningBalanceRequest,
+  VendorMoneyMisParams,
+  VendorMoneyMisResponse,
   PartyStatementResponse,
   PartySummariesResponse,
   ProfitAndLossResponse,
@@ -19,6 +21,7 @@ import type {
   UpdateAccountRequest,
 } from '@inventory-platform/accounting/types';
 import { ACCOUNTING_ENDPOINTS } from './endpoints';
+import { downloadAccountingBlob } from './download';
 
 function unwrap<T>(raw: unknown): T | undefined {
   if (raw == null) return undefined;
@@ -143,6 +146,48 @@ function normalizePartyStatement(st: PartyStatementResponse): PartyStatementResp
       balanceAfter: asNum(e.balanceAfter),
     })),
   };
+}
+
+function normalizeVendorMoneyMis(res: VendorMoneyMisResponse): VendorMoneyMisResponse {
+  const summary = res.summary;
+  return {
+    ...res,
+    rows: (res.rows ?? []).map((r) => ({
+      ...r,
+      totalAmount: asNum(r.totalAmount),
+      cashAmount: asNum(r.cashAmount),
+      onlineAmount: asNum(r.onlineAmount),
+      creditAmount: asNum(r.creditAmount),
+      balanceAfter: asNum(r.balanceAfter),
+      opening: Boolean(r.opening),
+    })),
+    summary: {
+      openingBalanceTotal: asNum(summary?.openingBalanceTotal),
+      periodCashTotal: asNum(summary?.periodCashTotal),
+      periodOnlineTotal: asNum(summary?.periodOnlineTotal),
+      periodCreditTotal: asNum(summary?.periodCreditTotal),
+      periodPurchaseTotal: asNum(summary?.periodPurchaseTotal),
+      currentPayableTotal: asNum(summary?.currentPayableTotal),
+      vendorSummaries: (summary?.vendorSummaries ?? []).map((p) => ({
+        ...p,
+        openingBalance: asNum(p.openingBalance),
+        closingBalanceInPeriod: asNum(p.closingBalanceInPeriod),
+        currentBalance: asNum(p.currentBalance),
+      })),
+    },
+  };
+}
+
+function vendorMoneyMisQuery(params: VendorMoneyMisParams): Record<string, string> {
+  const txnTypes = Array.isArray(params.txnTypes) ? params.txnTypes.join(',') : params.txnTypes;
+  return toQuery({
+    from: params.from,
+    to: params.to,
+    vendorId: params.vendorId,
+    txnTypes,
+    moneyFilter: params.moneyFilter,
+    q: params.q,
+  });
 }
 
 export interface JournalListParams {
@@ -405,5 +450,54 @@ export const accountingApi = {
     );
     const inner = unwrap<BackfillResult>(raw);
     return inner ?? { processed: 0, posted: 0, reposted: 0, skipped: 0, failed: 0 };
+  },
+
+  vendorMoneyMis: async (params: VendorMoneyMisParams = {}): Promise<VendorMoneyMisResponse> => {
+    const query = vendorMoneyMisQuery(params);
+    const raw = await apiClient.get<unknown>(ACCOUNTING_ENDPOINTS.VENDOR_MONEY_MIS, query);
+    const inner = unwrap<VendorMoneyMisResponse>(raw);
+    if (!inner) {
+      return {
+        from: params.from ?? '',
+        to: params.to ?? '',
+        rows: [],
+        summary: {
+          openingBalanceTotal: 0,
+          periodCashTotal: 0,
+          periodOnlineTotal: 0,
+          periodCreditTotal: 0,
+          periodPurchaseTotal: 0,
+          currentPayableTotal: 0,
+          vendorSummaries: [],
+        },
+      };
+    }
+    return normalizeVendorMoneyMis(inner);
+  },
+
+  vendorMoneyMisExcel: async (
+    params: VendorMoneyMisParams = {},
+  ): Promise<{ blob: Blob; filename: string }> => {
+    const query = vendorMoneyMisQuery(params);
+    const from = query.from ?? 'from';
+    const to = query.to ?? 'to';
+    return downloadAccountingBlob(
+      ACCOUNTING_ENDPOINTS.VENDOR_MONEY_MIS_EXCEL,
+      query,
+      `vendor-money-mis-${from}-${to}.xlsx`,
+    );
+  },
+
+  vendorMoneyMisPdf: async (
+    params: VendorMoneyMisParams = {},
+  ): Promise<{ blob: Blob; filename: string }> => {
+    const query = vendorMoneyMisQuery(params);
+    const from = query.from ?? 'from';
+    const to = query.to ?? 'to';
+    return downloadAccountingBlob(
+      ACCOUNTING_ENDPOINTS.VENDOR_MONEY_MIS_PDF,
+      query,
+      `vendor-money-mis-${from}-${to}.pdf`,
+    );
   },
 };

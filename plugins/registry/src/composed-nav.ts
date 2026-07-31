@@ -6,7 +6,7 @@ import {
   type DashboardMenuItem,
   type DashboardNavRow,
 } from '@inventory-platform/routing';
-import { accountingNav } from '@inventory-platform/accounting/nav';
+import { accountingNav, accountingReportsNav } from '@inventory-platform/accounting/nav';
 import { analyticsNav } from '@inventory-platform/analytics/nav';
 import { creditNav } from '@inventory-platform/credit/nav';
 import { planNav } from '@inventory-platform/plan/nav';
@@ -59,6 +59,7 @@ export const CORE_NAV_CONTRIBUTIONS: NavContribution[] = [
   productReturnsNav,
   analyticsNav,
   productHistoryNav,
+  accountingReportsNav,
   taxationNav,
   remindersNav,
   userMarketingNav,

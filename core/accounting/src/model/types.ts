@@ -247,3 +247,74 @@ export interface PartyStatementResponse {
   totalItems: number;
   totalPages: number;
 }
+
+/** Vendor money MIS. */
+export type VendorMoneyMisTxnType =
+  | 'VENDOR_PURCHASE'
+  | 'VENDOR_PAYMENT'
+  | 'VENDOR_RETURN'
+  | 'VENDOR_CREDIT_CHARGE';
+
+export type VendorMoneyMisMoneyFilter =
+  | 'ALL'
+  | 'HAS_CASH'
+  | 'HAS_ONLINE'
+  | 'HAS_CREDIT'
+  | 'FULLY_PAID'
+  | 'MIXED';
+
+export interface VendorMoneyMisRow {
+  txnId: string;
+  txnType: VendorMoneyMisTxnType | string;
+  txnTypeLabel: string;
+  vendorId: string;
+  vendorName: string;
+  txnDate: string;
+  postedAt: string | null;
+  refNo: string | null;
+  againstTxnId: string | null;
+  againstRefNo: string | null;
+  totalAmount: number;
+  cashAmount: number;
+  onlineAmount: number;
+  creditAmount: number;
+  balanceAfter: number;
+  sourceType: string | null;
+  sourceId: string | null;
+  opening: boolean;
+}
+
+export interface VendorMoneyMisVendorSummary {
+  vendorId: string;
+  vendorName: string;
+  openingBalance: number;
+  closingBalanceInPeriod: number;
+  currentBalance: number;
+}
+
+export interface VendorMoneyMisSummary {
+  openingBalanceTotal: number;
+  periodCashTotal: number;
+  periodOnlineTotal: number;
+  periodCreditTotal: number;
+  periodPurchaseTotal: number;
+  currentPayableTotal: number;
+  vendorSummaries: VendorMoneyMisVendorSummary[];
+}
+
+export interface VendorMoneyMisResponse {
+  from: string;
+  to: string;
+  rows: VendorMoneyMisRow[];
+  summary: VendorMoneyMisSummary;
+}
+
+export interface VendorMoneyMisParams {
+  from?: string;
+  to?: string;
+  vendorId?: string;
+  /** Comma-separated txn types, or an array joined by the API client. */
+  txnTypes?: string | VendorMoneyMisTxnType[];
+  moneyFilter?: VendorMoneyMisMoneyFilter;
+  q?: string;
+}

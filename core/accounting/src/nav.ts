@@ -20,3 +20,18 @@ export const accountingNav: NavContribution = {
     },
   ],
 };
+
+/** Report links under Reports & Analytics (analytics-history group). */
+export const accountingReportsNav: NavContribution = {
+  groupId: 'analytics-history',
+  label: 'Reports & Analytics',
+  icon: 'trending-up',
+  requiredCapability: 'accounting',
+  items: [
+    {
+      path: '/dashboard/accounting/reports/vendor-money-mis',
+      label: 'Vendor Money MIS',
+      icon: 'circle-dollar-sign',
+    },
+  ],
+};
