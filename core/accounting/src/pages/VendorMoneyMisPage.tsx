@@ -29,29 +29,32 @@ import type {
   VendorMoneyMisResponse,
   VendorMoneyMisTxnType,
 } from '@inventory-platform/accounting/types';
+import {
+  FILTERABLE_VENDOR_MONEY_MIS_TXN_TYPES,
+  VENDOR_MONEY_MIS_MONEY_FILTERS,
+  VENDOR_MONEY_MIS_MONEY_FILTER_LABEL,
+  VENDOR_MONEY_MIS_TXN_TYPE_LABEL,
+} from '@inventory-platform/accounting/types';
 import { accountingApi } from '../api/accounting.api';
 import { openOrDownloadPdf, triggerBlobDownload } from '../api/download';
 import { formatDateShort, formatMoney, todayLocalDate } from '../model/format';
 
 type PeriodPreset = 'today' | 'week' | 'month' | 'custom';
 
-const TXN_TYPE_OPTIONS: ReadonlyArray<{ value: VendorMoneyMisTxnType; label: string }> = [
-  { value: 'VENDOR_PURCHASE', label: 'Purchase' },
-  { value: 'VENDOR_PAYMENT', label: 'Payment' },
-  { value: 'VENDOR_RETURN', label: 'Return' },
-  { value: 'VENDOR_CREDIT_CHARGE', label: 'Credit charge' },
-];
+// Options derive from the shared constants so labels cannot drift from the API's own labels.
+const TXN_TYPE_OPTIONS: ReadonlyArray<{ value: VendorMoneyMisTxnType; label: string }> =
+  FILTERABLE_VENDOR_MONEY_MIS_TXN_TYPES.map((value) => ({
+    value,
+    label: VENDOR_MONEY_MIS_TXN_TYPE_LABEL[value],
+  }));
 
 const ALL_TXN_TYPES = TXN_TYPE_OPTIONS.map((opt) => opt.value);
 
-const MONEY_FILTER_OPTIONS: ReadonlyArray<{ value: VendorMoneyMisMoneyFilter; label: string }> = [
-  { value: 'ALL', label: 'All money types' },
-  { value: 'HAS_CASH', label: 'Has cash' },
-  { value: 'HAS_ONLINE', label: 'Has online' },
-  { value: 'HAS_CREDIT', label: 'Has credit' },
-  { value: 'FULLY_PAID', label: 'Fully paid' },
-  { value: 'MIXED', label: 'Mixed' },
-];
+const MONEY_FILTER_OPTIONS: ReadonlyArray<{ value: VendorMoneyMisMoneyFilter; label: string }> =
+  VENDOR_MONEY_MIS_MONEY_FILTERS.map((value) => ({
+    value,
+    label: VENDOR_MONEY_MIS_MONEY_FILTER_LABEL[value],
+  }));
 
 function monthStart(d = new Date()): string {
   const y = d.getFullYear();
@@ -282,7 +285,7 @@ export function VendorMoneyMisPage() {
                 <Input
                   id="vendor-mis-q"
                   type="search"
-                  placeholder="Vendor, ref, txn id…"
+                  placeholder="Vendor, invoice, txn id…"
                   value={qInput}
                   onChange={(e) => setQInput(e.target.value)}
                   disabled={loading}
@@ -346,7 +349,7 @@ export function VendorMoneyMisPage() {
           <CardBody>
             <Table>
               <TableBody>
-                <TableLoadingRow colSpan={11} label="Loading vendor transactions…" />
+                <TableLoadingRow colSpan={10} label="Loading vendor transactions…" />
               </TableBody>
             </Table>
           </CardBody>
@@ -437,9 +440,6 @@ export function VendorMoneyMisPage() {
                         <TableHeaderCell className={accountingChrome.misInvoiceCol}>
                           Invoice
                         </TableHeaderCell>
-                        <TableHeaderCell className={accountingChrome.misAgainstCol}>
-                          Against
-                        </TableHeaderCell>
                         <TableHeaderCell className={accountingChrome.misNumCol}>
                           Bill Amount
                         </TableHeaderCell>
@@ -460,11 +460,19 @@ export function VendorMoneyMisPage() {
                     <TableBody>
                       {rows.map((row) => {
                         const typeLabel = row.opening ? 'Opening' : row.txnTypeLabel || row.txnType;
+                        const fullTxnId = row.sourceId || row.txnId || '';
+                        const shortTxnId =
+                          fullTxnId.length > 4 ? `${fullTxnId.slice(0, 4)}...` : fullTxnId || '—';
                         return (
-                          <TableRow key={row.txnId}>
+                          <TableRow key={`${row.txnType}-${fullTxnId}-${row.txnDate}`}>
                             <TableCell>{formatDateShort(row.txnDate)}</TableCell>
                             <TableCell>{row.vendorName || '—'}</TableCell>
-                            <TableCell>{row.txnId}</TableCell>
+                            <TableCell
+                              className={accountingChrome.misTxnIdCol}
+                              title={fullTxnId || undefined}
+                            >
+                              {shortTxnId}
+                            </TableCell>
                             <TableCell className={accountingChrome.misTxnTypeCol}>
                               <Badge
                                 variant={txnBadgeVariant(
@@ -476,9 +484,6 @@ export function VendorMoneyMisPage() {
                             </TableCell>
                             <TableCell className={accountingChrome.misInvoiceCol}>
                               {row.refNo || '—'}
-                            </TableCell>
-                            <TableCell className={accountingChrome.misAgainstCol}>
-                              {row.againstRefNo || '—'}
                             </TableCell>
                             <TableCell className={accountingChrome.misNumCol}>
                               {rupee(row.totalAmount)}

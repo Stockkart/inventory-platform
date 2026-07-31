@@ -110,7 +110,7 @@ export const accountingChrome = {
   misTable: styles.misTable,
   misTxnTypeCol: styles.misTxnTypeCol,
   misInvoiceCol: styles.misInvoiceCol,
-  misAgainstCol: styles.misAgainstCol,
+  misTxnIdCol: styles.misTxnIdCol,
   misNumCol: styles.misNumCol,
   misFilterRow: styles.misFilterRow,
   misFilterCompact: styles.misFilterCompact,

@@ -248,24 +248,75 @@ export interface PartyStatementResponse {
   totalPages: number;
 }
 
-/** Vendor money MIS. */
+/**
+ * Vendor money MIS transaction types. Mirrors `MisTxnType` on the backend.
+ *
+ * Declared as a const object rather than a bare union so the values exist at runtime — filter
+ * controls need to enumerate them, and a union alone cannot be iterated.
+ */
+export const VENDOR_MONEY_MIS_TXN_TYPE = {
+  VENDOR_PURCHASE: 'VENDOR_PURCHASE',
+  VENDOR_RETURN: 'VENDOR_RETURN',
+  VENDOR_PAYMENT: 'VENDOR_PAYMENT',
+  VENDOR_CREDIT_CHARGE: 'VENDOR_CREDIT_CHARGE',
+  /** Synthetic carried-forward balance row. Returned by the API, never filtered on. */
+  OPENING: 'OPENING',
+} as const;
+
 export type VendorMoneyMisTxnType =
-  | 'VENDOR_PURCHASE'
-  | 'VENDOR_PAYMENT'
-  | 'VENDOR_RETURN'
-  | 'VENDOR_CREDIT_CHARGE';
+  (typeof VENDOR_MONEY_MIS_TXN_TYPE)[keyof typeof VENDOR_MONEY_MIS_TXN_TYPE];
+
+/** Display labels, matching `MisTxnType.label()` on the backend. */
+export const VENDOR_MONEY_MIS_TXN_TYPE_LABEL: Record<VendorMoneyMisTxnType, string> = {
+  VENDOR_PURCHASE: 'Purchase',
+  VENDOR_RETURN: 'Return',
+  VENDOR_PAYMENT: 'Payment',
+  VENDOR_CREDIT_CHARGE: 'Credit charge',
+  OPENING: 'Opening',
+};
+
+/**
+ * Types a user can filter by.
+ *
+ * Excludes `OPENING`: it is generated per vendor to explain the running balance, so filtering it
+ * out would leave balances that do not add up.
+ */
+export const FILTERABLE_VENDOR_MONEY_MIS_TXN_TYPES: readonly VendorMoneyMisTxnType[] = [
+  VENDOR_MONEY_MIS_TXN_TYPE.VENDOR_PURCHASE,
+  VENDOR_MONEY_MIS_TXN_TYPE.VENDOR_PAYMENT,
+  VENDOR_MONEY_MIS_TXN_TYPE.VENDOR_RETURN,
+  VENDOR_MONEY_MIS_TXN_TYPE.VENDOR_CREDIT_CHARGE,
+];
+
+/** Money-column filters. Mirrors `MoneyFilter` on the backend. */
+export const VENDOR_MONEY_MIS_MONEY_FILTER = {
+  ALL: 'ALL',
+  HAS_CASH: 'HAS_CASH',
+  HAS_ONLINE: 'HAS_ONLINE',
+  HAS_CREDIT: 'HAS_CREDIT',
+  FULLY_PAID: 'FULLY_PAID',
+  MIXED: 'MIXED',
+} as const;
 
 export type VendorMoneyMisMoneyFilter =
-  | 'ALL'
-  | 'HAS_CASH'
-  | 'HAS_ONLINE'
-  | 'HAS_CREDIT'
-  | 'FULLY_PAID'
-  | 'MIXED';
+  (typeof VENDOR_MONEY_MIS_MONEY_FILTER)[keyof typeof VENDOR_MONEY_MIS_MONEY_FILTER];
+
+export const VENDOR_MONEY_MIS_MONEY_FILTER_LABEL: Record<VendorMoneyMisMoneyFilter, string> = {
+  ALL: 'All money types',
+  HAS_CASH: 'Has cash',
+  HAS_ONLINE: 'Has online',
+  HAS_CREDIT: 'Has credit',
+  FULLY_PAID: 'Fully paid',
+  MIXED: 'Mixed',
+};
+
+export const VENDOR_MONEY_MIS_MONEY_FILTERS: readonly VendorMoneyMisMoneyFilter[] = Object.values(
+  VENDOR_MONEY_MIS_MONEY_FILTER,
+);
 
 export interface VendorMoneyMisRow {
   txnId: string;
-  txnType: VendorMoneyMisTxnType | string;
+  txnType: VendorMoneyMisTxnType;
   txnTypeLabel: string;
   vendorId: string;
   vendorName: string;
