@@ -192,12 +192,61 @@ function vendorMoneyMisQuery(params: VendorMoneyMisParams): Record<string, strin
   });
 }
 
+/** Shape the shared party endpoint returns; it is party-neutral, the UI is customer-oriented. */
+interface RawPartyMoneyMis {
+  from: string;
+  to: string;
+  rows: Array<Record<string, unknown>>;
+  summary: Record<string, unknown> | null;
+}
+
+/**
+ * Maps the party-neutral response onto the customer-oriented shape the Sales page reads.
+ *
+ * The deploy backend serves both ledgers from one endpoint using `partyId`/`partyName` and
+ * payable-flavoured summary keys; renaming here keeps that detail out of the page.
+ */
+function normalizeSalesMis(raw: RawPartyMoneyMis | null | undefined): SalesMisResponse | null {
+  if (!raw) return null;
+  const s = (raw.summary ?? {}) as Record<string, number>;
+  return {
+    from: raw.from,
+    to: raw.to,
+    rows: (raw.rows ?? []).map((r) => ({
+      ...r,
+      customerId: (r.partyId ?? r.customerId ?? '') as string,
+      customerName: (r.partyName ?? r.customerName ?? '') as string,
+    })) as SalesMisResponse['rows'],
+    summary: {
+      openingBalanceTotal: s.openingBalanceTotal ?? 0,
+      periodCashTotal: s.periodCashTotal ?? 0,
+      periodOnlineTotal: s.periodOnlineTotal ?? 0,
+      periodCreditTotal: s.periodCreditTotal ?? 0,
+      periodSalesTotal: s.periodSalesTotal ?? s.periodPurchaseTotal ?? 0,
+      currentReceivableTotal: s.currentReceivableTotal ?? s.currentPayableTotal ?? 0,
+      customerSummaries: (
+        (raw.summary?.partySummaries ?? raw.summary?.customerSummaries ?? []) as Array<
+          Record<string, unknown>
+        >
+      ).map((p) => ({
+        customerId: (p.partyId ?? p.customerId ?? '') as string,
+        customerName: (p.partyName ?? p.customerName ?? '') as string,
+        openingBalance: (p.openingBalance ?? 0) as number,
+        closingBalanceInPeriod: (p.closingBalanceInPeriod ?? 0) as number,
+        currentBalance: (p.currentBalance ?? 0) as number,
+      })),
+    },
+  };
+}
+
 function salesMisQuery(params: SalesMisParams): Record<string, string> {
   const txnTypes = Array.isArray(params.txnTypes) ? params.txnTypes.join(',') : params.txnTypes;
   return toQuery({
+    // The deploy backend serves both ledgers from one party endpoint, keyed by side.
+    side: 'CUSTOMER',
     from: params.from,
     to: params.to,
-    customerId: params.customerId,
+    partyId: params.customerId,
     txnTypes,
     moneyFilter: params.moneyFilter,
     q: params.q,
@@ -524,7 +573,7 @@ export const accountingApi = {
   salesMis: async (params: SalesMisParams = {}): Promise<SalesMisResponse> => {
     const query = salesMisQuery(params);
     const raw = await apiClient.get<unknown>(ACCOUNTING_ENDPOINTS.SALES_MIS, query);
-    const inner = unwrap<SalesMisResponse>(raw);
+    const inner = normalizeSalesMis(unwrap<RawPartyMoneyMis>(raw));
     if (!inner) {
       return {
         from: params.from ?? '',
