@@ -49,7 +49,7 @@ const PRINTER_OPTIONS: Array<{
   {
     value: 'THERMAL_3INCH',
     title: 'Thermal',
-    description: '80mm receipt',
+    description: '75mm receipt',
     icon: Receipt,
   },
 ];
@@ -459,7 +459,7 @@ export function InvoiceSettingsSection() {
             className={surfaceChrome.invoicePreviewHint}
           >
             {defaultPrinterType === 'THERMAL_3INCH'
-              ? 'Shown as an 80mm receipt strip — same layout as thermal prints.'
+              ? 'Shown as a 75mm receipt strip — same layout as thermal prints.'
               : 'Shown as print-sized paper — same template as checkout PDFs.'}
           </Text>
         </Box>
