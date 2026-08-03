@@ -13,8 +13,14 @@ import {
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { shopsApi } from '../api/shops.api';
-import { ShopProfileForm, InvoiceSettingsSection } from '../ui';
-import type { Location as LocationType } from '@inventory-platform/user/types';
+import {
+  ShopProfileForm,
+  InvoiceSettingsSection,
+  InvoiceSeriesSection,
+  ProfileTabs,
+  type ProfileTabId,
+} from '../ui';
+import type { Location as LocationType } from '../model/shop.types';
 
 export function meta() {
   return [
@@ -57,6 +63,7 @@ function ProfileField({ label, value, wide }: { label: string; value: string; wi
 }
 
 export function ProfilePage() {
+  const [activeTab, setActiveTab] = useState<ProfileTabId>('shop');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [shop, setShop] = useState<{
@@ -105,6 +112,14 @@ export function ProfilePage() {
   useEffect(() => {
     loadShop();
   }, [loadShop]);
+
+  const handleTabChange = (id: ProfileTabId) => {
+    setActiveTab(id);
+    if (id !== 'shop') {
+      setEditing(false);
+      setSaveError(null);
+    }
+  };
 
   const handleStartEdit = () => {
     if (shop) {
@@ -185,106 +200,110 @@ export function ProfilePage() {
   return (
     <Stack gap="md" className={surfaceChrome.profileShellWide}>
       <PageHeader description="View and edit your active shop information" />
+      <ProfileTabs activeTab={activeTab} onTabChange={handleTabChange} />
 
-      {!editing ? (
-        <Box className={cn(surfaceChrome.profileCard, surfaceChrome.profileCardNarrow)}>
-          <Box className={surfaceChrome.profileHero}>
-            <Box className={surfaceChrome.profileHeroMain}>
-              <Box as="span" className={surfaceChrome.profileHeroIcon} aria-hidden>
-                <Store size={20} strokeWidth={2.1} />
+      {activeTab === 'shop' ? (
+        !editing ? (
+          <Box className={cn(surfaceChrome.profileCard, surfaceChrome.profileCardNarrow)}>
+            <Box className={surfaceChrome.profileHero}>
+              <Box className={surfaceChrome.profileHeroMain}>
+                <Box as="span" className={surfaceChrome.profileHeroIcon} aria-hidden>
+                  <Store size={20} strokeWidth={2.1} />
+                </Box>
+                <Box className={surfaceChrome.profileHeroText}>
+                  <Text as="h2" className={surfaceChrome.profileHeroTitle}>
+                    {shop.name}
+                  </Text>
+                  <Text as="p" className={surfaceChrome.profileHeroTagline}>
+                    {shop.tagline?.trim() || 'No tagline yet'}
+                  </Text>
+                </Box>
               </Box>
-              <Box className={surfaceChrome.profileHeroText}>
-                <Text as="h2" className={surfaceChrome.profileHeroTitle}>
-                  {shop.name}
-                </Text>
-                <Text as="p" className={surfaceChrome.profileHeroTagline}>
-                  {shop.tagline?.trim() || 'No tagline yet'}
-                </Text>
-              </Box>
+              <Button type="button" variant="solid" size="sm" onClick={handleStartEdit}>
+                Edit profile
+              </Button>
             </Box>
-            <Button type="button" variant="solid" size="sm" onClick={handleStartEdit}>
-              Edit profile
-            </Button>
-          </Box>
 
-          <Box className={surfaceChrome.profileBody}>
-            {contactFields.length > 0 ? (
-              <Box className={surfaceChrome.profileSection}>
-                <Text as="p" className={surfaceChrome.profileSectionLabel}>
-                  Contact
-                </Text>
-                <Box className={surfaceChrome.profileFieldGrid}>
-                  {contactFields.map((field) => (
-                    <ProfileField key={field.label} label={field.label} value={field.value} />
-                  ))}
+            <Box className={surfaceChrome.profileBody}>
+              {contactFields.length > 0 ? (
+                <Box className={surfaceChrome.profileSection}>
+                  <Text as="p" className={surfaceChrome.profileSectionLabel}>
+                    Contact
+                  </Text>
+                  <Box className={surfaceChrome.profileFieldGrid}>
+                    {contactFields.map((field) => (
+                      <ProfileField key={field.label} label={field.label} value={field.value} />
+                    ))}
+                  </Box>
                 </Box>
-              </Box>
-            ) : null}
+              ) : null}
 
-            {businessFields.length > 0 ? (
-              <Box className={surfaceChrome.profileSection}>
-                <Text as="p" className={surfaceChrome.profileSectionLabel}>
-                  Business details
-                </Text>
-                <Box className={surfaceChrome.profileFieldGrid}>
-                  {businessFields.map((field) => (
-                    <ProfileField key={field.label} label={field.label} value={field.value} />
-                  ))}
+              {businessFields.length > 0 ? (
+                <Box className={surfaceChrome.profileSection}>
+                  <Text as="p" className={surfaceChrome.profileSectionLabel}>
+                    Business details
+                  </Text>
+                  <Box className={surfaceChrome.profileFieldGrid}>
+                    {businessFields.map((field) => (
+                      <ProfileField key={field.label} label={field.label} value={field.value} />
+                    ))}
+                  </Box>
                 </Box>
-              </Box>
-            ) : null}
+              ) : null}
 
-            {shop.location ? (
-              <Box className={surfaceChrome.profileSection}>
-                <Text as="p" className={surfaceChrome.profileSectionLabel}>
-                  Address
-                </Text>
-                <Box className={surfaceChrome.profileFieldGrid}>
-                  <ProfileField label="Location" value={formatAddress(shop.location)} wide />
+              {shop.location ? (
+                <Box className={surfaceChrome.profileSection}>
+                  <Text as="p" className={surfaceChrome.profileSectionLabel}>
+                    Address
+                  </Text>
+                  <Box className={surfaceChrome.profileFieldGrid}>
+                    <ProfileField label="Location" value={formatAddress(shop.location)} wide />
+                  </Box>
                 </Box>
-              </Box>
-            ) : null}
+              ) : null}
+            </Box>
           </Box>
-        </Box>
-      ) : (
-        <Box className={cn(surfaceChrome.profileCard, surfaceChrome.profileCardNarrow)}>
-          <Box className={surfaceChrome.profileEditHeader}>
-            <Text as="h2" className={surfaceChrome.profileEditTitle}>
-              Edit shop
-            </Text>
-            <Text variant="caption" color="secondary">
-              {shop.name}
-            </Text>
-          </Box>
-          <Box className={surfaceChrome.profileEditBody}>
-            <Stack gap="md">
-              {saveError ? <Alert variant="danger">{saveError}</Alert> : null}
-              <ShopProfileForm
-                tagline={editTagline}
-                onTaglineChange={setEditTagline}
-                location={editLocation}
-                onLocationChange={setEditLocation}
-                disabled={saving}
-              />
-              <Inline gap="sm" className={surfaceChrome.profileEditActions}>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleCancelEdit}
+        ) : (
+          <Box className={cn(surfaceChrome.profileCard, surfaceChrome.profileCardNarrow)}>
+            <Box className={surfaceChrome.profileEditHeader}>
+              <Text as="h2" className={surfaceChrome.profileEditTitle}>
+                Edit shop
+              </Text>
+              <Text variant="caption" color="secondary">
+                {shop.name}
+              </Text>
+            </Box>
+            <Box className={surfaceChrome.profileEditBody}>
+              <Stack gap="md">
+                {saveError ? <Alert variant="danger">{saveError}</Alert> : null}
+                <ShopProfileForm
+                  tagline={editTagline}
+                  onTaglineChange={setEditTagline}
+                  location={editLocation}
+                  onLocationChange={setEditLocation}
                   disabled={saving}
-                >
-                  Cancel
-                </Button>
-                <Button type="button" variant="solid" onClick={handleSave} disabled={saving}>
-                  {saving ? 'Saving…' : 'Save changes'}
-                </Button>
-              </Inline>
-            </Stack>
+                />
+                <Inline gap="sm" className={surfaceChrome.profileEditActions}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCancelEdit}
+                    disabled={saving}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="button" variant="solid" onClick={handleSave} disabled={saving}>
+                    {saving ? 'Saving…' : 'Save changes'}
+                  </Button>
+                </Inline>
+              </Stack>
+            </Box>
           </Box>
-        </Box>
-      )}
+        )
+      ) : null}
 
-      <InvoiceSettingsSection />
+      {activeTab === 'numbering' ? <InvoiceSeriesSection /> : null}
+      {activeTab === 'invoice' ? <InvoiceSettingsSection /> : null}
     </Stack>
   );
 }

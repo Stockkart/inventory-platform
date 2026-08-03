@@ -6,4 +6,5 @@ export type OnboardingStep =
   | 'contactEmail'
   | 'location'
   | 'businessDetails'
+  | 'invoiceNumbering'
   | 'tagline';
