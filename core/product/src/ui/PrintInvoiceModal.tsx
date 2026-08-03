@@ -49,7 +49,7 @@ const PRINTER_OPTIONS: Array<{
   {
     value: 'THERMAL_3INCH',
     title: 'Thermal (3-inch)',
-    description: 'Narrow 80mm receipt-roll format',
+    description: 'Narrow 75mm receipt-roll format',
     icon: Receipt,
   },
 ];

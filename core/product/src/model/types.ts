@@ -68,7 +68,8 @@ export interface CreateInventoryDto {
   businessType: string;
   location: string;
   count: number;
-  expiryDate: string;
+  /** Optional; medical stores expiry in verticalFields when schema uses extension storage. */
+  expiryDate?: string;
   description?: string;
   reminderAt?: string;
   customReminders?: CustomReminderInput[];
@@ -469,7 +470,8 @@ export interface InventoryItem {
   thresholdCount?: number;
   currentCount: number;
   location: string;
-  expiryDate: string;
+  /** Optional; medical expiry often lives in verticalFields instead of core. */
+  expiryDate?: string;
   shopId: string;
   vendorId?: string | null;
   vendorPurchaseInvoiceId?: string | null;

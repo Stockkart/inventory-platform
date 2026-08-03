@@ -121,12 +121,12 @@ export function ImportPage() {
     row: ParseInvoiceItem & { id: string },
   ): import('@inventory-platform/product/types').BulkCreateInventoryItem => {
     const loc = row.location?.trim() || '';
-    const expiry = row.expiryDate?.trim()
-      ? row.expiryDate.includes('T')
+    const verticalFields: Record<string, unknown> = {};
+    if (row.expiryDate?.trim()) {
+      verticalFields.expiryDate = row.expiryDate.includes('T')
         ? row.expiryDate
-        : `${String(row.expiryDate).trim().slice(0, 10)}T00:00:00Z`
-      : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10) + 'T00:00:00Z';
-    const verticalFields: Record<string, unknown> = { expiryDate: expiry };
+        : `${String(row.expiryDate).trim().slice(0, 10)}T00:00:00Z`;
+    }
     if (row.batchNo?.trim()) {
       verticalFields.batchNo = row.batchNo.trim();
     }
@@ -143,7 +143,7 @@ export function ImportPage() {
       count: Number(row.count) || 1,
       baseUnit: 'BASE UNIT',
       unitConversions: { unit: 'SALE UNIT', factor: 1 },
-      verticalFields,
+      ...(Object.keys(verticalFields).length > 0 ? { verticalFields } : {}),
       hsn: row.hsn || null,
       scheme: row.scheme ?? null,
       schemePayFor: row.schemePayFor ?? null,
