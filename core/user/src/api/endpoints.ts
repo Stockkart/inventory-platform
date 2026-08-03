@@ -34,6 +34,7 @@ export const SHOP_ENDPOINTS = {
   ACTIVE_SHOP: '/shops/active-shop',
   INVOICE_SETTINGS: '/shops/active-shop/invoice-settings',
   INVOICE_SETTINGS_PREVIEW: '/shops/active-shop/invoice-settings/preview',
+  INVOICE_SERIES: '/shops/active-shop/invoice-series',
   BY_ID: (shopId: string) => `/shops/${shopId}`,
   BY_OWNER_EMAIL: '/shops/by-owner-email',
   JOIN_REQUEST: '/shops/join-request',

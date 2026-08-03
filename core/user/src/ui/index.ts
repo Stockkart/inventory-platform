@@ -2,6 +2,8 @@ export { CustomerEditForm } from './CustomerEditForm';
 export { VendorEditForm } from './VendorEditForm';
 export { ShopProfileForm } from './ShopProfileForm';
 export { InvoiceSettingsSection } from './InvoiceSettingsSection';
+export { InvoiceSeriesSection } from './InvoiceSeriesSection';
+export { ProfileTabs, type ProfileTabId } from './ProfileTabs';
 export { InviteForm } from './InviteForm';
 export { RoleBadge } from './RoleBadge';
 export { InvitationList } from './InvitationList';

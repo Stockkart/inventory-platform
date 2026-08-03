@@ -5,6 +5,7 @@ import { shopsApi } from '@inventory-platform/user/shops';
 import { verticalsApi } from '@inventory-platform/session/api';
 import type { OnboardingStep } from '@inventory-platform/user/types';
 import type { ShopType } from '@inventory-platform/user/types';
+import { previewNextInvoiceNo } from '@inventory-platform/user/types';
 import type { VerticalSchemaFieldDef, VerticalSummary } from '@inventory-platform/schema/types';
 import {
   VerticalSchemaFieldInput,
@@ -37,6 +38,7 @@ const STEPS: OnboardingStep[] = [
   'contactEmail',
   'location',
   'businessDetails',
+  'invoiceNumbering',
 ];
 
 const STEP_LABELS: Record<OnboardingStep, string> = {
@@ -47,6 +49,7 @@ const STEP_LABELS: Record<OnboardingStep, string> = {
   contactEmail: 'Contact Email',
   location: 'Location Details',
   businessDetails: 'Business Details',
+  invoiceNumbering: 'Invoice numbering',
   tagline: 'Tagline',
 };
 
@@ -82,6 +85,11 @@ const STEP_COPY: Record<OnboardingStep, { title: string; subtitle: string }> = {
   businessDetails: {
     title: 'Business details',
     subtitle: 'Add tax and compliance info now, or skip and fill them later.',
+  },
+  invoiceNumbering: {
+    title: 'Invoice numbering',
+    subtitle:
+      'Already issuing invoices this financial year from another app? Continue that series — or start fresh with StockKart.',
   },
 };
 
@@ -132,6 +140,8 @@ export default function OnboardingPage() {
     sgst: '',
     cgst: '',
     tagline: '',
+    continueFromPreviousApp: false,
+    lastInvoiceNo: '',
   });
 
   useEffect(() => {
@@ -255,6 +265,20 @@ export default function OnboardingPage() {
         setError(null);
       }
       return;
+    } else if (step === 'invoiceNumbering') {
+      if (formData.continueFromPreviousApp) {
+        const last = formData.lastInvoiceNo.trim();
+        if (!last) {
+          notifyError('Enter your last invoice number from the previous app');
+          return;
+        }
+        if (!previewNextInvoiceNo(last)) {
+          notifyError('Invoice number must end with digits (e.g. SL-0152)');
+          return;
+        }
+      }
+      void handleSubmit();
+      return;
     } else if (step === 'tagline') {
       if (currentStep === STEPS.length - 1) {
         void handleSubmit();
@@ -331,6 +355,19 @@ export default function OnboardingPage() {
 
       if (response && response.shopId) {
         await fetchCurrentUser();
+        if (formData.continueFromPreviousApp && formData.lastInvoiceNo.trim()) {
+          try {
+            await shopsApi.updateInvoiceSeries({
+              lastInvoiceNo: formData.lastInvoiceNo.trim(),
+            });
+          } catch (seriesErr) {
+            notifyError(
+              seriesErr instanceof Error
+                ? seriesErr.message
+                : 'Shop created, but invoice numbering could not be saved. Set it in Profile.',
+            );
+          }
+        }
         navigate('/dashboard');
       } else {
         throw new Error('Shop registration failed - invalid response');
@@ -511,6 +548,81 @@ export default function OnboardingPage() {
               disabled={isLoading}
             />
           </FormRow>
+        </>
+      );
+    }
+
+    if (step === 'invoiceNumbering') {
+      const nextPreview = formData.continueFromPreviousApp
+        ? previewNextInvoiceNo(formData.lastInvoiceNo)
+        : 'INV-00001';
+      return (
+        <>
+          <Text color="secondary" variant="caption">
+            Were you already issuing invoices this financial year from another app?
+          </Text>
+          <Stack gap="sm" width="full">
+            <Button
+              variant="outline"
+              className={cn(
+                journeyChrome.onboardingShopTypeBtn,
+                !formData.continueFromPreviousApp && journeyChrome.onboardingShopTypeBtnActive,
+              )}
+              onClick={() => {
+                setFormData({
+                  ...formData,
+                  continueFromPreviousApp: false,
+                  lastInvoiceNo: '',
+                });
+                clearError();
+              }}
+              disabled={isLoading}
+              role="radio"
+              aria-checked={!formData.continueFromPreviousApp}
+              fullWidth
+            >
+              No — start with StockKart (INV-00001)
+            </Button>
+            <Button
+              variant="outline"
+              className={cn(
+                journeyChrome.onboardingShopTypeBtn,
+                formData.continueFromPreviousApp && journeyChrome.onboardingShopTypeBtnActive,
+              )}
+              onClick={() => {
+                setFormData({ ...formData, continueFromPreviousApp: true });
+                clearError();
+              }}
+              disabled={isLoading}
+              role="radio"
+              aria-checked={formData.continueFromPreviousApp}
+              fullWidth
+            >
+              Yes — continue from previous app
+            </Button>
+          </Stack>
+          {formData.continueFromPreviousApp ? (
+            <>
+              <FormField
+                label="Last invoice number"
+                id="lastInvoiceNo"
+                placeholder="e.g. SL-0152 or INV/PH/000149"
+                value={formData.lastInvoiceNo}
+                onChange={(v) => setFormData({ ...formData, lastInvoiceNo: v })}
+                disabled={isLoading}
+                required
+              />
+              {nextPreview ? (
+                <Text color="secondary" variant="caption">
+                  Next invoice will be {nextPreview}
+                </Text>
+              ) : null}
+            </>
+          ) : (
+            <Text color="secondary" variant="caption">
+              Next invoice will be INV-00001
+            </Text>
+          )}
         </>
       );
     }

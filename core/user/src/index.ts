@@ -34,6 +34,7 @@ export {
   VendorEditForm,
   ShopProfileForm,
   InvoiceSettingsSection,
+  InvoiceSeriesSection,
   InviteForm,
   RoleBadge,
   InvitationList,

@@ -16,6 +16,8 @@ import type {
   InvoiceSettingsResponse,
   UpdateInvoiceSettingsDto,
   PreviewInvoiceSettingsDto,
+  InvoiceSeriesResponse,
+  UpdateInvoiceSeriesDto,
 } from '@inventory-platform/user/types';
 import { SHOP_ENDPOINTS } from './endpoints';
 
@@ -148,5 +150,20 @@ export const shopsApi = {
       throw new Error('Preview response was not HTML. Check the API is running the latest build.');
     }
     return html;
+  },
+
+  getInvoiceSeries: async (): Promise<InvoiceSeriesResponse> => {
+    const response = await apiClient.get<ApiResponse<InvoiceSeriesResponse>>(
+      SHOP_ENDPOINTS.INVOICE_SERIES,
+    );
+    return response.data;
+  },
+
+  updateInvoiceSeries: async (data: UpdateInvoiceSeriesDto): Promise<InvoiceSeriesResponse> => {
+    const response = await apiClient.put<ApiResponse<InvoiceSeriesResponse>>(
+      SHOP_ENDPOINTS.INVOICE_SERIES,
+      data,
+    );
+    return response.data;
   },
 };
