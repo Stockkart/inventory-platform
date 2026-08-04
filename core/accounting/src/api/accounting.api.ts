@@ -11,6 +11,7 @@ import type {
   JournalSource,
   LedgerPageResponse,
   OpeningBalanceRequest,
+  SalesMisExportScope,
   SalesMisParams,
   SalesMisResponse,
   VendorMoneyMisParams,
@@ -180,6 +181,44 @@ function normalizeVendorMoneyMis(res: VendorMoneyMisResponse): VendorMoneyMisRes
   };
 }
 
+function normalizeSalesMis(res: SalesMisResponse): SalesMisResponse {
+  const summary = res.summary;
+  return {
+    ...res,
+    dailyRows: (res.dailyRows ?? []).map((d) => ({
+      ...d,
+      totalSale: asNum(d.totalSale),
+      cashAmount: asNum(d.cashAmount),
+      onlineAmount: asNum(d.onlineAmount),
+      creditAmount: asNum(d.creditAmount),
+      monthToDateTotal: asNum(d.monthToDateTotal),
+    })),
+    rows: (res.rows ?? []).map((r) => ({
+      ...r,
+      totalAmount: asNum(r.totalAmount),
+      cashAmount: asNum(r.cashAmount),
+      onlineAmount: asNum(r.onlineAmount),
+      creditAmount: asNum(r.creditAmount),
+      balanceAfter: asNum(r.balanceAfter),
+      opening: Boolean(r.opening),
+    })),
+    summary: {
+      openingBalanceTotal: asNum(summary?.openingBalanceTotal),
+      periodCashTotal: asNum(summary?.periodCashTotal),
+      periodOnlineTotal: asNum(summary?.periodOnlineTotal),
+      periodCreditTotal: asNum(summary?.periodCreditTotal),
+      periodSalesTotal: asNum(summary?.periodSalesTotal),
+      currentReceivableTotal: asNum(summary?.currentReceivableTotal),
+      customerSummaries: (summary?.customerSummaries ?? []).map((p) => ({
+        ...p,
+        openingBalance: asNum(p.openingBalance),
+        closingBalanceInPeriod: asNum(p.closingBalanceInPeriod),
+        currentBalance: asNum(p.currentBalance),
+      })),
+    },
+  };
+}
+
 function vendorMoneyMisQuery(params: VendorMoneyMisParams): Record<string, string> {
   const txnTypes = Array.isArray(params.txnTypes) ? params.txnTypes.join(',') : params.txnTypes;
   return toQuery({
@@ -190,6 +229,11 @@ function vendorMoneyMisQuery(params: VendorMoneyMisParams): Record<string, strin
     moneyFilter: params.moneyFilter,
     q: params.q,
   });
+}
+
+/** Mirrors `SalesMisExportScope.filenameInfix()` so the fallback filename matches the server's. */
+function exportInfix(scope: SalesMisExportScope): string {
+  return scope === 'DAILY' ? 'daily-' : '';
 }
 
 function salesMisQuery(params: SalesMisParams): Record<string, string> {
@@ -518,8 +562,8 @@ export const accountingApi = {
   /**
    * Sales (customer-side) MIS.
    *
-   * Its own endpoint rather than the vendor one with a `side` flag: that flag was dropped
-   * backend-side as speculative, and the two ledgers return different shapes.
+   * Its own endpoint rather than the vendor one with a `side` flag: the backend serves it from a
+   * dedicated `SalesMisController`, and the two ledgers return different shapes.
    */
   salesMis: async (params: SalesMisParams = {}): Promise<SalesMisResponse> => {
     const query = salesMisQuery(params);
@@ -529,6 +573,7 @@ export const accountingApi = {
       return {
         from: params.from ?? '',
         to: params.to ?? '',
+        dailyRows: [],
         rows: [],
         summary: {
           openingBalanceTotal: 0,
@@ -541,28 +586,34 @@ export const accountingApi = {
         },
       };
     }
-    return inner;
+    return normalizeSalesMis(inner);
   },
 
-  salesMisExcel: async (params: SalesMisParams = {}): Promise<{ blob: Blob; filename: string }> => {
-    const query = salesMisQuery(params);
+  salesMisExcel: async (
+    params: SalesMisParams = {},
+    scope: SalesMisExportScope = 'DAILY',
+  ): Promise<{ blob: Blob; filename: string }> => {
+    const query: Record<string, string> = { ...salesMisQuery(params), scope };
     const from = query.from ?? 'from';
     const to = query.to ?? 'to';
     return downloadAccountingBlob(
       ACCOUNTING_ENDPOINTS.SALES_MIS_EXCEL,
       query,
-      `sales-mis-${from}-${to}.xlsx`,
+      `sales-mis-${exportInfix(scope)}${from}-${to}.xlsx`,
     );
   },
 
-  salesMisPdf: async (params: SalesMisParams = {}): Promise<{ blob: Blob; filename: string }> => {
-    const query = salesMisQuery(params);
+  salesMisPdf: async (
+    params: SalesMisParams = {},
+    scope: SalesMisExportScope = 'DAILY',
+  ): Promise<{ blob: Blob; filename: string }> => {
+    const query: Record<string, string> = { ...salesMisQuery(params), scope };
     const from = query.from ?? 'from';
     const to = query.to ?? 'to';
     return downloadAccountingBlob(
       ACCOUNTING_ENDPOINTS.SALES_MIS_PDF,
       query,
-      `sales-mis-${from}-${to}.pdf`,
+      `sales-mis-${exportInfix(scope)}${from}-${to}.pdf`,
     );
   },
 };

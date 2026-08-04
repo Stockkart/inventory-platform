@@ -407,6 +407,12 @@ export const FILTERABLE_SALES_MIS_TXN_TYPES: readonly SalesMisTxnType[] = [
 /** Money-column filters are identical on both sides of the ledger. */
 export type SalesMisMoneyFilter = VendorMoneyMisMoneyFilter;
 
+export const SALES_MIS_MONEY_FILTER_LABEL: Record<SalesMisMoneyFilter, string> =
+  VENDOR_MONEY_MIS_MONEY_FILTER_LABEL;
+
+export const SALES_MIS_MONEY_FILTERS: readonly SalesMisMoneyFilter[] =
+  VENDOR_MONEY_MIS_MONEY_FILTERS;
+
 export interface SalesMisRow {
   txnId: string;
   txnType: SalesMisTxnType;
@@ -426,6 +432,22 @@ export interface SalesMisRow {
   sourceType: string | null;
   sourceId: string | null;
   opening: boolean;
+}
+
+/**
+ * One day of trading.
+ *
+ * `totalSale` is net of sales returns raised that day and equals `cashAmount + onlineAmount +
+ * creditAmount` — the three legs split that same figure rather than being separate movements.
+ */
+export interface SalesMisDailyRow {
+  txnDate: string;
+  totalSale: number;
+  cashAmount: number;
+  onlineAmount: number;
+  creditAmount: number;
+  /** Running total of `totalSale` within the calendar month, restarting on the 1st. */
+  monthToDateTotal: number;
 }
 
 export interface SalesMisCustomerSummary {
@@ -449,9 +471,28 @@ export interface SalesMisSummary {
 export interface SalesMisResponse {
   from: string;
   to: string;
+  /** Day-wise trading summary, oldest first; one entry per day that had sales activity. */
+  dailyRows: SalesMisDailyRow[];
   rows: SalesMisRow[];
   summary: SalesMisSummary;
 }
+
+/** Which of the two Sales MIS tables an Excel/PDF download contains. */
+export const SALES_MIS_EXPORT_SCOPE = {
+  DAILY: 'DAILY',
+  TRANSACTIONS: 'TRANSACTIONS',
+} as const;
+
+export type SalesMisExportScope =
+  (typeof SALES_MIS_EXPORT_SCOPE)[keyof typeof SALES_MIS_EXPORT_SCOPE];
+
+export const SALES_MIS_EXPORT_SCOPE_LABEL: Record<SalesMisExportScope, string> = {
+  DAILY: 'Daily sales',
+  TRANSACTIONS: 'Transactions',
+};
+
+export const SALES_MIS_EXPORT_SCOPES: readonly SalesMisExportScope[] =
+  Object.values(SALES_MIS_EXPORT_SCOPE);
 
 export interface SalesMisParams {
   from?: string;

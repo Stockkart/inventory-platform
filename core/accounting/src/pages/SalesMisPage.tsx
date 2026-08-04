@@ -1,11 +1,12 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
+  Badge,
   Box,
   Button,
   Card,
   CardBody,
   Checkbox,
-  FormField,
+  DropdownMenu,
   Inline,
   Input,
   PageHeader,
@@ -19,40 +20,52 @@ import {
   TableLoadingRow,
   TableRow,
   Text,
+  cn,
   accountingChrome,
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import type {
-  SalesMisTxnType,
+  SalesMisExportScope,
   SalesMisMoneyFilter,
   SalesMisParams,
   SalesMisResponse,
-  SalesMisRow,
+  SalesMisTxnType,
+} from '@inventory-platform/accounting/types';
+import {
+  FILTERABLE_SALES_MIS_TXN_TYPES,
+  SALES_MIS_EXPORT_SCOPES,
+  SALES_MIS_EXPORT_SCOPE_LABEL,
+  SALES_MIS_MONEY_FILTERS,
+  SALES_MIS_MONEY_FILTER_LABEL,
+  SALES_MIS_TXN_TYPE_LABEL,
 } from '@inventory-platform/accounting/types';
 import { accountingApi } from '../api/accounting.api';
 import { openOrDownloadPdf, triggerBlobDownload } from '../api/download';
-import { AccountingTabs } from '../ui/AccountingTabs';
-import { formatDateShort, formatDateTime, formatMoney, todayLocalDate } from '../model/format';
+import { formatDateShort, formatMoney, todayLocalDate } from '../model/format';
 
 type PeriodPreset = 'today' | 'week' | 'month' | 'custom';
 
-const TXN_TYPE_OPTIONS: ReadonlyArray<{ value: SalesMisTxnType; label: string }> = [
-  { value: 'SALE', label: 'Sale' },
-  { value: 'CUSTOMER_RECEIPT', label: 'Receipt' },
-  { value: 'SALES_RETURN', label: 'Sales return' },
-  { value: 'CUSTOMER_CREDIT_CHARGE', label: 'Credit charge' },
-];
+// Options derive from the shared constants so labels cannot drift from the API's own labels.
+const TXN_TYPE_OPTIONS: ReadonlyArray<{ value: SalesMisTxnType; label: string }> =
+  FILTERABLE_SALES_MIS_TXN_TYPES.map((value) => ({
+    value,
+    label: SALES_MIS_TXN_TYPE_LABEL[value],
+  }));
 
-const MONEY_FILTER_OPTIONS: ReadonlyArray<{ value: SalesMisMoneyFilter; label: string }> = [
-  { value: 'ALL', label: 'All money types' },
-  { value: 'HAS_CASH', label: 'Has cash' },
-  { value: 'HAS_ONLINE', label: 'Has online' },
-  { value: 'HAS_CREDIT', label: 'Has credit' },
-  { value: 'FULLY_PAID', label: 'Fully paid' },
-  { value: 'MIXED', label: 'Mixed' },
-];
+const ALL_TXN_TYPES = TXN_TYPE_OPTIONS.map((opt) => opt.value);
 
-const COL_COUNT = 11;
+const MONEY_FILTER_OPTIONS: ReadonlyArray<{ value: SalesMisMoneyFilter; label: string }> =
+  SALES_MIS_MONEY_FILTERS.map((value) => ({
+    value,
+    label: SALES_MIS_MONEY_FILTER_LABEL[value],
+  }));
+
+/** Each download button opens this list: a file holds one table, so the user picks which. */
+const EXPORT_SCOPE_OPTIONS: ReadonlyArray<{ value: SalesMisExportScope; label: string }> =
+  SALES_MIS_EXPORT_SCOPES.map((value) => ({
+    value,
+    label: SALES_MIS_EXPORT_SCOPE_LABEL[value],
+  }));
 
 function monthStart(d = new Date()): string {
   const y = d.getFullYear();
@@ -80,10 +93,34 @@ function rangeForPreset(preset: PeriodPreset): { from: string; to: string } {
   return { from: monthStart(), to };
 }
 
-function againstLabel(row: SalesMisRow): string {
-  if (row.againstRefNo) return row.againstRefNo;
-  if (row.againstTxnId) return row.againstTxnId;
-  return '—';
+function txnBadgeVariant(txnType: string): 'success' | 'info' | 'warning' | 'danger' | 'neutral' {
+  if (txnType === 'SALE' || txnType === 'Opening') return 'success';
+  if (txnType === 'CUSTOMER_RECEIPT') return 'info';
+  if (txnType === 'SALES_RETURN') return 'warning';
+  if (txnType === 'CUSTOMER_CREDIT_CHARGE') return 'danger';
+  return 'neutral';
+}
+
+function rupee(value: number | undefined | null): string {
+  return `₹${formatMoney(value)}`;
+}
+
+function toAppliedParams(
+  from: string,
+  to: string,
+  txnTypes: SalesMisTxnType[],
+  moneyFilter: SalesMisMoneyFilter,
+  q: string,
+): SalesMisParams {
+  const allSelected =
+    txnTypes.length === ALL_TXN_TYPES.length && ALL_TXN_TYPES.every((t) => txnTypes.includes(t));
+  return {
+    from,
+    to,
+    txnTypes: allSelected || txnTypes.length === 0 ? undefined : txnTypes,
+    moneyFilter: moneyFilter === 'ALL' ? undefined : moneyFilter,
+    q: q.trim() || undefined,
+  };
 }
 
 export function SalesMisPage() {
@@ -93,20 +130,19 @@ export function SalesMisPage() {
   const [preset, setPreset] = useState<PeriodPreset>('month');
   const [fromInput, setFromInput] = useState(initial.from);
   const [toInput, setToInput] = useState(initial.to);
-  const [txnTypes, setTxnTypes] = useState<SalesMisTxnType[]>([]);
+  const [txnTypes, setTxnTypes] = useState<SalesMisTxnType[]>([...ALL_TXN_TYPES]);
   const [moneyFilter, setMoneyFilter] = useState<SalesMisMoneyFilter>('ALL');
   const [qInput, setQInput] = useState('');
 
-  const [applied, setApplied] = useState<SalesMisParams>({
-    from: initial.from,
-    to: initial.to,
-    moneyFilter: 'ALL',
-  });
+  const [applied, setApplied] = useState<SalesMisParams>(() =>
+    toAppliedParams(initial.from, initial.to, [...ALL_TXN_TYPES], 'ALL', ''),
+  );
 
   const [data, setData] = useState<SalesMisResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState<'excel' | 'pdf' | null>(null);
-  const [expandedTxnId, setExpandedTxnId] = useState<string | null>(null);
+  /** Which download button has its table-picker open, if any. */
+  const [openMenu, setOpenMenu] = useState<'excel' | 'pdf' | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -116,7 +152,6 @@ export function SalesMisPage() {
         const res = await accountingApi.salesMis(applied);
         if (!cancelled) {
           setData(res);
-          setExpandedTxnId(null);
         }
       } catch (e) {
         if (!cancelled) {
@@ -131,15 +166,10 @@ export function SalesMisPage() {
     };
   }, [applied, notifyError]);
 
-  const queryParams = useMemo((): SalesMisParams => {
-    return {
-      from: fromInput,
-      to: toInput,
-      txnTypes: txnTypes.length > 0 ? txnTypes : undefined,
-      moneyFilter: moneyFilter === 'ALL' ? undefined : moneyFilter,
-      q: qInput.trim() || undefined,
-    };
-  }, [fromInput, toInput, txnTypes, moneyFilter, qInput]);
+  const draftParams = useMemo(
+    () => toAppliedParams(fromInput, toInput, txnTypes, moneyFilter, qInput),
+    [fromInput, toInput, txnTypes, moneyFilter, qInput],
+  );
 
   function applyPreset(next: PeriodPreset) {
     setPreset(next);
@@ -147,23 +177,11 @@ export function SalesMisPage() {
     const range = rangeForPreset(next);
     setFromInput(range.from);
     setToInput(range.to);
-    setApplied({
-      from: range.from,
-      to: range.to,
-      txnTypes: txnTypes.length > 0 ? txnTypes : undefined,
-      moneyFilter: moneyFilter === 'ALL' ? undefined : moneyFilter,
-      q: qInput.trim() || undefined,
-    });
+    setApplied(toAppliedParams(range.from, range.to, txnTypes, moneyFilter, qInput));
   }
 
   function handleSearch() {
-    setApplied({
-      from: fromInput,
-      to: toInput,
-      txnTypes: txnTypes.length > 0 ? txnTypes : undefined,
-      moneyFilter: moneyFilter === 'ALL' ? undefined : moneyFilter,
-      q: qInput.trim() || undefined,
-    });
+    setApplied(draftParams);
   }
 
   function toggleTxnType(value: SalesMisTxnType) {
@@ -172,19 +190,15 @@ export function SalesMisPage() {
     );
   }
 
-  function handleRowClick(row: SalesMisRow) {
-    setExpandedTxnId((prev) => (prev === row.txnId ? null : row.txnId));
-  }
-
-  async function handleDownload(kind: 'excel' | 'pdf') {
+  async function handleDownload(kind: 'excel' | 'pdf', scope: SalesMisExportScope) {
     setDownloading(kind);
     try {
       if (kind === 'excel') {
-        const result = await accountingApi.salesMisExcel(queryParams);
+        const result = await accountingApi.salesMisExcel(applied, scope);
         triggerBlobDownload(result.blob, result.filename);
         notifySuccess('Excel downloaded');
       } else {
-        const result = await accountingApi.salesMisPdf(queryParams);
+        const result = await accountingApi.salesMisPdf(applied, scope);
         openOrDownloadPdf(result.blob, result.filename);
         notifySuccess('PDF ready');
       }
@@ -195,17 +209,24 @@ export function SalesMisPage() {
     }
   }
 
+  function exportMenuItems(kind: 'excel' | 'pdf') {
+    return EXPORT_SCOPE_OPTIONS.map((opt) => ({
+      id: `${kind}-${opt.value}`,
+      label: opt.label,
+      onSelect: () => void handleDownload(kind, opt.value),
+    }));
+  }
+
   const summary = data?.summary;
+  const dailyRows = data?.dailyRows ?? [];
   const rows = data?.rows ?? [];
 
   return (
     <Stack gap="md">
-      <AccountingTabs />
-
-      <PageHeader description="Sales, receipts, returns, and credit — cash / online / credit split with running receivable." />
-
-      <Box className={accountingChrome.partiesFilterBar}>
-        <Stack gap="sm">
+      <PageHeader
+        title="Sales Transactions"
+        description="Customer sales, receipts, returns, and credit — cash / online / credit split."
+        actions={
           <Inline gap="sm" flexWrap>
             {(
               [
@@ -218,7 +239,7 @@ export function SalesMisPage() {
               <Button
                 key={key}
                 type="button"
-                variant={preset === key ? 'solid' : 'ghost'}
+                variant={preset === key ? 'solid' : 'outline'}
                 size="sm"
                 onClick={() => applyPreset(key)}
                 disabled={loading}
@@ -227,111 +248,142 @@ export function SalesMisPage() {
               </Button>
             ))}
           </Inline>
+        }
+      />
 
-          <Box className={accountingChrome.partiesFilterDates}>
-            <Box className={accountingChrome.partiesFilterField}>
-              <Text as="span" className={accountingChrome.partiesFilterLabel}>
-                From
-              </Text>
-              <Input
-                aria-label="From date"
-                type="date"
-                value={fromInput}
-                onChange={(e) => {
-                  setPreset('custom');
-                  setFromInput(e.target.value);
-                }}
-                className={accountingChrome.tbAsOfInput}
-                disabled={loading}
-              />
+      <Card>
+        <CardBody>
+          <Stack gap="md">
+            <Box className={accountingChrome.misFilterRow}>
+              <Box className={accountingChrome.partiesFilterField}>
+                <Text as="span" className={accountingChrome.partiesFilterLabel}>
+                  From date
+                </Text>
+                <Input
+                  aria-label="From date"
+                  type="date"
+                  value={fromInput}
+                  onChange={(e) => {
+                    setPreset('custom');
+                    setFromInput(e.target.value);
+                  }}
+                  className={accountingChrome.misFilterCompact}
+                  disabled={loading}
+                />
+              </Box>
+              <Box className={accountingChrome.partiesFilterField}>
+                <Text as="span" className={accountingChrome.partiesFilterLabel}>
+                  To date
+                </Text>
+                <Input
+                  aria-label="To date"
+                  type="date"
+                  value={toInput}
+                  onChange={(e) => {
+                    setPreset('custom');
+                    setToInput(e.target.value);
+                  }}
+                  className={accountingChrome.misFilterCompact}
+                  disabled={loading}
+                />
+              </Box>
+              <Box className={accountingChrome.partiesFilterField}>
+                <Text as="span" className={accountingChrome.partiesFilterLabel}>
+                  Money filter
+                </Text>
+                <Select
+                  id="sales-mis-money-filter"
+                  value={moneyFilter}
+                  options={MONEY_FILTER_OPTIONS}
+                  onChange={(e) => setMoneyFilter(e.target.value as SalesMisMoneyFilter)}
+                  disabled={loading}
+                  className={accountingChrome.misFilterMoney}
+                />
+              </Box>
+              <Box className={accountingChrome.partiesFilterField}>
+                <Text as="span" className={accountingChrome.partiesFilterLabel}>
+                  Search
+                </Text>
+                <Input
+                  id="sales-mis-q"
+                  type="search"
+                  placeholder="Customer, invoice, txn id…"
+                  value={qInput}
+                  onChange={(e) => setQInput(e.target.value)}
+                  disabled={loading}
+                  className={accountingChrome.misFilterSearch}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSearch();
+                  }}
+                />
+              </Box>
+              <Button
+                type="button"
+                variant="solid"
+                size="sm"
+                onClick={handleSearch}
+                loading={loading}
+                disabled={loading || !fromInput || !toInput}
+              >
+                Search
+              </Button>
+              <Box className={accountingChrome.misFilterActions}>
+                <DropdownMenu
+                  open={openMenu === 'excel'}
+                  onOpenChange={(next) => setOpenMenu(next ? 'excel' : null)}
+                  items={exportMenuItems('excel')}
+                  trigger={
+                    <Button
+                      type="button"
+                      variant="solid"
+                      size="sm"
+                      loading={downloading === 'excel'}
+                      disabled={loading || downloading != null}
+                    >
+                      Download Excel ▾
+                    </Button>
+                  }
+                />
+                <DropdownMenu
+                  open={openMenu === 'pdf'}
+                  onOpenChange={(next) => setOpenMenu(next ? 'pdf' : null)}
+                  items={exportMenuItems('pdf')}
+                  trigger={
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      loading={downloading === 'pdf'}
+                      disabled={loading || downloading != null}
+                    >
+                      Download PDF ▾
+                    </Button>
+                  }
+                />
+              </Box>
             </Box>
-            <Box className={accountingChrome.partiesFilterField}>
-              <Text as="span" className={accountingChrome.partiesFilterLabel}>
-                To
-              </Text>
-              <Input
-                aria-label="To date"
-                type="date"
-                value={toInput}
-                onChange={(e) => {
-                  setPreset('custom');
-                  setToInput(e.target.value);
-                }}
-                className={accountingChrome.tbAsOfInput}
-                disabled={loading}
-              />
-            </Box>
-            <FormField label="Money filter" htmlFor="sales-mis-money-filter">
-              <Select
-                id="sales-mis-money-filter"
-                value={moneyFilter}
-                options={MONEY_FILTER_OPTIONS}
-                onChange={(e) => setMoneyFilter(e.target.value as SalesMisMoneyFilter)}
-                disabled={loading}
-              />
-            </FormField>
-            <FormField label="Search" htmlFor="sales-mis-q">
-              <Input
-                id="sales-mis-q"
-                type="search"
-                placeholder="Customer, ref, txn id…"
-                value={qInput}
-                onChange={(e) => setQInput(e.target.value)}
-                disabled={loading}
-              />
-            </FormField>
-            <Button
-              type="button"
-              variant="solid"
-              onClick={handleSearch}
-              loading={loading}
-              disabled={loading || !fromInput || !toInput}
-            >
-              Search
-            </Button>
-          </Box>
 
-          <Inline gap="md" flexWrap>
-            {TXN_TYPE_OPTIONS.map((opt) => (
-              <Checkbox
-                key={opt.value}
-                label={opt.label}
-                checked={txnTypes.includes(opt.value)}
-                onChange={() => toggleTxnType(opt.value)}
-                disabled={loading}
-              />
-            ))}
-          </Inline>
-
-          <Inline gap="sm" flexWrap>
-            <Button
-              type="button"
-              variant="solid"
-              onClick={() => void handleDownload('excel')}
-              loading={downloading === 'excel'}
-              disabled={loading || downloading != null}
-            >
-              Download Excel
-            </Button>
-            <Button
-              type="button"
-              variant="solid"
-              onClick={() => void handleDownload('pdf')}
-              loading={downloading === 'pdf'}
-              disabled={loading || downloading != null}
-            >
-              Download PDF
-            </Button>
-          </Inline>
-        </Stack>
-      </Box>
+            <Inline gap="md" flexWrap>
+              {TXN_TYPE_OPTIONS.map((opt) => (
+                <Checkbox
+                  key={opt.value}
+                  label={opt.label}
+                  checked={txnTypes.includes(opt.value)}
+                  onChange={() => toggleTxnType(opt.value)}
+                  disabled={loading}
+                />
+              ))}
+            </Inline>
+          </Stack>
+        </CardBody>
+      </Card>
 
       {loading && !data ? (
         <Card>
           <CardBody>
             <Table>
               <TableBody>
-                <TableLoadingRow colSpan={COL_COUNT} label="Loading Sales MIS…" />
+                <TableLoadingRow colSpan={10} label="Loading sales transactions…" />
               </TableBody>
             </Table>
           </CardBody>
@@ -344,117 +396,211 @@ export function SalesMisPage() {
         </Card>
       ) : (
         <Stack gap="md">
-          <Box className={accountingChrome.pnlKpiGrid}>
-            <Box className={accountingChrome.overviewKpiCard}>
+          <Box className={accountingChrome.kpiGrid4}>
+            <Box
+              className={cn(
+                accountingChrome.overviewKpiCard,
+                accountingChrome.overviewKpiCardCenter,
+              )}
+            >
               <Text as="span" className={accountingChrome.overviewKpiLabel}>
                 Period cash
               </Text>
               <Text as="span" className={accountingChrome.overviewKpiValue}>
-                ₹{formatMoney(summary?.periodCashTotal)}
+                {rupee(summary?.periodCashTotal)}
               </Text>
             </Box>
-            <Box className={accountingChrome.overviewKpiCard}>
+            <Box
+              className={cn(
+                accountingChrome.overviewKpiCard,
+                accountingChrome.overviewKpiCardCenter,
+              )}
+            >
               <Text as="span" className={accountingChrome.overviewKpiLabel}>
                 Period online
               </Text>
               <Text as="span" className={accountingChrome.overviewKpiValue}>
-                ₹{formatMoney(summary?.periodOnlineTotal)}
+                {rupee(summary?.periodOnlineTotal)}
               </Text>
             </Box>
-            <Box className={accountingChrome.overviewKpiCard}>
+            <Box
+              className={cn(
+                accountingChrome.overviewKpiCard,
+                accountingChrome.overviewKpiCardCenter,
+              )}
+            >
               <Text as="span" className={accountingChrome.overviewKpiLabel}>
                 Period credit
               </Text>
               <Text as="span" className={accountingChrome.overviewKpiValue}>
-                ₹{formatMoney(summary?.periodCreditTotal)}
+                {rupee(summary?.periodCreditTotal)}
               </Text>
             </Box>
-            <Box className={accountingChrome.overviewKpiCard}>
+            <Box
+              className={cn(
+                accountingChrome.overviewKpiCard,
+                accountingChrome.overviewKpiCardCenter,
+              )}
+            >
               <Text as="span" className={accountingChrome.overviewKpiLabel}>
                 Current receivable
               </Text>
               <Text as="span" className={accountingChrome.overviewKpiValue}>
-                ₹{formatMoney(summary?.currentReceivableTotal)}
+                {rupee(summary?.currentReceivableTotal)}
               </Text>
             </Box>
           </Box>
 
           <Card>
             <CardBody>
-              {rows.length === 0 ? (
-                <Text as="p" className={accountingChrome.reportEmpty}>
-                  No transactions in this period.
+              <Stack gap="md">
+                <Text as="h2" className={accountingChrome.overviewSectionTitle}>
+                  Daily sales
                 </Text>
-              ) : (
-                <Table className={accountingChrome.tbTable}>
-                  <TableHead>
-                    <TableRow>
-                      <TableHeaderCell>Date</TableHeaderCell>
-                      <TableHeaderCell>Customer</TableHeaderCell>
-                      <TableHeaderCell>Txn ID</TableHeaderCell>
-                      <TableHeaderCell>Type</TableHeaderCell>
-                      <TableHeaderCell>Ref No</TableHeaderCell>
-                      <TableHeaderCell>Against</TableHeaderCell>
-                      <TableHeaderCell className={accountingChrome.tbNumCol}>Total</TableHeaderCell>
-                      <TableHeaderCell className={accountingChrome.tbNumCol}>Cash</TableHeaderCell>
-                      <TableHeaderCell className={accountingChrome.tbNumCol}>
-                        Online
-                      </TableHeaderCell>
-                      <TableHeaderCell className={accountingChrome.tbNumCol}>
-                        Credit
-                      </TableHeaderCell>
-                      <TableHeaderCell className={accountingChrome.tbNumCol}>
-                        Balance
-                      </TableHeaderCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {rows.map((row) => {
-                      const open = expandedTxnId === row.txnId;
-                      return (
-                        <Fragment key={row.txnId}>
-                          <TableRow
-                            onClick={() => handleRowClick(row)}
-                            style={{ cursor: 'pointer' }}
-                            aria-expanded={open}
-                          >
+                {dailyRows.length === 0 ? (
+                  <Text as="p" className={accountingChrome.reportEmpty}>
+                    No sales in this period.
+                  </Text>
+                ) : (
+                  <Table className={accountingChrome.misTable}>
+                    <TableHead>
+                      <TableRow>
+                        <TableHeaderCell>Date</TableHeaderCell>
+                        <TableHeaderCell className={accountingChrome.misNumCol}>
+                          Total Sale
+                        </TableHeaderCell>
+                        <TableHeaderCell className={accountingChrome.misNumCol}>
+                          Online
+                        </TableHeaderCell>
+                        <TableHeaderCell className={accountingChrome.misNumCol}>
+                          Cash
+                        </TableHeaderCell>
+                        <TableHeaderCell className={accountingChrome.misNumCol}>
+                          Credit
+                        </TableHeaderCell>
+                        <TableHeaderCell className={accountingChrome.misNumCol}>
+                          MTD
+                        </TableHeaderCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {dailyRows.map((day) => (
+                        <TableRow key={day.txnDate}>
+                          <TableCell>{formatDateShort(day.txnDate)}</TableCell>
+                          <TableCell className={accountingChrome.misNumCol}>
+                            {rupee(day.totalSale)}
+                          </TableCell>
+                          <TableCell className={accountingChrome.misNumCol}>
+                            {rupee(day.onlineAmount)}
+                          </TableCell>
+                          <TableCell className={accountingChrome.misNumCol}>
+                            {rupee(day.cashAmount)}
+                          </TableCell>
+                          <TableCell className={accountingChrome.misNumCol}>
+                            {rupee(day.creditAmount)}
+                          </TableCell>
+                          <TableCell className={accountingChrome.misNumCol}>
+                            {rupee(day.monthToDateTotal)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </Stack>
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardBody>
+              <Stack gap="md">
+                <Text as="h2" className={accountingChrome.overviewSectionTitle}>
+                  Transactions
+                </Text>
+                {rows.length === 0 ? (
+                  <Text as="p" className={accountingChrome.reportEmpty}>
+                    No transactions in this period.
+                  </Text>
+                ) : (
+                  <Table className={accountingChrome.misTable}>
+                    <TableHead>
+                      <TableRow>
+                        <TableHeaderCell>Date</TableHeaderCell>
+                        <TableHeaderCell>Customer</TableHeaderCell>
+                        <TableHeaderCell>Txn ID</TableHeaderCell>
+                        <TableHeaderCell className={accountingChrome.misTxnTypeCol}>
+                          Transaction
+                        </TableHeaderCell>
+                        <TableHeaderCell className={accountingChrome.misInvoiceCol}>
+                          Invoice
+                        </TableHeaderCell>
+                        <TableHeaderCell className={accountingChrome.misNumCol}>
+                          Bill Amount
+                        </TableHeaderCell>
+                        <TableHeaderCell className={accountingChrome.misNumCol}>
+                          Cash
+                        </TableHeaderCell>
+                        <TableHeaderCell className={accountingChrome.misNumCol}>
+                          Online
+                        </TableHeaderCell>
+                        <TableHeaderCell className={accountingChrome.misNumCol}>
+                          Credit
+                        </TableHeaderCell>
+                        <TableHeaderCell className={accountingChrome.misNumCol}>
+                          Outstanding
+                        </TableHeaderCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {rows.map((row) => {
+                        const typeLabel = row.opening ? 'Opening' : row.txnTypeLabel || row.txnType;
+                        const fullTxnId = row.sourceId || row.txnId || '';
+                        const shortTxnId =
+                          fullTxnId.length > 4 ? `${fullTxnId.slice(0, 4)}...` : fullTxnId || '—';
+                        return (
+                          <TableRow key={`${row.txnType}-${fullTxnId}-${row.txnDate}`}>
                             <TableCell>{formatDateShort(row.txnDate)}</TableCell>
                             <TableCell>{row.customerName || '—'}</TableCell>
-                            <TableCell>{row.txnId}</TableCell>
-                            <TableCell>
-                              {row.opening ? 'Opening' : row.txnTypeLabel || row.txnType}
+                            <TableCell
+                              className={accountingChrome.misTxnIdCol}
+                              title={fullTxnId || undefined}
+                            >
+                              {shortTxnId}
                             </TableCell>
-                            <TableCell>{row.refNo || '—'}</TableCell>
-                            <TableCell>{againstLabel(row)}</TableCell>
-                            <TableCell className={accountingChrome.tbNumCol}>
-                              {formatMoney(row.totalAmount)}
+                            <TableCell className={accountingChrome.misTxnTypeCol}>
+                              <Badge
+                                variant={txnBadgeVariant(
+                                  row.opening ? 'Opening' : String(row.txnType),
+                                )}
+                              >
+                                {typeLabel}
+                              </Badge>
                             </TableCell>
-                            <TableCell className={accountingChrome.tbNumCol}>
-                              {formatMoney(row.cashAmount)}
+                            <TableCell className={accountingChrome.misInvoiceCol}>
+                              {row.refNo || '—'}
                             </TableCell>
-                            <TableCell className={accountingChrome.tbNumCol}>
-                              {formatMoney(row.onlineAmount)}
+                            <TableCell className={accountingChrome.misNumCol}>
+                              {rupee(row.totalAmount)}
                             </TableCell>
-                            <TableCell className={accountingChrome.tbNumCol}>
-                              {formatMoney(row.creditAmount)}
+                            <TableCell className={accountingChrome.misNumCol}>
+                              {rupee(row.cashAmount)}
                             </TableCell>
-                            <TableCell className={accountingChrome.tbNumCol}>
-                              {formatMoney(row.balanceAfter)}
+                            <TableCell className={accountingChrome.misNumCol}>
+                              {rupee(row.onlineAmount)}
+                            </TableCell>
+                            <TableCell className={accountingChrome.misNumCol}>
+                              {rupee(row.creditAmount)}
+                            </TableCell>
+                            <TableCell className={accountingChrome.misNumCol}>
+                              {rupee(row.balanceAfter)}
                             </TableCell>
                           </TableRow>
-                          {open ? (
-                            <TableRow>
-                              <TableCell colSpan={COL_COUNT}>
-                                <RowKeyFields row={row} />
-                              </TableCell>
-                            </TableRow>
-                          ) : null}
-                        </Fragment>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              )}
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
+              </Stack>
             </CardBody>
           </Card>
 
@@ -465,40 +611,5 @@ export function SalesMisPage() {
         </Stack>
       )}
     </Stack>
-  );
-}
-
-function RowKeyFields({ row }: { row: SalesMisRow }) {
-  return (
-    <Stack gap="sm" padding="sm">
-      <Text as="h4" className={accountingChrome.overviewSectionTitle}>
-        {row.txnTypeLabel || row.txnType}
-      </Text>
-      <Inline gap="lg" flexWrap>
-        <DetailField label="Txn ID" value={row.txnId} />
-        <DetailField label="Customer" value={row.customerName || '—'} />
-        <DetailField label="Date" value={formatDateShort(row.txnDate)} />
-        <DetailField label="Posted" value={formatDateTime(row.postedAt)} />
-        <DetailField label="Ref no" value={row.refNo || '—'} />
-        <DetailField label="Against" value={againstLabel(row)} />
-        <DetailField label="Total" value={`₹${formatMoney(row.totalAmount)}`} />
-        <DetailField label="Cash" value={`₹${formatMoney(row.cashAmount)}`} />
-        <DetailField label="Online" value={`₹${formatMoney(row.onlineAmount)}`} />
-        <DetailField label="Credit" value={`₹${formatMoney(row.creditAmount)}`} />
-        <DetailField label="Balance after" value={`₹${formatMoney(row.balanceAfter)}`} />
-        <DetailField label="Source" value={row.sourceType || '—'} />
-      </Inline>
-    </Stack>
-  );
-}
-
-function DetailField({ label, value }: { label: string; value: string }) {
-  return (
-    <Box>
-      <Text as="span" variant="caption" color="secondary">
-        {label}
-      </Text>
-      <Text as="p">{value}</Text>
-    </Box>
   );
 }
