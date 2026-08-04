@@ -180,6 +180,25 @@ function formatComputedAmount(n: number): string {
   return String(roundMoney(n));
 }
 
+/**
+ * Parse Apply-to-all packaging drafts: {@code 10}, {@code 1x10}, {@code 1 x 10}, {@code 1×10}.
+ * Returns the display factor after "1 ×" (e.g. 10), or null if invalid.
+ */
+function parsePackagingBulkFactor(raw: string): number | null {
+  const t = raw.trim().toLowerCase().replace(/\s+/g, '');
+  if (!t) return null;
+  const paired = t.match(/^1(?:x|×|\*)(\d+)$/);
+  if (paired) {
+    const n = parseInt(paired[1], 10);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }
+  if (/^\d+$/.test(t)) {
+    const n = parseInt(t, 10);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }
+  return null;
+}
+
 function toReminderIso(value: string): string {
   if (!value.trim()) return '';
   return value.includes('T')
@@ -1634,10 +1653,12 @@ export function ProductEntryPage() {
   };
 
   const handleVerticalBulkChange = (key: string, value: string) => {
-    setGridBulkFill((prev) => ({
-      ...prev,
-      verticalBulk: { ...(prev.verticalBulk ?? {}), [key]: value },
-    }));
+    setGridBulkFill((prev) => {
+      const nextVertical = { ...(prev.verticalBulk ?? {}), [key]: value };
+      // Degree is never bulk-filled; drop any stale value if item type changes.
+      delete nextVertical.itemTypeDegree;
+      return { ...prev, verticalBulk: nextVertical };
+    });
   };
 
   const handleApplyGridBulkFill = () => {
@@ -1652,7 +1673,6 @@ export function ProductEntryPage() {
       prev.map((product) => {
         let next: ProductFormData = { ...product };
 
-        if (hasText(b.name)) next = { ...next, name: trim(b.name) };
         if (hasText(b.companyName)) {
           next = { ...next, companyName: trim(b.companyName) };
         }
@@ -1661,8 +1681,11 @@ export function ProductEntryPage() {
           if (!isNaN(n) && n > 0) next = { ...next, count: n };
         }
         if (hasText(b.conversionFactor)) {
-          const f = parseFloat(trim(b.conversionFactor));
-          if (!isNaN(f) && f > 0) next = { ...next, conversionFactor: f };
+          const factor = parsePackagingBulkFactor(trim(b.conversionFactor));
+          if (factor != null) {
+            const upp = packagingFactorToUnitsPerPack(factor);
+            next = { ...next, unitsPerPack: upp, conversionFactor: upp };
+          }
         }
         if (hasText(b.expiryDate)) {
           const expiryField = registrationFields.find((f) => f.key === 'expiryDate');
@@ -1766,12 +1789,6 @@ export function ProductEntryPage() {
             next = { ...next, itemTypeDegree: undefined };
           }
         }
-        if (showCommercialTerms && hasText(b.itemTypeDegree)) {
-          const deg = parseInt(trim(b.itemTypeDegree), 10);
-          if (!isNaN(deg) && deg > 0 && Number.isInteger(deg)) {
-            next = { ...next, itemType: 'DEGREE', itemTypeDegree: deg };
-          }
-        }
 
         if (showCommercialTerms && b.discountApplicable) {
           next = { ...next, discountApplicable: b.discountApplicable };
@@ -1781,6 +1798,10 @@ export function ProductEntryPage() {
         if (hasText(b.sgst)) next = { ...next, sgst: trim(b.sgst) };
 
         for (const field of registrationFields) {
+          // Product name / batch / temperature degree stay per-row — never apply from Fill all.
+          if (field.key === 'name' || field.key === 'batchNo' || field.key === 'itemTypeDegree') {
+            continue;
+          }
           const raw =
             b.verticalBulk?.[field.key] ??
             (field.key in b ? String(b[field.key as keyof GridBulkFillDraft] ?? '') : '');
@@ -3241,7 +3262,9 @@ export function ProductEntryPage() {
                                 fields={verticalRegistrationFields}
                               />
                               <TableHeaderCell className={denseDataGrid.th}>Qty *</TableHeaderCell>
-                              <TableHeaderCell className={denseDataGrid.th}>
+                              <TableHeaderCell
+                                className={`${denseDataGrid.th} ${denseDataGrid.tdPackaging}`}
+                              >
                                 Packaging
                               </TableHeaderCell>
                               <TableHeaderCell className={denseDataGrid.th}>
@@ -3442,7 +3465,7 @@ export function ProductEntryPage() {
                                     required
                                   />
                                 </TableCell>
-                                <TableCell className={denseDataGrid.td}>
+                                <TableCell className={denseDataGrid.tdPackaging}>
                                   <PackagingUnitInput
                                     label=""
                                     compact
@@ -4488,27 +4511,81 @@ function GridBulkFillRow({
         </TableHeaderCell>
       )}
       <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
-        <Input
-          type="text"
-          className={denseDataGrid.input}
-          placeholder="Product"
-          value={bulk.name ?? ''}
-          onChange={(e) => onBulkChange('name', e.target.value)}
-          disabled={isLoading}
-        />
+        <Text
+          as="span"
+          className={denseDataGrid.bulkDisabled}
+          title="Product name must be set per row"
+        >
+          —
+        </Text>
       </TableHeaderCell>
-      {schemaFields.map((field) => (
-        <TableHeaderCell key={field.key} className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
-          <Input
-            type={field.type === 'date' ? 'date' : 'text'}
-            className={field.type === 'date' ? denseDataGrid.inputDate : denseDataGrid.input}
-            placeholder={field.label ?? field.key}
-            value={bulk.verticalBulk?.[field.key] ?? ''}
-            onChange={(e) => onVerticalBulkChange(field.key, e.target.value)}
-            disabled={isLoading}
-          />
-        </TableHeaderCell>
-      ))}
+      {schemaFields.map((field) => {
+        // Degree has no grid column — it appears inline on the row when Item Type is Temperature.
+        if (field.key === 'itemTypeDegree') {
+          return null;
+        }
+        const perRowOnly = field.key === 'batchNo';
+        if (perRowOnly) {
+          return (
+            <TableHeaderCell
+              key={field.key}
+              className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}
+            >
+              <Text
+                as="span"
+                className={denseDataGrid.bulkDisabled}
+                title="Batch number must be set per row"
+              >
+                —
+              </Text>
+            </TableHeaderCell>
+          );
+        }
+        if (field.type === 'enum' && field.values?.length) {
+          return (
+            <TableHeaderCell
+              key={field.key}
+              className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}
+            >
+              <Select
+                className={denseDataGrid.select}
+                value={bulk.verticalBulk?.[field.key] ?? ''}
+                onChange={(e) => onVerticalBulkChange(field.key, e.target.value)}
+                disabled={isLoading}
+                aria-label={field.label ?? field.key}
+              >
+                <option value="">—</option>
+                {field.values.map((v) => (
+                  <option key={v} value={v}>
+                    {v === 'NORMAL'
+                      ? 'Normal'
+                      : v === 'COSTLY'
+                      ? 'Costly'
+                      : v === 'DEGREE'
+                      ? 'Temperature for the item'
+                      : v}
+                  </option>
+                ))}
+              </Select>
+            </TableHeaderCell>
+          );
+        }
+        return (
+          <TableHeaderCell
+            key={field.key}
+            className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}
+          >
+            <Input
+              type={field.type === 'date' ? 'date' : 'text'}
+              className={field.type === 'date' ? denseDataGrid.inputDate : denseDataGrid.input}
+              placeholder={field.label ?? field.key}
+              value={bulk.verticalBulk?.[field.key] ?? ''}
+              onChange={(e) => onVerticalBulkChange(field.key, e.target.value)}
+              disabled={isLoading}
+            />
+          </TableHeaderCell>
+        );
+      })}
       <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
         <Input
           type="text"
@@ -4523,9 +4600,10 @@ function GridBulkFillRow({
       <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
         <Input
           type="text"
-          inputMode="decimal"
+          inputMode="text"
           className={denseDataGrid.inputNarrow}
-          placeholder="1 x _"
+          placeholder="1x10"
+          title="Packaging factor: 10 or 1x10 → 1 × 10 (unit stays per row)"
           value={bulk.conversionFactor ?? ''}
           onChange={(e) => onBulkChange('conversionFactor', e.target.value)}
           disabled={isLoading}
@@ -4723,7 +4801,11 @@ function GridBulkFillRow({
           </TableHeaderCell>
         </>
       )}
-      <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`} />
+      <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
+        <Text as="span" className={denseDataGrid.bulkDisabled} title="Actions are per row">
+          —
+        </Text>
+      </TableHeaderCell>
     </TableRow>
   );
 }

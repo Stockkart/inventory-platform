@@ -1,4 +1,13 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+} from 'react';
+import { createPortal } from 'react-dom';
 import { Box } from '../layout/Box';
 import { Inline } from '../layout/Stack';
 import { Text } from '../layout/Text';
@@ -6,7 +15,6 @@ import { Button } from '../forms/Button';
 import { FormField } from '../forms/FormField';
 import { IconButton } from '../forms/IconButton';
 import { Input } from '../forms/Input';
-import { Stack } from '../layout/Stack';
 import styles from './PackagingFactorField.module.css';
 
 export type PackagingUnitOption = {
@@ -42,12 +50,19 @@ function formatUnitOption(u: PackagingUnitOption): string {
   return label ? `${code} — ${label}` : code;
 }
 
-function displayUnitValue(uqc: string | null | undefined, catalog: PackagingUnitOption[]): string {
+function displayUnitValue(
+  uqc: string | null | undefined,
+  catalog: PackagingUnitOption[],
+  compact = false,
+): string {
   const code = (uqc ?? '').trim();
   if (!code) return '';
   const upper = code.toUpperCase();
   const def = catalog.find((u) => u.uqc === upper);
-  return def ? formatUnitOption(def) : code;
+  if (!def) return code;
+  // Compact grids: show UQC only so the selection stays readable in a narrow cell.
+  if (compact) return def.uqc;
+  return formatUnitOption(def);
 }
 
 function filterPackagingUnits(
@@ -105,11 +120,15 @@ export function PackagingFactorField({
   id,
   compact = false,
 }: PackagingFactorFieldProps) {
-  const [unitDraft, setUnitDraft] = useState(() => displayUnitValue(baseUnit, packagingUnits));
+  const [unitDraft, setUnitDraft] = useState(() =>
+    displayUnitValue(baseUnit, packagingUnits, compact),
+  );
   const [listOpen, setListOpen] = useState(false);
   const [highlightIdx, setHighlightIdx] = useState(0);
+  const [dropdownStyle, setDropdownStyle] = useState<CSSProperties | null>(null);
   const unitWrapRef = useRef<HTMLDivElement>(null);
   const unitInputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLElement>(null);
   const unitFocusedRef = useRef(false);
   const qtyFocusedRef = useRef(false);
   const lastSyncedBaseUnitRef = useRef(baseUnit);
@@ -130,24 +149,34 @@ export function PackagingFactorField({
     if (unitFocusedRef.current) return;
     if (baseUnit === lastSyncedBaseUnitRef.current) return;
     lastSyncedBaseUnitRef.current = baseUnit;
-    setUnitDraft(displayUnitValue(baseUnit, packagingUnits));
-  }, [baseUnit, packagingUnits]);
+    setUnitDraft(displayUnitValue(baseUnit, packagingUnits, compact));
+  }, [baseUnit, packagingUnits, compact]);
 
   useEffect(() => {
     if (unitFocusedRef.current || !baseUnit || packagingUnits.length === 0) {
       return;
     }
-    const formatted = displayUnitValue(baseUnit, packagingUnits);
+    const formatted = displayUnitValue(baseUnit, packagingUnits, compact);
     setUnitDraft((draft) => {
       if (!draft || draft === baseUnit || draft.toUpperCase() === baseUnit) {
         return formatted;
       }
       return draft;
     });
-  }, [packagingUnits.length, baseUnit, packagingUnits]);
+  }, [packagingUnits.length, baseUnit, packagingUnits, compact]);
 
   const filteredUnits = useMemo(() => {
     const catalog = Array.isArray(packagingUnits) ? packagingUnits : [];
+    const q = (unitDraft ?? '').trim().toLowerCase();
+    if (!q) return catalog;
+    // Exact match on selected/display value → show full list so a single
+    // catalog item (or the current selection) still appears in the dropdown.
+    const exact = catalog.some((u) => {
+      const code = (u.uqc ?? '').toLowerCase();
+      const full = formatUnitOption(u).toLowerCase();
+      return q === code || q === full || q === (u.label ?? '').toLowerCase();
+    });
+    if (exact) return catalog;
     return filterPackagingUnits(catalog, unitDraft);
   }, [packagingUnits, unitDraft]);
 
@@ -155,12 +184,56 @@ export function PackagingFactorField({
     setHighlightIdx(0);
   }, [unitDraft, listOpen]);
 
+  useLayoutEffect(() => {
+    if (!listOpen || !unitWrapRef.current) {
+      setDropdownStyle(null);
+      return;
+    }
+    const place = () => {
+      const rect = unitWrapRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const gap = 4;
+      const maxH = 220;
+      const spaceBelow = window.innerHeight - rect.bottom - gap;
+      const spaceAbove = rect.top - gap;
+      const openUp = spaceBelow < 120 && spaceAbove > spaceBelow;
+      const width = Math.max(rect.width, 14 * 16);
+      if (openUp) {
+        setDropdownStyle({
+          position: 'fixed',
+          bottom: window.innerHeight - rect.top + gap,
+          left: rect.left,
+          width,
+          maxHeight: Math.min(maxH, spaceAbove),
+          zIndex: 1400,
+        });
+      } else {
+        setDropdownStyle({
+          position: 'fixed',
+          top: rect.bottom + gap,
+          left: rect.left,
+          width,
+          maxHeight: Math.min(maxH, Math.max(spaceBelow, 120)),
+          zIndex: 1400,
+        });
+      }
+    };
+    place();
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+    return () => {
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
+    };
+  }, [listOpen, filteredUnits.length]);
+
   useEffect(() => {
     if (!listOpen) return;
     const onDocMouseDown = (e: MouseEvent) => {
-      if (unitWrapRef.current && !unitWrapRef.current.contains(e.target as Node)) {
-        setListOpen(false);
-      }
+      const target = e.target as Node;
+      if (unitWrapRef.current?.contains(target)) return;
+      if (dropdownRef.current?.contains(target)) return;
+      setListOpen(false);
     };
     document.addEventListener('mousedown', onDocMouseDown);
     return () => document.removeEventListener('mousedown', onDocMouseDown);
@@ -179,7 +252,7 @@ export function PackagingFactorField({
     const nextFactor = resolvedFactorFromDraft();
     lastSyncedBaseUnitRef.current = resolved;
     onChange(resolved, nextFactor);
-    setUnitDraft(displayUnitValue(resolved, packagingUnits));
+    setUnitDraft(displayUnitValue(resolved, packagingUnits, compact));
     setQtyDraft(String(Math.max(1, nextFactor)));
     setListOpen(false);
   };
@@ -192,6 +265,7 @@ export function PackagingFactorField({
 
   const openList = () => {
     if (disabled || packagingUnits.length === 0) return;
+    setHighlightIdx(0);
     setListOpen(true);
   };
 
@@ -297,6 +371,10 @@ export function PackagingFactorField({
           }}
           onFocus={() => {
             unitFocusedRef.current = true;
+            // While editing, show the full label so search/filter is clearer.
+            if (compact && baseUnit) {
+              setUnitDraft(displayUnitValue(baseUnit, packagingUnits, false));
+            }
             openList();
           }}
           onBlur={() => {
@@ -337,32 +415,49 @@ export function PackagingFactorField({
         >
           ▾
         </IconButton>
-        {listOpen && filteredUnits.length > 0 ? (
-          <Stack id={listboxId} className={styles.unitDropdown} role="listbox" gap="none">
-            {filteredUnits.map((u, i) => (
-              <Button
-                key={u.uqc}
-                type="button"
-                role="option"
-                aria-selected={i === highlightIdx}
-                variant="ghost"
-                className={
-                  i === highlightIdx
-                    ? `${styles.unitDropdownItem} ${styles.unitDropdownItemActive}`
-                    : styles.unitDropdownItem
-                }
-                onMouseDown={(e) => e.preventDefault()}
-                onMouseEnter={() => setHighlightIdx(i)}
-                onClick={() => selectUnit(u)}
+        {listOpen && filteredUnits.length > 0 && dropdownStyle
+          ? createPortal(
+              <Box
+                ref={dropdownRef}
+                id={listboxId}
+                className={styles.unitDropdown}
+                role="listbox"
+                display="flex"
+                flexDirection="column"
+                gap="none"
+                style={dropdownStyle}
               >
-                {formatUnitOption(u)}
-              </Button>
-            ))}
-          </Stack>
-        ) : null}
-        {listOpen && filteredUnits.length === 0 && packagingUnits.length > 0 ? (
-          <Text className={styles.unitDropdownEmpty}>No matching units</Text>
-        ) : null}
+                {filteredUnits.map((u, i) => (
+                  <Button
+                    key={u.uqc}
+                    type="button"
+                    role="option"
+                    aria-selected={i === highlightIdx}
+                    variant="ghost"
+                    className={
+                      i === highlightIdx
+                        ? `${styles.unitDropdownItem} ${styles.unitDropdownItemActive}`
+                        : styles.unitDropdownItem
+                    }
+                    onMouseDown={(e) => e.preventDefault()}
+                    onMouseEnter={() => setHighlightIdx(i)}
+                    onClick={() => selectUnit(u)}
+                  >
+                    {formatUnitOption(u)}
+                  </Button>
+                ))}
+              </Box>,
+              document.body,
+            )
+          : null}
+        {listOpen && filteredUnits.length === 0 && packagingUnits.length > 0 && dropdownStyle
+          ? createPortal(
+              <Text ref={dropdownRef} className={styles.unitDropdownEmpty} style={dropdownStyle}>
+                No matching units
+              </Text>,
+              document.body,
+            )
+          : null}
       </Box>
     </Box>
   );

@@ -72,6 +72,16 @@
   color: var(--sk-color-text-primary, var(--text-primary));
   border: none;
   border-radius: 6px;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.cellInput input[type='number']::-webkit-outer-spin-button,
+.cellInput input[type='number']::-webkit-inner-spin-button,
+.priceCell input[type='number']::-webkit-outer-spin-button,
+.priceCell input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .cellInput input[type='number']:focus {
@@ -111,6 +121,8 @@
   background: var(--sk-color-bg-canvas, var(--bg-primary));
   color: var(--sk-color-text-primary, var(--text-primary));
   border: 1px solid var(--sk-color-border-default, var(--border-color));
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 .rateSelect {

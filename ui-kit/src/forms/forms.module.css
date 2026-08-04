@@ -40,6 +40,18 @@
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
+/* Hide browser spinners on all ui-kit number inputs */
+.control[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.control[type='number']::-webkit-outer-spin-button,
+.control[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 select.control {
   appearance: none;
   -webkit-appearance: none;
