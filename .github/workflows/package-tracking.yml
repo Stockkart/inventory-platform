@@ -1,0 +1,19 @@
+name: Package Tracking
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify new packages are tracked in labels / labeler / CODEOWNERS / ESLint
+        run: node .github/scripts/check-package-tracking.mjs

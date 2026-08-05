@@ -1,0 +1,31 @@
+---
+description: Checklist when creating a new inventory-platform package (labels, CI, ESLint)
+globs: core/**/package.json,platform/**/package.json,plugins/**/package.json,.github/**
+alwaysApply: false
+---
+
+# New frontend package checklist
+
+When adding a package under `core/*`, `platform/*`, or `plugins/*`, **also update tracking files in the same change**. CI enforces this via `.github/workflows/package-tracking.yml`.
+
+## Required (CI fails without these)
+
+1. **`.github/labels.yml`** — add `module:<name>` (plugins: `module:plugin-<dir>`)
+2. **`.github/labeler.yml`** — map that label to `core|platform|plugins/<dir>/**`
+3. **`.github/CODEOWNERS`** — add `/core|platform|plugins/<dir>/`
+4. **`<package>/eslint.config.mjs`** — copy from a sibling package (`domainUiKitHtmlBan` for core UI packages)
+5. **Root `eslint.config.mjs`** — add `@inventory-platform/<pkg>` to the `apps/inventory` `no-restricted-imports` ban list
+   - Exempt: `core/checkout`, `core/notifications` (scaffolds), `plugins/registry` (app composer)
+6. **Root `tsconfig.json`** — add a project `references` entry
+
+## Also update (docs / agents)
+
+7. **`AGENTS.md`** domains table (and architecture Cursor rule ownership shortcuts if user-facing)
+8. Wire routes/nav through **`plugins/registry`** (not direct app imports)
+9. After merge to `main`, run **Actions → Sync labels** once if the label is new
+
+## Verify locally
+
+```sh
+node .github/scripts/check-package-tracking.mjs
+```

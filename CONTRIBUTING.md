@@ -9,7 +9,7 @@
    - `fix(shell): stop notification panel clipping`
    - `style(analytics): fix chart container height`
    - `chore(ci): add PR labeler`
-4. Wait for CI: ESLint, Prettier, typecheck/build, PR title, PR description.
+4. Wait for CI: ESLint, Prettier, typecheck/build, PR title, PR description, **Package Tracking**.
 5. Path-based **labels** apply automatically (`module:product`, `area:ui-kit`, …). Size labels (`size:S` … `size:XL`) tip when a PR should be split.
 
 ### Title format
@@ -54,13 +54,13 @@ pnpm exec nx typecheck product
 
 In GitHub → Settings → Branches → rules for `main`, enable:
 
-| Rule                                  | Value                                                                |
-| ------------------------------------- | -------------------------------------------------------------------- |
-| Require a pull request before merging | On                                                                   |
-| Require approvals                     | ≥ 1 (2 for `area:ui-kit` / auth if desired)                          |
-| Require status checks                 | `CI`, `ESLint`, `Format`, `PR Title`, `PR Description`, `PR Labeler` |
-| Require conversation resolution       | On                                                                   |
-| Do not allow bypassing the above      | On for everyone except emergency admins                              |
+| Rule                                  | Value                                                                                    |
+| ------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Require a pull request before merging | On                                                                                       |
+| Require approvals                     | ≥ 1 (2 for `area:ui-kit` / auth if desired)                                              |
+| Require status checks                 | `CI`, `ESLint`, `Format`, `PR Title`, `PR Description`, `PR Labeler`, `Package Tracking` |
+| Require conversation resolution       | On                                                                                       |
+| Do not allow bypassing the above      | On for everyone except emergency admins                                                  |
 
 After the first merge of `.github/labels.yml`, run **Actions → Sync labels → Run workflow** once so module labels exist, then push an empty commit or “Re-run jobs” on the PR so auto-labeling can apply them.
 
@@ -69,3 +69,11 @@ After the first merge of `.github/labels.yml`, run **Actions → Sync labels →
 ## CODEOWNERS
 
 `.github/CODEOWNERS` maps paths to review teams. Replace `@your-org/stockkart-frontend` with real GitHub teams/users before relying on automatic review requests.
+
+## New packages
+
+When adding a `core/*`, `platform/*`, or `plugins/*` package, update labels, labeler, CODEOWNERS, ESLint bans, and `tsconfig.json` in the same PR. See **AGENTS.md → New package checklist**. Verify with:
+
+```sh
+node .github/scripts/check-package-tracking.mjs
+```

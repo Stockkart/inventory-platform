@@ -95,6 +95,22 @@ Standard layout: `api/` · `queries/` · `pages/` · `ui/` · `routes.ts` · `na
 4. Put routes in `routes.ts` and nav in `nav.ts` of that package — do not grow a god dashboard package.
 5. If ownership is unclear (`checkout` / `notifications` scaffolds), ask or follow the README “Next” guidance.
 
+## New package checklist
+
+Creating `core/<name>`, `platform/<name>`, or `plugins/<name>` requires wiring in the **same PR**:
+
+| File                      | What to add                                                                                |
+| ------------------------- | ------------------------------------------------------------------------------------------ |
+| `.github/labels.yml`      | `module:<name>` (plugins: `module:plugin-<dir>`)                                           |
+| `.github/labeler.yml`     | path glob → that label                                                                     |
+| `.github/CODEOWNERS`      | `/core\|platform\|plugins/<dir>/`                                                          |
+| `<pkg>/eslint.config.mjs` | package lint entry                                                                         |
+| root `eslint.config.mjs`  | ban `@inventory-platform/<pkg>` from `apps/inventory` (except scaffolds / plugin-registry) |
+| root `tsconfig.json`      | project reference                                                                          |
+| `AGENTS.md`               | domain row if user-facing                                                                  |
+
+CI: `.github/workflows/package-tracking.yml` (`node .github/scripts/check-package-tracking.mjs`). Cursor rule: `stockkart-new-package.mdc`.
+
 ## Docs
 
 - Package READMEs under `core/`, `platform/`, `ui-kit/`, `plugins/`
