@@ -344,6 +344,42 @@ importers:
         specifier: ^7.2.0
         version: 7.9.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
 
+  core/mis:
+    dependencies:
+      '@inventory-platform/api-client':
+        specifier: workspace:*
+        version: link:../../platform/api-client
+      '@inventory-platform/contracts':
+        specifier: workspace:*
+        version: link:../../platform/contracts
+      '@inventory-platform/query':
+        specifier: workspace:*
+        version: link:../../platform/query
+      '@inventory-platform/routing':
+        specifier: workspace:*
+        version: link:../../platform/routing
+      '@inventory-platform/session':
+        specifier: workspace:*
+        version: link:../../platform/session
+      '@inventory-platform/ui-kit':
+        specifier: workspace:*
+        version: link:../../ui-kit
+      '@tanstack/react-query':
+        specifier: ^5.90.0
+        version: 5.101.2(react@19.2.0)
+      axios:
+        specifier: ^1.13.2
+        version: 1.13.2
+      react:
+        specifier: ^19.0.0
+        version: 19.2.0
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.0(react@19.2.0)
+      react-router:
+        specifier: ^7.2.0
+        version: 7.9.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+
   core/notifications:
     dependencies:
       '@inventory-platform/query':
@@ -748,6 +784,9 @@ importers:
       '@inventory-platform/credit':
         specifier: workspace:*
         version: link:../../core/credit
+      '@inventory-platform/mis':
+        specifier: workspace:*
+        version: link:../../core/mis
       '@inventory-platform/plan':
         specifier: workspace:*
         version: link:../../core/plan

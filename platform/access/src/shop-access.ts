@@ -3,6 +3,7 @@ export type ProductSearchEditMode = 'FULL_EDIT' | 'PERMISSION_BASED';
 export interface ShopAccessModules {
   accounting: boolean;
   analytics: boolean;
+  mis: boolean;
   taxes: boolean;
   stockCorrection: boolean;
   marketing: boolean;
@@ -44,6 +45,7 @@ export interface ShopAccessTeam {
 export interface MemberModulePermissions {
   accounting?: boolean;
   analytics?: boolean;
+  mis?: boolean;
   taxes?: boolean;
   stockCorrection?: boolean;
   marketing?: boolean;

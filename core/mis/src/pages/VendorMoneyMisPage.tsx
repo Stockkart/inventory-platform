@@ -9,6 +9,7 @@ import {
   Inline,
   Input,
   PageHeader,
+  PaginationBar,
   Select,
   Stack,
   Table,
@@ -24,36 +25,38 @@ import {
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import type {
-  VendorMoneyMisMoneyFilter,
-  VendorMoneyMisParams,
-  VendorMoneyMisResponse,
-  VendorMoneyMisTxnType,
-} from '@inventory-platform/accounting/types';
+  MisMoneyFilter,
+  MisMoneyReportParams,
+  MisMoneyReportResponse,
+  MisVendorTxnType,
+} from '@inventory-platform/mis/types';
 import {
-  FILTERABLE_VENDOR_MONEY_MIS_TXN_TYPES,
-  VENDOR_MONEY_MIS_MONEY_FILTERS,
-  VENDOR_MONEY_MIS_MONEY_FILTER_LABEL,
-  VENDOR_MONEY_MIS_TXN_TYPE_LABEL,
-} from '@inventory-platform/accounting/types';
-import { accountingApi } from '../api/accounting.api';
+  FILTERABLE_MIS_VENDOR_TXN_TYPES,
+  MIS_MONEY_FILTERS,
+  MIS_MONEY_FILTER_LABEL,
+  MIS_VENDOR_TXN_TYPE_LABEL,
+} from '@inventory-platform/mis/types';
+import { misApi } from '../api/mis.api';
 import { openOrDownloadPdf, triggerBlobDownload } from '../api/download';
 import { formatDateShort, formatMoney, todayLocalDate } from '../model/format';
+import { MIS_DEFAULT_PAGE_SIZE, MIS_PAGE_SIZE_OPTIONS, misTotalPages } from '../model/paging';
+import { shortenTxnId } from '../model/txnId';
+import { MisExportButtons } from '../ui/MisExportButtons';
 
 type PeriodPreset = 'today' | 'week' | 'month' | 'custom';
 
-// Options derive from the shared constants so labels cannot drift from the API's own labels.
-const TXN_TYPE_OPTIONS: ReadonlyArray<{ value: VendorMoneyMisTxnType; label: string }> =
-  FILTERABLE_VENDOR_MONEY_MIS_TXN_TYPES.map((value) => ({
+const TXN_TYPE_OPTIONS: ReadonlyArray<{ value: MisVendorTxnType; label: string }> =
+  FILTERABLE_MIS_VENDOR_TXN_TYPES.map((value) => ({
     value,
-    label: VENDOR_MONEY_MIS_TXN_TYPE_LABEL[value],
+    label: MIS_VENDOR_TXN_TYPE_LABEL[value],
   }));
 
 const ALL_TXN_TYPES = TXN_TYPE_OPTIONS.map((opt) => opt.value);
 
-const MONEY_FILTER_OPTIONS: ReadonlyArray<{ value: VendorMoneyMisMoneyFilter; label: string }> =
-  VENDOR_MONEY_MIS_MONEY_FILTERS.map((value) => ({
+const MONEY_FILTER_OPTIONS: ReadonlyArray<{ value: MisMoneyFilter; label: string }> =
+  MIS_MONEY_FILTERS.map((value) => ({
     value,
-    label: VENDOR_MONEY_MIS_MONEY_FILTER_LABEL[value],
+    label: MIS_MONEY_FILTER_LABEL[value],
   }));
 
 function monthStart(d = new Date()): string {
@@ -62,7 +65,6 @@ function monthStart(d = new Date()): string {
   return `${y}-${m}-01`;
 }
 
-/** Monday of the local week containing `d`, as yyyy-mm-dd. */
 function weekStart(d = new Date()): string {
   const copy = new Date(d.getFullYear(), d.getMonth(), d.getDate());
   const day = copy.getDay();
@@ -82,14 +84,6 @@ function rangeForPreset(preset: PeriodPreset): { from: string; to: string } {
   return { from: monthStart(), to };
 }
 
-function txnBadgeVariant(txnType: string): 'success' | 'info' | 'warning' | 'danger' | 'neutral' {
-  if (txnType === 'VENDOR_PURCHASE' || txnType === 'Opening') return 'success';
-  if (txnType === 'VENDOR_PAYMENT') return 'info';
-  if (txnType === 'VENDOR_RETURN') return 'warning';
-  if (txnType === 'VENDOR_CREDIT_CHARGE') return 'danger';
-  return 'neutral';
-}
-
 function rupee(value: number | undefined | null): string {
   return `₹${formatMoney(value)}`;
 }
@@ -97,10 +91,10 @@ function rupee(value: number | undefined | null): string {
 function toAppliedParams(
   from: string,
   to: string,
-  txnTypes: VendorMoneyMisTxnType[],
-  moneyFilter: VendorMoneyMisMoneyFilter,
+  txnTypes: MisVendorTxnType[],
+  moneyFilter: MisMoneyFilter,
   q: string,
-): VendorMoneyMisParams {
+): MisMoneyReportParams {
   const allSelected =
     txnTypes.length === ALL_TXN_TYPES.length && ALL_TXN_TYPES.every((t) => txnTypes.includes(t));
   return {
@@ -119,15 +113,17 @@ export function VendorMoneyMisPage() {
   const [preset, setPreset] = useState<PeriodPreset>('month');
   const [fromInput, setFromInput] = useState(initial.from);
   const [toInput, setToInput] = useState(initial.to);
-  const [txnTypes, setTxnTypes] = useState<VendorMoneyMisTxnType[]>([...ALL_TXN_TYPES]);
-  const [moneyFilter, setMoneyFilter] = useState<VendorMoneyMisMoneyFilter>('ALL');
+  const [txnTypes, setTxnTypes] = useState<MisVendorTxnType[]>([...ALL_TXN_TYPES]);
+  const [moneyFilter, setMoneyFilter] = useState<MisMoneyFilter>('ALL');
   const [qInput, setQInput] = useState('');
 
-  const [applied, setApplied] = useState<VendorMoneyMisParams>(() =>
+  const [applied, setApplied] = useState<MisMoneyReportParams>(() =>
     toAppliedParams(initial.from, initial.to, [...ALL_TXN_TYPES], 'ALL', ''),
   );
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(MIS_DEFAULT_PAGE_SIZE);
 
-  const [data, setData] = useState<VendorMoneyMisResponse | null>(null);
+  const [data, setData] = useState<MisMoneyReportResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState<'excel' | 'pdf' | null>(null);
 
@@ -136,10 +132,8 @@ export function VendorMoneyMisPage() {
     (async () => {
       setLoading(true);
       try {
-        const res = await accountingApi.vendorMoneyMis(applied);
-        if (!cancelled) {
-          setData(res);
-        }
+        const res = await misApi.vendorMoney({ ...applied, page, size: pageSize });
+        if (!cancelled) setData(res);
       } catch (e) {
         if (!cancelled) {
           notifyError(e instanceof Error ? e.message : 'Failed to load Vendor Money MIS');
@@ -151,7 +145,7 @@ export function VendorMoneyMisPage() {
     return () => {
       cancelled = true;
     };
-  }, [applied, notifyError]);
+  }, [applied, page, pageSize, notifyError]);
 
   const draftParams = useMemo(
     () => toAppliedParams(fromInput, toInput, txnTypes, moneyFilter, qInput),
@@ -164,14 +158,16 @@ export function VendorMoneyMisPage() {
     const range = rangeForPreset(next);
     setFromInput(range.from);
     setToInput(range.to);
+    setPage(0);
     setApplied(toAppliedParams(range.from, range.to, txnTypes, moneyFilter, qInput));
   }
 
   function handleSearch() {
+    setPage(0);
     setApplied(draftParams);
   }
 
-  function toggleTxnType(value: VendorMoneyMisTxnType) {
+  function toggleTxnType(value: MisVendorTxnType) {
     setTxnTypes((prev) =>
       prev.includes(value) ? prev.filter((t) => t !== value) : [...prev, value],
     );
@@ -181,11 +177,11 @@ export function VendorMoneyMisPage() {
     setDownloading(kind);
     try {
       if (kind === 'excel') {
-        const result = await accountingApi.vendorMoneyMisExcel(applied);
+        const result = await misApi.vendorMoneyExcel(applied);
         triggerBlobDownload(result.blob, result.filename);
         notifySuccess('Excel downloaded');
       } else {
-        const result = await accountingApi.vendorMoneyMisPdf(applied);
+        const result = await misApi.vendorMoneyPdf(applied);
         openOrDownloadPdf(result.blob, result.filename);
         notifySuccess('PDF ready');
       }
@@ -198,11 +194,13 @@ export function VendorMoneyMisPage() {
 
   const summary = data?.summary;
   const rows = data?.rows ?? [];
+  const totalItems = data?.totalItems ?? 0;
+  const totalPages = misTotalPages(totalItems, pageSize);
 
   return (
     <Stack gap="md">
       <PageHeader
-        title="Vendor Transactions"
+        title="Vendor Money"
         description="Vendor purchases, payments, returns, and credit — cash / online / credit split."
         actions={
           <Inline gap="sm" flexWrap>
@@ -273,7 +271,7 @@ export function VendorMoneyMisPage() {
                   id="vendor-mis-money-filter"
                   value={moneyFilter}
                   options={MONEY_FILTER_OPTIONS}
-                  onChange={(e) => setMoneyFilter(e.target.value as VendorMoneyMisMoneyFilter)}
+                  onChange={(e) => setMoneyFilter(e.target.value as MisMoneyFilter)}
                   disabled={loading}
                   className={accountingChrome.misFilterMoney}
                 />
@@ -306,26 +304,12 @@ export function VendorMoneyMisPage() {
                 Search
               </Button>
               <Box className={accountingChrome.misFilterActions}>
-                <Button
-                  type="button"
-                  variant="solid"
-                  size="sm"
-                  onClick={() => void handleDownload('excel')}
-                  loading={downloading === 'excel'}
-                  disabled={loading || downloading != null}
-                >
-                  Download Excel
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => void handleDownload('pdf')}
-                  loading={downloading === 'pdf'}
-                  disabled={loading || downloading != null}
-                >
-                  Download PDF
-                </Button>
+                <MisExportButtons
+                  downloading={downloading}
+                  disabled={loading}
+                  onExcel={() => void handleDownload('excel')}
+                  onPdf={() => void handleDownload('pdf')}
+                />
               </Box>
             </Box>
 
@@ -412,7 +396,7 @@ export function VendorMoneyMisPage() {
                 Current payable
               </Text>
               <Text as="span" className={accountingChrome.overviewKpiValue}>
-                {rupee(summary?.currentPayableTotal)}
+                {rupee(summary?.currentBalanceTotal)}
               </Text>
             </Box>
           </Box>
@@ -431,15 +415,15 @@ export function VendorMoneyMisPage() {
                   <Table className={accountingChrome.misTable}>
                     <TableHead>
                       <TableRow>
-                        <TableHeaderCell>Date</TableHeaderCell>
+                        <TableHeaderCell className={accountingChrome.misDateCol}>
+                          Date
+                        </TableHeaderCell>
                         <TableHeaderCell>Supplier</TableHeaderCell>
                         <TableHeaderCell>Txn ID</TableHeaderCell>
                         <TableHeaderCell className={accountingChrome.misTxnTypeCol}>
                           Transaction
                         </TableHeaderCell>
-                        <TableHeaderCell className={accountingChrome.misInvoiceCol}>
-                          Invoice
-                        </TableHeaderCell>
+                        <TableHeaderCell>Invoice</TableHeaderCell>
                         <TableHeaderCell className={accountingChrome.misNumCol}>
                           Bill Amount
                         </TableHeaderCell>
@@ -460,27 +444,25 @@ export function VendorMoneyMisPage() {
                     <TableBody>
                       {rows.map((row) => {
                         const typeLabel = row.opening ? 'Opening' : row.txnTypeLabel || row.txnType;
-                        const fullTxnId = row.sourceId || row.txnId || '';
-                        const shortTxnId =
-                          fullTxnId.length > 4 ? `${fullTxnId.slice(0, 4)}...` : fullTxnId || '—';
+                        const fullTxnId = row.txnId || row.sourceId || '';
                         return (
                           <TableRow key={`${row.txnType}-${fullTxnId}-${row.txnDate}`}>
-                            <TableCell>{formatDateShort(row.txnDate)}</TableCell>
-                            <TableCell>{row.vendorName || '—'}</TableCell>
+                            <TableCell className={accountingChrome.misDateCol}>
+                              {formatDateShort(row.txnDate)}
+                            </TableCell>
+                            <TableCell className={accountingChrome.misPartyCol}>
+                              {row.partyName || '—'}
+                            </TableCell>
                             <TableCell
                               className={accountingChrome.misTxnIdCol}
                               title={fullTxnId || undefined}
                             >
-                              {shortTxnId}
+                              <span className={accountingChrome.misTxnId}>
+                                {shortenTxnId(fullTxnId)}
+                              </span>
                             </TableCell>
                             <TableCell className={accountingChrome.misTxnTypeCol}>
-                              <Badge
-                                variant={txnBadgeVariant(
-                                  row.opening ? 'Opening' : String(row.txnType),
-                                )}
-                              >
-                                {typeLabel}
-                              </Badge>
+                              <Badge variant="neutral">{typeLabel}</Badge>
                             </TableCell>
                             <TableCell className={accountingChrome.misInvoiceCol}>
                               {row.refNo || '—'}
@@ -506,13 +488,27 @@ export function VendorMoneyMisPage() {
                     </TableBody>
                   </Table>
                 )}
+                <PaginationBar
+                  page={page}
+                  totalPages={totalPages}
+                  totalItems={totalItems}
+                  disabled={loading}
+                  onPageChange={setPage}
+                  pageSize={pageSize}
+                  pageSizeOptions={MIS_PAGE_SIZE_OPTIONS}
+                  onPageSizeChange={(n) => {
+                    setPage(0);
+                    setPageSize(n);
+                  }}
+                  aria-label="Vendor Money pages"
+                />
               </Stack>
             </CardBody>
           </Card>
 
           <Text variant="caption" color="secondary">
-            Period {formatDateShort(data.from)} – {formatDateShort(data.to)} · {rows.length} row
-            {rows.length === 1 ? '' : 's'}
+            Period {formatDateShort(data.from)} – {formatDateShort(data.to)} · {totalItems} row
+            {totalItems === 1 ? '' : 's'}
           </Text>
         </Stack>
       )}

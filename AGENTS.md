@@ -28,6 +28,7 @@ plugins/<vertical>/ → vertical extras (e.g. cafe) loaded by registry
 | `user`          | auth journeys, onboarding, shops, profile, customers/vendors, team |
 | `accounting`    | journal, ledger, COA, reports                                      |
 | `analytics`     | sales/profit/inventory/vendor/customer analytics                   |
+| `mis`           | vendor/customer money, sales, stock MIS reports                    |
 | `credit`        | credit balances / charges                                          |
 | `plan`          | plan status, payment, marketing plan UI                            |
 | `pricing`       | pricing list + price edit                                          |
