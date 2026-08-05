@@ -149,6 +149,7 @@ export default [
                 '@inventory-platform/accounting',
                 '@inventory-platform/analytics',
                 '@inventory-platform/credit',
+                '@inventory-platform/mis',
                 '@inventory-platform/plan',
                 '@inventory-platform/pricing',
                 '@inventory-platform/product',

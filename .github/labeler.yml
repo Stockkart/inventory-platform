@@ -63,6 +63,11 @@
       - any-glob-to-any-file:
           - 'core/credit/**'
 
+'module:mis':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'core/mis/**'
+
 'module:notifications':
   - changed-files:
       - any-glob-to-any-file:

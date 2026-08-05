@@ -37,6 +37,9 @@
 - name: module:credit
   color: '14B8A6'
   description: core/credit
+- name: module:mis
+  color: '0F766E'
+  description: core/mis
 - name: module:notifications
   color: '94A3B8'
   description: core/notifications (scaffold)
