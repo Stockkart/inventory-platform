@@ -375,9 +375,9 @@ export function SalesMisPage() {
                             {formatDateShort(row.date)}
                           </TableCell>
                           <TableCell className={accountingChrome.misTxnIdCol}>
-                            <span className={accountingChrome.misTxnId}>
+                            <Text as="span" className={accountingChrome.misTxnId}>
                               {row.invoiceNo || '—'}
-                            </span>
+                            </Text>
                           </TableCell>
                           <TableCell className={accountingChrome.misPartyCol}>
                             {row.customer || '—'}

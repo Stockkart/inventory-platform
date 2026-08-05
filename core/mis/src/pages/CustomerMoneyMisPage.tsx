@@ -457,9 +457,9 @@ export function CustomerMoneyMisPage() {
                               className={accountingChrome.misTxnIdCol}
                               title={fullTxnId || undefined}
                             >
-                              <span className={accountingChrome.misTxnId}>
+                              <Text as="span" className={accountingChrome.misTxnId}>
                                 {shortenTxnId(fullTxnId)}
-                              </span>
+                              </Text>
                             </TableCell>
                             <TableCell className={accountingChrome.misTxnTypeCol}>
                               <Badge variant="neutral">{typeLabel}</Badge>
