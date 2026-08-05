@@ -42,7 +42,16 @@ jobs:
 
             const uiLikely =
               labels.some((l) =>
-                ['area:ui-kit', 'module:product', 'module:user', 'module:shell', 'module:analytics', 'module:plugin-cafe'].includes(l),
+                [
+                  'area:ui-kit',
+                  'module:product',
+                  'module:user',
+                  'module:shell',
+                  'module:analytics',
+                  'module:accounting',
+                  'module:mis',
+                  'module:plugin-cafe',
+                ].includes(l),
               ) || /\b(ui|css|chrome|layout|style)\b/i.test(title);
 
             if (uiLikely && !/##\s*Screenshots/i.test(body)) {

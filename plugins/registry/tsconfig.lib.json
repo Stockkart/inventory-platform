@@ -16,6 +16,7 @@
       "@inventory-platform/accounting/nav": ["../../core/accounting/src/nav.ts"],
       "@inventory-platform/analytics/nav": ["../../core/analytics/src/nav.ts"],
       "@inventory-platform/credit/nav": ["../../core/credit/src/nav.ts"],
+      "@inventory-platform/mis/nav": ["../../core/mis/src/nav.ts"],
       "@inventory-platform/plan/nav": ["../../core/plan/src/nav.ts"],
       "@inventory-platform/pricing/nav": ["../../core/pricing/src/nav.ts"],
       "@inventory-platform/product/nav": ["../../core/product/src/nav.ts"],
@@ -62,6 +63,9 @@
     },
     {
       "path": "../../core/accounting/tsconfig.lib.json"
+    },
+    {
+      "path": "../../core/mis/tsconfig.lib.json"
     }
   ]
 }

@@ -45,6 +45,7 @@ const MODULE_COLUMNS: {
   { key: 'productSearchEdit', label: 'Product search edit', short: 'Edit' },
   { key: 'accounting', label: 'Accounting', short: 'Accounting' },
   { key: 'analytics', label: 'Analytics', short: 'Analytics' },
+  { key: 'mis', label: 'MIS', short: 'MIS' },
   { key: 'taxes', label: 'Taxes', short: 'Taxes' },
   { key: 'marketing', label: 'Marketing', short: 'Marketing' },
   { key: 'paymentPlan', label: 'Payment & plan', short: 'Plan' },
@@ -87,6 +88,7 @@ function modulesFromMember(member: ShopMemberAccess): MemberModulePermissions {
   return {
     accounting: stored.accounting ?? effective.accounting,
     analytics: stored.analytics ?? effective.analytics,
+    mis: stored.mis ?? effective.mis,
     taxes: stored.taxes ?? effective.taxes,
     stockCorrection: stored.stockCorrection ?? effective.stockCorrection,
     marketing: stored.marketing ?? effective.marketing,

@@ -6,9 +6,10 @@ import {
   type DashboardMenuItem,
   type DashboardNavRow,
 } from '@inventory-platform/routing';
-import { accountingNav, accountingReportsNav } from '@inventory-platform/accounting/nav';
+import { accountingNav } from '@inventory-platform/accounting/nav';
 import { analyticsNav } from '@inventory-platform/analytics/nav';
 import { creditNav } from '@inventory-platform/credit/nav';
+import { misNav } from '@inventory-platform/mis/nav';
 import { planNav } from '@inventory-platform/plan/nav';
 import { pricingNav } from '@inventory-platform/pricing/nav';
 import { productHistoryNav, productNav, productReturnsNav } from '@inventory-platform/product/nav';
@@ -30,6 +31,7 @@ const NAV_GROUP_ORDER: string[] = [
   'contact',
   'credit',
   'accounting',
+  'mis',
   'returns',
   'analytics-history',
   'taxation',
@@ -56,10 +58,10 @@ export const CORE_NAV_CONTRIBUTIONS: NavContribution[] = [
   userContactNav,
   creditNav,
   accountingNav,
+  misNav,
   productReturnsNav,
   analyticsNav,
   productHistoryNav,
-  accountingReportsNav,
   taxationNav,
   remindersNav,
   userMarketingNav,

@@ -21,6 +21,7 @@ Work inside `inventory-platform` with strict package boundaries.
 - Auth / onboarding / shops / CRM → `core/user` (+ `journeyChrome`)
 - Dashboard chrome / notifications bell / help → `platform/shell` (+ `shellChrome`)
 - Analytics charts → `core/analytics` (+ `chartChrome.plot` fixed height)
+- MIS reports (vendor/customer money, sales, stock) → `core/mis` (+ `accountingChrome.mis*`)
 - Cafe menu/stock → `plugins/cafe`
 - `core/checkout` & `core/notifications` are scaffolds — don’t put real features there without migrating ownership
 
@@ -30,3 +31,4 @@ Work inside `inventory-platform` with strict package boundaries.
 - Prefer TanStack Query in `core/*/queries`; no new Zustand for server state
 - Extend ui-kit chrome for reusable UI; don’t add domain CSS that duplicates chrome
 - Read `AGENTS.md` + the target package `README.md` before large changes
+- Creating a new `core/*` / `platform/*` / `plugins/*` package → follow **New package checklist** (labels, labeler, CODEOWNERS, ESLint) — CI `Package Tracking` enforces it

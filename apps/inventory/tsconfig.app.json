@@ -27,6 +27,8 @@
       "@inventory-platform/analytics/routes/*": ["../../core/analytics/src/routes/*"],
       "@inventory-platform/accounting": ["../../core/accounting/src/index.ts"],
       "@inventory-platform/accounting/routes/*": ["../../core/accounting/src/routes/*"],
+      "@inventory-platform/mis": ["../../core/mis/src/index.ts"],
+      "@inventory-platform/mis/routes/*": ["../../core/mis/src/routes/*"],
       "@inventory-platform/credit": ["../../core/credit/src/index.ts"],
       "@inventory-platform/credit/routes/*": ["../../core/credit/src/routes/*"],
       "@inventory-platform/taxation": ["../../core/taxation/src/index.ts"],
@@ -75,6 +77,7 @@
       "@inventory-platform/pricing/types": ["../../core/pricing/src/model/index.ts"],
       "@inventory-platform/taxation/types": ["../../core/taxation/src/model/index.ts"],
       "@inventory-platform/accounting/types": ["../../core/accounting/src/model/index.ts"],
+      "@inventory-platform/mis/types": ["../../core/mis/src/model/index.ts"],
       "@inventory-platform/plugin-cafe/types": ["../../plugins/cafe/src/types/index.ts"]
     }
   },

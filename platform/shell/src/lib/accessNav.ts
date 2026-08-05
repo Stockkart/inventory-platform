@@ -2,11 +2,15 @@ import type { ShopAccess } from '@inventory-platform/access';
 import type { DashboardMenuGroup, DashboardMenuItem } from '@inventory-platform/routing';
 
 const ACCOUNTING_PREFIX = '/dashboard/accounting';
+const MIS_PREFIX = '/dashboard/mis';
 
 /** Paths gated by shop access — hidden until `/shops/me/access` has loaded. */
 function isRbacGatedPath(path: string): boolean {
   if (path === '/dashboard/access-control') return true;
   if (path.startsWith(ACCOUNTING_PREFIX) || path === '/dashboard/accounting') {
+    return true;
+  }
+  if (path.startsWith(MIS_PREFIX) || path === '/dashboard/mis') {
     return true;
   }
   if (path === '/dashboard/analytics') return true;
@@ -27,6 +31,9 @@ function isPathAllowed(path: string, access: ShopAccess): boolean {
   }
   if (path.startsWith(ACCOUNTING_PREFIX) || path === '/dashboard/accounting') {
     return access.modules.accounting;
+  }
+  if (path.startsWith(MIS_PREFIX) || path === '/dashboard/mis') {
+    return Boolean(access.modules.mis);
   }
   if (path === '/dashboard/analytics') {
     return access.modules.analytics;
