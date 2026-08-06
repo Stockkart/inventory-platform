@@ -60,8 +60,14 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
         try {
           const response = await authApi.signup(data);
+          // Prefer API phone; fall back to signup payload so onboarding can prefill
+          // even if an older backend omitted phone on the response.
+          const user = {
+            ...response.user,
+            phone: response.user?.phone || data.phone || undefined,
+          };
           set({
-            user: response.user,
+            user,
             token: response.accessToken,
             isAuthenticated: true,
             isLoading: false,
