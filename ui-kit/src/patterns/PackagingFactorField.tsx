@@ -200,21 +200,17 @@ export function PackagingFactorField({
       const width = Math.max(rect.width, 14 * 16);
       if (openUp) {
         setDropdownStyle({
-          position: 'fixed',
           bottom: window.innerHeight - rect.top + gap,
           left: rect.left,
           width,
           maxHeight: Math.min(maxH, spaceAbove),
-          zIndex: 1400,
         });
       } else {
         setDropdownStyle({
-          position: 'fixed',
           top: rect.bottom + gap,
           left: rect.left,
           width,
           maxHeight: Math.min(maxH, Math.max(spaceBelow, 120)),
-          zIndex: 1400,
         });
       }
     };
