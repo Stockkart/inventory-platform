@@ -90,9 +90,30 @@ import {
 import { ContextualHelpPanel } from './ContextualHelpPanel';
 import { NavIcon } from './NavIcon';
 
-/** Each full-screen hint is offered once per browser; clear these to see them again. */
-const FULLSCREEN_ENTER_HINT_SEEN = 'sk.fullscreen.enterHintSeen';
-const FULLSCREEN_HINT_SEEN = 'sk.fullscreen.exitHintSeen';
+/**
+ * Discovery hint, once per browser *session*. sessionStorage rather than
+ * localStorage on purpose: a permanent flag that gets set without the toast ever
+ * being seen silently kills the hint forever, with no in-app way to reset it.
+ * Transition toasts are not gated by this at all — they fire every time.
+ */
+const FULLSCREEN_HINT_SHOWN = 'sk.fullscreen.hintShown';
+
+/** sessionStorage throws in some privacy modes; a hint must never break the shell. */
+function readSessionFlag(key: string): boolean {
+  try {
+    return sessionStorage.getItem(key) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeSessionFlag(key: string): void {
+  try {
+    sessionStorage.setItem(key, '1');
+  } catch {
+    /* hint was shown anyway; it will simply offer itself again */
+  }
+}
 
 function isTypingInField(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -167,22 +188,16 @@ export function DashboardLayout({
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
 
-  const { isFullscreen, toggleFullscreen, exitFullscreen } = useFullscreen();
-  const fullscreenHintShown = useRef(false);
+  const {
+    isFullscreen,
+    isSupported: fullscreenSupported,
+    toggleFullscreen,
+    exitFullscreen,
+  } = useFullscreen();
+  // null means "first render", so mounting outside full screen is not mistaken
+  // for having just exited it.
+  const prevFullscreen = useRef<boolean | null>(null);
 
-  // Tell the user how to get back out, once per browser. Fires however fullscreen
-  // was entered — header button or hotkey — since all routes raise `fullscreenchange`.
-  useEffect(() => {
-    if (!isFullscreen || fullscreenHintShown.current) return;
-    fullscreenHintShown.current = true;
-    try {
-      if (localStorage.getItem(FULLSCREEN_HINT_SEEN) === '1') return;
-      localStorage.setItem(FULLSCREEN_HINT_SEEN, '1');
-    } catch {
-      /* storage unavailable — better to show the hint than to swallow it */
-    }
-    useNotify.info('Press Esc to exit full screen');
-  }, [isFullscreen]);
   const [favoritePageShortcuts, setFavoritePageShortcuts] = useState<FavoritePageShortcut[]>(() =>
     loadFavoritePageShortcuts(),
   );
@@ -193,19 +208,36 @@ export function DashboardLayout({
 
   const modLabel = useMemo(() => getDashboardModLabel(), []);
 
-  // Offer full screen once per browser, so the feature is discoverable without a
-  // permanent banner. Names the hotkey rather than Esc: Esc is reserved by the
-  // browser for *leaving* fullscreen and grants no user activation, so it can
-  // never start it.
+  // Names the hotkey rather than Esc: Esc is reserved by the browser for *leaving*
+  // full screen and grants no user activation, so it can never start it.
+  const fullscreenEnterHint = `Press ${modLabel}+Shift+F for full screen`;
+  const fullscreenExitHint = 'Press Esc to exit full screen';
+
+  /*
+   * Driven by `isFullscreen` changing rather than by the click, so every route in
+   * and out is covered — the header button, the hotkey, Esc, the macOS green
+   * button — without any of them needing their own toast call. The browser raises
+   * `fullscreenchange`, useFullscreen syncs state, and this reacts.
+   */
   useEffect(() => {
-    try {
-      if (localStorage.getItem(FULLSCREEN_ENTER_HINT_SEEN) === '1') return;
-      localStorage.setItem(FULLSCREEN_ENTER_HINT_SEEN, '1');
-    } catch {
-      return; // storage unavailable — skip rather than nag on every page load
+    // Stay quiet while unauthenticated — no point advertising shortcuts to someone
+    // who is about to be redirected to login.
+    if (!user || !fullscreenSupported) return;
+
+    if (prevFullscreen.current === null) {
+      // First render: discovery hint, once per browser session rather than
+      // forever, so it can resurface instead of being lost to a stale flag.
+      if (!isFullscreen && !readSessionFlag(FULLSCREEN_HINT_SHOWN)) {
+        useNotify.info(fullscreenEnterHint);
+        writeSessionFlag(FULLSCREEN_HINT_SHOWN);
+      }
+    } else if (prevFullscreen.current !== isFullscreen) {
+      // A real transition, in either direction.
+      useNotify.info(isFullscreen ? fullscreenExitHint : fullscreenEnterHint);
     }
-    useNotify.info(`Press ${modLabel}+Shift+F for full screen`);
-  }, [modLabel]);
+
+    prevFullscreen.current = isFullscreen;
+  }, [isFullscreen, user, fullscreenSupported, fullscreenEnterHint, fullscreenExitHint]);
 
   const filteredMenuGroups = useMemo(
     () =>

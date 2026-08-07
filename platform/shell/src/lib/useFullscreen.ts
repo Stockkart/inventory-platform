@@ -15,6 +15,7 @@ import { useCallback, useEffect, useState } from 'react';
 type FullscreenDocument = Document & {
   webkitFullscreenElement?: Element | null;
   webkitExitFullscreen?: () => Promise<void> | void;
+  webkitFullscreenEnabled?: boolean;
 };
 
 type FullscreenRoot = HTMLElement & {
@@ -27,8 +28,25 @@ function activeFullscreenElement(): Element | null {
   return doc.fullscreenElement ?? doc.webkitFullscreenElement ?? null;
 }
 
+/**
+ * False when the browser has no Fullscreen API, or a permissions policy blocks it
+ * (an embedding iframe without `allow="fullscreen"`). Callers use this to stay
+ * quiet rather than advertise a control that cannot work.
+ */
+function fullscreenSupported(): boolean {
+  if (typeof document === 'undefined') return false;
+  const doc = document as FullscreenDocument;
+  return Boolean(doc.fullscreenEnabled ?? doc.webkitFullscreenEnabled);
+}
+
 export function useFullscreen() {
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isSupported, setIsSupported] = useState(false);
+
+  // Read after mount, never during render — `document` does not exist on the server.
+  useEffect(() => {
+    setIsSupported(fullscreenSupported());
+  }, []);
 
   useEffect(() => {
     const sync = () => setIsFullscreen(Boolean(activeFullscreenElement()));
@@ -74,5 +92,5 @@ export function useFullscreen() {
     }
   }, [exitFullscreen]);
 
-  return { isFullscreen, toggleFullscreen, exitFullscreen };
+  return { isFullscreen, isSupported, toggleFullscreen, exitFullscreen };
 }
