@@ -15,6 +15,7 @@ export const denseDataGrid = {
   bulkDisabled: styles.bulkDisabled,
   tr: styles.tr,
   td: styles.td,
+  tdPackaging: styles.tdPackaging,
   input: styles.input,
   inputNarrow: styles.inputNarrow,
   inputDate: styles.inputDate,
