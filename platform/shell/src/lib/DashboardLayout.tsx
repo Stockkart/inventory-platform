@@ -192,7 +192,6 @@ export function DashboardLayout({
   const mainContentRef = useRef<HTMLElement>(null);
 
   const modLabel = useMemo(() => getDashboardModLabel(), []);
-  const fullscreenHotkeyLabel = `${modLabel}+Shift+${DASHBOARD_HOTKEY.toggleFullscreenModKey.toUpperCase()}`;
 
   // Offer full screen once per browser, so the feature is discoverable without a
   // permanent banner. Names the hotkey rather than Esc: Esc is reserved by the
@@ -205,8 +204,8 @@ export function DashboardLayout({
     } catch {
       return; // storage unavailable — skip rather than nag on every page load
     }
-    useNotify.info(`Press ${fullscreenHotkeyLabel} for full screen`);
-  }, [fullscreenHotkeyLabel]);
+    useNotify.info(`Press ${modLabel}+Shift+F for full screen`);
+  }, [modLabel]);
 
   const filteredMenuGroups = useMemo(
     () =>
@@ -955,8 +954,8 @@ export function DashboardLayout({
                     onClick={() => void toggleFullscreen()}
                     title={
                       isFullscreen
-                        ? `Exit full screen (Esc or ${fullscreenHotkeyLabel})`
-                        : `Full screen (${fullscreenHotkeyLabel})`
+                        ? `Exit full screen (Esc or ${modLabel}+Shift+F)`
+                        : `Full screen (${modLabel}+Shift+F)`
                     }
                   >
                     {isFullscreen ? (
