@@ -42,6 +42,7 @@ import { ChevronRight, Minus, Plus } from 'lucide-react';
 import { useCapabilityFeatureGuard } from '@inventory-platform/routing';
 import {
   PaymentMethodSplit,
+  PrintCreditNoteModal,
   RefundHistoryList,
   emptyPaymentSplit,
   formatPaymentMethod,
@@ -226,6 +227,10 @@ export function RefundPage() {
 
   // Refresh refund history when a refund is processed (used by RefundHistoryList)
   const [refundHistoryRefreshTrigger, setRefundHistoryRefreshTrigger] = useState(0);
+  const [printAfterCreate, setPrintAfterCreate] = useState<{
+    refundId: string;
+    creditNoteNo?: string;
+  } | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
   const [paymentSplit, setPaymentSplit] = useState<PaymentSplit>(() => emptyPaymentSplit());
 
@@ -424,6 +429,11 @@ export function RefundPage() {
           response.refundAmount,
         )}. Credit note: ${response.creditNoteNo ?? response.refundId}`,
       );
+
+      setPrintAfterCreate({
+        refundId: response.refundId,
+        creditNoteNo: response.creditNoteNo,
+      });
 
       // Reset form and refresh lists
       setSelectedPurchase(null);
@@ -921,6 +931,15 @@ export function RefundPage() {
           </CardBody>
         </Card>
       ) : null}
+
+      <PrintCreditNoteModal
+        isOpen={printAfterCreate != null}
+        onClose={() => setPrintAfterCreate(null)}
+        source="customer"
+        documentId={printAfterCreate?.refundId ?? ''}
+        creditNoteNo={printAfterCreate?.creditNoteNo}
+        onError={(message) => notifyError(message)}
+      />
     </Stack>
   );
 }

@@ -28,6 +28,9 @@ export const BARCODE_ENDPOINTS = {
   ATTACH: (code: string) => `/barcodes/${encodeURIComponent(code)}/attach`,
 } as const;
 
+/** Invoice / credit-note printer layout for PDF generation. */
+export type PrinterType = 'NORMAL' | 'DOT_MATRIX' | 'THERMAL_3INCH';
+
 /** Vendor purchase invoice paths. */
 export const VENDOR_PURCHASE_INVOICES_ENDPOINTS = {
   BASE: '/vendor-purchase-invoices',
@@ -37,6 +40,10 @@ export const VENDOR_PURCHASE_INVOICES_ENDPOINTS = {
 /** Vendor purchase return paths. */
 export const VENDOR_PURCHASE_RETURNS_ENDPOINTS = {
   BASE: '/vendor-purchase-returns',
+  PDF: (returnId: string, printerType?: PrinterType) =>
+    printerType != null
+      ? `/vendor-purchase-returns/${returnId}/pdf?printerType=${printerType}`
+      : `/vendor-purchase-returns/${returnId}/pdf`,
 } as const;
 
 /** Inventory correction paths. */
@@ -69,9 +76,6 @@ export const SHOP_SELL_ENDPOINTS = {
   ME_SELL_CATALOG: '/shops/me/sell-catalog',
 } as const;
 
-/** Invoice printer layout for PDF generation. */
-export type PrinterType = 'NORMAL' | 'DOT_MATRIX' | 'THERMAL_3INCH';
-
 /** Invoice PDF paths. */
 export const INVOICE_ENDPOINTS = {
   PDF: (purchaseId: string, printerType?: PrinterType) =>
@@ -90,6 +94,10 @@ export const PURCHASE_ENDPOINTS = {
 /** Refund paths. */
 export const REFUND_ENDPOINTS = {
   BASE: '/refund',
+  PDF: (refundId: string, printerType?: PrinterType) =>
+    printerType != null
+      ? `/refund/${refundId}/pdf?printerType=${printerType}`
+      : `/refund/${refundId}/pdf`,
 } as const;
 
 /** QR upload pairing paths. */

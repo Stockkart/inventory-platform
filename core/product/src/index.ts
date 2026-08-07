@@ -54,6 +54,7 @@ export {
   HistoryFiltersBar,
   PaymentMethodSplit,
   PrintInvoiceModal,
+  PrintCreditNoteModal,
   PrintBarcodeLabelsModal,
   InventoryAlertDetails,
   CustomerProductHistoryHint,
@@ -84,4 +85,5 @@ export type {
   RefundHistoryListProps,
   VendorReturnHistoryListProps,
   PrinterType,
+  CreditNoteSource,
 } from './ui';

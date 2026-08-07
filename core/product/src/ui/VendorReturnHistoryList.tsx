@@ -4,10 +4,12 @@ import type { VendorPurchaseReturnSummary } from '@inventory-platform/product/ty
 import { useNotify } from '@inventory-platform/session';
 import {
   Box,
+  Button,
   Card,
   CardBody,
   CenteredLoader,
   EmptyState,
+  Inline,
   PaginationBar,
   Stack,
   Table,
@@ -22,6 +24,7 @@ import {
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { HistoryListSummary } from './HistoryListSummary';
+import { PrintCreditNoteModal } from './PrintCreditNoteModal';
 import type { HistoryFilters } from './historyFilters';
 import {
   hasActiveHistoryFilters,
@@ -75,7 +78,7 @@ function formatDate(dateString: string): string {
 
 function creditNoteLabel(r: VendorPurchaseReturnSummary): string {
   const note = r.supplierCreditNoteNo?.trim();
-  return note || 'No credit note number';
+  return note || 'No debit note number';
 }
 
 function HistoryField({
@@ -131,6 +134,10 @@ export function VendorReturnHistoryList({ refreshTrigger, filters }: VendorRetur
   const filtering = applied != null && hasActiveHistoryFilters(applied, 'vendorReturnHistory');
 
   const [returns, setReturns] = useState<VendorPurchaseReturnSummary[]>([]);
+  const [printTarget, setPrintTarget] = useState<{
+    returnId: string;
+    creditNoteNo?: string;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [limit] = useState(PAGE_SIZE);
@@ -221,7 +228,7 @@ export function VendorReturnHistoryList({ refreshTrigger, filters }: VendorRetur
                       <Box className={productChrome.historyRecordHeader}>
                         <Box className={productChrome.salePickTitleRow}>
                           <Text as="p" className={productChrome.salePickInvoiceHint}>
-                            Credit note
+                            Debit note
                           </Text>
                           <Text
                             as="p"
@@ -233,9 +240,26 @@ export function VendorReturnHistoryList({ refreshTrigger, filters }: VendorRetur
                             {note}
                           </Text>
                         </Box>
-                        <Text as="p" className={productChrome.historyRecordAmount}>
-                          {formatCurrency(r.returnAmount)}
-                        </Text>
+                        <Box className={productChrome.historyRecordActions}>
+                          <Text as="p" className={productChrome.historyRecordAmount}>
+                            {formatCurrency(r.returnAmount)}
+                          </Text>
+                          <Inline gap="xs" align="center">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              onClick={() =>
+                                setPrintTarget({
+                                  returnId: r.returnId,
+                                  creditNoteNo: r.supplierCreditNoteNo,
+                                })
+                              }
+                            >
+                              Print
+                            </Button>
+                          </Inline>
+                        </Box>
                       </Box>
 
                       <Box className={productChrome.salePickGrid}>
@@ -341,6 +365,15 @@ export function VendorReturnHistoryList({ refreshTrigger, filters }: VendorRetur
           />
         </>
       )}
+
+      <PrintCreditNoteModal
+        isOpen={printTarget != null}
+        onClose={() => setPrintTarget(null)}
+        source="vendor"
+        documentId={printTarget?.returnId ?? ''}
+        creditNoteNo={printTarget?.creditNoteNo}
+        onError={(message) => notifyError(message)}
+      />
     </Stack>
   );
 }

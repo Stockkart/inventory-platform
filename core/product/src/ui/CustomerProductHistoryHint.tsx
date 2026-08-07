@@ -54,7 +54,7 @@ function HistoryEntryRow({
   const invoice = entry.invoiceNo?.trim();
 
   const summary = (
-    <Inline gap="xs" align="baseline" flexWrap className={productChrome.historyEntrySummary}>
+    <Inline gap="xs" align="center" flexWrap className={productChrome.historyEntrySummary}>
       <Text
         as="span"
         variant="caption"

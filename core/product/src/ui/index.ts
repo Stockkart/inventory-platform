@@ -29,6 +29,8 @@ export { HistoryListSummary } from './HistoryListSummary';
 export { SaleHistoryCard } from './SaleHistoryCard';
 export { PrintInvoiceModal } from './PrintInvoiceModal';
 export type { PrinterType } from './PrintInvoiceModal';
+export { PrintCreditNoteModal } from './PrintCreditNoteModal';
+export type { CreditNoteSource } from './PrintCreditNoteModal';
 export { PrintBarcodeLabelsModal } from './PrintBarcodeLabelsModal';
 export type { PrintBarcodeLabelsModalProps } from './PrintBarcodeLabelsModal';
 export { InventoryAlertDetails } from './InventoryAlertDetails';
