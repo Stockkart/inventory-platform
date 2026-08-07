@@ -2,10 +2,12 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import {
   useAuthStore,
+  useNotify,
   useShopCapabilitiesStore,
   useShopAccessStore,
 } from '@inventory-platform/session';
 import { useNotifications } from './useNotifications';
+import { useFullscreen } from './useFullscreen';
 import { shopsApi } from '@inventory-platform/user/shops';
 import type { DashboardLayoutProps } from '@inventory-platform/shell/types';
 import type { Location as LocationType } from '@inventory-platform/user/types';
@@ -48,6 +50,7 @@ import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 import {
   DASHBOARD_HOTKEY,
   getDashboardModLabel,
+  isFullscreenHotkey,
   isModLetter,
   isQuickNavSlash,
   isShortcutsHelp,
@@ -81,9 +84,15 @@ import {
   TriangleAlert,
   CalendarClock,
   User,
+  Maximize,
+  Minimize,
 } from 'lucide-react';
 import { ContextualHelpPanel } from './ContextualHelpPanel';
 import { NavIcon } from './NavIcon';
+
+/** Each full-screen hint is offered once per browser; clear these to see them again. */
+const FULLSCREEN_ENTER_HINT_SEEN = 'sk.fullscreen.enterHintSeen';
+const FULLSCREEN_HINT_SEEN = 'sk.fullscreen.exitHintSeen';
 
 function isTypingInField(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -157,6 +166,23 @@ export function DashboardLayout({
 
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
+
+  const { isFullscreen, toggleFullscreen, exitFullscreen } = useFullscreen();
+  const fullscreenHintShown = useRef(false);
+
+  // Tell the user how to get back out, once per browser. Fires however fullscreen
+  // was entered — header button or hotkey — since all routes raise `fullscreenchange`.
+  useEffect(() => {
+    if (!isFullscreen || fullscreenHintShown.current) return;
+    fullscreenHintShown.current = true;
+    try {
+      if (localStorage.getItem(FULLSCREEN_HINT_SEEN) === '1') return;
+      localStorage.setItem(FULLSCREEN_HINT_SEEN, '1');
+    } catch {
+      /* storage unavailable — better to show the hint than to swallow it */
+    }
+    useNotify.info('Press Esc to exit full screen');
+  }, [isFullscreen]);
   const [favoritePageShortcuts, setFavoritePageShortcuts] = useState<FavoritePageShortcut[]>(() =>
     loadFavoritePageShortcuts(),
   );
@@ -166,6 +192,21 @@ export function DashboardLayout({
   const mainContentRef = useRef<HTMLElement>(null);
 
   const modLabel = useMemo(() => getDashboardModLabel(), []);
+  const fullscreenHotkeyLabel = `${modLabel}+Shift+${DASHBOARD_HOTKEY.toggleFullscreenModKey.toUpperCase()}`;
+
+  // Offer full screen once per browser, so the feature is discoverable without a
+  // permanent banner. Names the hotkey rather than Esc: Esc is reserved by the
+  // browser for *leaving* fullscreen and grants no user activation, so it can
+  // never start it.
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(FULLSCREEN_ENTER_HINT_SEEN) === '1') return;
+      localStorage.setItem(FULLSCREEN_ENTER_HINT_SEEN, '1');
+    } catch {
+      return; // storage unavailable — skip rather than nag on every page load
+    }
+    useNotify.info(`Press ${fullscreenHotkeyLabel} for full screen`);
+  }, [fullscreenHotkeyLabel]);
 
   const filteredMenuGroups = useMemo(
     () =>
@@ -261,6 +302,14 @@ export function DashboardLayout({
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl+Shift+F drives the Fullscreen API, so the header icon and the
+      // exit hint track it. Handled before the typing guard on purpose: the combo
+      // types no character, so it should work with the cursor in an input.
+      if (isFullscreenHotkey(e)) {
+        e.preventDefault();
+        void toggleFullscreen();
+        return;
+      }
       if (isModLetter(e, DASHBOARD_HOTKEY.quickNavToggleModKey)) {
         e.preventDefault();
         setCommandPaletteOpen((open) => !open);
@@ -268,6 +317,14 @@ export function DashboardLayout({
         return;
       }
       if (commandPaletteOpen || shortcutsHelpOpen) return;
+
+      // Browsers are meant to leave fullscreen on Escape on their own. When that
+      // does not happen the user is stuck with only the header button, so exit
+      // explicitly. No-ops when not in fullscreen, and no preventDefault, so any
+      // other Escape consumer still gets the key.
+      if (e.key === DASHBOARD_HOTKEY.closeOverlay) {
+        void exitFullscreen();
+      }
 
       const inField = isTypingInField(e.target);
       if (isModLetter(e, DASHBOARD_HOTKEY.toggleSidebarModKey)) {
@@ -304,7 +361,14 @@ export function DashboardLayout({
     };
     document.addEventListener('keydown', onKeyDown, true);
     return () => document.removeEventListener('keydown', onKeyDown, true);
-  }, [commandPaletteOpen, shortcutsHelpOpen, favoritesNav, navigate]);
+  }, [
+    commandPaletteOpen,
+    shortcutsHelpOpen,
+    favoritesNav,
+    navigate,
+    toggleFullscreen,
+    exitFullscreen,
+  ]);
 
   const allMenuItems = useMemo(
     () => filteredMenuGroups.flatMap((g) => g.items),
@@ -880,6 +944,26 @@ export function DashboardLayout({
                     title={`Keyboard shortcuts (${DASHBOARD_HOTKEY.shortcutsHelp})`}
                   >
                     <Keyboard size={18} aria-hidden />
+                  </IconButton>
+
+                  <IconButton
+                    label={isFullscreen ? 'Exit full screen' : 'Full screen'}
+                    size="sm"
+                    shape="circle"
+                    aria-pressed={isFullscreen}
+                    className={shellChrome.headerIconButton}
+                    onClick={() => void toggleFullscreen()}
+                    title={
+                      isFullscreen
+                        ? `Exit full screen (Esc or ${fullscreenHotkeyLabel})`
+                        : `Full screen (${fullscreenHotkeyLabel})`
+                    }
+                  >
+                    {isFullscreen ? (
+                      <Minimize size={18} aria-hidden />
+                    ) : (
+                      <Maximize size={18} aria-hidden />
+                    )}
                   </IconButton>
                 </Inline>
 

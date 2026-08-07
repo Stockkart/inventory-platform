@@ -8,6 +8,11 @@ export const DASHBOARD_HOTKEY = {
   toggleSidebarModKey: 'b',
   shortcutsHelp: '?',
   closeOverlay: 'Escape',
+  /** Used as Cmd/Ctrl + Shift + F. F11 is deliberately not bound: macOS never
+   *  delivers it (the OS claims it for Mission Control, and on laptop keyboards
+   *  the function row is media keys), so one mod-based binding covers both
+   *  platforms instead of two that behave differently. */
+  toggleFullscreenModKey: 'f',
   /** Shown in help; US layout: Shift + ` (backquote) produces ~ */
   scanSellHidePurchaseKeyLabel: '~',
 } as const;
@@ -43,6 +48,16 @@ export function getShortcutHelpRows(modLabel: string): ShortcutHelpRow[] {
       alternatives: [['Esc']],
     },
     {
+      action: 'Toggle full screen',
+      alternatives: [[modLabel, 'Shift', h.toggleFullscreenModKey.toUpperCase()]],
+    },
+    {
+      // Esc only ever leaves fullscreen: browsers reserve it for exiting and it
+      // grants no user activation, so it cannot be used to enter.
+      action: 'Exit full screen',
+      alternatives: [['Esc']],
+    },
+    {
       action:
         'Scan & Sell: hide or show purchase scheme and purchase add. discount (sale fields stay visible)',
       alternatives: [[h.scanSellHidePurchaseKeyLabel]],
@@ -69,6 +84,12 @@ export function getQuickNavFooterHints(modLabel: string): QuickNavFooterHint[] {
 export function isModLetter(e: KeyboardEvent, letter: string): boolean {
   const mod = e.metaKey || e.ctrlKey;
   return mod && e.key.toLowerCase() === letter.toLowerCase();
+}
+
+/** Match Cmd/Ctrl + Shift + F. Shift keeps it clear of Cmd/Ctrl+F (browser find). */
+export function isFullscreenHotkey(e: KeyboardEvent): boolean {
+  if (!e.shiftKey) return false;
+  return isModLetter(e, DASHBOARD_HOTKEY.toggleFullscreenModKey);
 }
 
 export function isQuickNavSlash(e: KeyboardEvent): boolean {

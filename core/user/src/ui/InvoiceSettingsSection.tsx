@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
-import { FileText, Printer, Receipt } from 'lucide-react';
+import { FileText, Maximize2, Minimize2, Printer, Receipt } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useNotify } from '@inventory-platform/session';
 import {
@@ -27,6 +27,32 @@ import {
 } from '@inventory-platform/user/types';
 
 const PREVIEW_DEBOUNCE_MS = 400;
+
+/** Focus target after toggling — see applyPreviewExpanded for why this matters. */
+const PREVIEW_EXPAND_BUTTON_ID = 'invoice-preview-expand';
+const HINT_VISIBLE_MS = 5000;
+
+/** Each hint is offered once, ever. Clear these keys to see them again. */
+const HINT_SEEN_ENTER = 'sk.invoicePreview.hintEnterSeen';
+const HINT_SEEN_EXIT = 'sk.invoicePreview.hintExitSeen';
+
+/** localStorage throws in private mode and sandboxed frames; a storage failure
+ *  must never take the expand toggle down with it. */
+function hintSeen(key: string): boolean {
+  try {
+    return localStorage.getItem(key) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function markHintSeen(key: string): void {
+  try {
+    localStorage.setItem(key, '1');
+  } catch {
+    /* storage unavailable — the hint simply offers itself again next time */
+  }
+}
 
 const PRINTER_OPTIONS: Array<{
   value: InvoicePrinterType;
@@ -117,6 +143,11 @@ export function InvoiceSettingsSection() {
   const [previewError, setPreviewError] = useState<string | null>(null);
   const previewSeq = useRef(0);
 
+  const [previewExpanded, setPreviewExpanded] = useState(false);
+  const [shortcutHint, setShortcutHint] = useState<string | null>(null);
+  const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const enterHintOffered = useRef(false);
+
   const applySettings = (data: InvoiceSettingsResponse) => {
     setDefaultPrinterType(data.defaultPrinterType);
     setFooterNote(data.footerNote ?? '');
@@ -176,6 +207,88 @@ export function InvoiceSettingsSection() {
     }, PREVIEW_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
   }, [defaultPrinterType, footerNote, regularFields, basicFields, editMode]);
+
+  const clearHint = () => {
+    if (hintTimer.current) clearTimeout(hintTimer.current);
+    hintTimer.current = null;
+    setShortcutHint(null);
+  };
+
+  const showHint = (text: string) => {
+    if (hintTimer.current) clearTimeout(hintTimer.current);
+    setShortcutHint(text);
+    hintTimer.current = setTimeout(() => setShortcutHint(null), HINT_VISIBLE_MS);
+  };
+
+  /** Single source of truth — the Expand button and Escape both route through here. */
+  const applyPreviewExpanded = (next: boolean) => {
+    setPreviewExpanded(next);
+
+    if (next) {
+      markHintSeen(HINT_SEEN_ENTER);
+      if (hintSeen(HINT_SEEN_EXIT)) clearHint();
+      else showHint('again to exit full screen');
+    } else {
+      markHintSeen(HINT_SEEN_EXIT);
+      clearHint();
+    }
+
+    // Pull focus out of the preview iframe and onto the button. Key events fired
+    // inside an iframe never reach this document, so without this the next
+    // Escape is swallowed by the preview once the user has clicked into it.
+    requestAnimationFrame(() => {
+      document.getElementById(PREVIEW_EXPAND_BUTTON_ID)?.focus();
+    });
+  };
+
+  const togglePreviewExpanded = useEffectEvent(() => {
+    applyPreviewExpanded(!previewExpanded);
+  });
+
+  const offerEnterHint = useEffectEvent(() => {
+    if (enterHintOffered.current) return;
+    enterHintOffered.current = true;
+    if (!hintSeen(HINT_SEEN_ENTER)) showHint('to expand the preview');
+  });
+
+  // Bound once; useEffectEvent keeps the handler reading current state without
+  // detaching and reattaching the listener on every toggle.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      // While the app is in real browser fullscreen, Escape belongs to the browser
+      // for leaving it. Collapsing the preview at the same moment would make one
+      // keypress do two things.
+      if (document.fullscreenElement) return;
+      event.preventDefault();
+      togglePreviewExpanded();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  // Lock background scroll while expanded; restores on collapse and on unmount.
+  useEffect(() => {
+    if (!previewExpanded) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [previewExpanded]);
+
+  useEffect(
+    () => () => {
+      if (hintTimer.current) clearTimeout(hintTimer.current);
+    },
+    [],
+  );
+
+  // Offer the shortcut once the first preview has actually rendered.
+  useEffect(() => {
+    if (!previewHtml) return;
+    offerEnterHint();
+  }, [previewHtml]);
 
   const activeFields = editMode === 'REGULAR' ? regularFields : basicFields;
   const setActiveFields = editMode === 'REGULAR' ? setRegularFields : setBasicFields;
@@ -406,7 +519,12 @@ export function InvoiceSettingsSection() {
           </Box>
         </Box>
 
-        <Box className={surfaceChrome.invoiceSettingsPreview}>
+        <Box
+          className={cn(
+            surfaceChrome.invoiceSettingsPreview,
+            previewExpanded && surfaceChrome.invoiceSettingsPreviewExpanded,
+          )}
+        >
           <Box className={surfaceChrome.invoiceSettingsPreviewToolbar}>
             <Stack gap="sm">
               <Text as="p" className={surfaceChrome.profileSectionLabel}>
@@ -416,14 +534,27 @@ export function InvoiceSettingsSection() {
                 {modeLabel} · {printerLabel}
               </Text>
             </Stack>
-            {previewLoading ? (
-              <Inline gap="sm" align="center">
-                <Spinner size="sm" />
-                <Text variant="caption" color="secondary">
-                  Updating…
-                </Text>
-              </Inline>
-            ) : null}
+            <Inline gap="sm" align="center">
+              {previewLoading ? (
+                <Inline gap="sm" align="center">
+                  <Spinner size="sm" />
+                  <Text variant="caption" color="secondary">
+                    Updating…
+                  </Text>
+                </Inline>
+              ) : null}
+              <Button
+                id={PREVIEW_EXPAND_BUTTON_ID}
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-pressed={previewExpanded}
+                leftIcon={previewExpanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                onClick={() => applyPreviewExpanded(!previewExpanded)}
+              >
+                {previewExpanded ? 'Exit full screen' : 'Expand'}
+              </Button>
+            </Inline>
           </Box>
 
           {previewError ? <Alert variant="danger">{previewError}</Alert> : null}
@@ -462,6 +593,22 @@ export function InvoiceSettingsSection() {
               ? 'Shown as a 75mm receipt strip — same layout as thermal prints.'
               : 'Shown as print-sized paper — same template as checkout PDFs.'}
           </Text>
+
+          {/* Always mounted so it can transition both in and out; inert while hidden. */}
+          <Box
+            role="status"
+            aria-live="polite"
+            className={cn(
+              surfaceChrome.invoicePreviewShortcut,
+              shortcutHint && surfaceChrome.invoicePreviewShortcutVisible,
+            )}
+          >
+            {shortcutHint ? (
+              <>
+                Press <kbd>Esc</kbd> {shortcutHint}
+              </>
+            ) : null}
+          </Box>
         </Box>
       </Box>
     </Box>
