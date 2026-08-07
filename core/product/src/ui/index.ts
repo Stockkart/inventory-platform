@@ -39,7 +39,10 @@ export { VendorInvoiceExpandedBody } from './VendorInvoiceExpandedBody';
 export type { VendorInvoiceExpandedBodyProps } from './VendorInvoiceExpandedBody';
 export { AddToSellQuotationPicker } from './AddToSellQuotationPicker';
 export type { AddToSellQuotationPickerProps } from './AddToSellQuotationPicker';
-export { CustomerProductHistoryHint } from './CustomerProductHistoryHint';
+export {
+  CustomerProductHistoryHint,
+  shouldShowCustomerHistorySubrow,
+} from './CustomerProductHistoryHint';
 export type { CustomerProductHistoryHintProps } from './CustomerProductHistoryHint';
 export { useCustomerProductHistory } from './useCustomerProductHistory';
 export * from './scanSellStyles';

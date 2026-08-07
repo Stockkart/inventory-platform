@@ -5,6 +5,7 @@ import {
   useRef,
   useCallback,
   useMemo,
+  Fragment,
   ChangeEvent,
   type ReactNode,
 } from 'react';
@@ -162,7 +163,11 @@ import {
   getExtensionFieldString,
   sortInventoryByExpirySoonest,
 } from '@inventory-platform/schema';
-import { useCustomerProductHistory, CustomerProductHistoryHint } from '../ui';
+import {
+  useCustomerProductHistory,
+  CustomerProductHistoryHint,
+  shouldShowCustomerHistorySubrow,
+} from '../ui';
 import { ScanSellQuotationStack } from '../ui/ScanSellQuotationStack';
 
 export function meta() {
@@ -3177,186 +3182,205 @@ export function ScanSellPage() {
                                 const isLoading =
                                   pricingLoading[pricingId ?? ''] ||
                                   pricingLoading[`inv:${cartItem.inventoryItem.id}`];
+                                const showHistorySubrow = shouldShowCustomerHistorySubrow(
+                                  inventorySellableRef(cartItem.inventoryItem.id),
+                                  customerProductHistory,
+                                  customerProductHistoryLoading,
+                                );
                                 return (
-                                  <DenseTableRow key={cartItem.inventoryItem.id}>
-                                    <DenseTableCell>{idx + 1}</DenseTableCell>
-                                    <DenseTableCell>
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        className={denseTableClassNames.productBtn}
-                                        onClick={() => setDetailModalItem(cartItem)}
-                                      >
-                                        {cartItem.inventoryItem.name || '—'}
-                                      </Button>
-                                      <CustomerProductHistoryHint
-                                        sellableRef={inventorySellableRef(
-                                          cartItem.inventoryItem.id,
-                                        )}
-                                        history={customerProductHistory}
-                                        loading={customerProductHistoryLoading}
-                                      />
-                                    </DenseTableCell>
-                                    <DenseTableCell>
-                                      {cartItem.inventoryItem.companyName || '—'}
-                                    </DenseTableCell>
-                                    <DenseTableCell>
-                                      <Box className={denseTableClassNames.cellInput}>
-                                        <CartQuantityInput
-                                          value={quantityInputValue}
-                                          disabled={isUpdatingCart}
-                                          onCommit={async (newQty) => {
-                                            const delta = newQty - quantityInputValue;
-                                            if (delta !== 0) {
-                                              await handleUpdateQuantity(
-                                                cartItem.inventoryItem.id,
-                                                delta,
-                                                isBaseUnitSelected,
-                                              );
-                                            }
-                                          }}
+                                  <Fragment key={cartItem.inventoryItem.id}>
+                                    <DenseTableRow>
+                                      <DenseTableCell>{idx + 1}</DenseTableCell>
+                                      <DenseTableCell>
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          className={denseTableClassNames.productBtn}
+                                          onClick={() => setDetailModalItem(cartItem)}
+                                        >
+                                          {cartItem.inventoryItem.name || '—'}
+                                        </Button>
+                                      </DenseTableCell>
+                                      <DenseTableCell>
+                                        {cartItem.inventoryItem.companyName || '—'}
+                                      </DenseTableCell>
+                                      <DenseTableCell>
+                                        <Box className={denseTableClassNames.cellInput}>
+                                          <CartQuantityInput
+                                            value={quantityInputValue}
+                                            disabled={isUpdatingCart}
+                                            onCommit={async (newQty) => {
+                                              const delta = newQty - quantityInputValue;
+                                              if (delta !== 0) {
+                                                await handleUpdateQuantity(
+                                                  cartItem.inventoryItem.id,
+                                                  delta,
+                                                  isBaseUnitSelected,
+                                                );
+                                              }
+                                            }}
+                                          />
+                                        </Box>
+                                      </DenseTableCell>
+                                      <DenseTableCell>
+                                        <Select
+                                          className={denseTableClassNames.select}
+                                          value={cartItem.unit}
+                                          onChange={(e) =>
+                                            handleUnitChange(
+                                              cartItem.inventoryItem.id,
+                                              e.currentTarget.value,
+                                            )
+                                          }
+                                          disabled={
+                                            isUpdatingCart ||
+                                            cartItem.inventoryItem.sellUnitRule === 'PACK_ONLY'
+                                          }
+                                          options={(cartItem.availableUnits.length > 0
+                                            ? cartItem.availableUnits
+                                            : [{ unit: cartItem.unit, baseUnit: false }]
+                                          ).map((uo) => ({
+                                            value: uo.unit,
+                                            label: `${uo.unit}${uo.baseUnit ? ' (base)' : ''}`,
+                                          }))}
                                         />
-                                      </Box>
-                                    </DenseTableCell>
-                                    <DenseTableCell>
-                                      <Select
-                                        className={denseTableClassNames.select}
-                                        value={cartItem.unit}
-                                        onChange={(e) =>
-                                          handleUnitChange(
-                                            cartItem.inventoryItem.id,
-                                            e.currentTarget.value,
-                                          )
-                                        }
-                                        disabled={
-                                          isUpdatingCart ||
-                                          cartItem.inventoryItem.sellUnitRule === 'PACK_ONLY'
-                                        }
-                                        options={(cartItem.availableUnits.length > 0
-                                          ? cartItem.availableUnits
-                                          : [{ unit: cartItem.unit, baseUnit: false }]
-                                        ).map((uo) => ({
-                                          value: uo.unit,
-                                          label: `${uo.unit}${uo.baseUnit ? ' (base)' : ''}`,
-                                        }))}
-                                      />
-                                    </DenseTableCell>
-                                    <DenseTableCell>{formatPrice(lineTotal)}</DenseTableCell>
-                                    <DenseTableCell>
-                                      <Stack gap="xs" className={denseTableClassNames.priceCell}>
-                                        <CartSellingPriceInput
-                                          value={cartItem.price}
-                                          onCommit={(n) =>
-                                            handleSellingPriceChange(cartItem.inventoryItem.id, n)
+                                      </DenseTableCell>
+                                      <DenseTableCell>{formatPrice(lineTotal)}</DenseTableCell>
+                                      <DenseTableCell>
+                                        <Stack gap="xs" className={denseTableClassNames.priceCell}>
+                                          <CartSellingPriceInput
+                                            value={cartItem.price}
+                                            onCommit={(n) =>
+                                              handleSellingPriceChange(cartItem.inventoryItem.id, n)
+                                            }
+                                            disabled={isUpdatingCart}
+                                          />
+                                          {showRateDropdown ? (
+                                            <Select
+                                              className={denseTableClassNames.rateSelect}
+                                              value={matched ? matched.label : '__custom__'}
+                                              onChange={(e) => {
+                                                const sel = e.target.value;
+                                                if (sel === '__custom__') return;
+                                                const opt = rateOpts.find((o) => o.label === sel);
+                                                if (opt)
+                                                  handleSellingPriceChange(
+                                                    cartItem.inventoryItem.id,
+                                                    opt.price,
+                                                  );
+                                              }}
+                                              onMouseDown={() =>
+                                                loadPricingOnDropdownClick(
+                                                  cartItem.inventoryItem.pricingId ?? undefined,
+                                                  cartItem.inventoryItem.id,
+                                                )
+                                              }
+                                              disabled={isUpdatingCart || isLoading}
+                                              options={[
+                                                { value: '__custom__', label: 'Custom' },
+                                                ...rateOpts.map((opt) => ({
+                                                  value: opt.label,
+                                                  label: `${opt.label} (${formatPrice(opt.price)})`,
+                                                })),
+                                              ]}
+                                            />
+                                          ) : null}
+                                        </Stack>
+                                      </DenseTableCell>
+                                      <DenseTableCell>
+                                        <Stack gap="xs">
+                                          {!hidePurchaseDetailsInSell ? (
+                                            <Text
+                                              variant="caption"
+                                              className={productChrome.microLabel}
+                                            >
+                                              {(() => {
+                                                const v = getPurchaseAdditionalDiscount(
+                                                  cartItem.inventoryItem,
+                                                );
+                                                return v != null ? `${v}%` : '—';
+                                              })()}
+                                            </Text>
+                                          ) : null}
+                                          <Box className={productChrome.fontSemibold}>
+                                            <CartAdditionalDiscountInput
+                                              value={getEffectiveAdditionalDiscount(
+                                                cartItem.inventoryItem.id,
+                                                cartItem,
+                                              )}
+                                              onCommit={(n) =>
+                                                handleAdditionalDiscountChange(
+                                                  cartItem.inventoryItem.id,
+                                                  n,
+                                                )
+                                              }
+                                              disabled={isUpdatingCart}
+                                            />
+                                          </Box>
+                                        </Stack>
+                                      </DenseTableCell>
+                                      <DenseTableCell>
+                                        <Stack gap="xs">
+                                          {!hidePurchaseDetailsInSell ? (
+                                            <Text
+                                              variant="caption"
+                                              className={productChrome.microLabel}
+                                            >
+                                              {formatPurchaseSchemeLabel(cartItem.inventoryItem)}
+                                            </Text>
+                                          ) : null}
+                                          <Box className={productChrome.fontSemibold}>
+                                            <CartSchemeInput
+                                              schemeType={cartItem.schemeType ?? null}
+                                              payFor={cartItem.schemePayFor ?? null}
+                                              free={cartItem.schemeFree ?? null}
+                                              percentage={cartItem.schemePercentage ?? null}
+                                              onCommitUnits={(pf, f) =>
+                                                handleSchemeChange(cartItem.inventoryItem.id, pf, f)
+                                              }
+                                              onCommitPercentage={(p) =>
+                                                handleSchemePercentageChange(
+                                                  cartItem.inventoryItem.id,
+                                                  p,
+                                                )
+                                              }
+                                              disabled={isUpdatingCart}
+                                            />
+                                          </Box>
+                                        </Stack>
+                                      </DenseTableCell>
+                                      <DenseTableCell>
+                                        <Button
+                                          type="button"
+                                          variant="danger"
+                                          size="sm"
+                                          onClick={() =>
+                                            handleRemoveItem(cartItem.inventoryItem.id)
                                           }
                                           disabled={isUpdatingCart}
-                                        />
-                                        {showRateDropdown ? (
-                                          <Select
-                                            className={denseTableClassNames.rateSelect}
-                                            value={matched ? matched.label : '__custom__'}
-                                            onChange={(e) => {
-                                              const sel = e.target.value;
-                                              if (sel === '__custom__') return;
-                                              const opt = rateOpts.find((o) => o.label === sel);
-                                              if (opt)
-                                                handleSellingPriceChange(
-                                                  cartItem.inventoryItem.id,
-                                                  opt.price,
-                                                );
-                                            }}
-                                            onMouseDown={() =>
-                                              loadPricingOnDropdownClick(
-                                                cartItem.inventoryItem.pricingId ?? undefined,
-                                                cartItem.inventoryItem.id,
-                                              )
-                                            }
-                                            disabled={isUpdatingCart || isLoading}
-                                            options={[
-                                              { value: '__custom__', label: 'Custom' },
-                                              ...rateOpts.map((opt) => ({
-                                                value: opt.label,
-                                                label: `${opt.label} (${formatPrice(opt.price)})`,
-                                              })),
-                                            ]}
-                                          />
-                                        ) : null}
-                                      </Stack>
-                                    </DenseTableCell>
-                                    <DenseTableCell>
-                                      <Stack gap="xs">
-                                        {!hidePurchaseDetailsInSell ? (
-                                          <Text
-                                            variant="caption"
-                                            className={productChrome.microLabel}
-                                          >
-                                            {(() => {
-                                              const v = getPurchaseAdditionalDiscount(
-                                                cartItem.inventoryItem,
-                                              );
-                                              return v != null ? `${v}%` : '—';
-                                            })()}
-                                          </Text>
-                                        ) : null}
-                                        <Box className={productChrome.fontSemibold}>
-                                          <CartAdditionalDiscountInput
-                                            value={getEffectiveAdditionalDiscount(
+                                        >
+                                          Remove
+                                        </Button>
+                                      </DenseTableCell>
+                                    </DenseTableRow>
+                                    {showHistorySubrow ? (
+                                      <DenseTableRow className={productChrome.historySubrowTr}>
+                                        <DenseTableCell
+                                          colSpan={10}
+                                          className={productChrome.historySubrowCell}
+                                        >
+                                          <CustomerProductHistoryHint
+                                            variant="subrow"
+                                            sellableRef={inventorySellableRef(
                                               cartItem.inventoryItem.id,
-                                              cartItem,
                                             )}
-                                            onCommit={(n) =>
-                                              handleAdditionalDiscountChange(
-                                                cartItem.inventoryItem.id,
-                                                n,
-                                              )
-                                            }
-                                            disabled={isUpdatingCart}
+                                            history={customerProductHistory}
+                                            loading={customerProductHistoryLoading}
                                           />
-                                        </Box>
-                                      </Stack>
-                                    </DenseTableCell>
-                                    <DenseTableCell>
-                                      <Stack gap="xs">
-                                        {!hidePurchaseDetailsInSell ? (
-                                          <Text
-                                            variant="caption"
-                                            className={productChrome.microLabel}
-                                          >
-                                            {formatPurchaseSchemeLabel(cartItem.inventoryItem)}
-                                          </Text>
-                                        ) : null}
-                                        <Box className={productChrome.fontSemibold}>
-                                          <CartSchemeInput
-                                            schemeType={cartItem.schemeType ?? null}
-                                            payFor={cartItem.schemePayFor ?? null}
-                                            free={cartItem.schemeFree ?? null}
-                                            percentage={cartItem.schemePercentage ?? null}
-                                            onCommitUnits={(pf, f) =>
-                                              handleSchemeChange(cartItem.inventoryItem.id, pf, f)
-                                            }
-                                            onCommitPercentage={(p) =>
-                                              handleSchemePercentageChange(
-                                                cartItem.inventoryItem.id,
-                                                p,
-                                              )
-                                            }
-                                            disabled={isUpdatingCart}
-                                          />
-                                        </Box>
-                                      </Stack>
-                                    </DenseTableCell>
-                                    <DenseTableCell>
-                                      <Button
-                                        type="button"
-                                        variant="danger"
-                                        size="sm"
-                                        onClick={() => handleRemoveItem(cartItem.inventoryItem.id)}
-                                        disabled={isUpdatingCart}
-                                      >
-                                        Remove
-                                      </Button>
-                                    </DenseTableCell>
-                                  </DenseTableRow>
+                                        </DenseTableCell>
+                                      </DenseTableRow>
+                                    ) : null}
+                                  </Fragment>
                                 );
                               })}
                             </TableBody>

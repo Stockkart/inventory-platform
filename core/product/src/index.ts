@@ -57,6 +57,7 @@ export {
   PrintBarcodeLabelsModal,
   InventoryAlertDetails,
   CustomerProductHistoryHint,
+  shouldShowCustomerHistorySubrow,
   useCustomerProductHistory,
   HistoryListSummary,
   EMPTY_HISTORY_FILTERS,
