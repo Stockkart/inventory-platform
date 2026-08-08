@@ -311,6 +311,9 @@ export const surfaceChrome = {
   invoicePreviewFrame: styles.invoicePreviewFrame,
   invoicePreviewBusy: styles.invoicePreviewBusy,
   invoicePreviewHint: styles.invoicePreviewHint,
+  invoiceSettingsPreviewExpanded: styles.invoiceSettingsPreviewExpanded,
+  invoicePreviewShortcut: styles.invoicePreviewShortcut,
+  invoicePreviewShortcutVisible: styles.invoicePreviewShortcutVisible,
   invoiceSettingsFooterBar: styles.invoiceSettingsFooterBar,
   invoiceSettingsAlert: styles.invoiceSettingsAlert,
 } as const;

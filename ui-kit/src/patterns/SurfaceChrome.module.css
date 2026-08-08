@@ -2441,6 +2441,83 @@
   margin: 0;
 }
 
+/* ---- expanded (faux full-screen) preview ----
+   Not the Fullscreen API: Escape is reserved by the browser to *exit* real
+   fullscreen and does not count as a user gesture, so requestFullscreen() from
+   an Esc keypress is rejected. Filling the viewport with CSS toggles both ways. */
+.invoiceSettingsPreviewExpanded {
+  position: fixed;
+  inset: 0;
+  z-index: 1200; /* above the app shell header/sidebar, which sit at 1000-1100 */
+  margin: 0;
+  padding: 1rem 1.25rem 1.25rem;
+  border-radius: 0;
+  overflow: auto;
+}
+
+.invoiceSettingsPreviewExpanded .invoicePreviewStage {
+  min-height: 0;
+  max-height: none;
+  flex: 1;
+}
+
+.invoiceSettingsPreviewExpanded .invoicePreviewPaper {
+  width: min(100%, 62rem);
+}
+
+.invoiceSettingsPreviewExpanded .invoicePreviewPaperThermal {
+  width: min(100%, 22rem);
+}
+
+.invoiceSettingsPreviewExpanded .invoicePreviewFrame {
+  height: min(82vh, 62rem);
+}
+
+/* ---- one-time keyboard hint ---- */
+.invoicePreviewShortcut {
+  position: fixed;
+  bottom: 1.75rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(0.5rem);
+  z-index: 1300; /* above the expanded preview */
+
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1rem;
+
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--sk-color-text-primary, #18181b) 92%, transparent);
+  color: var(--sk-color-bg-default, #fafafa);
+  font-size: 0.8125rem;
+  line-height: 1;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.25);
+
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 180ms ease, transform 180ms ease, visibility 180ms;
+}
+
+.invoicePreviewShortcutVisible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.invoicePreviewShortcut kbd {
+  padding: 0.15rem 0.4rem;
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 0.6875rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .invoicePreviewShortcut {
+    transition: none;
+  }
+}
+
 .invoiceSettingsAlert {
   padding: 1rem 1.35rem 0;
 }

@@ -2,10 +2,12 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import {
   useAuthStore,
+  useNotify,
   useShopCapabilitiesStore,
   useShopAccessStore,
 } from '@inventory-platform/session';
 import { useNotifications } from './useNotifications';
+import { useFullscreen } from './useFullscreen';
 import { shopsApi } from '@inventory-platform/user/shops';
 import type { DashboardLayoutProps } from '@inventory-platform/shell/types';
 import type { Location as LocationType } from '@inventory-platform/user/types';
@@ -48,6 +50,7 @@ import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 import {
   DASHBOARD_HOTKEY,
   getDashboardModLabel,
+  isFullscreenHotkey,
   isModLetter,
   isQuickNavSlash,
   isShortcutsHelp,
@@ -81,9 +84,36 @@ import {
   TriangleAlert,
   CalendarClock,
   User,
+  Maximize,
+  Minimize,
 } from 'lucide-react';
 import { ContextualHelpPanel } from './ContextualHelpPanel';
 import { NavIcon } from './NavIcon';
+
+/**
+ * Discovery hint, once per browser *session*. sessionStorage rather than
+ * localStorage on purpose: a permanent flag that gets set without the toast ever
+ * being seen silently kills the hint forever, with no in-app way to reset it.
+ * Transition toasts are not gated by this at all — they fire every time.
+ */
+const FULLSCREEN_HINT_SHOWN = 'sk.fullscreen.hintShown';
+
+/** sessionStorage throws in some privacy modes; a hint must never break the shell. */
+function readSessionFlag(key: string): boolean {
+  try {
+    return sessionStorage.getItem(key) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeSessionFlag(key: string): void {
+  try {
+    sessionStorage.setItem(key, '1');
+  } catch {
+    /* hint was shown anyway; it will simply offer itself again */
+  }
+}
 
 function isTypingInField(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -157,6 +187,17 @@ export function DashboardLayout({
 
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
+
+  const {
+    isFullscreen,
+    isSupported: fullscreenSupported,
+    toggleFullscreen,
+    exitFullscreen,
+  } = useFullscreen();
+  // null means "first render", so mounting outside full screen is not mistaken
+  // for having just exited it.
+  const prevFullscreen = useRef<boolean | null>(null);
+
   const [favoritePageShortcuts, setFavoritePageShortcuts] = useState<FavoritePageShortcut[]>(() =>
     loadFavoritePageShortcuts(),
   );
@@ -166,6 +207,37 @@ export function DashboardLayout({
   const mainContentRef = useRef<HTMLElement>(null);
 
   const modLabel = useMemo(() => getDashboardModLabel(), []);
+
+  // Names the hotkey rather than Esc: Esc is reserved by the browser for *leaving*
+  // full screen and grants no user activation, so it can never start it.
+  const fullscreenEnterHint = `Press ${modLabel}+Shift+F for full screen`;
+  const fullscreenExitHint = 'Press Esc to exit full screen';
+
+  /*
+   * Driven by `isFullscreen` changing rather than by the click, so every route in
+   * and out is covered — the header button, the hotkey, Esc, the macOS green
+   * button — without any of them needing their own toast call. The browser raises
+   * `fullscreenchange`, useFullscreen syncs state, and this reacts.
+   */
+  useEffect(() => {
+    // Stay quiet while unauthenticated — no point advertising shortcuts to someone
+    // who is about to be redirected to login.
+    if (!user || !fullscreenSupported) return;
+
+    if (prevFullscreen.current === null) {
+      // First render: discovery hint, once per browser session rather than
+      // forever, so it can resurface instead of being lost to a stale flag.
+      if (!isFullscreen && !readSessionFlag(FULLSCREEN_HINT_SHOWN)) {
+        useNotify.info(fullscreenEnterHint);
+        writeSessionFlag(FULLSCREEN_HINT_SHOWN);
+      }
+    } else if (prevFullscreen.current !== isFullscreen) {
+      // A real transition, in either direction.
+      useNotify.info(isFullscreen ? fullscreenExitHint : fullscreenEnterHint);
+    }
+
+    prevFullscreen.current = isFullscreen;
+  }, [isFullscreen, user, fullscreenSupported, fullscreenEnterHint, fullscreenExitHint]);
 
   const filteredMenuGroups = useMemo(
     () =>
@@ -261,6 +333,14 @@ export function DashboardLayout({
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl+Shift+F drives the Fullscreen API, so the header icon and the
+      // exit hint track it. Handled before the typing guard on purpose: the combo
+      // types no character, so it should work with the cursor in an input.
+      if (isFullscreenHotkey(e)) {
+        e.preventDefault();
+        void toggleFullscreen();
+        return;
+      }
       if (isModLetter(e, DASHBOARD_HOTKEY.quickNavToggleModKey)) {
         e.preventDefault();
         setCommandPaletteOpen((open) => !open);
@@ -268,6 +348,14 @@ export function DashboardLayout({
         return;
       }
       if (commandPaletteOpen || shortcutsHelpOpen) return;
+
+      // Browsers are meant to leave fullscreen on Escape on their own. When that
+      // does not happen the user is stuck with only the header button, so exit
+      // explicitly. No-ops when not in fullscreen, and no preventDefault, so any
+      // other Escape consumer still gets the key.
+      if (e.key === DASHBOARD_HOTKEY.closeOverlay) {
+        void exitFullscreen();
+      }
 
       const inField = isTypingInField(e.target);
       if (isModLetter(e, DASHBOARD_HOTKEY.toggleSidebarModKey)) {
@@ -304,7 +392,14 @@ export function DashboardLayout({
     };
     document.addEventListener('keydown', onKeyDown, true);
     return () => document.removeEventListener('keydown', onKeyDown, true);
-  }, [commandPaletteOpen, shortcutsHelpOpen, favoritesNav, navigate]);
+  }, [
+    commandPaletteOpen,
+    shortcutsHelpOpen,
+    favoritesNav,
+    navigate,
+    toggleFullscreen,
+    exitFullscreen,
+  ]);
 
   const allMenuItems = useMemo(
     () => filteredMenuGroups.flatMap((g) => g.items),
@@ -880,6 +975,26 @@ export function DashboardLayout({
                     title={`Keyboard shortcuts (${DASHBOARD_HOTKEY.shortcutsHelp})`}
                   >
                     <Keyboard size={18} aria-hidden />
+                  </IconButton>
+
+                  <IconButton
+                    label={isFullscreen ? 'Exit full screen' : 'Full screen'}
+                    size="sm"
+                    shape="circle"
+                    aria-pressed={isFullscreen}
+                    className={shellChrome.headerIconButton}
+                    onClick={() => void toggleFullscreen()}
+                    title={
+                      isFullscreen
+                        ? `Exit full screen (Esc or ${modLabel}+Shift+F)`
+                        : `Full screen (${modLabel}+Shift+F)`
+                    }
+                  >
+                    {isFullscreen ? (
+                      <Minimize size={18} aria-hidden />
+                    ) : (
+                      <Maximize size={18} aria-hidden />
+                    )}
                   </IconButton>
                 </Inline>
 
