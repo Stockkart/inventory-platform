@@ -29,6 +29,8 @@ export { HistoryListSummary } from './HistoryListSummary';
 export { SaleHistoryCard } from './SaleHistoryCard';
 export { PrintInvoiceModal } from './PrintInvoiceModal';
 export type { PrinterType } from './PrintInvoiceModal';
+export { PrintCreditNoteModal } from './PrintCreditNoteModal';
+export type { CreditNoteSource } from './PrintCreditNoteModal';
 export { PrintBarcodeLabelsModal } from './PrintBarcodeLabelsModal';
 export type { PrintBarcodeLabelsModalProps } from './PrintBarcodeLabelsModal';
 export { InventoryAlertDetails } from './InventoryAlertDetails';
@@ -39,7 +41,10 @@ export { VendorInvoiceExpandedBody } from './VendorInvoiceExpandedBody';
 export type { VendorInvoiceExpandedBodyProps } from './VendorInvoiceExpandedBody';
 export { AddToSellQuotationPicker } from './AddToSellQuotationPicker';
 export type { AddToSellQuotationPickerProps } from './AddToSellQuotationPicker';
-export { CustomerProductHistoryHint } from './CustomerProductHistoryHint';
+export {
+  CustomerProductHistoryHint,
+  shouldShowCustomerHistorySubrow,
+} from './CustomerProductHistoryHint';
 export type { CustomerProductHistoryHintProps } from './CustomerProductHistoryHint';
 export { useCustomerProductHistory } from './useCustomerProductHistory';
 export * from './scanSellStyles';

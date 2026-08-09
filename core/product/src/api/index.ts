@@ -6,6 +6,8 @@ export { shopMenuApi } from './menu.api';
 export { sellCatalogApi } from './sell-catalog.api';
 export { purchasesApi } from './purchases.api';
 export { refundsApi } from './refunds.api';
+export { creditNoteApi } from './credit-note.api';
+export type { CreditNoteSource } from './credit-note.api';
 export { uploadApi } from './upload.api';
 export {
   INVENTORY_ENDPOINTS,

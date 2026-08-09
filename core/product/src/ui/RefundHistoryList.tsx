@@ -4,10 +4,12 @@ import type { Refund } from '@inventory-platform/product/types';
 import { useNotify } from '@inventory-platform/session';
 import {
   Box,
+  Button,
   Card,
   CardBody,
   CenteredLoader,
   EmptyState,
+  Inline,
   PaginationBar,
   Stack,
   Table,
@@ -22,6 +24,7 @@ import {
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { HistoryListSummary } from './HistoryListSummary';
+import { PrintCreditNoteModal } from './PrintCreditNoteModal';
 import type { HistoryFilters } from './historyFilters';
 import {
   hasActiveHistoryFilters,
@@ -118,6 +121,10 @@ export function RefundHistoryList({ refreshTrigger, filters }: RefundHistoryList
   const filtering = applied != null && hasActiveHistoryFilters(applied, 'customerReturnHistory');
 
   const [refunds, setRefunds] = useState<Refund[]>([]);
+  const [printTarget, setPrintTarget] = useState<{
+    refundId: string;
+    creditNoteNo?: string;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [limit] = useState(PAGE_SIZE);
@@ -223,9 +230,26 @@ export function RefundHistoryList({ refreshTrigger, filters }: RefundHistoryList
                         {note}
                       </Text>
                     </Box>
-                    <Text as="p" className={productChrome.historyRecordAmount}>
-                      {formatCurrency(refund.refundAmount)}
-                    </Text>
+                    <Box className={productChrome.historyRecordActions}>
+                      <Text as="p" className={productChrome.historyRecordAmount}>
+                        {formatCurrency(refund.refundAmount)}
+                      </Text>
+                      <Inline gap="xs" align="center">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            setPrintTarget({
+                              refundId: refund.refundId,
+                              creditNoteNo: refund.creditNoteNo,
+                            })
+                          }
+                        >
+                          Print
+                        </Button>
+                      </Inline>
+                    </Box>
                   </Box>
 
                   <Box className={productChrome.salePickGrid}>
@@ -307,6 +331,15 @@ export function RefundHistoryList({ refreshTrigger, filters }: RefundHistoryList
         disabled={isLoading}
         onPageChange={(p) => handlePageChange(p + 1)}
         aria-label="Customer return pages"
+      />
+
+      <PrintCreditNoteModal
+        isOpen={printTarget != null}
+        onClose={() => setPrintTarget(null)}
+        source="customer"
+        documentId={printTarget?.refundId ?? ''}
+        creditNoteNo={printTarget?.creditNoteNo}
+        onError={(message) => notifyError(message)}
       />
     </Stack>
   );

@@ -40,6 +40,7 @@ import { useCapabilityFeatureGuard } from '@inventory-platform/routing';
 import { ChevronRight, Minus, Plus } from 'lucide-react';
 import {
   PaymentMethodSplit,
+  PrintCreditNoteModal,
   VendorReturnHistoryList,
   emptyPaymentSplit,
   isCreditMethod,
@@ -311,6 +312,10 @@ export function VendorReturnPage() {
   const { success, error: notifyError } = useNotify;
   const [activeTab, setActiveTab] = useState<'process' | 'history'>('process');
   const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
+  const [printAfterCreate, setPrintAfterCreate] = useState<{
+    returnId: string;
+    creditNoteNo?: string;
+  } | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [returnRecording, setReturnRecording] = useState(false);
   const [vendorName, setVendorName] = useState('');
@@ -582,10 +587,14 @@ export function VendorReturnPage() {
         creditAmount: paymentSplit.creditAmount,
       });
       success(
-        `Return recorded. Supplier credit note: ${res.supplierCreditNoteNo}. Amount: ${formatMoney(
+        `Return recorded. Debit note: ${res.supplierCreditNoteNo}. Amount: ${formatMoney(
           res.returnAmount,
         )}`,
       );
+      setPrintAfterCreate({
+        returnId: res.returnId,
+        creditNoteNo: res.supplierCreditNoteNo,
+      });
       setHistoryRefreshTrigger((t) => t + 1);
       resetSelection();
       void loadInvoices();
@@ -639,7 +648,7 @@ export function VendorReturnPage() {
         </Button>
       </Inline>
 
-      <PageHeader description="Find a supplier purchase invoice, then enter how many selling units you are sending back—the same counting unit as stock on the shelf (like “Return to customer”). Credit notes appear in GSTR‑2 CDNR / CDNUR when applicable." />
+      <PageHeader description="Find a supplier purchase invoice, then enter how many selling units you are sending back—the same counting unit as stock on the shelf (like “Return to customer”). Debit notes feed GSTR‑2 CDNR / CDNUR when applicable." />
 
       {activeTab === 'history' ? (
         <Card>
@@ -1112,6 +1121,15 @@ export function VendorReturnPage() {
           </CardBody>
         </Card>
       ) : null}
+
+      <PrintCreditNoteModal
+        isOpen={printAfterCreate != null}
+        onClose={() => setPrintAfterCreate(null)}
+        source="vendor"
+        documentId={printAfterCreate?.returnId ?? ''}
+        creditNoteNo={printAfterCreate?.creditNoteNo}
+        onError={(message) => notifyError(message)}
+      />
     </Stack>
   );
 }
