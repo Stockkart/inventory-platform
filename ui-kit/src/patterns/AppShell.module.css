@@ -54,10 +54,17 @@
     90deg,
     color-mix(in srgb, #1e3a5f 8%, var(--sk-color-bg-header, #f3f6fb)) 0%,
     var(--sk-color-bg-header, #f3f6fb) 28%,
-    color-mix(in srgb, var(--sk-color-brand, #1e3a5f) 4%, #f8fafc) 100%
+    color-mix(in srgb, var(--sk-color-brand, #1e3a5f) 4%, var(--sk-color-bg-header, #f8fafc)) 100%
   );
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) inset, 0 1px 2px rgba(15, 35, 59, 0.04);
   overflow: visible;
+}
+
+/* The third gradient stop mixed into a literal #f8fafc, so the header faded to
+   near-white on the right whatever the theme. The inset white sheen is also a
+   light-mode treatment and reads as a bright seam on a dark header. */
+[data-theme='dark'] .shellHeader {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
 .mainColumn {
@@ -488,7 +495,17 @@
 .headerIconButton:hover {
   color: #355a82;
   border-color: color-mix(in srgb, var(--sk-color-brand, #355a82) 35%, transparent);
-  background: color-mix(in srgb, var(--sk-color-brand, #355a82) 8%, #fff);
+  background: color-mix(
+    in srgb,
+    var(--sk-color-brand, #355a82) 8%,
+    var(--sk-color-bg-elevated, #fff)
+  );
+}
+
+/* Background now follows the theme (see the bg-elevated mix above); this text
+   colour was pinned dark and would otherwise sit dark-on-dark. */
+[data-theme='dark'] .headerIconButton:hover {
+  color: var(--sk-color-brand, #93c5fd);
 }
 
 .headerDivider {
@@ -524,6 +541,27 @@
   max-width: 12rem;
   min-width: 0;
   box-shadow: 0 1px 1px rgba(15, 35, 59, 0.04);
+}
+
+/* The header controls put a literal #fff first in their mix, so they stayed white
+   pills on the dark header. Mirror the light recipe with theme tokens: elevated
+   surface tinted toward the canvas, and text that is legible on it. */
+[data-theme='dark'] .headerIconButton,
+[data-theme='dark'] .headerThemeToggle {
+  background: color-mix(
+    in srgb,
+    var(--sk-color-bg-elevated, #1e293b) 82%,
+    var(--sk-color-bg-canvas, #0f172a)
+  );
+  color: var(--sk-color-text-secondary, #cbd5e1);
+}
+
+[data-theme='dark'] .headerUserTrigger {
+  background: color-mix(
+    in srgb,
+    var(--sk-color-bg-elevated, #1e293b) 78%,
+    var(--sk-color-bg-canvas, #0f172a)
+  );
 }
 
 .popoverNotification {
@@ -565,7 +603,11 @@
   padding: 0.85rem 1rem 0.75rem;
   border-bottom: 1px solid
     color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
-  background: color-mix(in srgb, var(--sk-color-bg-muted, #f8fafc) 55%, #fff);
+  background: color-mix(
+    in srgb,
+    var(--sk-color-bg-muted, #f8fafc) 55%,
+    var(--sk-color-bg-elevated, #fff)
+  );
 }
 
 .notificationPanelTitle {
@@ -665,11 +707,19 @@
 }
 
 .notificationRowUnread {
-  background: color-mix(in srgb, var(--sk-color-brand, #355a82) 5%, #fff) !important;
+  background: color-mix(
+    in srgb,
+    var(--sk-color-brand, #355a82) 5%,
+    var(--sk-color-bg-elevated, #fff)
+  ) !important;
 }
 
 .notificationRowUnread:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--sk-color-brand, #355a82) 9%, #fff) !important;
+  background: color-mix(
+    in srgb,
+    var(--sk-color-brand, #355a82) 9%,
+    var(--sk-color-bg-elevated, #fff)
+  ) !important;
 }
 
 .notificationTypeIcon {
@@ -751,7 +801,11 @@
   padding: 0.95rem 1rem;
   border-bottom: 1px solid
     color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
-  background: color-mix(in srgb, var(--sk-color-bg-muted, #f8fafc) 45%, #fff);
+  background: color-mix(
+    in srgb,
+    var(--sk-color-bg-muted, #f8fafc) 45%,
+    var(--sk-color-bg-elevated, #fff)
+  );
 }
 
 .menuUserName {
@@ -1067,7 +1121,11 @@
   padding: 0.65rem 0.75rem;
   border-radius: 10px;
   border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 82%, transparent);
-  background: color-mix(in srgb, var(--sk-color-bg-muted, #f8fafc) 60%, #fff);
+  background: color-mix(
+    in srgb,
+    var(--sk-color-bg-muted, #f8fafc) 60%,
+    var(--sk-color-bg-elevated, #fff)
+  );
 }
 
 .shopCurrentIcon {
@@ -1124,7 +1182,11 @@
 
 .shopSwitchBtn:hover:not(:disabled) {
   border-color: color-mix(in srgb, var(--sk-color-brand, #355a82) 28%, transparent) !important;
-  background: color-mix(in srgb, var(--sk-color-brand, #355a82) 4%, #fff) !important;
+  background: color-mix(
+    in srgb,
+    var(--sk-color-brand, #355a82) 4%,
+    var(--sk-color-bg-elevated, #fff)
+  ) !important;
 }
 
 .shopSwitchBtnMain {
@@ -1505,4 +1567,14 @@
   .sidebarClosed {
     transform: translateX(-100%);
   }
+}
+
+/* Accent text pinned to a 700-weight blue chosen for contrast against white.
+   The brand token already carries a light variant for dark surfaces. */
+[data-theme='dark'] .notificationUnreadCount,
+[data-theme='dark'] .notificationTypeIconReminder,
+[data-theme='dark'] .shopCurrentIcon,
+[data-theme='dark'] .helpPanelIcon,
+[data-theme='dark'] .helpExternalLink:hover {
+  color: var(--sk-color-brand, #93c5fd);
 }

@@ -186,7 +186,7 @@
   font-weight: 600;
   cursor: pointer;
   border: 1px solid var(--border-color, rgba(148, 163, 184, 0.45));
-  background: var(--card-bg, #fff);
+  background: var(--sk-color-bg-elevated, #fff);
   color: var(--text-primary, #0f172a);
   white-space: nowrap;
 }
@@ -204,7 +204,7 @@
   padding: 0.75rem 0.85rem;
   border-radius: 10px;
   border: 1px solid var(--border-color, rgba(148, 163, 184, 0.35));
-  background: color-mix(in srgb, var(--card-bg, #fff) 96%, #2563eb 4%);
+  background: color-mix(in srgb, var(--sk-color-bg-elevated, #fff) 96%, #2563eb 4%);
   text-decoration: none;
   color: inherit;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
@@ -229,7 +229,11 @@
 }
 
 .subTotalCell {
-  background: color-mix(in srgb, var(--card-bg, #fff) 88%, var(--border-color, #e2e8f0));
+  background: color-mix(
+    in srgb,
+    var(--sk-color-bg-elevated, #fff) 88%,
+    var(--border-color, #e2e8f0)
+  );
   font-weight: 700;
 }
 
@@ -1248,4 +1252,37 @@
   .overviewKpiGrid {
     grid-template-columns: 1fr;
   }
+}
+
+/*
+ * Dark mode for accounting / GST screens.
+ *
+ * The backgrounds here mix accents into `transparent`, so they tint whatever is
+ * behind them and already follow the theme. The semantic *text* colours did not:
+ * they are pinned to 700-weight red, green and blue, which are chosen for
+ * contrast against white and go muddy on a dark surface. These are the same hues
+ * at a light enough weight to stay readable, so positive still reads green,
+ * negative still reads red, and links still read blue.
+ */
+[data-theme='dark'] .acctItemBalanceNeg,
+[data-theme='dark'] .balanceUnbalanced,
+[data-theme='dark'] .overviewKpiValueWarning,
+[data-theme='dark'] .ledgerClosingValueNeg {
+  color: #fca5a5;
+}
+
+[data-theme='dark'] .balanceBalanced,
+[data-theme='dark'] .overviewKpiValuePositive {
+  color: #6ee7b7;
+}
+
+[data-theme='dark'] .entryLink.entryLink,
+[data-theme='dark'] .tbAccountLink.tbAccountLink,
+[data-theme='dark'] .templateChipActive {
+  color: var(--sk-color-brand, #93c5fd);
+}
+
+[data-theme='dark'] .entryLink.entryLink:hover:not(:disabled),
+[data-theme='dark'] .tbAccountLink.tbAccountLink:hover:not(:disabled) {
+  color: var(--sk-color-brand-hover, #bfdbfe);
 }

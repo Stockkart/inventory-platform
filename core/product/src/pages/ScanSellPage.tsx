@@ -3038,7 +3038,10 @@ export function ScanSellPage() {
                       </CardBody>
                     </Card>
 
-                    {cartData &&
+                    {/* Same figures as the Margins block below, in the cafe layout —
+                        hidden by `~` too, or the numbers would just leak here instead. */}
+                    {!hidePurchaseDetailsInSell &&
+                      cartData &&
                       (cartData.totalCost != null ||
                         cartData.revenueAfterTax != null ||
                         cartData.totalProfit != null ||
@@ -3830,7 +3833,11 @@ export function ScanSellPage() {
                       </>
                     )}
                   </Stack>
-                  {cartData &&
+                  {/* Cost, profit and margin are purchase-side figures, so they hide behind
+                      the same `~` toggle as purchase scheme and purchase discount — the
+                      point of that key is keeping them off a customer-facing screen. */}
+                  {!hidePurchaseDetailsInSell &&
+                    cartData &&
                     (cartData.totalCost != null ||
                       cartData.revenueAfterTax != null ||
                       cartData.totalProfit != null ||

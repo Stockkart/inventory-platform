@@ -83,6 +83,13 @@
   white-space: nowrap;
 }
 
+/* Hardcoded pale blue / dark blue pair does not flip with the theme. */
+[data-theme='dark'] .bulkApplyBtn {
+  border-color: color-mix(in srgb, var(--sk-color-brand, #93c5fd) 55%, transparent);
+  background: var(--sk-color-brand-soft, rgba(147, 197, 253, 0.18));
+  color: var(--sk-color-brand, #93c5fd);
+}
+
 .bulkApplyBtn:hover:not(:disabled) {
   background: #dbeafe;
 }
