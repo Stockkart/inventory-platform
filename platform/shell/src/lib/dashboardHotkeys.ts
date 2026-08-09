@@ -59,7 +59,7 @@ export function getShortcutHelpRows(modLabel: string): ShortcutHelpRow[] {
     },
     {
       action:
-        'Scan & Sell: hide or show purchase scheme and purchase add. discount (sale fields stay visible)',
+        'Scan & Sell: hide or show purchase scheme, purchase add. discount and margins (sale fields stay visible)',
       alternatives: [[h.scanSellHidePurchaseKeyLabel]],
     },
   ];

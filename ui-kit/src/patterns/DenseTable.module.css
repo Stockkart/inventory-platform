@@ -68,9 +68,12 @@
   width: 50px;
   padding: 0.25rem 0.35rem;
   font-size: 0.8rem;
-  background: var(--sk-color-bg-muted, var(--bg-secondary));
+  /* Same canvas + border pair as the price, discount and scheme inputs in this
+     row. The border is not decoration: on a white row a border-less white field
+     reads as static text, losing the cue that it is editable. */
+  background: var(--sk-color-bg-canvas, var(--bg-primary));
   color: var(--sk-color-text-primary, var(--text-primary));
-  border: none;
+  border: 1px solid var(--sk-color-border-default, var(--border-color));
   border-radius: 6px;
   -moz-appearance: textfield;
   appearance: textfield;

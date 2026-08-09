@@ -1417,11 +1417,19 @@
 
 .customersPhoneCell {
   width: 8.75rem;
-  white-space: nowrap;
 }
 
 .customersTable :global(tbody) .customersPhoneCell {
   font-variant-numeric: tabular-nums;
+  /* Contacts are often stored with two numbers ("90287… 90964…"). Wrapping is
+     deliberate: `white-space: nowrap` here had no `overflow: hidden` to clip it,
+     so the second number painted over the address column. Default wrapping
+     breaks at the space only, never mid-number. */
+  overflow-wrap: normal;
+  word-break: normal;
+  /* Backstop for a single unbreakable value wider than the column: clip rather
+     than let it bleed across the row again. */
+  overflow: hidden;
 }
 
 .customersEmailCell {
