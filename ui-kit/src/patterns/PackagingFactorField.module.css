@@ -115,7 +115,7 @@
 
 .factorInputWrap:focus-within {
   border-color: #3b82f6;
-  box-shadow: 0 0 0 3px var(--focus-ring);
+  box-shadow: 0 0 0 3px var(--sk-color-focus-ring, rgba(37, 99, 235, 0.35));
 }
 
 .factorUnitWrap {

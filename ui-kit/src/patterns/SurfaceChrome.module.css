@@ -238,7 +238,7 @@
 }
 
 .linkStrong {
-  color: var(--link-color, #2563eb);
+  color: var(--sk-color-accent, #2563eb);
   font-weight: 600;
 }
 
@@ -566,6 +566,11 @@
   box-shadow: 0 1px 2px rgba(22, 163, 74, 0.06);
 }
 
+/* Pale green fill does not flip; keep the green cue but on a dark surface. */
+[data-theme='dark'] .planCardCurrent {
+  background: color-mix(in srgb, #16a34a 14%, var(--sk-color-bg-elevated, #1e293b));
+}
+
 .planCardCurrent:hover {
   border-color: color-mix(in srgb, #16a34a 55%, transparent);
   box-shadow: 0 4px 14px rgba(22, 163, 74, 0.08);
@@ -869,6 +874,11 @@
 .reminderSegmentBtn:hover:not(:disabled) {
   background: color-mix(in srgb, #fff 70%, transparent);
   color: var(--sk-color-text-primary, #0f172a);
+}
+
+/* A 70% white wash reads as a bright flash on a dark surface. */
+[data-theme='dark'] .reminderSegmentBtn:hover:not(:disabled) {
+  background: var(--sk-color-hover, rgba(248, 250, 252, 0.06));
 }
 
 .reminderSegmentBtnActive {
@@ -1202,6 +1212,14 @@
   border-color: color-mix(in srgb, #3b82f6 55%, transparent) !important;
   background: color-mix(in srgb, #eff6ff 88%, #fff) !important;
   color: #1d4ed8 !important;
+}
+
+/* Active-state chips pin a pale tint and a dark accent text colour, neither of
+   which flips with the theme. The brand tokens already carry dark variants. */
+[data-theme='dark'] .accessFieldChipActive,
+[data-theme='dark'] .accessFieldChipActive:hover:not(:disabled) {
+  background: var(--sk-color-brand-soft, rgba(147, 197, 253, 0.18)) !important;
+  color: var(--sk-color-brand, #93c5fd) !important;
 }
 
 .accessFieldToolbar {
@@ -1560,7 +1578,11 @@
   padding: 0.85rem 1rem;
   border-radius: var(--sk-radius-md, 8px);
   border: 1px dashed color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 90%, transparent);
-  background: color-mix(in srgb, var(--sk-color-bg-muted, #f8fafc) 70%, #fff);
+  background: color-mix(
+    in srgb,
+    var(--sk-color-bg-muted, #f8fafc) 70%,
+    var(--sk-color-bg-elevated, #fff)
+  );
   font-size: 0.8125rem;
   color: var(--sk-color-text-secondary, #64748b);
 }
@@ -1638,7 +1660,11 @@
   margin: 0.15rem 0 0.35rem;
   padding: 1rem 1.1rem;
   border-radius: var(--sk-radius-md, 8px);
-  background: color-mix(in srgb, var(--sk-color-bg-muted, #f8fafc) 88%, #fff);
+  background: color-mix(
+    in srgb,
+    var(--sk-color-bg-muted, #f8fafc) 88%,
+    var(--sk-color-bg-elevated, #fff)
+  );
   border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 92%, transparent);
 }
 
@@ -1665,7 +1691,7 @@
   padding: 0.12rem 0.45rem;
   border-radius: var(--sk-radius-full, 999px);
   border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 85%, transparent);
-  background: #fff;
+  background: var(--sk-color-bg-elevated, #fff);
   color: var(--sk-color-text-secondary, #475569);
   font-size: 0.6875rem;
   font-weight: 500;
@@ -1679,7 +1705,7 @@
   table-layout: fixed;
   border-collapse: collapse;
   font-size: 0.8125rem;
-  background: #fff;
+  background: var(--sk-color-bg-elevated, #fff);
   border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 90%, transparent);
   border-radius: var(--sk-radius-sm, 6px);
   overflow: hidden;
@@ -1699,7 +1725,11 @@
 }
 
 .historyNestedTable :global(thead th) {
-  background: color-mix(in srgb, var(--sk-color-bg-muted, #f8fafc) 75%, #fff);
+  background: color-mix(
+    in srgb,
+    var(--sk-color-bg-muted, #f8fafc) 75%,
+    var(--sk-color-bg-elevated, #fff)
+  );
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.03em;
@@ -1712,7 +1742,11 @@
 }
 
 .historyNestedTable :global(tbody tr:hover td) {
-  background: color-mix(in srgb, var(--sk-color-bg-muted, #f8fafc) 40%, #fff);
+  background: color-mix(
+    in srgb,
+    var(--sk-color-bg-muted, #f8fafc) 40%,
+    var(--sk-color-bg-elevated, #fff)
+  );
 }
 
 .historyProductCell {
@@ -1740,6 +1774,16 @@
   width: 7rem;
   padding-left: 0.85rem;
   padding-right: 1rem;
+}
+
+/* The product column had no horizontal padding of its own, so its text sat flush
+   against the table edge. Matches the :nth-child() specificity the other columns
+   use — a bare `.historyProductCell` loses to `.historyNestedTable td`, which is
+   also why that class needs `text-align: left !important`. */
+.historyNestedTable :global(th):first-child,
+.historyNestedTable :global(td):first-child {
+  padding-left: 1.1rem;
+  padding-right: 0.85rem;
 }
 
 .historyStatusCell {
@@ -1976,7 +2020,11 @@
   padding: 1.15rem 1.25rem;
   border-bottom: 1px solid
     color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
-  background: color-mix(in srgb, var(--sk-color-bg-muted, #f8fafc) 55%, #fff);
+  background: color-mix(
+    in srgb,
+    var(--sk-color-bg-muted, #f8fafc) 55%,
+    var(--sk-color-bg-elevated, #fff)
+  );
 }
 
 .profileHeroMain {
@@ -2058,7 +2106,11 @@
   padding: 0.7rem 0.8rem;
   border-radius: 10px;
   border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 85%, transparent);
-  background: color-mix(in srgb, var(--sk-color-bg-muted, #f8fafc) 42%, #fff);
+  background: color-mix(
+    in srgb,
+    var(--sk-color-bg-muted, #f8fafc) 42%,
+    var(--sk-color-bg-elevated, #fff)
+  );
 }
 
 .profileFieldWide {
@@ -2092,7 +2144,11 @@
   padding: 1rem 1.25rem;
   border-bottom: 1px solid
     color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
-  background: color-mix(in srgb, var(--sk-color-bg-muted, #f8fafc) 55%, #fff);
+  background: color-mix(
+    in srgb,
+    var(--sk-color-bg-muted, #f8fafc) 55%,
+    var(--sk-color-bg-elevated, #fff)
+  );
 }
 
 .profileEditTitle {
@@ -2144,7 +2200,7 @@
     color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
   background: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--sk-color-bg-muted, #f8fafc) 70%, #fff) 0%,
+    color-mix(in srgb, var(--sk-color-bg-muted, #f8fafc) 70%, var(--sk-color-bg-elevated, #fff)) 0%,
     #fff 55%
   );
 }
@@ -2165,7 +2221,11 @@
   padding: 0.35rem 0.65rem;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 80%, transparent);
-  background: color-mix(in srgb, var(--sk-color-bg-muted, #f8fafc) 70%, #fff);
+  background: color-mix(
+    in srgb,
+    var(--sk-color-bg-muted, #f8fafc) 70%,
+    var(--sk-color-bg-elevated, #fff)
+  );
   color: var(--sk-color-text-secondary, #475569);
   font-size: 0.75rem;
   font-weight: 600;
@@ -2190,12 +2250,22 @@
   flex-shrink: 0;
   padding: 0.12rem 0.4rem;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--sk-color-brand, #2563eb) 14%, #fff);
+  background: color-mix(
+    in srgb,
+    var(--sk-color-brand, #2563eb) 14%,
+    var(--sk-color-bg-elevated, #fff)
+  );
   color: #1d4ed8;
   font-size: 0.625rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+/* Background now follows the theme (see the bg-elevated mix above); this text
+   colour was pinned dark and would otherwise sit dark-on-dark. */
+[data-theme='dark'] .invoiceTemplateChipDefaultTag {
+  color: var(--sk-color-brand, #93c5fd);
 }
 
 .invoiceSettingsTitle {
@@ -2227,7 +2297,11 @@
   padding: 1.15rem 1.2rem 1.35rem;
   border-right: 1px solid
     color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
-  background: color-mix(in srgb, var(--sk-color-bg-muted, #f8fafc) 28%, #fff);
+  background: color-mix(
+    in srgb,
+    var(--sk-color-bg-muted, #f8fafc) 28%,
+    var(--sk-color-bg-elevated, #fff)
+  );
   max-height: min(78vh, 52rem);
   overflow-y: auto;
 }
@@ -2253,7 +2327,7 @@
   padding: 0.7rem 0.65rem;
   border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
-  background: #fff;
+  background: var(--sk-color-bg-elevated, #fff);
   text-align: left;
   cursor: pointer;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
@@ -2261,7 +2335,11 @@
 
 .invoiceTemplateChip:hover:not(:disabled) {
   border-color: color-mix(in srgb, var(--sk-color-brand, #2563eb) 35%, #cbd5e1);
-  background: color-mix(in srgb, var(--sk-color-brand, #2563eb) 4%, #fff);
+  background: color-mix(
+    in srgb,
+    var(--sk-color-brand, #2563eb) 4%,
+    var(--sk-color-bg-elevated, #fff)
+  );
 }
 
 .invoiceTemplateChip:focus-visible {
@@ -2271,7 +2349,11 @@
 
 .invoiceTemplateChipSelected {
   border-color: color-mix(in srgb, var(--sk-color-brand, #2563eb) 55%, #94a3b8);
-  background: color-mix(in srgb, var(--sk-color-brand, #2563eb) 8%, #fff);
+  background: color-mix(
+    in srgb,
+    var(--sk-color-brand, #2563eb) 8%,
+    var(--sk-color-bg-elevated, #fff)
+  );
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--sk-color-brand, #2563eb) 28%, transparent);
 }
 
@@ -2282,13 +2364,27 @@
   width: 1.85rem;
   height: 1.85rem;
   border-radius: 8px;
-  background: color-mix(in srgb, var(--sk-color-bg-muted, #f1f5f9) 90%, #fff);
+  background: color-mix(
+    in srgb,
+    var(--sk-color-bg-muted, #f1f5f9) 90%,
+    var(--sk-color-bg-elevated, #fff)
+  );
   color: var(--sk-color-text-secondary, #475569);
 }
 
 .invoiceTemplateChipSelected .invoiceTemplateChipIcon {
-  background: color-mix(in srgb, var(--sk-color-brand, #2563eb) 14%, #fff);
+  background: color-mix(
+    in srgb,
+    var(--sk-color-brand, #2563eb) 14%,
+    var(--sk-color-bg-elevated, #fff)
+  );
   color: #1d4ed8;
+}
+
+/* Background now follows the theme (see the bg-elevated mix above); this text
+   colour was pinned dark and would otherwise sit dark-on-dark. */
+[data-theme='dark'] .invoiceTemplateChipSelected .invoiceTemplateChipIcon {
+  color: var(--sk-color-brand, #93c5fd);
 }
 
 .invoiceTemplateChipTitle {
@@ -2311,7 +2407,11 @@
   display: inline-flex;
   padding: 0.2rem;
   border-radius: 10px;
-  background: color-mix(in srgb, var(--sk-color-bg-muted, #e2e8f0) 55%, #fff);
+  background: color-mix(
+    in srgb,
+    var(--sk-color-bg-muted, #e2e8f0) 55%,
+    var(--sk-color-bg-elevated, #fff)
+  );
   border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 80%, transparent);
   width: fit-content;
   max-width: 100%;
@@ -2331,7 +2431,7 @@
   padding: 0.85rem 0.9rem;
   border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 85%, transparent);
-  background: #fff;
+  background: var(--sk-color-bg-elevated, #fff);
 }
 
 .invoiceToggleGroup {
@@ -2397,6 +2497,11 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
+/* The white radial highlight is a light-mode sheen; drop it in dark. */
+[data-theme='dark'] .invoicePreviewStage {
+  background: var(--sk-color-bg-surface, #111827);
+}
+
 .invoicePreviewPaper {
   position: relative;
   flex-shrink: 0;
@@ -2442,6 +2547,11 @@
   backdrop-filter: blur(1px);
   pointer-events: none;
   z-index: 2;
+}
+
+/* The scrim must dim toward the theme's surface, not toward white. */
+[data-theme='dark'] .invoicePreviewBusy {
+  background: color-mix(in srgb, var(--sk-color-bg-surface, #111827) 72%, transparent);
 }
 
 .invoicePreviewHint {
@@ -2496,7 +2606,7 @@
 
   border-radius: 999px;
   background: color-mix(in srgb, var(--sk-color-text-primary, #18181b) 92%, transparent);
-  color: var(--sk-color-bg-default, #fafafa);
+  color: var(--sk-color-bg-canvas, #fafafa);
   font-size: 0.8125rem;
   line-height: 1;
   box-shadow: 0 4px 16px rgba(15, 23, 42, 0.25);
@@ -2599,4 +2709,16 @@
     flex-direction: column;
     align-items: stretch;
   }
+}
+
+/* Semantic + accent text pinned for white backgrounds. */
+[data-theme='dark'] .reminderSegmentBtnActive,
+[data-theme='dark'] .reminderSegmentBtnActive:hover:not(:disabled),
+[data-theme='dark'] .accessFieldGroupAction:hover:not(:disabled),
+[data-theme='dark'] .profileHeroIcon {
+  color: var(--sk-color-brand, #93c5fd);
+}
+
+[data-theme='dark'] .reminderListDueOverdue {
+  color: #fca5a5;
 }

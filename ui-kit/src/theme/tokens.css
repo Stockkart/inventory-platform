@@ -112,8 +112,12 @@
   --sk-color-text-secondary: #cbd5e1;
   --sk-color-text-muted: #94a3b8;
   --sk-color-text-inverse: #0f172a;
-  --sk-color-border-default: #1e293b;
-  --sk-color-border-strong: #334155;
+  /* Shifted one step lighter than the surfaces. border-default was #1e293b,
+     identical to --sk-color-bg-elevated, so every card drawn as
+     `background: bg-elevated; border: 1px solid border-default` had a border
+     the exact colour of itself and read as having no border at all. */
+  --sk-color-border-default: #334155;
+  --sk-color-border-strong: #475569;
   --sk-color-brand: #93c5fd;
   --sk-color-brand-hover: #bfdbfe;
   --sk-color-brand-cyan: #7dd3fc;

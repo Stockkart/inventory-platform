@@ -37,7 +37,7 @@
 }
 
 .tr:hover {
-  background: var(--sk-color-bg-hover, var(--hover-bg));
+  background: var(--sk-color-hover, var(--hover-bg));
 }
 
 [data-theme='dark'] .tr:hover {

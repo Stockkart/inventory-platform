@@ -306,6 +306,13 @@
   font-weight: 650 !important;
 }
 
+/* Active-state chips pin a pale tint and a dark accent text colour, neither of
+   which flips with the theme. The brand tokens already carry dark variants. */
+[data-theme='dark'] .onboardingShopTypeBtnActive {
+  background: var(--sk-color-brand-soft, rgba(147, 197, 253, 0.18)) !important;
+  color: var(--sk-color-brand, #93c5fd) !important;
+}
+
 /* Auth pages */
 .authMain {
   position: relative;
@@ -460,4 +467,10 @@
   .authTitle {
     font-size: 1.4rem;
   }
+}
+
+/* Link hover pinned to blue-700; unreadable on the dark auth surface. */
+[data-theme='dark'] .authMetaLink:hover,
+[data-theme='dark'] .authFooter a:hover {
+  color: var(--sk-color-brand, #93c5fd);
 }
