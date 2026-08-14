@@ -69,7 +69,7 @@ const PRINTER_OPTIONS: Array<{
   {
     value: 'DOT_MATRIX',
     title: 'Dot matrix',
-    description: 'Compact A4',
+    description: '10×12 in continuous form',
     icon: Printer,
   },
   {
@@ -103,6 +103,20 @@ function wrapPreviewHtml(html: string, printerType: InvoicePrinterType): string 
         width: 74mm !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
+      }
+    `
+    : printerType === 'DOT_MATRIX'
+    ? `
+      html, body { background: #fff; }
+      body {
+        margin: 8px !important;
+        box-sizing: border-box !important;
+      }
+      pre {
+        font-family: Courier, "Courier New", monospace !important;
+        font-size: 12pt !important;
+        line-height: 1.0 !important;
+        white-space: pre !important;
       }
     `
     : `
@@ -591,6 +605,8 @@ export function InvoiceSettingsSection() {
           >
             {defaultPrinterType === 'THERMAL_3INCH'
               ? 'Shown as a 75mm receipt strip — same layout as thermal prints.'
+              : defaultPrinterType === 'DOT_MATRIX'
+              ? '8×12 in printable area (80-column head). 10×12 paper will still show tractor margins — print the .txt, not this PDF, on the printer.'
               : 'Shown as print-sized paper — same template as checkout PDFs.'}
           </Text>
 

@@ -44,6 +44,7 @@ export const VENDOR_PURCHASE_RETURNS_ENDPOINTS = {
     printerType != null
       ? `/vendor-purchase-returns/${returnId}/pdf?printerType=${printerType}`
       : `/vendor-purchase-returns/${returnId}/pdf`,
+  DOT_MATRIX: (returnId: string) => `/vendor-purchase-returns/${returnId}/dot-matrix`,
 } as const;
 
 /** Inventory correction paths. */
@@ -82,6 +83,7 @@ export const INVOICE_ENDPOINTS = {
     printerType != null
       ? `/invoices/${purchaseId}/pdf?printerType=${printerType}`
       : `/invoices/${purchaseId}/pdf`,
+  DOT_MATRIX: (purchaseId: string) => `/invoices/${purchaseId}/dot-matrix`,
 } as const;
 
 /** Purchase history paths. */
@@ -98,6 +100,7 @@ export const REFUND_ENDPOINTS = {
     printerType != null
       ? `/refund/${refundId}/pdf?printerType=${printerType}`
       : `/refund/${refundId}/pdf`,
+  DOT_MATRIX: (refundId: string) => `/refund/${refundId}/dot-matrix`,
 } as const;
 
 /** QR upload pairing paths. */

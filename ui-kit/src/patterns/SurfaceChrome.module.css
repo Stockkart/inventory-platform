@@ -2524,6 +2524,10 @@
   width: min(100%, 36rem);
 }
 
+.invoicePreviewPaperDotMatrix .invoicePreviewFrame {
+  height: 42rem;
+}
+
 .invoicePreviewFrame {
   display: block;
   width: 100%;

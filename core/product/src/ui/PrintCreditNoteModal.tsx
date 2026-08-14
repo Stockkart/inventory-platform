@@ -5,6 +5,7 @@ import { creditNoteApi, type CreditNoteSource } from '../api/credit-note.api';
 import { invoiceSettingsApi } from '../api/invoice-settings.api';
 import type { PrinterType } from '../api/endpoints';
 import {
+  Alert,
   Box,
   Button,
   Icon,
@@ -44,7 +45,7 @@ const PRINTER_OPTIONS: Array<{
   {
     value: 'DOT_MATRIX',
     title: 'Dot Matrix',
-    description: 'Compact monospace layout on A4',
+    description: '10×12 in text file for impact printers',
     icon: Printer,
   },
   {
@@ -54,6 +55,27 @@ const PRINTER_OPTIONS: Array<{
     icon: Receipt,
   },
 ];
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+}
+
+function openPdfPreview(blob: Blob, fallbackName: string) {
+  const url = window.URL.createObjectURL(blob);
+  const newWindow = window.open(url, '_blank');
+  if (!newWindow) {
+    downloadBlob(blob, fallbackName);
+  } else {
+    window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+  }
+}
 
 export function PrintCreditNoteModal({
   isOpen,
@@ -89,27 +111,16 @@ export function PrintCreditNoteModal({
     };
   }, [isOpen]);
 
-  const handleGenerate = async () => {
+  const filePrefix = source === 'vendor' ? 'debit-note' : 'credit-note';
+
+  const handlePreviewPdf = async () => {
     setIsGenerating(true);
     try {
       const pdfBlob =
         source === 'customer'
           ? await creditNoteApi.getCustomerCreditNotePdf(documentId, printerType)
           : await creditNoteApi.getVendorCreditNotePdf(documentId, printerType);
-      const url = window.URL.createObjectURL(pdfBlob);
-      const newWindow = window.open(url, '_blank');
-      const filePrefix = source === 'vendor' ? 'debit-note' : 'credit-note';
-
-      if (!newWindow) {
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${filePrefix}-${creditNoteNo || documentId}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
-
-      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+      openPdfPreview(pdfBlob, `${filePrefix}-${creditNoteNo || documentId}.pdf`);
       onClose();
     } catch (err) {
       const message =
@@ -124,7 +135,30 @@ export function PrintCreditNoteModal({
     }
   };
 
+  const handleDownloadPrintFile = async () => {
+    setIsGenerating(true);
+    try {
+      const textBlob =
+        source === 'customer'
+          ? await creditNoteApi.getCustomerCreditNoteDotMatrixText(documentId)
+          : await creditNoteApi.getVendorCreditNoteDotMatrixText(documentId);
+      downloadBlob(textBlob, `${filePrefix}-${creditNoteNo || documentId}.txt`);
+      onClose();
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : source === 'vendor'
+          ? 'Failed to download debit note print file'
+          : 'Failed to download credit note print file';
+      onError?.(message);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const handleClose = isGenerating ? undefined : onClose;
+  const isDotMatrix = printerType === 'DOT_MATRIX';
   const modalTitle = source === 'vendor' ? 'Print Debit Note' : 'Print Credit Note';
   const modalHint =
     source === 'vendor'
@@ -182,16 +216,40 @@ export function PrintCreditNoteModal({
               );
             })}
           </Box>
+          {isDotMatrix ? (
+            <Alert variant="info">
+              Print the .txt at 10 CPI (Pica). Standard 80-column printers only paint 8 inches; the
+              extra 10×12 paper beside the holes cannot be used. Do not print the PDF on the
+              dot-matrix.
+            </Alert>
+          ) : null}
         </Stack>
       </Modal.Body>
       <Modal.Footer>
         <Button type="button" variant="outline" onClick={onClose} disabled={isGenerating}>
           Cancel
         </Button>
+        {isDotMatrix ? (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void handlePreviewPdf()}
+            disabled={isGenerating || !documentId}
+          >
+            {isGenerating ? (
+              <Inline gap="sm" align="center">
+                <Spinner size="sm" />
+                Generating…
+              </Inline>
+            ) : (
+              'Preview PDF'
+            )}
+          </Button>
+        ) : null}
         <Button
           type="button"
           variant="solid"
-          onClick={() => void handleGenerate()}
+          onClick={() => void (isDotMatrix ? handleDownloadPrintFile() : handlePreviewPdf())}
           disabled={isGenerating || !documentId}
         >
           {isGenerating ? (
@@ -199,6 +257,8 @@ export function PrintCreditNoteModal({
               <Spinner size="sm" />
               Generating…
             </Inline>
+          ) : isDotMatrix ? (
+            'Download print file'
           ) : (
             'Generate PDF'
           )}

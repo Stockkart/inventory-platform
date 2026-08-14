@@ -71,4 +71,19 @@ export const cartApi = {
 
     return response.data;
   },
+
+  getInvoiceDotMatrixText: async (purchaseId: string): Promise<Blob> => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    const shopId = typeof window !== 'undefined' ? localStorage.getItem('x_shop_id') : null;
+
+    const response = await axios.get(`${API_BASE_URL}${INVOICE_ENDPOINTS.DOT_MATRIX(purchaseId)}`, {
+      responseType: 'blob',
+      headers: {
+        Authorization: token ? `Bearer ${token}` : '',
+        ...(shopId ? { 'X-Shop-Id': shopId } : {}),
+      },
+    });
+
+    return response.data;
+  },
 };
