@@ -1106,10 +1106,13 @@ export function ProductEntryPage() {
         barcode: item.barcode || '',
         name: item.name || '',
         companyName: item.companyName || '',
-        price: item.priceToRetail || 0,
+        price: item.priceToRetail || item.maximumRetailPrice || 0,
         maximumRetailPrice: item.maximumRetailPrice || 0,
         costPrice: item.costPrice || 0,
-        priceToRetail: item.priceToRetail || 0,
+        priceToRetail: isRetailPricing
+          ? item.priceToRetail || item.maximumRetailPrice || 0
+          : item.priceToRetail || 0,
+        sellingPrice: isRetailPricing ? item.maximumRetailPrice || item.priceToRetail || 0 : 0,
         businessType: item.businessType?.toLowerCase() || shopSchema?.verticalId || 'medical',
         location: item.location || '',
         count: item.count || 0,
