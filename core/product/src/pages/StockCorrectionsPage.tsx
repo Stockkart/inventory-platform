@@ -1,11 +1,10 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
-import { inventoryApi } from '../api/inventory.api';
+import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
 import { useAuthStore, useShopAccessStore } from '@inventory-platform/session';
 import type {
   InventoryCorrection,
   InventoryCorrectionLine,
   InventoryItem,
-  VendorPurchaseInvoiceDetail,
   VendorPurchaseInvoiceSummary,
 } from '@inventory-platform/product/types';
 import {
@@ -18,6 +17,7 @@ import {
   CenteredLoader,
   EmptyState,
   Icon,
+  IconButton,
   Inline,
   Input,
   PageHeader,
@@ -37,14 +37,16 @@ import {
   surfaceChrome,
   type BadgeVariant,
 } from '@inventory-platform/ui-kit';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, Printer, Trash2 } from 'lucide-react';
+import { openStockCountSheetPrintWindow } from '../lib/printStockCountSheet';
 
 export function meta() {
   return [
     { title: 'Stock corrections - StockKart' },
     {
       name: 'description',
-      content: 'Correct inventory stock with pending approvals and history',
+      content:
+        'Build a count list, print it for a physical count, enter counted qty, and send to pending',
     },
   ];
 }
@@ -121,18 +123,144 @@ function formatShortDate(iso: string): string {
   }
 }
 
-/** Billing date when present; otherwise first stock-in timestamp so the line isn’t blank. */
-function correctionInvoiceSubtitle(inv: VendorPurchaseInvoiceDetail): string {
-  const invoiced = inv.invoiceDate?.trim();
-  if (invoiced) return `Invoice ${formatShortDate(invoiced)}`;
-  const recorded = inv.createdAt?.trim();
-  if (recorded) return `Recorded ${formatShortDate(recorded)}`;
-  return '—';
-}
-
 function vendorName(inv: { vendorName?: string | null }): string {
   const n = inv.vendorName?.trim();
   return n && n.length > 0 ? n : 'Unknown vendor';
+}
+
+type WorkbenchSource = 'product' | 'invoice';
+
+type StockImpactKind = 'neutral' | 'loss' | 'gain' | 'na';
+
+type InvoiceMeta = {
+  invoiceNo: string;
+};
+
+type CorrectionDraftRow = {
+  inventoryId: string;
+  name: string | null;
+  batchNo: string | null;
+  invoiceNo: string | null;
+  createdAt: string | null;
+  receivedQty: number | null;
+  currentCount: number | string | null;
+  requestedCount: string;
+  costPrice: number | null;
+  sellingPrice: number | null;
+  qtyDeltaDisplay: string;
+  impact: { text: string; kind: StockImpactKind };
+};
+
+function toCorrectionDraftRow(args: {
+  inventoryId: string;
+  name: string | null;
+  batchNo: string | null;
+  invoiceNo: string | null;
+  createdAt: string | null;
+  receivedQty: number | null;
+  currentRaw: number | string | null;
+  requestedCount: string;
+  costPrice: number | null;
+  sellingPrice: number | null;
+}): CorrectionDraftRow {
+  const currentNum = parseDisplayNumber(args.currentRaw);
+  const draft = args.requestedCount;
+  const correctedNum = draft.trim() === '' ? null : Number(draft.trim());
+  const correctedValid = correctedNum != null && Number.isFinite(correctedNum);
+  let qtyDeltaDisplay = '—';
+  let impact: { text: string; kind: StockImpactKind } = {
+    text: '—',
+    kind: 'neutral',
+  };
+  if (correctedValid && currentNum !== null) {
+    qtyDeltaDisplay = formatQtyDelta(correctedNum, currentNum);
+    impact = formatStockImpact({
+      corrected: correctedNum,
+      current: currentNum,
+      costPrice: args.costPrice != null ? Number(args.costPrice) : null,
+      sellingPrice: args.sellingPrice != null ? Number(args.sellingPrice) : null,
+    });
+  }
+  return {
+    inventoryId: args.inventoryId,
+    name: args.name,
+    batchNo: args.batchNo,
+    invoiceNo: args.invoiceNo,
+    createdAt: args.createdAt,
+    receivedQty: args.receivedQty,
+    currentCount: args.currentRaw,
+    requestedCount: draft,
+    costPrice: args.costPrice,
+    sellingPrice: args.sellingPrice,
+    qtyDeltaDisplay,
+    impact,
+  };
+}
+
+function correctionSourceTitle(c: InventoryCorrection): string {
+  const invoice = c.invoiceNo?.trim();
+  if (invoice) return invoice;
+  const names: string[] = [];
+  const seen = new Set<string>();
+  for (const line of c.lines ?? []) {
+    const name = line.productName?.trim();
+    if (!name || seen.has(name)) continue;
+    seen.add(name);
+    names.push(name);
+  }
+  if (names.length === 0) return 'Product lots';
+  if (names.length === 1) return names[0];
+  return `${names[0]} +${names.length - 1}`;
+}
+
+function correctionVendorLabel(c: InventoryCorrection): string {
+  const vendor = c.vendorName?.trim();
+  if (vendor) return vendor;
+  if (c.invoiceNo?.trim()) return 'Unknown vendor';
+  return '—';
+}
+
+function groupCorrectionRows(
+  rows: CorrectionDraftRow[],
+): { name: string; rows: CorrectionDraftRow[] }[] {
+  const byName = new Map<string, CorrectionDraftRow[]>();
+  for (const row of rows) {
+    const name = row.name?.trim() || 'Product';
+    const list = byName.get(name);
+    if (list) {
+      list.push(row);
+    } else {
+      byName.set(name, [row]);
+    }
+  }
+  return [...byName.entries()].map(([name, groupRows]) => ({ name, rows: groupRows }));
+}
+
+function lotTimestamp(item: Pick<InventoryItem, 'createdAt' | 'purchaseDate'>): number {
+  const raw = item.createdAt?.trim() || item.purchaseDate?.trim();
+  if (!raw) return 0;
+  const t = Date.parse(raw);
+  return Number.isFinite(t) ? t : 0;
+}
+
+function sortLotsLatestFirst(lots: InventoryItem[]): InventoryItem[] {
+  return [...lots].sort((a, b) => lotTimestamp(b) - lotTimestamp(a));
+}
+
+function lotCreatedLabel(item: Pick<InventoryItem, 'createdAt' | 'purchaseDate'>): string | null {
+  const raw = item.createdAt?.trim() || item.purchaseDate?.trim();
+  return raw ? formatShortDate(raw) : null;
+}
+
+function lotBatchNo(
+  item: Pick<InventoryItem, 'batchNo' | 'verticalFields'> | null | undefined,
+): string | null {
+  if (!item) return null;
+  const core = item.batchNo?.trim();
+  if (core) return core;
+  const ext = item.verticalFields?.batchNo;
+  if (typeof ext === 'string' && ext.trim()) return ext.trim();
+  return null;
 }
 
 function parseDisplayNumber(n: unknown): number | null {
@@ -238,13 +366,13 @@ function qtyDeltaClass(display: string): string | undefined {
 }
 
 function impactClass(kind: string): string {
-  if (kind === 'increase') return surfaceChrome.impactIncrease;
-  if (kind === 'decrease') return surfaceChrome.impactDecrease;
+  if (kind === 'increase' || kind === 'gain') return surfaceChrome.impactIncrease;
+  if (kind === 'decrease' || kind === 'loss') return surfaceChrome.impactDecrease;
   return surfaceChrome.impactNeutral;
 }
 
 export function StockCorrectionsPage() {
-  const { user } = useAuthStore();
+  const { user, shop } = useAuthStore();
   const canApproveCorrections = useShopAccessStore((s) => {
     const access = user?.shopId ? s.byShopId[user.shopId] : undefined;
     return access?.stockCorrection?.canApprove ?? false;
@@ -252,9 +380,16 @@ export function StockCorrectionsPage() {
 
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
+  const [workbenchSource, setWorkbenchSource] = useState<WorkbenchSource>('product');
+  const [lotResults, setLotResults] = useState<InventoryItem[]>([]);
+  const [productSearchAttempted, setProductSearchAttempted] = useState(false);
+  const [countList, setCountList] = useState<InventoryItem[]>([]);
   const [invoiceResults, setInvoiceResults] = useState<VendorPurchaseInvoiceSummary[]>([]);
-  const [selectedInvoice, setSelectedInvoice] = useState<VendorPurchaseInvoiceDetail | null>(null);
-  const [inventoryById, setInventoryById] = useState<Record<string, InventoryItem>>({});
+  const [addingInvoiceId, setAddingInvoiceId] = useState<string | null>(null);
+  const [expandedInvoiceId, setExpandedInvoiceId] = useState<string | null>(null);
+  const [invoiceLotsById, setInvoiceLotsById] = useState<Record<string, InventoryItem[]>>({});
+  const [loadingInvoiceId, setLoadingInvoiceId] = useState<string | null>(null);
+  const [invoiceMetaById, setInvoiceMetaById] = useState<Record<string, InvoiceMeta>>({});
   const [draftQtyByInventoryId, setDraftQtyByInventoryId] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -271,20 +406,127 @@ export function StockCorrectionsPage() {
   const [lineBusy, setLineBusy] = useState<string | null>(null);
   const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
 
-  const searchInvoices = useCallback(async () => {
+  const countListIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const item of countList) {
+      const id = resolveInventoryDocumentId(item);
+      if (id) ids.add(id);
+    }
+    return ids;
+  }, [countList]);
+
+  const clearSearchResults = useCallback(() => {
+    setInvoiceResults([]);
+    setLotResults([]);
+    setProductSearchAttempted(false);
+    setExpandedInvoiceId(null);
+    setInvoiceLotsById({});
+    setLoadingInvoiceId(null);
+  }, []);
+
+  const clearCountList = useCallback(() => {
+    setCountList([]);
+    setInvoiceMetaById({});
+    setDraftQtyByInventoryId({});
+  }, []);
+
+  const switchWorkbenchSource = (next: WorkbenchSource) => {
+    if (next === workbenchSource) return;
+    setWorkbenchSource(next);
+    clearSearchResults();
+    setError(null);
+    setSuccess(null);
+  };
+
+  const mergeInvoiceMeta = useCallback(async (items: InventoryItem[]) => {
+    const invoiceIds = [
+      ...new Set(
+        items
+          .map((item) => item.vendorPurchaseInvoiceId?.trim())
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    if (invoiceIds.length === 0) return;
+    const entries = await Promise.all(
+      invoiceIds.map(async (id) => {
+        try {
+          const invoice = await inventoryApi.getVendorPurchaseInvoice(id);
+          const invoiceNo = invoice.invoiceNo?.trim();
+          return invoiceNo ? ([id, { invoiceNo }] as const) : null;
+        } catch {
+          return null;
+        }
+      }),
+    );
+    setInvoiceMetaById((prev) => {
+      const next = { ...prev };
+      for (const entry of entries) {
+        if (entry) next[entry[0]] = entry[1];
+      }
+      return next;
+    });
+  }, []);
+
+  const addInventoryItems = useCallback(
+    (items: InventoryItem[]): { added: number; skipped: number } => {
+      const fresh: InventoryItem[] = [];
+      const seen = new Set<string>();
+      let skipped = 0;
+      for (const item of items) {
+        const id = resolveInventoryDocumentId(item);
+        if (!id) continue;
+        if (countListIds.has(id) || seen.has(id)) {
+          skipped += 1;
+          continue;
+        }
+        seen.add(id);
+        fresh.push(item);
+      }
+      if (fresh.length === 0) {
+        return { added: 0, skipped };
+      }
+      setCountList((prev) => [...prev, ...fresh]);
+      void mergeInvoiceMeta(fresh);
+      return { added: fresh.length, skipped };
+    },
+    [countListIds, mergeInvoiceMeta],
+  );
+
+  const searchWorkbench = useCallback(async () => {
     setSearching(true);
     setError(null);
     setSuccess(null);
+    if (workbenchSource === 'product') {
+      setProductSearchAttempted(true);
+      try {
+        const res = await inventoryApi.search({
+          q: query.trim() || undefined,
+          limit: 50,
+        });
+        const lots = sortLotsLatestFirst(
+          (res.data ?? []).filter((item) => Boolean(resolveInventoryDocumentId(item))),
+        );
+        setLotResults(lots);
+        void mergeInvoiceMeta(lots);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to search products');
+        setLotResults([]);
+      } finally {
+        setSearching(false);
+      }
+      return;
+    }
     try {
       const res = await inventoryApi.listVendorPurchaseInvoices(0, 20, query);
       setInvoiceResults(res.invoices ?? []);
+      setExpandedInvoiceId(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to search invoices');
       setInvoiceResults([]);
     } finally {
       setSearching(false);
     }
-  }, [query]);
+  }, [query, workbenchSource, mergeInvoiceMeta]);
 
   const loadPending = useCallback(async () => {
     setPendingLoading(true);
@@ -341,14 +583,11 @@ export function StockCorrectionsPage() {
     void hydrateHistoryPricing();
   }, [activeTab, history, hydrateHistoryPricing]);
 
-  const pickInvoice = async (id: string) => {
-    setError(null);
-    setSuccess(null);
-    setSelectedInvoice(null);
-    setDraftQtyByInventoryId({});
-    try {
+  const ensureInvoiceLots = useCallback(
+    async (id: string): Promise<InventoryItem[]> => {
+      const cached = invoiceLotsById[id];
+      if (cached) return cached;
       const detail = await inventoryApi.getVendorPurchaseInvoice(id);
-      setSelectedInvoice(detail);
       const ids = Array.from(
         new Set(
           (detail.lines ?? [])
@@ -356,74 +595,157 @@ export function StockCorrectionsPage() {
             .filter((v): v is string => Boolean(v)),
         ),
       );
-      if (ids.length > 0) {
-        const rows = await inventoryApi.getByIds(ids);
-        const mapped: Record<string, InventoryItem> = {};
-        for (let i = 0; i < ids.length; i += 1) {
-          const inv = rows[i];
-          if (inv) mapped[ids[i]] = inv;
-        }
-        setInventoryById(mapped);
+      if (ids.length === 0) {
+        setInvoiceLotsById((prev) => ({ ...prev, [id]: [] }));
+        return [];
+      }
+      const rows = await inventoryApi.getByIds(ids);
+      const lots = sortLotsLatestFirst(
+        ids.map((_, i) => rows[i]).filter((item): item is InventoryItem => Boolean(item)),
+      );
+      if (detail.invoiceNo?.trim()) {
+        setInvoiceMetaById((prev) => ({
+          ...prev,
+          [detail.id]: { invoiceNo: detail.invoiceNo.trim() },
+        }));
+      }
+      setInvoiceLotsById((prev) => ({ ...prev, [id]: lots }));
+      return lots;
+    },
+    [invoiceLotsById],
+  );
+
+  const toggleInvoiceExpand = async (id: string) => {
+    if (expandedInvoiceId === id) {
+      setExpandedInvoiceId(null);
+      return;
+    }
+    setExpandedInvoiceId(id);
+    setError(null);
+    if (invoiceLotsById[id]) return;
+    setLoadingInvoiceId(id);
+    try {
+      await ensureInvoiceLots(id);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load invoice lines');
+      setExpandedInvoiceId(null);
+    } finally {
+      setLoadingInvoiceId(null);
+    }
+  };
+  const addInvoiceToList = async (id: string) => {
+    setError(null);
+    setSuccess(null);
+    setAddingInvoiceId(id);
+    try {
+      const lots = await ensureInvoiceLots(id);
+      if (lots.length === 0) {
+        setError('No inventory lines found on that invoice.');
+        return;
+      }
+      const { added, skipped } = addInventoryItems(lots);
+      if (added === 0) {
+        setSuccess(
+          skipped > 0 ? 'Those lots are already on the count list.' : 'No lots were added.',
+        );
       } else {
-        setInventoryById({});
+        setSuccess(
+          skipped > 0
+            ? `Added ${added} lots (${skipped} already on the list).`
+            : `Added ${added} lots to the count list.`,
+        );
+        window.setTimeout(() => setSuccess(null), 3000);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load invoice');
+    } finally {
+      setAddingInvoiceId(null);
     }
   };
 
-  const correctionRows = useMemo(() => {
-    if (!selectedInvoice) return [];
-    return (selectedInvoice.lines ?? [])
-      .filter((line) => Boolean(line.inventoryId))
-      .map((line) => {
-        const inventoryId = line.inventoryId as string;
-        const inv = inventoryById[inventoryId];
-        const receivedQty =
-          inv != null
-            ? inv.receivedCount
-            : line.count != null && Number.isFinite(Number(line.count))
-            ? Number(line.count)
-            : null;
-        const currentRaw = inv?.currentCount ?? line.count ?? null;
-        const draft = draftQtyByInventoryId[inventoryId] ?? '';
-        const currentNum = parseDisplayNumber(currentRaw);
-        const correctedNum = draft.trim() === '' ? null : Number(draft.trim());
-        const correctedValid = correctedNum != null && Number.isFinite(correctedNum);
-        const costPrice = line.costPrice ?? inv?.costPrice ?? null;
-        const sellingPrice = inv?.sellingPrice ?? inv?.priceToRetail ?? null;
-        let qtyDeltaDisplay = '—';
-        let impact: { text: string; kind: 'neutral' | 'loss' | 'gain' | 'na' } = {
-          text: '—',
-          kind: 'neutral',
-        };
-        if (correctedValid && currentNum !== null) {
-          qtyDeltaDisplay = formatQtyDelta(correctedNum, currentNum);
-          impact = formatStockImpact({
-            corrected: correctedNum,
-            current: currentNum,
-            costPrice: costPrice != null ? Number(costPrice) : null,
-            sellingPrice: sellingPrice != null ? Number(sellingPrice) : null,
-          });
-        }
+  const addSearchLots = (items: InventoryItem[]) => {
+    setError(null);
+    const { added, skipped } = addInventoryItems(items);
+    if (added === 0) {
+      setSuccess(skipped > 0 ? 'Those lots are already on the count list.' : 'No lots were added.');
+    } else {
+      setSuccess(
+        skipped > 0
+          ? `Added ${added} lots (${skipped} already on the list).`
+          : `Added ${added} lots to the count list.`,
+      );
+      window.setTimeout(() => setSuccess(null), 3000);
+    }
+  };
 
-        return {
+  const removeFromCountList = (inventoryId: string) => {
+    setCountList((prev) => prev.filter((item) => resolveInventoryDocumentId(item) !== inventoryId));
+    setDraftQtyByInventoryId((prev) => {
+      const next = { ...prev };
+      delete next[inventoryId];
+      return next;
+    });
+  };
+
+  const correctionRows = useMemo((): CorrectionDraftRow[] => {
+    return countList.flatMap((item) => {
+      const inventoryId = resolveInventoryDocumentId(item);
+      if (!inventoryId) return [];
+      const received = parseDisplayNumber(item.receivedCount);
+      return [
+        toCorrectionDraftRow({
           inventoryId,
-          name: line.name,
-          batchNo: inv?.batchNo ?? null,
-          receivedQty,
-          currentCount: currentRaw,
-          requestedCount: draft,
-          costPrice,
-          sellingPrice,
-          qtyDeltaDisplay,
-          impact,
-        };
+          name: item.name ?? null,
+          batchNo: lotBatchNo(item),
+          invoiceNo: invoiceMetaById[item.vendorPurchaseInvoiceId?.trim() ?? '']?.invoiceNo ?? null,
+          createdAt: item.createdAt?.trim() || item.purchaseDate?.trim() || null,
+          receivedQty: received,
+          currentRaw: item.currentCount ?? null,
+          requestedCount: draftQtyByInventoryId[inventoryId] ?? '',
+          costPrice: item.costPrice ?? null,
+          sellingPrice: item.sellingPrice ?? item.priceToRetail ?? null,
+        }),
+      ];
+    });
+  }, [countList, draftQtyByInventoryId, invoiceMetaById]);
+
+  const correctionGroups = useMemo(() => groupCorrectionRows(correctionRows), [correctionRows]);
+  const showBatchColumn = correctionRows.some((row) => Boolean(row.batchNo));
+  const searchLotsToAdd = lotResults.filter((item) => {
+    const id = resolveInventoryDocumentId(item);
+    return id != null && !countListIds.has(id);
+  });
+
+  const printCountSheet = () => {
+    if (correctionRows.length === 0) return;
+    try {
+      openStockCountSheetPrintWindow({
+        shopName: shop?.name,
+        printedAt: new Date().toLocaleString(undefined, {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        lines: correctionRows.map((row) => ({
+          name: row.name?.trim() || 'Product',
+          batchNo: row.batchNo,
+          invoiceNo: row.invoiceNo,
+          createdLabel: row.createdAt ? formatShortDate(row.createdAt) : null,
+          currentQty:
+            row.currentCount != null && Number.isFinite(Number(row.currentCount))
+              ? String(row.currentCount)
+              : '—',
+        })),
       });
-  }, [draftQtyByInventoryId, inventoryById, selectedInvoice]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to print count sheet');
+    }
+  };
 
   const submitCorrection = async () => {
-    if (!selectedInvoice) return;
+    if (correctionRows.length === 0) return;
     const lines = correctionRows
       .map((row) => {
         const requested = Number(row.requestedCount);
@@ -439,7 +761,7 @@ export function StockCorrectionsPage() {
       .filter((x): x is { inventoryId: string; requestedCurrentCount: number } => x != null);
 
     if (lines.length === 0) {
-      setError('Enter at least one changed quantity before sending to pending.');
+      setError('Enter at least one counted quantity that differs from system qty.');
       return;
     }
     setSubmitting(true);
@@ -447,15 +769,10 @@ export function StockCorrectionsPage() {
     setSuccess(null);
     try {
       await inventoryApi.createInventoryCorrection({
-        vendorPurchaseInvoiceId: selectedInvoice.id,
-        invoiceNo: selectedInvoice.invoiceNo,
-        vendorId: selectedInvoice.vendorId,
-        vendorName: selectedInvoice.vendorName ?? null,
+        note: 'Product stock correction',
         lines,
       });
-      setSelectedInvoice(null);
-      setDraftQtyByInventoryId({});
-      setInventoryById({});
+      clearCountList();
       setSuccess('Correction submitted to pending for approval.');
       window.setTimeout(() => setSuccess(null), 3000);
       await Promise.all([loadPending(), loadHistory()]);
@@ -488,9 +805,58 @@ export function StockCorrectionsPage() {
     }
   };
 
+  const pendingLineRows = useMemo(() => {
+    const rows: Array<{
+      correctionId: string;
+      line: InventoryCorrectionLine;
+      invoiceNo: string | null;
+      vendor: string | null;
+      submittedAt: string;
+    }> = [];
+    for (const c of pending) {
+      for (const line of c.lines ?? []) {
+        if (line.status !== 'PENDING') continue;
+        rows.push({
+          correctionId: c.id,
+          line,
+          invoiceNo: c.invoiceNo?.trim() || null,
+          vendor: c.vendorName?.trim() || null,
+          submittedAt: c.createdAt,
+        });
+      }
+    }
+    return rows;
+  }, [pending]);
+
+  const processAllPending = async (action: 'approve' | 'reject') => {
+    if (pendingLineRows.length === 0) return;
+    setLineBusy(`bulk:${action}`);
+    setError(null);
+    setSuccess(null);
+    let done = 0;
+    try {
+      for (const row of pendingLineRows) {
+        if (action === 'approve') {
+          await inventoryApi.approveInventoryCorrectionLine(row.correctionId, row.line.lineId);
+        } else {
+          await inventoryApi.rejectInventoryCorrectionLine(row.correctionId, row.line.lineId);
+        }
+        done += 1;
+      }
+      setSuccess(action === 'approve' ? `Approved ${done} lines.` : `Rejected ${done} lines.`);
+      window.setTimeout(() => setSuccess(null), 3000);
+    } catch (e) {
+      const prefix = e instanceof Error ? e.message : 'Failed to process correction lines';
+      setError(done > 0 ? `${prefix} ${done} line(s) already processed.` : prefix);
+    } finally {
+      setLineBusy(null);
+      await Promise.all([loadPending(), loadHistory()]);
+    }
+  };
+
   return (
     <Stack gap="md" maxWidth="xl" mx="auto">
-      <PageHeader description="Search invoices by product, barcode, invoice no, or vendor name; propose quantity corrections and approve lines; and review correction history." />
+      <PageHeader description="Add lots to a count list, print it for a physical count, enter counted qty from the paper, then send to pending for approval." />
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
       {success ? <Alert variant="success">{success}</Alert> : null}
@@ -537,57 +903,307 @@ export function StockCorrectionsPage() {
           <Card>
             <CardBody>
               <Stack gap="md">
+                <Inline gap="none" className={productChrome.processTabBar}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    role="tab"
+                    aria-selected={workbenchSource === 'product'}
+                    className={cn(
+                      productChrome.processTab,
+                      workbenchSource === 'product' && productChrome.processTabActive,
+                    )}
+                    onClick={() => switchWorkbenchSource('product')}
+                  >
+                    By product
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    role="tab"
+                    aria-selected={workbenchSource === 'invoice'}
+                    className={cn(
+                      productChrome.processTab,
+                      workbenchSource === 'invoice' && productChrome.processTabActive,
+                    )}
+                    onClick={() => switchWorkbenchSource('invoice')}
+                  >
+                    By invoice
+                  </Button>
+                </Inline>
                 <Box width="full" className={productChrome.searchGrow}>
                   <SearchInput
                     value={query}
                     onChange={setQuery}
-                    onSearch={searchInvoices}
+                    onSearch={searchWorkbench}
                     showSearchButton
                     buttonVariant="solid"
-                    placeholder="Product, barcode, invoice no, or vendor"
+                    placeholder={
+                      workbenchSource === 'product'
+                        ? 'Product name, barcode, or batch'
+                        : 'Product, barcode, invoice no, or vendor'
+                    }
                   />
                 </Box>
-                <Box overflow="auto">
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableHeaderCell>Invoice</TableHeaderCell>
-                        <TableHeaderCell>Vendor</TableHeaderCell>
-                        <TableHeaderCell>Date</TableHeaderCell>
-                        <TableHeaderCell>Lines</TableHeaderCell>
-                        <TableHeaderCell>Total</TableHeaderCell>
-                        <TableHeaderCell></TableHeaderCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {searching ? (
-                        <TableLoadingRow colSpan={6} label="Searching…" />
-                      ) : invoiceResults.length === 0 ? (
-                        <TableEmptyRow colSpan={6} message="No results yet." />
-                      ) : (
-                        invoiceResults.map((inv) => (
-                          <TableRow key={inv.id}>
-                            <TableCell>{inv.invoiceNo}</TableCell>
-                            <TableCell>{vendorName(inv)}</TableCell>
-                            <TableCell>{dt(inv.invoiceDate)}</TableCell>
-                            <TableCell>{inv.lineCount}</TableCell>
-                            <TableCell>{money(inv.invoiceTotal)}</TableCell>
-                            <TableCell>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => pickInvoice(inv.id)}
-                              >
-                                Select
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </Box>
+                {workbenchSource === 'product' && productSearchAttempted ? (
+                  searching ? (
+                    <CenteredLoader label="Searching lots…" />
+                  ) : lotResults.length === 0 ? (
+                    <EmptyState title="No matching lots." />
+                  ) : (
+                    <Stack gap="sm">
+                      <Inline align="center" justify="between">
+                        <Text color="secondary" variant="caption">
+                          {lotResults.length} lots matching
+                          {query.trim() ? ` “${query.trim()}”` : ''}
+                          {searchLotsToAdd.length < lotResults.length
+                            ? ` · ${lotResults.length - searchLotsToAdd.length} already on the list`
+                            : ''}
+                        </Text>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={searchLotsToAdd.length === 0}
+                          leftIcon={<Icon icon={Plus} size="sm" />}
+                          onClick={() => addSearchLots(searchLotsToAdd)}
+                        >
+                          Add all ({searchLotsToAdd.length})
+                        </Button>
+                      </Inline>
+                      <Box overflow="auto">
+                        <Table className={productChrome.correctionDraftTable}>
+                          <TableHead>
+                            <TableRow>
+                              <TableHeaderCell>Product</TableHeaderCell>
+                              <TableHeaderCell>Batch</TableHeaderCell>
+                              <TableHeaderCell>Invoice</TableHeaderCell>
+                              <TableHeaderCell>Created</TableHeaderCell>
+                              <TableHeaderCell className={surfaceChrome.historyNumCell}>
+                                Received
+                              </TableHeaderCell>
+                              <TableHeaderCell className={surfaceChrome.historyNumCell}>
+                                Current
+                              </TableHeaderCell>
+                              <TableHeaderCell></TableHeaderCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {lotResults.map((item) => {
+                              const inventoryId = resolveInventoryDocumentId(item);
+                              const alreadyAdded =
+                                inventoryId != null && countListIds.has(inventoryId);
+                              const invoiceId = item.vendorPurchaseInvoiceId?.trim() ?? '';
+                              return (
+                                <TableRow key={inventoryId ?? item.lotId}>
+                                  <TableCell>
+                                    <Text weight="semibold">{item.name ?? 'Product'}</Text>
+                                  </TableCell>
+                                  <TableCell className={productChrome.correctionMetaCell}>
+                                    {lotBatchNo(item) ?? '—'}
+                                  </TableCell>
+                                  <TableCell className={productChrome.correctionMetaCell}>
+                                    {invoiceMetaById[invoiceId]?.invoiceNo ?? '—'}
+                                  </TableCell>
+                                  <TableCell className={productChrome.correctionMetaCell}>
+                                    {lotCreatedLabel(item) ?? '—'}
+                                  </TableCell>
+                                  <TableCell className={surfaceChrome.historyNumCell}>
+                                    {item.receivedCount ?? '—'}
+                                  </TableCell>
+                                  <TableCell className={surfaceChrome.historyNumCell}>
+                                    {item.currentCount ?? '—'}
+                                  </TableCell>
+                                  <TableCell>
+                                    {alreadyAdded ? (
+                                      <Text variant="caption" color="secondary">
+                                        On list
+                                      </Text>
+                                    ) : (
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="ghost"
+                                        leftIcon={<Icon icon={Plus} size="sm" />}
+                                        onClick={() => addSearchLots([item])}
+                                      >
+                                        Add
+                                      </Button>
+                                    )}
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </Box>
+                    </Stack>
+                  )
+                ) : null}
+                {workbenchSource === 'invoice' ? (
+                  <Box overflow="auto">
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableHeaderCell className={surfaceChrome.historyActionCell}>
+                            {' '}
+                          </TableHeaderCell>
+                          <TableHeaderCell>Invoice</TableHeaderCell>
+                          <TableHeaderCell>Vendor</TableHeaderCell>
+                          <TableHeaderCell>Date</TableHeaderCell>
+                          <TableHeaderCell>Lines</TableHeaderCell>
+                          <TableHeaderCell>Total</TableHeaderCell>
+                          <TableHeaderCell></TableHeaderCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {searching ? (
+                          <TableLoadingRow colSpan={7} label="Searching…" />
+                        ) : invoiceResults.length === 0 ? (
+                          <TableEmptyRow colSpan={7} message="No results yet." />
+                        ) : (
+                          invoiceResults.map((inv) => {
+                            const open = expandedInvoiceId === inv.id;
+                            const lots = invoiceLotsById[inv.id] ?? [];
+                            const loadingLines = loadingInvoiceId === inv.id;
+                            return (
+                              <Fragment key={inv.id}>
+                                <TableRow>
+                                  <TableCell className={surfaceChrome.historyActionCell}>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="outline"
+                                      aria-expanded={open}
+                                      onClick={() => void toggleInvoiceExpand(inv.id)}
+                                      rightIcon={
+                                        <Icon icon={open ? ChevronUp : ChevronDown} size="sm" />
+                                      }
+                                    >
+                                      {open ? 'Hide' : 'Lines'}
+                                    </Button>
+                                  </TableCell>
+                                  <TableCell>{inv.invoiceNo}</TableCell>
+                                  <TableCell>{vendorName(inv)}</TableCell>
+                                  <TableCell>{dt(inv.invoiceDate)}</TableCell>
+                                  <TableCell>{inv.lineCount}</TableCell>
+                                  <TableCell>{money(inv.invoiceTotal)}</TableCell>
+                                  <TableCell>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="ghost"
+                                      loading={addingInvoiceId === inv.id}
+                                      disabled={addingInvoiceId != null}
+                                      leftIcon={<Icon icon={Plus} size="sm" />}
+                                      onClick={() => void addInvoiceToList(inv.id)}
+                                    >
+                                      Add all
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                                {open ? (
+                                  <TableRow>
+                                    <TableCell
+                                      colSpan={7}
+                                      className={productChrome.historyExpandRow}
+                                    >
+                                      <Box className={surfaceChrome.historyExpandPanel}>
+                                        {loadingLines ? (
+                                          <CenteredLoader label="Loading lines…" />
+                                        ) : lots.length === 0 ? (
+                                          <EmptyState title="No inventory lines on this invoice." />
+                                        ) : (
+                                          <Table className={surfaceChrome.historyNestedTable}>
+                                            <TableHead>
+                                              <TableRow>
+                                                <TableHeaderCell>Product</TableHeaderCell>
+                                                <TableHeaderCell>Batch</TableHeaderCell>
+                                                <TableHeaderCell>Created</TableHeaderCell>
+                                                <TableHeaderCell
+                                                  className={surfaceChrome.historyNumCell}
+                                                >
+                                                  Received
+                                                </TableHeaderCell>
+                                                <TableHeaderCell
+                                                  className={surfaceChrome.historyNumCell}
+                                                >
+                                                  Current
+                                                </TableHeaderCell>
+                                                <TableHeaderCell></TableHeaderCell>
+                                              </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                              {lots.map((item) => {
+                                                const inventoryId =
+                                                  resolveInventoryDocumentId(item);
+                                                const alreadyAdded =
+                                                  inventoryId != null &&
+                                                  countListIds.has(inventoryId);
+                                                return (
+                                                  <TableRow key={inventoryId ?? item.lotId}>
+                                                    <TableCell>
+                                                      <Text weight="semibold">
+                                                        {item.name ?? 'Product'}
+                                                      </Text>
+                                                    </TableCell>
+                                                    <TableCell
+                                                      className={productChrome.correctionMetaCell}
+                                                    >
+                                                      {lotBatchNo(item) ?? '—'}
+                                                    </TableCell>
+                                                    <TableCell
+                                                      className={productChrome.correctionMetaCell}
+                                                    >
+                                                      {lotCreatedLabel(item) ?? '—'}
+                                                    </TableCell>
+                                                    <TableCell
+                                                      className={surfaceChrome.historyNumCell}
+                                                    >
+                                                      {item.receivedCount ?? '—'}
+                                                    </TableCell>
+                                                    <TableCell
+                                                      className={surfaceChrome.historyNumCell}
+                                                    >
+                                                      {item.currentCount ?? '—'}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                      {alreadyAdded ? (
+                                                        <Text variant="caption" color="secondary">
+                                                          On list
+                                                        </Text>
+                                                      ) : (
+                                                        <Button
+                                                          type="button"
+                                                          size="sm"
+                                                          variant="ghost"
+                                                          leftIcon={<Icon icon={Plus} size="sm" />}
+                                                          onClick={() => addSearchLots([item])}
+                                                        >
+                                                          Add
+                                                        </Button>
+                                                      )}
+                                                    </TableCell>
+                                                  </TableRow>
+                                                );
+                                              })}
+                                            </TableBody>
+                                          </Table>
+                                        )}
+                                      </Box>
+                                    </TableCell>
+                                  </TableRow>
+                                ) : null}
+                              </Fragment>
+                            );
+                          })
+                        )}
+                      </TableBody>
+                    </Table>
+                  </Box>
+                ) : null}
               </Stack>
             </CardBody>
           </Card>
@@ -595,109 +1211,183 @@ export function StockCorrectionsPage() {
           <Card>
             <CardBody>
               <Stack gap="md">
-                <Text variant="heading3" weight="semibold">
-                  Create pending correction
-                </Text>
-                {!selectedInvoice ? (
-                  <Text color="secondary">Select an invoice above first.</Text>
-                ) : (
-                  <>
-                    <Text color="secondary" variant="caption">
-                      <Text as="span" weight="semibold">
-                        {selectedInvoice.invoiceNo}
-                      </Text>
-                      {' · '}
-                      {vendorName(selectedInvoice)}
-                      {' · '}
-                      {correctionInvoiceSubtitle(selectedInvoice)}
+                <Inline align="center" justify="between">
+                  <Stack gap="xs">
+                    <Text variant="heading3" weight="semibold">
+                      Count list
                     </Text>
-                    <Box overflow="auto">
-                      <Table>
-                        <TableHead>
-                          <TableRow>
-                            <TableHeaderCell>Product</TableHeaderCell>
-                            <TableHeaderCell>Batch</TableHeaderCell>
-                            <TableHeaderCell title="Quantity received on this stock-in">
-                              Received qty
-                            </TableHeaderCell>
-                            <TableHeaderCell>Current qty</TableHeaderCell>
-                            <TableHeaderCell>Corrected qty</TableHeaderCell>
-                            <TableHeaderCell>Change</TableHeaderCell>
-                            <TableHeaderCell title="Loss at cost when qty drops; gain at selling price when qty rises">
-                              Impact
-                            </TableHeaderCell>
-                            <TableHeaderCell>Cost price</TableHeaderCell>
-                            <TableHeaderCell>Selling price</TableHeaderCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {correctionRows.length === 0 ? (
-                            <TableEmptyRow
-                              colSpan={9}
-                              message="No inventory lines found for correction."
-                            />
-                          ) : (
-                            correctionRows.map((row) => (
-                              <TableRow key={row.inventoryId}>
-                                <TableCell>{row.name}</TableCell>
-                                <TableCell>{row.batchNo ?? '-'}</TableCell>
-                                <TableCell>
-                                  {row.receivedQty != null &&
-                                  Number.isFinite(Number(row.receivedQty))
-                                    ? row.receivedQty
-                                    : '—'}
-                                </TableCell>
-                                <TableCell>{row.currentCount ?? '-'}</TableCell>
-                                <TableCell>
-                                  <Input
-                                    className={productChrome.qtyInputMd}
-                                    value={row.requestedCount}
-                                    onChange={(e) =>
-                                      setDraftQtyByInventoryId((prev) => ({
-                                        ...prev,
-                                        [row.inventoryId]: e.target.value,
-                                      }))
-                                    }
-                                    placeholder="new qty"
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <Text
-                                    as="span"
-                                    weight="semibold"
-                                    className={qtyDeltaClass(row.qtyDeltaDisplay)}
-                                  >
-                                    {row.qtyDeltaDisplay}
-                                  </Text>
-                                </TableCell>
-                                <TableCell>
-                                  <Text
-                                    as="span"
-                                    weight="semibold"
-                                    className={impactClass(row.impact.kind)}
-                                  >
-                                    {row.impact.text}
-                                  </Text>
-                                </TableCell>
-                                <TableCell>{money(row.costPrice)}</TableCell>
-                                <TableCell>{money(row.sellingPrice)}</TableCell>
+                    <Text color="secondary" variant="caption">
+                      Add lots from search, print the sheet, write counted qty on paper, then enter
+                      it here and send to pending.
+                    </Text>
+                  </Stack>
+                  <Inline gap="sm">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={correctionRows.length === 0}
+                      leftIcon={<Icon icon={Printer} size="sm" />}
+                      onClick={printCountSheet}
+                    >
+                      Print list
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      disabled={correctionRows.length === 0}
+                      onClick={clearCountList}
+                    >
+                      Clear
+                    </Button>
+                  </Inline>
+                </Inline>
+                {correctionRows.length === 0 ? (
+                  <EmptyState title="No lots on the count list yet." />
+                ) : (
+                  <Stack gap="md">
+                    <Text color="secondary" variant="caption">
+                      {correctionRows.length} lots on the list
+                    </Text>
+                    {correctionGroups.map((group) => (
+                      <Box key={group.name} className={productChrome.correctionGroup}>
+                        <Inline
+                          gap="sm"
+                          align="baseline"
+                          className={productChrome.correctionGroupTitle}
+                        >
+                          <Text weight="semibold">{group.name}</Text>
+                          {group.rows.length > 1 ? (
+                            <Text color="secondary" variant="caption">
+                              {group.rows.length} lots
+                            </Text>
+                          ) : null}
+                        </Inline>
+                        <Box overflow="auto">
+                          <Table className={productChrome.correctionDraftTable}>
+                            <TableHead>
+                              <TableRow>
+                                <TableHeaderCell>Invoice</TableHeaderCell>
+                                <TableHeaderCell title="When this lot was recorded">
+                                  Created
+                                </TableHeaderCell>
+                                {showBatchColumn ? <TableHeaderCell>Batch</TableHeaderCell> : null}
+                                <TableHeaderCell
+                                  className={surfaceChrome.historyNumCell}
+                                  title="Quantity received on this stock-in"
+                                >
+                                  Received
+                                </TableHeaderCell>
+                                <TableHeaderCell className={surfaceChrome.historyNumCell}>
+                                  Current
+                                </TableHeaderCell>
+                                <TableHeaderCell>Counted qty</TableHeaderCell>
+                                <TableHeaderCell className={surfaceChrome.historyNumCell}>
+                                  Change
+                                </TableHeaderCell>
+                                <TableHeaderCell
+                                  className={surfaceChrome.historyImpactCell}
+                                  title="Loss at cost when qty drops; gain at selling price when qty rises"
+                                >
+                                  Impact
+                                </TableHeaderCell>
+                                <TableHeaderCell className={surfaceChrome.historyNumCell}>
+                                  Cost
+                                </TableHeaderCell>
+                                <TableHeaderCell className={surfaceChrome.historyNumCell}>
+                                  Selling
+                                </TableHeaderCell>
+                                <TableHeaderCell></TableHeaderCell>
                               </TableRow>
-                            ))
-                          )}
-                        </TableBody>
-                      </Table>
-                    </Box>
+                            </TableHead>
+                            <TableBody>
+                              {group.rows.map((row) => (
+                                <TableRow key={row.inventoryId}>
+                                  <TableCell className={productChrome.correctionMetaCell}>
+                                    {row.invoiceNo ?? '—'}
+                                  </TableCell>
+                                  <TableCell className={productChrome.correctionMetaCell}>
+                                    {row.createdAt ? formatShortDate(row.createdAt) : '—'}
+                                  </TableCell>
+                                  {showBatchColumn ? (
+                                    <TableCell className={productChrome.correctionMetaCell}>
+                                      {row.batchNo ?? '—'}
+                                    </TableCell>
+                                  ) : null}
+                                  <TableCell className={surfaceChrome.historyNumCell}>
+                                    {row.receivedQty != null &&
+                                    Number.isFinite(Number(row.receivedQty))
+                                      ? row.receivedQty
+                                      : '—'}
+                                  </TableCell>
+                                  <TableCell className={surfaceChrome.historyNumCell}>
+                                    {row.currentCount ?? '—'}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      className={productChrome.correctionQtyInput}
+                                      value={row.requestedCount}
+                                      onChange={(e) =>
+                                        setDraftQtyByInventoryId((prev) => ({
+                                          ...prev,
+                                          [row.inventoryId]: e.target.value,
+                                        }))
+                                      }
+                                      placeholder="counted"
+                                    />
+                                  </TableCell>
+                                  <TableCell className={surfaceChrome.historyNumCell}>
+                                    <Text
+                                      as="span"
+                                      weight="semibold"
+                                      className={qtyDeltaClass(row.qtyDeltaDisplay)}
+                                    >
+                                      {row.qtyDeltaDisplay}
+                                    </Text>
+                                  </TableCell>
+                                  <TableCell className={surfaceChrome.historyImpactCell}>
+                                    <Text
+                                      as="span"
+                                      weight="semibold"
+                                      className={impactClass(row.impact.kind)}
+                                    >
+                                      {row.impact.text}
+                                    </Text>
+                                  </TableCell>
+                                  <TableCell className={surfaceChrome.historyNumCell}>
+                                    {money(row.costPrice)}
+                                  </TableCell>
+                                  <TableCell className={surfaceChrome.historyNumCell}>
+                                    {money(row.sellingPrice)}
+                                  </TableCell>
+                                  <TableCell>
+                                    <IconButton
+                                      size="sm"
+                                      label={`Remove ${row.name ?? 'lot'} from count list`}
+                                      onClick={() => removeFromCountList(row.inventoryId)}
+                                    >
+                                      <Icon icon={Trash2} size="sm" />
+                                    </IconButton>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </Box>
+                      </Box>
+                    ))}
                     <Inline>
                       <Button
                         type="button"
                         loading={submitting}
-                        disabled={submitting}
+                        disabled={submitting || correctionRows.length === 0}
                         onClick={submitCorrection}
                       >
                         {submitting ? 'Submitting...' : 'Send to pending'}
                       </Button>
                     </Inline>
-                  </>
+                  </Stack>
                 )}
               </Stack>
             </CardBody>
@@ -706,9 +1396,41 @@ export function StockCorrectionsPage() {
           <Card>
             <CardBody>
               <Stack gap="md">
-                <Text variant="heading3" weight="semibold">
-                  Pending approvals
-                </Text>
+                <Inline align="center" justify="between">
+                  <Stack gap="xs">
+                    <Text variant="heading3" weight="semibold">
+                      Pending approvals
+                    </Text>
+                    {pendingLineRows.length > 0 ? (
+                      <Text color="secondary" variant="caption">
+                        {pendingLineRows.length} lines waiting
+                      </Text>
+                    ) : null}
+                  </Stack>
+                  {canApproveCorrections && pendingLineRows.length > 0 ? (
+                    <Inline gap="sm">
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={lineBusy != null}
+                        loading={lineBusy === 'bulk:approve'}
+                        onClick={() => void processAllPending('approve')}
+                      >
+                        {lineBusy === 'bulk:approve' ? 'Approving…' : 'Approve all'}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={lineBusy != null}
+                        loading={lineBusy === 'bulk:reject'}
+                        onClick={() => void processAllPending('reject')}
+                      >
+                        {lineBusy === 'bulk:reject' ? 'Rejecting…' : 'Reject all'}
+                      </Button>
+                    </Inline>
+                  ) : null}
+                </Inline>
                 {!canApproveCorrections ? (
                   <Text color="secondary">
                     Pending corrections are listed below. Only the shop owner or a manager can
@@ -717,79 +1439,113 @@ export function StockCorrectionsPage() {
                 ) : null}
                 {pendingLoading ? (
                   <CenteredLoader label="Loading pending…" />
-                ) : pending.length === 0 ? (
+                ) : pendingLineRows.length === 0 ? (
                   <EmptyState title="No pending corrections." />
                 ) : (
-                  pending.map((c) => (
-                    <Box key={c.id} border rounded="md" padding="sm">
-                      <Stack gap="sm">
-                        <Text color="secondary" variant="caption">
-                          <Text as="span" weight="semibold">
-                            {c.invoiceNo ?? 'No invoice'}
-                          </Text>
-                          {' · '}
-                          {c.vendorName ?? 'Unknown vendor'}
-                          {' · '}
-                          {dt(c.createdAt)}
-                        </Text>
-                        <Box overflow="auto">
-                          <Table>
-                            <TableHead>
-                              <TableRow>
-                                <TableHeaderCell>Product</TableHeaderCell>
-                                <TableHeaderCell>Prev qty</TableHeaderCell>
-                                <TableHeaderCell>Requested qty</TableHeaderCell>
-                                <TableHeaderCell>Status</TableHeaderCell>
-                                <TableHeaderCell></TableHeaderCell>
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {c.lines.map((line) => (
-                                <TableRow key={line.lineId}>
-                                  <TableCell>{line.productName ?? line.inventoryId}</TableCell>
-                                  <TableCell>{line.previousCurrentCount ?? '-'}</TableCell>
-                                  <TableCell>{line.requestedCurrentCount}</TableCell>
-                                  <TableCell>{line.status}</TableCell>
-                                  <TableCell>
-                                    {line.status === 'PENDING' && canApproveCorrections ? (
-                                      <Inline gap="sm">
-                                        <Button
-                                          type="button"
-                                          size="sm"
-                                          variant="ghost"
-                                          disabled={lineBusy != null}
-                                          loading={lineBusy === `${c.id}:${line.lineId}:approve`}
-                                          onClick={() => processLine(c.id, line.lineId, 'approve')}
-                                        >
-                                          {lineBusy === `${c.id}:${line.lineId}:approve`
-                                            ? 'Approving...'
-                                            : 'Approve'}
-                                        </Button>
-                                        <Button
-                                          type="button"
-                                          size="sm"
-                                          variant="outline"
-                                          disabled={lineBusy != null}
-                                          loading={lineBusy === `${c.id}:${line.lineId}:reject`}
-                                          onClick={() => processLine(c.id, line.lineId, 'reject')}
-                                        >
-                                          {lineBusy === `${c.id}:${line.lineId}:reject`
-                                            ? 'Rejecting...'
-                                            : 'Reject'}
-                                        </Button>
-                                      </Inline>
-                                    ) : (
-                                      '-'
-                                    )}
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </Box>
-                      </Stack>
-                    </Box>
-                  ))
+                  <Box overflow="auto">
+                    <Table className={productChrome.correctionPendingTable}>
+                      <TableHead>
+                        <TableRow>
+                          <TableHeaderCell>Product</TableHeaderCell>
+                          <TableHeaderCell>Invoice</TableHeaderCell>
+                          <TableHeaderCell className={surfaceChrome.historyNumCell}>
+                            Prev
+                          </TableHeaderCell>
+                          <TableHeaderCell className={surfaceChrome.historyNumCell}>
+                            Requested
+                          </TableHeaderCell>
+                          <TableHeaderCell className={surfaceChrome.historyNumCell}>
+                            Change
+                          </TableHeaderCell>
+                          <TableHeaderCell>Submitted</TableHeaderCell>
+                          {canApproveCorrections ? <TableHeaderCell></TableHeaderCell> : null}
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {pendingLineRows.map((row) => {
+                          const prev = parseDisplayNumber(row.line.previousCurrentCount);
+                          const req = Number(row.line.requestedCurrentCount);
+                          const qtyOk = prev != null && Number.isFinite(req);
+                          const changeDisplay = qtyOk ? formatQtyDelta(req, prev) : '—';
+                          const invoiceLabel =
+                            [row.invoiceNo, row.vendor].filter(Boolean).join(' · ') || '—';
+                          return (
+                            <TableRow key={`${row.correctionId}:${row.line.lineId}`}>
+                              <TableCell>
+                                <Text weight="semibold">
+                                  {row.line.productName ?? row.line.inventoryId}
+                                </Text>
+                              </TableCell>
+                              <TableCell className={productChrome.correctionMetaCell}>
+                                {invoiceLabel}
+                              </TableCell>
+                              <TableCell className={surfaceChrome.historyNumCell}>
+                                {row.line.previousCurrentCount ?? '—'}
+                              </TableCell>
+                              <TableCell className={surfaceChrome.historyNumCell}>
+                                {row.line.requestedCurrentCount}
+                              </TableCell>
+                              <TableCell className={surfaceChrome.historyNumCell}>
+                                <Text
+                                  as="span"
+                                  weight="semibold"
+                                  className={qtyDeltaClass(changeDisplay)}
+                                >
+                                  {changeDisplay}
+                                </Text>
+                              </TableCell>
+                              <TableCell className={productChrome.correctionMetaCell}>
+                                {dt(row.submittedAt)}
+                              </TableCell>
+                              {canApproveCorrections ? (
+                                <TableCell>
+                                  <Inline gap="sm">
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="ghost"
+                                      disabled={lineBusy != null}
+                                      loading={
+                                        lineBusy ===
+                                        `${row.correctionId}:${row.line.lineId}:approve`
+                                      }
+                                      onClick={() =>
+                                        void processLine(
+                                          row.correctionId,
+                                          row.line.lineId,
+                                          'approve',
+                                        )
+                                      }
+                                    >
+                                      Approve
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="outline"
+                                      disabled={lineBusy != null}
+                                      loading={
+                                        lineBusy === `${row.correctionId}:${row.line.lineId}:reject`
+                                      }
+                                      onClick={() =>
+                                        void processLine(
+                                          row.correctionId,
+                                          row.line.lineId,
+                                          'reject',
+                                        )
+                                      }
+                                    >
+                                      Reject
+                                    </Button>
+                                  </Inline>
+                                </TableCell>
+                              ) : null}
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </Box>
                 )}
               </Stack>
             </CardBody>
@@ -832,7 +1588,7 @@ export function StockCorrectionsPage() {
                       <TableHeaderCell className={surfaceChrome.historyActionCell}>
                         {' '}
                       </TableHeaderCell>
-                      <TableHeaderCell>Invoice</TableHeaderCell>
+                      <TableHeaderCell>Source</TableHeaderCell>
                       <TableHeaderCell>Vendor</TableHeaderCell>
                       <TableHeaderCell>Status</TableHeaderCell>
                       <TableHeaderCell className={surfaceChrome.historyNumCell}>
@@ -873,9 +1629,9 @@ export function StockCorrectionsPage() {
                               </Button>
                             </TableCell>
                             <TableCell>
-                              <Text weight="semibold">{c.invoiceNo ?? '—'}</Text>
+                              <Text weight="semibold">{correctionSourceTitle(c)}</Text>
                             </TableCell>
-                            <TableCell>{c.vendorName ?? '—'}</TableCell>
+                            <TableCell>{correctionVendorLabel(c)}</TableCell>
                             <TableCell>
                               <Badge variant={correctionStatusVariant(c.status)}>
                                 {formatStatusLabel(c.status)}

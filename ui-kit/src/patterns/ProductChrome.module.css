@@ -1946,6 +1946,52 @@
   width: 100px;
 }
 
+.correctionGroup {
+  border: 1px solid var(--sk-color-border-default, var(--border-color));
+  border-radius: var(--sk-radius-md, 8px);
+  padding: 0.9rem 1rem 0.55rem;
+}
+
+.correctionGroupTitle {
+  margin-bottom: 0.7rem;
+}
+
+.correctionDraftTable {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+}
+
+.correctionDraftTable :global(th),
+.correctionDraftTable :global(td) {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  vertical-align: middle;
+}
+
+.correctionMetaCell {
+  white-space: nowrap;
+  color: var(--sk-color-text-secondary, var(--text-secondary));
+  font-size: 0.8125rem;
+}
+
+.correctionQtyInput {
+  width: 5.75rem;
+}
+
+.correctionPendingTable {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+}
+
+.correctionPendingTable :global(th),
+.correctionPendingTable :global(td) {
+  padding-top: 0.45rem;
+  padding-bottom: 0.45rem;
+  vertical-align: middle;
+}
+
 .btnSmText {
   font-size: 0.8125rem;
 }
