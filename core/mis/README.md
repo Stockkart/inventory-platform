@@ -1,6 +1,6 @@
 # @inventory-platform/mis
 
-Management Information System reports: vendor money, customer money, sales, and stock.
+Management Information System reports: vendor money, customer MIS (ledger + daily sales), and stock.
 
 ## Owns
 
@@ -8,6 +8,8 @@ Management Information System reports: vendor money, customer money, sales, and 
 - Nav group **MIS** (`requiredCapability: 'mis'`)
 - `/mis/*` APIs + Query hooks
 - Excel / PDF export downloads
+
+Customer MIS (`/dashboard/mis/customer-money`) has two tabs: **Customer money** (ledger) and **Sales** (one row per day). Download Excel is one workbook with both sheets. `/dashboard/mis/sales` redirects to the Sales tab.
 
 ## Does not own
 

@@ -166,6 +166,7 @@ function normalizeSalesReport(res: MisSalesReportResponse): MisSalesReportRespon
     totalItems: asLong(res.totalItems),
     rows: (res.rows ?? []).map((r) => ({
       ...r,
+      orderCount: asLong(r.orderCount),
       cash: asNum(r.cash),
       online: asNum(r.online),
       credit: asNum(r.credit),
@@ -176,6 +177,9 @@ function normalizeSalesReport(res: MisSalesReportResponse): MisSalesReportRespon
       cost: asNum(r.cost),
       profit: asNum(r.profit),
       margin: asNum(r.margin),
+      refundCount: asLong(r.refundCount),
+      refundAmount: asNum(r.refundAmount),
+      netSales: asNum(r.netSales),
     })),
     summary: {
       count: asLong(summary?.count),
@@ -297,7 +301,7 @@ export const misApi = {
     return downloadMisBlob(
       MIS_ENDPOINTS.CUSTOMER_MONEY_EXCEL,
       query,
-      `customer-money-mis-${from}-${to}.xlsx`,
+      `customer-mis-${from}-${to}.xlsx`,
     );
   },
 
