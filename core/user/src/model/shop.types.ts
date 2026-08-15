@@ -47,6 +47,11 @@ export interface ShopDetailResponse {
   pluginVersion?: string | null;
   dlNo?: string | null;
   fssai?: string | null;
+  shopType?: ShopType | null;
+  sgst?: string | null;
+  cgst?: string | null;
+  status?: string | null;
+  createdAt?: string | null;
 }
 
 export interface UpdateShopDto {

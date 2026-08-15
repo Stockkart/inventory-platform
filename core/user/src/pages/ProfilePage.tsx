@@ -20,7 +20,7 @@ import {
   ProfileTabs,
   type ProfileTabId,
 } from '../ui';
-import type { Location as LocationType } from '../model/shop.types';
+import type { Location as LocationType, ShopDetailResponse, ShopType } from '../model/shop.types';
 
 export function meta() {
   return [
@@ -43,10 +43,49 @@ function formatAddress(location: LocationType) {
     location.primaryAddress,
     location.secondaryAddress,
     [location.city, location.state, location.pin].filter(Boolean).join(', '),
-    location.country,
+    location.country === 'IND' ? 'India' : location.country,
   ]
     .filter(Boolean)
     .join(' · ');
+}
+
+function displayValue(value?: string | null): string {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : '—';
+}
+
+function formatShopType(shopType?: ShopType | null): string {
+  if (!shopType) return '—';
+  return shopType.charAt(0) + shopType.slice(1).toLowerCase();
+}
+
+function formatVertical(verticalId?: string | null): string {
+  const id = verticalId?.trim();
+  if (!id) return '—';
+  return id.replace(/[-_]/g, ' ').replace(/\b\w/g, (ch) => ch.toUpperCase());
+}
+
+function formatStatus(status?: string | null): string {
+  const value = status?.trim();
+  if (!value) return '—';
+  return value
+    .toLowerCase()
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function formatOpenedOn(iso?: string | null): string {
+  if (!iso) return '—';
+  try {
+    return new Date(iso).toLocaleDateString(undefined, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  } catch {
+    return iso;
+  }
 }
 
 function ProfileField({ label, value, wide }: { label: string; value: string; wide?: boolean }) {
@@ -66,18 +105,7 @@ export function ProfilePage() {
   const [activeTab, setActiveTab] = useState<ProfileTabId>('shop');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [shop, setShop] = useState<{
-    shopId: string;
-    name: string;
-    contactEmail?: string | null;
-    contactPhone?: string | null;
-    gstinNo?: string | null;
-    panNo?: string | null;
-    dlNo?: string | null;
-    fssai?: string | null;
-    tagline?: string | null;
-    location?: LocationType | null;
-  } | null>(null);
+  const [shop, setShop] = useState<ShopDetailResponse | null>(null);
   const [editing, setEditing] = useState(false);
   const [editTagline, setEditTagline] = useState('');
   const [editLocation, setEditLocation] = useState<LocationType>(emptyLocation);
@@ -187,17 +215,26 @@ export function ProfilePage() {
     );
   }
 
+  const aboutFields = [
+    { label: 'Type', value: formatShopType(shop.shopType) },
+    { label: 'Vertical', value: formatVertical(shop.verticalId) },
+    { label: 'Status', value: formatStatus(shop.status) },
+    { label: 'Opened', value: formatOpenedOn(shop.createdAt) },
+  ];
+
   const contactFields = [
-    shop.contactEmail ? { label: 'Email', value: shop.contactEmail } : null,
-    shop.contactPhone ? { label: 'Phone', value: shop.contactPhone } : null,
-  ].filter(Boolean) as { label: string; value: string }[];
+    { label: 'Email', value: displayValue(shop.contactEmail) },
+    { label: 'Phone', value: displayValue(shop.contactPhone) },
+  ];
 
   const businessFields = [
-    shop.gstinNo ? { label: 'GSTIN', value: shop.gstinNo } : null,
-    shop.panNo ? { label: 'PAN', value: shop.panNo } : null,
-    shop.dlNo ? { label: 'DL No', value: shop.dlNo } : null,
-    shop.fssai ? { label: 'FSSAI', value: shop.fssai } : null,
-  ].filter(Boolean) as { label: string; value: string }[];
+    { label: 'GSTIN', value: displayValue(shop.gstinNo) },
+    { label: 'PAN', value: displayValue(shop.panNo) },
+    { label: 'DL No', value: displayValue(shop.dlNo) },
+    { label: 'FSSAI', value: displayValue(shop.fssai) },
+    { label: 'SGST', value: displayValue(shop.sgst) },
+    { label: 'CGST', value: displayValue(shop.cgst) },
+  ];
 
   return (
     <Stack gap="md" className={surfaceChrome.profileShellWide}>
@@ -206,7 +243,7 @@ export function ProfilePage() {
 
       {activeTab === 'shop' ? (
         !editing ? (
-          <Box className={cn(surfaceChrome.profileCard, surfaceChrome.profileCardNarrow)}>
+          <Box className={surfaceChrome.profileCard}>
             <Box className={surfaceChrome.profileHero}>
               <Box className={surfaceChrome.profileHeroMain}>
                 <Box as="span" className={surfaceChrome.profileHeroIcon} aria-hidden>
@@ -227,31 +264,38 @@ export function ProfilePage() {
             </Box>
 
             <Box className={surfaceChrome.profileBody}>
-              {contactFields.length > 0 ? (
-                <Box className={surfaceChrome.profileSection}>
-                  <Text as="p" className={surfaceChrome.profileSectionLabel}>
-                    Contact
-                  </Text>
-                  <Box className={surfaceChrome.profileFieldGrid}>
-                    {contactFields.map((field) => (
-                      <ProfileField key={field.label} label={field.label} value={field.value} />
-                    ))}
-                  </Box>
+              <Box className={surfaceChrome.profileSection}>
+                <Text as="p" className={surfaceChrome.profileSectionLabel}>
+                  Shop
+                </Text>
+                <Box className={surfaceChrome.profileFieldGrid}>
+                  {aboutFields.map((field) => (
+                    <ProfileField key={field.label} label={field.label} value={field.value} />
+                  ))}
                 </Box>
-              ) : null}
+              </Box>
 
-              {businessFields.length > 0 ? (
-                <Box className={surfaceChrome.profileSection}>
-                  <Text as="p" className={surfaceChrome.profileSectionLabel}>
-                    Business details
-                  </Text>
-                  <Box className={surfaceChrome.profileFieldGrid}>
-                    {businessFields.map((field) => (
-                      <ProfileField key={field.label} label={field.label} value={field.value} />
-                    ))}
-                  </Box>
+              <Box className={surfaceChrome.profileSection}>
+                <Text as="p" className={surfaceChrome.profileSectionLabel}>
+                  Contact
+                </Text>
+                <Box className={surfaceChrome.profileFieldGrid}>
+                  {contactFields.map((field) => (
+                    <ProfileField key={field.label} label={field.label} value={field.value} />
+                  ))}
                 </Box>
-              ) : null}
+              </Box>
+
+              <Box className={surfaceChrome.profileSection}>
+                <Text as="p" className={surfaceChrome.profileSectionLabel}>
+                  Business details
+                </Text>
+                <Box className={surfaceChrome.profileFieldGrid}>
+                  {businessFields.map((field) => (
+                    <ProfileField key={field.label} label={field.label} value={field.value} />
+                  ))}
+                </Box>
+              </Box>
 
               {shop.location ? (
                 <Box className={surfaceChrome.profileSection}>
@@ -266,14 +310,16 @@ export function ProfilePage() {
             </Box>
           </Box>
         ) : (
-          <Box className={cn(surfaceChrome.profileCard, surfaceChrome.profileCardNarrow)}>
+          <Box className={surfaceChrome.profileCard}>
             <Box className={surfaceChrome.profileEditHeader}>
-              <Text as="h2" className={surfaceChrome.profileEditTitle}>
-                Edit shop
-              </Text>
-              <Text variant="caption" color="secondary">
-                {shop.name}
-              </Text>
+              <Box>
+                <Text as="h2" className={surfaceChrome.profileEditTitle}>
+                  Edit shop
+                </Text>
+                <Text variant="caption" color="secondary">
+                  {shop.name} · Name, contact, and tax IDs are read-only
+                </Text>
+              </Box>
             </Box>
             <Box className={surfaceChrome.profileEditBody}>
               <Stack gap="md">

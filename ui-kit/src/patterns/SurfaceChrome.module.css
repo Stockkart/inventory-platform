@@ -2070,17 +2070,38 @@
   color: var(--sk-color-text-secondary, #64748b);
 }
 
+.profileHeroMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.5rem;
+  margin-top: 0.45rem;
+}
+
+.profileHeroOpened {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--sk-color-text-secondary, #64748b);
+}
+
 .profileBody {
   display: flex;
   flex-direction: column;
-  gap: 1.15rem;
+  gap: 1.35rem;
   padding: 1.15rem 1.25rem 1.35rem;
 }
 
 .profileSection {
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0.55rem;
+}
+
+.profileSectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .profileSectionLabel {
@@ -2092,9 +2113,62 @@
   color: var(--sk-color-text-secondary, #94a3b8);
 }
 
+.profileDl {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  border-top: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
+}
+
+.profileDlRow {
+  display: grid;
+  grid-template-columns: 7.5rem minmax(0, 1fr);
+  gap: 0.75rem 1rem;
+  align-items: baseline;
+  padding: 0.62rem 0;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
+}
+
+.profileDlTerm {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--sk-color-text-secondary, #64748b);
+}
+
+.profileDlValue {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 550;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+  color: var(--sk-color-text-primary, #0f172a);
+  word-break: break-word;
+}
+
+.profileDlLink {
+  color: inherit;
+  text-decoration: none;
+}
+
+.profileDlLink:hover {
+  text-decoration: underline;
+  color: var(--sk-color-brand, #2563eb);
+}
+
+.profileAddress {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.55;
+  color: var(--sk-color-text-primary, #0f172a);
+  white-space: pre-line;
+}
+
 .profileFieldGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(14.5rem, 1fr));
   gap: 0.65rem;
 }
 
@@ -2134,6 +2208,13 @@
   letter-spacing: -0.01em;
   color: var(--sk-color-text-primary, #0f172a);
   word-break: break-word;
+}
+
+@media (max-width: 520px) {
+  .profileDlRow {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+  }
 }
 
 .profileEditHeader {

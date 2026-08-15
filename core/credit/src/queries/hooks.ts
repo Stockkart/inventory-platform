@@ -42,13 +42,14 @@ export function useChargeMutation(
   options?: UseMutationOptions<CreditEntryResponse, Error, CreateCreditEntryDto>,
 ) {
   const queryClient = useQueryClient();
+  const { onSuccess, ...rest } = options ?? {};
   return useMutation({
     mutationFn: (body) => creditApi.charge(body),
+    ...rest,
     onSuccess: (...args) => {
       void queryClient.invalidateQueries({ queryKey: creditKeys.all });
-      options?.onSuccess?.(...args);
+      onSuccess?.(...args);
     },
-    ...options,
   });
 }
 
@@ -56,12 +57,13 @@ export function useSettlementMutation(
   options?: UseMutationOptions<CreditEntryResponse, Error, CreateCreditEntryDto>,
 ) {
   const queryClient = useQueryClient();
+  const { onSuccess, ...rest } = options ?? {};
   return useMutation({
     mutationFn: (body) => creditApi.settlement(body),
+    ...rest,
     onSuccess: (...args) => {
       void queryClient.invalidateQueries({ queryKey: creditKeys.all });
-      options?.onSuccess?.(...args);
+      onSuccess?.(...args);
     },
-    ...options,
   });
 }
