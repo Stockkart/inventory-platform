@@ -136,12 +136,8 @@ export interface MisMoneyReportParams {
 }
 
 export interface MisSalesRow {
-  saleId: string;
   date: string;
-  invoiceNo: string | null;
-  customerId: string | null;
-  customer: string | null;
-  paymentMethod: string | null;
+  orderCount: number;
   cash: number;
   online: number;
   credit: number;
@@ -152,6 +148,9 @@ export interface MisSalesRow {
   cost: number;
   profit: number;
   margin: number;
+  refundCount: number;
+  refundAmount: number;
+  netSales: number;
 }
 
 export interface MisSalesSummary {
