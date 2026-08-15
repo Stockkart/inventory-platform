@@ -1254,7 +1254,7 @@ export function StockCorrectionsPage() {
                       <Box key={group.name} className={productChrome.correctionGroup}>
                         <Inline
                           gap="sm"
-                          align="baseline"
+                          align="center"
                           className={productChrome.correctionGroupTitle}
                         >
                           <Text weight="semibold">{group.name}</Text>

@@ -578,9 +578,12 @@ export function InvoiceSettingsSection() {
                                     missingShopValue ? (
                                       <>
                                         {child.label}
-                                        <span className={surfaceChrome.invoiceToggleHint}>
+                                        <Text
+                                          variant="caption"
+                                          className={surfaceChrome.invoiceToggleHint}
+                                        >
                                           Not set on this shop
-                                        </span>
+                                        </Text>
                                       </>
                                     ) : (
                                       child.label

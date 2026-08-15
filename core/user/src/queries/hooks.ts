@@ -115,7 +115,12 @@ export function useShopRbacAdminQuery(
 ) {
   return useQuery({
     queryKey: userKeys.shopRbacAdmin(shopId ?? ''),
-    queryFn: () => shopAccessApi.getAdmin(shopId!),
+    queryFn: () => {
+      if (!shopId) {
+        return Promise.reject(new Error('shopId is required'));
+      }
+      return shopAccessApi.getAdmin(shopId);
+    },
     enabled: Boolean(shopId),
     ...options,
   });
