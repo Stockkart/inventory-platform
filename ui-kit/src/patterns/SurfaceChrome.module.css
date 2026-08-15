@@ -2451,6 +2451,34 @@
   font-size: 0.8125rem;
 }
 
+.invoiceToggleItemParent {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.8125rem;
+}
+
+.invoiceToggleNested {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem 0.75rem;
+  margin: 0.15rem 0 0.35rem 0.35rem;
+  padding: 0.35rem 0 0.15rem 0.75rem;
+  border-left: 1px solid
+    color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 90%, transparent);
+}
+
+.invoiceToggleNested .invoiceToggleItem {
+  align-items: flex-start;
+}
+
+.invoiceToggleHint {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 400;
+  color: var(--sk-color-text-secondary, #64748b);
+}
+
 .invoiceSettingsPreview {
   display: flex;
   flex-direction: column;
@@ -2692,6 +2720,10 @@
   }
 
   .invoiceToggleGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .invoiceToggleNested {
     grid-template-columns: 1fr;
   }
 

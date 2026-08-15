@@ -74,6 +74,7 @@ export function ProfilePage() {
     gstinNo?: string | null;
     panNo?: string | null;
     dlNo?: string | null;
+    fssai?: string | null;
     tagline?: string | null;
     location?: LocationType | null;
   } | null>(null);
@@ -195,6 +196,7 @@ export function ProfilePage() {
     shop.gstinNo ? { label: 'GSTIN', value: shop.gstinNo } : null,
     shop.panNo ? { label: 'PAN', value: shop.panNo } : null,
     shop.dlNo ? { label: 'DL No', value: shop.dlNo } : null,
+    shop.fssai ? { label: 'FSSAI', value: shop.fssai } : null,
   ].filter(Boolean) as { label: string; value: string }[];
 
   return (
