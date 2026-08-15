@@ -5,6 +5,7 @@ import { cartApi } from '../api/cart.api';
 import { invoiceSettingsApi } from '../api/invoice-settings.api';
 import type { PrinterType } from '../api/endpoints';
 import {
+  Alert,
   Box,
   Button,
   Icon,
@@ -43,7 +44,7 @@ const PRINTER_OPTIONS: Array<{
   {
     value: 'DOT_MATRIX',
     title: 'Dot Matrix',
-    description: 'Compact monospace layout on A4',
+    description: '10×12 in text file for impact printers',
     icon: Printer,
   },
   {
@@ -53,6 +54,27 @@ const PRINTER_OPTIONS: Array<{
     icon: Receipt,
   },
 ];
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+}
+
+function openPdfPreview(blob: Blob, fallbackName: string) {
+  const url = window.URL.createObjectURL(blob);
+  const newWindow = window.open(url, '_blank');
+  if (!newWindow) {
+    downloadBlob(blob, fallbackName);
+  } else {
+    window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+  }
+}
 
 export function PrintInvoiceModal({
   isOpen,
@@ -87,23 +109,11 @@ export function PrintInvoiceModal({
     };
   }, [isOpen]);
 
-  const handleGenerate = async () => {
+  const handlePreviewPdf = async () => {
     setIsGenerating(true);
     try {
       const pdfBlob = await cartApi.getInvoicePdf(purchaseId, printerType);
-      const url = window.URL.createObjectURL(pdfBlob);
-      const newWindow = window.open(url, '_blank');
-
-      if (!newWindow) {
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `invoice-${invoiceNo || purchaseId}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
-
-      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+      openPdfPreview(pdfBlob, `invoice-${invoiceNo || purchaseId}.pdf`);
       onClose();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to download invoice PDF';
@@ -113,7 +123,22 @@ export function PrintInvoiceModal({
     }
   };
 
+  const handleDownloadPrintFile = async () => {
+    setIsGenerating(true);
+    try {
+      const textBlob = await cartApi.getInvoiceDotMatrixText(purchaseId);
+      downloadBlob(textBlob, `invoice-${invoiceNo || purchaseId}.txt`);
+      onClose();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to download print file';
+      onError?.(message);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const handleClose = isGenerating ? undefined : onClose;
+  const isDotMatrix = printerType === 'DOT_MATRIX';
 
   return (
     <Modal open={isOpen} onClose={handleClose} size="sm">
@@ -166,16 +191,40 @@ export function PrintInvoiceModal({
               );
             })}
           </Box>
+          {isDotMatrix ? (
+            <Alert variant="info">
+              Print the .txt at 10 CPI (Pica). Standard 80-column printers only paint 8 inches; the
+              extra 10×12 paper beside the holes cannot be used. Do not print the PDF on the
+              dot-matrix.
+            </Alert>
+          ) : null}
         </Stack>
       </Modal.Body>
       <Modal.Footer>
         <Button type="button" variant="outline" onClick={onClose} disabled={isGenerating}>
           Cancel
         </Button>
+        {isDotMatrix ? (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void handlePreviewPdf()}
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <Inline gap="sm" align="center">
+                <Spinner size="sm" />
+                Generating…
+              </Inline>
+            ) : (
+              'Preview PDF'
+            )}
+          </Button>
+        ) : null}
         <Button
           type="button"
           variant="solid"
-          onClick={() => void handleGenerate()}
+          onClick={() => void (isDotMatrix ? handleDownloadPrintFile() : handlePreviewPdf())}
           disabled={isGenerating}
         >
           {isGenerating ? (
@@ -183,6 +232,8 @@ export function PrintInvoiceModal({
               <Spinner size="sm" />
               Generating…
             </Inline>
+          ) : isDotMatrix ? (
+            'Download print file'
           ) : (
             'Generate PDF'
           )}

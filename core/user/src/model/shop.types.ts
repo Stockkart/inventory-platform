@@ -36,13 +36,22 @@ export interface RegisterShopResponse {
 export interface ShopDetailResponse {
   shopId: string;
   name: string;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+  gstinNo?: string | null;
   tagline?: string | null;
   location?: Location | null;
-  /** PAN derived from GSTIN: 10 chars from 3rd character (1-based). */
+  /** Stored PAN, or derived from GSTIN: 10 chars from 3rd character (1-based). */
   panNo?: string | null;
   verticalId?: string | null;
   pluginVersion?: string | null;
   dlNo?: string | null;
+  fssai?: string | null;
+  shopType?: ShopType | null;
+  sgst?: string | null;
+  cgst?: string | null;
+  status?: string | null;
+  createdAt?: string | null;
 }
 
 export interface UpdateShopDto {

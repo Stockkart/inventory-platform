@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useRef, useState } from 'react';
+import { Fragment, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { FileText, Maximize2, Minimize2, Printer, Receipt } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useNotify } from '@inventory-platform/session';
@@ -24,6 +24,8 @@ import {
   type InvoiceFieldVisibility,
   type InvoicePrinterType,
   type InvoiceSettingsResponse,
+  type InvoiceShopValueKey,
+  type ShopDetailResponse,
 } from '@inventory-platform/user/types';
 
 const PREVIEW_DEBOUNCE_MS = 400;
@@ -69,7 +71,7 @@ const PRINTER_OPTIONS: Array<{
   {
     value: 'DOT_MATRIX',
     title: 'Dot matrix',
-    description: 'Compact A4',
+    description: '10×12 in continuous form',
     icon: Printer,
   },
   {
@@ -91,6 +93,44 @@ function cloneFields(fields: InvoiceFieldVisibility): InvoiceFieldVisibility {
   return { ...fields };
 }
 
+function shopFieldPresent(
+  shop: ShopDetailResponse | null,
+  key: InvoiceShopValueKey | undefined,
+): boolean {
+  if (!key) return true;
+  if (!shop) return true;
+  switch (key) {
+    case 'name':
+      return Boolean(shop.name?.trim());
+    case 'address': {
+      const loc = shop.location;
+      return Boolean(
+        loc?.primaryAddress?.trim() ||
+          loc?.secondaryAddress?.trim() ||
+          loc?.city?.trim() ||
+          loc?.state?.trim() ||
+          loc?.pin?.trim(),
+      );
+    }
+    case 'tagline':
+      return Boolean(shop.tagline?.trim());
+    case 'phone':
+      return Boolean(shop.contactPhone?.trim());
+    case 'email':
+      return Boolean(shop.contactEmail?.trim());
+    case 'gstin':
+      return Boolean(shop.gstinNo?.trim());
+    case 'pan':
+      return Boolean(shop.panNo?.trim());
+    case 'dlNo':
+      return Boolean(shop.dlNo?.trim());
+    case 'fssai':
+      return Boolean(shop.fssai?.trim());
+    default:
+      return true;
+  }
+}
+
 /** Soften iframe preview so thermal/A4 sit cleanly on the paper sheet. */
 function wrapPreviewHtml(html: string, printerType: InvoicePrinterType): string {
   const isThermal = printerType === 'THERMAL_3INCH';
@@ -103,6 +143,20 @@ function wrapPreviewHtml(html: string, printerType: InvoicePrinterType): string 
         width: 74mm !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
+      }
+    `
+    : printerType === 'DOT_MATRIX'
+    ? `
+      html, body { background: #fff; }
+      body {
+        margin: 8px !important;
+        box-sizing: border-box !important;
+      }
+      pre {
+        font-family: Courier, "Courier New", monospace !important;
+        font-size: 12pt !important;
+        line-height: 1.0 !important;
+        white-space: pre !important;
       }
     `
     : `
@@ -137,6 +191,7 @@ export function InvoiceSettingsSection() {
   const [regularFields, setRegularFields] = useState<InvoiceFieldVisibility | null>(null);
   const [basicFields, setBasicFields] = useState<InvoiceFieldVisibility | null>(null);
   const [editMode, setEditMode] = useState<InvoiceBillingModePreview>('REGULAR');
+  const [shop, setShop] = useState<ShopDetailResponse | null>(null);
 
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -163,6 +218,12 @@ export function InvoiceSettingsSection() {
       try {
         const data = await shopsApi.getInvoiceSettings();
         if (!cancelled) applySettings(data);
+        try {
+          const shopData = await shopsApi.getActiveShop();
+          if (!cancelled) setShop(shopData);
+        } catch {
+          if (!cancelled) setShop(null);
+        }
       } catch (err) {
         if (!cancelled) {
           setLoadError(err instanceof Error ? err.message : 'Failed to load invoice settings');
@@ -476,16 +537,68 @@ export function InvoiceSettingsSection() {
                   {label}
                 </Text>
                 <Box className={surfaceChrome.invoiceToggleGrid}>
-                  {toggles.map((toggle) => (
-                    <Switch
-                      key={toggle.key}
-                      className={surfaceChrome.invoiceToggleItem}
-                      label={toggle.label}
-                      checked={Boolean(activeFields[toggle.key])}
-                      disabled={saving}
-                      onChange={(e) => handleToggle(toggle.key, e.target.checked)}
-                    />
-                  ))}
+                  {toggles
+                    .filter((toggle) => !toggle.parent)
+                    .map((toggle) => {
+                      const children = toggles.filter((child) => child.parent === toggle.key);
+                      if (children.length === 0) {
+                        return (
+                          <Switch
+                            key={toggle.key}
+                            id={`invoice-toggle-${toggle.key}`}
+                            className={surfaceChrome.invoiceToggleItem}
+                            label={toggle.label}
+                            checked={Boolean(activeFields[toggle.key])}
+                            disabled={saving}
+                            onChange={(e) => handleToggle(toggle.key, e.target.checked)}
+                          />
+                        );
+                      }
+                      const parentOn = Boolean(activeFields[toggle.key]);
+                      return (
+                        <Fragment key={toggle.key}>
+                          <Switch
+                            id={`invoice-toggle-${toggle.key}`}
+                            className={surfaceChrome.invoiceToggleItemParent}
+                            label={toggle.label}
+                            checked={parentOn}
+                            disabled={saving}
+                            onChange={(e) => handleToggle(toggle.key, e.target.checked)}
+                          />
+                          <Box className={surfaceChrome.invoiceToggleNested}>
+                            {children.map((child) => {
+                              const missingShopValue = !shopFieldPresent(shop, child.shopValueKey);
+                              const disabled = saving || !parentOn || missingShopValue;
+                              return (
+                                <Switch
+                                  key={child.key}
+                                  id={`invoice-toggle-${child.key}`}
+                                  className={surfaceChrome.invoiceToggleItem}
+                                  label={
+                                    missingShopValue ? (
+                                      <>
+                                        {child.label}
+                                        <Text
+                                          variant="caption"
+                                          className={surfaceChrome.invoiceToggleHint}
+                                        >
+                                          Not set on this shop
+                                        </Text>
+                                      </>
+                                    ) : (
+                                      child.label
+                                    )
+                                  }
+                                  checked={Boolean(activeFields[child.key])}
+                                  disabled={disabled}
+                                  onChange={(e) => handleToggle(child.key, e.target.checked)}
+                                />
+                              );
+                            })}
+                          </Box>
+                        </Fragment>
+                      );
+                    })}
                 </Box>
               </Box>
             ))}
@@ -591,6 +704,8 @@ export function InvoiceSettingsSection() {
           >
             {defaultPrinterType === 'THERMAL_3INCH'
               ? 'Shown as a 75mm receipt strip — same layout as thermal prints.'
+              : defaultPrinterType === 'DOT_MATRIX'
+              ? '8×12 in printable area (80-column head). 10×12 paper will still show tractor margins — print the .txt, not this PDF, on the printer.'
               : 'Shown as print-sized paper — same template as checkout PDFs.'}
           </Text>
 

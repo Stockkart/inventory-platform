@@ -26,4 +26,10 @@ export const creditNoteApi = {
 
   getVendorCreditNotePdf: async (returnId: string, printerType?: PrinterType): Promise<Blob> =>
     fetchPdfBlob(VENDOR_PURCHASE_RETURNS_ENDPOINTS.PDF(returnId, printerType)),
+
+  getCustomerCreditNoteDotMatrixText: async (refundId: string): Promise<Blob> =>
+    fetchPdfBlob(REFUND_ENDPOINTS.DOT_MATRIX(refundId)),
+
+  getVendorCreditNoteDotMatrixText: async (returnId: string): Promise<Blob> =>
+    fetchPdfBlob(VENDOR_PURCHASE_RETURNS_ENDPOINTS.DOT_MATRIX(returnId)),
 };
