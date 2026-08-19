@@ -882,7 +882,13 @@ export interface SearchPurchasesParams {
   customerEmail?: string;
   customerPhone?: string;
   customerName?: string;
+  /** Free text matched against a customer's name, phone, email or address. */
+  customer?: string;
   invoiceNo?: string;
+  /** Inclusive first sale date, yyyy-MM-dd. */
+  from?: string;
+  /** Inclusive last sale date, yyyy-MM-dd. */
+  to?: string;
   page?: number;
   limit?: number;
 }

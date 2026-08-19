@@ -12,33 +12,20 @@ import { SaleHistoryCard } from './SaleHistoryCard';
 import { HistoryListSummary } from './HistoryListSummary';
 import { useNotify } from '@inventory-platform/session';
 import type { HistoryFilters } from './historyFilters';
-import {
-  hasActiveHistoryFilters,
-  isDateInRange,
-  paginateLocal,
-  matchesRegexField,
-} from './historyFilters';
+import { hasActiveHistoryFilters } from './historyFilters';
 
 interface PurchaseListProps {
   onPurchaseChange?: () => void;
   filters?: HistoryFilters;
 }
 
-const FILTER_FETCH_LIMIT = 100;
 const PAGE_SIZE = 20;
 
 function isSaleStatus(purchase: Purchase): boolean {
   return purchase.status === 'COMPLETED' || purchase.status === 'CANCELLED';
 }
 
-function applySaleFilters(rows: Purchase[], applied: HistoryFilters): Purchase[] {
-  return rows
-    .filter(isSaleStatus)
-    .filter((p) => isDateInRange(p.soldAt, applied.dateFrom, applied.dateTo))
-    .filter((p) => matchesRegexField(applied.invoiceNo, p.invoiceNo))
-    .filter((p) => matchesRegexField(applied.customer, p.customerName, p.customerPhone))
-    .sort((a, b) => new Date(b.soldAt).getTime() - new Date(a.soldAt).getTime());
-}
+
 
 export function PurchaseList({ filters }: PurchaseListProps) {
   const applied = filters;
@@ -63,16 +50,21 @@ export function PurchaseList({ filters }: PurchaseListProps) {
 
     try {
       if (filtering && applied) {
-        const response = await purchasesApi.getAll({
-          page: 1,
-          limit: FILTER_FETCH_LIMIT,
-          order: 'soldAt:desc',
+        // The server does the narrowing. Fetching a fixed window of recent
+        // sales and sifting it here could only ever find what happened to fall
+        // inside that window: with a hundred rows fetched, an invoice from the
+        // start of the month was reported as not existing.
+        const response = await purchasesApi.search({
+          page,
+          limit,
+          invoiceNo: applied.invoiceNo || undefined,
+          from: applied.dateFrom || undefined,
+          to: applied.dateTo || undefined,
+          customer: applied.customer || undefined,
         });
-        const rows = applySaleFilters(response.purchases, applied);
-        const paged = paginateLocal(rows, page, limit);
-        setPurchases(paged.slice);
-        setTotalPages(paged.totalPages);
-        setTotal(paged.total);
+        setPurchases(response.purchases.filter(isSaleStatus));
+        setTotalPages(response.totalPages);
+        setTotal(response.total);
       } else {
         const response = await purchasesApi.getAll({
           page,
