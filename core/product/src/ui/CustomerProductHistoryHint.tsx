@@ -39,6 +39,42 @@ function formatQty(qty: SaleEntry['quantity']): string {
   return n === 1 ? '1 pc' : `${n} pcs`;
 }
 
+function formatDiscountPercent(discount: number | null | undefined): string {
+  if (discount == null || !Number.isFinite(Number(discount))) return '—';
+  const n = Number(discount);
+  const isWhole = n % 1 === 0;
+  return `${isWhole ? n.toFixed(0) : n.toFixed(2)}%`;
+}
+
+function formatSchemeApplied(entry: SaleEntry): string {
+  const schemeType = entry.schemeType;
+  const percentage = entry.schemePercentage;
+  const payFor = entry.schemePayFor;
+  const free = entry.schemeFree;
+  if (schemeType === 'PERCENTAGE' && percentage != null && Number.isFinite(Number(percentage))) {
+    const n = Number(percentage);
+    const isWhole = n % 1 === 0;
+    return `${isWhole ? n.toFixed(0) : n.toFixed(2)}%`;
+  }
+  if (payFor != null || free != null) {
+    return `${payFor ?? 0} + ${free ?? 0}`;
+  }
+  if (percentage != null && Number.isFinite(Number(percentage)) && Number(percentage) !== 0) {
+    const n = Number(percentage);
+    const isWhole = n % 1 === 0;
+    return `${isWhole ? n.toFixed(0) : n.toFixed(2)}%`;
+  }
+  return '—';
+}
+
+function MetaDot() {
+  return (
+    <Text as="span" variant="caption" color="muted" aria-hidden>
+      ·
+    </Text>
+  );
+}
+
 function HistoryEntryRow({
   entry,
   primary = false,
@@ -50,7 +86,9 @@ function HistoryEntryRow({
 }) {
   const date = entry.soldAt ? dateFormatter.format(new Date(entry.soldAt)) : '—';
   const qty = formatQty(entry.quantity);
-  const rate = formatRate(Number(entry.priceToRetail) || 0);
+  const ptr = formatRate(Number(entry.priceToRetail) || 0);
+  const discount = formatDiscountPercent(entry.saleAdditionalDiscount);
+  const scheme = formatSchemeApplied(entry);
   const invoice = entry.invoiceNo?.trim();
 
   const summary = (
@@ -63,29 +101,46 @@ function HistoryEntryRow({
       >
         {date}
       </Text>
-      <Text as="span" variant="caption" color="muted" aria-hidden>
-        ·
-      </Text>
+      <MetaDot />
       <Text as="span" variant="caption" color="secondary">
         {qty}
       </Text>
-      <Text as="span" variant="caption" color="muted" aria-hidden>
-        ·
+      <MetaDot />
+      <Text as="span" variant="caption" className={productChrome.historyPricePart}>
+        <Text as="span" variant="caption" color="muted" className={productChrome.historyMetaLabel}>
+          PTR
+        </Text>{' '}
+        <Text
+          as="span"
+          variant="caption"
+          weight="bold"
+          color="primary"
+          className={productChrome.historyRate}
+        >
+          {ptr}
+        </Text>
       </Text>
-      <Text
-        as="span"
-        variant="caption"
-        weight="bold"
-        color="primary"
-        className={productChrome.historyRate}
-      >
-        {rate}
+      <MetaDot />
+      <Text as="span" variant="caption" className={productChrome.historyPricePart}>
+        <Text as="span" variant="caption" color="muted" className={productChrome.historyMetaLabel}>
+          Disc
+        </Text>{' '}
+        <Text as="span" variant="caption" weight="semibold" color="secondary">
+          {discount}
+        </Text>
+      </Text>
+      <MetaDot />
+      <Text as="span" variant="caption" className={productChrome.historyPricePart}>
+        <Text as="span" variant="caption" color="muted" className={productChrome.historyMetaLabel}>
+          Scheme
+        </Text>{' '}
+        <Text as="span" variant="caption" weight="semibold" color="secondary">
+          {scheme}
+        </Text>
       </Text>
       {compact && invoice ? (
         <>
-          <Text as="span" variant="caption" color="muted" aria-hidden>
-            ·
-          </Text>
+          <MetaDot />
           <Text
             as="span"
             variant="caption"

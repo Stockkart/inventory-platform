@@ -167,6 +167,8 @@ export const productChrome = {
   historyEntryRow: styles.historyEntryRow,
   historyEntrySummary: styles.historyEntrySummary,
   historyRate: styles.historyRate,
+  historyPricePart: styles.historyPricePart,
+  historyMetaLabel: styles.historyMetaLabel,
   historyInvoiceChip: styles.historyInvoiceChip,
   historyChevron: styles.historyChevron,
   historyChevronOpen: styles.historyChevronOpen,
