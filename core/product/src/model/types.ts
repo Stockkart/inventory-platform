@@ -902,6 +902,11 @@ export interface CustomerProductSaleEntry {
   quantity: number;
   priceToRetail: number;
   lineTotal: number;
+  saleAdditionalDiscount?: number | null;
+  schemeType?: 'FIXED_UNITS' | 'PERCENTAGE' | null;
+  schemePayFor?: number | null;
+  schemeFree?: number | null;
+  schemePercentage?: number | null;
 }
 
 export interface CustomerProductHistoryGroup {

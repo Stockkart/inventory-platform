@@ -1313,6 +1313,16 @@
   letter-spacing: -0.015em;
 }
 
+.historyPricePart {
+  white-space: nowrap;
+}
+
+.historyMetaLabel {
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .historyInvoiceChip {
   flex: 0 0 auto;
   margin-left: 0.35rem;
