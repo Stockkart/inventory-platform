@@ -25,8 +25,6 @@ function isSaleStatus(purchase: Purchase): boolean {
   return purchase.status === 'COMPLETED' || purchase.status === 'CANCELLED';
 }
 
-
-
 export function PurchaseList({ filters }: PurchaseListProps) {
   const applied = filters;
   const filtering = applied != null && hasActiveHistoryFilters(applied, 'saleHistory');
