@@ -72,6 +72,7 @@ import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
 import { cartApi } from '../api/cart.api';
 import { sellCatalogApi } from '../api/sell-catalog.api';
 import { pricingClient } from '../api/pricing-client.api';
+import { gstAmountRowLabel, uniqueGstRateLabel } from '../lib/gstRateLabel';
 import { customersApi } from '@inventory-platform/user/customers';
 import type {
   AvailableUnit,
@@ -1740,6 +1741,8 @@ export function ScanSellPage() {
                 ...existing.inventoryItem,
                 saleAdditionalDiscount:
                   resItem.saleAdditionalDiscount ?? existing.inventoryItem.saleAdditionalDiscount,
+                sgst: resItem.sgst ?? existing.inventoryItem.sgst,
+                cgst: resItem.cgst ?? existing.inventoryItem.cgst,
                 billingMode: normalizeBillingMode(
                   resItem.billingMode ?? existing.inventoryItem.billingMode,
                 ),
@@ -1785,6 +1788,8 @@ export function ScanSellPage() {
                 expiryDate: '',
                 shopId: cart.shopId,
                 saleAdditionalDiscount: resItem.saleAdditionalDiscount ?? null,
+                sgst: resItem.sgst ?? null,
+                cgst: resItem.cgst ?? null,
                 billingMode: normalizeBillingMode(resItem.billingMode ?? cart.billingMode),
                 baseUnit: inferredBaseUnit ?? undefined,
                 packUnitUqc: packUnitUqc ?? undefined,
@@ -2603,19 +2608,14 @@ export function ScanSellPage() {
     return calculateSubtotal() + calculateTax();
   };
 
-  const getSGSTPercentage = () => {
-    const subtotal = calculateSubtotal();
-    if (subtotal === 0) return '0.0';
-    const sgst = calculateSGST();
-    return ((sgst / subtotal) * 100).toFixed(1);
-  };
-
-  const getCGSTPercentage = () => {
-    const subtotal = calculateSubtotal();
-    if (subtotal === 0) return '0.0';
-    const cgst = calculateCGST();
-    return ((cgst / subtotal) * 100).toFixed(1);
-  };
+  const sgstRateLabel = uniqueGstRateLabel(
+    [...(cartData?.items ?? []), ...cartItems.map((item) => item.inventoryItem)],
+    'sgst',
+  );
+  const cgstRateLabel = uniqueGstRateLabel(
+    [...(cartData?.items ?? []), ...cartItems.map((item) => item.inventoryItem)],
+    'cgst',
+  );
 
   const handleCustomerSearch = async () => {
     if (!customerPhone.trim()) {
@@ -3815,11 +3815,11 @@ export function ScanSellPage() {
                             (cartData?.cgstAmount ?? 0) !== 0) && (
                             <>
                               <SummaryRow
-                                label={`SGST (${getSGSTPercentage()}%)`}
+                                label={gstAmountRowLabel('SGST', sgstRateLabel)}
                                 value={`₹${calculateSGST().toFixed(2)}`}
                               />
                               <SummaryRow
-                                label={`CGST (${getCGSTPercentage()}%)`}
+                                label={gstAmountRowLabel('CGST', cgstRateLabel)}
                                 value={`₹${calculateCGST().toFixed(2)}`}
                               />
                             </>

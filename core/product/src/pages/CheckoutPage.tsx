@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { cartApi } from '../api/cart.api';
+import { gstAmountRowLabel, uniqueGstRateLabel } from '../lib/gstRateLabel';
 import type { CartResponse, UpdateCartStatusDto } from '@inventory-platform/product/types';
 import type { PaymentMethod, PaymentSplit } from '@inventory-platform/contracts';
 import {
@@ -283,20 +284,9 @@ export function CheckoutPage() {
     }
   };
 
-  // Get SGST and CGST percentages from items if available, otherwise calculate from amounts
   const billingMode = checkoutData.billingMode === 'BASIC' ? 'BASIC' : 'REGULAR';
-  const firstItem = checkoutData.items[0];
-  const sgstPercentage = firstItem?.sgst
-    ? parseFloat(firstItem.sgst).toFixed(1)
-    : checkoutData.subTotal > 0 && checkoutData.sgstAmount
-    ? ((checkoutData.sgstAmount / checkoutData.subTotal) * 100).toFixed(1)
-    : '0';
-
-  const cgstPercentage = firstItem?.cgst
-    ? parseFloat(firstItem.cgst).toFixed(1)
-    : checkoutData.subTotal > 0 && checkoutData.cgstAmount
-    ? ((checkoutData.cgstAmount / checkoutData.subTotal) * 100).toFixed(1)
-    : '0';
+  const sgstPercentage = uniqueGstRateLabel(checkoutData.items, 'sgst');
+  const cgstPercentage = uniqueGstRateLabel(checkoutData.items, 'cgst');
 
   // Get current date
   const currentDate = new Date().toLocaleDateString('en-US', {
@@ -515,13 +505,13 @@ export function CheckoutPage() {
                 <SummaryRow label="Subtotal:" value={`₹${checkoutData.subTotal.toFixed(2)}`} />
                 {checkoutData.sgstAmount !== undefined && checkoutData.sgstAmount > 0 ? (
                   <SummaryRow
-                    label={`SGST (${sgstPercentage}%):`}
+                    label={`${gstAmountRowLabel('SGST', sgstPercentage)}:`}
                     value={`₹${checkoutData.sgstAmount.toFixed(2)}`}
                   />
                 ) : null}
                 {checkoutData.cgstAmount !== undefined && checkoutData.cgstAmount > 0 ? (
                   <SummaryRow
-                    label={`CGST (${cgstPercentage}%):`}
+                    label={`${gstAmountRowLabel('CGST', cgstPercentage)}:`}
                     value={`₹${checkoutData.cgstAmount.toFixed(2)}`}
                   />
                 ) : null}
