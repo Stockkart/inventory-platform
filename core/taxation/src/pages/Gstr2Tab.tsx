@@ -18,7 +18,16 @@ import {
 import { triggerBlobDownload } from '../api/download';
 import { gstr2Api } from '../api/gstr2.api';
 import { useGstr2ReportQuery } from '../queries/hooks';
-import { formatCurrency, formatDate, getDefaultPeriod, GstrReportHeader, GstrSubTabs } from '../ui';
+import {
+  formatCurrency,
+  formatDate,
+  getDefaultPeriod,
+  GstrReportHeader,
+  GstrSubTabs,
+  GstrSummaryGrid,
+} from '../ui';
+import type { GstrSummaryItem } from '../ui';
+import type { Gstr2Summary } from '../model/types';
 import { numColStyle } from '../ui/tabNav';
 
 const TABS = [
@@ -76,6 +85,24 @@ export function Gstr2Tab() {
     }
   };
 
+  // The figures the portal heads each tab with. Counts are omitted where the
+  // tab has none -- the HSN summary has no invoices and no suppliers.
+  const summaryItems = (summary: Gstr2Summary | null | undefined): GstrSummaryItem[] => {
+    if (!summary) return [];
+    const items: GstrSummaryItem[] = [];
+    if (summary.noOfSuppliers != null) {
+      items.push({ label: 'Suppliers', value: String(summary.noOfSuppliers) });
+    }
+    if (summary.noOfInvoices != null) {
+      items.push({ label: 'Invoices', value: String(summary.noOfInvoices) });
+    }
+    items.push({ label: 'Total Invoice Value', value: formatCurrency(summary.totalInvoiceValue) });
+    items.push({ label: 'Taxable Value', value: formatCurrency(summary.taxableValue) });
+    items.push({ label: 'Central Tax', value: formatCurrency(summary.centralTaxPaid) });
+    items.push({ label: 'State/UT Tax', value: formatCurrency(summary.stateUtTaxPaid) });
+    return items;
+  };
+
   const b2bData = data?.b2b?.lines ?? [];
   const b2burData = data?.b2bur?.lines ?? [];
   const impsData = data?.imps?.lines ?? [];
@@ -120,6 +147,7 @@ export function Gstr2Tab() {
               {activeTab === 'b2b' && (
                 <Stack gap="md">
                   <SectionTitle>B2B Inward Supplies (Registered Suppliers)</SectionTitle>
+                  <GstrSummaryGrid items={summaryItems(data?.b2b?.summary)} />
                   {b2bData.length === 0 ? (
                     <EmptySection message="No B2B inward supplies for this period." />
                   ) : (
@@ -168,6 +196,7 @@ export function Gstr2Tab() {
               {activeTab === 'b2bur' && (
                 <Stack gap="md">
                   <SectionTitle>B2BUR Inward Supplies (Unregistered Suppliers)</SectionTitle>
+                  <GstrSummaryGrid items={summaryItems(data?.b2bur?.summary)} />
                   {b2burData.length === 0 ? (
                     <EmptySection message="No B2BUR inward supplies for this period." />
                   ) : (
@@ -542,6 +571,7 @@ export function Gstr2Tab() {
               {activeTab === 'hsnsum' && (
                 <Stack gap="md">
                   <SectionTitle>HSN Summary</SectionTitle>
+                  <GstrSummaryGrid items={summaryItems(data?.hsnsum?.summary)} />
                   {hsnData.length === 0 ? (
                     <EmptySection message="No HSN summary for this period." />
                   ) : (
