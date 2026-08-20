@@ -3622,10 +3622,10 @@ export function ScanSellPage() {
                                                     isLoading
                                                       ? 'Loading rates'
                                                       : selectedOpt
-                                                        ? `Rate: ${selectedOpt.label}, ${formatPrice(
-                                                            selectedOpt.price,
-                                                          )}`
-                                                        : 'Select selling rate'
+                                                      ? `Rate: ${selectedOpt.label}, ${formatPrice(
+                                                          selectedOpt.price,
+                                                        )}`
+                                                      : 'Select selling rate'
                                                   }
                                                   options={[
                                                     { value: '__custom__', label: 'Custom' },
@@ -3963,8 +3963,8 @@ export function ScanSellPage() {
                       {isProcessing
                         ? 'Processing...'
                         : isUpdatingCart
-                          ? 'Updating...'
-                          : 'Process Payment'}
+                        ? 'Updating...'
+                        : 'Process Payment'}
                     </Button>
                   </Inline>
                 </Stack>
@@ -3992,8 +3992,8 @@ export function ScanSellPage() {
               detailModalItem.schemePercentage != null
                 ? `${detailModalItem.schemePercentage}%`
                 : detailModalItem.schemePayFor != null || detailModalItem.schemeFree != null
-                  ? `${detailModalItem.schemePayFor ?? 0} + ${detailModalItem.schemeFree ?? 0}`
-                  : '—';
+                ? `${detailModalItem.schemePayFor ?? 0} + ${detailModalItem.schemeFree ?? 0}`
+                : '—';
             return (
               <Modal
                 open
