@@ -7,11 +7,12 @@ const historyCache = new Map<string, CustomerProductHistoryResponse>();
 function buildCacheKey(
   customerId: string | null | undefined,
   customerPhone: string | null | undefined,
+  customerName: string | null | undefined,
   refs: string[],
   excludePurchaseId: string | null | undefined,
   limit: number,
 ): string {
-  return `${customerId ?? ''}|${customerPhone ?? ''}|${
+  return `${customerId ?? ''}|${customerPhone ?? ''}|${customerName ?? ''}|${
     excludePurchaseId ?? ''
   }|${limit}|${refs.join(',')}`;
 }
@@ -19,6 +20,7 @@ function buildCacheKey(
 export interface UseCustomerProductHistoryParams {
   customerId?: string | null;
   customerPhone?: string | null;
+  customerName?: string | null;
   sellableRefs: string[];
   excludePurchaseId?: string | null;
   limit?: number;
@@ -28,6 +30,7 @@ export interface UseCustomerProductHistoryParams {
 export function useCustomerProductHistory({
   customerId,
   customerPhone,
+  customerName,
   sellableRefs,
   excludePurchaseId,
   limit = 3,
@@ -39,7 +42,10 @@ export function useCustomerProductHistory({
     return unique;
   }, [sellableRefs]);
 
-  const hasCustomer = Boolean(customerId?.trim() || customerPhone?.trim());
+  // The name counts as identifying the customer. Most customers have no phone
+  // recorded, and without the name every line on their bill reported itself as
+  // new to someone who had been buying for years.
+  const hasCustomer = Boolean(customerId?.trim() || customerPhone?.trim() || customerName?.trim());
   const [data, setData] = useState<CustomerProductHistoryResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -50,7 +56,14 @@ export function useCustomerProductHistory({
       return;
     }
 
-    const key = buildCacheKey(customerId, customerPhone, stableRefs, excludePurchaseId, limit);
+    const key = buildCacheKey(
+      customerId,
+      customerPhone,
+      customerName,
+      stableRefs,
+      excludePurchaseId,
+      limit,
+    );
     const cached = historyCache.get(key);
     if (cached) {
       setData(cached);
@@ -65,6 +78,7 @@ export function useCustomerProductHistory({
         .getCustomerProductHistory({
           customerId: customerId?.trim() || undefined,
           customerPhone: customerPhone?.trim() || undefined,
+          customerName: customerName?.trim() || undefined,
           sellableRefs: stableRefs,
           excludePurchaseId: excludePurchaseId?.trim() || undefined,
           limit,
@@ -87,7 +101,16 @@ export function useCustomerProductHistory({
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [enabled, hasCustomer, customerId, customerPhone, stableRefs, excludePurchaseId, limit]);
+  }, [
+    enabled,
+    hasCustomer,
+    customerId,
+    customerPhone,
+    customerName,
+    stableRefs,
+    excludePurchaseId,
+    limit,
+  ]);
 
   return { data, loading };
 }
