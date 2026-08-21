@@ -14,6 +14,11 @@ export type SchemeType = 'FIXED_UNITS' | 'PERCENTAGE';
 export type PurchaseSchemeInputType = SchemeType | 'FREE_QUANTITY';
 export type BillingMode = 'REGULAR' | 'BASIC';
 
+/** SALE cart/invoice vs ESTIMATE quote document. Orthogonal to BillingMode. */
+export type DocumentType = 'SALE' | 'ESTIMATE';
+
+export type EstimateState = 'OPEN' | 'CONVERTED' | 'DISCARDED';
+
 export interface UnitConversion {
   unit: string;
   factor: number;
@@ -760,6 +765,11 @@ export interface CartResponse {
   creditEntryId?: string | null;
   /** Daily order token (cafe / menu-billing verticals). */
   tokenNo?: string | null;
+  documentType?: DocumentType | null;
+  estimateState?: EstimateState | null;
+  estimateNo?: string | null;
+  convertedToPurchaseId?: string | null;
+  sourceEstimateId?: string | null;
 }
 
 export interface AddToCartDto {
@@ -790,6 +800,18 @@ export interface CreateQuotationDto {
   customerUserId?: string;
 }
 
+export interface CreateEstimateDto {
+  businessType: string;
+  customerName?: string;
+  customerAddress?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  customerGstin?: string;
+  customerDlNo?: string;
+  customerPan?: string;
+  customerUserId?: string;
+}
+
 export interface QuotationSummary {
   purchaseId: string;
   status: string;
@@ -806,6 +828,32 @@ export interface QuotationSummary {
 
 export interface QuotationListResponse {
   quotations: QuotationSummary[];
+}
+
+export interface EstimateSummary {
+  purchaseId: string;
+  estimateNo?: string | null;
+  status: string;
+  estimateState: EstimateState;
+  billingMode?: BillingMode | null;
+  customerId?: string | null;
+  customerName: string;
+  customerPhone?: string | null;
+  itemCount: number;
+  grandTotal: number;
+  convertedToPurchaseId?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface EstimateListResponse {
+  estimates: EstimateSummary[];
+}
+
+export interface ConvertEstimateResponse {
+  estimateId: string;
+  estimateNo?: string | null;
+  salePurchaseId: string;
 }
 
 export interface UpdateCartStatusDto {

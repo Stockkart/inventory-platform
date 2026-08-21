@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { cartApi } from '../api/cart.api';
+import { estimatesApi } from '../api/estimates.api';
 import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
 import type {
   BillingMode,
+  EstimateSummary,
   InventoryItem,
   QuotationSummary,
 } from '@inventory-platform/product/types';
@@ -33,6 +35,8 @@ import {
   useVerticalSchemaStore,
 } from '@inventory-platform/session';
 import { AddToSellQuotationPicker } from '../ui/AddToSellQuotationPicker';
+import { AddToEstimatePicker } from '../ui/AddToEstimatePicker';
+import { AddToCartDestinationPicker, type CartDestination } from '../ui/AddToCartDestinationPicker';
 
 const BILLING_MODE_OPTIONS = [
   { value: 'ALL', label: 'All' },
@@ -66,6 +70,9 @@ export function ProductSearchPage() {
   const [billingModeFilter, setBillingModeFilter] = useState<'ALL' | BillingMode>('ALL');
   const [quotationPickerItem, setQuotationPickerItem] = useState<InventoryItem | null>(null);
   const [quotationPickerList, setQuotationPickerList] = useState<QuotationSummary[]>([]);
+  const [estimatePickerItem, setEstimatePickerItem] = useState<InventoryItem | null>(null);
+  const [estimatePickerList, setEstimatePickerList] = useState<EstimateSummary[]>([]);
+  const [destinationPickerItem, setDestinationPickerItem] = useState<InventoryItem | null>(null);
   const [cartBusinessType, setCartBusinessType] = useState('medical');
   const { success: notifySuccess, error: notifyError } = useNotify;
   const { user } = useAuthStore();
@@ -184,7 +191,7 @@ export function ProductSearchPage() {
     }
   };
 
-  const addItemToQuotation = async (item: InventoryItem, purchaseId: string): Promise<void> => {
+  const addItemToCartDocument = async (item: InventoryItem, purchaseId: string): Promise<void> => {
     const inventoryId = resolveInventoryDocumentId(item);
     if (!inventoryId) {
       notifyError('Cannot add: missing inventory id');
@@ -221,11 +228,21 @@ export function ProductSearchPage() {
     }
   };
 
-  const handleAddToSellError = (err: unknown) => {
-    const errorMessage = err instanceof Error ? err.message : 'Failed to add item to cart';
+  const notifyAddedToEstimate = (item: InventoryItem, estimate?: EstimateSummary) => {
+    const productName = item.name || 'Product';
+    if (estimate) {
+      const who = estimate.estimateNo?.trim() || estimate.customerName;
+      notifySuccess(`Added "${productName}" to estimate ${who}`);
+    } else {
+      notifySuccess(`Added "${productName}" to a new estimate`);
+    }
+  };
+
+  const handleAddToCartDocumentError = (err: unknown, kind: 'quotation' | 'estimate') => {
+    const errorMessage = err instanceof Error ? err.message : `Failed to add item to ${kind}`;
     if (errorMessage.includes('Cannot mix REGULAR and BASIC inventory items in a single cart')) {
       notifyError(
-        'Cannot add this item because the quotation already contains a different billing mode (REGULAR/BASIC). Pick another quotation or clear that cart.',
+        `Cannot add this item because the ${kind} already contains a different billing mode (REGULAR/BASIC). Pick another ${kind} or clear that cart.`,
       );
     } else {
       notifyError(errorMessage);
@@ -247,6 +264,21 @@ export function ProductSearchPage() {
     return { quotations: list, purchaseId: list[0].purchaseId };
   };
 
+  const resolveTargetEstimate = async (): Promise<{
+    estimates: EstimateSummary[];
+    purchaseId: string;
+  }> => {
+    let list = (await estimatesApi.list('OPEN')).estimates;
+    if (list.length === 0) {
+      const cart = await estimatesApi.create({
+        businessType: cartBusinessType,
+      });
+      list = (await estimatesApi.list('OPEN')).estimates;
+      return { estimates: list, purchaseId: cart.purchaseId };
+    }
+    return { estimates: list, purchaseId: list[0].purchaseId };
+  };
+
   const commitAddToSell = async (
     item: InventoryItem,
     purchaseId: string,
@@ -260,16 +292,72 @@ export function ProductSearchPage() {
     setError(null);
     setSuccessMessage(null);
     try {
-      await addItemToQuotation(item, purchaseId);
+      await addItemToCartDocument(item, purchaseId);
       const quotation = quotations.find((q) => q.purchaseId === purchaseId);
       notifyAddedToQuotation(item, quotation);
       setQuotationPickerItem(null);
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
-      handleAddToSellError(err);
+      handleAddToCartDocumentError(err, 'quotation');
     } finally {
       setAddingToCart(null);
     }
+  };
+
+  const commitAddToEstimate = async (
+    item: InventoryItem,
+    purchaseId: string,
+    estimates: EstimateSummary[],
+  ) => {
+    const inventoryId = resolveInventoryDocumentId(item);
+    if (!inventoryId) {
+      return;
+    }
+    setAddingToCart(inventoryId);
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      await addItemToCartDocument(item, purchaseId);
+      const estimate = estimates.find((e) => e.purchaseId === purchaseId);
+      notifyAddedToEstimate(item, estimate);
+      setEstimatePickerItem(null);
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err) {
+      handleAddToCartDocumentError(err, 'estimate');
+    } finally {
+      setAddingToCart(null);
+    }
+  };
+
+  const handleAddToCart = (item: InventoryItem) => {
+    const inventoryId = resolveInventoryDocumentId(item);
+    if (!inventoryId) {
+      notifyError('Cannot add: missing inventory id');
+      return;
+    }
+    if (item.currentCount <= 0) {
+      notifyError('Product is out of stock');
+      return;
+    }
+    const effectivePrice = item.sellingPrice ?? item.priceToRetail;
+    if (effectivePrice == null) {
+      notifyError('Cannot add: product price is not set');
+      return;
+    }
+    setDestinationPickerItem(item);
+  };
+
+  const handleDestinationSelect = async (destination: CartDestination) => {
+    const item = destinationPickerItem;
+    if (!item) {
+      return;
+    }
+    setDestinationPickerItem(null);
+    if (destination === 'sell') {
+      await handleAddToSell(item);
+      return;
+    }
+    await handleAddToEstimate(item);
   };
 
   const handleAddToSell = async (item: InventoryItem) => {
@@ -301,7 +389,41 @@ export function ProductSearchPage() {
       }
       await commitAddToSell(item, purchaseId, quotations);
     } catch (err) {
-      handleAddToSellError(err);
+      handleAddToCartDocumentError(err, 'quotation');
+      setAddingToCart(null);
+    }
+  };
+
+  const handleAddToEstimate = async (item: InventoryItem) => {
+    const inventoryId = resolveInventoryDocumentId(item);
+    if (!inventoryId) {
+      notifyError('Cannot add: missing inventory id');
+      return;
+    }
+    if (item.currentCount <= 0) {
+      notifyError('Product is out of stock');
+      return;
+    }
+
+    const effectivePrice = item.sellingPrice ?? item.priceToRetail;
+    if (effectivePrice == null) {
+      notifyError('Cannot add: product price is not set');
+      return;
+    }
+
+    setAddingToCart(inventoryId);
+    setError(null);
+    try {
+      const { estimates, purchaseId } = await resolveTargetEstimate();
+      if (estimates.length > 1) {
+        setEstimatePickerList(estimates);
+        setEstimatePickerItem(item);
+        setAddingToCart(null);
+        return;
+      }
+      await commitAddToEstimate(item, purchaseId, estimates);
+    } catch (err) {
+      handleAddToCartDocumentError(err, 'estimate');
       setAddingToCart(null);
     }
   };
@@ -330,7 +452,36 @@ export function ProductSearchPage() {
       setQuotationPickerList(list);
       await commitAddToSell(quotationPickerItem, cart.purchaseId, list);
     } catch (err) {
-      handleAddToSellError(err);
+      handleAddToCartDocumentError(err, 'quotation');
+      setAddingToCart(null);
+    }
+  };
+
+  const handleEstimatePickerSelect = async (purchaseId: string) => {
+    if (!estimatePickerItem) {
+      return;
+    }
+    await commitAddToEstimate(estimatePickerItem, purchaseId, estimatePickerList);
+  };
+
+  const handleEstimatePickerNew = async () => {
+    if (!estimatePickerItem) {
+      return;
+    }
+    const inventoryId = resolveInventoryDocumentId(estimatePickerItem);
+    if (!inventoryId) {
+      return;
+    }
+    setAddingToCart(inventoryId);
+    try {
+      const cart = await estimatesApi.create({
+        businessType: cartBusinessType,
+      });
+      const list = (await estimatesApi.list('OPEN')).estimates;
+      setEstimatePickerList(list);
+      await commitAddToEstimate(estimatePickerItem, cart.purchaseId, list);
+    } catch (err) {
+      handleAddToCartDocumentError(err, 'estimate');
       setAddingToCart(null);
     }
   };
@@ -412,7 +563,7 @@ export function ProductSearchPage() {
                         isDetailLoading={detailLoadingId === inventoryId}
                         isAddingToCart={addingToCart === inventoryId}
                         onViewDetails={openProductDetails}
-                        onAddToSell={handleAddToSell}
+                        onAddToCart={handleAddToCart}
                       />
                     );
                   })}
@@ -445,6 +596,19 @@ export function ProductSearchPage() {
           setSelectedItem(updated);
         }}
       />
+      <AddToCartDestinationPicker
+        open={destinationPickerItem !== null}
+        productLabel={destinationPickerItem?.name || 'this product'}
+        isSubmitting={
+          destinationPickerItem !== null &&
+          addingToCart === resolveInventoryDocumentId(destinationPickerItem)
+        }
+        onSelect={(destination) => void handleDestinationSelect(destination)}
+        onCancel={() => {
+          if (addingToCart) return;
+          setDestinationPickerItem(null);
+        }}
+      />
       <AddToSellQuotationPicker
         open={quotationPickerItem !== null}
         productLabel={quotationPickerItem?.name || 'this product'}
@@ -458,6 +622,41 @@ export function ProductSearchPage() {
         onCancel={() => {
           if (addingToCart) return;
           setQuotationPickerItem(null);
+          setQuotationPickerList([]);
+        }}
+        onBack={() => {
+          if (addingToCart) return;
+          const item = quotationPickerItem;
+          setQuotationPickerItem(null);
+          setQuotationPickerList([]);
+          if (item) {
+            setDestinationPickerItem(item);
+          }
+        }}
+      />
+      <AddToEstimatePicker
+        open={estimatePickerItem !== null}
+        productLabel={estimatePickerItem?.name || 'this product'}
+        estimates={estimatePickerList}
+        isSubmitting={
+          estimatePickerItem !== null &&
+          addingToCart === resolveInventoryDocumentId(estimatePickerItem)
+        }
+        onSelect={(purchaseId) => void handleEstimatePickerSelect(purchaseId)}
+        onNewEstimate={() => void handleEstimatePickerNew()}
+        onCancel={() => {
+          if (addingToCart) return;
+          setEstimatePickerItem(null);
+          setEstimatePickerList([]);
+        }}
+        onBack={() => {
+          if (addingToCart) return;
+          const item = estimatePickerItem;
+          setEstimatePickerItem(null);
+          setEstimatePickerList([]);
+          if (item) {
+            setDestinationPickerItem(item);
+          }
         }}
       />
     </Stack>

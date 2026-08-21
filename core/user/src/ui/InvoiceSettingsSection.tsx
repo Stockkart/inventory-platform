@@ -89,6 +89,13 @@ const GROUP_LABELS: Record<(typeof INVOICE_FIELD_TOGGLES)[number]['group'], stri
   footer: 'Footer',
 };
 
+const MODE_HELP = {
+  REGULAR:
+    'Tax invoice layout for completed Regular (GST) sales. Controls seller, buyer, tax columns, and signatures.',
+  BASIC:
+    'Shared estimate template for Basic bills and Scan & Sell estimates. Tax is hidden on Basic bills and shown automatically on Regular (GST) estimates.',
+} as const;
+
 function cloneFields(fields: InvoiceFieldVisibility): InvoiceFieldVisibility {
   return { ...fields };
 }
@@ -404,7 +411,7 @@ export function InvoiceSettingsSection() {
     toggles: INVOICE_FIELD_TOGGLES.filter((t) => t.group === group),
   }));
 
-  const modeLabel = editMode === 'REGULAR' ? 'Tax invoice' : 'Estimate';
+  const modeLabel = editMode === 'REGULAR' ? 'Tax invoice' : 'Estimate / basic bill';
   const printerLabel =
     PRINTER_OPTIONS.find((o) => o.value === defaultPrinterType)?.title ?? defaultPrinterType;
 
@@ -432,8 +439,9 @@ export function InvoiceSettingsSection() {
             Invoice settings
           </Text>
           <Text as="p" className={surfaceChrome.invoiceSettingsSubtitle}>
-            Choose the default printer shops use when printing, then tune which fields appear.
-            Preview updates live on the right.
+            Choose the default printer, then tune Tax invoice and Estimate / basic bill templates
+            separately. The estimate template is shared by Basic bills and Scan &amp; Sell estimates
+            — tax prints only on Regular (GST) estimates. Preview updates live on the right.
           </Text>
         </Box>
         <Box className={surfaceChrome.invoiceSettingsHeaderActions}>
@@ -525,9 +533,17 @@ export function InvoiceSettingsSection() {
                 onClick={() => setEditMode('BASIC')}
                 disabled={saving}
               >
-                Estimate
+                Estimate / basic bill
               </Button>
             </Box>
+            <Text
+              as="p"
+              variant="caption"
+              color="secondary"
+              className={surfaceChrome.invoiceToggleHint}
+            >
+              {MODE_HELP[editMode]}
+            </Text>
           </Box>
 
           <Box className={surfaceChrome.invoiceTogglePanel}>
@@ -541,15 +557,33 @@ export function InvoiceSettingsSection() {
                     .filter((toggle) => !toggle.parent)
                     .map((toggle) => {
                       const children = toggles.filter((child) => child.parent === toggle.key);
+                      const isEstimateTaxToggle =
+                        editMode === 'BASIC' && toggle.key === 'showTaxDetails';
                       if (children.length === 0) {
                         return (
                           <Switch
                             key={toggle.key}
                             id={`invoice-toggle-${toggle.key}`}
                             className={surfaceChrome.invoiceToggleItem}
-                            label={toggle.label}
-                            checked={Boolean(activeFields[toggle.key])}
-                            disabled={saving}
+                            label={
+                              isEstimateTaxToggle ? (
+                                <>
+                                  {toggle.label}
+                                  <Text
+                                    variant="caption"
+                                    className={surfaceChrome.invoiceToggleHint}
+                                  >
+                                    Auto for Regular estimates; always off on Basic bills
+                                  </Text>
+                                </>
+                              ) : (
+                                toggle.label
+                              )
+                            }
+                            checked={
+                              isEstimateTaxToggle ? false : Boolean(activeFields[toggle.key])
+                            }
+                            disabled={saving || isEstimateTaxToggle}
                             onChange={(e) => handleToggle(toggle.key, e.target.checked)}
                           />
                         );

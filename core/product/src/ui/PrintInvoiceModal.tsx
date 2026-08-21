@@ -26,6 +26,8 @@ interface PrintInvoiceModalProps {
   onClose: () => void;
   purchaseId: string;
   invoiceNo?: string;
+  /** Defaults to "Invoice"; use "Estimate" for quote PDFs. */
+  documentLabel?: string;
   onError?: (message: string) => void;
 }
 
@@ -81,6 +83,7 @@ export function PrintInvoiceModal({
   onClose,
   purchaseId,
   invoiceNo,
+  documentLabel = 'Invoice',
   onError,
 }: PrintInvoiceModalProps) {
   const [printerType, setPrinterType] = useState<PrinterType>('NORMAL');
@@ -113,10 +116,14 @@ export function PrintInvoiceModal({
     setIsGenerating(true);
     try {
       const pdfBlob = await cartApi.getInvoicePdf(purchaseId, printerType);
-      openPdfPreview(pdfBlob, `invoice-${invoiceNo || purchaseId}.pdf`);
+      const slug = documentLabel.toLowerCase().replace(/\s+/g, '-');
+      openPdfPreview(pdfBlob, `${slug}-${invoiceNo || purchaseId}.pdf`);
       onClose();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to download invoice PDF';
+      const message =
+        err instanceof Error
+          ? err.message
+          : `Failed to download ${documentLabel.toLowerCase()} PDF`;
       onError?.(message);
     } finally {
       setIsGenerating(false);
@@ -127,7 +134,8 @@ export function PrintInvoiceModal({
     setIsGenerating(true);
     try {
       const textBlob = await cartApi.getInvoiceDotMatrixText(purchaseId);
-      downloadBlob(textBlob, `invoice-${invoiceNo || purchaseId}.txt`);
+      const slug = documentLabel.toLowerCase().replace(/\s+/g, '-');
+      downloadBlob(textBlob, `${slug}-${invoiceNo || purchaseId}.txt`);
       onClose();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to download print file';
@@ -142,10 +150,12 @@ export function PrintInvoiceModal({
 
   return (
     <Modal open={isOpen} onClose={handleClose} size="sm">
-      <Modal.Header title="Print Invoice" onClose={handleClose} />
+      <Modal.Header title={`Print ${documentLabel}`} onClose={handleClose} />
       <Modal.Body>
         <Stack gap="md">
-          <Text color="secondary">Choose a print layout for this invoice.</Text>
+          <Text color="secondary">
+            Choose a print layout for this {documentLabel.toLowerCase()}.
+          </Text>
           <Box
             className={cn(productChrome.printOptionList, isGenerating && surfaceChrome.busyDim)}
             role="radiogroup"
