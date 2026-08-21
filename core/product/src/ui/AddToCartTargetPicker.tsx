@@ -102,7 +102,7 @@ export function AddToCartTargetPicker({
               {backLabel}
             </Button>
           ) : (
-            <span />
+            <Box />
           )}
           <Button type="button" variant="ghost" onClick={onCancel} disabled={isSubmitting}>
             Cancel
