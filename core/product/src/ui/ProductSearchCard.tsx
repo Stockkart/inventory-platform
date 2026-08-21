@@ -82,7 +82,7 @@ export interface ProductSearchCardProps {
   isDetailLoading: boolean;
   isAddingToCart: boolean;
   onViewDetails: (item: InventoryItem) => void;
-  onAddToSell: (item: InventoryItem) => void;
+  onAddToCart: (item: InventoryItem) => void;
 }
 
 export function ProductSearchCard({
@@ -91,7 +91,7 @@ export function ProductSearchCard({
   isDetailLoading,
   isAddingToCart,
   onViewDetails,
-  onAddToSell,
+  onAddToCart,
 }: ProductSearchCardProps) {
   const mode = normalizedBillingMode(item);
   const price = effectivePrice(item);
@@ -229,7 +229,7 @@ export function ProductSearchCard({
         <Button
           type="button"
           variant="solid"
-          onClick={() => onAddToSell(item)}
+          onClick={() => onAddToCart(item)}
           disabled={isPageLoading || isAddingToCart || outOfStock || priceMissing}
           loading={isAddingToCart}
         >
@@ -239,7 +239,7 @@ export function ProductSearchCard({
             ? 'Out of Stock'
             : priceMissing
             ? 'Price not set'
-            : 'Add to Sell'}
+            : 'Add to Cart'}
         </Button>
       </CardFooter>
     </Card>

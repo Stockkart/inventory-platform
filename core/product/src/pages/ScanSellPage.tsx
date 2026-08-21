@@ -9,7 +9,7 @@ import {
   ChangeEvent,
   type ReactNode,
 } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router';
+import { useNavigate, useLocation, useSearchParams, Link } from 'react-router';
 import {
   Alert,
   Badge,
@@ -70,6 +70,7 @@ import {
 } from 'lucide-react';
 import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
 import { cartApi } from '../api/cart.api';
+import { estimatesApi } from '../api/estimates.api';
 import { sellCatalogApi } from '../api/sell-catalog.api';
 import { pricingClient } from '../api/pricing-client.api';
 import { gstAmountRowLabel, uniqueGstRateLabel } from '../lib/gstRateLabel';
@@ -168,6 +169,7 @@ import {
   useCustomerProductHistory,
   CustomerProductHistoryHint,
   shouldShowCustomerHistorySubrow,
+  PrintInvoiceModal,
 } from '../ui';
 import { ScanSellQuotationStack } from '../ui/ScanSellQuotationStack';
 
@@ -970,6 +972,9 @@ export function ScanSellPage() {
   const catalogLoadedForShopRef = useRef<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const isEstimateMode = searchParams.get('mode') === 'estimate';
+  const estimatePurchaseIdParam = searchParams.get('purchaseId');
   const scanSellCustomerPrefillRef = useRef<CustomerResponse | null>(null);
   const scanSellCustomerPrefillConsumedRef = useRef(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -987,6 +992,8 @@ export function ScanSellPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoadingCart, setIsLoadingCart] = useState(true);
   const [isUpdatingCart, setIsUpdatingCart] = useState(false);
+  const [printEstimateOpen, setPrintEstimateOpen] = useState(false);
+  const [isConvertingEstimate, setIsConvertingEstimate] = useState(false);
   const cartLoadedRef = useRef(false);
   const isUpdatingRef = useRef(false);
   const syncVersionRef = useRef(0);
@@ -1335,16 +1342,22 @@ export function ScanSellPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showSearchDropdown]);
 
-  // Load cart on mount (once; time guard avoids double run in React Strict Mode)
+  // Load cart on mount and when Sell ↔ Estimate mode changes
   const searchWrapperRef = useRef<HTMLDivElement>(null);
   const lastLoadCartTimeRef = useRef(0);
+  const lastSellModeRef = useRef<boolean | null>(null);
+  /** Dedupes concurrent estimate bootstraps (Strict Mode / rapid mode toggles). */
+  const estimateBootstrapRef = useRef<Promise<void> | null>(null);
   useEffect(() => {
+    const modeChanged =
+      lastSellModeRef.current !== null && lastSellModeRef.current !== isEstimateMode;
+    lastSellModeRef.current = isEstimateMode;
     const now = Date.now();
-    if (now - lastLoadCartTimeRef.current < 1500) return;
+    if (!modeChanged && now - lastLoadCartTimeRef.current < 1500) return;
     lastLoadCartTimeRef.current = now;
     cartLoadedRef.current = true;
-    loadCart();
-  }, []);
+    void loadCart();
+  }, [isEstimateMode]);
 
   // Auto-dismiss error message after 5 seconds
   useEffect(() => {
@@ -1359,6 +1372,10 @@ export function ScanSellPage() {
   }, [error]);
 
   const loadCart = async (): Promise<void> => {
+    if (isEstimateMode) {
+      await initializeEstimateSession();
+      return;
+    }
     await initializeQuotations();
   };
 
@@ -1369,6 +1386,40 @@ export function ScanSellPage() {
     await refreshQuotationList();
     applyCartToState(cart, []);
     return cart.purchaseId;
+  };
+
+  const syncEstimateUrl = (purchaseId: string) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('mode', 'estimate');
+        next.set('purchaseId', purchaseId);
+        next.delete('fresh');
+        return next;
+      },
+      { replace: true },
+    );
+  };
+
+  const createEstimateDocument = async (): Promise<string> => {
+    const cart = await estimatesApi.create({
+      businessType: cartBusinessType,
+    });
+    applyCartToState(cart, []);
+    syncEstimateUrl(cart.purchaseId);
+    return cart.purchaseId;
+  };
+
+  /** Prefer an existing open estimate; create only when none exist (or fresh=1). */
+  const ensureDefaultEstimate = async (): Promise<string> => {
+    const list = await estimatesApi.list('OPEN');
+    const existing = list.estimates[0];
+    if (existing) {
+      await loadQuotation(existing.purchaseId);
+      syncEstimateUrl(existing.purchaseId);
+      return existing.purchaseId;
+    }
+    return createEstimateDocument();
   };
 
   const looksLikePhone = (value: string) => {
@@ -1538,6 +1589,13 @@ export function ScanSellPage() {
     suppressCustomerSyncRef.current = true;
     try {
       const cart = await cartApi.get(purchaseId);
+      if (cart.documentType === 'ESTIMATE') {
+        if (cart.estimateState === 'DISCARDED') {
+          throw new Error('Estimate was discarded');
+        }
+        applyCartToState(cart, []);
+        return;
+      }
       if (cart.status === 'PENDING') {
         scanSellCustomerPrefillRef.current = null;
         navigate(`/dashboard/checkout?purchaseId=${encodeURIComponent(purchaseId)}`, {
@@ -1554,6 +1612,57 @@ export function ScanSellPage() {
     }
   };
 
+  const initializeEstimateSession = async (): Promise<void> => {
+    if (isUpdatingRef.current) {
+      return;
+    }
+    if (estimateBootstrapRef.current) {
+      await estimateBootstrapRef.current;
+      return;
+    }
+
+    const forceFresh = searchParams.get('fresh') === '1';
+    const bootstrap = (async () => {
+      setIsLoadingCart(true);
+      setError(null);
+      setQuotations([]);
+      try {
+        const targetId = estimatePurchaseIdParam?.trim() || activePurchaseId;
+        if (targetId && !forceFresh) {
+          await loadQuotation(targetId);
+          syncEstimateUrl(targetId);
+          return;
+        }
+        if (forceFresh) {
+          await createEstimateDocument();
+          return;
+        }
+        await ensureDefaultEstimate();
+      } catch (err) {
+        console.log('No estimate or error loading:', err);
+        try {
+          await ensureDefaultEstimate();
+        } catch (createErr) {
+          console.log('Failed to open estimate session:', createErr);
+          setActivePurchaseId(null);
+          setCartData(null);
+          setCartItems([]);
+        }
+      } finally {
+        setIsLoadingCart(false);
+      }
+    })();
+
+    estimateBootstrapRef.current = bootstrap;
+    try {
+      await bootstrap;
+    } finally {
+      if (estimateBootstrapRef.current === bootstrap) {
+        estimateBootstrapRef.current = null;
+      }
+    }
+  };
+
   const initializeQuotations = async (): Promise<void> => {
     if (isUpdatingRef.current) {
       return;
@@ -1563,10 +1672,11 @@ export function ScanSellPage() {
     setError(null);
     try {
       const list = await refreshQuotationList();
+      const preferredId = estimatePurchaseIdParam?.trim() || activePurchaseId;
       if (list.length > 0) {
         const targetId =
-          activePurchaseId && list.some((q) => q.purchaseId === activePurchaseId)
-            ? activePurchaseId
+          preferredId && list.some((q) => q.purchaseId === preferredId)
+            ? preferredId
             : list[0].purchaseId;
         await loadQuotation(targetId);
         return;
@@ -1653,9 +1763,18 @@ export function ScanSellPage() {
       return activePurchaseId;
     }
     try {
+      if (isEstimateMode) {
+        return await ensureDefaultEstimate();
+      }
       return await ensureDefaultQuotation();
     } catch (err) {
-      notifyError(err instanceof Error ? err.message : 'Failed to create quotation');
+      notifyError(
+        err instanceof Error
+          ? err.message
+          : isEstimateMode
+          ? 'Failed to open estimate'
+          : 'Failed to create quotation',
+      );
       return null;
     }
   };
@@ -2717,6 +2836,10 @@ export function ScanSellPage() {
   };
 
   const handleProcessPayment = async () => {
+    if (isEstimateMode) {
+      notifyError('Convert the estimate to an invoice before taking payment');
+      return;
+    }
     if (cartItems.length === 0 && menuCartLines.length === 0) {
       notifyError('Cart is empty');
       return;
@@ -2775,6 +2898,43 @@ export function ScanSellPage() {
       setError(errorMessage);
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const isEstimateEditable = !isEstimateMode || cartData?.estimateState !== 'CONVERTED';
+
+  const handleConvertEstimate = async () => {
+    const estimateId = activePurchaseId ?? cartData?.purchaseId;
+    if (!estimateId) {
+      notifyError('No estimate to convert');
+      return;
+    }
+    if (cartItems.length === 0 && menuCartLines.length === 0) {
+      notifyError('Add items before converting');
+      return;
+    }
+    setIsConvertingEstimate(true);
+    try {
+      await syncCustomerToQuotation();
+      const result = await estimatesApi.convert(estimateId);
+      navigate(`/dashboard/scan-sell?purchaseId=${encodeURIComponent(result.salePurchaseId)}`);
+    } catch (err) {
+      notifyError(err instanceof Error ? err.message : 'Failed to convert estimate');
+    } finally {
+      setIsConvertingEstimate(false);
+    }
+  };
+
+  const handleSellModeChange = (nextEstimate: boolean) => {
+    if (nextEstimate === isEstimateMode) return;
+    setActivePurchaseId(null);
+    setCartData(null);
+    setCartItems([]);
+    if (nextEstimate) {
+      // Reuse an open estimate on entry — do not force a new EST- number.
+      setSearchParams({ mode: 'estimate' });
+    } else {
+      setSearchParams({});
     }
   };
 
@@ -2895,24 +3055,58 @@ export function ScanSellPage() {
             variant="outline"
             className={shellChrome.nowrap}
             onClick={() => void handleClearCart()}
-            disabled={isUpdatingCart || isLoadingCart}
+            disabled={isUpdatingCart || isLoadingCart || !isEstimateEditable}
           >
             Clear Cart
           </Button>
-          <Button
-            type="button"
-            variant="solid"
-            className={cafeCheckoutPayBtnStyle}
-            onClick={() => void handleProcessPayment()}
-            disabled={
-              (cartItems.length === 0 && menuCartLines.length === 0) ||
-              isProcessing ||
-              isUpdatingCart ||
-              isLoadingCart
-            }
-          >
-            {isProcessing ? 'Processing…' : isUpdatingCart ? 'Updating…' : 'Process Payment'}
-          </Button>
+          {isEstimateMode ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                className={shellChrome.nowrap}
+                disabled={
+                  !activePurchaseId ||
+                  (cartItems.length === 0 && menuCartLines.length === 0) ||
+                  isUpdatingCart ||
+                  isLoadingCart
+                }
+                onClick={() => setPrintEstimateOpen(true)}
+              >
+                Print
+              </Button>
+              <Button
+                type="button"
+                variant="solid"
+                className={cafeCheckoutPayBtnStyle}
+                onClick={() => void handleConvertEstimate()}
+                disabled={
+                  !isEstimateEditable ||
+                  (cartItems.length === 0 && menuCartLines.length === 0) ||
+                  isConvertingEstimate ||
+                  isUpdatingCart ||
+                  isLoadingCart
+                }
+              >
+                {isConvertingEstimate ? 'Converting…' : 'Convert to invoice'}
+              </Button>
+            </>
+          ) : (
+            <Button
+              type="button"
+              variant="solid"
+              className={cafeCheckoutPayBtnStyle}
+              onClick={() => void handleProcessPayment()}
+              disabled={
+                (cartItems.length === 0 && menuCartLines.length === 0) ||
+                isProcessing ||
+                isUpdatingCart ||
+                isLoadingCart
+              }
+            >
+              {isProcessing ? 'Processing…' : isUpdatingCart ? 'Updating…' : 'Process Payment'}
+            </Button>
+          )}
         </Inline>
       </Inline>
     </StickyBar>
@@ -2929,24 +3123,73 @@ export function ScanSellPage() {
 
       <PageHeader
         description={
-          isCafeSell
+          isEstimateMode
+            ? 'Build a printable estimate (with tax when products are Regular), then convert to invoice'
+            : isCafeSell
             ? 'Tap menu items or direct stock to build the order'
             : 'Speed up sales with barcode scanning'
         }
+        actions={
+          <Inline gap="sm" align="center" flexWrap>
+            <Inline gap="none" border rounded="md" overflow="hidden">
+              <Button
+                type="button"
+                size="sm"
+                variant={!isEstimateMode ? 'solid' : 'ghost'}
+                onClick={() => handleSellModeChange(false)}
+              >
+                Sell
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={isEstimateMode ? 'solid' : 'ghost'}
+                onClick={() => handleSellModeChange(true)}
+              >
+                Estimate
+              </Button>
+            </Inline>
+            {isEstimateMode ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/dashboard/estimates')}
+              >
+                All estimates
+              </Button>
+            ) : null}
+          </Inline>
+        }
       />
+
+      {isEstimateMode && cartData?.estimateNo ? (
+        <Inline gap="sm" align="center" flexWrap>
+          <Badge variant="info">{cartData.estimateNo}</Badge>
+          {cartData.estimateState === 'CONVERTED' ? (
+            <Badge variant="neutral">Converted — reprint only</Badge>
+          ) : (
+            <Text variant="caption" color="secondary">
+              Estimates do not reserve stock. Convert to invoice when the customer confirms.
+            </Text>
+          )}
+        </Inline>
+      ) : null}
 
       {isLoadingCart ? (
         <CenteredLoader label="Loading…" />
       ) : (
         <>
-          <ScanSellQuotationStack
-            quotations={quotations}
-            activePurchaseId={activePurchaseId}
-            disabled={isUpdatingCart || isLoadingCart}
-            onSelect={handleSelectQuotation}
-            onNew={handleNewQuotation}
-            onCancel={handleCancelQuotation}
-          />
+          {!isEstimateMode ? (
+            <ScanSellQuotationStack
+              quotations={quotations}
+              activePurchaseId={activePurchaseId}
+              disabled={isUpdatingCart || isLoadingCart}
+              onSelect={handleSelectQuotation}
+              onNew={handleNewQuotation}
+              onCancel={handleCancelQuotation}
+            />
+          ) : null}
 
           {isCafeSell ? (
             <>
@@ -3876,27 +4119,62 @@ export function ScanSellPage() {
                       variant="outline"
                       className={surfaceChrome.flexMin0}
                       onClick={handleClearCart}
+                      disabled={!isEstimateEditable}
                     >
                       Clear Cart
                     </Button>
-                    <Button
-                      type="button"
-                      variant="solid"
-                      className={productChrome.flexGrow2}
-                      onClick={handleProcessPayment}
-                      disabled={
-                        (cartItems.length === 0 && menuCartLines.length === 0) ||
-                        isProcessing ||
-                        isUpdatingCart ||
-                        isLoadingCart
-                      }
-                    >
-                      {isProcessing
-                        ? 'Processing...'
-                        : isUpdatingCart
-                        ? 'Updating...'
-                        : 'Process Payment'}
-                    </Button>
+                    {isEstimateMode ? (
+                      <>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className={surfaceChrome.flexMin0}
+                          disabled={
+                            !activePurchaseId ||
+                            (cartItems.length === 0 && menuCartLines.length === 0) ||
+                            isUpdatingCart ||
+                            isLoadingCart
+                          }
+                          onClick={() => setPrintEstimateOpen(true)}
+                        >
+                          Print estimate
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="solid"
+                          className={productChrome.flexGrow2}
+                          onClick={() => void handleConvertEstimate()}
+                          disabled={
+                            !isEstimateEditable ||
+                            (cartItems.length === 0 && menuCartLines.length === 0) ||
+                            isConvertingEstimate ||
+                            isUpdatingCart ||
+                            isLoadingCart
+                          }
+                        >
+                          {isConvertingEstimate ? 'Converting…' : 'Convert to invoice'}
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="solid"
+                        className={productChrome.flexGrow2}
+                        onClick={handleProcessPayment}
+                        disabled={
+                          (cartItems.length === 0 && menuCartLines.length === 0) ||
+                          isProcessing ||
+                          isUpdatingCart ||
+                          isLoadingCart
+                        }
+                      >
+                        {isProcessing
+                          ? 'Processing...'
+                          : isUpdatingCart
+                          ? 'Updating...'
+                          : 'Process Payment'}
+                      </Button>
+                    )}
                   </Inline>
                 </Stack>
               }
@@ -4090,6 +4368,21 @@ export function ScanSellPage() {
             );
           })()
         : null}
+
+      {(() => {
+        const printId = activePurchaseId ?? cartData?.purchaseId;
+        if (!printEstimateOpen || !printId) return null;
+        return (
+          <PrintInvoiceModal
+            isOpen
+            onClose={() => setPrintEstimateOpen(false)}
+            purchaseId={printId}
+            invoiceNo={cartData?.estimateNo ?? undefined}
+            documentLabel="Estimate"
+            onError={(message) => notifyError(message)}
+          />
+        );
+      })()}
     </Stack>
   );
 }

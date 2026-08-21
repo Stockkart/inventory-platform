@@ -25,6 +25,7 @@ export const productNav: NavContribution = {
       label: 'Stock corrections',
       icon: 'wrench',
     },
+    { path: '/dashboard/estimates', label: 'Estimates', icon: 'receipt' },
     { path: '/dashboard/scan-sell', label: 'Scan and Sell', icon: 'smartphone' },
   ],
 };

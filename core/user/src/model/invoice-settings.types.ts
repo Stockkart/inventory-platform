@@ -150,7 +150,11 @@ export const INVOICE_FIELD_TOGGLES: Array<{
   { key: 'showCustomerPan', label: 'PAN', group: 'parties', parent: 'showBuyerDetails' },
   { key: 'showCustomerDlNo', label: 'D.L. No.', group: 'parties', parent: 'showBuyerDetails' },
   { key: 'showPaymentMethod', label: 'Payment method', group: 'parties' },
-  { key: 'showTaxDetails', label: 'Tax details', group: 'money' },
+  {
+    key: 'showTaxDetails',
+    label: 'Tax details (CGST / SGST)',
+    group: 'money',
+  },
   { key: 'showAmountInWords', label: 'Amount in words', group: 'money' },
   { key: 'showAmountSaved', label: 'Amount saved', group: 'money' },
   { key: 'showAdditionalDiscount', label: 'Additional discount', group: 'money' },
@@ -163,3 +167,7 @@ export const INVOICE_FIELD_TOGGLES: Array<{
   { key: 'showLineDiscount', label: 'Line discount', group: 'columns' },
   { key: 'showSignatures', label: 'Signatures', group: 'footer' },
 ];
+
+/** Fields that stay editable on the Estimate template but are overridden at print for tax. */
+export const ESTIMATE_TAX_OVERRIDE_HINT =
+  'Tax columns print automatically on Regular (GST) estimates. Basic bills never show tax.';

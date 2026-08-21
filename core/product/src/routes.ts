@@ -50,6 +50,11 @@ export const scanSellRoutes: RouteModule = {
   children: [{ path: '', file: 'routes/scan-sell.tsx', lazy: () => import('./routes/scan-sell') }],
 };
 
+export const estimatesRoutes: RouteModule = {
+  path: 'estimates',
+  children: [{ path: '', file: 'routes/estimates.tsx', lazy: () => import('./routes/estimates') }],
+};
+
 export const checkoutRoutes: RouteModule = {
   path: 'checkout',
   children: [{ path: '', file: 'routes/checkout.tsx', lazy: () => import('./routes/checkout') }],
@@ -92,6 +97,7 @@ export const productDashboardRoutes: RouteModule[] = [
   stockCorrectionsRoutes,
   vendorInvoicesRoutes,
   scanSellRoutes,
+  estimatesRoutes,
   checkoutRoutes,
   historyRoutes,
   refundRoutes,

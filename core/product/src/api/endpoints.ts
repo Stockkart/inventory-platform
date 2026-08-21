@@ -66,6 +66,13 @@ export const CART_ENDPOINTS = {
   QUOTATION_BY_ID: (purchaseId: string) => `/cart/quotations/${purchaseId}`,
 } as const;
 
+/** Estimate / quotation document paths (printable quotes → convert to invoice). */
+export const ESTIMATE_ENDPOINTS = {
+  BASE: '/estimates',
+  BY_ID: (purchaseId: string) => `/estimates/${purchaseId}`,
+  CONVERT: (purchaseId: string) => `/estimates/${purchaseId}/convert`,
+} as const;
+
 /** Checkout paths. */
 export const CHECKOUT_ENDPOINTS = {
   BASE: '/checkout',
