@@ -9,7 +9,7 @@ import {
   cn,
   productChrome,
 } from '@inventory-platform/ui-kit';
-import { formatInventoryExpiryDate } from '@inventory-platform/schema';
+import { formatInventoryExpiryDate, getInventoryBatchNo } from '@inventory-platform/schema';
 
 export function normalizedBillingMode(item: InventoryItem): BillingMode {
   return item.billingMode === 'BASIC' ? 'BASIC' : 'REGULAR';
@@ -101,6 +101,12 @@ export function ProductSearchCard({
   const discountText = discountLabel(item);
   const schemeText = schemeLabel(item);
   const purchaseDate = item.purchaseDate || item.createdAt;
+  // The batch lives on the line for some verticals and in the extension fields
+  // for others, so it is read through the helper that knows both. The helper
+  // answers "—" when there is none, which is a value to print in a table of
+  // fixed rows but not a line to add to a card.
+  const rawBatchNo = getInventoryBatchNo(item);
+  const batchNo = rawBatchNo && rawBatchNo !== '—' ? rawBatchNo : '';
   const chips = [typeLabel, discountText, schemeText].filter(Boolean) as string[];
 
   return (
@@ -121,13 +127,18 @@ export function ProductSearchCard({
           </Badge>
         </Box>
 
-        {(item.companyName || item.barcode || item.location) && (
+        {(item.companyName || item.barcode || item.location || batchNo) && (
           <Box
             className={cn(productChrome.searchResultStack, productChrome.searchResultStackTight)}
           >
             {item.companyName ? (
               <Box as="p" className={productChrome.searchResultLine}>
                 Company: {item.companyName}
+              </Box>
+            ) : null}
+            {batchNo ? (
+              <Box as="p" className={productChrome.searchResultLine}>
+                Batch: {batchNo}
               </Box>
             ) : null}
             {item.barcode ? (
