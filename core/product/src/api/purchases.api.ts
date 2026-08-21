@@ -15,7 +15,6 @@ export const purchasesApi = {
     const queryParams: Record<string, string> = {};
     if (params.customerEmail) queryParams.customerEmail = params.customerEmail;
     if (params.customerPhone) queryParams.customerPhone = params.customerPhone;
-    if (params.customerName) queryParams.customerName = params.customerName;
     if (params.customer) queryParams.customer = params.customer;
     if (params.invoiceNo) queryParams.invoiceNo = params.invoiceNo;
     if (params.from) queryParams.from = params.from;

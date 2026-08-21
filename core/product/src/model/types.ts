@@ -881,8 +881,13 @@ export interface GetPurchasesParams {
 export interface SearchPurchasesParams {
   customerEmail?: string;
   customerPhone?: string;
-  customerName?: string;
-  /** Free text matched against a customer's name, phone, email or address. */
+  /**
+   * Free text matched against a customer's name, phone, email or address.
+   *
+   * This is the one box the counter types into. There is no separate exact-name
+   * parameter: a party is entered as its trading name and stored with its town
+   * appended, so an exact name reaches almost none of them.
+   */
   customer?: string;
   invoiceNo?: string;
   /** Inclusive first sale date, yyyy-MM-dd. */

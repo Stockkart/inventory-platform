@@ -206,13 +206,13 @@ export function RefundPage() {
   const [searchParams, setSearchParams] = useState<SearchPurchasesParams>({
     customerEmail: '',
     customerPhone: '',
-    customerName: '',
+    customer: '',
     invoiceNo: '',
   });
   const [appliedSearch, setAppliedSearch] = useState<SearchPurchasesParams>({
     customerEmail: '',
     customerPhone: '',
-    customerName: '',
+    customer: '',
     invoiceNo: '',
   });
   const [page, setPage] = useState(0);
@@ -238,7 +238,7 @@ export function RefundPage() {
     if (!state?.prefillCustomer) return;
     const { name, phone, email } = state.prefillCustomer;
     const next = {
-      customerName: name ?? '',
+      customer: name ?? '',
       customerPhone: phone ?? '',
       customerEmail: email ?? '',
       invoiceNo: '',
@@ -260,7 +260,7 @@ export function RefundPage() {
   const hasActiveSearch = Boolean(
     appliedSearch.customerEmail?.trim() ||
       appliedSearch.customerPhone?.trim() ||
-      appliedSearch.customerName?.trim() ||
+      appliedSearch.customer?.trim() ||
       appliedSearch.invoiceNo?.trim(),
   );
 
@@ -314,7 +314,7 @@ export function RefundPage() {
     const empty = {
       customerEmail: '',
       customerPhone: '',
-      customerName: '',
+      customer: '',
       invoiceNo: '',
     };
     setSearchParams(empty);
@@ -533,13 +533,13 @@ export function RefundPage() {
                 </Text>
                 <Stack gap="sm">
                   <Grid columns={3} gap="sm">
-                    <FormField label="Customer Name" id="customerName">
+                    <FormField label="Customer" id="customer">
                       <Input
-                        id="customerName"
+                        id="customer"
                         type="text"
-                        placeholder="Enter customer name"
-                        value={searchParams.customerName || ''}
-                        onChange={(e) => handleSearchChange('customerName', e.target.value)}
+                        placeholder="Name, phone or email"
+                        value={searchParams.customer || ''}
+                        onChange={(e) => handleSearchChange('customer', e.target.value)}
                         disabled={isLoading}
                       />
                     </FormField>

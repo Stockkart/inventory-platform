@@ -19,8 +19,8 @@ export const refundsApi = {
     if (params.customerPhone) {
       queryParams.customerPhone = params.customerPhone;
     }
-    if (params.customerName) {
-      queryParams.customerName = params.customerName;
+    if (params.customer) {
+      queryParams.customer = params.customer;
     }
     if (params.invoiceNo) {
       queryParams.invoiceNo = params.invoiceNo;
