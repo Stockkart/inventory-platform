@@ -127,18 +127,13 @@ export function ProductSearchCard({
           </Badge>
         </Box>
 
-        {(item.companyName || item.barcode || item.location || item.hsn || batchNo) && (
+        {(item.companyName || item.barcode || item.location || batchNo) && (
           <Box
             className={cn(productChrome.searchResultStack, productChrome.searchResultStackTight)}
           >
             {item.companyName ? (
               <Box as="p" className={productChrome.searchResultLine}>
                 Company: {item.companyName}
-              </Box>
-            ) : null}
-            {item.hsn ? (
-              <Box as="p" className={productChrome.searchResultLine}>
-                HSN: {item.hsn}
               </Box>
             ) : null}
             {batchNo ? (
