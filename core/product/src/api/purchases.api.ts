@@ -13,8 +13,6 @@ import { PURCHASE_ENDPOINTS } from './endpoints';
 export const purchasesApi = {
   search: async (params: SearchPurchasesParams): Promise<SearchPurchasesResponse> => {
     const queryParams: Record<string, string> = {};
-    if (params.customerEmail) queryParams.customerEmail = params.customerEmail;
-    if (params.customerPhone) queryParams.customerPhone = params.customerPhone;
     if (params.customer) queryParams.customer = params.customer;
     if (params.invoiceNo) queryParams.invoiceNo = params.invoiceNo;
     if (params.from) queryParams.from = params.from;

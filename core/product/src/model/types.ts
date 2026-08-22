@@ -879,14 +879,14 @@ export interface GetPurchasesParams {
 }
 
 export interface SearchPurchasesParams {
-  customerEmail?: string;
-  customerPhone?: string;
   /**
    * Free text matched against a customer's name, phone, email or address.
    *
-   * This is the one box the counter types into. There is no separate exact-name
-   * parameter: a party is entered as its trading name and stored with its town
-   * appended, so an exact name reaches almost none of them.
+   * This is the one box the counter types into. There are no separate name,
+   * phone or email parameters: the person typing should not have to say which
+   * of the four they are holding, and an exact name would reach almost no party
+   * anyway -- one is entered as its trading name and stored with its town
+   * appended.
    */
   customer?: string;
   invoiceNo?: string;
