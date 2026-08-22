@@ -969,6 +969,8 @@ export interface CustomerProductHistoryResponse {
 export interface GetCustomerProductHistoryParams {
   customerId?: string;
   customerPhone?: string;
+  /** Used when the customer has no phone recorded, which most do not. */
+  customerName?: string;
   sellableRefs: string[];
   limit?: number;
   excludePurchaseId?: string;

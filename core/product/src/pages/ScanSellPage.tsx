@@ -757,6 +757,7 @@ function CustomerSectionBlock({
   isSearchingCustomer,
   handleCustomerSearch,
   handleCustomerSearchByEmail,
+  handleCustomerSearchByName,
   isRetailer,
   setIsRetailer,
   customerGstin,
@@ -781,6 +782,7 @@ function CustomerSectionBlock({
   isSearchingCustomer: boolean;
   handleCustomerSearch: () => void;
   handleCustomerSearchByEmail: () => void;
+  handleCustomerSearchByName: () => void;
   isRetailer: boolean;
   setIsRetailer: (v: boolean) => void;
   customerGstin: string;
@@ -840,17 +842,29 @@ function CustomerSectionBlock({
               </Inline>
             </FormField>
             <FormField label="Name" id={`${idPrefix}-customerName`}>
-              <Input
-                id={`${idPrefix}-customerName`}
-                type="text"
-                className={customerInputStyle}
-                placeholder="Name"
-                value={customerName}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setCustomerName(e.currentTarget.value)
-                }
-                onBlur={handleCustomerFieldBlur}
-              />
+              <Inline gap="sm" width="full">
+                <Input
+                  id={`${idPrefix}-customerName`}
+                  type="text"
+                  className={customerInputStyle}
+                  placeholder="Name"
+                  value={customerName}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setCustomerName(e.currentTarget.value)
+                  }
+                  onBlur={handleCustomerFieldBlur}
+                  disabled={isSearchingCustomer}
+                />
+                <IconButton
+                  label="Search customer by name"
+                  title="Search customer by name"
+                  className={sidebarSearchBtnStyle}
+                  onClick={handleCustomerSearchByName}
+                  disabled={isSearchingCustomer || !customerName.trim()}
+                >
+                  {isSearchingCustomer ? '…' : '⌕'}
+                </IconButton>
+              </Inline>
             </FormField>
             <FormField label="Email" id={`${idPrefix}-customerEmail`}>
               <Inline gap="sm" width="full">
@@ -2835,6 +2849,58 @@ export function ScanSellPage() {
     }
   };
 
+  const handleCustomerSearchByName = async () => {
+    if (!customerName.trim()) {
+      notifyError('Please enter a customer name');
+      return;
+    }
+
+    setIsSearchingCustomer(true);
+    setError(null);
+    try {
+      const customer = await customersApi.searchByName(customerName.trim());
+      if (customer) {
+        setCustomerName(customer.name || '');
+        setCustomerPhone(customer.phone || '');
+        setCustomerEmail(customer.email || '');
+        setCustomerId(customer.customerId || '');
+        setCustomerAddress(customer.address || '');
+        const hasRetailerFields = !!(customer.gstin || customer.dlNo || customer.pan);
+        if (hasRetailerFields) {
+          setIsRetailer(true);
+          setCustomerGstin(customer.gstin || '');
+          setCustomerDlNo(customer.dlNo || '');
+          setCustomerPan(customer.pan || '');
+        } else {
+          setIsRetailer(false);
+          setCustomerGstin('');
+          setCustomerDlNo('');
+          setCustomerPan('');
+        }
+        await syncCustomerToQuotation({
+          customerName: customer.name || '',
+          customerPhone: customer.phone || '',
+          customerEmail: customer.email || '',
+          customerAddress: customer.address || '',
+          customerGstin: hasRetailerFields ? customer.gstin || '' : '',
+          customerDlNo: hasRetailerFields ? customer.dlNo || '' : '',
+          customerPan: hasRetailerFields ? customer.pan || '' : '',
+          isRetailer: hasRetailerFields,
+        });
+      } else {
+        // The server answers only when the name fits exactly one customer, so
+        // this covers both "nobody" and "more than one" -- and the operator's
+        // next move is the same either way.
+        notifyError('No single customer matches this name');
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to search customer';
+      notifyError(errorMessage);
+    } finally {
+      setIsSearchingCustomer(false);
+    }
+  };
+
   const handleProcessPayment = async () => {
     if (isEstimateMode) {
       notifyError('Convert the estimate to an invoice before taking payment');
@@ -2957,6 +3023,7 @@ export function ScanSellPage() {
     useCustomerProductHistory({
       customerId,
       customerPhone,
+      customerName,
       sellableRefs: cartSellableRefs,
       excludePurchaseId: cartData?.purchaseId,
       enabled: cartItems.length > 0 || menuCartLines.length > 0,
@@ -3249,6 +3316,7 @@ export function ScanSellPage() {
                       isSearchingCustomer={isSearchingCustomer}
                       handleCustomerSearch={handleCustomerSearch}
                       handleCustomerSearchByEmail={handleCustomerSearchByEmail}
+                      handleCustomerSearchByName={handleCustomerSearchByName}
                       isRetailer={isRetailer}
                       setIsRetailer={setIsRetailer}
                       customerGstin={customerGstin}
@@ -4018,6 +4086,7 @@ export function ScanSellPage() {
                     isSearchingCustomer={isSearchingCustomer}
                     handleCustomerSearch={handleCustomerSearch}
                     handleCustomerSearchByEmail={handleCustomerSearchByEmail}
+                    handleCustomerSearchByName={handleCustomerSearchByName}
                     isRetailer={isRetailer}
                     setIsRetailer={setIsRetailer}
                     customerGstin={customerGstin}

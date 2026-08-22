@@ -63,6 +63,33 @@ export const customersApi = {
     }
   },
 
+  /**
+   * The shop's customer with this name, or null when the name does not decide it.
+   *
+   * Most customers have no phone recorded, so the name is often the only thing
+   * the counter can search on. The server returns a customer only when the name
+   * fits exactly one, since several shops can trade under the same name.
+   */
+  searchByName: async (name: string): Promise<CustomerResponse | null> => {
+    try {
+      const response = await apiClient.get<ApiResponse<CustomerResponse>>(
+        CUSTOMER_ENDPOINTS.SEARCH,
+        { name },
+      );
+      return response.data;
+    } catch (error: unknown) {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'status' in error &&
+        (error as { status?: number }).status === 404
+      ) {
+        return null;
+      }
+      throw error;
+    }
+  },
+
   searchByEmail: async (email: string): Promise<CustomerResponse | null> => {
     try {
       const response = await apiClient.get<ApiResponse<CustomerResponse>>(

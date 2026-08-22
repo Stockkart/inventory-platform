@@ -57,6 +57,7 @@ export const purchasesApi = {
     };
     if (params.customerId) queryParams.customerId = params.customerId;
     if (params.customerPhone) queryParams.customerPhone = params.customerPhone;
+    if (params.customerName) queryParams.customerName = params.customerName;
     if (params.limit != null) queryParams.limit = String(params.limit);
     if (params.excludePurchaseId) {
       queryParams.excludePurchaseId = params.excludePurchaseId;
