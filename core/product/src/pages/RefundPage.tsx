@@ -204,14 +204,10 @@ export function RefundPage() {
 
   // Search state
   const [searchParams, setSearchParams] = useState<SearchPurchasesParams>({
-    customerEmail: '',
-    customerPhone: '',
     customer: '',
     invoiceNo: '',
   });
   const [appliedSearch, setAppliedSearch] = useState<SearchPurchasesParams>({
-    customerEmail: '',
-    customerPhone: '',
     customer: '',
     invoiceNo: '',
   });
@@ -237,10 +233,10 @@ export function RefundPage() {
   useEffect(() => {
     if (!state?.prefillCustomer) return;
     const { name, phone, email } = state.prefillCustomer;
+    // One box, so one term: whichever identifier the calling screen knew. The
+    // server matches it against name, phone, email and address alike.
     const next = {
-      customer: name ?? '',
-      customerPhone: phone ?? '',
-      customerEmail: email ?? '',
+      customer: name || phone || email || '',
       invoiceNo: '',
     };
 
@@ -258,10 +254,7 @@ export function RefundPage() {
   };
 
   const hasActiveSearch = Boolean(
-    appliedSearch.customerEmail?.trim() ||
-      appliedSearch.customerPhone?.trim() ||
-      appliedSearch.customer?.trim() ||
-      appliedSearch.invoiceNo?.trim(),
+    appliedSearch.customer?.trim() || appliedSearch.invoiceNo?.trim(),
   );
 
   const loadPurchases = useCallback(async () => {
@@ -312,8 +305,6 @@ export function RefundPage() {
 
   const clearSearch = () => {
     const empty = {
-      customerEmail: '',
-      customerPhone: '',
       customer: '',
       invoiceNo: '',
     };
@@ -532,7 +523,14 @@ export function RefundPage() {
                   Recent sales load automatically. Use the fields below to narrow the list.
                 </Text>
                 <Stack gap="sm">
-                  <Grid columns={3} gap="sm">
+                  <Grid columns={2} gap="sm">
+                    {/*
+                      One box for the customer. It was three -- name, phone and
+                      email -- which asked the counter to know which of them it
+                      was holding before it could look anything up. The server
+                      matches the term against all of them, so the question does
+                      not need asking.
+                    */}
                     <FormField label="Customer" id="customer">
                       <Input
                         id="customer"
@@ -543,37 +541,17 @@ export function RefundPage() {
                         disabled={isLoading}
                       />
                     </FormField>
-                    <FormField label="Customer Phone" id="customerPhone">
+                    <FormField label="Invoice Number" id="invoiceNo">
                       <Input
-                        id="customerPhone"
+                        id="invoiceNo"
                         type="text"
-                        placeholder="Enter customer phone"
-                        value={searchParams.customerPhone || ''}
-                        onChange={(e) => handleSearchChange('customerPhone', e.target.value)}
-                        disabled={isLoading}
-                      />
-                    </FormField>
-                    <FormField label="Customer Email" id="customerEmail">
-                      <Input
-                        id="customerEmail"
-                        type="email"
-                        placeholder="Enter customer email"
-                        value={searchParams.customerEmail || ''}
-                        onChange={(e) => handleSearchChange('customerEmail', e.target.value)}
+                        placeholder="Enter invoice number"
+                        value={searchParams.invoiceNo || ''}
+                        onChange={(e) => handleSearchChange('invoiceNo', e.target.value)}
                         disabled={isLoading}
                       />
                     </FormField>
                   </Grid>
-                  <FormField label="Invoice Number" id="invoiceNo">
-                    <Input
-                      id="invoiceNo"
-                      type="text"
-                      placeholder="Enter invoice number"
-                      value={searchParams.invoiceNo || ''}
-                      onChange={(e) => handleSearchChange('invoiceNo', e.target.value)}
-                      disabled={isLoading}
-                    />
-                  </FormField>
                   <Inline gap="sm">
                     <Button
                       type="button"
