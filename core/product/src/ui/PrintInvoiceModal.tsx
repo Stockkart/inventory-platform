@@ -134,11 +134,14 @@ export function PrintInvoiceModal({
     setIsGenerating(true);
     try {
       const textBlob = await cartApi.getInvoiceDotMatrixText(purchaseId);
+      // .prn, not .txt. The file is a printer stream: it opens with the codes
+      // that reset the printer and set its pitch, and Windows hands a .txt to
+      // Notepad, which reads those bytes as characters and prints what it read.
       const slug = documentLabel.toLowerCase().replace(/\s+/g, '-');
-      downloadBlob(textBlob, `${slug}-${invoiceNo || purchaseId}.txt`);
+      downloadBlob(textBlob, `${slug}-${invoiceNo || purchaseId}.prn`);
       onClose();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to download print file';
+      const message = err instanceof Error ? err.message : 'Failed to download the printer file';
       onError?.(message);
     } finally {
       setIsGenerating(false);
@@ -203,9 +206,13 @@ export function PrintInvoiceModal({
           </Box>
           {isDotMatrix ? (
             <Alert variant="info">
-              Print the .txt at 10 CPI (Pica). Standard 80-column printers only paint 8 inches; the
-              extra 10×12 paper beside the holes cannot be used. Do not print the PDF on the
-              dot-matrix.
+              Send the .prn straight to the printer — <code>copy /b invoice-….prn PRN</code> on
+              Windows, or <code>lp -o raw</code> elsewhere. Do not open it first: it carries the
+              codes that set condensed pitch, and only the printer reads them as codes. Anything
+              that opens it reads them as characters and prints those instead. The bill is 137
+              characters wide, which needs condensed to fit the 8 inches an 80-column printer
+              paints; the extra 10×12 paper beside the holes cannot be used. Do not print the PDF on
+              the dot-matrix.
             </Alert>
           ) : null}
         </Stack>
@@ -243,7 +250,7 @@ export function PrintInvoiceModal({
               Generating…
             </Inline>
           ) : isDotMatrix ? (
-            'Download print file'
+            'Download printer file'
           ) : (
             'Generate PDF'
           )}
