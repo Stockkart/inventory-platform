@@ -927,10 +927,21 @@ export interface GetPurchasesParams {
 }
 
 export interface SearchPurchasesParams {
-  customerEmail?: string;
-  customerPhone?: string;
-  customerName?: string;
+  /**
+   * Free text matched against a customer's name, phone, email or address.
+   *
+   * This is the one box the counter types into. There are no separate name,
+   * phone or email parameters: the person typing should not have to say which
+   * of the four they are holding, and an exact name would reach almost no party
+   * anyway -- one is entered as its trading name and stored with its town
+   * appended.
+   */
+  customer?: string;
   invoiceNo?: string;
+  /** Inclusive first sale date, yyyy-MM-dd. */
+  from?: string;
+  /** Inclusive last sale date, yyyy-MM-dd. */
+  to?: string;
   page?: number;
   limit?: number;
 }
