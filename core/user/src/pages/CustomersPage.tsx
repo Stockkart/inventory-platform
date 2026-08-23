@@ -316,6 +316,7 @@ export function CustomersPage() {
         open={createModalOpen}
         title="New customer"
         onClose={handleCloseCreate}
+        onCancel={handleCloseCreate}
         onSave={() => void handleCreate()}
         saving={saving}
         error={saveError}
@@ -328,6 +329,7 @@ export function CustomersPage() {
         open={editModal !== null}
         title="Edit customer"
         onClose={handleCloseEdit}
+        onCancel={handleCloseEdit}
         onSave={() => void handleSave()}
         saving={saving}
         error={saveError}

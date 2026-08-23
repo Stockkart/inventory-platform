@@ -14,20 +14,20 @@ const PARTY_TYPE_OPTIONS = [
   { value: 'WHOLESALER', label: 'Wholesaler' },
 ] as const;
 
-interface CustomerEditFormProps {
-  value: UpdateCustomerDto;
-  onChange: (value: UpdateCustomerDto) => void;
+interface CustomerEditFormProps<T extends UpdateCustomerDto> {
+  value: T;
+  onChange: (value: T) => void;
   /** Display-only PAN from API (derived from GSTIN). Shown read-only. */
   panNo?: string | null;
   disabled?: boolean;
 }
 
-export function CustomerEditForm({
+export function CustomerEditForm<T extends UpdateCustomerDto>({
   value,
   onChange,
   panNo,
   disabled = false,
-}: CustomerEditFormProps) {
+}: CustomerEditFormProps<T>) {
   const panDisplay = panNo ?? derivePanFromGstin(value.gstin ?? null);
 
   return (

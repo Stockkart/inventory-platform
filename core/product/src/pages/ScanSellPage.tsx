@@ -119,8 +119,6 @@ import {
   customerToggleValueStyle,
   customerToggleIconStyle,
   customerFormStyle,
-  customerInputStyle,
-  sidebarSearchBtnStyle,
   detailModalContentStyle,
   detailModalHeaderStyle,
   detailModalBodyStyle,
@@ -146,7 +144,6 @@ import {
   cafeCheckoutPayBtnStyle,
   cartLineFlushStyle,
   lineTotalAmountStyle,
-  sectionDividerLgStyle,
   microLabelStyle,
 } from '../ui/scanSellStyles';
 import { CafeSellCatalogPanel } from '../ui/CafeSellCatalogPanel';
