@@ -1589,8 +1589,34 @@ export function ScanSellPage() {
     setIsLoadingCart(true);
     setError(null);
     try {
+      // In-progress checkout (PENDING) is not in the open-quotation list.
+      // Resume it instead of creating a new empty cart.
+      const preferredId = estimatePurchaseIdParam?.trim() || activePurchaseId || undefined;
+      if (preferredId) {
+        try {
+          const preferred = await cartApi.get(preferredId);
+          if (preferred.status === 'PENDING') {
+            navigate(`/dashboard/checkout?purchaseId=${encodeURIComponent(preferred.purchaseId)}`, {
+              replace: true,
+              state: { purchaseId: preferred.purchaseId },
+            });
+            return;
+          }
+        } catch {
+          // Fall through to active-cart / open quotations.
+        }
+      }
+
+      const activeCart = await cartApi.get().catch(() => null);
+      if (activeCart?.status === 'PENDING' && activeCart.purchaseId) {
+        navigate(`/dashboard/checkout?purchaseId=${encodeURIComponent(activeCart.purchaseId)}`, {
+          replace: true,
+          state: { purchaseId: activeCart.purchaseId },
+        });
+        return;
+      }
+
       const list = await refreshQuotationList();
-      const preferredId = estimatePurchaseIdParam?.trim() || activePurchaseId;
       if (list.length > 0) {
         const targetId =
           preferredId && list.some((q) => q.purchaseId === preferredId)
