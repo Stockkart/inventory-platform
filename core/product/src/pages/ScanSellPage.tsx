@@ -70,6 +70,13 @@ import {
 import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
 import { cartApi } from '../api/cart.api';
 import { estimatesApi } from '../api/estimates.api';
+import {
+  ESTIMATES_LIST_PATH,
+  estimateWorkspaceHref,
+  isEstimateListPath,
+  isEstimateWorkspaceSearch,
+  isLegacyEstimateWorkspacePath,
+} from '../lib/estimatePaths';
 import { sellCatalogApi } from '../api/sell-catalog.api';
 import { pricingClient } from '../api/pricing-client.api';
 import { gstAmountRowLabel, uniqueGstRateLabel } from '../lib/gstRateLabel';
@@ -807,7 +814,7 @@ function CustomerSectionBlock({
   );
 }
 
-export function ScanSellPage() {
+export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?: boolean }) {
   const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
   const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
   const [cartBusinessType, setCartBusinessType] = useState('medical');
@@ -818,7 +825,11 @@ export function ScanSellPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const isEstimateMode = searchParams.get('mode') === 'estimate';
+  const isEstimateMode =
+    forceEstimateMode ||
+    isLegacyEstimateWorkspacePath(location.pathname) ||
+    searchParams.get('mode') === 'estimate' ||
+    (isEstimateListPath(location.pathname) && isEstimateWorkspaceSearch(searchParams));
   const estimatePurchaseIdParam = searchParams.get('purchaseId');
   const scanSellCustomerPrefillRef = useRef<CustomerResponse | null>(null);
   const scanSellCustomerPrefillConsumedRef = useRef(false);
@@ -1187,13 +1198,23 @@ export function ScanSellPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showSearchDropdown]);
 
-  // Load cart on mount and when Sell ↔ Estimate mode changes
+  // Load cart on mount (sell quotations vs estimate workspace are different routes)
   const searchWrapperRef = useRef<HTMLDivElement>(null);
   const lastLoadCartTimeRef = useRef(0);
   const lastSellModeRef = useRef<boolean | null>(null);
-  /** Dedupes concurrent estimate bootstraps (Strict Mode / rapid mode toggles). */
+  /** Dedupes concurrent estimate bootstraps (Strict Mode). */
   const estimateBootstrapRef = useRef<Promise<void> | null>(null);
   useEffect(() => {
+    if (location.pathname.includes('/scan-sell') && searchParams.get('mode') === 'estimate') {
+      const next = new URLSearchParams(searchParams);
+      next.delete('mode');
+      const purchaseId = next.get('purchaseId')?.trim();
+      const fresh = next.get('fresh') === '1';
+      navigate(estimateWorkspaceHref({ purchaseId: purchaseId || undefined, fresh }), {
+        replace: true,
+      });
+      return;
+    }
     const modeChanged =
       lastSellModeRef.current !== null && lastSellModeRef.current !== isEstimateMode;
     lastSellModeRef.current = isEstimateMode;
@@ -1202,7 +1223,7 @@ export function ScanSellPage() {
     lastLoadCartTimeRef.current = now;
     cartLoadedRef.current = true;
     void loadCart();
-  }, [isEstimateMode]);
+  }, [isEstimateMode, location.pathname]);
 
   // Auto-dismiss error message after 5 seconds
   useEffect(() => {
@@ -1237,7 +1258,7 @@ export function ScanSellPage() {
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev);
-        next.set('mode', 'estimate');
+        next.delete('mode');
         next.set('purchaseId', purchaseId);
         next.delete('fresh');
         return next;
@@ -1257,7 +1278,7 @@ export function ScanSellPage() {
 
   /** Prefer an existing open estimate; create only when none exist (or fresh=1). */
   const ensureDefaultEstimate = async (): Promise<string> => {
-    const list = await estimatesApi.list('OPEN');
+    const list = await estimatesApi.list('OPEN', { size: 100 });
     const existing = list.estimates[0];
     if (existing) {
       await loadQuotation(existing.purchaseId);
@@ -2770,19 +2791,6 @@ export function ScanSellPage() {
     }
   };
 
-  const handleSellModeChange = (nextEstimate: boolean) => {
-    if (nextEstimate === isEstimateMode) return;
-    setActivePurchaseId(null);
-    setCartData(null);
-    setCartItems([]);
-    if (nextEstimate) {
-      // Reuse an open estimate on entry — do not force a new EST- number.
-      setSearchParams({ mode: 'estimate' });
-    } else {
-      setSearchParams({});
-    }
-  };
-
   const menuCartLines = useMemo(
     () => (cartData?.items ?? []).filter((line) => isMenuLine(line)),
     [cartData],
@@ -2975,36 +2983,16 @@ export function ScanSellPage() {
             : 'Speed up sales with barcode scanning'
         }
         actions={
-          <Inline gap="sm" align="center" flexWrap>
-            <Inline gap="none" border rounded="md" overflow="hidden">
-              <Button
-                type="button"
-                size="sm"
-                variant={!isEstimateMode ? 'solid' : 'ghost'}
-                onClick={() => handleSellModeChange(false)}
-              >
-                Sell
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant={isEstimateMode ? 'solid' : 'ghost'}
-                onClick={() => handleSellModeChange(true)}
-              >
-                Estimate
-              </Button>
-            </Inline>
-            {isEstimateMode ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/dashboard/estimates')}
-              >
-                All estimates
-              </Button>
-            ) : null}
-          </Inline>
+          isEstimateMode ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(ESTIMATES_LIST_PATH)}
+            >
+              All estimates
+            </Button>
+          ) : undefined
         }
       />
 

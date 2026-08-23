@@ -6,8 +6,8 @@ Inventory and sell flows: product registration, search, stock corrections, scan-
 
 ## Owns
 
-- Routes: `product-registration`, `import`, `product-search`, `stock-corrections`, `vendor-invoices`, `scan-sell`, `checkout`, `history`, `refund`, `vendor-return`, `m/upload`
-- Nav groups **Products & Sales**, **Returns**, History under reports
+- Routes: `product-registration`, `import`, `product-search`, `stock-corrections`, `vendor-invoices`, `scan-sell`, `estimates`, `checkout`, `history`, `refund`, `vendor-return`, `m/upload`
+- Nav groups **Products & Sales** (including History), **Returns**
 - Product/inventory APIs + Query hooks
 - Scan Sell UI and related widgets (`ui/`, `vertical/`)
 

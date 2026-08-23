@@ -9,11 +9,34 @@ import type {
 } from '@inventory-platform/product/types';
 import { ESTIMATE_ENDPOINTS } from './endpoints';
 
+export type EstimateListParams = {
+  state?: EstimateState;
+  q?: string;
+  page?: number;
+  size?: number;
+};
+
 export const estimatesApi = {
-  list: async (state?: EstimateState): Promise<EstimateListResponse> => {
+  list: async (
+    state?: EstimateState,
+    options?: Omit<EstimateListParams, 'state'>,
+  ): Promise<EstimateListResponse> => {
+    const params: Record<string, string | number> = {};
+    if (state) {
+      params.state = state;
+    }
+    if (options?.q?.trim()) {
+      params.q = options.q.trim();
+    }
+    if (options?.page != null) {
+      params.page = options.page;
+    }
+    if (options?.size != null) {
+      params.size = options.size;
+    }
     const response = await apiClient.get<ApiResponse<EstimateListResponse>>(
       ESTIMATE_ENDPOINTS.BASE,
-      state ? { state } : undefined,
+      Object.keys(params).length > 0 ? params : undefined,
     );
     return response.data;
   },
