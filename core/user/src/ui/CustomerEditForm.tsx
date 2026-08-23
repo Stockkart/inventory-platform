@@ -1,5 +1,5 @@
-import type { UpdateCustomerDto } from '@inventory-platform/user/types';
-import { FormField, FormRow, Stack, Text, surfaceChrome } from '@inventory-platform/ui-kit';
+import type { UpdateCustomerDto, CustomerPartyType } from '@inventory-platform/user/types';
+import { FormField, FormRow, Select, Stack, Text, surfaceChrome } from '@inventory-platform/ui-kit';
 
 /** Derive PAN from GSTIN: 10 chars from 3rd character (1-based). */
 function derivePanFromGstin(gstin: string | null | undefined): string {
@@ -7,20 +7,27 @@ function derivePanFromGstin(gstin: string | null | undefined): string {
   return gstin.substring(2, 12);
 }
 
-interface CustomerEditFormProps {
-  value: UpdateCustomerDto;
-  onChange: (value: UpdateCustomerDto) => void;
+const PARTY_TYPE_OPTIONS = [
+  { value: 'CONSUMER', label: 'Consumer' },
+  { value: 'RETAILER', label: 'Retailer' },
+  { value: 'DISTRIBUTOR', label: 'Distributor' },
+  { value: 'WHOLESALER', label: 'Wholesaler' },
+] as const;
+
+interface CustomerEditFormProps<T extends UpdateCustomerDto> {
+  value: T;
+  onChange: (value: T) => void;
   /** Display-only PAN from API (derived from GSTIN). Shown read-only. */
   panNo?: string | null;
   disabled?: boolean;
 }
 
-export function CustomerEditForm({
+export function CustomerEditForm<T extends UpdateCustomerDto>({
   value,
   onChange,
   panNo,
   disabled = false,
-}: CustomerEditFormProps) {
+}: CustomerEditFormProps<T>) {
   const panDisplay = panNo ?? derivePanFromGstin(value.gstin ?? null);
 
   return (
@@ -34,6 +41,19 @@ export function CustomerEditForm({
           disabled={disabled}
           required
         />
+        <FormField label="Party type">
+          <Select
+            value={value.partyType ?? 'CONSUMER'}
+            options={[...PARTY_TYPE_OPTIONS]}
+            onChange={(e) =>
+              onChange({
+                ...value,
+                partyType: e.target.value as CustomerPartyType,
+              })
+            }
+            disabled={disabled}
+          />
+        </FormField>
         <FormRow>
           <FormField
             label="Phone"
@@ -85,10 +105,11 @@ export function CustomerEditForm({
         </FormRow>
         <FormField
           label="PAN"
-          value={panDisplay}
-          readOnly
-          placeholder="Derived from GSTIN"
-          hint="Auto-filled from GSTIN when available. Not editable here."
+          value={value.pan ?? panDisplay}
+          onChange={(v) => onChange({ ...value, pan: v })}
+          placeholder="PAN"
+          hint="At least one of phone, email, GSTIN, PAN, or DL is required for a unique customer."
+          disabled={disabled}
         />
       </Stack>
     </Stack>

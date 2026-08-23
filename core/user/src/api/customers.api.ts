@@ -14,6 +14,23 @@ export type CustomersListParams = {
   q?: string;
 };
 
+/** True when at least one unique identity key is present. */
+export function customerHasUniqueIdentifier(input: {
+  phone?: string | null;
+  email?: string | null;
+  gstin?: string | null;
+  pan?: string | null;
+  dlNo?: string | null;
+}): boolean {
+  return Boolean(
+    input.phone?.trim() ||
+      input.email?.trim() ||
+      input.gstin?.trim() ||
+      input.pan?.trim() ||
+      input.dlNo?.trim(),
+  );
+}
+
 export const customersApi = {
   create: async (data: CreateCustomerDto): Promise<CustomerResponse> => {
     const response = await apiClient.post<ApiResponse<CustomerResponse>>(
@@ -33,6 +50,14 @@ export const customersApi = {
       Object.keys(queryParams).length > 0 ? queryParams : undefined,
     );
     return response.data;
+  },
+
+  /** Keyword search (name, phone, email, address, GSTIN, PAN, DL). */
+  search: async (q: string, limit = 25): Promise<CustomerResponse[]> => {
+    const trimmed = q.trim();
+    if (!trimmed) return [];
+    const res = await customersApi.list({ page: 0, limit, q: trimmed });
+    return (res.data ?? []).filter((c) => !c.isGeneral);
   },
 
   update: async (customerId: string, data: UpdateCustomerDto): Promise<CustomerResponse> => {

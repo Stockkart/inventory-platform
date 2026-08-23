@@ -25,7 +25,7 @@ import {
 } from '@inventory-platform/ui-kit';
 import { useResolvedSellPath } from '@inventory-platform/routing';
 import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/session';
-import { customersApi } from '../api/customers.api';
+import { customersApi, customerHasUniqueIdentifier } from '../api/customers.api';
 import { CustomerEditForm } from '../ui';
 import type {
   CustomerResponse,
@@ -43,6 +43,11 @@ export function meta() {
 function formatAddress(addr: string | null | undefined) {
   if (!addr?.trim()) return '—';
   return addr.trim();
+}
+
+function partyTypeLabel(partyType?: string | null) {
+  if (!partyType || partyType === 'CONSUMER') return 'Consumer';
+  return partyType.charAt(0) + partyType.slice(1).toLowerCase();
 }
 
 export function CustomersPage() {
@@ -64,7 +69,10 @@ export function CustomersPage() {
   const [editModal, setEditModal] = useState<CustomerResponse | null>(null);
   const [editForm, setEditForm] = useState<UpdateCustomerDto>({});
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [createForm, setCreateForm] = useState<CreateCustomerDto>({ name: '' });
+  const [createForm, setCreateForm] = useState<CreateCustomerDto>({
+    name: '',
+    partyType: 'CONSUMER',
+  });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -77,7 +85,7 @@ export function CustomersPage() {
         limit,
         q: query || undefined,
       });
-      setData(res.data ?? []);
+      setData((res.data ?? []).filter((c) => !c.isGeneral));
       setTotal(res.total ?? 0);
       setTotalPages(res.totalPages ?? 0);
     } catch (err) {
@@ -97,6 +105,10 @@ export function CustomersPage() {
   };
 
   const handleOpenEdit = (customer: CustomerResponse) => {
+    if (customer.isGeneral) {
+      setSaveError('The general customer placeholder cannot be edited');
+      return;
+    }
     setEditModal(customer);
     setEditForm({
       name: customer.name ?? '',
@@ -105,6 +117,8 @@ export function CustomersPage() {
       address: customer.address ?? undefined,
       gstin: customer.gstin ?? undefined,
       dlNo: customer.dlNo ?? undefined,
+      pan: customer.pan ?? undefined,
+      partyType: customer.partyType ?? 'CONSUMER',
     });
     setSaveError(null);
   };
@@ -115,7 +129,7 @@ export function CustomersPage() {
   };
 
   const handleOpenCreate = () => {
-    setCreateForm({ name: '' });
+    setCreateForm({ name: '', partyType: 'CONSUMER' });
     setSaveError(null);
     setCreateModalOpen(true);
   };
@@ -130,11 +144,19 @@ export function CustomersPage() {
       setSaveError('Name is required');
       return;
     }
+    if (!customerHasUniqueIdentifier(createForm)) {
+      setSaveError(
+        'Add phone, email, GSTIN, PAN, or DL to create a unique customer. Name and address alone use the general customer on bills.',
+      );
+      return;
+    }
+    const partyType = createForm.partyType ?? 'CONSUMER';
     setSaving(true);
     setSaveError(null);
     try {
       await customersApi.create({
         name: createForm.name.trim(),
+        partyType,
         phone: createForm.phone?.trim() || undefined,
         email: createForm.email?.trim() || undefined,
         address: createForm.address?.trim() || undefined,
@@ -153,6 +175,10 @@ export function CustomersPage() {
 
   const handleSave = async () => {
     if (!editModal) return;
+    if (!customerHasUniqueIdentifier(editForm)) {
+      setSaveError('Keep at least one of phone, email, GSTIN, PAN, or DL');
+      return;
+    }
     setSaving(true);
     setSaveError(null);
     try {
@@ -191,7 +217,7 @@ export function CustomersPage() {
             showSearchButton
             buttonVariant="solid"
             grow
-            placeholder="Search by name, phone, email…"
+            placeholder="Search by name, phone, email, GST, PAN, DL…"
             disabled={loading}
             searchLabel={loading ? 'Searching…' : 'Search'}
           />
@@ -217,96 +243,54 @@ export function CustomersPage() {
 
       <Card>
         <CardBody>
-          <Table className={surfaceChrome.customersTable}>
+          <Table>
             <TableHead>
               <TableRow>
-                <TableHeaderCell className={surfaceChrome.customersNameCell}>Name</TableHeaderCell>
-                <TableHeaderCell className={surfaceChrome.customersPhoneCell}>
-                  Phone
-                </TableHeaderCell>
-                <TableHeaderCell className={surfaceChrome.customersEmailCell}>
-                  Email
-                </TableHeaderCell>
-                <TableHeaderCell className={surfaceChrome.customersAddressCell}>
-                  Address
-                </TableHeaderCell>
-                <TableHeaderCell className={surfaceChrome.customersIdCell}>GSTIN</TableHeaderCell>
-                <TableHeaderCell className={surfaceChrome.customersIdCell}>DL No</TableHeaderCell>
-                <TableHeaderCell className={surfaceChrome.customersActionCell}>
-                  Actions
-                </TableHeaderCell>
+                <TableHeaderCell>Name</TableHeaderCell>
+                <TableHeaderCell>Type</TableHeaderCell>
+                <TableHeaderCell>Phone</TableHeaderCell>
+                <TableHeaderCell>Email</TableHeaderCell>
+                <TableHeaderCell>Address</TableHeaderCell>
+                <TableHeaderCell>Actions</TableHeaderCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {loading ? (
-                <TableLoadingRow colSpan={7} label="Loading customers…" />
+                <TableLoadingRow colSpan={6} />
               ) : data.length === 0 ? (
-                <TableEmptyRow
-                  colSpan={7}
-                  message={
-                    query
-                      ? 'No customers match your search.'
-                      : 'No customers yet. Add one with New customer, or they’ll appear after a sale.'
-                  }
-                />
+                <TableEmptyRow colSpan={6} message="No customers found" />
               ) : (
                 data.map((customer) => (
                   <TableRow key={customer.customerId}>
-                    <TableCell className={surfaceChrome.customersNameCell}>
-                      <Text as="span" weight="medium">
-                        {customer.name ?? '—'}
-                      </Text>
-                    </TableCell>
-                    <TableCell className={surfaceChrome.customersPhoneCell}>
-                      {customer.phone ?? '—'}
-                    </TableCell>
-                    <TableCell
-                      className={surfaceChrome.customersEmailCell}
-                      title={customer.email ?? undefined}
-                    >
-                      {customer.email ?? '—'}
-                    </TableCell>
-                    <TableCell
-                      className={surfaceChrome.customersAddressCell}
-                      title={customer.address ?? undefined}
-                    >
-                      {formatAddress(customer.address)}
-                    </TableCell>
-                    <TableCell className={surfaceChrome.customersIdCell}>
-                      {customer.gstin ?? '—'}
-                    </TableCell>
-                    <TableCell className={surfaceChrome.customersIdCell}>
-                      {customer.dlNo ?? '—'}
-                    </TableCell>
-                    <TableCell className={surfaceChrome.customersActionCell}>
-                      <Box className={surfaceChrome.customersActionRow}>
+                    <TableCell>{customer.name}</TableCell>
+                    <TableCell>{partyTypeLabel(customer.partyType)}</TableCell>
+                    <TableCell>{customer.phone || '—'}</TableCell>
+                    <TableCell>{customer.email || '—'}</TableCell>
+                    <TableCell>{formatAddress(customer.address)}</TableCell>
+                    <TableCell>
+                      <Inline gap="sm">
                         <Button
                           type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => goScanSellWithCustomer(customer)}
-                          title="Open Scan and Sell with this customer filled in"
-                        >
-                          Sell
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => goReturnWithCustomer(customer)}
-                          title="Open Return to customer with this customer prefilled"
-                        >
-                          Return
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
                           variant="ghost"
                           onClick={() => handleOpenEdit(customer)}
                         >
                           Edit
                         </Button>
-                      </Box>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() => goScanSellWithCustomer(customer)}
+                        >
+                          Sell
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() => goReturnWithCustomer(customer)}
+                        >
+                          Return
+                        </Button>
+                      </Inline>
                     </TableCell>
                   </TableRow>
                 ))
@@ -318,54 +302,47 @@ export function CustomersPage() {
 
       <PaginationBar
         page={page}
-        totalPages={Math.max(totalPages, 1)}
+        totalPages={totalPages}
         totalItems={total}
-        disabled={loading}
-        onPageChange={setPage}
         pageSize={limit}
-        pageSizeOptions={[10, 20, 50]}
+        onPageChange={setPage}
         onPageSizeChange={(n) => {
-          setPage(0);
           setLimit(n);
+          setPage(0);
         }}
-        aria-label="Customer pages"
       />
 
-      {editModal ? (
-        <EditModal
-          open
-          title="Edit customer"
-          onClose={handleCloseEdit}
-          error={saveError}
-          onCancel={handleCloseEdit}
-          onSave={handleSave}
-          saving={saving}
-        >
+      <EditModal
+        open={createModalOpen}
+        title="New customer"
+        onClose={handleCloseCreate}
+        onCancel={handleCloseCreate}
+        onSave={() => void handleCreate()}
+        saving={saving}
+        error={saveError}
+        saveLabel="Create"
+      >
+        <CustomerEditForm value={createForm} onChange={setCreateForm} disabled={saving} />
+      </EditModal>
+
+      <EditModal
+        open={editModal !== null}
+        title="Edit customer"
+        onClose={handleCloseEdit}
+        onCancel={handleCloseEdit}
+        onSave={() => void handleSave()}
+        saving={saving}
+        error={saveError}
+      >
+        {editModal ? (
           <CustomerEditForm
             value={editForm}
             onChange={setEditForm}
-            panNo={editModal.panNo ?? editModal.pan}
+            panNo={editModal.panNo}
+            disabled={saving}
           />
-        </EditModal>
-      ) : null}
-
-      {createModalOpen ? (
-        <EditModal
-          open
-          title="New customer"
-          onClose={handleCloseCreate}
-          error={saveError}
-          onCancel={handleCloseCreate}
-          onSave={handleCreate}
-          saving={saving}
-          saveLabel="Create"
-        >
-          <CustomerEditForm
-            value={createForm}
-            onChange={(v) => setCreateForm((prev) => ({ ...prev, ...v }))}
-          />
-        </EditModal>
-      ) : null}
+        ) : null}
+      </EditModal>
     </Stack>
   );
 }
