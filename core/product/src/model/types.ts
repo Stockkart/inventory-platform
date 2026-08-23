@@ -784,12 +784,15 @@ export interface AddToCartDto {
   customerGstin?: string;
   customerDlNo?: string;
   customerPan?: string;
+  customerId?: string;
+  customerPartyType?: string;
   /** Optional link to a registered StockKart user for this party. */
   customerUserId?: string;
 }
 
 export interface CreateQuotationDto {
   businessType: string;
+  customerId?: string;
   customerName?: string;
   customerAddress?: string;
   customerPhone?: string;
@@ -797,11 +800,13 @@ export interface CreateQuotationDto {
   customerGstin?: string;
   customerDlNo?: string;
   customerPan?: string;
+  customerPartyType?: string;
   customerUserId?: string;
 }
 
 export interface CreateEstimateDto {
   businessType: string;
+  customerId?: string;
   customerName?: string;
   customerAddress?: string;
   customerPhone?: string;
@@ -809,6 +814,7 @@ export interface CreateEstimateDto {
   customerGstin?: string;
   customerDlNo?: string;
   customerPan?: string;
+  customerPartyType?: string;
   customerUserId?: string;
 }
 

@@ -1,3 +1,5 @@
+export { CustomerSearchPanel } from './CustomerSearchPanel';
+export type { CustomerSearchPanelProps } from './CustomerSearchPanel';
 export { PurchaseCard } from './PurchaseCard';
 export { PurchaseList } from './PurchaseList';
 export { PaymentMethodSplit } from './PaymentMethodSplit';

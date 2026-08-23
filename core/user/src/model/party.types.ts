@@ -120,6 +120,8 @@ export interface VendorResponse {
 }
 
 // Customer types
+export type CustomerPartyType = 'CONSUMER' | 'RETAILER' | 'DISTRIBUTOR' | 'WHOLESALER';
+
 export interface Customer {
   customerId: string;
   name: string;
@@ -129,6 +131,8 @@ export interface Customer {
   gstin?: string | null;
   dlNo?: string | null;
   pan?: string | null;
+  partyType?: CustomerPartyType | null;
+  isGeneral?: boolean | null;
   /** Optional. Set when customer is linked to a registered user. */
   userId?: string | null;
   createdAt: string;
@@ -146,6 +150,8 @@ export interface CustomerResponse {
   pan?: string | null;
   /** PAN derived from GSTIN: 10 chars from 3rd character (1-based). */
   panNo?: string | null;
+  partyType?: CustomerPartyType | null;
+  isGeneral?: boolean | null;
   /** Optional. Set when customer is linked to a registered user. */
   userId?: string | null;
   createdAt: string;
@@ -168,6 +174,7 @@ export interface CreateCustomerDto {
   gstin?: string;
   dlNo?: string;
   pan?: string;
+  partyType?: CustomerPartyType;
 }
 
 export interface UpdateCustomerDto {
@@ -178,6 +185,7 @@ export interface UpdateCustomerDto {
   gstin?: string;
   dlNo?: string;
   pan?: string;
+  partyType?: CustomerPartyType;
 }
 
 export interface VendorListResponse {

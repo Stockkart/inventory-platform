@@ -18,7 +18,6 @@ import {
   Card,
   CardBody,
   CenteredLoader,
-  Checkbox,
   EmptyState,
   FormField,
   Grid,
@@ -74,7 +73,6 @@ import { estimatesApi } from '../api/estimates.api';
 import { sellCatalogApi } from '../api/sell-catalog.api';
 import { pricingClient } from '../api/pricing-client.api';
 import { gstAmountRowLabel, uniqueGstRateLabel } from '../lib/gstRateLabel';
-import { customersApi } from '@inventory-platform/user/customers';
 import type {
   AvailableUnit,
   BillingMode,
@@ -171,7 +169,9 @@ import {
   shouldShowCustomerHistorySubrow,
   PrintInvoiceModal,
 } from '../ui';
+import { CustomerSearchPanel } from '../ui/CustomerSearchPanel';
 import { ScanSellQuotationStack } from '../ui/ScanSellQuotationStack';
+import type { CustomerPartyType } from '@inventory-platform/user/types';
 
 export function meta() {
   return [
@@ -181,6 +181,20 @@ export function meta() {
 }
 
 type SchemeTypeCart = 'FIXED_UNITS' | 'PERCENTAGE';
+
+const GENERAL_CUSTOMER_DISPLAY_NAME = 'General Customer';
+
+function isGeneralCustomerName(name?: string | null): boolean {
+  return (name ?? '').trim().toLowerCase() === GENERAL_CUSTOMER_DISPLAY_NAME.toLowerCase();
+}
+
+/** Header chip for the customer section — hide backend general placeholder name. */
+function customerSectionSummary(name: string, phone: string): string {
+  if (isGeneralCustomerName(name)) {
+    return '';
+  }
+  return name.trim() || phone.trim();
+}
 
 /** True when a cart/checkout line represents a cafe menu item (not direct inventory). */
 function isMenuLine(line: CheckoutItemResponse): boolean {
@@ -745,50 +759,20 @@ function CustomerSectionBlock({
   idPrefix,
   customerSectionOpen,
   setCustomerSectionOpen,
-  customerName,
-  customerPhone,
-  customerEmail,
-  customerAddress,
-  setCustomerName,
-  setCustomerPhone,
-  setCustomerEmail,
-  setCustomerAddress,
-  handleCustomerFieldBlur,
-  isSearchingCustomer,
-  handleCustomerSearch,
-  handleCustomerSearchByEmail,
-  isRetailer,
-  setIsRetailer,
-  customerGstin,
-  customerDlNo,
-  customerPan,
-  setCustomerGstin,
-  setCustomerDlNo,
-  setCustomerPan,
+  selectedCustomer,
+  summaryLabel,
+  onSelectCustomer,
+  onClearCustomer,
+  disabled,
 }: {
   idPrefix: string;
   customerSectionOpen: boolean;
   setCustomerSectionOpen: (open: boolean | ((o: boolean) => boolean)) => void;
-  customerName: string;
-  customerPhone: string;
-  customerEmail: string;
-  customerAddress: string;
-  setCustomerName: (v: string) => void;
-  setCustomerPhone: (v: string) => void;
-  setCustomerEmail: (v: string) => void;
-  setCustomerAddress: (v: string) => void;
-  handleCustomerFieldBlur: () => void;
-  isSearchingCustomer: boolean;
-  handleCustomerSearch: () => void;
-  handleCustomerSearchByEmail: () => void;
-  isRetailer: boolean;
-  setIsRetailer: (v: boolean) => void;
-  customerGstin: string;
-  customerDlNo: string;
-  customerPan: string;
-  setCustomerGstin: (v: string) => void;
-  setCustomerDlNo: (v: string) => void;
-  setCustomerPan: (v: string) => void;
+  selectedCustomer: CustomerResponse | null;
+  summaryLabel: string;
+  onSelectCustomer: (customer: CustomerResponse) => void;
+  onClearCustomer: () => void;
+  disabled?: boolean;
 }) {
   return (
     <Box className={cn(customerBlockStyle, idPrefix === 'cafe' && customerBlockCafeStyle)}>
@@ -801,11 +785,11 @@ function CustomerSectionBlock({
       >
         <Inline gap="sm" align="center" width="full">
           <Text weight="semibold">Customer</Text>
-          {customerName || customerPhone ? (
-            <Text className={customerToggleValueStyle}>{customerName || customerPhone}</Text>
+          {summaryLabel ? (
+            <Text className={customerToggleValueStyle}>{summaryLabel}</Text>
           ) : (
             <Text color="secondary" className={surfaceChrome.flexMin0}>
-              Optional
+              Walk-in
             </Text>
           )}
           <Text className={customerToggleIconStyle}>{customerSectionOpen ? '▼' : '▶'}</Text>
@@ -813,149 +797,13 @@ function CustomerSectionBlock({
       </Button>
       {customerSectionOpen ? (
         <Stack gap="md" className={customerFormStyle}>
-          <Stack gap="sm" pt="sm">
-            <FormField label="Phone" id={`${idPrefix}-customerPhone`}>
-              <Inline gap="sm" width="full">
-                <Input
-                  id={`${idPrefix}-customerPhone`}
-                  type="tel"
-                  className={customerInputStyle}
-                  placeholder="Phone"
-                  value={customerPhone}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    setCustomerPhone(e.currentTarget.value)
-                  }
-                  onBlur={handleCustomerFieldBlur}
-                  disabled={isSearchingCustomer}
-                />
-                <IconButton
-                  label="Search customer"
-                  title="Search customer"
-                  className={sidebarSearchBtnStyle}
-                  onClick={handleCustomerSearch}
-                  disabled={isSearchingCustomer || !customerPhone.trim()}
-                >
-                  {isSearchingCustomer ? '…' : '⌕'}
-                </IconButton>
-              </Inline>
-            </FormField>
-            <FormField label="Name" id={`${idPrefix}-customerName`}>
-              <Input
-                id={`${idPrefix}-customerName`}
-                type="text"
-                className={customerInputStyle}
-                placeholder="Name"
-                value={customerName}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setCustomerName(e.currentTarget.value)
-                }
-                onBlur={handleCustomerFieldBlur}
-              />
-            </FormField>
-            <FormField label="Email" id={`${idPrefix}-customerEmail`}>
-              <Inline gap="sm" width="full">
-                <Input
-                  id={`${idPrefix}-customerEmail`}
-                  type="email"
-                  className={customerInputStyle}
-                  placeholder="Email"
-                  value={customerEmail}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    setCustomerEmail(e.currentTarget.value)
-                  }
-                  onBlur={handleCustomerFieldBlur}
-                  disabled={isSearchingCustomer}
-                />
-                <IconButton
-                  label="Search customer by email"
-                  title="Search customer by email"
-                  className={sidebarSearchBtnStyle}
-                  onClick={handleCustomerSearchByEmail}
-                  disabled={isSearchingCustomer || !customerEmail.trim()}
-                >
-                  {isSearchingCustomer ? '…' : '⌕'}
-                </IconButton>
-              </Inline>
-            </FormField>
-            <FormField label="Address" id={`${idPrefix}-customerAddress`}>
-              <Input
-                id={`${idPrefix}-customerAddress`}
-                type="text"
-                className={customerInputStyle}
-                placeholder="Address"
-                value={customerAddress}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setCustomerAddress(e.currentTarget.value)
-                }
-                onBlur={handleCustomerFieldBlur}
-              />
-            </FormField>
-          </Stack>
-          {idPrefix === 'sidebar' ? (
-            <>
-              <Box className={sectionDividerLgStyle}>
-                <Checkbox
-                  label="Is Retailer"
-                  checked={isRetailer}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                    setIsRetailer(e.currentTarget.checked);
-                    if (!e.currentTarget.checked) {
-                      setCustomerGstin('');
-                      setCustomerDlNo('');
-                      setCustomerPan('');
-                    }
-                  }}
-                />
-              </Box>
-              {isRetailer ? (
-                <Stack
-                  gap="sm"
-                  padding="md"
-                  border
-                  rounded="md"
-                  bg="surface"
-                  className={productChrome.sectionDivider}
-                >
-                  <FormField label="GSTIN" id={`${idPrefix}-customerGstin`}>
-                    <Input
-                      id={`${idPrefix}-customerGstin`}
-                      type="text"
-                      className={customerInputStyle}
-                      placeholder="GSTIN"
-                      value={customerGstin}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                        setCustomerGstin(e.currentTarget.value)
-                      }
-                    />
-                  </FormField>
-                  <FormField label="DL No" id={`${idPrefix}-customerDlNo`}>
-                    <Input
-                      id={`${idPrefix}-customerDlNo`}
-                      type="text"
-                      className={customerInputStyle}
-                      placeholder="DL No"
-                      value={customerDlNo}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                        setCustomerDlNo(e.currentTarget.value)
-                      }
-                    />
-                  </FormField>
-                  <FormField label="PAN" id={`${idPrefix}-customerPan`}>
-                    <Input
-                      id={`${idPrefix}-customerPan`}
-                      type="text"
-                      className={customerInputStyle}
-                      placeholder="PAN"
-                      value={customerPan}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                        setCustomerPan(e.currentTarget.value)
-                      }
-                    />
-                  </FormField>
-                </Stack>
-              ) : null}
-            </>
-          ) : null}
+          <CustomerSearchPanel
+            idPrefix={idPrefix}
+            selected={selectedCustomer}
+            onSelect={onSelectCustomer}
+            onClear={onClearCustomer}
+            disabled={disabled}
+          />
         </Stack>
       ) : null}
     </Box>
@@ -1005,11 +853,11 @@ export function ScanSellPage() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerId, setCustomerId] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
-  const [isRetailer, setIsRetailer] = useState(false);
+  const [customerPartyType, setCustomerPartyType] = useState<CustomerPartyType>('CONSUMER');
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerResponse | null>(null);
   const [customerGstin, setCustomerGstin] = useState('');
   const [customerDlNo, setCustomerDlNo] = useState('');
   const [customerPan, setCustomerPan] = useState('');
-  const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [customerSectionOpen, setCustomerSectionOpen] = useState(false);
   const [additionalDiscountOverrides, setAdditionalDiscountOverrides] = useState<
@@ -1448,6 +1296,32 @@ export function ScanSellPage() {
     };
   };
 
+  const applySelectedCustomer = (customer: CustomerResponse | null) => {
+    if (!customer) {
+      setSelectedCustomer(null);
+      setCustomerId('');
+      setCustomerName('');
+      setCustomerPhone('');
+      setCustomerEmail('');
+      setCustomerAddress('');
+      setCustomerGstin('');
+      setCustomerDlNo('');
+      setCustomerPan('');
+      setCustomerPartyType('CONSUMER');
+      return;
+    }
+    setSelectedCustomer(customer);
+    setCustomerId(customer.customerId || '');
+    setCustomerName(customer.name || '');
+    setCustomerPhone(customer.phone || '');
+    setCustomerEmail(customer.email || '');
+    setCustomerAddress(customer.address || '');
+    setCustomerGstin(customer.gstin || '');
+    setCustomerDlNo(customer.dlNo || '');
+    setCustomerPan(customer.pan || customer.panNo || '');
+    setCustomerPartyType(customer.partyType ?? 'CONSUMER');
+  };
+
   const applyCustomerFieldsFromCart = (
     cart: CartResponse,
     typed?: {
@@ -1458,24 +1332,41 @@ export function ScanSellPage() {
     },
   ) => {
     const resolved = resolveCustomerFieldsFromCart(cart);
-    setCustomerName(resolved.name || typed?.customerName?.trim() || '');
-    setCustomerAddress(resolved.address || typed?.customerAddress?.trim() || '');
-    setCustomerPhone(resolved.phone || typed?.customerPhone?.trim() || '');
-    setCustomerId(resolved.customerId);
-    setCustomerEmail(resolved.email || typed?.customerEmail?.trim() || '');
+    const nameRaw = resolved.name || typed?.customerName?.trim() || '';
+    const name = isGeneralCustomerName(nameRaw) ? '' : nameRaw;
+    const phone = resolved.phone || typed?.customerPhone?.trim() || '';
+    const email = resolved.email || typed?.customerEmail?.trim() || '';
+    const address = resolved.address || typed?.customerAddress?.trim() || '';
     const gstin = resolved.gstin;
     const dl = resolved.dlNo;
     const pan = resolved.pan;
-    if (gstin || dl || pan) {
-      setIsRetailer(true);
-      setCustomerGstin(gstin);
-      setCustomerDlNo(dl);
-      setCustomerPan(pan);
+    setCustomerName(name);
+    setCustomerAddress(address);
+    setCustomerPhone(phone);
+    setCustomerId(resolved.customerId);
+    setCustomerEmail(email);
+    setCustomerGstin(gstin);
+    setCustomerDlNo(dl);
+    setCustomerPan(pan);
+    if (resolved.customerId && (phone || email || gstin || dl || pan)) {
+      setSelectedCustomer({
+        customerId: resolved.customerId,
+        name: name || 'Customer',
+        phone: phone || '',
+        email: email || null,
+        address: address || null,
+        gstin: gstin || null,
+        dlNo: dl || null,
+        pan: pan || null,
+        partyType: customerPartyType,
+        createdAt: '',
+        updatedAt: '',
+      });
     } else {
-      setIsRetailer(false);
-      setCustomerGstin('');
-      setCustomerDlNo('');
-      setCustomerPan('');
+      setSelectedCustomer(null);
+      if (!phone && !email && !gstin && !dl && !pan) {
+        setCustomerPartyType('CONSUMER');
+      }
     }
   };
 
@@ -1495,6 +1386,7 @@ export function ScanSellPage() {
   };
 
   const syncCustomerToQuotation = async (overrides?: {
+    customerId?: string;
     customerName?: string;
     customerPhone?: string;
     customerEmail?: string;
@@ -1502,7 +1394,7 @@ export function ScanSellPage() {
     customerGstin?: string;
     customerDlNo?: string;
     customerPan?: string;
-    isRetailer?: boolean;
+    customerPartyType?: CustomerPartyType;
   }): Promise<void> => {
     if (
       suppressCustomerSyncRef.current ||
@@ -1514,16 +1406,18 @@ export function ScanSellPage() {
       return;
     }
 
+    const id = overrides?.customerId ?? customerId;
     const name = overrides?.customerName ?? customerName;
     const phone = overrides?.customerPhone ?? customerPhone;
     const email = overrides?.customerEmail ?? customerEmail;
     const address = overrides?.customerAddress ?? customerAddress;
-    const retailer = overrides?.isRetailer ?? isRetailer;
     const gstin = overrides?.customerGstin ?? customerGstin;
     const dlNo = overrides?.customerDlNo ?? customerDlNo;
     const pan = overrides?.customerPan ?? customerPan;
+    const partyType = overrides?.customerPartyType ?? customerPartyType;
 
     const dirty =
+      normCustomerField(id) !== normCustomerField(cartData?.customerId) ||
       normCustomerField(name) !== normCustomerField(cartData?.customerName) ||
       normCustomerField(phone) !== normCustomerField(cartData?.customerPhone) ||
       normCustomerField(email) !== normCustomerField(cartData?.customerEmail) ||
@@ -1536,6 +1430,7 @@ export function ScanSellPage() {
     }
 
     const hasCustomerInput =
+      normCustomerField(id).length > 0 ||
       normCustomerField(name).length > 0 ||
       normCustomerField(phone).length > 0 ||
       normCustomerField(email).length > 0 ||
@@ -1553,13 +1448,15 @@ export function ScanSellPage() {
         businessType: cartBusinessType,
         purchaseId: activePurchaseId,
         items: [],
+        ...(id.trim() && { customerId: id.trim() }),
         ...(name.trim() && { customerName: name.trim() }),
         ...(address.trim() && { customerAddress: address.trim() }),
         ...(phone.trim() && { customerPhone: phone.trim() }),
         ...(email.trim() && { customerEmail: email.trim() }),
-        ...(retailer && gstin && { customerGstin: gstin.trim() }),
-        ...(retailer && dlNo && { customerDlNo: dlNo.trim() }),
-        ...(retailer && pan && { customerPan: pan.trim() }),
+        ...(gstin.trim() && { customerGstin: gstin.trim() }),
+        ...(dlNo.trim() && { customerDlNo: dlNo.trim() }),
+        ...(pan.trim() && { customerPan: pan.trim() }),
+        ...(partyType && { customerPartyType: partyType }),
       });
       suppressCustomerSyncRef.current = true;
       setCartData(updatedCart);
@@ -1578,11 +1475,35 @@ export function ScanSellPage() {
     }
   };
 
-  const handleCustomerFieldBlur = () => {
-    if (customerSyncTimerRef.current) {
-      clearTimeout(customerSyncTimerRef.current);
-    }
-    void syncCustomerToQuotation();
+  const handleSelectCustomer = (customer: CustomerResponse) => {
+    applySelectedCustomer(customer);
+    setCustomerSectionOpen(true);
+    void syncCustomerToQuotation({
+      customerId: customer.customerId,
+      customerName: customer.name || '',
+      customerPhone: customer.phone || '',
+      customerEmail: customer.email || '',
+      customerAddress: customer.address || '',
+      customerGstin: customer.gstin || '',
+      customerDlNo: customer.dlNo || '',
+      customerPan: customer.pan || customer.panNo || '',
+      customerPartyType: customer.partyType ?? 'CONSUMER',
+    });
+  };
+
+  const handleClearCustomer = () => {
+    applySelectedCustomer(null);
+    void syncCustomerToQuotation({
+      customerId: '',
+      customerName: '',
+      customerPhone: '',
+      customerEmail: '',
+      customerAddress: '',
+      customerGstin: '',
+      customerDlNo: '',
+      customerPan: '',
+      customerPartyType: 'CONSUMER',
+    });
   };
 
   const loadQuotation = async (purchaseId: string): Promise<void> => {
@@ -1785,26 +1706,19 @@ export function ScanSellPage() {
     if (!c || scanSellCustomerPrefillConsumedRef.current) return;
     scanSellCustomerPrefillConsumedRef.current = true;
     scanSellCustomerPrefillRef.current = null;
-    setCustomerName(c.name ?? '');
-    setCustomerPhone(c.phone ?? '');
-    setCustomerId(c.customerId ?? '');
-    setCustomerEmail(c.email ?? '');
-    setCustomerAddress(c.address ?? '');
-    const gstin = c.gstin ?? '';
-    const dl = c.dlNo ?? '';
-    const pan = c.pan ?? c.panNo ?? '';
-    if (gstin || dl || pan) {
-      setIsRetailer(true);
-      setCustomerGstin(gstin);
-      setCustomerDlNo(dl);
-      setCustomerPan(pan);
-    } else {
-      setIsRetailer(false);
-      setCustomerGstin('');
-      setCustomerDlNo('');
-      setCustomerPan('');
-    }
+    applySelectedCustomer(c);
     setCustomerSectionOpen(true);
+    void syncCustomerToQuotation({
+      customerId: c.customerId ?? '',
+      customerName: c.name ?? '',
+      customerPhone: c.phone ?? '',
+      customerEmail: c.email ?? '',
+      customerAddress: c.address ?? '',
+      customerGstin: c.gstin ?? '',
+      customerDlNo: c.dlNo ?? '',
+      customerPan: c.pan ?? c.panNo ?? '',
+      customerPartyType: c.partyType ?? 'CONSUMER',
+    });
   }, [isLoadingCart]);
 
   /** Build CartItem[] from cart response, reusing existing inventoryItem when possible (no API calls). */
@@ -1962,10 +1876,11 @@ export function ScanSellPage() {
       }
     };
   }, [
+    customerId,
     customerName,
     customerEmail,
     customerAddress,
-    isRetailer,
+    customerPartyType,
     customerGstin,
     customerDlNo,
     customerPan,
@@ -2252,9 +2167,11 @@ export function ScanSellPage() {
         ...(customerAddress && { customerAddress }),
         ...(customerPhone && { customerPhone }),
         ...(customerEmail && { customerEmail }),
-        ...(isRetailer && customerGstin && { customerGstin }),
-        ...(isRetailer && customerDlNo && { customerDlNo }),
-        ...(isRetailer && customerPan && { customerPan }),
+        ...(customerId.trim() && { customerId: customerId.trim() }),
+        ...(customerGstin && { customerGstin }),
+        ...(customerDlNo && { customerDlNo }),
+        ...(customerPan && { customerPan }),
+        ...(customerPartyType && { customerPartyType }),
       };
 
       const updatedCart = await cartApi.add(cartPayload);
@@ -2643,13 +2560,15 @@ export function ScanSellPage() {
           businessType: cartBusinessType,
           ...(activePurchaseId && { purchaseId: activePurchaseId }),
           items: itemsToSend,
+          ...(customerId && { customerId }),
           ...(customerName && { customerName }),
           ...(customerAddress && { customerAddress }),
           ...(customerPhone && { customerPhone }),
           ...(customerEmail && { customerEmail }),
-          ...(isRetailer && customerGstin && { customerGstin }),
-          ...(isRetailer && customerDlNo && { customerDlNo }),
-          ...(isRetailer && customerPan && { customerPan }),
+          ...(customerGstin && { customerGstin }),
+          ...(customerDlNo && { customerDlNo }),
+          ...(customerPan && { customerPan }),
+          ...(customerPartyType && { customerPartyType }),
         };
 
         const updatedCart = await cartApi.add(cartPayload);
@@ -2736,105 +2655,6 @@ export function ScanSellPage() {
     'cgst',
   );
 
-  const handleCustomerSearch = async () => {
-    if (!customerPhone.trim()) {
-      notifyError('Please enter a customer phone number');
-      return;
-    }
-
-    setIsSearchingCustomer(true);
-    setError(null);
-    try {
-      const customer = await customersApi.searchByPhone(customerPhone.trim());
-      if (customer) {
-        setCustomerName(customer.name || '');
-        setCustomerId(customer.customerId || '');
-        setCustomerEmail(customer.email || '');
-        setCustomerAddress(customer.address || '');
-        // Phone is already set from the search input
-
-        // Check if retailer fields are present
-        const hasRetailerFields = !!(customer.gstin || customer.dlNo || customer.pan);
-        if (hasRetailerFields) {
-          setIsRetailer(true);
-          setCustomerGstin(customer.gstin || '');
-          setCustomerDlNo(customer.dlNo || '');
-          setCustomerPan(customer.pan || '');
-        } else {
-          setIsRetailer(false);
-          setCustomerGstin('');
-          setCustomerDlNo('');
-          setCustomerPan('');
-        }
-        await syncCustomerToQuotation({
-          customerName: customer.name || '',
-          customerPhone: customer.phone || customerPhone.trim(),
-          customerEmail: customer.email || '',
-          customerAddress: customer.address || '',
-          customerGstin: hasRetailerFields ? customer.gstin || '' : '',
-          customerDlNo: hasRetailerFields ? customer.dlNo || '' : '',
-          customerPan: hasRetailerFields ? customer.pan || '' : '',
-          isRetailer: hasRetailerFields,
-        });
-      } else {
-        notifyError('No customer found with this phone number');
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to search customer';
-      notifyError(errorMessage);
-    } finally {
-      setIsSearchingCustomer(false);
-    }
-  };
-
-  const handleCustomerSearchByEmail = async () => {
-    if (!customerEmail.trim()) {
-      notifyError('Please enter a customer email');
-      return;
-    }
-
-    setIsSearchingCustomer(true);
-    setError(null);
-    try {
-      const customer = await customersApi.searchByEmail(customerEmail.trim());
-      if (customer) {
-        setCustomerName(customer.name || '');
-        setCustomerPhone(customer.phone || '');
-        setCustomerId(customer.customerId || '');
-        setCustomerAddress(customer.address || '');
-        const hasRetailerFields = !!(customer.gstin || customer.dlNo || customer.pan);
-        if (hasRetailerFields) {
-          setIsRetailer(true);
-          setCustomerGstin(customer.gstin || '');
-          setCustomerDlNo(customer.dlNo || '');
-          setCustomerPan(customer.pan || '');
-        } else {
-          setIsRetailer(false);
-          setCustomerGstin('');
-          setCustomerDlNo('');
-          setCustomerPan('');
-        }
-        await syncCustomerToQuotation({
-          customerName: customer.name || '',
-          customerPhone: customer.phone || '',
-          customerEmail: customer.email || '',
-          customerAddress: customer.address || '',
-          customerGstin: hasRetailerFields ? customer.gstin || '' : '',
-          customerDlNo: hasRetailerFields ? customer.dlNo || '' : '',
-          customerPan: hasRetailerFields ? customer.pan || '' : '',
-          isRetailer: hasRetailerFields,
-        });
-      } else {
-        notifyError('No customer found with this email');
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to search customer';
-      notifyError(errorMessage);
-    } finally {
-      setIsSearchingCustomer(false);
-    }
-  };
-
   const handleProcessPayment = async () => {
     if (isEstimateMode) {
       notifyError('Convert the estimate to an invoice before taking payment');
@@ -2866,9 +2686,11 @@ export function ScanSellPage() {
         ...(customerAddress && { customerAddress }),
         ...(customerPhone && { customerPhone: customerPhone.trim() }),
         ...(customerEmail && { customerEmail: customerEmail.trim() }),
-        ...(isRetailer && customerGstin && { customerGstin: customerGstin.trim() }),
-        ...(isRetailer && customerDlNo && { customerDlNo: customerDlNo.trim() }),
-        ...(isRetailer && customerPan && { customerPan: customerPan.trim() }),
+        ...(customerId.trim() && { customerId: customerId.trim() }),
+        ...(customerGstin.trim() && { customerGstin: customerGstin.trim() }),
+        ...(customerDlNo.trim() && { customerDlNo: customerDlNo.trim() }),
+        ...(customerPan.trim() && { customerPan: customerPan.trim() }),
+        ...(customerPartyType && { customerPartyType }),
       };
 
       const upsertResponse = await cartApi.add(upsertPayload);
@@ -3237,26 +3059,11 @@ export function ScanSellPage() {
                       idPrefix="cafe"
                       customerSectionOpen={customerSectionOpen}
                       setCustomerSectionOpen={setCustomerSectionOpen}
-                      customerName={customerName}
-                      customerPhone={customerPhone}
-                      customerEmail={customerEmail}
-                      customerAddress={customerAddress}
-                      setCustomerName={setCustomerName}
-                      setCustomerPhone={setCustomerPhone}
-                      setCustomerEmail={setCustomerEmail}
-                      setCustomerAddress={setCustomerAddress}
-                      handleCustomerFieldBlur={handleCustomerFieldBlur}
-                      isSearchingCustomer={isSearchingCustomer}
-                      handleCustomerSearch={handleCustomerSearch}
-                      handleCustomerSearchByEmail={handleCustomerSearchByEmail}
-                      isRetailer={isRetailer}
-                      setIsRetailer={setIsRetailer}
-                      customerGstin={customerGstin}
-                      customerDlNo={customerDlNo}
-                      customerPan={customerPan}
-                      setCustomerGstin={setCustomerGstin}
-                      setCustomerDlNo={setCustomerDlNo}
-                      setCustomerPan={setCustomerPan}
+                      selectedCustomer={selectedCustomer}
+                      summaryLabel={customerSectionSummary(customerName, customerPhone)}
+                      onSelectCustomer={handleSelectCustomer}
+                      onClearCustomer={handleClearCustomer}
+                      disabled={isUpdatingCart || isLoadingCart}
                     />
 
                     <Card className={cafeOrderPanelStyle}>
@@ -4006,26 +3813,11 @@ export function ScanSellPage() {
                     idPrefix="sidebar"
                     customerSectionOpen={customerSectionOpen}
                     setCustomerSectionOpen={setCustomerSectionOpen}
-                    customerName={customerName}
-                    customerPhone={customerPhone}
-                    customerEmail={customerEmail}
-                    customerAddress={customerAddress}
-                    setCustomerName={setCustomerName}
-                    setCustomerPhone={setCustomerPhone}
-                    setCustomerEmail={setCustomerEmail}
-                    setCustomerAddress={setCustomerAddress}
-                    handleCustomerFieldBlur={handleCustomerFieldBlur}
-                    isSearchingCustomer={isSearchingCustomer}
-                    handleCustomerSearch={handleCustomerSearch}
-                    handleCustomerSearchByEmail={handleCustomerSearchByEmail}
-                    isRetailer={isRetailer}
-                    setIsRetailer={setIsRetailer}
-                    customerGstin={customerGstin}
-                    customerDlNo={customerDlNo}
-                    customerPan={customerPan}
-                    setCustomerGstin={setCustomerGstin}
-                    setCustomerDlNo={setCustomerDlNo}
-                    setCustomerPan={setCustomerPan}
+                    selectedCustomer={selectedCustomer}
+                    summaryLabel={customerSectionSummary(customerName, customerPhone)}
+                    onSelectCustomer={handleSelectCustomer}
+                    onClearCustomer={handleClearCustomer}
+                    disabled={isUpdatingCart || isLoadingCart}
                   />
 
                   <Stack gap="xs" className={productChrome.sectionDivider}>
