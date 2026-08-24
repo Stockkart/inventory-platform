@@ -239,6 +239,8 @@ export const productChrome = {
   historyRecordHeader: styles.historyRecordHeader,
   historyRecordAmount: styles.historyRecordAmount,
   historyRecordActions: styles.historyRecordActions,
+  historyRecordFooter: styles.historyRecordFooter,
+  historyRecordFooterAfterItems: styles.historyRecordFooterAfterItems,
   historyItemsPanel: styles.historyItemsPanel,
   historyItemsTitle: styles.historyItemsTitle,
   historyItemsTable: styles.historyItemsTable,
