@@ -494,7 +494,7 @@ export function ProductSearchPage() {
 
   return (
     <Stack gap="md">
-      <PageHeader description="Search by product name, barcode, or batch number" />
+      <PageHeader description="Search by name, company, location, barcode, HSN, or batch" />
 
       <Box className={surfaceChrome.searchFilterBar}>
         <Box className={surfaceChrome.searchFilterGrow}>
@@ -507,7 +507,7 @@ export function ProductSearchPage() {
             onChange={setSearchQuery}
             onSearch={() => void handleSearch()}
             showSearchButton
-            placeholder="Name, barcode, or batch number"
+            placeholder="Name, company, location, barcode, HSN, or batch"
             disabled={isLoading}
             searchLabel={isLoading ? 'Searching…' : 'Search'}
           />
