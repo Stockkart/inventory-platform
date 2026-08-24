@@ -285,12 +285,12 @@ function formatCartPackagingMeta(cartItem: CartItem): string {
   return conv ? `${conv} · ${line}` : line;
 }
 
-/** Format purchase scheme from inventory (registration) for read-only display. Uses purchase* when present (from API). */
+/** Format purchase scheme from inventory (registration) for the read-only hint above the sale scheme field. */
 function formatPurchaseSchemeLabel(inv: InventoryItem): string {
-  const schemeType = inv.purchaseSchemeType ?? inv.schemeType;
-  const schemePercentage = inv.purchaseSchemePercentage ?? inv.schemePercentage;
-  const schemePayFor = inv.purchaseSchemePayFor ?? inv.schemePayFor;
-  const schemeFree = inv.purchaseSchemeFree ?? inv.schemeFree;
+  const schemeType = inv.purchaseSchemeType;
+  const schemePercentage = inv.purchaseSchemePercentage;
+  const schemePayFor = inv.purchaseSchemePayFor;
+  const schemeFree = inv.purchaseSchemeFree;
   if (schemeType === 'PERCENTAGE' && schemePercentage != null) {
     return `${schemePercentage}%`;
   }
@@ -300,9 +300,9 @@ function formatPurchaseSchemeLabel(inv: InventoryItem): string {
   return '—';
 }
 
-/** Get purchase additional discount from inventory (registration). Uses purchase* when present. */
+/** Purchase additional discount from product registration only — never the sale DISC input. */
 function getPurchaseAdditionalDiscount(inv: InventoryItem): number | null {
-  return inv.purchaseAdditionalDiscount ?? inv.saleAdditionalDiscount ?? null;
+  return inv.purchaseAdditionalDiscount ?? null;
 }
 
 function CartQuantityInput({
