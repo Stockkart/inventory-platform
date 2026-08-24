@@ -30,6 +30,7 @@ export {
   vendorInvoicesRoutes,
   scanSellRoutes,
   estimatesRoutes,
+  estimateWorkspaceRoutes,
   checkoutRoutes,
   historyRoutes,
   refundRoutes,

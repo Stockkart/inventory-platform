@@ -268,12 +268,12 @@ export function ProductSearchPage() {
     estimates: EstimateSummary[];
     purchaseId: string;
   }> => {
-    let list = (await estimatesApi.list('OPEN')).estimates;
+    let list = (await estimatesApi.list('OPEN', { size: 100 })).estimates;
     if (list.length === 0) {
       const cart = await estimatesApi.create({
         businessType: cartBusinessType,
       });
-      list = (await estimatesApi.list('OPEN')).estimates;
+      list = (await estimatesApi.list('OPEN', { size: 100 })).estimates;
       return { estimates: list, purchaseId: cart.purchaseId };
     }
     return { estimates: list, purchaseId: list[0].purchaseId };
@@ -477,7 +477,7 @@ export function ProductSearchPage() {
       const cart = await estimatesApi.create({
         businessType: cartBusinessType,
       });
-      const list = (await estimatesApi.list('OPEN')).estimates;
+      const list = (await estimatesApi.list('OPEN', { size: 100 })).estimates;
       setEstimatePickerList(list);
       await commitAddToEstimate(estimatePickerItem, cart.purchaseId, list);
     } catch (err) {

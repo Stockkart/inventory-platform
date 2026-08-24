@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import {
   Alert,
   Badge,
@@ -9,14 +9,19 @@ import {
   EmptyState,
   Inline,
   PageHeader,
+  PaginationBar,
+  SearchInput,
   Stack,
   Text,
   accountingChrome,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import { estimatesApi } from '../api/estimates.api';
+import { estimateWorkspaceHref, isEstimateWorkspaceSearch } from '../lib/estimatePaths';
 import type { EstimateState, EstimateSummary } from '@inventory-platform/product/types';
 import { PrintInvoiceModal } from '../ui/PrintInvoiceModal';
+import { ScanSellPage } from './ScanSellPage';
 
 function formatMoney(n: number): string {
   return new Intl.NumberFormat('en-IN', {
@@ -46,7 +51,7 @@ type FilterTab = 'OPEN' | 'CONVERTED' | 'ALL';
 
 export function meta() {
   return [
-    { title: 'Estimates - StockKart' },
+    { title: 'Sell Estimate - StockKart' },
     {
       name: 'description',
       content: 'Create printable estimates and convert them to invoices',
@@ -55,6 +60,14 @@ export function meta() {
 }
 
 export function EstimatesPage() {
+  const [searchParams] = useSearchParams();
+  if (isEstimateWorkspaceSearch(searchParams)) {
+    return <ScanSellPage forceEstimateMode />;
+  }
+  return <EstimatesListPage />;
+}
+
+function EstimatesListPage() {
   const navigate = useNavigate();
   const { error: notifyError } = useNotify;
   const [filter, setFilter] = useState<FilterTab>('OPEN');
@@ -63,6 +76,12 @@ export function EstimatesPage() {
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [printTarget, setPrintTarget] = useState<EstimateSummary | null>(null);
+  const [searchInput, setSearchInput] = useState('');
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -70,14 +89,20 @@ export function EstimatesPage() {
     try {
       const state: EstimateState | undefined =
         filter === 'ALL' ? undefined : filter === 'OPEN' ? 'OPEN' : 'CONVERTED';
-      const res = await estimatesApi.list(state);
+      const res = await estimatesApi.list(state, {
+        q: query || undefined,
+        page,
+        size: pageSize,
+      });
       setEstimates(res.estimates);
+      setTotal(res.total ?? res.estimates.length);
+      setTotalPages(res.totalPages ?? 1);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load estimates');
     } finally {
       setLoading(false);
     }
-  }, [filter]);
+  }, [filter, query, page, pageSize]);
 
   useEffect(() => {
     void load();
@@ -93,13 +118,21 @@ export function EstimatesPage() {
   );
 
   const handleNew = () => {
-    navigate('/dashboard/scan-sell?mode=estimate&fresh=1');
+    navigate(estimateWorkspaceHref({ fresh: true }));
+  };
+
+  const handleSearch = () => {
+    setQuery(searchInput.trim());
+    setPage(0);
+  };
+
+  const handleFilterChange = (next: FilterTab) => {
+    setFilter(next);
+    setPage(0);
   };
 
   const handleOpen = (estimate: EstimateSummary) => {
-    navigate(
-      `/dashboard/scan-sell?mode=estimate&purchaseId=${encodeURIComponent(estimate.purchaseId)}`,
-    );
+    navigate(estimateWorkspaceHref({ purchaseId: estimate.purchaseId }));
   };
 
   const handleConvert = async (estimate: EstimateSummary) => {
@@ -132,7 +165,7 @@ export function EstimatesPage() {
   return (
     <Stack gap="md" maxWidth="xl" mx="auto">
       <PageHeader
-        title="Estimates"
+        title="Sell Estimate"
         description="Build quotes with tax, print them, then convert one-way to an invoice."
         actions={
           <Button type="button" variant="solid" onClick={handleNew}>
@@ -159,7 +192,7 @@ export function EstimatesPage() {
                 variant={active ? 'solid' : 'ghost'}
                 size="sm"
                 aria-selected={active}
-                onClick={() => setFilter(tab.id)}
+                onClick={() => handleFilterChange(tab.id)}
               >
                 {tab.label}
               </Button>
@@ -168,16 +201,41 @@ export function EstimatesPage() {
         </Inline>
       </Box>
 
+      <Box flex="1" className={surfaceChrome.minW280} width="full">
+        <SearchInput
+          value={searchInput}
+          onChange={setSearchInput}
+          onSearch={handleSearch}
+          showSearchButton
+          buttonVariant="solid"
+          grow
+          placeholder="Search by estimate no, customer name, phone, or email…"
+          disabled={loading}
+          searchLabel={loading ? 'Searching…' : 'Search'}
+        />
+      </Box>
+
+      <Text as="span" variant="caption" color="secondary">
+        {loading ? 'Loading…' : `${total} estimate${total === 1 ? '' : 's'}`}
+        {query ? ` matching “${query}”` : null}
+      </Text>
+
       {loading ? (
         <CenteredLoader label="Loading estimates…" />
       ) : estimates.length === 0 ? (
         <EmptyState
-          title="No estimates yet"
-          description="Create an estimate from Scan & Sell, tweak amounts, print, then convert to invoice."
+          title={query ? 'No matching estimates' : 'No estimates yet'}
+          description={
+            query
+              ? 'Try a different estimate number, customer name, phone, or email.'
+              : 'Start a new estimate, add products, print, then convert to an invoice when the customer confirms.'
+          }
           action={
-            <Button type="button" variant="solid" onClick={handleNew}>
-              New estimate
-            </Button>
+            query ? undefined : (
+              <Button type="button" variant="solid" onClick={handleNew}>
+                New estimate
+              </Button>
+            )
           }
         />
       ) : (
@@ -203,6 +261,7 @@ export function EstimatesPage() {
                     <Text variant="body" color="secondary">
                       {estimate.customerName}
                       {estimate.customerPhone ? ` · ${estimate.customerPhone}` : ''}
+                      {estimate.customerEmail ? ` · ${estimate.customerEmail}` : ''}
                     </Text>
                     <Text variant="caption" color="secondary">
                       {estimate.itemCount} item{estimate.itemCount === 1 ? '' : 's'} ·{' '}
@@ -262,6 +321,23 @@ export function EstimatesPage() {
           })}
         </Stack>
       )}
+
+      {total > 0 ? (
+        <PaginationBar
+          page={page}
+          totalPages={Math.max(1, totalPages)}
+          totalItems={total}
+          pageSize={pageSize}
+          pageSizeOptions={[10, 20, 50]}
+          onPageChange={setPage}
+          onPageSizeChange={(n) => {
+            setPageSize(n);
+            setPage(0);
+          }}
+          disabled={loading}
+          aria-label="Estimate pages"
+        />
+      ) : null}
 
       {printTarget ? (
         <PrintInvoiceModal
