@@ -2562,7 +2562,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
         };
         return next;
       });
-      syncCartToAPI(updatedItems);
+      syncCartToAPI(updatedItems, inventoryId, 0);
       return updatedItems;
     });
   };
