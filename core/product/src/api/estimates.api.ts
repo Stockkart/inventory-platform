@@ -21,7 +21,7 @@ export const estimatesApi = {
     state?: EstimateState,
     options?: Omit<EstimateListParams, 'state'>,
   ): Promise<EstimateListResponse> => {
-    const params: Record<string, string | number> = {};
+    const params: Record<string, string> = {};
     if (state) {
       params.state = state;
     }
@@ -29,10 +29,10 @@ export const estimatesApi = {
       params.q = options.q.trim();
     }
     if (options?.page != null) {
-      params.page = options.page;
+      params.page = String(options.page);
     }
     if (options?.size != null) {
-      params.size = options.size;
+      params.size = String(options.size);
     }
     const response = await apiClient.get<ApiResponse<EstimateListResponse>>(
       ESTIMATE_ENDPOINTS.BASE,
