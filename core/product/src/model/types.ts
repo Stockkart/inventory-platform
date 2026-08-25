@@ -595,6 +595,11 @@ export interface InventorySearchParams {
   limit?: number;
   /** Extension field filters, e.g. sellDirect=true */
   filters?: Record<string, string>;
+  /**
+   * Sold-out lots are returned unless this is false. Selling screens pass false; stock
+   * correction and pricing screens need the sold-out lots and leave it alone.
+   */
+  includeZeroStock?: boolean;
 }
 
 export interface PaginationInventoryResponse {

@@ -1154,7 +1154,12 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       setIsSearching(true);
       setError(null);
       try {
-        const response = await inventoryApi.search(query.trim(), pageNum, pageSize);
+        // Sold-out lots cannot be added to a bill, so the counter never sees them here.
+        const response = await inventoryApi.search({
+          q: query.trim(),
+          limit: pageSize,
+          includeZeroStock: false,
+        });
         let items: InventoryItem[] = [];
         if (response) {
           if (Array.isArray(response)) items = response;

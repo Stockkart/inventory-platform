@@ -22,6 +22,7 @@ import {
   SearchInput,
   SegmentedControl,
   Stack,
+  Switch,
   Text,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
@@ -69,6 +70,8 @@ export function ProductSearchPage() {
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
   const [billingModeFilter, setBillingModeFilter] = useState<'ALL' | BillingMode>('ALL');
+  // Sold-out lots are dead weight at the counter, so they are hidden until asked for.
+  const [includeZeroStock, setIncludeZeroStock] = useState(false);
   const [quotationPickerItem, setQuotationPickerItem] = useState<InventoryItem | null>(null);
   const [quotationPickerList, setQuotationPickerList] = useState<QuotationSummary[]>([]);
   const [estimatePickerItem, setEstimatePickerItem] = useState<InventoryItem | null>(null);
@@ -100,11 +103,11 @@ export function ProductSearchPage() {
     });
   }, [activeShopId, fetchShopSchema]);
 
-  const fetchAllInventory = async (page = 0, size = 10) => {
+  const fetchAllInventory = async (page = 0, size = 10, withZeroStock = includeZeroStock) => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await inventoryApi.getAll(page, size);
+      const response = await inventoryApi.getAll(page, size, withZeroStock);
       setInventory(sortInventoryByExpirySoonest(response.data || []));
       // Update pagination info if available
       if (response.page) {
@@ -126,7 +129,11 @@ export function ProductSearchPage() {
     }
   };
 
-  const handleSearch = async (pageNum?: number, pageSize?: number) => {
+  const handleSearch = async (
+    pageNum?: number,
+    pageSize?: number,
+    withZeroStock = includeZeroStock,
+  ) => {
     const currentPage = pageNum !== undefined ? pageNum : 0;
     const currentPageSize = pageSize !== undefined ? pageSize : searchPageSize;
 
@@ -139,7 +146,7 @@ export function ProductSearchPage() {
     }
 
     if (!hasActiveSearch) {
-      fetchAllInventory(currentPage, currentPageSize);
+      fetchAllInventory(currentPage, currentPageSize, withZeroStock);
       return;
     }
 
@@ -150,6 +157,7 @@ export function ProductSearchPage() {
         q: searchQuery.trim(),
         limit: currentPageSize,
         sort: 'expiryDate:asc',
+        includeZeroStock: withZeroStock,
       });
       setInventory(sortInventoryByExpirySoonest(response.data || []));
       const total = response.data?.length ?? 0;
@@ -171,6 +179,14 @@ export function ProductSearchPage() {
     setSearchTotalPages(0);
     setSearchTotalItems(0);
     fetchAllInventory(0, searchPageSize);
+  };
+
+  // Re-run whatever is on screen against the new setting. The flag is passed rather than read
+  // from state because this runs in the same tick as the state update.
+  const handleIncludeZeroStockChange = (next: boolean) => {
+    setIncludeZeroStock(next);
+    setSearchPage(0);
+    void handleSearch(0, searchPageSize, next);
   };
 
   const openProductDetails = async (item: InventoryItem) => {
@@ -472,6 +488,13 @@ export function ProductSearchPage() {
             searchLabel={isLoading ? 'Searching…' : 'Search'}
           />
         </Box>
+        <Box className={surfaceChrome.searchFilterDivider} aria-hidden />
+        <Switch
+          label="Include dump stock"
+          checked={includeZeroStock}
+          onChange={(e) => handleIncludeZeroStockChange(e.target.checked)}
+          disabled={isLoading}
+        />
         <Box className={surfaceChrome.searchFilterDivider} aria-hidden />
         <SegmentedControl
           value={billingModeFilter}
