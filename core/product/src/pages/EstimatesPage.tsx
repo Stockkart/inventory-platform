@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import {
   Alert,
-  Badge,
   Box,
   Button,
   CenteredLoader,
@@ -20,32 +19,8 @@ import { useNotify } from '@inventory-platform/session';
 import { estimatesApi } from '../api/estimates.api';
 import { estimateWorkspaceHref, isEstimateWorkspaceSearch } from '../lib/estimatePaths';
 import type { EstimateState, EstimateSummary } from '@inventory-platform/product/types';
-import { PrintInvoiceModal } from '../ui/PrintInvoiceModal';
+import { EstimateListCard } from '../ui/EstimateListCard';
 import { ScanSellPage } from './ScanSellPage';
-
-function formatMoney(n: number): string {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(n);
-}
-
-function formatDate(value?: string): string {
-  if (!value) return '—';
-  try {
-    return new Date(value).toLocaleString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  } catch {
-    return value;
-  }
-}
 
 type FilterTab = 'OPEN' | 'CONVERTED' | 'ALL';
 
@@ -75,7 +50,6 @@ function EstimatesListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [printTarget, setPrintTarget] = useState<EstimateSummary | null>(null);
   const [searchInput, setSearchInput] = useState('');
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(0);
@@ -239,86 +213,17 @@ function EstimatesListPage() {
           }
         />
       ) : (
-        <Stack gap="sm">
-          {estimates.map((estimate) => {
-            const busy = busyId === estimate.purchaseId;
-            const isOpen = estimate.estimateState === 'OPEN';
-            return (
-              <Box key={estimate.purchaseId} border rounded="md" padding="md" bg="elevated">
-                <Inline justify="between" align="start" gap="md" flexWrap>
-                  <Stack gap="xs">
-                    <Inline gap="sm" align="center" flexWrap>
-                      <Text weight="semibold">{estimate.estimateNo?.trim() || 'Estimate'}</Text>
-                      <Badge variant={isOpen ? 'info' : 'neutral'}>
-                        {estimate.estimateState === 'OPEN' ? 'Open' : 'Converted'}
-                      </Badge>
-                      {estimate.billingMode === 'REGULAR' ? (
-                        <Badge variant="neutral">Tax</Badge>
-                      ) : estimate.billingMode === 'BASIC' ? (
-                        <Badge variant="neutral">Basic</Badge>
-                      ) : null}
-                    </Inline>
-                    <Text variant="body" color="secondary">
-                      {estimate.customerName}
-                      {estimate.customerPhone ? ` · ${estimate.customerPhone}` : ''}
-                      {estimate.customerEmail ? ` · ${estimate.customerEmail}` : ''}
-                    </Text>
-                    <Text variant="caption" color="secondary">
-                      {estimate.itemCount} item{estimate.itemCount === 1 ? '' : 's'} ·{' '}
-                      {formatMoney(estimate.grandTotal)} · Updated {formatDate(estimate.updatedAt)}
-                    </Text>
-                    {estimate.convertedToPurchaseId ? (
-                      <Text variant="caption" color="secondary">
-                        Converted — open History for the invoice.
-                      </Text>
-                    ) : null}
-                  </Stack>
-                  <Inline gap="sm" flexWrap>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={busy}
-                      onClick={() => handleOpen(estimate)}
-                    >
-                      {isOpen ? 'Edit' : 'View'}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={busy}
-                      onClick={() => setPrintTarget(estimate)}
-                    >
-                      Print
-                    </Button>
-                    {isOpen ? (
-                      <>
-                        <Button
-                          type="button"
-                          variant="solid"
-                          size="sm"
-                          disabled={busy || estimate.itemCount === 0}
-                          onClick={() => void handleConvert(estimate)}
-                        >
-                          {busy ? 'Converting…' : 'Convert to invoice'}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          disabled={busy}
-                          onClick={() => void handleDiscard(estimate)}
-                        >
-                          Discard
-                        </Button>
-                      </>
-                    ) : null}
-                  </Inline>
-                </Inline>
-              </Box>
-            );
-          })}
+        <Stack gap="lg">
+          {estimates.map((estimate) => (
+            <EstimateListCard
+              key={estimate.purchaseId}
+              estimate={estimate}
+              busy={busyId === estimate.purchaseId}
+              onEdit={() => handleOpen(estimate)}
+              onConvert={() => void handleConvert(estimate)}
+              onDiscard={() => void handleDiscard(estimate)}
+            />
+          ))}
         </Stack>
       )}
 
@@ -336,17 +241,6 @@ function EstimatesListPage() {
           }}
           disabled={loading}
           aria-label="Estimate pages"
-        />
-      ) : null}
-
-      {printTarget ? (
-        <PrintInvoiceModal
-          isOpen
-          onClose={() => setPrintTarget(null)}
-          purchaseId={printTarget.purchaseId}
-          invoiceNo={printTarget.estimateNo ?? undefined}
-          documentLabel="Estimate"
-          onError={(message) => notifyError(message)}
         />
       ) : null}
     </Stack>

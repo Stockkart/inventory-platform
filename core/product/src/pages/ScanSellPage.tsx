@@ -77,6 +77,7 @@ import {
   isEstimateWorkspaceSearch,
   isLegacyEstimateWorkspacePath,
 } from '../lib/estimatePaths';
+import { rememberOpenQuotationId, readOpenQuotationId } from '../lib/sellSession';
 import { sellCatalogApi } from '../api/sell-catalog.api';
 import { pricingClient } from '../api/pricing-client.api';
 import { gstAmountRowLabel, uniqueGstRateLabel } from '../lib/gstRateLabel';
@@ -172,6 +173,7 @@ import {
   CustomerProductHistoryHint,
   shouldShowCustomerHistorySubrow,
   PrintInvoiceModal,
+  PendingCustomerSellFlow,
 } from '../ui';
 import { CustomerSearchPanel } from '../ui/CustomerSearchPanel';
 import { ScanSellQuotationStack } from '../ui/ScanSellQuotationStack';
@@ -285,12 +287,12 @@ function formatCartPackagingMeta(cartItem: CartItem): string {
   return conv ? `${conv} · ${line}` : line;
 }
 
-/** Format purchase scheme from inventory (registration) for read-only display. Uses purchase* when present (from API). */
+/** Format purchase scheme from inventory (registration) for the read-only hint above the sale scheme field. */
 function formatPurchaseSchemeLabel(inv: InventoryItem): string {
-  const schemeType = inv.purchaseSchemeType ?? inv.schemeType;
-  const schemePercentage = inv.purchaseSchemePercentage ?? inv.schemePercentage;
-  const schemePayFor = inv.purchaseSchemePayFor ?? inv.schemePayFor;
-  const schemeFree = inv.purchaseSchemeFree ?? inv.schemeFree;
+  const schemeType = inv.purchaseSchemeType;
+  const schemePercentage = inv.purchaseSchemePercentage;
+  const schemePayFor = inv.purchaseSchemePayFor;
+  const schemeFree = inv.purchaseSchemeFree;
   if (schemeType === 'PERCENTAGE' && schemePercentage != null) {
     return `${schemePercentage}%`;
   }
@@ -300,9 +302,9 @@ function formatPurchaseSchemeLabel(inv: InventoryItem): string {
   return '—';
 }
 
-/** Get purchase additional discount from inventory (registration). Uses purchase* when present. */
+/** Purchase additional discount from product registration only — never the sale DISC input. */
 function getPurchaseAdditionalDiscount(inv: InventoryItem): number | null {
-  return inv.purchaseAdditionalDiscount ?? inv.saleAdditionalDiscount ?? null;
+  return inv.purchaseAdditionalDiscount ?? null;
 }
 
 function CartQuantityInput({
@@ -765,6 +767,8 @@ function CustomerSectionBlock({
   setCustomerSectionOpen,
   selectedCustomer,
   summaryLabel,
+  walkInName,
+  onWalkInNameChange,
   onSelectCustomer,
   onClearCustomer,
   disabled,
@@ -774,6 +778,8 @@ function CustomerSectionBlock({
   setCustomerSectionOpen: (open: boolean | ((o: boolean) => boolean)) => void;
   selectedCustomer: CustomerResponse | null;
   summaryLabel: string;
+  walkInName: string;
+  onWalkInNameChange: (value: string) => void;
   onSelectCustomer: (customer: CustomerResponse) => void;
   onClearCustomer: () => void;
   disabled?: boolean;
@@ -807,6 +813,8 @@ function CustomerSectionBlock({
             onSelect={onSelectCustomer}
             onClear={onClearCustomer}
             disabled={disabled}
+            walkInName={walkInName}
+            onWalkInNameChange={onWalkInNameChange}
           />
         </Stack>
       ) : null}
@@ -1047,9 +1055,13 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   }, [location.key]);
 
   useLayoutEffect(() => {
-    const raw = (location.state as { prefillCustomer?: CustomerResponse } | null | undefined)
-      ?.prefillCustomer;
+    const state = location.state as
+      | { prefillCustomer?: CustomerResponse; pickSellDestination?: boolean }
+      | null
+      | undefined;
+    const raw = state?.prefillCustomer;
     if (!raw?.customerId) return;
+    if (state?.pickSellDestination) return;
     scanSellCustomerPrefillRef.current = raw;
     navigate(location.pathname, { replace: true, state: {} });
   }, [location.state, location.pathname, navigate]);
@@ -1393,6 +1405,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   const applyCartToState = (cart: CartResponse, previousItems: CartItem[] = []) => {
     setCartData(cart);
     setActivePurchaseId(cart.purchaseId);
+    rememberOpenQuotationId(cart.purchaseId);
     applyCustomerFieldsFromCart(cart);
     setCartItems(mergeCartResponseToItems(cart, previousItems));
   };
@@ -1612,7 +1625,8 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     try {
       // In-progress checkout (PENDING) is not in the open-quotation list.
       // Resume it instead of creating a new empty cart.
-      const preferredId = estimatePurchaseIdParam?.trim() || activePurchaseId || undefined;
+      const preferredId =
+        estimatePurchaseIdParam?.trim() || activePurchaseId || readOpenQuotationId() || undefined;
       if (preferredId) {
         try {
           const preferred = await cartApi.get(preferredId);
@@ -2223,6 +2237,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       if (thisSyncVersion !== syncVersionRef.current) return;
       setCartData(updatedCart);
       setActivePurchaseId(updatedCart.purchaseId);
+      rememberOpenQuotationId(updatedCart.purchaseId);
       // Merge response into local state (no extra inventory/search API calls)
       setCartItems(mergeCartResponseToItems(updatedCart, items));
       void refreshQuotationList();
@@ -2562,7 +2577,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
         };
         return next;
       });
-      syncCartToAPI(updatedItems);
+      syncCartToAPI(updatedItems, inventoryId, 0);
       return updatedItems;
     });
   };
@@ -2972,6 +2987,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       mx={isCafeSell ? undefined : 'auto'}
       className={isCafeSell ? scanSellCafePageShell : scanSellPageShell}
     >
+      <PendingCustomerSellFlow sellPath={location.pathname} />
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
       <PageHeader
@@ -3072,6 +3088,8 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                       setCustomerSectionOpen={setCustomerSectionOpen}
                       selectedCustomer={selectedCustomer}
                       summaryLabel={customerSectionSummary(customerName, customerPhone)}
+                      walkInName={customerName}
+                      onWalkInNameChange={setCustomerName}
                       onSelectCustomer={handleSelectCustomer}
                       onClearCustomer={handleClearCustomer}
                       disabled={isUpdatingCart || isLoadingCart}
@@ -3826,6 +3844,8 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                     setCustomerSectionOpen={setCustomerSectionOpen}
                     selectedCustomer={selectedCustomer}
                     summaryLabel={customerSectionSummary(customerName, customerPhone)}
+                    walkInName={customerName}
+                    onWalkInNameChange={setCustomerName}
                     onSelectCustomer={handleSelectCustomer}
                     onClearCustomer={handleClearCustomer}
                     disabled={isUpdatingCart || isLoadingCart}

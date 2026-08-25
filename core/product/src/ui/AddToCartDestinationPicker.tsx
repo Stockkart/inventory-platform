@@ -20,6 +20,8 @@ export interface AddToCartDestinationPickerProps {
   isSubmitting: boolean;
   onSelect: (destination: CartDestination) => void;
   onCancel: () => void;
+  title?: string;
+  promptPrefix?: string;
 }
 
 const DESTINATIONS: Array<{
@@ -48,14 +50,19 @@ export function AddToCartDestinationPicker({
   isSubmitting,
   onSelect,
   onCancel,
+  title = 'Add to cart',
+  promptPrefix = 'Choose a destination for',
 }: AddToCartDestinationPickerProps) {
   return (
     <Modal open={open} onClose={onCancel} size="sm">
-      <Modal.Header title="Add to cart" onClose={onCancel} />
+      <Modal.Header title={title} onClose={onCancel} />
       <Modal.Body>
         <Stack gap="md">
           <Text color="secondary">
-            Choose a destination for <Text weight="semibold">{productLabel}</Text>.
+            {promptPrefix}{' '}
+            <Text as="span" weight="semibold">
+              {productLabel}
+            </Text>
           </Text>
 
           <Box

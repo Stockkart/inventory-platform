@@ -194,7 +194,7 @@ export function CustomersPage() {
 
   const goScanSellWithCustomer = (customer: CustomerResponse) => {
     navigate(sellPath, {
-      state: { prefillCustomer: customer },
+      state: { prefillCustomer: customer, pickSellDestination: true },
     });
   };
 

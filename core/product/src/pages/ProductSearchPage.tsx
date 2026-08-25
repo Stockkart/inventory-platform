@@ -28,6 +28,7 @@ import {
 import { Search } from 'lucide-react';
 import { InventoryAlertDetails, ProductSearchCard, normalizedBillingMode } from '../ui';
 import { sortInventoryByExpirySoonest } from '@inventory-platform/schema';
+import { rememberOpenQuotationId } from '../lib/sellSession';
 import {
   useAuthStore,
   useNotify,
@@ -249,36 +250,6 @@ export function ProductSearchPage() {
     }
   };
 
-  const resolveTargetQuotation = async (): Promise<{
-    quotations: QuotationSummary[];
-    purchaseId: string;
-  }> => {
-    let list = (await cartApi.listQuotations()).quotations;
-    if (list.length === 0) {
-      const cart = await cartApi.createQuotation({
-        businessType: cartBusinessType,
-      });
-      list = (await cartApi.listQuotations()).quotations;
-      return { quotations: list, purchaseId: cart.purchaseId };
-    }
-    return { quotations: list, purchaseId: list[0].purchaseId };
-  };
-
-  const resolveTargetEstimate = async (): Promise<{
-    estimates: EstimateSummary[];
-    purchaseId: string;
-  }> => {
-    let list = (await estimatesApi.list('OPEN', { size: 100 })).estimates;
-    if (list.length === 0) {
-      const cart = await estimatesApi.create({
-        businessType: cartBusinessType,
-      });
-      list = (await estimatesApi.list('OPEN', { size: 100 })).estimates;
-      return { estimates: list, purchaseId: cart.purchaseId };
-    }
-    return { estimates: list, purchaseId: list[0].purchaseId };
-  };
-
   const commitAddToSell = async (
     item: InventoryItem,
     purchaseId: string,
@@ -293,6 +264,7 @@ export function ProductSearchPage() {
     setSuccessMessage(null);
     try {
       await addItemToCartDocument(item, purchaseId);
+      rememberOpenQuotationId(purchaseId);
       const quotation = quotations.find((q) => q.purchaseId === purchaseId);
       notifyAddedToQuotation(item, quotation);
       setQuotationPickerItem(null);
@@ -377,20 +349,14 @@ export function ProductSearchPage() {
       return;
     }
 
-    setAddingToCart(inventoryId);
     setError(null);
     try {
-      const { quotations, purchaseId } = await resolveTargetQuotation();
-      if (quotations.length > 1) {
-        setQuotationPickerList(quotations);
-        setQuotationPickerItem(item);
-        setAddingToCart(null);
-        return;
-      }
-      await commitAddToSell(item, purchaseId, quotations);
+      const list = (await cartApi.listQuotations()).quotations;
+      setQuotationPickerList(list);
+      setQuotationPickerItem(item);
     } catch (err) {
       handleAddToCartDocumentError(err, 'quotation');
-      setAddingToCart(null);
+      setDestinationPickerItem(item);
     }
   };
 
@@ -411,20 +377,14 @@ export function ProductSearchPage() {
       return;
     }
 
-    setAddingToCart(inventoryId);
     setError(null);
     try {
-      const { estimates, purchaseId } = await resolveTargetEstimate();
-      if (estimates.length > 1) {
-        setEstimatePickerList(estimates);
-        setEstimatePickerItem(item);
-        setAddingToCart(null);
-        return;
-      }
-      await commitAddToEstimate(item, purchaseId, estimates);
+      const list = (await estimatesApi.list('OPEN', { size: 100 })).estimates;
+      setEstimatePickerList(list);
+      setEstimatePickerItem(item);
     } catch (err) {
       handleAddToCartDocumentError(err, 'estimate');
-      setAddingToCart(null);
+      setDestinationPickerItem(item);
     }
   };
 
@@ -494,7 +454,7 @@ export function ProductSearchPage() {
 
   return (
     <Stack gap="md">
-      <PageHeader description="Search by product name, barcode, or batch number" />
+      <PageHeader description="Search by name, company, location, barcode, HSN, or batch" />
 
       <Box className={surfaceChrome.searchFilterBar}>
         <Box className={surfaceChrome.searchFilterGrow}>
@@ -507,7 +467,7 @@ export function ProductSearchPage() {
             onChange={setSearchQuery}
             onSearch={() => void handleSearch()}
             showSearchButton
-            placeholder="Name, barcode, or batch number"
+            placeholder="Name, company, location, barcode, HSN, or batch"
             disabled={isLoading}
             searchLabel={isLoading ? 'Searching…' : 'Search'}
           />
