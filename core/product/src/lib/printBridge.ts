@@ -100,21 +100,22 @@ export async function isBridgeUp(
  *
  * Classification of failures, by design:
  * - `fetch()` itself never settling (no connection, refused, or aborted
- *   before headers arrived) is UNREACHABLE: the bridge was never reached.
- * - A settled response with a non-2xx status is REJECTED, carrying
- *   `response.status`: the bridge was reached and explicitly refused.
- * - A settled 2xx response whose body read is later aborted by the timeout
- *   is also UNREACHABLE: headers said OK, but we never got confirmation the
- *   job was accepted, so callers should treat it the same as never having
- *   reached the bridge and fall back to a file download rather than assume
- *   a stalled connection printed.
- * - A settled 2xx response with a body that fails to parse (but was not
- *   aborted) is REJECTED, carrying `response.status`: the bridge was
- *   definitely reached and definitely answered, just with content we can't
- *   use.
+ *   before headers arrived) is UNREACHABLE: the bridge was never reached at
+ *   all, so a caller's file-download fallback is honest - nothing was
+ *   printed.
+ * - Everything else - a settled response with a non-2xx status, a settled
+ *   2xx response whose body fails to parse, or a settled 2xx response whose
+ *   body read is later aborted by the timeout - is REJECTED, carrying
+ *   `response.status`: the bridge was reached and did answer. Under this
+ *   wire contract a 202 means the job was queued, not that printing
+ *   finished, so a timeout while confirming the body very likely means the
+ *   job already reached the printer. Treating that as UNREACHABLE would
+ *   make a caller's fallback silently produce a second physical invoice;
+ *   REJECTED surfaces an actionable error instead.
  *
- * @throws PrintBridgeError with kind UNREACHABLE when the bridge cannot be contacted,
- *     or kind REJECTED (carrying the HTTP status) when the bridge refuses the job.
+ * @throws PrintBridgeError with kind UNREACHABLE only when the bridge could not be
+ *     contacted at all, or kind REJECTED (carrying the HTTP status) for every case
+ *     where the bridge was reached but the job could not be confirmed accepted.
  *     Never throws anything else, including a raw parse error.
  */
 export async function sendToBridge(
@@ -142,13 +143,11 @@ export async function sendToBridge(
     try {
       return (await response.json()) as PrintJobAccepted;
     } catch (err) {
-      if (err instanceof PrintBridgeError) {
-        throw err;
-      }
       if (err instanceof Error && err.name === 'AbortError') {
         throw new PrintBridgeError(
-          'Print bridge stopped responding while confirming the job',
-          'UNREACHABLE',
+          'Print bridge stopped responding while confirming the job; it may already have printed.',
+          'REJECTED',
+          response.status,
         );
       }
       throw new PrintBridgeError(
