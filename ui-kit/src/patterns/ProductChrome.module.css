@@ -1941,6 +1941,13 @@
   background: color-mix(in srgb, #0f172a 2%, var(--sk-color-bg-elevated, #fff));
 }
 
+.historyTotalsPanel {
+  /* Sits under the line items in the same panel; a bill's totals belong on the right, and the
+     column is narrow so the labels stay next to their figures on a wide table. */
+  margin: 0.9rem 0 0 auto;
+  max-width: 22rem;
+}
+
 .historyItemsTitle {
   margin: 0 0 0.65rem;
   font-size: 0.75rem;

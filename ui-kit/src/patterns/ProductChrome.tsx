@@ -243,6 +243,7 @@ export const productChrome = {
   historyRecordFooterAfterItems: styles.historyRecordFooterAfterItems,
   historyItemsPanel: styles.historyItemsPanel,
   historyItemsTitle: styles.historyItemsTitle,
+  historyTotalsPanel: styles.historyTotalsPanel,
   historyItemsTable: styles.historyItemsTable,
   estimateBar: styles.estimateBar,
   estimateCreditBar: styles.estimateCreditBar,
