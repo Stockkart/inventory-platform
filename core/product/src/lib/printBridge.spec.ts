@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  BRIDGE_HEALTH_TIMEOUT_MS,
   BRIDGE_ORIGIN,
+  BRIDGE_PRINT_TIMEOUT_MS,
   PrintBridgeError,
   isBridgeUp,
   sendToBridge,
@@ -29,6 +31,21 @@ function jsonResponse(status: number, body: unknown): Response {
   });
 }
 
+/** A fetch mock whose returned promise only ever settles when the request's
+ * AbortSignal fires - it never resolves or rejects on its own. Used to prove
+ * a timeout genuinely aborts an in-flight call, rather than merely being
+ * simulated by pre-rejecting the mock. */
+function hangUntilAborted(): (url: string, init: RequestInit) => Promise<never> {
+  return (_url: string, init: RequestInit) =>
+    new Promise<never>((_resolve, reject) => {
+      init.signal?.addEventListener('abort', () => {
+        const abortError = new Error('The operation was aborted.');
+        abortError.name = 'AbortError';
+        reject(abortError);
+      });
+    });
+}
+
 describe('printBridge', () => {
   const fetchMock = vi.fn();
 
@@ -39,6 +56,7 @@ describe('printBridge', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   it('reports health when the bridge answers', async () => {
@@ -57,12 +75,17 @@ describe('printBridge', () => {
     await expect(isBridgeUp()).resolves.toBeNull();
   });
 
-  it('returns null when the health probe times out', async () => {
-    const abort = new Error('The operation was aborted.');
-    abort.name = 'AbortError';
-    fetchMock.mockRejectedValue(abort);
+  it('aborts the health probe once the timeout elapses, and resolves null', async () => {
+    vi.useFakeTimers();
+    fetchMock.mockImplementation(hangUntilAborted());
 
-    await expect(isBridgeUp()).resolves.toBeNull();
+    const result = isBridgeUp(BRIDGE_HEALTH_TIMEOUT_MS);
+    // Nothing has settled yet: the mock never resolves on its own.
+    await vi.advanceTimersByTimeAsync(BRIDGE_HEALTH_TIMEOUT_MS);
+
+    await expect(result).resolves.toBeNull();
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect((init.signal as AbortSignal).aborted).toBe(true);
   });
 
   it('returns null when the bridge answers with a non-200', async () => {
@@ -101,5 +124,43 @@ describe('printBridge', () => {
     expect(error).toBeInstanceOf(PrintBridgeError);
     expect(error.kind).toBe('UNREACHABLE');
     expect(error.status).toBeUndefined();
+  });
+
+  it('keeps the print timeout armed through the body read, aborting a stalled 2xx response as UNREACHABLE', async () => {
+    vi.useFakeTimers();
+    const bodyRead = hangUntilAborted();
+    fetchMock.mockImplementation(
+      (url: string, init: RequestInit) =>
+        Promise.resolve({
+          ok: true,
+          status: 202,
+          json: () => bodyRead(url, init),
+        }) as unknown as Promise<Response>,
+    );
+
+    // Attach the rejection handler synchronously, before advancing timers -
+    // the reject can happen inside advanceTimersByTimeAsync itself, and a
+    // handler attached afterwards would be too late to suppress the
+    // "unhandled rejection" that Node/Vitest would otherwise report.
+    const result = sendToBridge(JOB, BRIDGE_PRINT_TIMEOUT_MS).catch((e) => e);
+    // Headers "arrived" (the mock's outer promise already resolved), but the
+    // body read never settles on its own - only the timeout can end this.
+    await vi.advanceTimersByTimeAsync(BRIDGE_PRINT_TIMEOUT_MS);
+
+    const error = await result;
+    expect(error).toBeInstanceOf(PrintBridgeError);
+    expect(error.kind).toBe('UNREACHABLE');
+  });
+
+  it('wraps a malformed 2xx response body as a REJECTED PrintBridgeError, not a raw parse error', async () => {
+    fetchMock.mockResolvedValue(
+      new Response('not json', { status: 202, headers: { 'content-type': 'application/json' } }),
+    );
+
+    const error = await sendToBridge(JOB).catch((e) => e);
+    expect(error).toBeInstanceOf(PrintBridgeError);
+    expect(error).not.toBeInstanceOf(SyntaxError);
+    expect(error.kind).toBe('REJECTED');
+    expect(error.status).toBe(202);
   });
 });
