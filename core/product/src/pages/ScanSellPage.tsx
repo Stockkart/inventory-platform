@@ -77,6 +77,7 @@ import {
   isEstimateWorkspaceSearch,
   isLegacyEstimateWorkspacePath,
 } from '../lib/estimatePaths';
+import { rememberOpenQuotationId, readOpenQuotationId } from '../lib/sellSession';
 import { sellCatalogApi } from '../api/sell-catalog.api';
 import { pricingClient } from '../api/pricing-client.api';
 import { gstAmountRowLabel, uniqueGstRateLabel } from '../lib/gstRateLabel';
@@ -1393,6 +1394,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   const applyCartToState = (cart: CartResponse, previousItems: CartItem[] = []) => {
     setCartData(cart);
     setActivePurchaseId(cart.purchaseId);
+    rememberOpenQuotationId(cart.purchaseId);
     applyCustomerFieldsFromCart(cart);
     setCartItems(mergeCartResponseToItems(cart, previousItems));
   };
@@ -1612,7 +1614,8 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     try {
       // In-progress checkout (PENDING) is not in the open-quotation list.
       // Resume it instead of creating a new empty cart.
-      const preferredId = estimatePurchaseIdParam?.trim() || activePurchaseId || undefined;
+      const preferredId =
+        estimatePurchaseIdParam?.trim() || activePurchaseId || readOpenQuotationId() || undefined;
       if (preferredId) {
         try {
           const preferred = await cartApi.get(preferredId);
@@ -2223,6 +2226,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       if (thisSyncVersion !== syncVersionRef.current) return;
       setCartData(updatedCart);
       setActivePurchaseId(updatedCart.purchaseId);
+      rememberOpenQuotationId(updatedCart.purchaseId);
       // Merge response into local state (no extra inventory/search API calls)
       setCartItems(mergeCartResponseToItems(updatedCart, items));
       void refreshQuotationList();

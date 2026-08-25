@@ -28,6 +28,7 @@ import {
 import { Search } from 'lucide-react';
 import { InventoryAlertDetails, ProductSearchCard, normalizedBillingMode } from '../ui';
 import { sortInventoryByExpirySoonest } from '@inventory-platform/schema';
+import { readOpenQuotationId, rememberOpenQuotationId } from '../lib/sellSession';
 import {
   useAuthStore,
   useNotify,
@@ -259,9 +260,13 @@ export function ProductSearchPage() {
         businessType: cartBusinessType,
       });
       list = (await cartApi.listQuotations()).quotations;
+      rememberOpenQuotationId(cart.purchaseId);
       return { quotations: list, purchaseId: cart.purchaseId };
     }
-    return { quotations: list, purchaseId: list[0].purchaseId };
+    const remembered = readOpenQuotationId();
+    const purchaseId =
+      remembered && list.some((q) => q.purchaseId === remembered) ? remembered : list[0].purchaseId;
+    return { quotations: list, purchaseId };
   };
 
   const resolveTargetEstimate = async (): Promise<{
@@ -293,6 +298,7 @@ export function ProductSearchPage() {
     setSuccessMessage(null);
     try {
       await addItemToCartDocument(item, purchaseId);
+      rememberOpenQuotationId(purchaseId);
       const quotation = quotations.find((q) => q.purchaseId === purchaseId);
       notifyAddedToQuotation(item, quotation);
       setQuotationPickerItem(null);
