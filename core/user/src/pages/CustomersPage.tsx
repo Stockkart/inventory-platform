@@ -27,6 +27,7 @@ import { useResolvedSellPath } from '@inventory-platform/routing';
 import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/session';
 import { customersApi, customerHasUniqueIdentifier } from '../api/customers.api';
 import { CustomerEditForm } from '../ui';
+import { CustomerSellDestinationFlow } from '@inventory-platform/product';
 import type {
   CustomerResponse,
   CreateCustomerDto,
@@ -75,6 +76,7 @@ export function CustomersPage() {
   });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [sellCustomer, setSellCustomer] = useState<CustomerResponse | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -193,9 +195,7 @@ export function CustomersPage() {
   };
 
   const goScanSellWithCustomer = (customer: CustomerResponse) => {
-    navigate(sellPath, {
-      state: { prefillCustomer: customer },
-    });
+    setSellCustomer(customer);
   };
 
   const goReturnWithCustomer = (customer: CustomerResponse) => {
@@ -343,6 +343,13 @@ export function CustomersPage() {
           />
         ) : null}
       </EditModal>
+
+      <CustomerSellDestinationFlow
+        customer={sellCustomer}
+        open={sellCustomer !== null}
+        sellPath={sellPath}
+        onClose={() => setSellCustomer(null)}
+      />
     </Stack>
   );
 }

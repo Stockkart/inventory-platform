@@ -27,6 +27,7 @@
       "@inventory-platform/session/types": ["../../platform/session/src/model/index.ts"],
       "@inventory-platform/user/types": ["./src/model/index.ts"],
       "@inventory-platform/product/types": ["../product/src/model/index.ts"],
+      "@inventory-platform/product": ["../product/src/index.ts"],
       "@inventory-platform/analytics/types": ["../analytics/src/model/index.ts"],
       "@inventory-platform/reminders/types": ["../reminders/src/model/index.ts"],
       "@inventory-platform/credit/types": ["../credit/src/model/index.ts"],

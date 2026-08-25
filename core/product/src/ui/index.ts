@@ -53,6 +53,7 @@ export type {
   AddToCartDestinationPickerProps,
   CartDestination,
 } from './AddToCartDestinationPicker';
+export { CustomerSellDestinationFlow } from './CustomerSellDestinationFlow';
 export {
   CustomerProductHistoryHint,
   shouldShowCustomerHistorySubrow,

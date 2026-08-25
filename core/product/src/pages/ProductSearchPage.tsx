@@ -28,7 +28,7 @@ import {
 import { Search } from 'lucide-react';
 import { InventoryAlertDetails, ProductSearchCard, normalizedBillingMode } from '../ui';
 import { sortInventoryByExpirySoonest } from '@inventory-platform/schema';
-import { readOpenQuotationId, rememberOpenQuotationId } from '../lib/sellSession';
+import { rememberOpenQuotationId } from '../lib/sellSession';
 import {
   useAuthStore,
   useNotify,
@@ -250,40 +250,6 @@ export function ProductSearchPage() {
     }
   };
 
-  const resolveTargetQuotation = async (): Promise<{
-    quotations: QuotationSummary[];
-    purchaseId: string;
-  }> => {
-    let list = (await cartApi.listQuotations()).quotations;
-    if (list.length === 0) {
-      const cart = await cartApi.createQuotation({
-        businessType: cartBusinessType,
-      });
-      list = (await cartApi.listQuotations()).quotations;
-      rememberOpenQuotationId(cart.purchaseId);
-      return { quotations: list, purchaseId: cart.purchaseId };
-    }
-    const remembered = readOpenQuotationId();
-    const purchaseId =
-      remembered && list.some((q) => q.purchaseId === remembered) ? remembered : list[0].purchaseId;
-    return { quotations: list, purchaseId };
-  };
-
-  const resolveTargetEstimate = async (): Promise<{
-    estimates: EstimateSummary[];
-    purchaseId: string;
-  }> => {
-    let list = (await estimatesApi.list('OPEN', { size: 100 })).estimates;
-    if (list.length === 0) {
-      const cart = await estimatesApi.create({
-        businessType: cartBusinessType,
-      });
-      list = (await estimatesApi.list('OPEN', { size: 100 })).estimates;
-      return { estimates: list, purchaseId: cart.purchaseId };
-    }
-    return { estimates: list, purchaseId: list[0].purchaseId };
-  };
-
   const commitAddToSell = async (
     item: InventoryItem,
     purchaseId: string,
@@ -383,20 +349,14 @@ export function ProductSearchPage() {
       return;
     }
 
-    setAddingToCart(inventoryId);
     setError(null);
     try {
-      const { quotations, purchaseId } = await resolveTargetQuotation();
-      if (quotations.length > 1) {
-        setQuotationPickerList(quotations);
-        setQuotationPickerItem(item);
-        setAddingToCart(null);
-        return;
-      }
-      await commitAddToSell(item, purchaseId, quotations);
+      const list = (await cartApi.listQuotations()).quotations;
+      setQuotationPickerList(list);
+      setQuotationPickerItem(item);
     } catch (err) {
       handleAddToCartDocumentError(err, 'quotation');
-      setAddingToCart(null);
+      setDestinationPickerItem(item);
     }
   };
 
@@ -417,20 +377,14 @@ export function ProductSearchPage() {
       return;
     }
 
-    setAddingToCart(inventoryId);
     setError(null);
     try {
-      const { estimates, purchaseId } = await resolveTargetEstimate();
-      if (estimates.length > 1) {
-        setEstimatePickerList(estimates);
-        setEstimatePickerItem(item);
-        setAddingToCart(null);
-        return;
-      }
-      await commitAddToEstimate(item, purchaseId, estimates);
+      const list = (await estimatesApi.list('OPEN', { size: 100 })).estimates;
+      setEstimatePickerList(list);
+      setEstimatePickerItem(item);
     } catch (err) {
       handleAddToCartDocumentError(err, 'estimate');
-      setAddingToCart(null);
+      setDestinationPickerItem(item);
     }
   };
 

@@ -66,6 +66,7 @@ export {
   shouldShowCustomerHistorySubrow,
   useCustomerProductHistory,
   HistoryListSummary,
+  CustomerSellDestinationFlow,
   EMPTY_HISTORY_FILTERS,
   hasActiveHistoryFilters,
   isDateInRange,
