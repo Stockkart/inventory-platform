@@ -87,6 +87,8 @@ export interface Vendor {
   companyName: string;
   businessType: VendorBusinessType;
   gstinUin?: string | null;
+  /** Drug licence number, as printed on a pharmacy bill. */
+  dlNo?: string | null;
   /** Optional. Set when vendor is linked to a registered user. */
   userId?: string | null;
   createdAt: string;
@@ -100,6 +102,7 @@ export interface CreateVendorDto {
   address?: string;
   businessType: VendorBusinessType;
   gstinUin?: string;
+  dlNo?: string;
   /** Optional. Links vendor to a registered user account. */
   userId?: string | null;
 }
@@ -113,6 +116,8 @@ export interface VendorResponse {
   companyName: string;
   businessType: VendorBusinessType;
   gstinUin?: string | null;
+  /** Drug licence number, as printed on a pharmacy bill. */
+  dlNo?: string | null;
   /** Optional. Set when vendor is linked to a registered user. */
   userId?: string | null;
   createdAt: string;
@@ -204,4 +209,5 @@ export interface UpdateVendorDto {
   companyName?: string;
   businessType?: string;
   gstinUin?: string;
+  dlNo?: string;
 }
