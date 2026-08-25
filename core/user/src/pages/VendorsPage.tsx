@@ -112,6 +112,7 @@ export function VendorsPage() {
       companyName: vendor.companyName ?? '',
       businessType: vendor.businessType ?? '',
       gstinUin: vendor.gstinUin ?? '',
+      dlNo: vendor.dlNo ?? '',
     });
     setSaveError(null);
   };
@@ -155,6 +156,7 @@ export function VendorsPage() {
         address: createForm.address?.trim() || undefined,
         businessType: createForm.businessType ?? 'RETAIL',
         gstinUin: createForm.gstinUin?.trim() || undefined,
+        dlNo: createForm.dlNo?.trim() || undefined,
       });
       void load();
       handleCloseCreate();
@@ -241,9 +243,7 @@ export function VendorsPage() {
                 <TableHeaderCell className={surfaceChrome.customersAddressCell}>
                   Address
                 </TableHeaderCell>
-                <TableHeaderCell className={surfaceChrome.customersEmailCell}>
-                  Email
-                </TableHeaderCell>
+                <TableHeaderCell className={surfaceChrome.customersIdCell}>DL no.</TableHeaderCell>
                 <TableHeaderCell className={surfaceChrome.vendorsBusinessCell}>
                   Business type
                 </TableHeaderCell>
@@ -282,11 +282,8 @@ export function VendorsPage() {
                     >
                       {formatAddress(vendor.address)}
                     </TableCell>
-                    <TableCell
-                      className={surfaceChrome.customersEmailCell}
-                      title={vendor.contactEmail ?? undefined}
-                    >
-                      {vendor.contactEmail ?? '—'}
+                    <TableCell className={surfaceChrome.customersIdCell}>
+                      {vendor.dlNo ?? '—'}
                     </TableCell>
                     <TableCell className={surfaceChrome.vendorsBusinessCell}>
                       {formatBusinessType(vendor.businessType)}
