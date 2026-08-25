@@ -766,6 +766,8 @@ function CustomerSectionBlock({
   setCustomerSectionOpen,
   selectedCustomer,
   summaryLabel,
+  walkInName,
+  onWalkInNameChange,
   onSelectCustomer,
   onClearCustomer,
   disabled,
@@ -775,6 +777,8 @@ function CustomerSectionBlock({
   setCustomerSectionOpen: (open: boolean | ((o: boolean) => boolean)) => void;
   selectedCustomer: CustomerResponse | null;
   summaryLabel: string;
+  walkInName: string;
+  onWalkInNameChange: (value: string) => void;
   onSelectCustomer: (customer: CustomerResponse) => void;
   onClearCustomer: () => void;
   disabled?: boolean;
@@ -808,6 +812,8 @@ function CustomerSectionBlock({
             onSelect={onSelectCustomer}
             onClear={onClearCustomer}
             disabled={disabled}
+            walkInName={walkInName}
+            onWalkInNameChange={onWalkInNameChange}
           />
         </Stack>
       ) : null}
@@ -3076,6 +3082,8 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                       setCustomerSectionOpen={setCustomerSectionOpen}
                       selectedCustomer={selectedCustomer}
                       summaryLabel={customerSectionSummary(customerName, customerPhone)}
+                      walkInName={customerName}
+                      onWalkInNameChange={setCustomerName}
                       onSelectCustomer={handleSelectCustomer}
                       onClearCustomer={handleClearCustomer}
                       disabled={isUpdatingCart || isLoadingCart}
@@ -3830,6 +3838,8 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                     setCustomerSectionOpen={setCustomerSectionOpen}
                     selectedCustomer={selectedCustomer}
                     summaryLabel={customerSectionSummary(customerName, customerPhone)}
+                    walkInName={customerName}
+                    onWalkInNameChange={setCustomerName}
                     onSelectCustomer={handleSelectCustomer}
                     onClearCustomer={handleClearCustomer}
                     disabled={isUpdatingCart || isLoadingCart}

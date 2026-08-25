@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Search, UserRound } from 'lucide-react';
 import { customersApi, customerHasUniqueIdentifier } from '@inventory-platform/user/customers';
 import type {
@@ -36,6 +36,9 @@ export interface CustomerSearchPanelProps {
   onClear: () => void;
   disabled?: boolean;
   idPrefix?: string;
+  /** Name on this bill only (General Customer in accounting). */
+  walkInName?: string;
+  onWalkInNameChange?: (value: string) => void;
 }
 
 function partyTypeLabel(partyType?: CustomerPartyType | null): string {
@@ -49,8 +52,9 @@ export function CustomerSearchPanel({
   onClear,
   disabled = false,
   idPrefix = 'customer',
+  walkInName = '',
+  onWalkInNameChange,
 }: CustomerSearchPanelProps) {
-  const [query, setQuery] = useState('');
   const [results, setResults] = useState<CustomerResponse[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -61,31 +65,66 @@ export function CustomerSearchPanel({
     name: '',
     partyType: 'CONSUMER',
   });
+  const searchGenRef = useRef(0);
 
-  const handleSearch = async () => {
-    const q = query.trim();
-    if (!q) return;
+  const inputValue = selected ? selected.name || selected.phone || '' : walkInName;
+  const guestQuery = walkInName.trim();
+  const canSearch = guestQuery.length >= 1 && !selected;
+
+  useEffect(() => {
+    if (!canSearch) {
+      setResults([]);
+      setShowDropdown(false);
+      setIsSearching(false);
+      return undefined;
+    }
+    const gen = ++searchGenRef.current;
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        setIsSearching(true);
+        try {
+          const list = await customersApi.search(guestQuery);
+          if (gen !== searchGenRef.current) return;
+          setResults(list);
+          setShowDropdown(true);
+        } catch {
+          if (gen !== searchGenRef.current) return;
+          setResults([]);
+          setShowDropdown(true);
+        } finally {
+          if (gen === searchGenRef.current) {
+            setIsSearching(false);
+          }
+        }
+      })();
+    }, 280);
+    return () => window.clearTimeout(timer);
+  }, [canSearch, guestQuery]);
+
+  const handleSearchNow = async () => {
+    if (!canSearch) return;
+    searchGenRef.current += 1;
+    const gen = searchGenRef.current;
     setIsSearching(true);
     setShowDropdown(true);
     try {
-      const list = await customersApi.search(q);
+      const list = await customersApi.search(guestQuery);
+      if (gen !== searchGenRef.current) return;
       setResults(list);
-      if (list.length === 1) {
-        onSelect(list[0]);
-        setShowDropdown(false);
-        setQuery(list[0].name || list[0].phone || q);
-      }
     } catch {
+      if (gen !== searchGenRef.current) return;
       setResults([]);
     } finally {
-      setIsSearching(false);
+      if (gen === searchGenRef.current) {
+        setIsSearching(false);
+      }
     }
   };
 
   const openCreate = () => {
     setCreateError(null);
     setForm({
-      name: query.trim() || '',
+      name: guestQuery || selected?.name || '',
       partyType: 'CONSUMER',
       phone: '',
       email: '',
@@ -125,7 +164,6 @@ export function CustomerSearchPanel({
         dlNo: form.dlNo?.trim() || undefined,
       });
       onSelect(created);
-      setQuery(created.name || created.phone || '');
       setShowCreateModal(false);
       setShowDropdown(false);
     } catch (err) {
@@ -137,48 +175,57 @@ export function CustomerSearchPanel({
 
   const clearSelection = () => {
     onClear();
-    setQuery('');
     setResults([]);
     setShowDropdown(false);
   };
 
+  const onInputChange = (value: string) => {
+    if (selected) {
+      onClear();
+    }
+    onWalkInNameChange?.(value);
+  };
+
+  const hasMatches = showDropdown && results.length > 0 && !selected;
+  const showGuestHint =
+    !selected && guestQuery.length > 0 && !isSearching && showDropdown && results.length === 0;
+
   return (
     <Box className={productChrome.customerPartyStack}>
-      <Box className={productChrome.customerPartySearchField}>
-        <Label htmlFor={`${idPrefix}-customerSearch`}>Find customer</Label>
-        <Box className={productChrome.customerPartySearchRow}>
-          <Input
-            type="search"
-            id={`${idPrefix}-customerSearch`}
-            placeholder="Name, phone, email, GST…"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setShowDropdown(false);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                void handleSearch();
-              }
-            }}
-            disabled={disabled || isSearching}
-            className={productChrome.customerPartySearchInput}
-            autoComplete="off"
-          />
-          <IconButton
-            type="button"
-            label={isSearching ? 'Searching' : 'Search customers'}
-            className={productChrome.customerPartySearchBtn}
-            onClick={() => void handleSearch()}
-            disabled={disabled || isSearching || !query.trim()}
-          >
-            <Icon icon={Search} size="sm" />
-          </IconButton>
+      {selected ? null : (
+        <Box className={productChrome.customerPartySearchField}>
+          <Label htmlFor={`${idPrefix}-customerSearch`}>Customer</Label>
+          <Box className={productChrome.customerPartySearchRow}>
+            <Input
+              type="search"
+              id={`${idPrefix}-customerSearch`}
+              placeholder="Name, phone, email, GST…"
+              value={inputValue}
+              onChange={(e) => onInputChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  void handleSearchNow();
+                }
+              }}
+              disabled={disabled}
+              className={productChrome.customerPartySearchInput}
+              autoComplete="off"
+            />
+            <IconButton
+              type="button"
+              label={isSearching ? 'Searching' : 'Search customers'}
+              className={productChrome.customerPartySearchBtn}
+              onClick={() => void handleSearchNow()}
+              disabled={disabled || isSearching || !guestQuery}
+            >
+              <Icon icon={Search} size="sm" />
+            </IconButton>
+          </Box>
         </Box>
-      </Box>
+      )}
 
-      {showDropdown && results.length > 0 ? (
+      {hasMatches ? (
         <Box
           className={productChrome.customerPartyDropdown}
           role="listbox"
@@ -193,7 +240,6 @@ export function CustomerSearchPanel({
               className={productChrome.customerPartyResult}
               onClick={() => {
                 onSelect(customer);
-                setQuery(customer.name || customer.phone || '');
                 setShowDropdown(false);
               }}
             >
@@ -210,25 +256,6 @@ export function CustomerSearchPanel({
               ) : null}
             </Button>
           ))}
-        </Box>
-      ) : null}
-
-      {showDropdown && results.length === 0 && !isSearching ? (
-        <Box className={productChrome.customerPartyEmpty}>
-          <Box className={productChrome.customerPartyEmptyLead}>
-            <Box className={productChrome.customerPartyEmptyIcon} aria-hidden>
-              <Icon icon={Search} size="sm" />
-            </Box>
-            <Stack gap="xs">
-              <Text className={productChrome.customerPartyEmptyTitle}>No match</Text>
-              <Text className={productChrome.customerPartyEmptyHint}>
-                Try another search, or save a new customer with phone or GST.
-              </Text>
-            </Stack>
-          </Box>
-          <Button type="button" variant="solid" fullWidth onClick={openCreate} disabled={disabled}>
-            New customer
-          </Button>
         </Box>
       ) : null}
 
@@ -286,29 +313,34 @@ export function CustomerSearchPanel({
             </Button>
           </Box>
         </Box>
-      ) : !showDropdown ? (
+      ) : showGuestHint ? (
         <Box className={productChrome.customerPartyEmpty}>
           <Box className={productChrome.customerPartyEmptyLead}>
             <Box className={productChrome.customerPartyEmptyIcon} aria-hidden>
               <Icon icon={UserRound} size="sm" />
             </Box>
             <Stack gap="xs">
-              <Text className={productChrome.customerPartyEmptyTitle}>Walk-in sale</Text>
+              <Text className={productChrome.customerPartyEmptyTitle}>No saved customer</Text>
               <Text className={productChrome.customerPartyEmptyHint}>
-                Search to attach a saved customer, or create one with phone, email, or GST.
+                Saving “{guestQuery}” as a guest on this bill. Accounting still uses the shop
+                walk-in account.
               </Text>
             </Stack>
           </Box>
           <Button
             type="button"
-            variant="solid"
+            variant="outline"
             fullWidth
             onClick={openCreate}
-            disabled={disabled || isCreating}
+            disabled={disabled}
           >
-            New customer
+            Save as new customer
           </Button>
         </Box>
+      ) : !selected ? (
+        <Text variant="caption" color="muted">
+          Type to find a saved customer, or enter a guest name for this bill.
+        </Text>
       ) : null}
 
       <Modal
