@@ -98,12 +98,23 @@ export function ProductSearchCard({
   const mode = normalizedBillingMode(item);
   const price = effectivePrice(item);
   const outOfStock = item.currentCount <= 0;
+  const priceMissing = price == null;
   // Quantity lives on the card, not on the page: each result carries its own count until it is
-  // handed to a cart, and the stock on this lot is the ceiling.
+  // handed to a cart, and the stock on this lot is the ceiling. The stepper stays out of the way
+  // until Add to Cart is pressed, so a card at a glance is still two buttons.
   const [quantity, setQuantity] = useState(1);
+  const [pickingQuantity, setPickingQuantity] = useState(false);
   const maxQuantity = Math.max(1, Math.floor(item.currentCount));
   const clampQuantity = (next: number) => Math.min(Math.max(next, 1), maxQuantity);
-  const priceMissing = price == null;
+  const addBlocked = isPageLoading || isAddingToCart || outOfStock || priceMissing;
+
+  const addLabel = outOfStock ? 'Out of Stock' : priceMissing ? 'Price not set' : 'Add to Cart';
+
+  const confirmAdd = () => {
+    onAddToCart(item, quantity);
+    setPickingQuantity(false);
+    setQuantity(1);
+  };
   const typeLabel = itemTypeLabel(item);
   const discountText = discountLabel(item);
   const schemeText = schemeLabel(item);
@@ -224,21 +235,11 @@ export function ProductSearchCard({
       </CardBody>
 
       <CardFooter
-        className={cn(productChrome.searchResultFooter, productChrome.searchResultFooterTriple)}
+        className={cn(
+          productChrome.searchResultFooter,
+          pickingQuantity && productChrome.searchResultFooterTriple,
+        )}
       >
-        <QtyStepper
-          value={quantity}
-          onDecrement={() => setQuantity((q) => clampQuantity(q - 1))}
-          onIncrement={() => setQuantity((q) => clampQuantity(q + 1))}
-          onChange={(e) => {
-            const parsed = Number.parseInt(e.target.value, 10);
-            setQuantity(Number.isNaN(parsed) ? 1 : clampQuantity(parsed));
-          }}
-          disabled={isPageLoading || isAddingToCart || outOfStock || priceMissing}
-          decrementDisabled={quantity <= 1}
-          incrementDisabled={quantity >= maxQuantity}
-          inputProps={{ min: 1, max: maxQuantity, 'aria-label': 'Quantity' }}
-        />
         <Button
           type="button"
           variant="outline"
@@ -248,21 +249,47 @@ export function ProductSearchCard({
         >
           {isDetailLoading ? 'Loading…' : 'View Details'}
         </Button>
-        <Button
-          type="button"
-          variant="solid"
-          onClick={() => onAddToCart(item, quantity)}
-          disabled={isPageLoading || isAddingToCart || outOfStock || priceMissing}
-          loading={isAddingToCart}
-        >
-          {isAddingToCart
-            ? 'Adding...'
-            : outOfStock
-            ? 'Out of Stock'
-            : priceMissing
-            ? 'Price not set'
-            : 'Add to Cart'}
-        </Button>
+        {pickingQuantity ? (
+          <>
+            <QtyStepper
+              value={quantity}
+              onDecrement={() => setQuantity((q) => clampQuantity(q - 1))}
+              onIncrement={() => setQuantity((q) => clampQuantity(q + 1))}
+              onChange={(e) => {
+                const parsed = Number.parseInt(e.target.value, 10);
+                setQuantity(Number.isNaN(parsed) ? 1 : clampQuantity(parsed));
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  confirmAdd();
+                }
+              }}
+              disabled={addBlocked}
+              decrementDisabled={quantity <= 1}
+              incrementDisabled={quantity >= maxQuantity}
+              inputProps={{ min: 1, max: maxQuantity, 'aria-label': 'Quantity', autoFocus: true }}
+            />
+            <Button
+              type="button"
+              variant="solid"
+              onClick={confirmAdd}
+              disabled={addBlocked}
+              loading={isAddingToCart}
+            >
+              {isAddingToCart ? 'Adding…' : 'Add'}
+            </Button>
+          </>
+        ) : (
+          <Button
+            type="button"
+            variant="solid"
+            onClick={() => setPickingQuantity(true)}
+            disabled={addBlocked}
+            loading={isAddingToCart}
+          >
+            {isAddingToCart ? 'Adding…' : addLabel}
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );
