@@ -173,6 +173,7 @@ import {
   CustomerProductHistoryHint,
   shouldShowCustomerHistorySubrow,
   PrintInvoiceModal,
+  PendingCustomerSellFlow,
 } from '../ui';
 import { CustomerSearchPanel } from '../ui/CustomerSearchPanel';
 import { ScanSellQuotationStack } from '../ui/ScanSellQuotationStack';
@@ -1054,9 +1055,13 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   }, [location.key]);
 
   useLayoutEffect(() => {
-    const raw = (location.state as { prefillCustomer?: CustomerResponse } | null | undefined)
-      ?.prefillCustomer;
+    const state = location.state as
+      | { prefillCustomer?: CustomerResponse; pickSellDestination?: boolean }
+      | null
+      | undefined;
+    const raw = state?.prefillCustomer;
     if (!raw?.customerId) return;
+    if (state?.pickSellDestination) return;
     scanSellCustomerPrefillRef.current = raw;
     navigate(location.pathname, { replace: true, state: {} });
   }, [location.state, location.pathname, navigate]);
@@ -2982,6 +2987,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       mx={isCafeSell ? undefined : 'auto'}
       className={isCafeSell ? scanSellCafePageShell : scanSellPageShell}
     >
+      <PendingCustomerSellFlow sellPath={location.pathname} />
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
       <PageHeader

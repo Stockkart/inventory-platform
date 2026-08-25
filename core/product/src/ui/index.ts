@@ -54,6 +54,7 @@ export type {
   CartDestination,
 } from './AddToCartDestinationPicker';
 export { CustomerSellDestinationFlow } from './CustomerSellDestinationFlow';
+export { PendingCustomerSellFlow } from './PendingCustomerSellFlow';
 export {
   CustomerProductHistoryHint,
   shouldShowCustomerHistorySubrow,
