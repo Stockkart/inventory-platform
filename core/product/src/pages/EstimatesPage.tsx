@@ -56,7 +56,7 @@ export function meta() {
 
 export function EstimatesPage() {
   const navigate = useNavigate();
-  const { error: notifyError } = useNotify;
+  const { error: notifyError, success: notifySuccess, info: notifyInfo } = useNotify;
   const [filter, setFilter] = useState<FilterTab>('OPEN');
   const [estimates, setEstimates] = useState<EstimateSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -271,6 +271,8 @@ export function EstimatesPage() {
           invoiceNo={printTarget.estimateNo ?? undefined}
           documentLabel="Estimate"
           onError={(message) => notifyError(message)}
+          onSuccess={(message) => notifySuccess(message)}
+          onInfo={(message) => notifyInfo(message)}
         />
       ) : null}
     </Stack>

@@ -878,7 +878,7 @@ export function ScanSellPage() {
   });
   const [pricingCache, setPricingCache] = useState<Record<string, PricingResponse>>({});
   const [pricingLoading, setPricingLoading] = useState<Record<string, boolean>>({});
-  const { error: notifyError } = useNotify;
+  const { error: notifyError, success: notifySuccess, info: notifyInfo } = useNotify;
 
   useEffect(() => {
     if (!activeShopId) {
@@ -4169,6 +4169,8 @@ export function ScanSellPage() {
             invoiceNo={cartData?.estimateNo ?? undefined}
             documentLabel="Estimate"
             onError={(message) => notifyError(message)}
+            onSuccess={(message) => notifySuccess(message)}
+            onInfo={(message) => notifyInfo(message)}
           />
         );
       })()}

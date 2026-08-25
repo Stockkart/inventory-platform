@@ -3,9 +3,15 @@ import {
   BRIDGE_HEALTH_TIMEOUT_MS,
   BRIDGE_ORIGIN,
   BRIDGE_PRINT_TIMEOUT_MS,
+  PRINTED_MESSAGE,
   PrintBridgeError,
+  describeDuplicateJob,
+  describePrintOutcome,
+  getJobs,
   isBridgeUp,
+  pollJobOutcome,
   sendToBridge,
+  type PrintJob,
   type PrintJobRequest,
 } from './printBridge';
 
@@ -170,5 +176,223 @@ describe('printBridge', () => {
     expect(error).not.toBeInstanceOf(SyntaxError);
     expect(error.kind).toBe('REJECTED');
     expect(error.status).toBe(202);
+  });
+});
+
+function job(overrides: Partial<PrintJob> = {}): PrintJob {
+  return {
+    id: 'j-7',
+    docType: 'INVOICE',
+    docId: 'purchase-1',
+    copies: 1,
+    status: 'QUEUED',
+    error: null,
+    at: '2026-08-24T10:00:00Z',
+    ...overrides,
+  };
+}
+
+function jobsResponse(jobs: PrintJob[]): Response {
+  return jsonResponse(200, { jobs });
+}
+
+describe('getJobs', () => {
+  const fetchMock = vi.fn();
+
+  beforeEach(() => {
+    fetchMock.mockReset();
+    vi.stubGlobal('fetch', fetchMock);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it('returns the job list when the bridge answers', async () => {
+    const jobs = [job({ status: 'PRINTED' })];
+    fetchMock.mockResolvedValue(jobsResponse(jobs));
+
+    await expect(getJobs()).resolves.toEqual(jobs);
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${BRIDGE_ORIGIN}/jobs`,
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
+
+  it('returns an empty list when the bridge answers with a non-200, never throwing', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(500, { error: 'boom' }));
+
+    await expect(getJobs()).resolves.toEqual([]);
+  });
+
+  it('returns an empty list when the bridge is unreachable, never throwing', async () => {
+    fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    await expect(getJobs()).resolves.toEqual([]);
+  });
+
+  it('returns an empty list when the body has no jobs array', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, {}));
+
+    await expect(getJobs()).resolves.toEqual([]);
+  });
+});
+
+describe('pollJobOutcome', () => {
+  const fetchMock = vi.fn();
+
+  beforeEach(() => {
+    fetchMock.mockReset();
+    vi.stubGlobal('fetch', fetchMock);
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it('resolves PRINTED as soon as the bridge reports it, on the very first check', async () => {
+    fetchMock.mockResolvedValue(jobsResponse([job({ status: 'PRINTED' })]));
+
+    await expect(pollJobOutcome('j-7', { budgetMs: 2000, intervalMs: 200 })).resolves.toEqual({
+      status: 'PRINTED',
+    });
+  });
+
+  it("resolves FAILED carrying the bridge's own error text", async () => {
+    fetchMock.mockResolvedValue(
+      jobsResponse([job({ status: 'FAILED', error: 'winspool: printer offline' })]),
+    );
+
+    await expect(pollJobOutcome('j-7', { budgetMs: 2000, intervalMs: 200 })).resolves.toEqual({
+      status: 'FAILED',
+      error: 'winspool: printer offline',
+    });
+  });
+
+  it('falls back to a generic message when the bridge reports FAILED with no error text', async () => {
+    fetchMock.mockResolvedValue(jobsResponse([job({ status: 'FAILED', error: null })]));
+
+    await expect(pollJobOutcome('j-7', { budgetMs: 2000, intervalMs: 200 })).resolves.toEqual({
+      status: 'FAILED',
+      error: 'Unknown printer error',
+    });
+  });
+
+  it('keeps polling while QUEUED and resolves PRINTED once the bridge catches up', async () => {
+    let calls = 0;
+    fetchMock.mockImplementation(() => {
+      calls += 1;
+      const status = calls < 3 ? 'QUEUED' : 'PRINTED';
+      return Promise.resolve(jobsResponse([job({ status })]));
+    });
+
+    const result = pollJobOutcome('j-7', { budgetMs: 2000, intervalMs: 200 });
+    await vi.advanceTimersByTimeAsync(2000);
+
+    await expect(result).resolves.toEqual({ status: 'PRINTED' });
+    // First check plus two more before the third (successful) check.
+    expect(calls).toBeGreaterThanOrEqual(3);
+  });
+
+  it('resolves STILL_QUEUED - never rounded up to PRINTED or down to FAILED - once the budget runs out', async () => {
+    // A fresh Response per call: fetch Responses can only have their body
+    // read once, and this poll calls GET /jobs repeatedly.
+    fetchMock.mockImplementation(() => Promise.resolve(jobsResponse([job({ status: 'QUEUED' })])));
+
+    const result = pollJobOutcome('j-7', { budgetMs: 1000, intervalMs: 200 });
+    await vi.advanceTimersByTimeAsync(1000);
+
+    await expect(result).resolves.toEqual({ status: 'STILL_QUEUED' });
+  });
+
+  it('resolves STILL_QUEUED, not an error, when the job never appears in the history', async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(jobsResponse([])));
+
+    const result = pollJobOutcome('j-7', { budgetMs: 1000, intervalMs: 200 });
+    await vi.advanceTimersByTimeAsync(1000);
+
+    await expect(result).resolves.toEqual({ status: 'STILL_QUEUED' });
+  });
+
+  it('resolves STILL_QUEUED rather than throwing when every GET /jobs call fails', async () => {
+    fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    const result = pollJobOutcome('j-7', { budgetMs: 1000, intervalMs: 200 });
+    await vi.advanceTimersByTimeAsync(1000);
+
+    await expect(result).resolves.toEqual({ status: 'STILL_QUEUED' });
+  });
+
+  it('defaults to a ~5s budget and a 500ms interval when no options are given', async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(jobsResponse([job({ status: 'QUEUED' })])));
+
+    const result = pollJobOutcome('j-7');
+    // Not yet exhausted at 4.5s.
+    await vi.advanceTimersByTimeAsync(4500);
+    let settled = false;
+    void result.then(() => {
+      settled = true;
+    });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+
+    await vi.advanceTimersByTimeAsync(600);
+    await expect(result).resolves.toEqual({ status: 'STILL_QUEUED' });
+  });
+});
+
+describe('describePrintOutcome', () => {
+  it('reports PRINTED as success, with the exact wording the design spec requires, and closes the modal', () => {
+    expect(describePrintOutcome({ status: 'PRINTED' })).toEqual({
+      channel: 'success',
+      message: PRINTED_MESSAGE,
+      shouldClose: true,
+    });
+  });
+
+  it("reports FAILED as an error carrying the job's error text, and does not close the modal", () => {
+    const report = describePrintOutcome({ status: 'FAILED', error: 'printer offline' });
+    expect(report.channel).toBe('error');
+    expect(report.message).toContain('printer offline');
+    expect(report.shouldClose).toBe(false);
+  });
+
+  it('reports STILL_QUEUED as information - not success, not failure - and closes the modal', () => {
+    const report = describePrintOutcome({ status: 'STILL_QUEUED' });
+    expect(report.channel).toBe('info');
+    expect(report.message.toLowerCase()).not.toContain('failed');
+    expect(report.message.toLowerCase()).not.toContain('success');
+    expect(report.shouldClose).toBe(true);
+  });
+});
+
+describe('describeDuplicateJob', () => {
+  it("reports a 409 as information, not an error, and does not repeat the bridge's raw message", () => {
+    const error = new PrintBridgeError('duplicate job suppressed', 'REJECTED', 409);
+
+    const report = describeDuplicateJob(error);
+
+    expect(report).not.toBeNull();
+    expect(report?.channel).toBe('info');
+    expect(report?.shouldClose).toBe(true);
+    expect(report?.message).not.toBe('duplicate job suppressed');
+  });
+
+  it('returns null for a non-409 REJECTED error, leaving it to normal error handling', () => {
+    const error = new PrintBridgeError('printer offline', 'REJECTED', 503);
+
+    expect(describeDuplicateJob(error)).toBeNull();
+  });
+
+  it('returns null for an UNREACHABLE error', () => {
+    const error = new PrintBridgeError(
+      'Print bridge is not running on this computer',
+      'UNREACHABLE',
+    );
+
+    expect(describeDuplicateJob(error)).toBeNull();
   });
 });
