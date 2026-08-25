@@ -303,6 +303,29 @@ function formatPurchaseSchemeLabel(inv: InventoryItem): string {
   return '—';
 }
 
+/**
+ * What the line is billed before tax, mirroring CheckoutService: a percentage scheme cuts the
+ * price per unit, a pay-for/free scheme cuts the billable quantity, and the sale DISC comes off
+ * whatever is left. Without this the row read price x quantity, so a discount or a scheme only
+ * showed up once it reached the bill totals.
+ */
+function cartLineNetAmount(item: CartItem, additionalDiscount: number | null): number {
+  const price =
+    item.schemeType === 'PERCENTAGE' && item.schemePercentage
+      ? item.price * (1 - item.schemePercentage / 100)
+      : item.price;
+
+  const payFor = item.schemePayFor ?? 0;
+  const free = item.schemeFree ?? 0;
+  const billableQty =
+    item.schemeType === 'FIXED_UNITS' && payFor > 0 && free >= 0 && payFor + free > 0
+      ? (item.quantity * payFor) / (payFor + free)
+      : item.quantity;
+
+  const gross = price * billableQty;
+  return additionalDiscount ? gross * (1 - additionalDiscount / 100) : gross;
+}
+
 /** Purchase additional discount from product registration only — never the sale DISC input. */
 function getPurchaseAdditionalDiscount(inv: InventoryItem): number | null {
   return inv.purchaseAdditionalDiscount ?? null;
@@ -3255,7 +3278,13 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                 const quantityInputValue = isBaseUnitSelected
                                   ? cartItem.baseQuantity
                                   : cartItem.quantity;
-                                const lineTotal = cartItem.price * cartItem.quantity;
+                                const lineTotal = cartLineNetAmount(
+                                  cartItem,
+                                  getEffectiveAdditionalDiscount(
+                                    cartItem.inventoryItem.id,
+                                    cartItem,
+                                  ),
+                                );
                                 const formatPrice = (n: number) =>
                                   new Intl.NumberFormat('en-IN', {
                                     style: 'currency',
@@ -3817,7 +3846,14 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                           </Button>
                                         </Inline>
                                         <Text weight="semibold" className={lineTotalAmountStyle}>
-                                          ₹{(cartItem.price * cartItem.quantity).toFixed(2)}
+                                          ₹
+                                          {cartLineNetAmount(
+                                            cartItem,
+                                            getEffectiveAdditionalDiscount(
+                                              cartItem.inventoryItem.id,
+                                              cartItem,
+                                            ),
+                                          ).toFixed(2)}
                                         </Text>
                                       </Stack>
                                     </Inline>
