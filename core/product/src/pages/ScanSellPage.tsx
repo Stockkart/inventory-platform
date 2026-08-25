@@ -1063,8 +1063,10 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     if (!raw?.customerId) return;
     if (state?.pickSellDestination) return;
     scanSellCustomerPrefillRef.current = raw;
-    navigate(location.pathname, { replace: true, state: {} });
-  }, [location.state, location.pathname, navigate]);
+    // Keep the query string: the destination picker hands the chosen quotation
+    // over as `?purchaseId=`, and dropping it here loses which document to open.
+    navigate(`${location.pathname}${location.search}`, { replace: true, state: {} });
+  }, [location.state, location.pathname, location.search, navigate]);
 
   const normalizeBillingMode = useCallback(
     (mode?: BillingMode | null): BillingMode => (mode === 'BASIC' ? 'BASIC' : 'REGULAR'),
@@ -1777,7 +1779,11 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       customerPan: c.pan ?? c.panNo ?? '',
       customerPartyType: c.partyType ?? 'CONSUMER',
     });
-  }, [isLoadingCart]);
+    // `location.key` matters as much as the cart: arriving from the customer
+    // picker is a navigation to this same route, so the cart never reloads and
+    // `isLoadingCart` never changes. Keyed only on that, this effect would not
+    // run again and the customer left in the ref would never be applied.
+  }, [isLoadingCart, location.key]);
 
   /** Build CartItem[] from cart response, reusing existing inventoryItem when possible (no API calls). */
   const mergeCartResponseToItems = useCallback(
