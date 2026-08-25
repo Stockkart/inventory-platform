@@ -3,6 +3,8 @@ import type { LucideIcon } from 'lucide-react';
 import { FileText, Printer, Receipt } from 'lucide-react';
 import { cartApi } from '../api/cart.api';
 import { invoiceSettingsApi } from '../api/invoice-settings.api';
+import { PrintBridgeError, isBridgeUp, sendToBridge } from '../lib/printBridge';
+import type { BridgeHealth } from '../lib/printBridge';
 import type { PrinterType } from '../api/endpoints';
 import {
   Alert,
@@ -89,6 +91,7 @@ export function PrintInvoiceModal({
   const [printerType, setPrinterType] = useState<PrinterType>('NORMAL');
   const [shopDefault, setShopDefault] = useState<PrinterType | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [bridge, setBridge] = useState<BridgeHealth | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -107,6 +110,24 @@ export function PrintInvoiceModal({
         }
       }
     })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
+
+  // Probe the local print bridge whenever the modal opens. Never blocks the UI:
+  // isBridgeUp resolves to null on any failure, and the modal stays usable.
+  useEffect(() => {
+    if (!isOpen) {
+      setBridge(null);
+      return;
+    }
+    let cancelled = false;
+    void isBridgeUp().then((health) => {
+      if (!cancelled) {
+        setBridge(health);
+      }
+    });
     return () => {
       cancelled = true;
     };
@@ -139,6 +160,33 @@ export function PrintInvoiceModal({
       onClose();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to download print file';
+      onError?.(message);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handlePrintToBridge = async () => {
+    setIsGenerating(true);
+    let textBlob: Blob | null = null;
+    try {
+      textBlob = await cartApi.getInvoiceDotMatrixText(purchaseId);
+      const text = await textBlob.text();
+      await sendToBridge({ docType: 'INVOICE', docId: purchaseId, copies: 1, text });
+      onClose();
+    } catch (err) {
+      // Bridge missing or blocked by the browser: degrade to the download that
+      // worked before the bridge existed, rather than failing the sale.
+      if (err instanceof PrintBridgeError && err.kind === 'UNREACHABLE' && textBlob) {
+        const slug = documentLabel.toLowerCase().replace(/\s+/g, '-');
+        downloadBlob(textBlob, `${slug}-${invoiceNo || purchaseId}.txt`);
+        setBridge(null);
+        onError?.('Print bridge not running. Print file downloaded instead.');
+        onClose();
+        return;
+      }
+      const message =
+        err instanceof Error ? err.message : `Failed to print ${documentLabel.toLowerCase()}`;
       onError?.(message);
     } finally {
       setIsGenerating(false);
@@ -203,9 +251,11 @@ export function PrintInvoiceModal({
           </Box>
           {isDotMatrix ? (
             <Alert variant="info">
-              Print the .txt at 10 CPI (Pica). Standard 80-column printers only paint 8 inches; the
-              extra 10×12 paper beside the holes cannot be used. Do not print the PDF on the
-              dot-matrix.
+              {bridge
+                ? `Prints directly to ${
+                    bridge.selectedPrinter ?? 'the selected printer'
+                  } via the print bridge on this computer.`
+                : 'Print bridge not detected on this computer. The invoice will download as a .txt file that you can print at 10 CPI (Pica). Never print the PDF on a dot-matrix printer.'}
             </Alert>
           ) : null}
         </Stack>
@@ -234,16 +284,26 @@ export function PrintInvoiceModal({
         <Button
           type="button"
           variant="solid"
-          onClick={() => void (isDotMatrix ? handleDownloadPrintFile() : handlePreviewPdf())}
+          onClick={() =>
+            void (isDotMatrix
+              ? bridge
+                ? handlePrintToBridge()
+                : handleDownloadPrintFile()
+              : handlePreviewPdf())
+          }
           disabled={isGenerating}
         >
           {isGenerating ? (
             <Inline gap="sm" align="center">
               <Spinner size="sm" />
-              Generating…
+              {isDotMatrix && bridge ? 'Printing…' : 'Generating…'}
             </Inline>
           ) : isDotMatrix ? (
-            'Download print file'
+            bridge ? (
+              'Print'
+            ) : (
+              'Download print file'
+            )
           ) : (
             'Generate PDF'
           )}
