@@ -126,7 +126,7 @@ describe('printBridge', () => {
     expect(error.status).toBeUndefined();
   });
 
-  it('keeps the print timeout armed through the body read, aborting a stalled 2xx response as UNREACHABLE', async () => {
+  it('keeps the print timeout armed through the body read, rejecting a stalled 2xx response as REJECTED (not UNREACHABLE)', async () => {
     vi.useFakeTimers();
     const bodyRead = hangUntilAborted();
     fetchMock.mockImplementation(
@@ -149,7 +149,15 @@ describe('printBridge', () => {
 
     const error = await result;
     expect(error).toBeInstanceOf(PrintBridgeError);
-    expect(error.kind).toBe('UNREACHABLE');
+    // Headers already said 202 (queued): a stall while confirming the body
+    // does not mean the bridge was never reached, so callers must not get
+    // UNREACHABLE here - that would trigger a file-download fallback that
+    // risks printing the invoice a second time. REJECTED, with the real
+    // status and a message that says the job may already have printed, is
+    // what stops a caller from reflexively reprinting.
+    expect(error.kind).toBe('REJECTED');
+    expect(error.status).toBe(202);
+    expect(error.message).toMatch(/already have printed/i);
   });
 
   it('wraps a malformed 2xx response body as a REJECTED PrintBridgeError, not a raw parse error', async () => {
