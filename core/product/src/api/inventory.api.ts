@@ -78,12 +78,17 @@ export const inventoryApi = {
     return response.data;
   },
 
-  getAll: async (page = 0, size = 10): Promise<PaginationInventoryResponse> => {
+  getAll: async (
+    page = 0,
+    size = 10,
+    includeZeroStock = true,
+  ): Promise<PaginationInventoryResponse> => {
     const response = await apiClient.get<ApiResponse<PaginationInventoryResponse>>(
       INVENTORY_ENDPOINTS.BASE,
       {
         page: String(page),
         size: String(size),
+        ...(includeZeroStock ? {} : { includeZeroStock: 'false' }),
       },
     );
     return response.data;
@@ -118,6 +123,9 @@ export const inventoryApi = {
     if (params.sort?.trim()) queryParams.sort = params.sort.trim();
     if (params.limit !== undefined && params.limit > 0) {
       queryParams.limit = String(params.limit);
+    }
+    if (params.includeZeroStock === false) {
+      queryParams.includeZeroStock = 'false';
     }
     if (params.filters) {
       for (const [key, val] of Object.entries(params.filters)) {
