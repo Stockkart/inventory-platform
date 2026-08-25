@@ -166,6 +166,7 @@ import {
   formatInventoryExpiryDate,
   hasInventoryExpiryDate,
   getExtensionFieldString,
+  getInventoryBatchNo,
   sortInventoryByExpirySoonest,
 } from '@inventory-platform/schema';
 import {
@@ -4230,6 +4231,12 @@ function SearchDropdownItem({
     onAddToCart(item);
   };
 
+  // The batch sits on the line for some verticals and in the extension fields
+  // for others, so read it through the helper that knows both. It answers '—'
+  // when there is none, which suits a fixed table row but not a card line.
+  const rawBatchNo = getInventoryBatchNo(item);
+  const batchNo = rawBatchNo && rawBatchNo !== '—' ? rawBatchNo : '';
+
   return (
     <Inline as="li" justify="between" align="start" gap="md" className={dropdownItemStyle}>
       <Stack gap="xs" flex="1" minWidth="0">
@@ -4242,6 +4249,11 @@ function SearchDropdownItem({
         {item.companyName ? (
           <Text variant="caption" color="secondary" truncate>
             Company: {item.companyName}
+          </Text>
+        ) : null}
+        {batchNo ? (
+          <Text variant="caption" color="secondary" truncate>
+            Batch: {batchNo}
           </Text>
         ) : null}
         {item.barcode ? (
