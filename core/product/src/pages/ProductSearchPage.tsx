@@ -77,6 +77,9 @@ export function ProductSearchPage() {
   const [estimatePickerItem, setEstimatePickerItem] = useState<InventoryItem | null>(null);
   const [estimatePickerList, setEstimatePickerList] = useState<EstimateSummary[]>([]);
   const [destinationPickerItem, setDestinationPickerItem] = useState<InventoryItem | null>(null);
+  // The quantity chosen on the card. It has to outlive the destination and document pickers,
+  // whose callbacks only know which purchase to add to.
+  const [pendingQuantity, setPendingQuantity] = useState(1);
   const [cartBusinessType, setCartBusinessType] = useState('medical');
   const { success: notifySuccess, error: notifyError } = useNotify;
   const { user } = useAuthStore();
@@ -208,7 +211,11 @@ export function ProductSearchPage() {
     }
   };
 
-  const addItemToCartDocument = async (item: InventoryItem, purchaseId: string): Promise<void> => {
+  const addItemToCartDocument = async (
+    item: InventoryItem,
+    purchaseId: string,
+    quantity = pendingQuantity,
+  ): Promise<void> => {
     const inventoryId = resolveInventoryDocumentId(item);
     if (!inventoryId) {
       notifyError('Cannot add: missing inventory id');
@@ -227,7 +234,7 @@ export function ProductSearchPage() {
       items: [
         {
           id: inventoryId,
-          quantity: 1,
+          quantity: Math.max(1, Math.floor(quantity)),
           priceToRetail: effectivePrice,
         },
       ],
@@ -317,7 +324,7 @@ export function ProductSearchPage() {
     }
   };
 
-  const handleAddToCart = (item: InventoryItem) => {
+  const handleAddToCart = (item: InventoryItem, quantity: number) => {
     const inventoryId = resolveInventoryDocumentId(item);
     if (!inventoryId) {
       notifyError('Cannot add: missing inventory id');
@@ -332,6 +339,7 @@ export function ProductSearchPage() {
       notifyError('Cannot add: product price is not set');
       return;
     }
+    setPendingQuantity(Math.max(1, Math.floor(quantity)));
     setDestinationPickerItem(item);
   };
 

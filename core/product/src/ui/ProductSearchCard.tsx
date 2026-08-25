@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { BillingMode, InventoryItem } from '@inventory-platform/product/types';
 import {
   Badge,
@@ -6,6 +7,7 @@ import {
   Card,
   CardBody,
   CardFooter,
+  QtyStepper,
   cn,
   productChrome,
 } from '@inventory-platform/ui-kit';
@@ -82,7 +84,7 @@ export interface ProductSearchCardProps {
   isDetailLoading: boolean;
   isAddingToCart: boolean;
   onViewDetails: (item: InventoryItem) => void;
-  onAddToCart: (item: InventoryItem) => void;
+  onAddToCart: (item: InventoryItem, quantity: number) => void;
 }
 
 export function ProductSearchCard({
@@ -96,6 +98,11 @@ export function ProductSearchCard({
   const mode = normalizedBillingMode(item);
   const price = effectivePrice(item);
   const outOfStock = item.currentCount <= 0;
+  // Quantity lives on the card, not on the page: each result carries its own count until it is
+  // handed to a cart, and the stock on this lot is the ceiling.
+  const [quantity, setQuantity] = useState(1);
+  const maxQuantity = Math.max(1, Math.floor(item.currentCount));
+  const clampQuantity = (next: number) => Math.min(Math.max(next, 1), maxQuantity);
   const priceMissing = price == null;
   const typeLabel = itemTypeLabel(item);
   const discountText = discountLabel(item);
@@ -216,7 +223,22 @@ export function ProductSearchCard({
         <Box className={productChrome.searchResultGrow} aria-hidden />
       </CardBody>
 
-      <CardFooter className={productChrome.searchResultFooter}>
+      <CardFooter
+        className={cn(productChrome.searchResultFooter, productChrome.searchResultFooterTriple)}
+      >
+        <QtyStepper
+          value={quantity}
+          onDecrement={() => setQuantity((q) => clampQuantity(q - 1))}
+          onIncrement={() => setQuantity((q) => clampQuantity(q + 1))}
+          onChange={(e) => {
+            const parsed = Number.parseInt(e.target.value, 10);
+            setQuantity(Number.isNaN(parsed) ? 1 : clampQuantity(parsed));
+          }}
+          disabled={isPageLoading || isAddingToCart || outOfStock || priceMissing}
+          decrementDisabled={quantity <= 1}
+          incrementDisabled={quantity >= maxQuantity}
+          inputProps={{ min: 1, max: maxQuantity, 'aria-label': 'Quantity' }}
+        />
         <Button
           type="button"
           variant="outline"
@@ -229,7 +251,7 @@ export function ProductSearchCard({
         <Button
           type="button"
           variant="solid"
-          onClick={() => onAddToCart(item)}
+          onClick={() => onAddToCart(item, quantity)}
           disabled={isPageLoading || isAddingToCart || outOfStock || priceMissing}
           loading={isAddingToCart}
         >
