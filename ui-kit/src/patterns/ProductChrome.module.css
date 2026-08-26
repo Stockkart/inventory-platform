@@ -1941,6 +1941,16 @@
   background: color-mix(in srgb, #0f172a 2%, var(--sk-color-bg-elevated, #fff));
 }
 
+.rowActionsCell {
+  /* A table column takes the width its widest cell asks for; 1% asks for as little as the
+     content allows, which for an icon button is the icon. */
+  width: 1%;
+  padding-left: 0.3rem;
+  padding-right: 0.3rem;
+  text-align: center;
+  white-space: nowrap;
+}
+
 .rowRemoveButton {
   color: var(--sk-color-danger);
 }
