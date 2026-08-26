@@ -261,12 +261,13 @@ export function SaleHistoryCard({ purchase }: { purchase: Purchase }) {
                         {formatCurrency(item.priceToRetail ?? 0)}
                       </TableCell>
                       <TableCell className={surfaceChrome.numericCell}>
-                        {item.discount ? formatCurrency(item.discount) : '—'}
-                        {item.saleAdditionalDiscount ? (
-                          <Text variant="caption" color="secondary">
-                            {formatPercent(item.saleAdditionalDiscount)} extra
-                          </Text>
-                        ) : null}
+                        {/* The discount rate the operator applied at sale, not the rupee value
+                            of it. item.discount holds (MRP - selling price) x quantity, which
+                            rendered beside this caption with no separator and read as one
+                            garbled figure. */}
+                        {item.saleAdditionalDiscount
+                          ? formatPercent(item.saleAdditionalDiscount)
+                          : '—'}
                       </TableCell>
                       <TableCell className={surfaceChrome.numericCell}>
                         {schemeLabel(item)}
