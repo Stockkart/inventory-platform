@@ -1941,6 +1941,15 @@
   background: color-mix(in srgb, #0f172a 2%, var(--sk-color-bg-elevated, #fff));
 }
 
+.rowRemoveButton {
+  color: var(--sk-color-danger);
+}
+
+.rowRemoveButton:hover:not(:disabled) {
+  color: var(--sk-color-danger);
+  background: color-mix(in srgb, var(--sk-color-danger) 12%, transparent);
+}
+
 .historyTotalsPanel {
   /* Sits under the line items in the same panel; a bill's totals belong on the right, and the
      column is narrow so the labels stay next to their figures on a wide table. */

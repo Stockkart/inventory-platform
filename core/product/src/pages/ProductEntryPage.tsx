@@ -115,6 +115,7 @@ import {
   Textarea,
   denseDataGrid,
   fileDropzone,
+  IconButton,
   productChrome,
   cn,
   Icon,
@@ -130,6 +131,7 @@ import {
   Printer,
   QrCode,
   Receipt,
+  Trash2,
   Upload,
   Wand2,
 } from 'lucide-react';
@@ -4067,15 +4069,17 @@ export function ProductEntryPage() {
                                   </>
                                 )}
                                 <TableCell className={denseDataGrid.td}>
-                                  <Button
+                                  <IconButton
                                     type="button"
-                                    className={denseDataGrid.removeBtn}
+                                    size="sm"
+                                    className={productChrome.rowRemoveButton}
                                     onClick={() => handleRemoveProduct(product.id)}
                                     disabled={isLoading}
-                                    aria-label="Remove product"
+                                    label="Remove product"
+                                    title="Remove"
                                   >
-                                    ×
-                                  </Button>
+                                    <Icon icon={Trash2} size="sm" />
+                                  </IconButton>
                                 </TableCell>
                               </TableRow>
                             ))}
@@ -5124,18 +5128,20 @@ function ProductAccordion({
             </Text>
           )}
         </Box>
-        <Button
+        <IconButton
           type="button"
-          className={accordionStyles.removeProductBtn}
+          size="sm"
+          className={productChrome.rowRemoveButton}
           onClick={(e) => {
             e.stopPropagation();
             onRemove();
           }}
           disabled={isLoading}
-          aria-label="Remove product"
+          label="Remove product"
+          title="Remove"
         >
-          ×
-        </Button>
+          <Icon icon={Trash2} size="sm" />
+        </IconButton>
       </Box>
 
       {product.isExpanded && (
