@@ -595,6 +595,11 @@ export interface InventorySearchParams {
   limit?: number;
   /** Extension field filters, e.g. sellDirect=true */
   filters?: Record<string, string>;
+  /**
+   * Sold-out lots are returned unless this is false. Selling screens pass false; stock
+   * correction and pricing screens need the sold-out lots and leave it alone.
+   */
+  includeZeroStock?: boolean;
 }
 
 export interface PaginationInventoryResponse {
@@ -845,6 +850,7 @@ export interface EstimateSummary {
   customerId?: string | null;
   customerName: string;
   customerPhone?: string | null;
+  customerEmail?: string | null;
   itemCount: number;
   grandTotal: number;
   convertedToPurchaseId?: string | null;
@@ -854,6 +860,10 @@ export interface EstimateSummary {
 
 export interface EstimateListResponse {
   estimates: EstimateSummary[];
+  page?: number;
+  size?: number;
+  total?: number;
+  totalPages?: number;
 }
 
 export interface ConvertEstimateResponse {

@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { Box, Button, Modal, Stack, Text, surfaceChrome } from '@inventory-platform/ui-kit';
+import type { KeyboardEvent, ReactNode } from 'react';
+import { Box, Button, Inline, Modal, Stack, Text, surfaceChrome } from '@inventory-platform/ui-kit';
 
 function formatMoney(n: number): string {
   return new Intl.NumberFormat('en-IN', {
@@ -8,6 +8,16 @@ function formatMoney(n: number): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(n);
+}
+
+function targetMeta(target: CartTargetSummary): string {
+  const parts = [
+    target.secondaryLabel?.trim() || null,
+    `${target.itemCount} item${target.itemCount === 1 ? '' : 's'}`,
+    formatMoney(Number(target.grandTotal) || 0),
+    target.customerPhone?.trim() || null,
+  ].filter((part): part is string => Boolean(part));
+  return parts.join(' · ');
 }
 
 /** Open sale quotation or estimate row for the product-search picker. */
@@ -53,13 +63,28 @@ export function AddToCartTargetPicker({
   onBack,
   backLabel = 'Back',
 }: AddToCartTargetPickerProps) {
+  const activate = (purchaseId: string) => {
+    if (isSubmitting) return;
+    onSelect(purchaseId);
+  };
+
+  const onRowKeyDown = (event: KeyboardEvent<HTMLDivElement>, purchaseId: string) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      activate(purchaseId);
+    }
+  };
+
   return (
-    <Modal open={open} onClose={onCancel} size="sm">
+    <Modal open={open} onClose={onCancel} size="md">
       <Modal.Header title={title} onClose={onCancel} />
       <Modal.Body>
         <Stack gap="md">
           <Text color="secondary">
-            {choosePrompt} <Text weight="semibold">{productLabel}</Text>
+            {choosePrompt}{' '}
+            <Text as="span" weight="semibold">
+              {productLabel}
+            </Text>
           </Text>
 
           <Button
@@ -74,40 +99,44 @@ export function AddToCartTargetPicker({
           </Button>
 
           <Stack gap="sm" aria-label={listAriaLabel} className={surfaceChrome.scrollPanel50}>
-            {targets.map((target) => (
-              <Button
-                key={target.purchaseId}
-                type="button"
-                variant="outline"
-                onClick={() => onSelect(target.purchaseId)}
-                disabled={isSubmitting}
-                className={surfaceChrome.pickerBtn}
-              >
-                <Text weight="semibold">{target.label}</Text>
-                <Text variant="caption" color="muted">
-                  {target.secondaryLabel ? `${target.secondaryLabel} · ` : ''}
-                  {target.itemCount} item{target.itemCount === 1 ? '' : 's'} ·{' '}
-                  {formatMoney(Number(target.grandTotal) || 0)}
-                  {target.customerPhone ? ` · ${target.customerPhone}` : ''}
-                </Text>
-              </Button>
-            ))}
+            {targets.length === 0 ? (
+              <Text variant="caption" color="muted">
+                None open yet. Use the button above to start a new one.
+              </Text>
+            ) : (
+              targets.map((target) => (
+                <Box
+                  key={target.purchaseId}
+                  role="button"
+                  tabIndex={isSubmitting ? -1 : 0}
+                  aria-disabled={isSubmitting || undefined}
+                  className={surfaceChrome.pickerRow}
+                  onClick={() => activate(target.purchaseId)}
+                  onKeyDown={(event) => onRowKeyDown(event, target.purchaseId)}
+                >
+                  <Stack gap="xs">
+                    <Text weight="semibold">{target.label || 'Walk-in'}</Text>
+                    <Text variant="caption" color="muted">
+                      {targetMeta(target)}
+                    </Text>
+                  </Stack>
+                </Box>
+              ))
+            )}
           </Stack>
         </Stack>
       </Modal.Body>
       <Modal.Footer>
-        <Box display="flex" width="full" justify="between" align="center" gap="md">
+        <Inline gap="sm" justify="end" width="full">
           {onBack ? (
-            <Button type="button" variant="ghost" onClick={onBack} disabled={isSubmitting}>
+            <Button type="button" variant="outline" onClick={onBack} disabled={isSubmitting}>
               {backLabel}
             </Button>
-          ) : (
-            <Box />
-          )}
-          <Button type="button" variant="ghost" onClick={onCancel} disabled={isSubmitting}>
+          ) : null}
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
             Cancel
           </Button>
-        </Box>
+        </Inline>
       </Modal.Footer>
     </Modal>
   );

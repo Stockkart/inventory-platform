@@ -1918,11 +1918,34 @@
   flex-shrink: 0;
 }
 
+.historyRecordFooter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 90%, transparent);
+}
+
+.historyRecordFooterAfterItems {
+  margin-top: 0;
+  padding: 0.85rem 1.25rem 1.15rem;
+}
+
 .historyItemsPanel {
   margin: 0;
   padding: 1rem 1.25rem 1.15rem;
   border-top: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 92%, transparent);
   background: color-mix(in srgb, #0f172a 2%, var(--sk-color-bg-elevated, #fff));
+}
+
+.historyTotalsPanel {
+  /* Sits under the line items in the same panel; a bill's totals belong on the right, and the
+     column is narrow so the labels stay next to their figures on a wide table. */
+  margin: 0.9rem 0 0 auto;
+  max-width: 22rem;
 }
 
 .historyItemsTitle {

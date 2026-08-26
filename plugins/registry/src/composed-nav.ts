@@ -12,7 +12,7 @@ import { creditNav } from '@inventory-platform/credit/nav';
 import { misNav } from '@inventory-platform/mis/nav';
 import { planNav } from '@inventory-platform/plan/nav';
 import { pricingNav } from '@inventory-platform/pricing/nav';
-import { productHistoryNav, productNav, productReturnsNav } from '@inventory-platform/product/nav';
+import { productNav, productReturnsNav } from '@inventory-platform/product/nav';
 import { remindersNav } from '@inventory-platform/reminders/nav';
 import { taxationNav } from '@inventory-platform/taxation/nav';
 import {
@@ -61,7 +61,6 @@ export const CORE_NAV_CONTRIBUTIONS: NavContribution[] = [
   misNav,
   productReturnsNav,
   analyticsNav,
-  productHistoryNav,
   taxationNav,
   remindersNav,
   userMarketingNav,

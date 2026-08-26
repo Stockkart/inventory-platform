@@ -194,7 +194,7 @@ export function CustomersPage() {
 
   const goScanSellWithCustomer = (customer: CustomerResponse) => {
     navigate(sellPath, {
-      state: { prefillCustomer: customer },
+      state: { prefillCustomer: customer, pickSellDestination: true },
     });
   };
 
@@ -249,8 +249,8 @@ export function CustomersPage() {
                 <TableHeaderCell>Name</TableHeaderCell>
                 <TableHeaderCell>Type</TableHeaderCell>
                 <TableHeaderCell>Phone</TableHeaderCell>
-                <TableHeaderCell>Email</TableHeaderCell>
                 <TableHeaderCell>Address</TableHeaderCell>
+                <TableHeaderCell>DL no.</TableHeaderCell>
                 <TableHeaderCell>Actions</TableHeaderCell>
               </TableRow>
             </TableHead>
@@ -265,8 +265,8 @@ export function CustomersPage() {
                     <TableCell>{customer.name}</TableCell>
                     <TableCell>{partyTypeLabel(customer.partyType)}</TableCell>
                     <TableCell>{customer.phone || '—'}</TableCell>
-                    <TableCell>{customer.email || '—'}</TableCell>
                     <TableCell>{formatAddress(customer.address)}</TableCell>
+                    <TableCell>{customer.dlNo || '—'}</TableCell>
                     <TableCell>
                       <Inline gap="sm">
                         <Button

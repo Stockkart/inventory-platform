@@ -1,4 +1,4 @@
-import { apiClient } from '@inventory-platform/api-client';
+import { apiClient, isApiError } from '@inventory-platform/api-client';
 import {
   INVENTORY_CORRECTIONS_ENDPOINTS,
   INVENTORY_ENDPOINTS,
@@ -51,6 +51,11 @@ function normalizeInventoryItem(row: InventoryItem, inventoryDocumentId: string)
   };
 }
 
+/** True for the 400 an API without includeZeroStock support answers with. */
+function rejectedIncludeZeroStock(err: unknown): boolean {
+  return isApiError(err) && err.status === 400 && (err.message ?? '').includes('includeZeroStock');
+}
+
 export const inventoryApi = {
   listPackagingUnits: async (): Promise<PackagingUnit[]> => {
     const response = await apiClient.get<ApiResponse<PackagingUnit[]>>(
@@ -78,14 +83,28 @@ export const inventoryApi = {
     return response.data;
   },
 
-  getAll: async (page = 0, size = 10): Promise<PaginationInventoryResponse> => {
+  getAll: async (
+    page = 0,
+    size = 10,
+    includeZeroStock = true,
+  ): Promise<PaginationInventoryResponse> => {
     const response = await apiClient.get<ApiResponse<PaginationInventoryResponse>>(
       INVENTORY_ENDPOINTS.BASE,
       {
         page: String(page),
         size: String(size),
+        ...(includeZeroStock ? {} : { includeZeroStock: 'false' }),
       },
     );
+    // Spring ignores a query param it does not declare, so an API without the flag answers with
+    // the sold-out lots still in. Trim them here so the list matches the search until it ships;
+    // on an API that understands the flag there is nothing left to trim.
+    if (!includeZeroStock && Array.isArray(response.data?.data)) {
+      return {
+        ...response.data,
+        data: response.data.data.filter((row) => (row.currentCount ?? 0) > 0),
+      };
+    }
     return response.data;
   },
 
@@ -119,6 +138,9 @@ export const inventoryApi = {
     if (params.limit !== undefined && params.limit > 0) {
       queryParams.limit = String(params.limit);
     }
+    if (params.includeZeroStock === false) {
+      queryParams.includeZeroStock = 'false';
+    }
     if (params.filters) {
       for (const [key, val] of Object.entries(params.filters)) {
         if (val?.trim()) {
@@ -127,11 +149,28 @@ export const inventoryApi = {
       }
     }
 
-    const response = await apiClient.get<ApiResponse<InventoryListResponse>>(
-      INVENTORY_ENDPOINTS.SEARCH,
-      queryParams,
-    );
-    return response.data;
+    const run = (q: Record<string, string>) =>
+      apiClient.get<ApiResponse<InventoryListResponse>>(INVENTORY_ENDPOINTS.SEARCH, q);
+
+    try {
+      const response = await run(queryParams);
+      return response.data;
+    } catch (err) {
+      // An API that predates the flag reads it as a vertical field filter and rejects the whole
+      // search with 400, so a client that hides sold-out lots would break search outright until
+      // the backend ships. Retry without the flag and drop the sold-out rows here instead.
+      // Pages come back short that way, which is exactly why the flag exists server-side.
+      if (!rejectedIncludeZeroStock(err)) {
+        throw err;
+      }
+      const { includeZeroStock: _dropped, ...rest } = queryParams;
+      const response = await run(rest);
+      const rows = response.data?.data;
+      if (!Array.isArray(rows)) {
+        return response.data;
+      }
+      return { ...response.data, data: rows.filter((row) => (row.currentCount ?? 0) > 0) };
+    }
   },
 
   /** @deprecated Use inventoryApi.search with flat params */

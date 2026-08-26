@@ -70,6 +70,14 @@ import {
 import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
 import { cartApi } from '../api/cart.api';
 import { estimatesApi } from '../api/estimates.api';
+import {
+  ESTIMATES_LIST_PATH,
+  estimateWorkspaceHref,
+  isEstimateListPath,
+  isEstimateWorkspaceSearch,
+  isLegacyEstimateWorkspacePath,
+} from '../lib/estimatePaths';
+import { rememberOpenQuotationId, readOpenQuotationId } from '../lib/sellSession';
 import { sellCatalogApi } from '../api/sell-catalog.api';
 import { pricingClient } from '../api/pricing-client.api';
 import { gstAmountRowLabel, uniqueGstRateLabel } from '../lib/gstRateLabel';
@@ -158,6 +166,7 @@ import {
   formatInventoryExpiryDate,
   hasInventoryExpiryDate,
   getExtensionFieldString,
+  getInventoryBatchNo,
   sortInventoryByExpirySoonest,
 } from '@inventory-platform/schema';
 import {
@@ -165,6 +174,7 @@ import {
   CustomerProductHistoryHint,
   shouldShowCustomerHistorySubrow,
   PrintInvoiceModal,
+  PendingCustomerSellFlow,
 } from '../ui';
 import { CustomerSearchPanel } from '../ui/CustomerSearchPanel';
 import { ScanSellQuotationStack } from '../ui/ScanSellQuotationStack';
@@ -278,12 +288,12 @@ function formatCartPackagingMeta(cartItem: CartItem): string {
   return conv ? `${conv} · ${line}` : line;
 }
 
-/** Format purchase scheme from inventory (registration) for read-only display. Uses purchase* when present (from API). */
+/** Format purchase scheme from inventory (registration) for the read-only hint above the sale scheme field. */
 function formatPurchaseSchemeLabel(inv: InventoryItem): string {
-  const schemeType = inv.purchaseSchemeType ?? inv.schemeType;
-  const schemePercentage = inv.purchaseSchemePercentage ?? inv.schemePercentage;
-  const schemePayFor = inv.purchaseSchemePayFor ?? inv.schemePayFor;
-  const schemeFree = inv.purchaseSchemeFree ?? inv.schemeFree;
+  const schemeType = inv.purchaseSchemeType;
+  const schemePercentage = inv.purchaseSchemePercentage;
+  const schemePayFor = inv.purchaseSchemePayFor;
+  const schemeFree = inv.purchaseSchemeFree;
   if (schemeType === 'PERCENTAGE' && schemePercentage != null) {
     return `${schemePercentage}%`;
   }
@@ -293,9 +303,32 @@ function formatPurchaseSchemeLabel(inv: InventoryItem): string {
   return '—';
 }
 
-/** Get purchase additional discount from inventory (registration). Uses purchase* when present. */
+/**
+ * What the line is billed before tax, mirroring CheckoutService: a percentage scheme cuts the
+ * price per unit, a pay-for/free scheme cuts the billable quantity, and the sale DISC comes off
+ * whatever is left. Without this the row read price x quantity, so a discount or a scheme only
+ * showed up once it reached the bill totals.
+ */
+function cartLineNetAmount(item: CartItem, additionalDiscount: number | null): number {
+  const price =
+    item.schemeType === 'PERCENTAGE' && item.schemePercentage
+      ? item.price * (1 - item.schemePercentage / 100)
+      : item.price;
+
+  const payFor = item.schemePayFor ?? 0;
+  const free = item.schemeFree ?? 0;
+  const billableQty =
+    item.schemeType === 'FIXED_UNITS' && payFor > 0 && free >= 0 && payFor + free > 0
+      ? (item.quantity * payFor) / (payFor + free)
+      : item.quantity;
+
+  const gross = price * billableQty;
+  return additionalDiscount ? gross * (1 - additionalDiscount / 100) : gross;
+}
+
+/** Purchase additional discount from product registration only — never the sale DISC input. */
 function getPurchaseAdditionalDiscount(inv: InventoryItem): number | null {
-  return inv.purchaseAdditionalDiscount ?? inv.saleAdditionalDiscount ?? null;
+  return inv.purchaseAdditionalDiscount ?? null;
 }
 
 function CartQuantityInput({
@@ -758,6 +791,8 @@ function CustomerSectionBlock({
   setCustomerSectionOpen,
   selectedCustomer,
   summaryLabel,
+  walkInName,
+  onWalkInNameChange,
   onSelectCustomer,
   onClearCustomer,
   disabled,
@@ -767,6 +802,8 @@ function CustomerSectionBlock({
   setCustomerSectionOpen: (open: boolean | ((o: boolean) => boolean)) => void;
   selectedCustomer: CustomerResponse | null;
   summaryLabel: string;
+  walkInName: string;
+  onWalkInNameChange: (value: string) => void;
   onSelectCustomer: (customer: CustomerResponse) => void;
   onClearCustomer: () => void;
   disabled?: boolean;
@@ -800,6 +837,8 @@ function CustomerSectionBlock({
             onSelect={onSelectCustomer}
             onClear={onClearCustomer}
             disabled={disabled}
+            walkInName={walkInName}
+            onWalkInNameChange={onWalkInNameChange}
           />
         </Stack>
       ) : null}
@@ -807,7 +846,7 @@ function CustomerSectionBlock({
   );
 }
 
-export function ScanSellPage() {
+export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?: boolean }) {
   const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
   const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
   const [cartBusinessType, setCartBusinessType] = useState('medical');
@@ -818,7 +857,11 @@ export function ScanSellPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const isEstimateMode = searchParams.get('mode') === 'estimate';
+  const isEstimateMode =
+    forceEstimateMode ||
+    isLegacyEstimateWorkspacePath(location.pathname) ||
+    searchParams.get('mode') === 'estimate' ||
+    (isEstimateListPath(location.pathname) && isEstimateWorkspaceSearch(searchParams));
   const estimatePurchaseIdParam = searchParams.get('purchaseId');
   const scanSellCustomerPrefillRef = useRef<CustomerResponse | null>(null);
   const scanSellCustomerPrefillConsumedRef = useRef(false);
@@ -1036,12 +1079,18 @@ export function ScanSellPage() {
   }, [location.key]);
 
   useLayoutEffect(() => {
-    const raw = (location.state as { prefillCustomer?: CustomerResponse } | null | undefined)
-      ?.prefillCustomer;
+    const state = location.state as
+      | { prefillCustomer?: CustomerResponse; pickSellDestination?: boolean }
+      | null
+      | undefined;
+    const raw = state?.prefillCustomer;
     if (!raw?.customerId) return;
+    if (state?.pickSellDestination) return;
     scanSellCustomerPrefillRef.current = raw;
-    navigate(location.pathname, { replace: true, state: {} });
-  }, [location.state, location.pathname, navigate]);
+    // Keep the query string: the destination picker hands the chosen quotation
+    // over as `?purchaseId=`, and dropping it here loses which document to open.
+    navigate(`${location.pathname}${location.search}`, { replace: true, state: {} });
+  }, [location.state, location.pathname, location.search, navigate]);
 
   const normalizeBillingMode = useCallback(
     (mode?: BillingMode | null): BillingMode => (mode === 'BASIC' ? 'BASIC' : 'REGULAR'),
@@ -1128,7 +1177,12 @@ export function ScanSellPage() {
       setIsSearching(true);
       setError(null);
       try {
-        const response = await inventoryApi.search(query.trim(), pageNum, pageSize);
+        // Sold-out lots cannot be added to a bill, so the counter never sees them here.
+        const response = await inventoryApi.search({
+          q: query.trim(),
+          limit: pageSize,
+          includeZeroStock: false,
+        });
         let items: InventoryItem[] = [];
         if (response) {
           if (Array.isArray(response)) items = response;
@@ -1187,13 +1241,23 @@ export function ScanSellPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showSearchDropdown]);
 
-  // Load cart on mount and when Sell ↔ Estimate mode changes
+  // Load cart on mount (sell quotations vs estimate workspace are different routes)
   const searchWrapperRef = useRef<HTMLDivElement>(null);
   const lastLoadCartTimeRef = useRef(0);
   const lastSellModeRef = useRef<boolean | null>(null);
-  /** Dedupes concurrent estimate bootstraps (Strict Mode / rapid mode toggles). */
+  /** Dedupes concurrent estimate bootstraps (Strict Mode). */
   const estimateBootstrapRef = useRef<Promise<void> | null>(null);
   useEffect(() => {
+    if (location.pathname.includes('/scan-sell') && searchParams.get('mode') === 'estimate') {
+      const next = new URLSearchParams(searchParams);
+      next.delete('mode');
+      const purchaseId = next.get('purchaseId')?.trim();
+      const fresh = next.get('fresh') === '1';
+      navigate(estimateWorkspaceHref({ purchaseId: purchaseId || undefined, fresh }), {
+        replace: true,
+      });
+      return;
+    }
     const modeChanged =
       lastSellModeRef.current !== null && lastSellModeRef.current !== isEstimateMode;
     lastSellModeRef.current = isEstimateMode;
@@ -1202,7 +1266,7 @@ export function ScanSellPage() {
     lastLoadCartTimeRef.current = now;
     cartLoadedRef.current = true;
     void loadCart();
-  }, [isEstimateMode]);
+  }, [isEstimateMode, location.pathname]);
 
   // Auto-dismiss error message after 5 seconds
   useEffect(() => {
@@ -1237,7 +1301,7 @@ export function ScanSellPage() {
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev);
-        next.set('mode', 'estimate');
+        next.delete('mode');
         next.set('purchaseId', purchaseId);
         next.delete('fresh');
         return next;
@@ -1257,7 +1321,7 @@ export function ScanSellPage() {
 
   /** Prefer an existing open estimate; create only when none exist (or fresh=1). */
   const ensureDefaultEstimate = async (): Promise<string> => {
-    const list = await estimatesApi.list('OPEN');
+    const list = await estimatesApi.list('OPEN', { size: 100 });
     const existing = list.estimates[0];
     if (existing) {
       await loadQuotation(existing.purchaseId);
@@ -1372,6 +1436,7 @@ export function ScanSellPage() {
   const applyCartToState = (cart: CartResponse, previousItems: CartItem[] = []) => {
     setCartData(cart);
     setActivePurchaseId(cart.purchaseId);
+    rememberOpenQuotationId(cart.purchaseId);
     applyCustomerFieldsFromCart(cart);
     setCartItems(mergeCartResponseToItems(cart, previousItems));
   };
@@ -1589,8 +1654,35 @@ export function ScanSellPage() {
     setIsLoadingCart(true);
     setError(null);
     try {
+      // In-progress checkout (PENDING) is not in the open-quotation list.
+      // Resume it instead of creating a new empty cart.
+      const preferredId =
+        estimatePurchaseIdParam?.trim() || activePurchaseId || readOpenQuotationId() || undefined;
+      if (preferredId) {
+        try {
+          const preferred = await cartApi.get(preferredId);
+          if (preferred.status === 'PENDING') {
+            navigate(`/dashboard/checkout?purchaseId=${encodeURIComponent(preferred.purchaseId)}`, {
+              replace: true,
+              state: { purchaseId: preferred.purchaseId },
+            });
+            return;
+          }
+        } catch {
+          // Fall through to active-cart / open quotations.
+        }
+      }
+
+      const activeCart = await cartApi.get().catch(() => null);
+      if (activeCart?.status === 'PENDING' && activeCart.purchaseId) {
+        navigate(`/dashboard/checkout?purchaseId=${encodeURIComponent(activeCart.purchaseId)}`, {
+          replace: true,
+          state: { purchaseId: activeCart.purchaseId },
+        });
+        return;
+      }
+
       const list = await refreshQuotationList();
-      const preferredId = estimatePurchaseIdParam?.trim() || activePurchaseId;
       if (list.length > 0) {
         const targetId =
           preferredId && list.some((q) => q.purchaseId === preferredId)
@@ -1716,7 +1808,11 @@ export function ScanSellPage() {
       customerPan: c.pan ?? c.panNo ?? '',
       customerPartyType: c.partyType ?? 'CONSUMER',
     });
-  }, [isLoadingCart]);
+    // `location.key` matters as much as the cart: arriving from the customer
+    // picker is a navigation to this same route, so the cart never reloads and
+    // `isLoadingCart` never changes. Keyed only on that, this effect would not
+    // run again and the customer left in the ref would never be applied.
+  }, [isLoadingCart, location.key]);
 
   /** Build CartItem[] from cart response, reusing existing inventoryItem when possible (no API calls). */
   const mergeCartResponseToItems = useCallback(
@@ -2176,6 +2272,7 @@ export function ScanSellPage() {
       if (thisSyncVersion !== syncVersionRef.current) return;
       setCartData(updatedCart);
       setActivePurchaseId(updatedCart.purchaseId);
+      rememberOpenQuotationId(updatedCart.purchaseId);
       // Merge response into local state (no extra inventory/search API calls)
       setCartItems(mergeCartResponseToItems(updatedCart, items));
       void refreshQuotationList();
@@ -2515,7 +2612,7 @@ export function ScanSellPage() {
         };
         return next;
       });
-      syncCartToAPI(updatedItems);
+      syncCartToAPI(updatedItems, inventoryId, 0);
       return updatedItems;
     });
   };
@@ -2744,19 +2841,6 @@ export function ScanSellPage() {
     }
   };
 
-  const handleSellModeChange = (nextEstimate: boolean) => {
-    if (nextEstimate === isEstimateMode) return;
-    setActivePurchaseId(null);
-    setCartData(null);
-    setCartItems([]);
-    if (nextEstimate) {
-      // Reuse an open estimate on entry — do not force a new EST- number.
-      setSearchParams({ mode: 'estimate' });
-    } else {
-      setSearchParams({});
-    }
-  };
-
   const menuCartLines = useMemo(
     () => (cartData?.items ?? []).filter((line) => isMenuLine(line)),
     [cartData],
@@ -2938,6 +3022,7 @@ export function ScanSellPage() {
       mx={isCafeSell ? undefined : 'auto'}
       className={isCafeSell ? scanSellCafePageShell : scanSellPageShell}
     >
+      <PendingCustomerSellFlow sellPath={location.pathname} />
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
       <PageHeader
@@ -2949,36 +3034,16 @@ export function ScanSellPage() {
             : 'Speed up sales with barcode scanning'
         }
         actions={
-          <Inline gap="sm" align="center" flexWrap>
-            <Inline gap="none" border rounded="md" overflow="hidden">
-              <Button
-                type="button"
-                size="sm"
-                variant={!isEstimateMode ? 'solid' : 'ghost'}
-                onClick={() => handleSellModeChange(false)}
-              >
-                Sell
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant={isEstimateMode ? 'solid' : 'ghost'}
-                onClick={() => handleSellModeChange(true)}
-              >
-                Estimate
-              </Button>
-            </Inline>
-            {isEstimateMode ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/dashboard/estimates')}
-              >
-                All estimates
-              </Button>
-            ) : null}
-          </Inline>
+          isEstimateMode ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(ESTIMATES_LIST_PATH)}
+            >
+              All estimates
+            </Button>
+          ) : undefined
         }
       />
 
@@ -3058,6 +3123,8 @@ export function ScanSellPage() {
                       setCustomerSectionOpen={setCustomerSectionOpen}
                       selectedCustomer={selectedCustomer}
                       summaryLabel={customerSectionSummary(customerName, customerPhone)}
+                      walkInName={customerName}
+                      onWalkInNameChange={setCustomerName}
                       onSelectCustomer={handleSelectCustomer}
                       onClearCustomer={handleClearCustomer}
                       disabled={isUpdatingCart || isLoadingCart}
@@ -3211,7 +3278,13 @@ export function ScanSellPage() {
                                 const quantityInputValue = isBaseUnitSelected
                                   ? cartItem.baseQuantity
                                   : cartItem.quantity;
-                                const lineTotal = cartItem.price * cartItem.quantity;
+                                const lineTotal = cartLineNetAmount(
+                                  cartItem,
+                                  getEffectiveAdditionalDiscount(
+                                    cartItem.inventoryItem.id,
+                                    cartItem,
+                                  ),
+                                );
                                 const formatPrice = (n: number) =>
                                   new Intl.NumberFormat('en-IN', {
                                     style: 'currency',
@@ -3773,7 +3846,14 @@ export function ScanSellPage() {
                                           </Button>
                                         </Inline>
                                         <Text weight="semibold" className={lineTotalAmountStyle}>
-                                          ₹{(cartItem.price * cartItem.quantity).toFixed(2)}
+                                          ₹
+                                          {cartLineNetAmount(
+                                            cartItem,
+                                            getEffectiveAdditionalDiscount(
+                                              cartItem.inventoryItem.id,
+                                              cartItem,
+                                            ),
+                                          ).toFixed(2)}
                                         </Text>
                                       </Stack>
                                     </Inline>
@@ -3812,6 +3892,8 @@ export function ScanSellPage() {
                     setCustomerSectionOpen={setCustomerSectionOpen}
                     selectedCustomer={selectedCustomer}
                     summaryLabel={customerSectionSummary(customerName, customerPhone)}
+                    walkInName={customerName}
+                    onWalkInNameChange={setCustomerName}
                     onSelectCustomer={handleSelectCustomer}
                     onClearCustomer={handleClearCustomer}
                     disabled={isUpdatingCart || isLoadingCart}
@@ -4192,6 +4274,12 @@ function SearchDropdownItem({
     onAddToCart(item);
   };
 
+  // The batch sits on the line for some verticals and in the extension fields
+  // for others, so read it through the helper that knows both. It answers '—'
+  // when there is none, which suits a fixed table row but not a card line.
+  const rawBatchNo = getInventoryBatchNo(item);
+  const batchNo = rawBatchNo && rawBatchNo !== '—' ? rawBatchNo : '';
+
   return (
     <Inline as="li" justify="between" align="start" gap="md" className={dropdownItemStyle}>
       <Stack gap="xs" flex="1" minWidth="0">
@@ -4204,6 +4292,11 @@ function SearchDropdownItem({
         {item.companyName ? (
           <Text variant="caption" color="secondary" truncate>
             Company: {item.companyName}
+          </Text>
+        ) : null}
+        {batchNo ? (
+          <Text variant="caption" color="secondary" truncate>
+            Batch: {batchNo}
           </Text>
         ) : null}
         {item.barcode ? (
