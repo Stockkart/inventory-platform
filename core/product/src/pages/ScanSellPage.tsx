@@ -3537,7 +3537,10 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                   <DenseTableHeaderCell>Disc</DenseTableHeaderCell>
                                   <DenseTableHeaderCell>Scheme</DenseTableHeaderCell>
                                   <DenseTableHeaderCell>Amount</DenseTableHeaderCell>
-                                  <DenseTableHeaderCell aria-label="Actions" />
+                                  <DenseTableHeaderCell
+                                    aria-label="Actions"
+                                    className={productChrome.rowActionsCell}
+                                  />
                                 </DenseTableRow>
                               </TableHead>
                               <TableBody>
@@ -3768,7 +3771,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                           </Stack>
                                         </DenseTableCell>
                                         <DenseTableCell>{formatPrice(lineTotal)}</DenseTableCell>
-                                        <DenseTableCell>
+                                        <DenseTableCell className={productChrome.rowActionsCell}>
                                           <IconButton
                                             type="button"
                                             size="sm"
