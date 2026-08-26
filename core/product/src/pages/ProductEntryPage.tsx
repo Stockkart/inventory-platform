@@ -9,10 +9,10 @@ import { productApi } from '../api/product.api';
 import { barcodesApi } from '../api/barcodes.api';
 import { mapLastInventoryToRegistrationPatch } from '../lib/registrationPrefill';
 import {
-  clearProductEntryVendor,
-  readProductEntryVendor,
-  rememberProductEntryVendor,
-} from '../lib/sellSession';
+  clearProductEntryDraft,
+  readProductEntryDraft,
+  saveProductEntryDraft,
+} from '../lib/productEntryDraft';
 import { PrintBarcodeLabelsModal } from '../ui/PrintBarcodeLabelsModal';
 import { openLocalBarcodeLabelPrint } from '../lib/printBarcodeLabels';
 import { vendorsApi } from '@inventory-platform/user/vendors';
@@ -975,6 +975,80 @@ export function ProductEntryPage() {
   // Multiple products state
   const [products, setProducts] = useState<ProductFormData[]>([]);
   const [packagingUnits, setPackagingUnits] = useState<PackagingUnit[]>([]);
+
+  /**
+   * Bring back a half-finished entry after a refresh.
+   *
+   * Scanning a vendor bill fills this grid from OCR and the operator then corrects it
+   * by hand; before this, a refresh threw all of that away and the bill had to be
+   * scanned again. Restores silently, the way the vendor field already does.
+   *
+   * The ref guards the persist effect below: without it, the first render would write
+   * an empty grid over the very draft we are about to read.
+   */
+  const draftRestoredRef = useRef(false);
+  useLayoutEffect(() => {
+    if (draftRestoredRef.current) return;
+    draftRestoredRef.current = true;
+    const draft = readProductEntryDraft<ProductFormData, Vendor>();
+    if (!draft) return;
+    setProducts(draft.products);
+    if (draft.billingMode) setBillingMode(draft.billingMode as BillingMode);
+    if (draft.vendorInvoiceNo) setVendorInvoiceNo(draft.vendorInvoiceNo);
+    if (draft.vendorInvoiceDate) setVendorInvoiceDate(draft.vendorInvoiceDate);
+    if (draft.vendorLineSubTotal) setVendorLineSubTotal(draft.vendorLineSubTotal);
+    if (draft.vendorTaxTotal) setVendorTaxTotal(draft.vendorTaxTotal);
+    if (draft.vendorShippingCharge) setVendorShippingCharge(draft.vendorShippingCharge);
+    if (draft.vendorOtherCharges) setVendorOtherCharges(draft.vendorOtherCharges);
+    if (draft.vendorOverallDiscount) setVendorOverallDiscount(draft.vendorOverallDiscount);
+    if (draft.vendorRoundOff) setVendorRoundOff(draft.vendorRoundOff);
+    if (draft.vendorInvoiceTotal) setVendorInvoiceTotal(draft.vendorInvoiceTotal);
+  }, []);
+
+  /**
+   * Persist the entry as it is edited. Debounced so typing does not hit storage on
+   * every keystroke. An empty grid clears the draft rather than saving nothing over
+   * it, which is what makes the post-submit reset tidy up after itself.
+   */
+  useEffect(() => {
+    if (!draftRestoredRef.current) return;
+    // A vendor is normally picked before the bill is scanned, so an empty grid with a
+    // vendor on it is still worth keeping. Only a genuinely empty form clears.
+    if (products.length === 0 && !selectedVendor) {
+      clearProductEntryDraft();
+      return;
+    }
+    const timer = setTimeout(() => {
+      saveProductEntryDraft<ProductFormData, Vendor>({
+        products,
+        vendor: selectedVendor,
+        billingMode,
+        vendorInvoiceNo,
+        vendorInvoiceDate,
+        vendorLineSubTotal,
+        vendorTaxTotal,
+        vendorShippingCharge,
+        vendorOtherCharges,
+        vendorOverallDiscount,
+        vendorRoundOff,
+        vendorInvoiceTotal,
+      });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [
+    products,
+    selectedVendor,
+    billingMode,
+    vendorInvoiceNo,
+    vendorInvoiceDate,
+    vendorLineSubTotal,
+    vendorTaxTotal,
+    vendorShippingCharge,
+    vendorOtherCharges,
+    vendorOverallDiscount,
+    vendorRoundOff,
+    vendorInvoiceTotal,
+  ]);
 
   useEffect(() => {
     inventoryApi
@@ -2456,6 +2530,10 @@ export function ProductEntryPage() {
               : `Successfully registered ${count} products`,
           );
 
+          // Saved is saved. The form only resets after 5s below, and a refresh inside
+          // that window would otherwise restore an entry that is already in the books.
+          clearProductEntryDraft();
+
           const createdBarcodes = items
             .map((item) => item.barcode)
             .filter((code): code is string => Boolean(code?.trim()));
@@ -2493,6 +2571,7 @@ export function ProductEntryPage() {
               ? 'Product registered successfully'
               : `Successfully registered ${count} products`,
           );
+          clearProductEntryDraft();
           setTimeout(() => {
             setProducts([]);
             handleClearVendor();
@@ -2561,7 +2640,6 @@ export function ProductEntryPage() {
 
   const handleSelectVendor = (vendor: Vendor) => {
     setSelectedVendor(vendor);
-    rememberProductEntryVendor(vendor);
     setVendorSearchQuery(vendor.name);
     setShowVendorDropdown(false);
     setVendorSearchResults([]);
@@ -2571,7 +2649,10 @@ export function ProductEntryPage() {
     if (vendorPrefillConsumedRef.current) return;
     const fromNav = (location.state as { prefillVendor?: VendorResponse } | null | undefined)
       ?.prefillVendor;
-    const raw = fromNav?.vendorId ? fromNav : readProductEntryVendor<VendorResponse>();
+    // Navigation state wins (arriving from Contacts with a vendor chosen); otherwise
+    // take the vendor off the draft, which is where it now lives alongside the rows.
+    const fromDraft = readProductEntryDraft<ProductFormData, VendorResponse>()?.vendor ?? null;
+    const raw = fromNav?.vendorId ? fromNav : fromDraft;
     if (!raw?.vendorId) return;
     vendorPrefillConsumedRef.current = true;
     const vendor: Vendor = {
@@ -2672,7 +2753,6 @@ export function ProductEntryPage() {
       };
       const vendor = await vendorsApi.create(vendorPayload);
       setSelectedVendor(vendor);
-      rememberProductEntryVendor(vendor);
       setVendorSearchQuery(vendor.contactPhone);
       handleCloseVendorModal();
     } catch (err) {
@@ -2684,7 +2764,6 @@ export function ProductEntryPage() {
   };
 
   const handleClearVendor = () => {
-    clearProductEntryVendor();
     setSelectedVendor(null);
     setVendorSearchQuery('');
     setVendorSearchResults([]);
