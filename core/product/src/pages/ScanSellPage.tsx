@@ -3254,7 +3254,6 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                               <DenseTableRow>
                                 <DenseTableHeaderCell>#</DenseTableHeaderCell>
                                 <DenseTableHeaderCell>Product</DenseTableHeaderCell>
-                                <DenseTableHeaderCell>Company</DenseTableHeaderCell>
                                 <DenseTableHeaderCell>Qty</DenseTableHeaderCell>
                                 <DenseTableHeaderCell>Unit</DenseTableHeaderCell>
                                 <DenseTableHeaderCell>Amount</DenseTableHeaderCell>
@@ -3323,9 +3322,6 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                         >
                                           {cartItem.inventoryItem.name || '—'}
                                         </Button>
-                                      </DenseTableCell>
-                                      <DenseTableCell>
-                                        {cartItem.inventoryItem.companyName || '—'}
                                       </DenseTableCell>
                                       <DenseTableCell>
                                         <Box className={denseTableClassNames.cellInput}>
@@ -3489,7 +3485,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                     {showHistorySubrow ? (
                                       <DenseTableRow className={productChrome.historySubrowTr}>
                                         <DenseTableCell
-                                          colSpan={10}
+                                          colSpan={9}
                                           className={productChrome.historySubrowCell}
                                         >
                                           <CustomerProductHistoryHint
