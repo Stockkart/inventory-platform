@@ -10,8 +10,8 @@
  * buys two obligations localStorage does not give us for free: the key is scoped to
  * the shop, because a counter PC is shared and one shop's half-typed invoice must
  * not surface for the next; and the payload carries a timestamp, because
- * localStorage never expires on its own and a month-old draft reappearing as if it
- * were today's work is worse than losing it.
+ * localStorage never expires on its own and a stale draft reappearing as if it were
+ * today's work is worse than losing it.
  */
 
 const DRAFT_KEY_PREFIX = 'sk-product-entry-draft';
@@ -19,9 +19,11 @@ const DRAFT_KEY_PREFIX = 'sk-product-entry-draft';
 /**
  * How long a draft stays restorable. Long enough that a real interruption — a power
  * cut, a machine restart, a shift ending mid-bill — does not lose the work, short
- * enough that an abandoned draft does not resurface weeks later looking current.
+ * enough that an abandoned draft does not resurface looking current. A bill left
+ * unfinished longer than this has almost certainly been entered another way, and
+ * restore is silent, so a stale draft arrives with nothing to say it is stale.
  */
-export const DRAFT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+export const DRAFT_MAX_AGE_MS = 2 * 24 * 60 * 60 * 1000;
 
 export interface ProductEntryDraft<TProduct = unknown, TVendor = unknown> {
   /** Epoch millis. Used only to age the draft out; never shown to the operator. */
