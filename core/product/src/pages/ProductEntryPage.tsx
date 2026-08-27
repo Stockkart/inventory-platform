@@ -8,6 +8,7 @@ import { inventoryApi } from '../api/inventory.api';
 import { productApi } from '../api/product.api';
 import { barcodesApi } from '../api/barcodes.api';
 import { mapLastInventoryToRegistrationPatch } from '../lib/registrationPrefill';
+import { TypeaheadPortal } from '../ui/TypeaheadPortal';
 import {
   clearProductEntryDraft,
   readProductEntryDraft,
@@ -142,6 +143,61 @@ import {
   uploadLayoutStyles,
   vendorStyles,
 } from '../ui/registration-layout-styles';
+
+/**
+ * The product-name field of one registration-grid row, with its suggestions.
+ *
+ * The menu is portalled rather than positioned inside the cell: the grid scrolls in
+ * both axes, and an absolutely positioned menu was clipped to that scroll box, so on
+ * lower rows the suggestions never appeared even though the search had returned them.
+ * The wrapper Box is the measurement anchor because the ui-kit Input does not forward
+ * a ref.
+ */
+function GridProductNameCell({
+  rowId,
+  value,
+  disabled,
+  open,
+  suggestions,
+  onChange,
+  onBlur,
+  onApply,
+}: {
+  rowId: string;
+  value: string;
+  disabled: boolean;
+  open: boolean;
+  suggestions: ProductSuggestion[];
+  onChange: (rowId: string, value: string) => void;
+  onBlur: (rowId: string) => void;
+  onApply: (rowId: string, suggestion: ProductSuggestion) => Promise<void> | void;
+}) {
+  const anchorRef = useRef<HTMLElement | null>(null);
+  return (
+    <Box ref={anchorRef} className={productChrome.typeaheadWrap}>
+      <Input
+        type="text"
+        className={denseDataGrid.input}
+        placeholder="Product name"
+        value={value}
+        autoComplete="off"
+        onChange={(e) => onChange(rowId, e.target.value)}
+        onBlur={() => onBlur(rowId)}
+        disabled={disabled}
+        required
+      />
+      <TypeaheadPortal anchorRef={anchorRef} open={open}>
+        <Box as="ul" className={productChrome.typeaheadMenu}>
+          {suggestions.map((s) => (
+            <Box as="li" key={s.id}>
+              <ProductSuggestionOption suggestion={s} onSelect={() => void onApply(rowId, s)} />
+            </Box>
+          ))}
+        </Box>
+      </TypeaheadPortal>
+    </Box>
+  );
+}
 
 function VendorDetailField({
   icon,
@@ -3503,34 +3559,19 @@ export function ProductEntryPage() {
                                   }
                                 />
                                 <TableCell className={denseDataGrid.td}>
-                                  <Box className={productChrome.typeaheadWrap}>
-                                    <Input
-                                      type="text"
-                                      className={denseDataGrid.input}
-                                      placeholder="Product name"
-                                      value={product.name}
-                                      autoComplete="off"
-                                      onChange={(e) => handleNameChange(product.id, e.target.value)}
-                                      onBlur={() => handleNameBlur(product.id)}
-                                      disabled={isLoading}
-                                      required
-                                    />
-                                    {suggestionRowId === product.id &&
-                                    productSuggestions.length > 0 ? (
-                                      <Box as="ul" className={productChrome.typeaheadMenu}>
-                                        {productSuggestions.map((s) => (
-                                          <Box as="li" key={s.id}>
-                                            <ProductSuggestionOption
-                                              suggestion={s}
-                                              onSelect={() =>
-                                                void applyProductPrefill(product.id, s)
-                                              }
-                                            />
-                                          </Box>
-                                        ))}
-                                      </Box>
-                                    ) : null}
-                                  </Box>
+                                  <GridProductNameCell
+                                    rowId={product.id}
+                                    value={product.name}
+                                    disabled={isLoading}
+                                    open={
+                                      suggestionRowId === product.id &&
+                                      productSuggestions.length > 0
+                                    }
+                                    suggestions={productSuggestions}
+                                    onChange={handleNameChange}
+                                    onBlur={handleNameBlur}
+                                    onApply={applyProductPrefill}
+                                  />
                                 </TableCell>
                                 <VerticalRegistrationGridCells
                                   fields={verticalRegistrationFields}
