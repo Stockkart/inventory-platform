@@ -10,17 +10,11 @@ import {
   CardBody,
   CenteredLoader,
   Inline,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeaderCell,
-  TableRow,
   Text,
   cn,
   productChrome,
-  surfaceChrome,
 } from '@inventory-platform/ui-kit';
+import { SaleLineItemsTable, SaleTotals } from './SaleLineItems';
 import { useEstimateDetailQuery } from '../queries/hooks';
 import { PrintInvoiceModal } from './PrintInvoiceModal';
 
@@ -249,41 +243,21 @@ export function EstimateListCard({
                 No line items on this estimate.
               </Text>
             ) : (
-              <Box overflow="auto">
-                <Table className={cn(surfaceChrome.minW320, productChrome.historyItemsTable)}>
-                  <TableHead>
-                    <TableRow>
-                      <TableHeaderCell>Product</TableHeaderCell>
-                      <TableHeaderCell className={surfaceChrome.numericCell}>Qty</TableHeaderCell>
-                      <TableHeaderCell className={surfaceChrome.numericCell}>
-                        Unit price
-                      </TableHeaderCell>
-                      <TableHeaderCell className={surfaceChrome.numericCell}>
-                        Line total
-                      </TableHeaderCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {items.map((item, idx) => (
-                      <TableRow key={`${item.inventoryId ?? item.name}-${idx}`}>
-                        <TableCell>
-                          <Text weight="medium">{item.name ?? item.inventoryId ?? '—'}</Text>
-                        </TableCell>
-                        <TableCell className={surfaceChrome.numericCell}>
-                          {item.quantity}
-                          {item.saleUnit ? ` ${item.saleUnit}` : ''}
-                        </TableCell>
-                        <TableCell className={surfaceChrome.numericCell}>
-                          {formatCurrency(item.priceToRetail ?? 0)}
-                        </TableCell>
-                        <TableCell className={surfaceChrome.numericCell}>
-                          <Text weight="semibold">{formatCurrency(item.totalAmount ?? 0)}</Text>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </Box>
+              <>
+                <SaleLineItemsTable items={items} />
+
+                {/* An estimate is a cart read before conversion, so it carries the same
+                    totals a completed sale does. Showing only Qty, Unit price and Line
+                    total made the same document look thinner here than in History. */}
+                <SaleTotals
+                  subTotal={detailQuery.data?.subTotal}
+                  discountTotal={detailQuery.data?.discountTotal}
+                  sgstAmount={detailQuery.data?.sgstAmount}
+                  cgstAmount={detailQuery.data?.cgstAmount}
+                  taxTotal={detailQuery.data?.taxTotal}
+                  grandTotal={detailQuery.data?.grandTotal}
+                />
+              </>
             )}
           </Box>
         ) : null}

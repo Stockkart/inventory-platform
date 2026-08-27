@@ -64,6 +64,7 @@ import {
   Percent,
   Receipt,
   Tag,
+  Trash2,
   TrendingDown,
   X,
 } from 'lucide-react';
@@ -3254,14 +3255,16 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                               <DenseTableRow>
                                 <DenseTableHeaderCell>#</DenseTableHeaderCell>
                                 <DenseTableHeaderCell>Product</DenseTableHeaderCell>
-                                <DenseTableHeaderCell>Company</DenseTableHeaderCell>
-                                <DenseTableHeaderCell>Qty</DenseTableHeaderCell>
                                 <DenseTableHeaderCell>Unit</DenseTableHeaderCell>
-                                <DenseTableHeaderCell>Amount</DenseTableHeaderCell>
+                                <DenseTableHeaderCell>Qty</DenseTableHeaderCell>
                                 <DenseTableHeaderCell>Price</DenseTableHeaderCell>
-                                <DenseTableHeaderCell>Discount</DenseTableHeaderCell>
+                                <DenseTableHeaderCell>Disc</DenseTableHeaderCell>
                                 <DenseTableHeaderCell>Scheme</DenseTableHeaderCell>
-                                <DenseTableHeaderCell>Actions</DenseTableHeaderCell>
+                                <DenseTableHeaderCell>Amount</DenseTableHeaderCell>
+                                <DenseTableHeaderCell
+                                  aria-label="Actions"
+                                  className={productChrome.rowActionsCell}
+                                />
                               </DenseTableRow>
                             </TableHead>
                             <TableBody>
@@ -3325,27 +3328,6 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                         </Button>
                                       </DenseTableCell>
                                       <DenseTableCell>
-                                        {cartItem.inventoryItem.companyName || '—'}
-                                      </DenseTableCell>
-                                      <DenseTableCell>
-                                        <Box className={denseTableClassNames.cellInput}>
-                                          <CartQuantityInput
-                                            value={quantityInputValue}
-                                            disabled={isUpdatingCart}
-                                            onCommit={async (newQty) => {
-                                              const delta = newQty - quantityInputValue;
-                                              if (delta !== 0) {
-                                                await handleUpdateQuantity(
-                                                  cartItem.inventoryItem.id,
-                                                  delta,
-                                                  isBaseUnitSelected,
-                                                );
-                                              }
-                                            }}
-                                          />
-                                        </Box>
-                                      </DenseTableCell>
-                                      <DenseTableCell>
                                         <Select
                                           className={denseTableClassNames.select}
                                           value={cartItem.unit}
@@ -3368,7 +3350,24 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                           }))}
                                         />
                                       </DenseTableCell>
-                                      <DenseTableCell>{formatPrice(lineTotal)}</DenseTableCell>
+                                      <DenseTableCell>
+                                        <Box className={denseTableClassNames.cellInput}>
+                                          <CartQuantityInput
+                                            value={quantityInputValue}
+                                            disabled={isUpdatingCart}
+                                            onCommit={async (newQty) => {
+                                              const delta = newQty - quantityInputValue;
+                                              if (delta !== 0) {
+                                                await handleUpdateQuantity(
+                                                  cartItem.inventoryItem.id,
+                                                  delta,
+                                                  isBaseUnitSelected,
+                                                );
+                                              }
+                                            }}
+                                          />
+                                        </Box>
+                                      </DenseTableCell>
                                       <DenseTableCell>
                                         <Stack gap="xs" className={denseTableClassNames.priceCell}>
                                           <CartSellingPriceInput
@@ -3472,24 +3471,27 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                           </Box>
                                         </Stack>
                                       </DenseTableCell>
-                                      <DenseTableCell>
-                                        <Button
+                                      <DenseTableCell>{formatPrice(lineTotal)}</DenseTableCell>
+                                      <DenseTableCell className={productChrome.rowActionsCell}>
+                                        <IconButton
                                           type="button"
-                                          variant="danger"
                                           size="sm"
+                                          className={productChrome.rowRemoveButton}
                                           onClick={() =>
                                             handleRemoveItem(cartItem.inventoryItem.id)
                                           }
                                           disabled={isUpdatingCart}
+                                          label={`Remove ${cartItem.inventoryItem.name || 'item'}`}
+                                          title="Remove"
                                         >
-                                          Remove
-                                        </Button>
+                                          <Icon icon={Trash2} size="sm" />
+                                        </IconButton>
                                       </DenseTableCell>
                                     </DenseTableRow>
                                     {showHistorySubrow ? (
                                       <DenseTableRow className={productChrome.historySubrowTr}>
                                         <DenseTableCell
-                                          colSpan={10}
+                                          colSpan={9}
                                           className={productChrome.historySubrowCell}
                                         >
                                           <CustomerProductHistoryHint
@@ -3832,18 +3834,24 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                               }
                                             }}
                                           />
-                                          <Button
+                                          <IconButton
                                             type="button"
-                                            variant="ghost"
                                             size="sm"
-                                            className={surfaceChrome.flexShrink0}
+                                            className={cn(
+                                              surfaceChrome.flexShrink0,
+                                              productChrome.rowRemoveButton,
+                                            )}
                                             onClick={() =>
                                               handleRemoveItem(cartItem.inventoryItem.id)
                                             }
                                             disabled={isUpdatingCart}
+                                            label={`Remove ${
+                                              cartItem.inventoryItem.name || 'item'
+                                            }`}
+                                            title="Remove"
                                           >
-                                            Remove
-                                          </Button>
+                                            <Icon icon={Trash2} size="sm" />
+                                          </IconButton>
                                         </Inline>
                                         <Text weight="semibold" className={lineTotalAmountStyle}>
                                           ₹

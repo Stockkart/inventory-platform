@@ -43,19 +43,6 @@ function formatAddress(addr: string | null | undefined) {
   return addr.trim();
 }
 
-function formatBusinessType(value: string | null | undefined) {
-  if (!value) return '—';
-  const labels: Record<string, string> = {
-    WHOLESALE: 'Wholesale',
-    RETAIL: 'Retail',
-    MANUFACTURER: 'Manufacturer',
-    DISTRIBUTOR: 'Distributor',
-    'C&F': 'C&F',
-    OTHER: 'Other',
-  };
-  return labels[value] ?? value;
-}
-
 export function VendorsPage() {
   const navigate = useNavigate();
   const [data, setData] = useState<VendorResponse[]>([]);
@@ -244,9 +231,6 @@ export function VendorsPage() {
                   Address
                 </TableHeaderCell>
                 <TableHeaderCell className={surfaceChrome.customersIdCell}>DL no.</TableHeaderCell>
-                <TableHeaderCell className={surfaceChrome.vendorsBusinessCell}>
-                  Business type
-                </TableHeaderCell>
                 <TableHeaderCell className={surfaceChrome.customersIdCell}>GSTIN</TableHeaderCell>
                 <TableHeaderCell className={surfaceChrome.customersActionCell}>
                   Actions
@@ -255,10 +239,10 @@ export function VendorsPage() {
             </TableHead>
             <TableBody>
               {loading ? (
-                <TableLoadingRow colSpan={7} label="Loading vendors…" />
+                <TableLoadingRow colSpan={6} label="Loading vendors…" />
               ) : data.length === 0 ? (
                 <TableEmptyRow
-                  colSpan={7}
+                  colSpan={6}
                   message={
                     query
                       ? 'No vendors match your search.'
@@ -284,9 +268,6 @@ export function VendorsPage() {
                     </TableCell>
                     <TableCell className={surfaceChrome.customersIdCell}>
                       {vendor.dlNo ?? '—'}
-                    </TableCell>
-                    <TableCell className={surfaceChrome.vendorsBusinessCell}>
-                      {formatBusinessType(vendor.businessType)}
                     </TableCell>
                     <TableCell className={surfaceChrome.customersIdCell}>
                       {vendor.gstinUin ?? '—'}
