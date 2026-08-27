@@ -2046,6 +2046,11 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     if (isLoadingCart) return;
     const c = scanSellCustomerPrefillRef.current;
     if (!c || scanSellCustomerPrefillConsumedRef.current) return;
+    // The picker names its quotation in the URL, but the page only adopts it once that cart has
+    // loaded. Applying the customer before then wrote it to whichever quotation happened to be
+    // open, renaming that one and leaving two quotations under the same customer.
+    const targetPurchaseId = estimatePurchaseIdParam?.trim();
+    if (targetPurchaseId && targetPurchaseId !== activePurchaseId) return;
     scanSellCustomerPrefillConsumedRef.current = true;
     scanSellCustomerPrefillRef.current = null;
     applySelectedCustomer(c);
@@ -2065,7 +2070,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     // picker is a navigation to this same route, so the cart never reloads and
     // `isLoadingCart` never changes. Keyed only on that, this effect would not
     // run again and the customer left in the ref would never be applied.
-  }, [isLoadingCart, location.key]);
+  }, [isLoadingCart, location.key, activePurchaseId, estimatePurchaseIdParam]);
 
   /** Build CartItem[] from cart response, reusing existing inventoryItem when possible (no API calls). */
   const mergeCartResponseToItems = useCallback(
