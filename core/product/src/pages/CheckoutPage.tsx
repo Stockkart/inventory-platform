@@ -83,7 +83,7 @@ function SummaryRow({ label, value, total }: { label: string; value: string; tot
 export function CheckoutPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { error: notifyError, success: notifySuccess, info: notifyInfo } = useNotify;
   const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
   const fetchCapabilities = useShopCapabilitiesStore((s) => s.fetchCapabilities);
@@ -112,26 +112,47 @@ export function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
   const [paymentSplit, setPaymentSplit] = useState<PaymentSplit>(() => emptyPaymentSplit());
 
+  const persistCheckoutPurchaseId = useCallback(
+    (purchaseId: string) => {
+      if (!purchaseId) return;
+      if (searchParams.get('purchaseId') === purchaseId) return;
+      const next = new URLSearchParams(searchParams);
+      next.set('purchaseId', purchaseId);
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+
   const loadCart = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // Prefer the quotation that Process Payment just marked PENDING.
-      // Legacy GET /cart without purchaseId can return a different CREATED cart
-      // when multiple quotations exist, which bounced users back to Scan & Sell.
-      const cart = await cartApi.get(purchaseIdFromNav);
+      let cart: CartResponse | null = null;
+      if (purchaseIdFromNav) {
+        try {
+          cart = await cartApi.get(purchaseIdFromNav);
+        } catch {
+          cart = null;
+        }
+      }
+      if (!cart || (cart.status !== 'PENDING' && cart.status !== 'COMPLETED')) {
+        const fallback = await cartApi.get().catch(() => null);
+        if (fallback?.status === 'PENDING' || fallback?.status === 'COMPLETED') {
+          cart = fallback;
+        }
+      }
 
       if (import.meta.env.DEV) {
         console.log('Cart data:', cart, { purchaseIdFromNav });
       }
 
-      if (cart.status === 'PENDING' || cart.status === 'COMPLETED') {
+      if (cart && (cart.status === 'PENDING' || cart.status === 'COMPLETED')) {
+        persistCheckoutPurchaseId(cart.purchaseId);
         setCheckoutData(cart);
         return;
       }
 
-      // CREATED (or unexpected) — not ready for checkout
       navigate(sellPath);
     } catch (err) {
       console.log('Cart API returned error (no matching cart):', err);
@@ -144,7 +165,7 @@ export function CheckoutPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [navigate, checkoutData, sellPath, purchaseIdFromNav]);
+  }, [navigate, checkoutData, sellPath, purchaseIdFromNav, persistCheckoutPurchaseId]);
 
   // Load cart data on mount
   useEffect(() => {

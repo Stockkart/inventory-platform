@@ -8,6 +8,7 @@ export const productKeys = {
     [...base.all, 'inventory-list', page, size] as const,
   inventoryDetail: (id: string) => [...base.all, 'inventory', id] as const,
   pricingDetail: (pricingId: string) => [...base.all, 'pricing', pricingId] as const,
+  estimateDetail: (purchaseId: string) => [...base.all, 'estimate', purchaseId] as const,
 };
 
 export const PRODUCT_MODULE_VERSION = '0.1.0';

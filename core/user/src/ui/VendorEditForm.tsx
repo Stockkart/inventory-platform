@@ -128,6 +128,13 @@ export function VendorEditForm({ value, onChange, disabled = false }: VendorEdit
           placeholder="15-character GSTIN"
           disabled={disabled}
         />
+        <FormField
+          label="DL no."
+          value={value.dlNo ?? ''}
+          onChange={(v) => onChange({ ...value, dlNo: v })}
+          placeholder="Drug licence number"
+          disabled={disabled}
+        />
       </Stack>
     </Stack>
   );

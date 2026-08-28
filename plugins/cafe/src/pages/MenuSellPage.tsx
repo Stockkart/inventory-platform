@@ -7,7 +7,11 @@ import type { CartResponse } from '@inventory-platform/product/types';
 import type { MenuItem, SellCatalog, ShopMenu } from '@inventory-platform/plugin-cafe/types';
 import { lineSellableRef, menuSellableRef } from '@inventory-platform/product/types';
 import { useNotify, useVerticalSchemaStore } from '@inventory-platform/session';
-import { CustomerProductHistoryHint, useCustomerProductHistory } from '@inventory-platform/product';
+import {
+  CustomerProductHistoryHint,
+  PendingCustomerSellFlow,
+  useCustomerProductHistory,
+} from '@inventory-platform/product';
 import {
   cartActionsStyle,
   cartItemsStyle,
@@ -960,6 +964,7 @@ export function MenuSellPage() {
 
   return (
     <Stack gap="md" maxWidth="xl" mx="auto" className={menuSellPageShell}>
+      <PendingCustomerSellFlow sellPath="/dashboard/menu-sell" />
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
       <PageHeader description="Search and add menu items to the cart" />

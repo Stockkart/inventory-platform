@@ -312,12 +312,23 @@
   width: 6rem;
 }
 
-.pickerBtn {
-  flex-direction: column;
-  align-items: flex-start;
-  height: auto;
-  padding: 0.65rem 0.75rem;
+.pickerRow {
+  width: 100%;
+  padding: 0.85rem 1rem;
   text-align: left;
+  cursor: pointer;
+  background: var(--sk-color-bg-elevated, #fff);
+  border: 1px solid var(--sk-color-border-default, #e2e8f0);
+  border-radius: var(--sk-radius-md);
+}
+
+.pickerRow:hover {
+  background: var(--sk-color-hover, #f8fafc);
+}
+
+.pickerRow:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--sk-color-focus-ring, rgba(30, 58, 95, 0.25));
 }
 
 .mobileUploadShell {

@@ -22,12 +22,14 @@ import {
   SearchInput,
   SegmentedControl,
   Stack,
+  Switch,
   Text,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { Search } from 'lucide-react';
 import { InventoryAlertDetails, ProductSearchCard, normalizedBillingMode } from '../ui';
 import { sortInventoryByExpirySoonest } from '@inventory-platform/schema';
+import { rememberOpenQuotationId } from '../lib/sellSession';
 import {
   useAuthStore,
   useNotify,
@@ -68,11 +70,16 @@ export function ProductSearchPage() {
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
   const [billingModeFilter, setBillingModeFilter] = useState<'ALL' | BillingMode>('ALL');
+  // Sold-out lots are dead weight at the counter, so they are hidden until asked for.
+  const [includeZeroStock, setIncludeZeroStock] = useState(false);
   const [quotationPickerItem, setQuotationPickerItem] = useState<InventoryItem | null>(null);
   const [quotationPickerList, setQuotationPickerList] = useState<QuotationSummary[]>([]);
   const [estimatePickerItem, setEstimatePickerItem] = useState<InventoryItem | null>(null);
   const [estimatePickerList, setEstimatePickerList] = useState<EstimateSummary[]>([]);
   const [destinationPickerItem, setDestinationPickerItem] = useState<InventoryItem | null>(null);
+  // The quantity chosen on the card. It has to outlive the destination and document pickers,
+  // whose callbacks only know which purchase to add to.
+  const [pendingQuantity, setPendingQuantity] = useState(1);
   const [cartBusinessType, setCartBusinessType] = useState('medical');
   const { success: notifySuccess, error: notifyError } = useNotify;
   const { user } = useAuthStore();
@@ -99,11 +106,11 @@ export function ProductSearchPage() {
     });
   }, [activeShopId, fetchShopSchema]);
 
-  const fetchAllInventory = async (page = 0, size = 10) => {
+  const fetchAllInventory = async (page = 0, size = 10, withZeroStock = includeZeroStock) => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await inventoryApi.getAll(page, size);
+      const response = await inventoryApi.getAll(page, size, withZeroStock);
       setInventory(sortInventoryByExpirySoonest(response.data || []));
       // Update pagination info if available
       if (response.page) {
@@ -125,7 +132,11 @@ export function ProductSearchPage() {
     }
   };
 
-  const handleSearch = async (pageNum?: number, pageSize?: number) => {
+  const handleSearch = async (
+    pageNum?: number,
+    pageSize?: number,
+    withZeroStock = includeZeroStock,
+  ) => {
     const currentPage = pageNum !== undefined ? pageNum : 0;
     const currentPageSize = pageSize !== undefined ? pageSize : searchPageSize;
 
@@ -138,7 +149,7 @@ export function ProductSearchPage() {
     }
 
     if (!hasActiveSearch) {
-      fetchAllInventory(currentPage, currentPageSize);
+      fetchAllInventory(currentPage, currentPageSize, withZeroStock);
       return;
     }
 
@@ -149,6 +160,7 @@ export function ProductSearchPage() {
         q: searchQuery.trim(),
         limit: currentPageSize,
         sort: 'expiryDate:asc',
+        includeZeroStock: withZeroStock,
       });
       setInventory(sortInventoryByExpirySoonest(response.data || []));
       const total = response.data?.length ?? 0;
@@ -172,6 +184,14 @@ export function ProductSearchPage() {
     fetchAllInventory(0, searchPageSize);
   };
 
+  // Re-run whatever is on screen against the new setting. The flag is passed rather than read
+  // from state because this runs in the same tick as the state update.
+  const handleIncludeZeroStockChange = (next: boolean) => {
+    setIncludeZeroStock(next);
+    setSearchPage(0);
+    void handleSearch(0, searchPageSize, next);
+  };
+
   const openProductDetails = async (item: InventoryItem) => {
     const inventoryId = resolveInventoryDocumentId(item);
     if (!inventoryId) {
@@ -191,7 +211,11 @@ export function ProductSearchPage() {
     }
   };
 
-  const addItemToCartDocument = async (item: InventoryItem, purchaseId: string): Promise<void> => {
+  const addItemToCartDocument = async (
+    item: InventoryItem,
+    purchaseId: string,
+    quantity = pendingQuantity,
+  ): Promise<void> => {
     const inventoryId = resolveInventoryDocumentId(item);
     if (!inventoryId) {
       notifyError('Cannot add: missing inventory id');
@@ -210,7 +234,7 @@ export function ProductSearchPage() {
       items: [
         {
           id: inventoryId,
-          quantity: 1,
+          quantity: Math.max(1, Math.floor(quantity)),
           priceToRetail: effectivePrice,
         },
       ],
@@ -249,36 +273,6 @@ export function ProductSearchPage() {
     }
   };
 
-  const resolveTargetQuotation = async (): Promise<{
-    quotations: QuotationSummary[];
-    purchaseId: string;
-  }> => {
-    let list = (await cartApi.listQuotations()).quotations;
-    if (list.length === 0) {
-      const cart = await cartApi.createQuotation({
-        businessType: cartBusinessType,
-      });
-      list = (await cartApi.listQuotations()).quotations;
-      return { quotations: list, purchaseId: cart.purchaseId };
-    }
-    return { quotations: list, purchaseId: list[0].purchaseId };
-  };
-
-  const resolveTargetEstimate = async (): Promise<{
-    estimates: EstimateSummary[];
-    purchaseId: string;
-  }> => {
-    let list = (await estimatesApi.list('OPEN')).estimates;
-    if (list.length === 0) {
-      const cart = await estimatesApi.create({
-        businessType: cartBusinessType,
-      });
-      list = (await estimatesApi.list('OPEN')).estimates;
-      return { estimates: list, purchaseId: cart.purchaseId };
-    }
-    return { estimates: list, purchaseId: list[0].purchaseId };
-  };
-
   const commitAddToSell = async (
     item: InventoryItem,
     purchaseId: string,
@@ -293,6 +287,7 @@ export function ProductSearchPage() {
     setSuccessMessage(null);
     try {
       await addItemToCartDocument(item, purchaseId);
+      rememberOpenQuotationId(purchaseId);
       const quotation = quotations.find((q) => q.purchaseId === purchaseId);
       notifyAddedToQuotation(item, quotation);
       setQuotationPickerItem(null);
@@ -329,7 +324,7 @@ export function ProductSearchPage() {
     }
   };
 
-  const handleAddToCart = (item: InventoryItem) => {
+  const handleAddToCart = (item: InventoryItem, quantity: number) => {
     const inventoryId = resolveInventoryDocumentId(item);
     if (!inventoryId) {
       notifyError('Cannot add: missing inventory id');
@@ -344,6 +339,7 @@ export function ProductSearchPage() {
       notifyError('Cannot add: product price is not set');
       return;
     }
+    setPendingQuantity(Math.max(1, Math.floor(quantity)));
     setDestinationPickerItem(item);
   };
 
@@ -377,20 +373,14 @@ export function ProductSearchPage() {
       return;
     }
 
-    setAddingToCart(inventoryId);
     setError(null);
     try {
-      const { quotations, purchaseId } = await resolveTargetQuotation();
-      if (quotations.length > 1) {
-        setQuotationPickerList(quotations);
-        setQuotationPickerItem(item);
-        setAddingToCart(null);
-        return;
-      }
-      await commitAddToSell(item, purchaseId, quotations);
+      const list = (await cartApi.listQuotations()).quotations;
+      setQuotationPickerList(list);
+      setQuotationPickerItem(item);
     } catch (err) {
       handleAddToCartDocumentError(err, 'quotation');
-      setAddingToCart(null);
+      setDestinationPickerItem(item);
     }
   };
 
@@ -411,20 +401,14 @@ export function ProductSearchPage() {
       return;
     }
 
-    setAddingToCart(inventoryId);
     setError(null);
     try {
-      const { estimates, purchaseId } = await resolveTargetEstimate();
-      if (estimates.length > 1) {
-        setEstimatePickerList(estimates);
-        setEstimatePickerItem(item);
-        setAddingToCart(null);
-        return;
-      }
-      await commitAddToEstimate(item, purchaseId, estimates);
+      const list = (await estimatesApi.list('OPEN', { size: 100 })).estimates;
+      setEstimatePickerList(list);
+      setEstimatePickerItem(item);
     } catch (err) {
       handleAddToCartDocumentError(err, 'estimate');
-      setAddingToCart(null);
+      setDestinationPickerItem(item);
     }
   };
 
@@ -477,7 +461,7 @@ export function ProductSearchPage() {
       const cart = await estimatesApi.create({
         businessType: cartBusinessType,
       });
-      const list = (await estimatesApi.list('OPEN')).estimates;
+      const list = (await estimatesApi.list('OPEN', { size: 100 })).estimates;
       setEstimatePickerList(list);
       await commitAddToEstimate(estimatePickerItem, cart.purchaseId, list);
     } catch (err) {
@@ -494,7 +478,7 @@ export function ProductSearchPage() {
 
   return (
     <Stack gap="md">
-      <PageHeader description="Search by product name, barcode, or batch number" />
+      <PageHeader description="Search by name, company, location, barcode, HSN, or batch" />
 
       <Box className={surfaceChrome.searchFilterBar}>
         <Box className={surfaceChrome.searchFilterGrow}>
@@ -507,11 +491,18 @@ export function ProductSearchPage() {
             onChange={setSearchQuery}
             onSearch={() => void handleSearch()}
             showSearchButton
-            placeholder="Name, barcode, or batch number"
+            placeholder="Name, company, location, barcode, HSN, or batch"
             disabled={isLoading}
             searchLabel={isLoading ? 'Searching…' : 'Search'}
           />
         </Box>
+        <Box className={surfaceChrome.searchFilterDivider} aria-hidden />
+        <Switch
+          label="Include dump stock"
+          checked={includeZeroStock}
+          onChange={(e) => handleIncludeZeroStockChange(e.target.checked)}
+          disabled={isLoading}
+        />
         <Box className={surfaceChrome.searchFilterDivider} aria-hidden />
         <SegmentedControl
           value={billingModeFilter}

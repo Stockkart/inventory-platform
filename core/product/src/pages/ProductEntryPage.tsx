@@ -8,6 +8,11 @@ import { inventoryApi } from '../api/inventory.api';
 import { productApi } from '../api/product.api';
 import { barcodesApi } from '../api/barcodes.api';
 import { mapLastInventoryToRegistrationPatch } from '../lib/registrationPrefill';
+import {
+  clearProductEntryVendor,
+  readProductEntryVendor,
+  rememberProductEntryVendor,
+} from '../lib/sellSession';
 import { PrintBarcodeLabelsModal } from '../ui/PrintBarcodeLabelsModal';
 import { openLocalBarcodeLabelPrint } from '../lib/printBarcodeLabels';
 import { vendorsApi } from '@inventory-platform/user/vendors';
@@ -2468,19 +2473,17 @@ export function ProductEntryPage() {
 
   const handleSelectVendor = (vendor: Vendor) => {
     setSelectedVendor(vendor);
+    rememberProductEntryVendor(vendor);
     setVendorSearchQuery(vendor.name);
     setShowVendorDropdown(false);
     setVendorSearchResults([]);
   };
 
-  useEffect(() => {
-    vendorPrefillConsumedRef.current = false;
-  }, [location.key]);
-
   useLayoutEffect(() => {
     if (vendorPrefillConsumedRef.current) return;
-    const raw = (location.state as { prefillVendor?: VendorResponse } | null | undefined)
+    const fromNav = (location.state as { prefillVendor?: VendorResponse } | null | undefined)
       ?.prefillVendor;
+    const raw = fromNav?.vendorId ? fromNav : readProductEntryVendor<VendorResponse>();
     if (!raw?.vendorId) return;
     vendorPrefillConsumedRef.current = true;
     const vendor: Vendor = {
@@ -2497,7 +2500,9 @@ export function ProductEntryPage() {
       updatedAt: raw.updatedAt,
     };
     handleSelectVendor(vendor);
-    navigate(location.pathname, { replace: true, state: {} });
+    if (fromNav?.vendorId) {
+      navigate(location.pathname, { replace: true, state: {} });
+    }
   }, [location.state, location.pathname, navigate]);
 
   const handleCloseVendorModal = () => {
@@ -2579,6 +2584,7 @@ export function ProductEntryPage() {
       };
       const vendor = await vendorsApi.create(vendorPayload);
       setSelectedVendor(vendor);
+      rememberProductEntryVendor(vendor);
       setVendorSearchQuery(vendor.contactPhone);
       handleCloseVendorModal();
     } catch (err) {
@@ -2590,6 +2596,7 @@ export function ProductEntryPage() {
   };
 
   const handleClearVendor = () => {
+    clearProductEntryVendor();
     setSelectedVendor(null);
     setVendorSearchQuery('');
     setVendorSearchResults([]);

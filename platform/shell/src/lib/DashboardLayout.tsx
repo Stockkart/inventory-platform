@@ -123,6 +123,22 @@ function isTypingInField(target: EventTarget | null): boolean {
   return Boolean(target.closest('[contenteditable="true"]'));
 }
 
+function navItemMatchesCurrentPath(itemPath: string, currentPath: string): boolean {
+  return (
+    currentPath === itemPath ||
+    (itemPath !== '/dashboard' && currentPath.startsWith(`${itemPath}/`))
+  );
+}
+
+function bestMatchingNavItemPath(
+  items: Array<{ path: string }>,
+  currentPath: string,
+): string | undefined {
+  return items
+    .filter((i) => navItemMatchesCurrentPath(i.path, currentPath))
+    .sort((a, b) => b.path.length - a.path.length)[0]?.path;
+}
+
 export function DashboardLayout({
   children,
   verticalPlugin = null,
@@ -406,30 +422,27 @@ export function DashboardLayout({
     [filteredMenuGroups],
   );
 
+  const activeNavPath = useMemo(
+    () => bestMatchingNavItemPath(allMenuItems, currentPath),
+    [allMenuItems, currentPath],
+  );
+
   const currentPageLabel = useMemo(() => {
-    const exact = allMenuItems.find((i) => i.path === currentPath);
-    if (exact) return exact.label;
-    const prefixMatch = allMenuItems
-      .filter(
-        (i) =>
-          currentPath === i.path ||
-          (i.path !== '/dashboard' && currentPath.startsWith(`${i.path}/`)),
-      )
-      .sort((a, b) => b.path.length - a.path.length)[0];
-    return prefixMatch?.label ?? 'Dashboard';
-  }, [allMenuItems, currentPath]);
+    const match = allMenuItems.find((i) => i.path === activeNavPath);
+    return match?.label ?? 'Dashboard';
+  }, [allMenuItems, activeNavPath]);
 
   const isPathInGroup = useCallback(
     (groupId: string, path: string) => {
       const group = filteredMenuGroups.find((g) => g.id === groupId);
-      return group?.items.some((i) => i.path === path) ?? false;
+      return group?.items.some((i) => navItemMatchesCurrentPath(i.path, path)) ?? false;
     },
     [filteredMenuGroups],
   );
 
   useEffect(() => {
     const groupWithPath = filteredMenuGroups.find((g) =>
-      g.items.some((i) => i.path === currentPath),
+      g.items.some((i) => navItemMatchesCurrentPath(i.path, currentPath)),
     );
     if (groupWithPath) {
       setExpandedGroups(new Set([groupWithPath.id]));
@@ -659,11 +672,11 @@ export function DashboardLayout({
                             <Link
                               key={item.path}
                               to={item.path}
-                              className={navItemClassName(currentPath === item.path)}
+                              className={navItemClassName(item.path === activeNavPath)}
                             >
                               <Box
                                 as="span"
-                                className={navItemIconClassName(currentPath === item.path)}
+                                className={navItemIconClassName(item.path === activeNavPath)}
                               >
                                 <NavIcon name={item.icon} size="sm" />
                               </Box>
@@ -684,7 +697,7 @@ export function DashboardLayout({
                       key={item.path}
                       to={item.path}
                       title={item.label}
-                      className={navItemCollapsedClassName(currentPath === item.path)}
+                      className={navItemCollapsedClassName(item.path === activeNavPath)}
                     >
                       <Box as="span" className={navItemIconClassName(false, true)}>
                         <NavIcon name={item.icon} size="sm" />
