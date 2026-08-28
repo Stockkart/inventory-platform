@@ -20,6 +20,7 @@ import {
   productChrome,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
+import { useNotify } from '@inventory-platform/session';
 import { useEstimateDetailQuery } from '../queries/hooks';
 import { PrintInvoiceModal } from './PrintInvoiceModal';
 
@@ -132,6 +133,7 @@ export function EstimateListCard({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const { error: notifyError, success: notifySuccess, info: notifyInfo } = useNotify;
   const isOpen = estimate.estimateState === 'OPEN';
   const estimateNo = estimate.estimateNo?.trim() || null;
   const customer = estimate.customerName?.trim() || 'Walk-in';
@@ -310,6 +312,9 @@ export function EstimateListCard({
         purchaseId={estimate.purchaseId}
         invoiceNo={estimate.estimateNo ?? undefined}
         documentLabel="Estimate"
+        onError={(message) => notifyError(message)}
+        onSuccess={(message) => notifySuccess(message)}
+        onInfo={(message) => notifyInfo(message)}
       />
     </>
   );

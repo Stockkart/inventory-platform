@@ -44,7 +44,7 @@ export function EstimatesPage() {
 
 function EstimatesListPage() {
   const navigate = useNavigate();
-  const { error: notifyError, success: notifySuccess, info: notifyInfo } = useNotify;
+  const { error: notifyError } = useNotify;
   const [filter, setFilter] = useState<FilterTab>('OPEN');
   const [estimates, setEstimates] = useState<EstimateSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -241,19 +241,6 @@ function EstimatesListPage() {
           }}
           disabled={loading}
           aria-label="Estimate pages"
-        />
-      ) : null}
-
-      {printTarget ? (
-        <PrintInvoiceModal
-          isOpen
-          onClose={() => setPrintTarget(null)}
-          purchaseId={printTarget.purchaseId}
-          invoiceNo={printTarget.estimateNo ?? undefined}
-          documentLabel="Estimate"
-          onError={(message) => notifyError(message)}
-          onSuccess={(message) => notifySuccess(message)}
-          onInfo={(message) => notifyInfo(message)}
         />
       ) : null}
     </Stack>
