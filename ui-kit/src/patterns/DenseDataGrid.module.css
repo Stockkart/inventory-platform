@@ -26,7 +26,13 @@
 }
 
 .table {
-  width: 100%;
+  /* Grow to whatever the columns need, but never narrower than the wrapper.
+     Pinned at width:100% the table could not exceed its container, so a grid with
+     more columns than fit squeezed them until the text clipped - and because
+     nothing overflowed, .wrap's overflow-x never produced a scrollbar to reach
+     the hidden columns with. */
+  width: max-content;
+  min-width: 100%;
   border-collapse: collapse;
   font-size: 0.85rem;
   background: var(--bg-primary);
