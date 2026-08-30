@@ -25,7 +25,12 @@ import {
 } from '@inventory-platform/ui-kit';
 import { useResolvedSellPath } from '@inventory-platform/routing';
 import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/session';
-import { customersApi, customerHasUniqueIdentifier } from '../api/customers.api';
+import {
+  customersApi,
+  customerHasUniqueIdentifier,
+  partyNameHasLetters,
+  PARTY_NAME_LETTERS_MESSAGE,
+} from '../api/customers.api';
 import { CustomerEditForm } from '../ui';
 import type {
   CustomerResponse,
@@ -139,6 +144,10 @@ export function CustomersPage() {
       setSaveError('Name is required');
       return;
     }
+    if (!partyNameHasLetters(createForm.name)) {
+      setSaveError(PARTY_NAME_LETTERS_MESSAGE);
+      return;
+    }
     if (!customerHasUniqueIdentifier(createForm)) {
       setSaveError(
         'Add phone, email, GSTIN, PAN, or DL to create a unique customer. Name and address alone use the general customer on bills.',
@@ -170,6 +179,10 @@ export function CustomersPage() {
 
   const handleSave = async () => {
     if (!editModal) return;
+    if (editForm.name !== undefined && !partyNameHasLetters(editForm.name)) {
+      setSaveError(PARTY_NAME_LETTERS_MESSAGE);
+      return;
+    }
     if (!customerHasUniqueIdentifier(editForm)) {
       setSaveError('Keep at least one of phone, email, GSTIN, PAN, or DL');
       return;
