@@ -1015,8 +1015,11 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   });
   /** When true, purchase scheme / purchase add. discount read-only rows are hidden in cart (sale inputs stay). */
   const [hidePurchaseDetailsInSell, setHidePurchaseDetailsInSell] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('scan-sell-hide-purchase-details') === '1';
+    // Hidden unless the operator has explicitly turned them on. Purchase cost and
+    // margin are the shop's own figures and are read over the counter by whoever is
+    // standing there, so the safe default is off, and only an explicit '0' shows them.
+    if (typeof window === 'undefined') return true;
+    return localStorage.getItem('scan-sell-hide-purchase-details') !== '0';
   });
   const [pricingCache, setPricingCache] = useState<Record<string, PricingResponse>>({});
   const [pricingLoading, setPricingLoading] = useState<Record<string, boolean>>({});

@@ -304,15 +304,6 @@ export function CustomerSearchPanel({
           <Box className={productChrome.customerPartyActions}>
             <Button
               type="button"
-              variant="outline"
-              fullWidth
-              onClick={openCreate}
-              disabled={disabled}
-            >
-              New customer
-            </Button>
-            <Button
-              type="button"
               variant="ghost"
               fullWidth
               onClick={clearSelection}
