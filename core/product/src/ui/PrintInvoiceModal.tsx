@@ -172,11 +172,14 @@ export function PrintInvoiceModal({
     setIsGenerating(true);
     try {
       const textBlob = await cartApi.getInvoiceDotMatrixText(purchaseId);
+      // .prn, not .txt. The file is a printer stream: it opens with the codes
+      // that reset the printer and set its pitch, and Windows hands a .txt to
+      // Notepad, which reads those bytes as characters and prints what it read.
       const slug = documentLabel.toLowerCase().replace(/\s+/g, '-');
-      downloadBlob(textBlob, `${slug}-${invoiceNo || purchaseId}.txt`);
+      downloadBlob(textBlob, `${slug}-${invoiceNo || purchaseId}.prn`);
       onClose();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to download print file';
+      const message = err instanceof Error ? err.message : 'Failed to download the printer file';
       onError?.(message);
     } finally {
       setIsGenerating(false);
@@ -224,9 +227,9 @@ export function PrintInvoiceModal({
       // worked before the bridge existed, rather than failing the sale.
       if (err instanceof PrintBridgeError && err.kind === 'UNREACHABLE' && textBlob) {
         const slug = documentLabel.toLowerCase().replace(/\s+/g, '-');
-        downloadBlob(textBlob, `${slug}-${invoiceNo || purchaseId}.txt`);
+        downloadBlob(textBlob, `${slug}-${invoiceNo || purchaseId}.prn`);
         setBridge(null);
-        onError?.('Print bridge not running. Print file downloaded instead.');
+        onError?.('Print bridge not running. Printer file downloaded instead.');
         onClose();
         return;
       }
@@ -307,7 +310,7 @@ export function PrintInvoiceModal({
                 ? `Prints directly to ${
                     bridge.selectedPrinter ?? 'the selected printer'
                   } via the print bridge on this computer.`
-                : 'Print bridge not detected on this computer. The invoice will download as a .txt file that you can print at 10 CPI (Pica). Never print the PDF on a dot-matrix printer.'}
+                : 'Print bridge not detected on this computer. The bill downloads as a .prn printer file. Send it straight to the printer - copy /b <file> PRN on Windows - and do not open it first: it carries the codes that set the pitch, and only the printer reads them as codes. Anything that opens it prints them as characters. Never print the PDF on a dot-matrix printer.'}
             </Alert>
           ) : null}
         </Stack>
@@ -354,7 +357,7 @@ export function PrintInvoiceModal({
             bridge ? (
               'Print'
             ) : (
-              'Download print file'
+              'Download printer file'
             )
           ) : (
             'Generate PDF'
