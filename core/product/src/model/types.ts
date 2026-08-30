@@ -469,6 +469,8 @@ export interface InventoryItem {
   companyName: string | null;
   maximumRetailPrice: number;
   costPrice: number;
+  /** Landed cost per unit: costPrice after purchase scheme and additional discount. */
+  effectiveCostPrice?: number | null;
   priceToRetail: number;
   receivedCount: number;
   soldCount: number;
