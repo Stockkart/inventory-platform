@@ -109,7 +109,7 @@ export function HistoryFiltersBar({
                 type="text"
                 value={filters.customer}
                 onChange={(e) => set({ customer: e.target.value })}
-                placeholder="Name or phone"
+                placeholder="Name, phone or email"
               />
             </FormField>
           </Box>

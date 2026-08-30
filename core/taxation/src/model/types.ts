@@ -402,7 +402,25 @@ export interface Gstr2HsnLineDto {
   cessAmount?: number;
 }
 
+/**
+ * The figures a GSTR-2 tab is headed with.
+ *
+ * Counts are null on a tab that has none — the HSN summary has no invoices and
+ * no suppliers, only the goods and what was paid on them.
+ */
+export interface Gstr2Summary {
+  noOfSuppliers: number | null;
+  noOfInvoices: number | null;
+  totalInvoiceValue: number;
+  taxableValue: number;
+  integratedTaxPaid: number;
+  centralTaxPaid: number;
+  stateUtTaxPaid: number;
+  cessAmount: number;
+}
+
 export interface Gstr2TabDto<T> {
+  summary?: Gstr2Summary | null;
   lines: T[];
 }
 

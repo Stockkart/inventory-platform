@@ -1,4 +1,8 @@
-export { customersApi, type CustomersListParams } from './api/customers.api';
+export {
+  customersApi,
+  customerHasUniqueIdentifier,
+  type CustomersListParams,
+} from './api/customers.api';
 export { vendorsApi, type VendorsListParams } from './api/vendors.api';
 export { shopAccessApi } from './api/shop-access.api';
 export { invitationsApi } from './api/invitations.api';

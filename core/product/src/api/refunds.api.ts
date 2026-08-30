@@ -13,14 +13,8 @@ import { PURCHASE_ENDPOINTS, REFUND_ENDPOINTS } from './endpoints';
 export const refundsApi = {
   searchPurchases: async (params: SearchPurchasesParams): Promise<SearchPurchasesResponse> => {
     const queryParams: Record<string, string> = {};
-    if (params.customerEmail) {
-      queryParams.customerEmail = params.customerEmail;
-    }
-    if (params.customerPhone) {
-      queryParams.customerPhone = params.customerPhone;
-    }
-    if (params.customerName) {
-      queryParams.customerName = params.customerName;
+    if (params.customer) {
+      queryParams.customer = params.customer;
     }
     if (params.invoiceNo) {
       queryParams.invoiceNo = params.invoiceNo;

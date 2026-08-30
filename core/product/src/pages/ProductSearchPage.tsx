@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { cartApi } from '../api/cart.api';
+import { estimatesApi } from '../api/estimates.api';
 import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
 import type {
   BillingMode,
+  EstimateSummary,
   InventoryItem,
   QuotationSummary,
 } from '@inventory-platform/product/types';
@@ -20,12 +22,14 @@ import {
   SearchInput,
   SegmentedControl,
   Stack,
+  Switch,
   Text,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { Search } from 'lucide-react';
 import { InventoryAlertDetails, ProductSearchCard, normalizedBillingMode } from '../ui';
 import { sortInventoryByExpirySoonest } from '@inventory-platform/schema';
+import { rememberOpenQuotationId } from '../lib/sellSession';
 import {
   useAuthStore,
   useNotify,
@@ -33,6 +37,8 @@ import {
   useVerticalSchemaStore,
 } from '@inventory-platform/session';
 import { AddToSellQuotationPicker } from '../ui/AddToSellQuotationPicker';
+import { AddToEstimatePicker } from '../ui/AddToEstimatePicker';
+import { AddToCartDestinationPicker, type CartDestination } from '../ui/AddToCartDestinationPicker';
 
 const BILLING_MODE_OPTIONS = [
   { value: 'ALL', label: 'All' },
@@ -64,8 +70,16 @@ export function ProductSearchPage() {
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
   const [billingModeFilter, setBillingModeFilter] = useState<'ALL' | BillingMode>('ALL');
+  // Sold-out lots are dead weight at the counter, so they are hidden until asked for.
+  const [includeZeroStock, setIncludeZeroStock] = useState(false);
   const [quotationPickerItem, setQuotationPickerItem] = useState<InventoryItem | null>(null);
   const [quotationPickerList, setQuotationPickerList] = useState<QuotationSummary[]>([]);
+  const [estimatePickerItem, setEstimatePickerItem] = useState<InventoryItem | null>(null);
+  const [estimatePickerList, setEstimatePickerList] = useState<EstimateSummary[]>([]);
+  const [destinationPickerItem, setDestinationPickerItem] = useState<InventoryItem | null>(null);
+  // The quantity chosen on the card. It has to outlive the destination and document pickers,
+  // whose callbacks only know which purchase to add to.
+  const [pendingQuantity, setPendingQuantity] = useState(1);
   const [cartBusinessType, setCartBusinessType] = useState('medical');
   const { success: notifySuccess, error: notifyError } = useNotify;
   const { user } = useAuthStore();
@@ -92,11 +106,11 @@ export function ProductSearchPage() {
     });
   }, [activeShopId, fetchShopSchema]);
 
-  const fetchAllInventory = async (page = 0, size = 10) => {
+  const fetchAllInventory = async (page = 0, size = 10, withZeroStock = includeZeroStock) => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await inventoryApi.getAll(page, size);
+      const response = await inventoryApi.getAll(page, size, withZeroStock);
       setInventory(sortInventoryByExpirySoonest(response.data || []));
       // Update pagination info if available
       if (response.page) {
@@ -118,7 +132,11 @@ export function ProductSearchPage() {
     }
   };
 
-  const handleSearch = async (pageNum?: number, pageSize?: number) => {
+  const handleSearch = async (
+    pageNum?: number,
+    pageSize?: number,
+    withZeroStock = includeZeroStock,
+  ) => {
     const currentPage = pageNum !== undefined ? pageNum : 0;
     const currentPageSize = pageSize !== undefined ? pageSize : searchPageSize;
 
@@ -131,7 +149,7 @@ export function ProductSearchPage() {
     }
 
     if (!hasActiveSearch) {
-      fetchAllInventory(currentPage, currentPageSize);
+      fetchAllInventory(currentPage, currentPageSize, withZeroStock);
       return;
     }
 
@@ -142,6 +160,7 @@ export function ProductSearchPage() {
         q: searchQuery.trim(),
         limit: currentPageSize,
         sort: 'expiryDate:asc',
+        includeZeroStock: withZeroStock,
       });
       setInventory(sortInventoryByExpirySoonest(response.data || []));
       const total = response.data?.length ?? 0;
@@ -165,6 +184,14 @@ export function ProductSearchPage() {
     fetchAllInventory(0, searchPageSize);
   };
 
+  // Re-run whatever is on screen against the new setting. The flag is passed rather than read
+  // from state because this runs in the same tick as the state update.
+  const handleIncludeZeroStockChange = (next: boolean) => {
+    setIncludeZeroStock(next);
+    setSearchPage(0);
+    void handleSearch(0, searchPageSize, next);
+  };
+
   const openProductDetails = async (item: InventoryItem) => {
     const inventoryId = resolveInventoryDocumentId(item);
     if (!inventoryId) {
@@ -184,7 +211,11 @@ export function ProductSearchPage() {
     }
   };
 
-  const addItemToQuotation = async (item: InventoryItem, purchaseId: string): Promise<void> => {
+  const addItemToCartDocument = async (
+    item: InventoryItem,
+    purchaseId: string,
+    quantity = pendingQuantity,
+  ): Promise<void> => {
     const inventoryId = resolveInventoryDocumentId(item);
     if (!inventoryId) {
       notifyError('Cannot add: missing inventory id');
@@ -203,7 +234,7 @@ export function ProductSearchPage() {
       items: [
         {
           id: inventoryId,
-          quantity: 1,
+          quantity: Math.max(1, Math.floor(quantity)),
           priceToRetail: effectivePrice,
         },
       ],
@@ -221,30 +252,25 @@ export function ProductSearchPage() {
     }
   };
 
-  const handleAddToSellError = (err: unknown) => {
-    const errorMessage = err instanceof Error ? err.message : 'Failed to add item to cart';
+  const notifyAddedToEstimate = (item: InventoryItem, estimate?: EstimateSummary) => {
+    const productName = item.name || 'Product';
+    if (estimate) {
+      const who = estimate.estimateNo?.trim() || estimate.customerName;
+      notifySuccess(`Added "${productName}" to estimate ${who}`);
+    } else {
+      notifySuccess(`Added "${productName}" to a new estimate`);
+    }
+  };
+
+  const handleAddToCartDocumentError = (err: unknown, kind: 'quotation' | 'estimate') => {
+    const errorMessage = err instanceof Error ? err.message : `Failed to add item to ${kind}`;
     if (errorMessage.includes('Cannot mix REGULAR and BASIC inventory items in a single cart')) {
       notifyError(
-        'Cannot add this item because the quotation already contains a different billing mode (REGULAR/BASIC). Pick another quotation or clear that cart.',
+        `Cannot add this item because the ${kind} already contains a different billing mode (REGULAR/BASIC). Pick another ${kind} or clear that cart.`,
       );
     } else {
       notifyError(errorMessage);
     }
-  };
-
-  const resolveTargetQuotation = async (): Promise<{
-    quotations: QuotationSummary[];
-    purchaseId: string;
-  }> => {
-    let list = (await cartApi.listQuotations()).quotations;
-    if (list.length === 0) {
-      const cart = await cartApi.createQuotation({
-        businessType: cartBusinessType,
-      });
-      list = (await cartApi.listQuotations()).quotations;
-      return { quotations: list, purchaseId: cart.purchaseId };
-    }
-    return { quotations: list, purchaseId: list[0].purchaseId };
   };
 
   const commitAddToSell = async (
@@ -260,16 +286,74 @@ export function ProductSearchPage() {
     setError(null);
     setSuccessMessage(null);
     try {
-      await addItemToQuotation(item, purchaseId);
+      await addItemToCartDocument(item, purchaseId);
+      rememberOpenQuotationId(purchaseId);
       const quotation = quotations.find((q) => q.purchaseId === purchaseId);
       notifyAddedToQuotation(item, quotation);
       setQuotationPickerItem(null);
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
-      handleAddToSellError(err);
+      handleAddToCartDocumentError(err, 'quotation');
     } finally {
       setAddingToCart(null);
     }
+  };
+
+  const commitAddToEstimate = async (
+    item: InventoryItem,
+    purchaseId: string,
+    estimates: EstimateSummary[],
+  ) => {
+    const inventoryId = resolveInventoryDocumentId(item);
+    if (!inventoryId) {
+      return;
+    }
+    setAddingToCart(inventoryId);
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      await addItemToCartDocument(item, purchaseId);
+      const estimate = estimates.find((e) => e.purchaseId === purchaseId);
+      notifyAddedToEstimate(item, estimate);
+      setEstimatePickerItem(null);
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err) {
+      handleAddToCartDocumentError(err, 'estimate');
+    } finally {
+      setAddingToCart(null);
+    }
+  };
+
+  const handleAddToCart = (item: InventoryItem, quantity: number) => {
+    const inventoryId = resolveInventoryDocumentId(item);
+    if (!inventoryId) {
+      notifyError('Cannot add: missing inventory id');
+      return;
+    }
+    if (item.currentCount <= 0) {
+      notifyError('Product is out of stock');
+      return;
+    }
+    const effectivePrice = item.sellingPrice ?? item.priceToRetail;
+    if (effectivePrice == null) {
+      notifyError('Cannot add: product price is not set');
+      return;
+    }
+    setPendingQuantity(Math.max(1, Math.floor(quantity)));
+    setDestinationPickerItem(item);
+  };
+
+  const handleDestinationSelect = async (destination: CartDestination) => {
+    const item = destinationPickerItem;
+    if (!item) {
+      return;
+    }
+    setDestinationPickerItem(null);
+    if (destination === 'sell') {
+      await handleAddToSell(item);
+      return;
+    }
+    await handleAddToEstimate(item);
   };
 
   const handleAddToSell = async (item: InventoryItem) => {
@@ -289,20 +373,42 @@ export function ProductSearchPage() {
       return;
     }
 
-    setAddingToCart(inventoryId);
     setError(null);
     try {
-      const { quotations, purchaseId } = await resolveTargetQuotation();
-      if (quotations.length > 1) {
-        setQuotationPickerList(quotations);
-        setQuotationPickerItem(item);
-        setAddingToCart(null);
-        return;
-      }
-      await commitAddToSell(item, purchaseId, quotations);
+      const list = (await cartApi.listQuotations()).quotations;
+      setQuotationPickerList(list);
+      setQuotationPickerItem(item);
     } catch (err) {
-      handleAddToSellError(err);
-      setAddingToCart(null);
+      handleAddToCartDocumentError(err, 'quotation');
+      setDestinationPickerItem(item);
+    }
+  };
+
+  const handleAddToEstimate = async (item: InventoryItem) => {
+    const inventoryId = resolveInventoryDocumentId(item);
+    if (!inventoryId) {
+      notifyError('Cannot add: missing inventory id');
+      return;
+    }
+    if (item.currentCount <= 0) {
+      notifyError('Product is out of stock');
+      return;
+    }
+
+    const effectivePrice = item.sellingPrice ?? item.priceToRetail;
+    if (effectivePrice == null) {
+      notifyError('Cannot add: product price is not set');
+      return;
+    }
+
+    setError(null);
+    try {
+      const list = (await estimatesApi.list('OPEN', { size: 100 })).estimates;
+      setEstimatePickerList(list);
+      setEstimatePickerItem(item);
+    } catch (err) {
+      handleAddToCartDocumentError(err, 'estimate');
+      setDestinationPickerItem(item);
     }
   };
 
@@ -330,7 +436,36 @@ export function ProductSearchPage() {
       setQuotationPickerList(list);
       await commitAddToSell(quotationPickerItem, cart.purchaseId, list);
     } catch (err) {
-      handleAddToSellError(err);
+      handleAddToCartDocumentError(err, 'quotation');
+      setAddingToCart(null);
+    }
+  };
+
+  const handleEstimatePickerSelect = async (purchaseId: string) => {
+    if (!estimatePickerItem) {
+      return;
+    }
+    await commitAddToEstimate(estimatePickerItem, purchaseId, estimatePickerList);
+  };
+
+  const handleEstimatePickerNew = async () => {
+    if (!estimatePickerItem) {
+      return;
+    }
+    const inventoryId = resolveInventoryDocumentId(estimatePickerItem);
+    if (!inventoryId) {
+      return;
+    }
+    setAddingToCart(inventoryId);
+    try {
+      const cart = await estimatesApi.create({
+        businessType: cartBusinessType,
+      });
+      const list = (await estimatesApi.list('OPEN', { size: 100 })).estimates;
+      setEstimatePickerList(list);
+      await commitAddToEstimate(estimatePickerItem, cart.purchaseId, list);
+    } catch (err) {
+      handleAddToCartDocumentError(err, 'estimate');
       setAddingToCart(null);
     }
   };
@@ -343,7 +478,7 @@ export function ProductSearchPage() {
 
   return (
     <Stack gap="md">
-      <PageHeader description="Search by product name, barcode, or batch number" />
+      <PageHeader description="Search by name, company, location, barcode, HSN, or batch" />
 
       <Box className={surfaceChrome.searchFilterBar}>
         <Box className={surfaceChrome.searchFilterGrow}>
@@ -356,11 +491,18 @@ export function ProductSearchPage() {
             onChange={setSearchQuery}
             onSearch={() => void handleSearch()}
             showSearchButton
-            placeholder="Name, barcode, or batch number"
+            placeholder="Name, company, location, barcode, HSN, or batch"
             disabled={isLoading}
             searchLabel={isLoading ? 'Searching…' : 'Search'}
           />
         </Box>
+        <Box className={surfaceChrome.searchFilterDivider} aria-hidden />
+        <Switch
+          label="Include dump stock"
+          checked={includeZeroStock}
+          onChange={(e) => handleIncludeZeroStockChange(e.target.checked)}
+          disabled={isLoading}
+        />
         <Box className={surfaceChrome.searchFilterDivider} aria-hidden />
         <SegmentedControl
           value={billingModeFilter}
@@ -412,7 +554,7 @@ export function ProductSearchPage() {
                         isDetailLoading={detailLoadingId === inventoryId}
                         isAddingToCart={addingToCart === inventoryId}
                         onViewDetails={openProductDetails}
-                        onAddToSell={handleAddToSell}
+                        onAddToCart={handleAddToCart}
                       />
                     );
                   })}
@@ -445,6 +587,19 @@ export function ProductSearchPage() {
           setSelectedItem(updated);
         }}
       />
+      <AddToCartDestinationPicker
+        open={destinationPickerItem !== null}
+        productLabel={destinationPickerItem?.name || 'this product'}
+        isSubmitting={
+          destinationPickerItem !== null &&
+          addingToCart === resolveInventoryDocumentId(destinationPickerItem)
+        }
+        onSelect={(destination) => void handleDestinationSelect(destination)}
+        onCancel={() => {
+          if (addingToCart) return;
+          setDestinationPickerItem(null);
+        }}
+      />
       <AddToSellQuotationPicker
         open={quotationPickerItem !== null}
         productLabel={quotationPickerItem?.name || 'this product'}
@@ -458,6 +613,41 @@ export function ProductSearchPage() {
         onCancel={() => {
           if (addingToCart) return;
           setQuotationPickerItem(null);
+          setQuotationPickerList([]);
+        }}
+        onBack={() => {
+          if (addingToCart) return;
+          const item = quotationPickerItem;
+          setQuotationPickerItem(null);
+          setQuotationPickerList([]);
+          if (item) {
+            setDestinationPickerItem(item);
+          }
+        }}
+      />
+      <AddToEstimatePicker
+        open={estimatePickerItem !== null}
+        productLabel={estimatePickerItem?.name || 'this product'}
+        estimates={estimatePickerList}
+        isSubmitting={
+          estimatePickerItem !== null &&
+          addingToCart === resolveInventoryDocumentId(estimatePickerItem)
+        }
+        onSelect={(purchaseId) => void handleEstimatePickerSelect(purchaseId)}
+        onNewEstimate={() => void handleEstimatePickerNew()}
+        onCancel={() => {
+          if (addingToCart) return;
+          setEstimatePickerItem(null);
+          setEstimatePickerList([]);
+        }}
+        onBack={() => {
+          if (addingToCart) return;
+          const item = estimatePickerItem;
+          setEstimatePickerItem(null);
+          setEstimatePickerList([]);
+          if (item) {
+            setDestinationPickerItem(item);
+          }
         }}
       />
     </Stack>

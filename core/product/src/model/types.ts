@@ -14,6 +14,11 @@ export type SchemeType = 'FIXED_UNITS' | 'PERCENTAGE';
 export type PurchaseSchemeInputType = SchemeType | 'FREE_QUANTITY';
 export type BillingMode = 'REGULAR' | 'BASIC';
 
+/** SALE cart/invoice vs ESTIMATE quote document. Orthogonal to BillingMode. */
+export type DocumentType = 'SALE' | 'ESTIMATE';
+
+export type EstimateState = 'OPEN' | 'CONVERTED' | 'DISCARDED';
+
 export interface UnitConversion {
   unit: string;
   factor: number;
@@ -464,6 +469,8 @@ export interface InventoryItem {
   companyName: string | null;
   maximumRetailPrice: number;
   costPrice: number;
+  /** Landed cost per unit: costPrice after purchase scheme and additional discount. */
+  effectiveCostPrice?: number | null;
   priceToRetail: number;
   receivedCount: number;
   soldCount: number;
@@ -590,6 +597,11 @@ export interface InventorySearchParams {
   limit?: number;
   /** Extension field filters, e.g. sellDirect=true */
   filters?: Record<string, string>;
+  /**
+   * Sold-out lots are returned unless this is false. Selling screens pass false; stock
+   * correction and pricing screens need the sold-out lots and leave it alone.
+   */
+  includeZeroStock?: boolean;
 }
 
 export interface PaginationInventoryResponse {
@@ -760,6 +772,11 @@ export interface CartResponse {
   creditEntryId?: string | null;
   /** Daily order token (cafe / menu-billing verticals). */
   tokenNo?: string | null;
+  documentType?: DocumentType | null;
+  estimateState?: EstimateState | null;
+  estimateNo?: string | null;
+  convertedToPurchaseId?: string | null;
+  sourceEstimateId?: string | null;
 }
 
 export interface AddToCartDto {
@@ -774,12 +791,15 @@ export interface AddToCartDto {
   customerGstin?: string;
   customerDlNo?: string;
   customerPan?: string;
+  customerId?: string;
+  customerPartyType?: string;
   /** Optional link to a registered StockKart user for this party. */
   customerUserId?: string;
 }
 
 export interface CreateQuotationDto {
   businessType: string;
+  customerId?: string;
   customerName?: string;
   customerAddress?: string;
   customerPhone?: string;
@@ -787,6 +807,21 @@ export interface CreateQuotationDto {
   customerGstin?: string;
   customerDlNo?: string;
   customerPan?: string;
+  customerPartyType?: string;
+  customerUserId?: string;
+}
+
+export interface CreateEstimateDto {
+  businessType: string;
+  customerId?: string;
+  customerName?: string;
+  customerAddress?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  customerGstin?: string;
+  customerDlNo?: string;
+  customerPan?: string;
+  customerPartyType?: string;
   customerUserId?: string;
 }
 
@@ -806,6 +841,37 @@ export interface QuotationSummary {
 
 export interface QuotationListResponse {
   quotations: QuotationSummary[];
+}
+
+export interface EstimateSummary {
+  purchaseId: string;
+  estimateNo?: string | null;
+  status: string;
+  estimateState: EstimateState;
+  billingMode?: BillingMode | null;
+  customerId?: string | null;
+  customerName: string;
+  customerPhone?: string | null;
+  customerEmail?: string | null;
+  itemCount: number;
+  grandTotal: number;
+  convertedToPurchaseId?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface EstimateListResponse {
+  estimates: EstimateSummary[];
+  page?: number;
+  size?: number;
+  total?: number;
+  totalPages?: number;
+}
+
+export interface ConvertEstimateResponse {
+  estimateId: string;
+  estimateNo?: string | null;
+  salePurchaseId: string;
 }
 
 export interface UpdateCartStatusDto {
@@ -879,10 +945,21 @@ export interface GetPurchasesParams {
 }
 
 export interface SearchPurchasesParams {
-  customerEmail?: string;
-  customerPhone?: string;
-  customerName?: string;
+  /**
+   * Free text matched against a customer's name, phone, email or address.
+   *
+   * This is the one box the counter types into. There are no separate name,
+   * phone or email parameters: the person typing should not have to say which
+   * of the four they are holding, and an exact name would reach almost no party
+   * anyway -- one is entered as its trading name and stored with its town
+   * appended.
+   */
+  customer?: string;
   invoiceNo?: string;
+  /** Inclusive first sale date, yyyy-MM-dd. */
+  from?: string;
+  /** Inclusive last sale date, yyyy-MM-dd. */
+  to?: string;
   page?: number;
   limit?: number;
 }

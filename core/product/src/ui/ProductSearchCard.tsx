@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { BillingMode, InventoryItem } from '@inventory-platform/product/types';
 import {
   Badge,
@@ -6,10 +7,11 @@ import {
   Card,
   CardBody,
   CardFooter,
+  QtyStepper,
   cn,
   productChrome,
 } from '@inventory-platform/ui-kit';
-import { formatInventoryExpiryDate } from '@inventory-platform/schema';
+import { formatInventoryExpiryDate, getInventoryBatchNo } from '@inventory-platform/schema';
 
 export function normalizedBillingMode(item: InventoryItem): BillingMode {
   return item.billingMode === 'BASIC' ? 'BASIC' : 'REGULAR';
@@ -82,7 +84,7 @@ export interface ProductSearchCardProps {
   isDetailLoading: boolean;
   isAddingToCart: boolean;
   onViewDetails: (item: InventoryItem) => void;
-  onAddToSell: (item: InventoryItem) => void;
+  onAddToCart: (item: InventoryItem, quantity: number) => void;
 }
 
 export function ProductSearchCard({
@@ -91,16 +93,38 @@ export function ProductSearchCard({
   isDetailLoading,
   isAddingToCart,
   onViewDetails,
-  onAddToSell,
+  onAddToCart,
 }: ProductSearchCardProps) {
   const mode = normalizedBillingMode(item);
   const price = effectivePrice(item);
   const outOfStock = item.currentCount <= 0;
   const priceMissing = price == null;
+  // Quantity lives on the card, not on the page: each result carries its own count until it is
+  // handed to a cart, and the stock on this lot is the ceiling. The stepper stays out of the way
+  // until Add to Cart is pressed, so a card at a glance is still two buttons.
+  const [quantity, setQuantity] = useState(1);
+  const [pickingQuantity, setPickingQuantity] = useState(false);
+  const maxQuantity = Math.max(1, Math.floor(item.currentCount));
+  const clampQuantity = (next: number) => Math.min(Math.max(next, 1), maxQuantity);
+  const addBlocked = isPageLoading || isAddingToCart || outOfStock || priceMissing;
+
+  const addLabel = outOfStock ? 'Out of Stock' : priceMissing ? 'Price not set' : 'Add to Cart';
+
+  const confirmAdd = () => {
+    onAddToCart(item, quantity);
+    setPickingQuantity(false);
+    setQuantity(1);
+  };
   const typeLabel = itemTypeLabel(item);
   const discountText = discountLabel(item);
   const schemeText = schemeLabel(item);
   const purchaseDate = item.purchaseDate || item.createdAt;
+  // The batch lives on the line for some verticals and in the extension fields
+  // for others, so it is read through the helper that knows both. The helper
+  // answers "—" when there is none, which is a value to print in a table of
+  // fixed rows but not a line to add to a card.
+  const rawBatchNo = getInventoryBatchNo(item);
+  const batchNo = rawBatchNo && rawBatchNo !== '—' ? rawBatchNo : '';
   const chips = [typeLabel, discountText, schemeText].filter(Boolean) as string[];
 
   return (
@@ -121,13 +145,18 @@ export function ProductSearchCard({
           </Badge>
         </Box>
 
-        {(item.companyName || item.barcode || item.location) && (
+        {(item.companyName || item.barcode || item.location || batchNo) && (
           <Box
             className={cn(productChrome.searchResultStack, productChrome.searchResultStackTight)}
           >
             {item.companyName ? (
               <Box as="p" className={productChrome.searchResultLine}>
                 Company: {item.companyName}
+              </Box>
+            ) : null}
+            {batchNo ? (
+              <Box as="p" className={productChrome.searchResultLine}>
+                Batch: {batchNo}
               </Box>
             ) : null}
             {item.barcode ? (
@@ -205,7 +234,12 @@ export function ProductSearchCard({
         <Box className={productChrome.searchResultGrow} aria-hidden />
       </CardBody>
 
-      <CardFooter className={productChrome.searchResultFooter}>
+      <CardFooter
+        className={cn(
+          productChrome.searchResultFooter,
+          pickingQuantity && productChrome.searchResultFooterTriple,
+        )}
+      >
         <Button
           type="button"
           variant="outline"
@@ -215,21 +249,47 @@ export function ProductSearchCard({
         >
           {isDetailLoading ? 'Loading…' : 'View Details'}
         </Button>
-        <Button
-          type="button"
-          variant="solid"
-          onClick={() => onAddToSell(item)}
-          disabled={isPageLoading || isAddingToCart || outOfStock || priceMissing}
-          loading={isAddingToCart}
-        >
-          {isAddingToCart
-            ? 'Adding...'
-            : outOfStock
-            ? 'Out of Stock'
-            : priceMissing
-            ? 'Price not set'
-            : 'Add to Sell'}
-        </Button>
+        {pickingQuantity ? (
+          <>
+            <QtyStepper
+              value={quantity}
+              onDecrement={() => setQuantity((q) => clampQuantity(q - 1))}
+              onIncrement={() => setQuantity((q) => clampQuantity(q + 1))}
+              onChange={(e) => {
+                const parsed = Number.parseInt(e.target.value, 10);
+                setQuantity(Number.isNaN(parsed) ? 1 : clampQuantity(parsed));
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  confirmAdd();
+                }
+              }}
+              disabled={addBlocked}
+              decrementDisabled={quantity <= 1}
+              incrementDisabled={quantity >= maxQuantity}
+              inputProps={{ min: 1, max: maxQuantity, 'aria-label': 'Quantity', autoFocus: true }}
+            />
+            <Button
+              type="button"
+              variant="solid"
+              onClick={confirmAdd}
+              disabled={addBlocked}
+              loading={isAddingToCart}
+            >
+              {isAddingToCart ? 'Adding…' : 'Add'}
+            </Button>
+          </>
+        ) : (
+          <Button
+            type="button"
+            variant="solid"
+            onClick={() => setPickingQuantity(true)}
+            disabled={addBlocked}
+            loading={isAddingToCart}
+          >
+            {isAddingToCart ? 'Adding…' : addLabel}
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );

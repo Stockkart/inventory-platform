@@ -31,7 +31,11 @@ function quotationTabLabel(q: QuotationSummary): string {
   if (q.tokenNo?.trim()) {
     return `Token ${q.tokenNo.trim()}`;
   }
-  return q.customerName?.trim() || 'Order';
+  const name = q.customerName?.trim() ?? '';
+  if (!name || name.toLowerCase() === 'general customer') {
+    return 'Walk-in';
+  }
+  return name;
 }
 
 export function ScanSellQuotationStack({

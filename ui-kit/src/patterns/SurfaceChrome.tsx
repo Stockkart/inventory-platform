@@ -58,7 +58,7 @@ export const surfaceChrome = {
   monoPad: styles.monoPad,
   monoSm: styles.monoSm,
   inputW6: styles.inputW6,
-  pickerBtn: styles.pickerBtn,
+  pickerRow: styles.pickerRow,
   mobileUploadShell: styles.mobileUploadShell,
   creditContextCard: styles.creditContextCard,
   creditTabTrack: styles.creditTabTrack,

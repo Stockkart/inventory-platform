@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Purchase } from '@inventory-platform/product/types';
+import type { CheckoutItemResponse, Purchase } from '@inventory-platform/product/types';
 import {
   Badge,
   Box,
@@ -79,6 +79,56 @@ function HistoryField({
         {value}
       </Text>
     </Box>
+  );
+}
+
+/** Percent as it was entered, without the trailing zeros a fixed format would add. */
+function formatPercent(value: number): string {
+  return `${Number(value.toFixed(2))}%`;
+}
+
+/**
+ * The scheme the line was billed on: a percentage, or a pay-for/free pair, or nothing. Reads the
+ * sale-side fields; the purchase-side ones are what the stock was bought on, not sold on.
+ */
+function schemeLabel(item: CheckoutItemResponse): string {
+  if (item.schemeType === 'PERCENTAGE' && item.schemePercentage) {
+    return formatPercent(item.schemePercentage);
+  }
+  if (item.schemePayFor != null && item.schemeFree != null) {
+    return `${item.schemePayFor}+${item.schemeFree}`;
+  }
+  return '—';
+}
+
+/** CGST and SGST are carried as strings on the line; the bill shows their sum. */
+function gstLabel(item: CheckoutItemResponse): string {
+  const cgst = Number.parseFloat(item.cgst ?? '');
+  const sgst = Number.parseFloat(item.sgst ?? '');
+  const total = (Number.isNaN(cgst) ? 0 : cgst) + (Number.isNaN(sgst) ? 0 : sgst);
+  return total > 0 ? formatPercent(total) : '—';
+}
+
+function SummaryRow({ label, value, total }: { label: string; value: string; total?: boolean }) {
+  if (total) {
+    return (
+      <Inline justify="between" align="end" width="full" className={productChrome.summaryRowTotal}>
+        <Text as="span" className={productChrome.summaryRowTotalLabel}>
+          {label}
+        </Text>
+        <Text as="span" className={productChrome.summaryRowTotalValue}>
+          {value}
+        </Text>
+      </Inline>
+    );
+  }
+  return (
+    <Inline justify="between" width="full" className={productChrome.summaryRow}>
+      <Text variant="caption" color="secondary">
+        {label}
+      </Text>
+      <Text weight="medium">{value}</Text>
+    </Inline>
   );
 }
 
@@ -183,9 +233,15 @@ export function SaleHistoryCard({ purchase }: { purchase: Purchase }) {
                   <TableRow>
                     <TableHeaderCell>Product</TableHeaderCell>
                     <TableHeaderCell className={surfaceChrome.numericCell}>Qty</TableHeaderCell>
+                    <TableHeaderCell className={surfaceChrome.numericCell}>MRP</TableHeaderCell>
                     <TableHeaderCell className={surfaceChrome.numericCell}>
                       Unit price
                     </TableHeaderCell>
+                    <TableHeaderCell className={surfaceChrome.numericCell}>
+                      Discount
+                    </TableHeaderCell>
+                    <TableHeaderCell className={surfaceChrome.numericCell}>Scheme</TableHeaderCell>
+                    <TableHeaderCell className={surfaceChrome.numericCell}>GST</TableHeaderCell>
                     <TableHeaderCell className={surfaceChrome.numericCell}>
                       Line total
                     </TableHeaderCell>
@@ -199,17 +255,58 @@ export function SaleHistoryCard({ purchase }: { purchase: Purchase }) {
                       </TableCell>
                       <TableCell className={surfaceChrome.numericCell}>{item.quantity}</TableCell>
                       <TableCell className={surfaceChrome.numericCell}>
+                        {item.maximumRetailPrice ? formatCurrency(item.maximumRetailPrice) : '—'}
+                      </TableCell>
+                      <TableCell className={surfaceChrome.numericCell}>
                         {formatCurrency(item.priceToRetail ?? 0)}
                       </TableCell>
                       <TableCell className={surfaceChrome.numericCell}>
+                        {item.discount ? formatCurrency(item.discount) : '—'}
+                        {item.saleAdditionalDiscount ? (
+                          <Text variant="caption" color="secondary">
+                            {formatPercent(item.saleAdditionalDiscount)} extra
+                          </Text>
+                        ) : null}
+                      </TableCell>
+                      <TableCell className={surfaceChrome.numericCell}>
+                        {schemeLabel(item)}
+                      </TableCell>
+                      <TableCell className={surfaceChrome.numericCell}>{gstLabel(item)}</TableCell>
+                      <TableCell className={surfaceChrome.numericCell}>
                         <Text weight="semibold">
-                          {formatCurrency((item.priceToRetail ?? 0) * (item.quantity ?? 0))}
+                          {/* What the line was billed, taxes and discounts included. Multiplying
+                              rate by quantity here disagreed with the invoice on every line that
+                              carried a discount or a scheme. */}
+                          {formatCurrency(
+                            item.totalAmount ?? (item.priceToRetail ?? 0) * (item.quantity ?? 0),
+                          )}
                         </Text>
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
+            </Box>
+
+            <Box className={productChrome.historyTotalsPanel}>
+              <SummaryRow label="Subtotal" value={formatCurrency(purchase.subTotal ?? 0)} />
+              {purchase.discountTotal ? (
+                <SummaryRow
+                  label="Discount"
+                  value={`− ${formatCurrency(purchase.discountTotal)}`}
+                />
+              ) : null}
+              {purchase.sgstAmount ? (
+                <SummaryRow label="SGST" value={formatCurrency(purchase.sgstAmount)} />
+              ) : null}
+              {purchase.cgstAmount ? (
+                <SummaryRow label="CGST" value={formatCurrency(purchase.cgstAmount)} />
+              ) : null}
+              {/* Older sales carry the tax total but not the split between SGST and CGST. */}
+              {!purchase.sgstAmount && !purchase.cgstAmount && purchase.taxTotal ? (
+                <SummaryRow label="Tax" value={formatCurrency(purchase.taxTotal)} />
+              ) : null}
+              <SummaryRow label="Total" value={formatCurrency(purchase.grandTotal ?? 0)} total />
             </Box>
           </Box>
         ) : null}

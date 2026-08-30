@@ -25,7 +25,9 @@ export const productNav: NavContribution = {
       label: 'Stock corrections',
       icon: 'wrench',
     },
+    { path: '/dashboard/estimates', label: 'Sell Estimate', icon: 'receipt' },
     { path: '/dashboard/scan-sell', label: 'Scan and Sell', icon: 'smartphone' },
+    { path: '/dashboard/history', label: 'History', icon: 'scroll-text' },
   ],
 };
 
@@ -48,8 +50,8 @@ export const productReturnsNav: NavContribution = {
 };
 
 export const productHistoryNav: NavContribution = {
-  groupId: 'analytics-history',
-  label: 'Reports & Analytics',
-  icon: 'trending-up',
+  groupId: 'products',
+  label: 'Products & Sales',
+  icon: 'package',
   items: [{ path: '/dashboard/history', label: 'History', icon: 'scroll-text' }],
 };

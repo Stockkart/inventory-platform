@@ -9,7 +9,7 @@ import {
   ChangeEvent,
   type ReactNode,
 } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router';
+import { useNavigate, useLocation, useSearchParams, Link } from 'react-router';
 import {
   Alert,
   Badge,
@@ -18,7 +18,6 @@ import {
   Card,
   CardBody,
   CenteredLoader,
-  Checkbox,
   EmptyState,
   FormField,
   Grid,
@@ -48,6 +47,7 @@ import {
   ViewModeToggle,
   Icon,
 } from '@inventory-platform/ui-kit';
+import type { BadgeVariant } from '@inventory-platform/ui-kit';
 import type { LucideIcon } from 'lucide-react';
 import {
   AlertTriangle,
@@ -70,10 +70,18 @@ import {
 } from 'lucide-react';
 import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
 import { cartApi } from '../api/cart.api';
+import { estimatesApi } from '../api/estimates.api';
+import {
+  ESTIMATES_LIST_PATH,
+  estimateWorkspaceHref,
+  isEstimateListPath,
+  isEstimateWorkspaceSearch,
+  isLegacyEstimateWorkspacePath,
+} from '../lib/estimatePaths';
+import { rememberOpenQuotationId, readOpenQuotationId } from '../lib/sellSession';
 import { sellCatalogApi } from '../api/sell-catalog.api';
 import { pricingClient } from '../api/pricing-client.api';
 import { gstAmountRowLabel, uniqueGstRateLabel } from '../lib/gstRateLabel';
-import { customersApi } from '@inventory-platform/user/customers';
 import type {
   AvailableUnit,
   BillingMode,
@@ -120,8 +128,6 @@ import {
   customerToggleValueStyle,
   customerToggleIconStyle,
   customerFormStyle,
-  customerInputStyle,
-  sidebarSearchBtnStyle,
   detailModalContentStyle,
   detailModalHeaderStyle,
   detailModalBodyStyle,
@@ -147,7 +153,6 @@ import {
   cafeCheckoutPayBtnStyle,
   cartLineFlushStyle,
   lineTotalAmountStyle,
-  sectionDividerLgStyle,
   microLabelStyle,
 } from '../ui/scanSellStyles';
 import { CafeSellCatalogPanel } from '../ui/CafeSellCatalogPanel';
@@ -162,14 +167,19 @@ import {
   formatInventoryExpiryDate,
   hasInventoryExpiryDate,
   getExtensionFieldString,
+  getInventoryBatchNo,
   sortInventoryByExpirySoonest,
 } from '@inventory-platform/schema';
 import {
   useCustomerProductHistory,
   CustomerProductHistoryHint,
   shouldShowCustomerHistorySubrow,
+  PrintInvoiceModal,
+  PendingCustomerSellFlow,
 } from '../ui';
+import { CustomerSearchPanel } from '../ui/CustomerSearchPanel';
 import { ScanSellQuotationStack } from '../ui/ScanSellQuotationStack';
+import type { CustomerPartyType } from '@inventory-platform/user/types';
 
 export function meta() {
   return [
@@ -179,6 +189,20 @@ export function meta() {
 }
 
 type SchemeTypeCart = 'FIXED_UNITS' | 'PERCENTAGE';
+
+const GENERAL_CUSTOMER_DISPLAY_NAME = 'General Customer';
+
+function isGeneralCustomerName(name?: string | null): boolean {
+  return (name ?? '').trim().toLowerCase() === GENERAL_CUSTOMER_DISPLAY_NAME.toLowerCase();
+}
+
+/** Header chip for the customer section — hide backend general placeholder name. */
+function customerSectionSummary(name: string, phone: string): string {
+  if (isGeneralCustomerName(name)) {
+    return '';
+  }
+  return name.trim() || phone.trim();
+}
 
 /** True when a cart/checkout line represents a cafe menu item (not direct inventory). */
 function isMenuLine(line: CheckoutItemResponse): boolean {
@@ -265,12 +289,12 @@ function formatCartPackagingMeta(cartItem: CartItem): string {
   return conv ? `${conv} · ${line}` : line;
 }
 
-/** Format purchase scheme from inventory (registration) for read-only display. Uses purchase* when present (from API). */
+/** Format purchase scheme from inventory (registration) for the read-only hint above the sale scheme field. */
 function formatPurchaseSchemeLabel(inv: InventoryItem): string {
-  const schemeType = inv.purchaseSchemeType ?? inv.schemeType;
-  const schemePercentage = inv.purchaseSchemePercentage ?? inv.schemePercentage;
-  const schemePayFor = inv.purchaseSchemePayFor ?? inv.schemePayFor;
-  const schemeFree = inv.purchaseSchemeFree ?? inv.schemeFree;
+  const schemeType = inv.purchaseSchemeType;
+  const schemePercentage = inv.purchaseSchemePercentage;
+  const schemePayFor = inv.purchaseSchemePayFor;
+  const schemeFree = inv.purchaseSchemeFree;
   if (schemeType === 'PERCENTAGE' && schemePercentage != null) {
     return `${schemePercentage}%`;
   }
@@ -280,9 +304,63 @@ function formatPurchaseSchemeLabel(inv: InventoryItem): string {
   return '—';
 }
 
-/** Get purchase additional discount from inventory (registration). Uses purchase* when present. */
+/**
+ * What the line is billed before tax, mirroring CheckoutService: a percentage scheme cuts the
+ * price per unit, a pay-for/free scheme cuts the billable quantity, and the sale DISC comes off
+ * whatever is left. Without this the row read price x quantity, so a discount or a scheme only
+ * showed up once it reached the bill totals.
+ */
+function cartLineNetAmount(item: CartItem, additionalDiscount: number | null): number {
+  const price =
+    item.schemeType === 'PERCENTAGE' && item.schemePercentage
+      ? item.price * (1 - item.schemePercentage / 100)
+      : item.price;
+
+  const payFor = item.schemePayFor ?? 0;
+  const free = item.schemeFree ?? 0;
+  const billableQty =
+    item.schemeType === 'FIXED_UNITS' && payFor > 0 && free >= 0 && payFor + free > 0
+      ? (item.quantity * payFor) / (payFor + free)
+      : item.quantity;
+
+  const gross = price * billableQty;
+  return additionalDiscount ? gross * (1 - additionalDiscount / 100) : gross;
+}
+
+/** Purchase additional discount from product registration only — never the sale DISC input. */
 function getPurchaseAdditionalDiscount(inv: InventoryItem): number | null {
-  return inv.purchaseAdditionalDiscount ?? inv.saleAdditionalDiscount ?? null;
+  return inv.purchaseAdditionalDiscount ?? null;
+}
+
+interface CartLineMarginFigures {
+  costTotal: number | null;
+  profit: number | null;
+  marginPercent: number | null;
+}
+
+/**
+ * Per-line cost, profit and margin keyed by inventory id. These are read rather than recomputed:
+ * the server measures margin against landed cost, and a line that disagreed with the bill total
+ * sitting next to it would be worse than showing nothing.
+ */
+function buildCartLineMarginIndex(
+  cartData: CartResponse | null,
+): Map<string, CartLineMarginFigures> {
+  const index = new Map<string, CartLineMarginFigures>();
+  for (const line of cartData?.items ?? []) {
+    const inventoryId = line.inventoryId;
+    if (!inventoryId) continue;
+    const figures: CartLineMarginFigures = {
+      costTotal: line.costTotal ?? null,
+      profit: line.profit ?? null,
+      marginPercent: line.marginPercent ?? null,
+    };
+    if (figures.costTotal == null && figures.profit == null && figures.marginPercent == null) {
+      continue;
+    }
+    index.set(inventoryId, figures);
+  }
+  return index;
 }
 
 function CartQuantityInput({
@@ -600,6 +678,70 @@ function SummaryRow({ label, value, total }: { label: string; value: string; tot
   );
 }
 
+/**
+ * Thin-margin threshold, matching the `lowMarginThreshold` default in ProfitAnalyticsService so a
+ * line flagged amber at the counter is the same line the profit report calls low-margin.
+ */
+const LOW_MARGIN_PERCENT = 10;
+
+function marginBadgeVariant(marginPercent: number): BadgeVariant {
+  if (marginPercent < 0) return 'danger';
+  if (marginPercent < LOW_MARGIN_PERCENT) return 'warning';
+  return 'success';
+}
+
+/**
+ * Per-line margin: the percentage carries the signal as a colour-coded badge, with cost and profit
+ * demoted to a caption. Purchase-side figures, so callers gate it on the same `~` toggle as the
+ * bill-level Margins block — the point of that key is keeping cost off a customer-facing screen.
+ *
+ * `compact` drops the caption and the word "margin" for grid view, where a column header already
+ * names the figure and cost/profit only wrap the cell into an unreadable stack.
+ */
+function CartLineMargin({
+  figures,
+  compact,
+}: {
+  figures: CartLineMarginFigures | null;
+  compact?: boolean;
+}) {
+  if (!figures) return null;
+  const { marginPercent } = figures;
+  if (compact) {
+    if (marginPercent == null && figures.costTotal == null) return null;
+    return (
+      <Stack gap="xs" align="start">
+        {marginPercent != null ? (
+          <Badge variant={marginBadgeVariant(marginPercent)}>{marginPercent.toFixed(1)}%</Badge>
+        ) : null}
+        {figures.costTotal != null ? (
+          <Text variant="caption" color="secondary">
+            Cost ₹{figures.costTotal.toFixed(2)}
+          </Text>
+        ) : null}
+      </Stack>
+    );
+  }
+  const detail: string[] = [];
+  if (figures.costTotal != null) detail.push(`Cost ₹${figures.costTotal.toFixed(2)}`);
+  if (figures.profit != null) detail.push(`Profit ₹${figures.profit.toFixed(2)}`);
+  if (marginPercent == null && detail.length === 0) return null;
+  return (
+    <Inline gap="sm" align="center" flexWrap>
+      {marginPercent != null ? (
+        <Badge variant={marginBadgeVariant(marginPercent)}>
+          {marginPercent.toFixed(1)}% margin
+        </Badge>
+      ) : null}
+      {detail.length > 0 ? (
+        <Text variant="caption" color="secondary">
+          {detail.join(' · ')}
+        </Text>
+      ) : null}
+    </Inline>
+  );
+}
+
 function DetailField({
   icon,
   label,
@@ -743,50 +885,24 @@ function CustomerSectionBlock({
   idPrefix,
   customerSectionOpen,
   setCustomerSectionOpen,
-  customerName,
-  customerPhone,
-  customerEmail,
-  customerAddress,
-  setCustomerName,
-  setCustomerPhone,
-  setCustomerEmail,
-  setCustomerAddress,
-  handleCustomerFieldBlur,
-  isSearchingCustomer,
-  handleCustomerSearch,
-  handleCustomerSearchByEmail,
-  isRetailer,
-  setIsRetailer,
-  customerGstin,
-  customerDlNo,
-  customerPan,
-  setCustomerGstin,
-  setCustomerDlNo,
-  setCustomerPan,
+  selectedCustomer,
+  summaryLabel,
+  walkInName,
+  onWalkInNameChange,
+  onSelectCustomer,
+  onClearCustomer,
+  disabled,
 }: {
   idPrefix: string;
   customerSectionOpen: boolean;
   setCustomerSectionOpen: (open: boolean | ((o: boolean) => boolean)) => void;
-  customerName: string;
-  customerPhone: string;
-  customerEmail: string;
-  customerAddress: string;
-  setCustomerName: (v: string) => void;
-  setCustomerPhone: (v: string) => void;
-  setCustomerEmail: (v: string) => void;
-  setCustomerAddress: (v: string) => void;
-  handleCustomerFieldBlur: () => void;
-  isSearchingCustomer: boolean;
-  handleCustomerSearch: () => void;
-  handleCustomerSearchByEmail: () => void;
-  isRetailer: boolean;
-  setIsRetailer: (v: boolean) => void;
-  customerGstin: string;
-  customerDlNo: string;
-  customerPan: string;
-  setCustomerGstin: (v: string) => void;
-  setCustomerDlNo: (v: string) => void;
-  setCustomerPan: (v: string) => void;
+  selectedCustomer: CustomerResponse | null;
+  summaryLabel: string;
+  walkInName: string;
+  onWalkInNameChange: (value: string) => void;
+  onSelectCustomer: (customer: CustomerResponse) => void;
+  onClearCustomer: () => void;
+  disabled?: boolean;
 }) {
   return (
     <Box className={cn(customerBlockStyle, idPrefix === 'cafe' && customerBlockCafeStyle)}>
@@ -799,11 +915,11 @@ function CustomerSectionBlock({
       >
         <Inline gap="sm" align="center" width="full">
           <Text weight="semibold">Customer</Text>
-          {customerName || customerPhone ? (
-            <Text className={customerToggleValueStyle}>{customerName || customerPhone}</Text>
+          {summaryLabel ? (
+            <Text className={customerToggleValueStyle}>{summaryLabel}</Text>
           ) : (
             <Text color="secondary" className={surfaceChrome.flexMin0}>
-              Optional
+              Walk-in
             </Text>
           )}
           <Text className={customerToggleIconStyle}>{customerSectionOpen ? '▼' : '▶'}</Text>
@@ -811,156 +927,22 @@ function CustomerSectionBlock({
       </Button>
       {customerSectionOpen ? (
         <Stack gap="md" className={customerFormStyle}>
-          <Stack gap="sm" pt="sm">
-            <FormField label="Phone" id={`${idPrefix}-customerPhone`}>
-              <Inline gap="sm" width="full">
-                <Input
-                  id={`${idPrefix}-customerPhone`}
-                  type="tel"
-                  className={customerInputStyle}
-                  placeholder="Phone"
-                  value={customerPhone}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    setCustomerPhone(e.currentTarget.value)
-                  }
-                  onBlur={handleCustomerFieldBlur}
-                  disabled={isSearchingCustomer}
-                />
-                <IconButton
-                  label="Search customer"
-                  title="Search customer"
-                  className={sidebarSearchBtnStyle}
-                  onClick={handleCustomerSearch}
-                  disabled={isSearchingCustomer || !customerPhone.trim()}
-                >
-                  {isSearchingCustomer ? '…' : '⌕'}
-                </IconButton>
-              </Inline>
-            </FormField>
-            <FormField label="Name" id={`${idPrefix}-customerName`}>
-              <Input
-                id={`${idPrefix}-customerName`}
-                type="text"
-                className={customerInputStyle}
-                placeholder="Name"
-                value={customerName}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setCustomerName(e.currentTarget.value)
-                }
-                onBlur={handleCustomerFieldBlur}
-              />
-            </FormField>
-            <FormField label="Email" id={`${idPrefix}-customerEmail`}>
-              <Inline gap="sm" width="full">
-                <Input
-                  id={`${idPrefix}-customerEmail`}
-                  type="email"
-                  className={customerInputStyle}
-                  placeholder="Email"
-                  value={customerEmail}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    setCustomerEmail(e.currentTarget.value)
-                  }
-                  onBlur={handleCustomerFieldBlur}
-                  disabled={isSearchingCustomer}
-                />
-                <IconButton
-                  label="Search customer by email"
-                  title="Search customer by email"
-                  className={sidebarSearchBtnStyle}
-                  onClick={handleCustomerSearchByEmail}
-                  disabled={isSearchingCustomer || !customerEmail.trim()}
-                >
-                  {isSearchingCustomer ? '…' : '⌕'}
-                </IconButton>
-              </Inline>
-            </FormField>
-            <FormField label="Address" id={`${idPrefix}-customerAddress`}>
-              <Input
-                id={`${idPrefix}-customerAddress`}
-                type="text"
-                className={customerInputStyle}
-                placeholder="Address"
-                value={customerAddress}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setCustomerAddress(e.currentTarget.value)
-                }
-                onBlur={handleCustomerFieldBlur}
-              />
-            </FormField>
-          </Stack>
-          {idPrefix === 'sidebar' ? (
-            <>
-              <Box className={sectionDividerLgStyle}>
-                <Checkbox
-                  label="Is Retailer"
-                  checked={isRetailer}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                    setIsRetailer(e.currentTarget.checked);
-                    if (!e.currentTarget.checked) {
-                      setCustomerGstin('');
-                      setCustomerDlNo('');
-                      setCustomerPan('');
-                    }
-                  }}
-                />
-              </Box>
-              {isRetailer ? (
-                <Stack
-                  gap="sm"
-                  padding="md"
-                  border
-                  rounded="md"
-                  bg="surface"
-                  className={productChrome.sectionDivider}
-                >
-                  <FormField label="GSTIN" id={`${idPrefix}-customerGstin`}>
-                    <Input
-                      id={`${idPrefix}-customerGstin`}
-                      type="text"
-                      className={customerInputStyle}
-                      placeholder="GSTIN"
-                      value={customerGstin}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                        setCustomerGstin(e.currentTarget.value)
-                      }
-                    />
-                  </FormField>
-                  <FormField label="DL No" id={`${idPrefix}-customerDlNo`}>
-                    <Input
-                      id={`${idPrefix}-customerDlNo`}
-                      type="text"
-                      className={customerInputStyle}
-                      placeholder="DL No"
-                      value={customerDlNo}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                        setCustomerDlNo(e.currentTarget.value)
-                      }
-                    />
-                  </FormField>
-                  <FormField label="PAN" id={`${idPrefix}-customerPan`}>
-                    <Input
-                      id={`${idPrefix}-customerPan`}
-                      type="text"
-                      className={customerInputStyle}
-                      placeholder="PAN"
-                      value={customerPan}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                        setCustomerPan(e.currentTarget.value)
-                      }
-                    />
-                  </FormField>
-                </Stack>
-              ) : null}
-            </>
-          ) : null}
+          <CustomerSearchPanel
+            idPrefix={idPrefix}
+            selected={selectedCustomer}
+            onSelect={onSelectCustomer}
+            onClear={onClearCustomer}
+            disabled={disabled}
+            walkInName={walkInName}
+            onWalkInNameChange={onWalkInNameChange}
+          />
         </Stack>
       ) : null}
     </Box>
   );
 }
 
-export function ScanSellPage() {
+export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?: boolean }) {
   const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
   const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
   const [cartBusinessType, setCartBusinessType] = useState('medical');
@@ -970,6 +952,13 @@ export function ScanSellPage() {
   const catalogLoadedForShopRef = useRef<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const isEstimateMode =
+    forceEstimateMode ||
+    isLegacyEstimateWorkspacePath(location.pathname) ||
+    searchParams.get('mode') === 'estimate' ||
+    (isEstimateListPath(location.pathname) && isEstimateWorkspaceSearch(searchParams));
+  const estimatePurchaseIdParam = searchParams.get('purchaseId');
   const scanSellCustomerPrefillRef = useRef<CustomerResponse | null>(null);
   const scanSellCustomerPrefillConsumedRef = useRef(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -981,12 +970,16 @@ export function ScanSellPage() {
   const [_searchTotalItems, setSearchTotalItems] = useState(0);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [cartData, setCartData] = useState<CartResponse | null>(null);
+  /** Built once per cart response so each line looks its margin up instead of scanning the cart. */
+  const cartLineMarginById = useMemo(() => buildCartLineMarginIndex(cartData), [cartData]);
   const [quotations, setQuotations] = useState<QuotationSummary[]>([]);
   const [activePurchaseId, setActivePurchaseId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoadingCart, setIsLoadingCart] = useState(true);
   const [isUpdatingCart, setIsUpdatingCart] = useState(false);
+  const [printEstimateOpen, setPrintEstimateOpen] = useState(false);
+  const [isConvertingEstimate, setIsConvertingEstimate] = useState(false);
   const cartLoadedRef = useRef(false);
   const isUpdatingRef = useRef(false);
   const syncVersionRef = useRef(0);
@@ -998,11 +991,11 @@ export function ScanSellPage() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerId, setCustomerId] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
-  const [isRetailer, setIsRetailer] = useState(false);
+  const [customerPartyType, setCustomerPartyType] = useState<CustomerPartyType>('CONSUMER');
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerResponse | null>(null);
   const [customerGstin, setCustomerGstin] = useState('');
   const [customerDlNo, setCustomerDlNo] = useState('');
   const [customerPan, setCustomerPan] = useState('');
-  const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [customerSectionOpen, setCustomerSectionOpen] = useState(false);
   const [additionalDiscountOverrides, setAdditionalDiscountOverrides] = useState<
@@ -1184,12 +1177,18 @@ export function ScanSellPage() {
   }, [location.key]);
 
   useLayoutEffect(() => {
-    const raw = (location.state as { prefillCustomer?: CustomerResponse } | null | undefined)
-      ?.prefillCustomer;
+    const state = location.state as
+      | { prefillCustomer?: CustomerResponse; pickSellDestination?: boolean }
+      | null
+      | undefined;
+    const raw = state?.prefillCustomer;
     if (!raw?.customerId) return;
+    if (state?.pickSellDestination) return;
     scanSellCustomerPrefillRef.current = raw;
-    navigate(location.pathname, { replace: true, state: {} });
-  }, [location.state, location.pathname, navigate]);
+    // Keep the query string: the destination picker hands the chosen quotation
+    // over as `?purchaseId=`, and dropping it here loses which document to open.
+    navigate(`${location.pathname}${location.search}`, { replace: true, state: {} });
+  }, [location.state, location.pathname, location.search, navigate]);
 
   const normalizeBillingMode = useCallback(
     (mode?: BillingMode | null): BillingMode => (mode === 'BASIC' ? 'BASIC' : 'REGULAR'),
@@ -1276,7 +1275,12 @@ export function ScanSellPage() {
       setIsSearching(true);
       setError(null);
       try {
-        const response = await inventoryApi.search(query.trim(), pageNum, pageSize);
+        // Sold-out lots cannot be added to a bill, so the counter never sees them here.
+        const response = await inventoryApi.search({
+          q: query.trim(),
+          limit: pageSize,
+          includeZeroStock: false,
+        });
         let items: InventoryItem[] = [];
         if (response) {
           if (Array.isArray(response)) items = response;
@@ -1335,16 +1339,32 @@ export function ScanSellPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showSearchDropdown]);
 
-  // Load cart on mount (once; time guard avoids double run in React Strict Mode)
+  // Load cart on mount (sell quotations vs estimate workspace are different routes)
   const searchWrapperRef = useRef<HTMLDivElement>(null);
   const lastLoadCartTimeRef = useRef(0);
+  const lastSellModeRef = useRef<boolean | null>(null);
+  /** Dedupes concurrent estimate bootstraps (Strict Mode). */
+  const estimateBootstrapRef = useRef<Promise<void> | null>(null);
   useEffect(() => {
+    if (location.pathname.includes('/scan-sell') && searchParams.get('mode') === 'estimate') {
+      const next = new URLSearchParams(searchParams);
+      next.delete('mode');
+      const purchaseId = next.get('purchaseId')?.trim();
+      const fresh = next.get('fresh') === '1';
+      navigate(estimateWorkspaceHref({ purchaseId: purchaseId || undefined, fresh }), {
+        replace: true,
+      });
+      return;
+    }
+    const modeChanged =
+      lastSellModeRef.current !== null && lastSellModeRef.current !== isEstimateMode;
+    lastSellModeRef.current = isEstimateMode;
     const now = Date.now();
-    if (now - lastLoadCartTimeRef.current < 1500) return;
+    if (!modeChanged && now - lastLoadCartTimeRef.current < 1500) return;
     lastLoadCartTimeRef.current = now;
     cartLoadedRef.current = true;
-    loadCart();
-  }, []);
+    void loadCart();
+  }, [isEstimateMode, location.pathname]);
 
   // Auto-dismiss error message after 5 seconds
   useEffect(() => {
@@ -1359,6 +1379,10 @@ export function ScanSellPage() {
   }, [error]);
 
   const loadCart = async (): Promise<void> => {
+    if (isEstimateMode) {
+      await initializeEstimateSession();
+      return;
+    }
     await initializeQuotations();
   };
 
@@ -1369,6 +1393,40 @@ export function ScanSellPage() {
     await refreshQuotationList();
     applyCartToState(cart, []);
     return cart.purchaseId;
+  };
+
+  const syncEstimateUrl = (purchaseId: string) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('mode');
+        next.set('purchaseId', purchaseId);
+        next.delete('fresh');
+        return next;
+      },
+      { replace: true },
+    );
+  };
+
+  const createEstimateDocument = async (): Promise<string> => {
+    const cart = await estimatesApi.create({
+      businessType: cartBusinessType,
+    });
+    applyCartToState(cart, []);
+    syncEstimateUrl(cart.purchaseId);
+    return cart.purchaseId;
+  };
+
+  /** Prefer an existing open estimate; create only when none exist (or fresh=1). */
+  const ensureDefaultEstimate = async (): Promise<string> => {
+    const list = await estimatesApi.list('OPEN', { size: 100 });
+    const existing = list.estimates[0];
+    if (existing) {
+      await loadQuotation(existing.purchaseId);
+      syncEstimateUrl(existing.purchaseId);
+      return existing.purchaseId;
+    }
+    return createEstimateDocument();
   };
 
   const looksLikePhone = (value: string) => {
@@ -1397,6 +1455,32 @@ export function ScanSellPage() {
     };
   };
 
+  const applySelectedCustomer = (customer: CustomerResponse | null) => {
+    if (!customer) {
+      setSelectedCustomer(null);
+      setCustomerId('');
+      setCustomerName('');
+      setCustomerPhone('');
+      setCustomerEmail('');
+      setCustomerAddress('');
+      setCustomerGstin('');
+      setCustomerDlNo('');
+      setCustomerPan('');
+      setCustomerPartyType('CONSUMER');
+      return;
+    }
+    setSelectedCustomer(customer);
+    setCustomerId(customer.customerId || '');
+    setCustomerName(customer.name || '');
+    setCustomerPhone(customer.phone || '');
+    setCustomerEmail(customer.email || '');
+    setCustomerAddress(customer.address || '');
+    setCustomerGstin(customer.gstin || '');
+    setCustomerDlNo(customer.dlNo || '');
+    setCustomerPan(customer.pan || customer.panNo || '');
+    setCustomerPartyType(customer.partyType ?? 'CONSUMER');
+  };
+
   const applyCustomerFieldsFromCart = (
     cart: CartResponse,
     typed?: {
@@ -1407,24 +1491,41 @@ export function ScanSellPage() {
     },
   ) => {
     const resolved = resolveCustomerFieldsFromCart(cart);
-    setCustomerName(resolved.name || typed?.customerName?.trim() || '');
-    setCustomerAddress(resolved.address || typed?.customerAddress?.trim() || '');
-    setCustomerPhone(resolved.phone || typed?.customerPhone?.trim() || '');
-    setCustomerId(resolved.customerId);
-    setCustomerEmail(resolved.email || typed?.customerEmail?.trim() || '');
+    const nameRaw = resolved.name || typed?.customerName?.trim() || '';
+    const name = isGeneralCustomerName(nameRaw) ? '' : nameRaw;
+    const phone = resolved.phone || typed?.customerPhone?.trim() || '';
+    const email = resolved.email || typed?.customerEmail?.trim() || '';
+    const address = resolved.address || typed?.customerAddress?.trim() || '';
     const gstin = resolved.gstin;
     const dl = resolved.dlNo;
     const pan = resolved.pan;
-    if (gstin || dl || pan) {
-      setIsRetailer(true);
-      setCustomerGstin(gstin);
-      setCustomerDlNo(dl);
-      setCustomerPan(pan);
+    setCustomerName(name);
+    setCustomerAddress(address);
+    setCustomerPhone(phone);
+    setCustomerId(resolved.customerId);
+    setCustomerEmail(email);
+    setCustomerGstin(gstin);
+    setCustomerDlNo(dl);
+    setCustomerPan(pan);
+    if (resolved.customerId && (phone || email || gstin || dl || pan)) {
+      setSelectedCustomer({
+        customerId: resolved.customerId,
+        name: name || 'Customer',
+        phone: phone || '',
+        email: email || null,
+        address: address || null,
+        gstin: gstin || null,
+        dlNo: dl || null,
+        pan: pan || null,
+        partyType: customerPartyType,
+        createdAt: '',
+        updatedAt: '',
+      });
     } else {
-      setIsRetailer(false);
-      setCustomerGstin('');
-      setCustomerDlNo('');
-      setCustomerPan('');
+      setSelectedCustomer(null);
+      if (!phone && !email && !gstin && !dl && !pan) {
+        setCustomerPartyType('CONSUMER');
+      }
     }
   };
 
@@ -1433,6 +1534,7 @@ export function ScanSellPage() {
   const applyCartToState = (cart: CartResponse, previousItems: CartItem[] = []) => {
     setCartData(cart);
     setActivePurchaseId(cart.purchaseId);
+    rememberOpenQuotationId(cart.purchaseId);
     applyCustomerFieldsFromCart(cart);
     setCartItems(mergeCartResponseToItems(cart, previousItems));
   };
@@ -1444,6 +1546,7 @@ export function ScanSellPage() {
   };
 
   const syncCustomerToQuotation = async (overrides?: {
+    customerId?: string;
     customerName?: string;
     customerPhone?: string;
     customerEmail?: string;
@@ -1451,7 +1554,7 @@ export function ScanSellPage() {
     customerGstin?: string;
     customerDlNo?: string;
     customerPan?: string;
-    isRetailer?: boolean;
+    customerPartyType?: CustomerPartyType;
   }): Promise<void> => {
     if (
       suppressCustomerSyncRef.current ||
@@ -1463,16 +1566,18 @@ export function ScanSellPage() {
       return;
     }
 
+    const id = overrides?.customerId ?? customerId;
     const name = overrides?.customerName ?? customerName;
     const phone = overrides?.customerPhone ?? customerPhone;
     const email = overrides?.customerEmail ?? customerEmail;
     const address = overrides?.customerAddress ?? customerAddress;
-    const retailer = overrides?.isRetailer ?? isRetailer;
     const gstin = overrides?.customerGstin ?? customerGstin;
     const dlNo = overrides?.customerDlNo ?? customerDlNo;
     const pan = overrides?.customerPan ?? customerPan;
+    const partyType = overrides?.customerPartyType ?? customerPartyType;
 
     const dirty =
+      normCustomerField(id) !== normCustomerField(cartData?.customerId) ||
       normCustomerField(name) !== normCustomerField(cartData?.customerName) ||
       normCustomerField(phone) !== normCustomerField(cartData?.customerPhone) ||
       normCustomerField(email) !== normCustomerField(cartData?.customerEmail) ||
@@ -1485,6 +1590,7 @@ export function ScanSellPage() {
     }
 
     const hasCustomerInput =
+      normCustomerField(id).length > 0 ||
       normCustomerField(name).length > 0 ||
       normCustomerField(phone).length > 0 ||
       normCustomerField(email).length > 0 ||
@@ -1502,13 +1608,15 @@ export function ScanSellPage() {
         businessType: cartBusinessType,
         purchaseId: activePurchaseId,
         items: [],
+        ...(id.trim() && { customerId: id.trim() }),
         ...(name.trim() && { customerName: name.trim() }),
         ...(address.trim() && { customerAddress: address.trim() }),
         ...(phone.trim() && { customerPhone: phone.trim() }),
         ...(email.trim() && { customerEmail: email.trim() }),
-        ...(retailer && gstin && { customerGstin: gstin.trim() }),
-        ...(retailer && dlNo && { customerDlNo: dlNo.trim() }),
-        ...(retailer && pan && { customerPan: pan.trim() }),
+        ...(gstin.trim() && { customerGstin: gstin.trim() }),
+        ...(dlNo.trim() && { customerDlNo: dlNo.trim() }),
+        ...(pan.trim() && { customerPan: pan.trim() }),
+        ...(partyType && { customerPartyType: partyType }),
       });
       suppressCustomerSyncRef.current = true;
       setCartData(updatedCart);
@@ -1527,17 +1635,48 @@ export function ScanSellPage() {
     }
   };
 
-  const handleCustomerFieldBlur = () => {
-    if (customerSyncTimerRef.current) {
-      clearTimeout(customerSyncTimerRef.current);
-    }
-    void syncCustomerToQuotation();
+  const handleSelectCustomer = (customer: CustomerResponse) => {
+    applySelectedCustomer(customer);
+    setCustomerSectionOpen(true);
+    void syncCustomerToQuotation({
+      customerId: customer.customerId,
+      customerName: customer.name || '',
+      customerPhone: customer.phone || '',
+      customerEmail: customer.email || '',
+      customerAddress: customer.address || '',
+      customerGstin: customer.gstin || '',
+      customerDlNo: customer.dlNo || '',
+      customerPan: customer.pan || customer.panNo || '',
+      customerPartyType: customer.partyType ?? 'CONSUMER',
+    });
+  };
+
+  const handleClearCustomer = () => {
+    applySelectedCustomer(null);
+    void syncCustomerToQuotation({
+      customerId: '',
+      customerName: '',
+      customerPhone: '',
+      customerEmail: '',
+      customerAddress: '',
+      customerGstin: '',
+      customerDlNo: '',
+      customerPan: '',
+      customerPartyType: 'CONSUMER',
+    });
   };
 
   const loadQuotation = async (purchaseId: string): Promise<void> => {
     suppressCustomerSyncRef.current = true;
     try {
       const cart = await cartApi.get(purchaseId);
+      if (cart.documentType === 'ESTIMATE') {
+        if (cart.estimateState === 'DISCARDED') {
+          throw new Error('Estimate was discarded');
+        }
+        applyCartToState(cart, []);
+        return;
+      }
       if (cart.status === 'PENDING') {
         scanSellCustomerPrefillRef.current = null;
         navigate(`/dashboard/checkout?purchaseId=${encodeURIComponent(purchaseId)}`, {
@@ -1554,6 +1693,57 @@ export function ScanSellPage() {
     }
   };
 
+  const initializeEstimateSession = async (): Promise<void> => {
+    if (isUpdatingRef.current) {
+      return;
+    }
+    if (estimateBootstrapRef.current) {
+      await estimateBootstrapRef.current;
+      return;
+    }
+
+    const forceFresh = searchParams.get('fresh') === '1';
+    const bootstrap = (async () => {
+      setIsLoadingCart(true);
+      setError(null);
+      setQuotations([]);
+      try {
+        const targetId = estimatePurchaseIdParam?.trim() || activePurchaseId;
+        if (targetId && !forceFresh) {
+          await loadQuotation(targetId);
+          syncEstimateUrl(targetId);
+          return;
+        }
+        if (forceFresh) {
+          await createEstimateDocument();
+          return;
+        }
+        await ensureDefaultEstimate();
+      } catch (err) {
+        console.log('No estimate or error loading:', err);
+        try {
+          await ensureDefaultEstimate();
+        } catch (createErr) {
+          console.log('Failed to open estimate session:', createErr);
+          setActivePurchaseId(null);
+          setCartData(null);
+          setCartItems([]);
+        }
+      } finally {
+        setIsLoadingCart(false);
+      }
+    })();
+
+    estimateBootstrapRef.current = bootstrap;
+    try {
+      await bootstrap;
+    } finally {
+      if (estimateBootstrapRef.current === bootstrap) {
+        estimateBootstrapRef.current = null;
+      }
+    }
+  };
+
   const initializeQuotations = async (): Promise<void> => {
     if (isUpdatingRef.current) {
       return;
@@ -1562,11 +1752,39 @@ export function ScanSellPage() {
     setIsLoadingCart(true);
     setError(null);
     try {
+      // In-progress checkout (PENDING) is not in the open-quotation list.
+      // Resume it instead of creating a new empty cart.
+      const preferredId =
+        estimatePurchaseIdParam?.trim() || activePurchaseId || readOpenQuotationId() || undefined;
+      if (preferredId) {
+        try {
+          const preferred = await cartApi.get(preferredId);
+          if (preferred.status === 'PENDING') {
+            navigate(`/dashboard/checkout?purchaseId=${encodeURIComponent(preferred.purchaseId)}`, {
+              replace: true,
+              state: { purchaseId: preferred.purchaseId },
+            });
+            return;
+          }
+        } catch {
+          // Fall through to active-cart / open quotations.
+        }
+      }
+
+      const activeCart = await cartApi.get().catch(() => null);
+      if (activeCart?.status === 'PENDING' && activeCart.purchaseId) {
+        navigate(`/dashboard/checkout?purchaseId=${encodeURIComponent(activeCart.purchaseId)}`, {
+          replace: true,
+          state: { purchaseId: activeCart.purchaseId },
+        });
+        return;
+      }
+
       const list = await refreshQuotationList();
       if (list.length > 0) {
         const targetId =
-          activePurchaseId && list.some((q) => q.purchaseId === activePurchaseId)
-            ? activePurchaseId
+          preferredId && list.some((q) => q.purchaseId === preferredId)
+            ? preferredId
             : list[0].purchaseId;
         await loadQuotation(targetId);
         return;
@@ -1653,9 +1871,18 @@ export function ScanSellPage() {
       return activePurchaseId;
     }
     try {
+      if (isEstimateMode) {
+        return await ensureDefaultEstimate();
+      }
       return await ensureDefaultQuotation();
     } catch (err) {
-      notifyError(err instanceof Error ? err.message : 'Failed to create quotation');
+      notifyError(
+        err instanceof Error
+          ? err.message
+          : isEstimateMode
+          ? 'Failed to open estimate'
+          : 'Failed to create quotation',
+      );
       return null;
     }
   };
@@ -1666,27 +1893,24 @@ export function ScanSellPage() {
     if (!c || scanSellCustomerPrefillConsumedRef.current) return;
     scanSellCustomerPrefillConsumedRef.current = true;
     scanSellCustomerPrefillRef.current = null;
-    setCustomerName(c.name ?? '');
-    setCustomerPhone(c.phone ?? '');
-    setCustomerId(c.customerId ?? '');
-    setCustomerEmail(c.email ?? '');
-    setCustomerAddress(c.address ?? '');
-    const gstin = c.gstin ?? '';
-    const dl = c.dlNo ?? '';
-    const pan = c.pan ?? c.panNo ?? '';
-    if (gstin || dl || pan) {
-      setIsRetailer(true);
-      setCustomerGstin(gstin);
-      setCustomerDlNo(dl);
-      setCustomerPan(pan);
-    } else {
-      setIsRetailer(false);
-      setCustomerGstin('');
-      setCustomerDlNo('');
-      setCustomerPan('');
-    }
+    applySelectedCustomer(c);
     setCustomerSectionOpen(true);
-  }, [isLoadingCart]);
+    void syncCustomerToQuotation({
+      customerId: c.customerId ?? '',
+      customerName: c.name ?? '',
+      customerPhone: c.phone ?? '',
+      customerEmail: c.email ?? '',
+      customerAddress: c.address ?? '',
+      customerGstin: c.gstin ?? '',
+      customerDlNo: c.dlNo ?? '',
+      customerPan: c.pan ?? c.panNo ?? '',
+      customerPartyType: c.partyType ?? 'CONSUMER',
+    });
+    // `location.key` matters as much as the cart: arriving from the customer
+    // picker is a navigation to this same route, so the cart never reloads and
+    // `isLoadingCart` never changes. Keyed only on that, this effect would not
+    // run again and the customer left in the ref would never be applied.
+  }, [isLoadingCart, location.key]);
 
   /** Build CartItem[] from cart response, reusing existing inventoryItem when possible (no API calls). */
   const mergeCartResponseToItems = useCallback(
@@ -1843,10 +2067,11 @@ export function ScanSellPage() {
       }
     };
   }, [
+    customerId,
     customerName,
     customerEmail,
     customerAddress,
-    isRetailer,
+    customerPartyType,
     customerGstin,
     customerDlNo,
     customerPan,
@@ -2133,9 +2358,11 @@ export function ScanSellPage() {
         ...(customerAddress && { customerAddress }),
         ...(customerPhone && { customerPhone }),
         ...(customerEmail && { customerEmail }),
-        ...(isRetailer && customerGstin && { customerGstin }),
-        ...(isRetailer && customerDlNo && { customerDlNo }),
-        ...(isRetailer && customerPan && { customerPan }),
+        ...(customerId.trim() && { customerId: customerId.trim() }),
+        ...(customerGstin && { customerGstin }),
+        ...(customerDlNo && { customerDlNo }),
+        ...(customerPan && { customerPan }),
+        ...(customerPartyType && { customerPartyType }),
       };
 
       const updatedCart = await cartApi.add(cartPayload);
@@ -2143,6 +2370,7 @@ export function ScanSellPage() {
       if (thisSyncVersion !== syncVersionRef.current) return;
       setCartData(updatedCart);
       setActivePurchaseId(updatedCart.purchaseId);
+      rememberOpenQuotationId(updatedCart.purchaseId);
       // Merge response into local state (no extra inventory/search API calls)
       setCartItems(mergeCartResponseToItems(updatedCart, items));
       void refreshQuotationList();
@@ -2482,7 +2710,7 @@ export function ScanSellPage() {
         };
         return next;
       });
-      syncCartToAPI(updatedItems);
+      syncCartToAPI(updatedItems, inventoryId, 0);
       return updatedItems;
     });
   };
@@ -2524,13 +2752,15 @@ export function ScanSellPage() {
           businessType: cartBusinessType,
           ...(activePurchaseId && { purchaseId: activePurchaseId }),
           items: itemsToSend,
+          ...(customerId && { customerId }),
           ...(customerName && { customerName }),
           ...(customerAddress && { customerAddress }),
           ...(customerPhone && { customerPhone }),
           ...(customerEmail && { customerEmail }),
-          ...(isRetailer && customerGstin && { customerGstin }),
-          ...(isRetailer && customerDlNo && { customerDlNo }),
-          ...(isRetailer && customerPan && { customerPan }),
+          ...(customerGstin && { customerGstin }),
+          ...(customerDlNo && { customerDlNo }),
+          ...(customerPan && { customerPan }),
+          ...(customerPartyType && { customerPartyType }),
         };
 
         const updatedCart = await cartApi.add(cartPayload);
@@ -2617,106 +2847,11 @@ export function ScanSellPage() {
     'cgst',
   );
 
-  const handleCustomerSearch = async () => {
-    if (!customerPhone.trim()) {
-      notifyError('Please enter a customer phone number');
-      return;
-    }
-
-    setIsSearchingCustomer(true);
-    setError(null);
-    try {
-      const customer = await customersApi.searchByPhone(customerPhone.trim());
-      if (customer) {
-        setCustomerName(customer.name || '');
-        setCustomerId(customer.customerId || '');
-        setCustomerEmail(customer.email || '');
-        setCustomerAddress(customer.address || '');
-        // Phone is already set from the search input
-
-        // Check if retailer fields are present
-        const hasRetailerFields = !!(customer.gstin || customer.dlNo || customer.pan);
-        if (hasRetailerFields) {
-          setIsRetailer(true);
-          setCustomerGstin(customer.gstin || '');
-          setCustomerDlNo(customer.dlNo || '');
-          setCustomerPan(customer.pan || '');
-        } else {
-          setIsRetailer(false);
-          setCustomerGstin('');
-          setCustomerDlNo('');
-          setCustomerPan('');
-        }
-        await syncCustomerToQuotation({
-          customerName: customer.name || '',
-          customerPhone: customer.phone || customerPhone.trim(),
-          customerEmail: customer.email || '',
-          customerAddress: customer.address || '',
-          customerGstin: hasRetailerFields ? customer.gstin || '' : '',
-          customerDlNo: hasRetailerFields ? customer.dlNo || '' : '',
-          customerPan: hasRetailerFields ? customer.pan || '' : '',
-          isRetailer: hasRetailerFields,
-        });
-      } else {
-        notifyError('No customer found with this phone number');
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to search customer';
-      notifyError(errorMessage);
-    } finally {
-      setIsSearchingCustomer(false);
-    }
-  };
-
-  const handleCustomerSearchByEmail = async () => {
-    if (!customerEmail.trim()) {
-      notifyError('Please enter a customer email');
-      return;
-    }
-
-    setIsSearchingCustomer(true);
-    setError(null);
-    try {
-      const customer = await customersApi.searchByEmail(customerEmail.trim());
-      if (customer) {
-        setCustomerName(customer.name || '');
-        setCustomerPhone(customer.phone || '');
-        setCustomerId(customer.customerId || '');
-        setCustomerAddress(customer.address || '');
-        const hasRetailerFields = !!(customer.gstin || customer.dlNo || customer.pan);
-        if (hasRetailerFields) {
-          setIsRetailer(true);
-          setCustomerGstin(customer.gstin || '');
-          setCustomerDlNo(customer.dlNo || '');
-          setCustomerPan(customer.pan || '');
-        } else {
-          setIsRetailer(false);
-          setCustomerGstin('');
-          setCustomerDlNo('');
-          setCustomerPan('');
-        }
-        await syncCustomerToQuotation({
-          customerName: customer.name || '',
-          customerPhone: customer.phone || '',
-          customerEmail: customer.email || '',
-          customerAddress: customer.address || '',
-          customerGstin: hasRetailerFields ? customer.gstin || '' : '',
-          customerDlNo: hasRetailerFields ? customer.dlNo || '' : '',
-          customerPan: hasRetailerFields ? customer.pan || '' : '',
-          isRetailer: hasRetailerFields,
-        });
-      } else {
-        notifyError('No customer found with this email');
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to search customer';
-      notifyError(errorMessage);
-    } finally {
-      setIsSearchingCustomer(false);
-    }
-  };
-
   const handleProcessPayment = async () => {
+    if (isEstimateMode) {
+      notifyError('Convert the estimate to an invoice before taking payment');
+      return;
+    }
     if (cartItems.length === 0 && menuCartLines.length === 0) {
       notifyError('Cart is empty');
       return;
@@ -2743,9 +2878,11 @@ export function ScanSellPage() {
         ...(customerAddress && { customerAddress }),
         ...(customerPhone && { customerPhone: customerPhone.trim() }),
         ...(customerEmail && { customerEmail: customerEmail.trim() }),
-        ...(isRetailer && customerGstin && { customerGstin: customerGstin.trim() }),
-        ...(isRetailer && customerDlNo && { customerDlNo: customerDlNo.trim() }),
-        ...(isRetailer && customerPan && { customerPan: customerPan.trim() }),
+        ...(customerId.trim() && { customerId: customerId.trim() }),
+        ...(customerGstin.trim() && { customerGstin: customerGstin.trim() }),
+        ...(customerDlNo.trim() && { customerDlNo: customerDlNo.trim() }),
+        ...(customerPan.trim() && { customerPan: customerPan.trim() }),
+        ...(customerPartyType && { customerPartyType }),
       };
 
       const upsertResponse = await cartApi.add(upsertPayload);
@@ -2775,6 +2912,30 @@ export function ScanSellPage() {
       setError(errorMessage);
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const isEstimateEditable = !isEstimateMode || cartData?.estimateState !== 'CONVERTED';
+
+  const handleConvertEstimate = async () => {
+    const estimateId = activePurchaseId ?? cartData?.purchaseId;
+    if (!estimateId) {
+      notifyError('No estimate to convert');
+      return;
+    }
+    if (cartItems.length === 0 && menuCartLines.length === 0) {
+      notifyError('Add items before converting');
+      return;
+    }
+    setIsConvertingEstimate(true);
+    try {
+      await syncCustomerToQuotation();
+      const result = await estimatesApi.convert(estimateId);
+      navigate(`/dashboard/scan-sell?purchaseId=${encodeURIComponent(result.salePurchaseId)}`);
+    } catch (err) {
+      notifyError(err instanceof Error ? err.message : 'Failed to convert estimate');
+    } finally {
+      setIsConvertingEstimate(false);
     }
   };
 
@@ -2846,6 +3007,13 @@ export function ScanSellPage() {
               price={cartItem.price}
               quantity={cartItem.quantity}
               lineTotal={lineTotal}
+              marginNote={
+                !hidePurchaseDetailsInSell ? (
+                  <CartLineMargin
+                    figures={cartLineMarginById.get(cartItem.inventoryItem.id) ?? null}
+                  />
+                ) : null
+              }
               disabled={isUpdatingCart}
               customerProductHistory={customerProductHistory}
               customerProductHistoryLoading={customerProductHistoryLoading}
@@ -2895,24 +3063,58 @@ export function ScanSellPage() {
             variant="outline"
             className={shellChrome.nowrap}
             onClick={() => void handleClearCart()}
-            disabled={isUpdatingCart || isLoadingCart}
+            disabled={isUpdatingCart || isLoadingCart || !isEstimateEditable}
           >
             Clear Cart
           </Button>
-          <Button
-            type="button"
-            variant="solid"
-            className={cafeCheckoutPayBtnStyle}
-            onClick={() => void handleProcessPayment()}
-            disabled={
-              (cartItems.length === 0 && menuCartLines.length === 0) ||
-              isProcessing ||
-              isUpdatingCart ||
-              isLoadingCart
-            }
-          >
-            {isProcessing ? 'Processing…' : isUpdatingCart ? 'Updating…' : 'Process Payment'}
-          </Button>
+          {isEstimateMode ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                className={shellChrome.nowrap}
+                disabled={
+                  !activePurchaseId ||
+                  (cartItems.length === 0 && menuCartLines.length === 0) ||
+                  isUpdatingCart ||
+                  isLoadingCart
+                }
+                onClick={() => setPrintEstimateOpen(true)}
+              >
+                Print
+              </Button>
+              <Button
+                type="button"
+                variant="solid"
+                className={cafeCheckoutPayBtnStyle}
+                onClick={() => void handleConvertEstimate()}
+                disabled={
+                  !isEstimateEditable ||
+                  (cartItems.length === 0 && menuCartLines.length === 0) ||
+                  isConvertingEstimate ||
+                  isUpdatingCart ||
+                  isLoadingCart
+                }
+              >
+                {isConvertingEstimate ? 'Converting…' : 'Convert to invoice'}
+              </Button>
+            </>
+          ) : (
+            <Button
+              type="button"
+              variant="solid"
+              className={cafeCheckoutPayBtnStyle}
+              onClick={() => void handleProcessPayment()}
+              disabled={
+                (cartItems.length === 0 && menuCartLines.length === 0) ||
+                isProcessing ||
+                isUpdatingCart ||
+                isLoadingCart
+              }
+            >
+              {isProcessing ? 'Processing…' : isUpdatingCart ? 'Updating…' : 'Process Payment'}
+            </Button>
+          )}
         </Inline>
       </Inline>
     </StickyBar>
@@ -2925,28 +3127,58 @@ export function ScanSellPage() {
       mx={isCafeSell ? undefined : 'auto'}
       className={isCafeSell ? scanSellCafePageShell : scanSellPageShell}
     >
+      <PendingCustomerSellFlow sellPath={location.pathname} />
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
       <PageHeader
         description={
-          isCafeSell
+          isEstimateMode
+            ? 'Build a printable estimate (with tax when products are Regular), then convert to invoice'
+            : isCafeSell
             ? 'Tap menu items or direct stock to build the order'
             : 'Speed up sales with barcode scanning'
         }
+        actions={
+          isEstimateMode ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(ESTIMATES_LIST_PATH)}
+            >
+              All estimates
+            </Button>
+          ) : undefined
+        }
       />
+
+      {isEstimateMode && cartData?.estimateNo ? (
+        <Inline gap="sm" align="center" flexWrap>
+          <Badge variant="info">{cartData.estimateNo}</Badge>
+          {cartData.estimateState === 'CONVERTED' ? (
+            <Badge variant="neutral">Converted — reprint only</Badge>
+          ) : (
+            <Text variant="caption" color="secondary">
+              Estimates do not reserve stock. Convert to invoice when the customer confirms.
+            </Text>
+          )}
+        </Inline>
+      ) : null}
 
       {isLoadingCart ? (
         <CenteredLoader label="Loading…" />
       ) : (
         <>
-          <ScanSellQuotationStack
-            quotations={quotations}
-            activePurchaseId={activePurchaseId}
-            disabled={isUpdatingCart || isLoadingCart}
-            onSelect={handleSelectQuotation}
-            onNew={handleNewQuotation}
-            onCancel={handleCancelQuotation}
-          />
+          {!isEstimateMode ? (
+            <ScanSellQuotationStack
+              quotations={quotations}
+              activePurchaseId={activePurchaseId}
+              disabled={isUpdatingCart || isLoadingCart}
+              onSelect={handleSelectQuotation}
+              onNew={handleNewQuotation}
+              onCancel={handleCancelQuotation}
+            />
+          ) : null}
 
           {isCafeSell ? (
             <>
@@ -2994,26 +3226,13 @@ export function ScanSellPage() {
                       idPrefix="cafe"
                       customerSectionOpen={customerSectionOpen}
                       setCustomerSectionOpen={setCustomerSectionOpen}
-                      customerName={customerName}
-                      customerPhone={customerPhone}
-                      customerEmail={customerEmail}
-                      customerAddress={customerAddress}
-                      setCustomerName={setCustomerName}
-                      setCustomerPhone={setCustomerPhone}
-                      setCustomerEmail={setCustomerEmail}
-                      setCustomerAddress={setCustomerAddress}
-                      handleCustomerFieldBlur={handleCustomerFieldBlur}
-                      isSearchingCustomer={isSearchingCustomer}
-                      handleCustomerSearch={handleCustomerSearch}
-                      handleCustomerSearchByEmail={handleCustomerSearchByEmail}
-                      isRetailer={isRetailer}
-                      setIsRetailer={setIsRetailer}
-                      customerGstin={customerGstin}
-                      customerDlNo={customerDlNo}
-                      customerPan={customerPan}
-                      setCustomerGstin={setCustomerGstin}
-                      setCustomerDlNo={setCustomerDlNo}
-                      setCustomerPan={setCustomerPan}
+                      selectedCustomer={selectedCustomer}
+                      summaryLabel={customerSectionSummary(customerName, customerPhone)}
+                      walkInName={customerName}
+                      onWalkInNameChange={setCustomerName}
+                      onSelectCustomer={handleSelectCustomer}
+                      onClearCustomer={handleClearCustomer}
+                      disabled={isUpdatingCart || isLoadingCart}
                     />
 
                     <Card className={cafeOrderPanelStyle}>
@@ -3144,6 +3363,9 @@ export function ScanSellPage() {
                                 <DenseTableHeaderCell>Qty</DenseTableHeaderCell>
                                 <DenseTableHeaderCell>Unit</DenseTableHeaderCell>
                                 <DenseTableHeaderCell>Amount</DenseTableHeaderCell>
+                                {!hidePurchaseDetailsInSell ? (
+                                  <DenseTableHeaderCell>Margin</DenseTableHeaderCell>
+                                ) : null}
                                 <DenseTableHeaderCell>Price</DenseTableHeaderCell>
                                 <DenseTableHeaderCell>Discount</DenseTableHeaderCell>
                                 <DenseTableHeaderCell>Scheme</DenseTableHeaderCell>
@@ -3164,7 +3386,13 @@ export function ScanSellPage() {
                                 const quantityInputValue = isBaseUnitSelected
                                   ? cartItem.baseQuantity
                                   : cartItem.quantity;
-                                const lineTotal = cartItem.price * cartItem.quantity;
+                                const lineTotal = cartLineNetAmount(
+                                  cartItem,
+                                  getEffectiveAdditionalDiscount(
+                                    cartItem.inventoryItem.id,
+                                    cartItem,
+                                  ),
+                                );
                                 const formatPrice = (n: number) =>
                                   new Intl.NumberFormat('en-IN', {
                                     style: 'currency',
@@ -3249,6 +3477,17 @@ export function ScanSellPage() {
                                         />
                                       </DenseTableCell>
                                       <DenseTableCell>{formatPrice(lineTotal)}</DenseTableCell>
+                                      {!hidePurchaseDetailsInSell ? (
+                                        <DenseTableCell>
+                                          <CartLineMargin
+                                            compact
+                                            figures={
+                                              cartLineMarginById.get(cartItem.inventoryItem.id) ??
+                                              null
+                                            }
+                                          />
+                                        </DenseTableCell>
+                                      ) : null}
                                       <DenseTableCell>
                                         <Stack gap="xs" className={denseTableClassNames.priceCell}>
                                           <CartSellingPriceInput
@@ -3369,7 +3608,7 @@ export function ScanSellPage() {
                                     {showHistorySubrow ? (
                                       <DenseTableRow className={productChrome.historySubrowTr}>
                                         <DenseTableCell
-                                          colSpan={10}
+                                          colSpan={hidePurchaseDetailsInSell ? 10 : 11}
                                           className={productChrome.historySubrowCell}
                                         >
                                           <CustomerProductHistoryHint
@@ -3726,8 +3965,23 @@ export function ScanSellPage() {
                                           </Button>
                                         </Inline>
                                         <Text weight="semibold" className={lineTotalAmountStyle}>
-                                          ₹{(cartItem.price * cartItem.quantity).toFixed(2)}
+                                          ₹
+                                          {cartLineNetAmount(
+                                            cartItem,
+                                            getEffectiveAdditionalDiscount(
+                                              cartItem.inventoryItem.id,
+                                              cartItem,
+                                            ),
+                                          ).toFixed(2)}
                                         </Text>
+                                        {!hidePurchaseDetailsInSell ? (
+                                          <CartLineMargin
+                                            figures={
+                                              cartLineMarginById.get(cartItem.inventoryItem.id) ??
+                                              null
+                                            }
+                                          />
+                                        ) : null}
                                       </Stack>
                                     </Inline>
                                   </Stack>
@@ -3763,26 +4017,13 @@ export function ScanSellPage() {
                     idPrefix="sidebar"
                     customerSectionOpen={customerSectionOpen}
                     setCustomerSectionOpen={setCustomerSectionOpen}
-                    customerName={customerName}
-                    customerPhone={customerPhone}
-                    customerEmail={customerEmail}
-                    customerAddress={customerAddress}
-                    setCustomerName={setCustomerName}
-                    setCustomerPhone={setCustomerPhone}
-                    setCustomerEmail={setCustomerEmail}
-                    setCustomerAddress={setCustomerAddress}
-                    handleCustomerFieldBlur={handleCustomerFieldBlur}
-                    isSearchingCustomer={isSearchingCustomer}
-                    handleCustomerSearch={handleCustomerSearch}
-                    handleCustomerSearchByEmail={handleCustomerSearchByEmail}
-                    isRetailer={isRetailer}
-                    setIsRetailer={setIsRetailer}
-                    customerGstin={customerGstin}
-                    customerDlNo={customerDlNo}
-                    customerPan={customerPan}
-                    setCustomerGstin={setCustomerGstin}
-                    setCustomerDlNo={setCustomerDlNo}
-                    setCustomerPan={setCustomerPan}
+                    selectedCustomer={selectedCustomer}
+                    summaryLabel={customerSectionSummary(customerName, customerPhone)}
+                    walkInName={customerName}
+                    onWalkInNameChange={setCustomerName}
+                    onSelectCustomer={handleSelectCustomer}
+                    onClearCustomer={handleClearCustomer}
+                    disabled={isUpdatingCart || isLoadingCart}
                   />
 
                   <Stack gap="xs" className={productChrome.sectionDivider}>
@@ -3876,27 +4117,62 @@ export function ScanSellPage() {
                       variant="outline"
                       className={surfaceChrome.flexMin0}
                       onClick={handleClearCart}
+                      disabled={!isEstimateEditable}
                     >
                       Clear Cart
                     </Button>
-                    <Button
-                      type="button"
-                      variant="solid"
-                      className={productChrome.flexGrow2}
-                      onClick={handleProcessPayment}
-                      disabled={
-                        (cartItems.length === 0 && menuCartLines.length === 0) ||
-                        isProcessing ||
-                        isUpdatingCart ||
-                        isLoadingCart
-                      }
-                    >
-                      {isProcessing
-                        ? 'Processing...'
-                        : isUpdatingCart
-                        ? 'Updating...'
-                        : 'Process Payment'}
-                    </Button>
+                    {isEstimateMode ? (
+                      <>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className={surfaceChrome.flexMin0}
+                          disabled={
+                            !activePurchaseId ||
+                            (cartItems.length === 0 && menuCartLines.length === 0) ||
+                            isUpdatingCart ||
+                            isLoadingCart
+                          }
+                          onClick={() => setPrintEstimateOpen(true)}
+                        >
+                          Print estimate
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="solid"
+                          className={productChrome.flexGrow2}
+                          onClick={() => void handleConvertEstimate()}
+                          disabled={
+                            !isEstimateEditable ||
+                            (cartItems.length === 0 && menuCartLines.length === 0) ||
+                            isConvertingEstimate ||
+                            isUpdatingCart ||
+                            isLoadingCart
+                          }
+                        >
+                          {isConvertingEstimate ? 'Converting…' : 'Convert to invoice'}
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="solid"
+                        className={productChrome.flexGrow2}
+                        onClick={handleProcessPayment}
+                        disabled={
+                          (cartItems.length === 0 && menuCartLines.length === 0) ||
+                          isProcessing ||
+                          isUpdatingCart ||
+                          isLoadingCart
+                        }
+                      >
+                        {isProcessing
+                          ? 'Processing...'
+                          : isUpdatingCart
+                          ? 'Updating...'
+                          : 'Process Payment'}
+                      </Button>
+                    )}
                   </Inline>
                 </Stack>
               }
@@ -4036,6 +4312,21 @@ export function ScanSellPage() {
                             <DetailField icon={Gift} label="Purchase scheme/deal" pricing>
                               {formatPurchaseSchemeLabel(detailModalItem.inventoryItem)}
                             </DetailField>
+                            {apiItem?.costTotal != null ? (
+                              <DetailField icon={IndianRupee} label="Cost" pricing>
+                                ₹{Number(apiItem.costTotal).toFixed(2)}
+                              </DetailField>
+                            ) : null}
+                            {apiItem?.profit != null ? (
+                              <DetailField icon={IndianRupee} label="Profit" pricing>
+                                ₹{Number(apiItem.profit).toFixed(2)}
+                              </DetailField>
+                            ) : null}
+                            {apiItem?.marginPercent != null ? (
+                              <DetailField icon={Percent} label="Margin" pricing>
+                                {Number(apiItem.marginPercent).toFixed(1)}%
+                              </DetailField>
+                            ) : null}
                           </>
                         ) : null}
                         <DetailField icon={Percent} label="Sale add. discount" pricing>
@@ -4090,6 +4381,21 @@ export function ScanSellPage() {
             );
           })()
         : null}
+
+      {(() => {
+        const printId = activePurchaseId ?? cartData?.purchaseId;
+        if (!printEstimateOpen || !printId) return null;
+        return (
+          <PrintInvoiceModal
+            isOpen
+            onClose={() => setPrintEstimateOpen(false)}
+            purchaseId={printId}
+            invoiceNo={cartData?.estimateNo ?? undefined}
+            documentLabel="Estimate"
+            onError={(message) => notifyError(message)}
+          />
+        );
+      })()}
     </Stack>
   );
 }
@@ -4108,6 +4414,12 @@ function SearchDropdownItem({
     onAddToCart(item);
   };
 
+  // The batch sits on the line for some verticals and in the extension fields
+  // for others, so read it through the helper that knows both. It answers '—'
+  // when there is none, which suits a fixed table row but not a card line.
+  const rawBatchNo = getInventoryBatchNo(item);
+  const batchNo = rawBatchNo && rawBatchNo !== '—' ? rawBatchNo : '';
+
   return (
     <Inline as="li" justify="between" align="start" gap="md" className={dropdownItemStyle}>
       <Stack gap="xs" flex="1" minWidth="0">
@@ -4120,6 +4432,11 @@ function SearchDropdownItem({
         {item.companyName ? (
           <Text variant="caption" color="secondary" truncate>
             Company: {item.companyName}
+          </Text>
+        ) : null}
+        {batchNo ? (
+          <Text variant="caption" color="secondary" truncate>
+            Batch: {batchNo}
           </Text>
         ) : null}
         {item.barcode ? (

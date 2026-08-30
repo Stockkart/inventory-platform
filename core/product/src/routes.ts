@@ -50,6 +50,23 @@ export const scanSellRoutes: RouteModule = {
   children: [{ path: '', file: 'routes/scan-sell.tsx', lazy: () => import('./routes/scan-sell') }],
 };
 
+export const estimatesRoutes: RouteModule = {
+  path: 'estimates',
+  children: [{ path: '', file: 'routes/estimates.tsx', lazy: () => import('./routes/estimates') }],
+};
+
+/** Redirects legacy `/dashboard/estimates/workspace` URLs onto the Estimates page. */
+export const estimateWorkspaceRoutes: RouteModule = {
+  path: 'estimates/workspace',
+  children: [
+    {
+      path: '',
+      file: 'routes/estimate-workspace.tsx',
+      lazy: () => import('./routes/estimate-workspace'),
+    },
+  ],
+};
+
 export const checkoutRoutes: RouteModule = {
   path: 'checkout',
   children: [{ path: '', file: 'routes/checkout.tsx', lazy: () => import('./routes/checkout') }],
@@ -92,6 +109,8 @@ export const productDashboardRoutes: RouteModule[] = [
   stockCorrectionsRoutes,
   vendorInvoicesRoutes,
   scanSellRoutes,
+  estimatesRoutes,
+  estimateWorkspaceRoutes,
   checkoutRoutes,
   historyRoutes,
   refundRoutes,

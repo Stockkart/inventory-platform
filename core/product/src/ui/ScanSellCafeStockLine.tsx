@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { CustomerProductHistoryResponse } from '@inventory-platform/product/types';
 import { inventorySellableRef } from '@inventory-platform/product/types';
 import {
@@ -36,6 +37,8 @@ export interface ScanSellCafeStockLineProps {
   disabled?: boolean;
   customerProductHistory?: CustomerProductHistoryResponse | null;
   customerProductHistoryLoading?: boolean;
+  /** Per-line margin caption. Caller decides whether purchase-side figures may be shown. */
+  marginNote?: ReactNode;
   onChangeQty: (delta: number) => void;
   onSetQuantity: (newQty: number) => Promise<void>;
   onRemove: () => void;
@@ -51,6 +54,7 @@ export function ScanSellCafeStockLine({
   disabled = false,
   customerProductHistory,
   customerProductHistoryLoading = false,
+  marginNote,
   onChangeQty,
   onSetQuantity,
   onRemove,
@@ -74,6 +78,7 @@ export function ScanSellCafeStockLine({
             {unitLabel ? `${unitLabel} · ` : ''}
             {money(price)} each
           </Text>
+          {marginNote}
         </Stack>
         <Stack className={cartLineActionsStyle}>
           <CartQtyStepper
