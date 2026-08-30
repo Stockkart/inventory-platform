@@ -47,6 +47,7 @@ import {
   ViewModeToggle,
   Icon,
 } from '@inventory-platform/ui-kit';
+import type { BadgeVariant } from '@inventory-platform/ui-kit';
 import type { LucideIcon } from 'lucide-react';
 import {
   AlertTriangle,
@@ -330,6 +331,37 @@ function cartLineNetAmount(item: CartItem, additionalDiscount: number | null): n
 /** Purchase additional discount from product registration only — never the sale DISC input. */
 function getPurchaseAdditionalDiscount(inv: InventoryItem): number | null {
   return inv.purchaseAdditionalDiscount ?? null;
+}
+
+interface CartLineMarginFigures {
+  costTotal: number | null;
+  profit: number | null;
+  marginPercent: number | null;
+}
+
+/**
+ * Per-line cost, profit and margin keyed by inventory id. These are read rather than recomputed:
+ * the server measures margin against landed cost, and a line that disagreed with the bill total
+ * sitting next to it would be worse than showing nothing.
+ */
+function buildCartLineMarginIndex(
+  cartData: CartResponse | null,
+): Map<string, CartLineMarginFigures> {
+  const index = new Map<string, CartLineMarginFigures>();
+  for (const line of cartData?.items ?? []) {
+    const inventoryId = line.inventoryId;
+    if (!inventoryId) continue;
+    const figures: CartLineMarginFigures = {
+      costTotal: line.costTotal ?? null,
+      profit: line.profit ?? null,
+      marginPercent: line.marginPercent ?? null,
+    };
+    if (figures.costTotal == null && figures.profit == null && figures.marginPercent == null) {
+      continue;
+    }
+    index.set(inventoryId, figures);
+  }
+  return index;
 }
 
 function CartQuantityInput({
@@ -647,6 +679,70 @@ function SummaryRow({ label, value, total }: { label: string; value: string; tot
   );
 }
 
+/**
+ * Thin-margin threshold, matching the `lowMarginThreshold` default in ProfitAnalyticsService so a
+ * line flagged amber at the counter is the same line the profit report calls low-margin.
+ */
+const LOW_MARGIN_PERCENT = 10;
+
+function marginBadgeVariant(marginPercent: number): BadgeVariant {
+  if (marginPercent < 0) return 'danger';
+  if (marginPercent < LOW_MARGIN_PERCENT) return 'warning';
+  return 'success';
+}
+
+/**
+ * Per-line margin: the percentage carries the signal as a colour-coded badge, with cost and profit
+ * demoted to a caption. Purchase-side figures, so callers gate it on the same `~` toggle as the
+ * bill-level Margins block — the point of that key is keeping cost off a customer-facing screen.
+ *
+ * `compact` drops the caption and the word "margin" for grid view, where a column header already
+ * names the figure and cost/profit only wrap the cell into an unreadable stack.
+ */
+function CartLineMargin({
+  figures,
+  compact,
+}: {
+  figures: CartLineMarginFigures | null;
+  compact?: boolean;
+}) {
+  if (!figures) return null;
+  const { marginPercent } = figures;
+  if (compact) {
+    if (marginPercent == null && figures.costTotal == null) return null;
+    return (
+      <Stack gap="xs" align="start">
+        {marginPercent != null ? (
+          <Badge variant={marginBadgeVariant(marginPercent)}>{marginPercent.toFixed(1)}%</Badge>
+        ) : null}
+        {figures.costTotal != null ? (
+          <Text variant="caption" color="secondary">
+            Cost ₹{figures.costTotal.toFixed(2)}
+          </Text>
+        ) : null}
+      </Stack>
+    );
+  }
+  const detail: string[] = [];
+  if (figures.costTotal != null) detail.push(`Cost ₹${figures.costTotal.toFixed(2)}`);
+  if (figures.profit != null) detail.push(`Profit ₹${figures.profit.toFixed(2)}`);
+  if (marginPercent == null && detail.length === 0) return null;
+  return (
+    <Inline gap="sm" align="center" flexWrap>
+      {marginPercent != null ? (
+        <Badge variant={marginBadgeVariant(marginPercent)}>
+          {marginPercent.toFixed(1)}% margin
+        </Badge>
+      ) : null}
+      {detail.length > 0 ? (
+        <Text variant="caption" color="secondary">
+          {detail.join(' · ')}
+        </Text>
+      ) : null}
+    </Inline>
+  );
+}
+
 function DetailField({
   icon,
   label,
@@ -875,6 +971,8 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   const [_searchTotalItems, setSearchTotalItems] = useState(0);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [cartData, setCartData] = useState<CartResponse | null>(null);
+  /** Built once per cart response so each line looks its margin up instead of scanning the cart. */
+  const cartLineMarginById = useMemo(() => buildCartLineMarginIndex(cartData), [cartData]);
   const [quotations, setQuotations] = useState<QuotationSummary[]>([]);
   const [activePurchaseId, setActivePurchaseId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -2915,6 +3013,13 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
               price={cartItem.price}
               quantity={cartItem.quantity}
               lineTotal={lineTotal}
+              marginNote={
+                !hidePurchaseDetailsInSell ? (
+                  <CartLineMargin
+                    figures={cartLineMarginById.get(cartItem.inventoryItem.id) ?? null}
+                  />
+                ) : null
+              }
               disabled={isUpdatingCart}
               customerProductHistory={customerProductHistory}
               customerProductHistoryLoading={customerProductHistoryLoading}
@@ -3868,6 +3973,14 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                             ),
                                           ).toFixed(2)}
                                         </Text>
+                                        {!hidePurchaseDetailsInSell ? (
+                                          <CartLineMargin
+                                            figures={
+                                              cartLineMarginById.get(cartItem.inventoryItem.id) ??
+                                              null
+                                            }
+                                          />
+                                        ) : null}
                                       </Stack>
                                     </Inline>
                                   </Stack>
@@ -4198,6 +4311,21 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                             <DetailField icon={Gift} label="Purchase scheme/deal" pricing>
                               {formatPurchaseSchemeLabel(detailModalItem.inventoryItem)}
                             </DetailField>
+                            {apiItem?.costTotal != null ? (
+                              <DetailField icon={IndianRupee} label="Cost" pricing>
+                                ₹{Number(apiItem.costTotal).toFixed(2)}
+                              </DetailField>
+                            ) : null}
+                            {apiItem?.profit != null ? (
+                              <DetailField icon={IndianRupee} label="Profit" pricing>
+                                ₹{Number(apiItem.profit).toFixed(2)}
+                              </DetailField>
+                            ) : null}
+                            {apiItem?.marginPercent != null ? (
+                              <DetailField icon={Percent} label="Margin" pricing>
+                                {Number(apiItem.marginPercent).toFixed(1)}%
+                              </DetailField>
+                            ) : null}
                           </>
                         ) : null}
                         <DetailField icon={Percent} label="Sale add. discount" pricing>
