@@ -17,6 +17,10 @@ import {
 import { PrintBarcodeLabelsModal } from '../ui/PrintBarcodeLabelsModal';
 import { openLocalBarcodeLabelPrint } from '../lib/printBarcodeLabels';
 import { vendorsApi } from '@inventory-platform/user/vendors';
+import {
+  partyNameHasLetters,
+  PARTY_NAME_LETTERS_MESSAGE,
+} from '@inventory-platform/user/customers';
 import type {
   CreateInventoryDto,
   BulkCreateInventoryDto,
@@ -2696,6 +2700,12 @@ export function ProductEntryPage() {
     try {
       if (!vendorFormData.name || !vendorFormData.contactPhone) {
         notifyError('Please fill in all required vendor fields (Name and Phone)');
+        setIsCreatingVendor(false);
+        return;
+      }
+
+      if (!partyNameHasLetters(vendorFormData.name)) {
+        notifyError(PARTY_NAME_LETTERS_MESSAGE);
         setIsCreatingVendor(false);
         return;
       }

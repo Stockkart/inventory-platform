@@ -23,6 +23,7 @@ import {
   Text,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
+import { partyNameHasLetters, PARTY_NAME_LETTERS_MESSAGE } from '../api/customers.api';
 import { vendorsApi } from '../api/vendors.api';
 import { VendorEditForm } from '../ui';
 import type {
@@ -129,6 +130,10 @@ export function VendorsPage() {
       setSaveError('Name is required');
       return;
     }
+    if (!partyNameHasLetters(createForm.name)) {
+      setSaveError(PARTY_NAME_LETTERS_MESSAGE);
+      return;
+    }
     if (!createForm.contactPhone?.trim() && !createForm.contactEmail?.trim()) {
       setSaveError('Either phone or email is required');
       return;
@@ -156,6 +161,10 @@ export function VendorsPage() {
 
   const handleSave = async () => {
     if (!editModal) return;
+    if (editForm.name !== undefined && !partyNameHasLetters(editForm.name)) {
+      setSaveError(PARTY_NAME_LETTERS_MESSAGE);
+      return;
+    }
     setSaving(true);
     setSaveError(null);
     try {
