@@ -46,8 +46,7 @@ export function partyNameHasLetters(name: string | null | undefined): boolean {
 }
 
 /** The message shown when a name is digits only, worded the same everywhere. */
-export const PARTY_NAME_LETTERS_MESSAGE =
-  'Name must include letters, not only numbers';
+export const PARTY_NAME_LETTERS_MESSAGE = 'Name must include letters, not only numbers';
 
 export const customersApi = {
   create: async (data: CreateCustomerDto): Promise<CustomerResponse> => {
