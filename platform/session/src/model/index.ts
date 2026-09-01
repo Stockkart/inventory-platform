@@ -10,6 +10,8 @@ export interface AuthState {
   login: (credentials: LoginDto) => Promise<void>;
   signup: (data: SignupDto) => Promise<void>;
   logout: () => Promise<void>;
+  /** Drop local session without calling the logout API (e.g. expired token). */
+  clearSession: () => void;
   fetchCurrentUser: () => Promise<void>;
   switchActiveShop: (shopId: string) => Promise<void>;
   clearError: () => void;

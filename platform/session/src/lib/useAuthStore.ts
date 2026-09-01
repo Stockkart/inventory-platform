@@ -97,17 +97,24 @@ export const useAuthStore = create<AuthState>()(
         } catch {
           // Continue with logout even if API call fails
         } finally {
-          useVerticalSchemaStore.getState().clear();
-          usePlanStatusStore.getState().clear();
-          useShopAccessStore.getState().clear();
-          set({
-            user: null,
-            token: null,
-            isAuthenticated: false,
-            isLoading: false,
-            error: null,
-          });
+          get().clearSession();
         }
+      },
+
+      clearSession: () => {
+        useVerticalSchemaStore.getState().clear();
+        usePlanStatusStore.getState().clear();
+        useShopAccessStore.getState().clear();
+        apiClient.setToken(null);
+        apiClient.setShopId(null);
+        set({
+          user: null,
+          shop: null,
+          token: null,
+          isAuthenticated: false,
+          isLoading: false,
+          error: null,
+        });
       },
 
       fetchCurrentUser: async () => {
@@ -131,15 +138,10 @@ export const useAuthStore = create<AuthState>()(
           });
         } catch (error: unknown) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to fetch user';
+          get().clearSession();
           set({
-            isLoading: false,
             error: errorMessage,
-            isAuthenticated: false,
-            user: null,
-            token: null,
           });
-          apiClient.setToken(null);
-          apiClient.setShopId(null);
         }
       },
 
