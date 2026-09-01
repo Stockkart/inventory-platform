@@ -146,7 +146,7 @@ export function CustomerSearchPanel({
     const hasUnique = customerHasUniqueIdentifier(form);
     if (!hasUnique) {
       setCreateError(
-        'Add phone, email, GSTIN, PAN, or DL. Name and address alone stay on walk-in.',
+        'Add phone, email, GSTIN, PAN, or DL. Name and address alone stay as a guest on this bill.',
       );
       return;
     }
@@ -322,8 +322,8 @@ export function CustomerSearchPanel({
             <Stack gap="xs">
               <Text className={productChrome.customerPartyEmptyTitle}>No saved customer</Text>
               <Text className={productChrome.customerPartyEmptyHint}>
-                Saving “{guestQuery}” as a guest on this bill. Accounting still uses the shop
-                walk-in account.
+                Saving “{guestQuery}” as a guest on this bill. Accounting still uses the shop guest
+                account.
               </Text>
             </Stack>
           </Box>

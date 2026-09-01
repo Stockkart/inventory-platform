@@ -1,4 +1,5 @@
 import type { QuotationSummary } from '@inventory-platform/product/types';
+import { formatCustomerDisplayName } from '../lib/customerDisplay';
 import {
   Button,
   IconButton,
@@ -31,11 +32,7 @@ function quotationTabLabel(q: QuotationSummary): string {
   if (q.tokenNo?.trim()) {
     return `Token ${q.tokenNo.trim()}`;
   }
-  const name = q.customerName?.trim() ?? '';
-  if (!name || name.toLowerCase() === 'general customer') {
-    return 'Walk-in';
-  }
-  return name;
+  return formatCustomerDisplayName(q.customerName);
 }
 
 export function ScanSellQuotationStack({
