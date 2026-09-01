@@ -121,6 +121,8 @@ import {
   ViewModeToggle,
 } from '@inventory-platform/ui-kit';
 import {
+  ChevronsDown,
+  ChevronsUp,
   ClipboardList,
   FileText,
   Mail,
@@ -1575,9 +1577,17 @@ export function ProductEntryPage() {
   };
 
   const handleToggleProduct = (productId: string) => {
-    setProducts(
-      products.map((p) => (p.id === productId ? { ...p, isExpanded: !p.isExpanded } : p)),
+    setProducts((prev) =>
+      prev.map((p) => (p.id === productId ? { ...p, isExpanded: !p.isExpanded } : p)),
     );
+  };
+
+  const allProductsExpanded =
+    products.length > 0 && products.every((product) => product.isExpanded);
+
+  const handleToggleAllProducts = () => {
+    const nextExpanded = !allProductsExpanded;
+    setProducts((prev) => prev.map((p) => ({ ...p, isExpanded: nextExpanded })));
   };
 
   const handleProductChange = (
@@ -3233,6 +3243,21 @@ export function ProductEntryPage() {
                 >
                   <Text variant="heading3">Products</Text>
                   <Inline gap="md" align="center">
+                    {products.length > 0 && productViewMode === 'list' ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        leftIcon={
+                          <Icon icon={allProductsExpanded ? ChevronsUp : ChevronsDown} size="sm" />
+                        }
+                        onClick={handleToggleAllProducts}
+                        disabled={isLoading}
+                        aria-expanded={allProductsExpanded}
+                      >
+                        {allProductsExpanded ? 'Collapse all' : 'Expand all'}
+                      </Button>
+                    ) : null}
                     {products.length > 0 ? (
                       <ViewModeToggle
                         value={productViewMode}
