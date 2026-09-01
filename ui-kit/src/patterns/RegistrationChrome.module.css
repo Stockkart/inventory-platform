@@ -121,6 +121,31 @@
   line-height: 1.45;
 }
 
+.pageProductsSummary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.25rem;
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+}
+
+.pageProductsSummaryItem {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.pageProductsSummaryValue {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
 .pageKeyboardNavHintLabel {
   font-weight: 600;
   color: var(--text-tertiary);
@@ -206,6 +231,22 @@
   color: var(--text-secondary);
   width: 1rem;
   display: inline-block;
+}
+
+.accordionProductIndex {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.65rem;
+  height: 1.65rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  flex-shrink: 0;
 }
 
 .accordionAccordionSubtitle {

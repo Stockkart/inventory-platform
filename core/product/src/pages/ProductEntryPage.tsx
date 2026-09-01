@@ -751,6 +751,79 @@ function computeVendorInvoiceTotalsFromProducts(
   };
 }
 
+interface ProductsRegistrationSummary {
+  productCount: number;
+  totalQuantity: number;
+  lineSubTotal: number;
+  taxTotal: number;
+  grandTotal: number;
+}
+
+function computeProductsRegistrationSummary(
+  productRows: ProductFormData[],
+  billingModeForGst: BillingMode,
+  schemeDrafts?: Record<string, { sale?: string; purchase?: string }>,
+): ProductsRegistrationSummary {
+  const { lineSubTotal, taxTotal } = computeVendorInvoiceTotalsFromProducts(
+    productRows,
+    billingModeForGst,
+    schemeDrafts,
+  );
+  let totalQuantity = 0;
+  for (const p of productRows) {
+    const qtyRaw = p.count;
+    const q = qtyRaw != null && Number.isFinite(Number(qtyRaw)) ? Math.max(0, Number(qtyRaw)) : 0;
+    totalQuantity += q;
+  }
+  return {
+    productCount: productRows.length,
+    totalQuantity,
+    lineSubTotal,
+    taxTotal,
+    grandTotal: roundMoney(lineSubTotal + taxTotal),
+  };
+}
+
+function ProductsRegistrationSummaryBar({ summary }: { summary: ProductsRegistrationSummary }) {
+  const productLabel = summary.productCount === 1 ? 'product' : 'products';
+  return (
+    <Box className={pageStyles.productsSummary} role="status" aria-live="polite">
+      <Text as="span" className={pageStyles.productsSummaryItem}>
+        <Text as="span" className={pageStyles.productsSummaryValue}>
+          {summary.productCount}
+        </Text>{' '}
+        {productLabel}
+      </Text>
+      <Text as="span" className={pageStyles.productsSummaryItem}>
+        Total qty{' '}
+        <Text as="span" className={pageStyles.productsSummaryValue}>
+          {summary.totalQuantity}
+        </Text>
+      </Text>
+      <Text as="span" className={pageStyles.productsSummaryItem}>
+        Subtotal{' '}
+        <Text as="span" className={pageStyles.productsSummaryValue}>
+          ₹{formatComputedAmount(summary.lineSubTotal)}
+        </Text>
+      </Text>
+      {summary.taxTotal > 0 ? (
+        <Text as="span" className={pageStyles.productsSummaryItem}>
+          Tax{' '}
+          <Text as="span" className={pageStyles.productsSummaryValue}>
+            ₹{formatComputedAmount(summary.taxTotal)}
+          </Text>
+        </Text>
+      ) : null}
+      <Text as="span" className={pageStyles.productsSummaryItem}>
+        Total{' '}
+        <Text as="span" className={pageStyles.productsSummaryValue}>
+          ₹{formatComputedAmount(summary.grandTotal)}
+        </Text>
+      </Text>
+    </Box>
+  );
+}
+
 export function ProductEntryPage() {
   const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
   const activeShopId = useAuthStore((s) => s.user?.shopId ?? null) ?? apiClient.getShopId();
@@ -950,6 +1023,11 @@ export function ProductEntryPage() {
     setVendorLineSubTotal(formatComputedAmount(lineSubTotal));
     setVendorTaxTotal(formatComputedAmount(taxTotal));
   }, [products, billingMode, gridSchemeDrafts]);
+
+  const productsRegistrationSummary = useMemo(
+    () => computeProductsRegistrationSummary(products, billingMode, gridSchemeDrafts),
+    [products, billingMode, gridSchemeDrafts],
+  );
 
   // Product view mode: list (accordion) or grid (Excel-style)
   const [productViewMode, setProductViewMode] = useState<'list' | 'grid'>(() => {
@@ -3237,6 +3315,10 @@ export function ProductEntryPage() {
                       </Text>
                     )}
 
+                    {products.length > 0 ? (
+                      <ProductsRegistrationSummaryBar summary={productsRegistrationSummary} />
+                    ) : null}
+
                     {products.length === 0 ? (
                       <Box className={pageStyles.emptyState}>
                         <Text>
@@ -4955,7 +5037,8 @@ function ProductAccordion({
   isoToLocalDateTime,
   localDateTimeToIso,
 }: ProductAccordionProps) {
-  const productTitle = product.name || `Product ${index + 1}`;
+  const productNumber = index + 1;
+  const productName = product.name?.trim() || null;
   const showExpiryReminder = schemaFields.some((field) => field.key === 'expiryDate');
 
   const formatSchemeFixed = (p: ProductFormData): string => {
@@ -5112,12 +5195,19 @@ function ProductAccordion({
 
   return (
     <Box className={accordionStyles.productAccordion}>
-      <Box className={accordionStyles.accordionHeader} onClick={onToggle}>
+      <Box
+        className={accordionStyles.accordionHeader}
+        onClick={onToggle}
+        aria-label={productName ? `${productNumber}. ${productName}` : `Product ${productNumber}`}
+      >
         <Box className={accordionStyles.accordionTitle}>
           <Text as="span" className={accordionStyles.accordionIcon}>
             {product.isExpanded ? '▼' : '▶'}
           </Text>
-          <Text as="span">{productTitle}</Text>
+          <Text as="span" className={accordionStyles.productIndex} aria-hidden>
+            {productNumber}
+          </Text>
+          {productName ? <Text as="span">{productName}</Text> : null}
           {product.barcode && (
             <Text as="span" className={accordionStyles.accordionSubtitle}>
               (Barcode: {product.barcode})
