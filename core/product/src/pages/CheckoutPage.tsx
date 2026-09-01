@@ -39,6 +39,7 @@ import {
 } from '../ui';
 import { useResolvedSellPath } from '@inventory-platform/routing';
 import { useAuthStore, useNotify, useShopCapabilitiesStore } from '@inventory-platform/session';
+import { schemeLabel } from '../ui/SaleLineItems';
 
 export function meta() {
   return [
@@ -486,11 +487,7 @@ export function CheckoutPage() {
                               ? `${item.saleAdditionalDiscount.toFixed(2)}%`
                               : '—'}
                           </TableCell>
-                          <TableCell>
-                            {item.schemePayFor != null || item.schemeFree != null
-                              ? `${item.schemePayFor ?? '—'} + ${item.schemeFree ?? '—'}`
-                              : '—'}
-                          </TableCell>
+                          <TableCell>{schemeLabel(item)}</TableCell>
                           {billingMode === 'REGULAR' ? (
                             <TableCell>
                               {item.cgst !== null && item.cgst !== undefined
