@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { CheckoutItemResponse, Purchase } from '@inventory-platform/product/types';
+import { formatCustomerDisplayName } from '../lib/customerDisplay';
 import {
   Badge,
   Box,
@@ -145,7 +146,7 @@ export function SaleHistoryCard({ purchase }: { purchase: Purchase }) {
   const invoiceNo = purchase.invoiceNo?.trim() || null;
   const paymentLabel = formatPaymentMethod(purchase.paymentMethod);
   const hasPayment = Boolean(purchase.paymentMethod) && paymentLabel !== 'Not specified';
-  const customer = purchase.customerName?.trim() || 'Walk-in customer';
+  const customer = formatCustomerDisplayName(purchase.customerName);
   const phone = purchase.customerPhone?.trim() || '—';
   const hasItems = purchase.items.length > 0;
 

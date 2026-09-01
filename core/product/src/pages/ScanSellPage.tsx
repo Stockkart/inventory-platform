@@ -180,6 +180,7 @@ import {
 import { CustomerSearchPanel } from '../ui/CustomerSearchPanel';
 import { ScanSellQuotationStack } from '../ui/ScanSellQuotationStack';
 import type { CustomerPartyType } from '@inventory-platform/user/types';
+import { GUEST_CUSTOMER_LABEL, isDefaultGuestCustomerName } from '../lib/customerDisplay';
 
 export function meta() {
   return [
@@ -190,15 +191,9 @@ export function meta() {
 
 type SchemeTypeCart = 'FIXED_UNITS' | 'PERCENTAGE';
 
-const GENERAL_CUSTOMER_DISPLAY_NAME = 'General Customer';
-
-function isGeneralCustomerName(name?: string | null): boolean {
-  return (name ?? '').trim().toLowerCase() === GENERAL_CUSTOMER_DISPLAY_NAME.toLowerCase();
-}
-
 /** Header chip for the customer section — hide backend general placeholder name. */
 function customerSectionSummary(name: string, phone: string): string {
-  if (isGeneralCustomerName(name)) {
+  if (isDefaultGuestCustomerName(name)) {
     return '';
   }
   return name.trim() || phone.trim();
@@ -919,7 +914,7 @@ function CustomerSectionBlock({
             <Text className={customerToggleValueStyle}>{summaryLabel}</Text>
           ) : (
             <Text color="secondary" className={surfaceChrome.flexMin0}>
-              Walk-in
+              {GUEST_CUSTOMER_LABEL}
             </Text>
           )}
           <Text className={customerToggleIconStyle}>{customerSectionOpen ? '▼' : '▶'}</Text>
@@ -1343,6 +1338,8 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   const searchWrapperRef = useRef<HTMLDivElement>(null);
   const lastLoadCartTimeRef = useRef(0);
   const lastSellModeRef = useRef<boolean | null>(null);
+  /** Dedupes concurrent quotation bootstraps (Strict Mode / rapid remounts). */
+  const quotationBootstrapRef = useRef<Promise<void> | null>(null);
   /** Dedupes concurrent estimate bootstraps (Strict Mode). */
   const estimateBootstrapRef = useRef<Promise<void> | null>(null);
   useEffect(() => {
@@ -1492,7 +1489,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   ) => {
     const resolved = resolveCustomerFieldsFromCart(cart);
     const nameRaw = resolved.name || typed?.customerName?.trim() || '';
-    const name = isGeneralCustomerName(nameRaw) ? '' : nameRaw;
+    const name = isDefaultGuestCustomerName(nameRaw) ? '' : nameRaw;
     const phone = resolved.phone || typed?.customerPhone?.trim() || '';
     const email = resolved.email || typed?.customerEmail?.trim() || '';
     const address = resolved.address || typed?.customerAddress?.trim() || '';
@@ -1748,60 +1745,84 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     if (isUpdatingRef.current) {
       return;
     }
+    if (quotationBootstrapRef.current) {
+      await quotationBootstrapRef.current;
+      return;
+    }
 
-    setIsLoadingCart(true);
-    setError(null);
-    try {
-      // In-progress checkout (PENDING) is not in the open-quotation list.
-      // Resume it instead of creating a new empty cart.
-      const preferredId =
-        estimatePurchaseIdParam?.trim() || activePurchaseId || readOpenQuotationId() || undefined;
-      if (preferredId) {
-        try {
-          const preferred = await cartApi.get(preferredId);
-          if (preferred.status === 'PENDING') {
-            navigate(`/dashboard/checkout?purchaseId=${encodeURIComponent(preferred.purchaseId)}`, {
-              replace: true,
-              state: { purchaseId: preferred.purchaseId },
-            });
-            return;
-          }
-        } catch {
-          // Fall through to active-cart / open quotations.
-        }
-      }
-
-      const activeCart = await cartApi.get().catch(() => null);
-      if (activeCart?.status === 'PENDING' && activeCart.purchaseId) {
-        navigate(`/dashboard/checkout?purchaseId=${encodeURIComponent(activeCart.purchaseId)}`, {
-          replace: true,
-          state: { purchaseId: activeCart.purchaseId },
-        });
-        return;
-      }
-
-      const list = await refreshQuotationList();
-      if (list.length > 0) {
-        const targetId =
-          preferredId && list.some((q) => q.purchaseId === preferredId)
-            ? preferredId
-            : list[0].purchaseId;
-        await loadQuotation(targetId);
-        return;
-      }
-      await ensureDefaultQuotation();
-    } catch (err) {
-      console.log('No quotations or error loading:', err);
+    const bootstrap = (async () => {
+      setIsLoadingCart(true);
+      setError(null);
+      let openList: QuotationSummary[] = [];
       try {
+        // In-progress checkout (PENDING) is not in the open-quotation list.
+        // Resume it instead of creating a new empty cart.
+        const preferredId =
+          estimatePurchaseIdParam?.trim() || activePurchaseId || readOpenQuotationId() || undefined;
+        if (preferredId) {
+          try {
+            const preferred = await cartApi.get(preferredId);
+            if (preferred.status === 'PENDING') {
+              navigate(
+                `/dashboard/checkout?purchaseId=${encodeURIComponent(preferred.purchaseId)}`,
+                {
+                  replace: true,
+                  state: { purchaseId: preferred.purchaseId },
+                },
+              );
+              return;
+            }
+          } catch {
+            // Fall through to active-cart / open quotations.
+          }
+        }
+
+        const activeCart = await cartApi.get().catch(() => null);
+        if (activeCart?.status === 'PENDING' && activeCart.purchaseId) {
+          navigate(`/dashboard/checkout?purchaseId=${encodeURIComponent(activeCart.purchaseId)}`, {
+            replace: true,
+            state: { purchaseId: activeCart.purchaseId },
+          });
+          return;
+        }
+
+        const list = await refreshQuotationList();
+        openList = list;
+        if (list.length > 0) {
+          const targetId =
+            preferredId && list.some((q) => q.purchaseId === preferredId)
+              ? preferredId
+              : list[0].purchaseId;
+          await loadQuotation(targetId);
+          return;
+        }
         await ensureDefaultQuotation();
-      } catch (createErr) {
-        console.log('Failed to create default quotation:', createErr);
-        setActivePurchaseId(null);
-        setCartData(null);
-        setCartItems([]);
+      } catch (err) {
+        console.log('No quotations or error loading:', err);
+        try {
+          if (openList.length > 0) {
+            await loadQuotation(openList[0].purchaseId);
+          } else {
+            await ensureDefaultQuotation();
+          }
+        } catch (createErr) {
+          console.log('Failed to create default quotation:', createErr);
+          setActivePurchaseId(null);
+          setCartData(null);
+          setCartItems([]);
+        }
+      } finally {
+        setIsLoadingCart(false);
       }
+    })();
+
+    quotationBootstrapRef.current = bootstrap;
+    try {
+      await bootstrap;
     } finally {
-      setIsLoadingCart(false);
+      if (quotationBootstrapRef.current === bootstrap) {
+        quotationBootstrapRef.current = null;
+      }
     }
   };
 
