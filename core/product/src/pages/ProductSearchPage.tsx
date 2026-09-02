@@ -159,14 +159,20 @@ export function ProductSearchPage() {
       const response = await inventoryApi.search({
         q: searchQuery.trim(),
         limit: currentPageSize,
+        page: currentPage,
         sort: 'expiryDate:asc',
         includeZeroStock: withZeroStock,
       });
-      setInventory(sortInventoryByExpirySoonest(response.data || []));
-      const total = response.data?.length ?? 0;
-      setSearchTotalPages(total > 0 ? 1 : 0);
-      setSearchTotalItems(total);
-      setSearchPage(0);
+      setInventory(response.data || []);
+      if (response.page) {
+        setSearchTotalPages(response.page.totalPages || 0);
+        setSearchTotalItems(response.page.totalItems || 0);
+        setSearchPage(response.page.page ?? currentPage);
+      } else {
+        setSearchTotalPages(0);
+        setSearchTotalItems(response.data?.length ?? 0);
+        setSearchPage(currentPage);
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to search inventory';
       notifyError(errorMessage);

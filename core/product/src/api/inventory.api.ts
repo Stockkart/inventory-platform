@@ -129,6 +129,7 @@ export const inventoryApi = {
         ? {
             q: queryOrParams,
             limit: size !== undefined ? size : 50,
+            page: page !== undefined ? page : 0,
           }
         : queryOrParams;
 
@@ -137,6 +138,11 @@ export const inventoryApi = {
     if (params.sort?.trim()) queryParams.sort = params.sort.trim();
     if (params.limit !== undefined && params.limit > 0) {
       queryParams.limit = String(params.limit);
+    }
+    if (params.page !== undefined && params.page >= 0) {
+      queryParams.page = String(params.page);
+    } else if (page !== undefined && page >= 0) {
+      queryParams.page = String(page);
     }
     if (params.includeZeroStock === false) {
       queryParams.includeZeroStock = 'false';
