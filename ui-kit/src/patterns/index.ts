@@ -41,9 +41,11 @@ export {
 export {
   AsideLayout,
   SearchDropdown,
+  SearchDropdownScroll,
   StickyBar,
   type AsideLayoutProps,
   type SearchDropdownProps,
+  type SearchDropdownScrollProps,
   type StickyBarProps,
 } from './AsideLayout';
 export { DenseDataGridWrap, denseDataGrid, type DenseDataGridWrapProps } from './DenseDataGrid';

@@ -33,6 +33,7 @@ import {
   Text,
   AsideLayout,
   SearchDropdown,
+  SearchDropdownScroll,
   StickyBar,
   DenseTable,
   DenseTableSurface,
@@ -112,7 +113,9 @@ import {
   dropdownListStyle,
   dropdownItemStyle,
   dropdownItemNameStyle,
+  dropdownFooterStyle,
   cartSectionStyle,
+  cartSectionBodyStyle,
   cartItemsStyle,
   itemEditFieldsStyle,
   itemPriceBlockStyle,
@@ -778,13 +781,19 @@ function DetailSectionHeader({ icon, title }: { icon: LucideIcon; title: string 
   );
 }
 
+const SCAN_SELL_SEARCH_PAGE_SIZE = 8;
+
 function ProductSearchBlock({
   searchQuery,
   setSearchQuery,
   isSearching,
+  isLoadingMore,
   showSearchDropdown,
   searchResults,
+  searchTotalItems,
+  hasMoreResults,
   onSearch,
+  onLoadMore,
   placeholder,
   autoFocus,
   onAddToCart,
@@ -795,9 +804,13 @@ function ProductSearchBlock({
   searchQuery: string;
   setSearchQuery: (value: string) => void;
   isSearching: boolean;
+  isLoadingMore?: boolean;
   showSearchDropdown: boolean;
   searchResults: InventoryItem[];
+  searchTotalItems: number;
+  hasMoreResults: boolean;
   onSearch: () => void;
+  onLoadMore: () => void;
   placeholder: string;
   autoFocus?: boolean;
   onAddToCart: (item: InventoryItem, price?: number) => void;
@@ -850,7 +863,7 @@ function ProductSearchBlock({
       </Inline>
       {showSearchDropdown ? (
         <SearchDropdown id="search-results-list" role="listbox">
-          {isSearching ? (
+          {isSearching && searchResults.length === 0 ? (
             <Box padding="md" textAlign="center">
               <Text color="secondary">Searching…</Text>
             </Box>
@@ -859,16 +872,40 @@ function ProductSearchBlock({
               <Text color="secondary">No products found</Text>
             </Box>
           ) : (
-            <Stack as="ul" gap="none" className={dropdownListStyle}>
-              {searchResults.map((item) => (
-                <SearchDropdownItem
-                  key={item.id}
-                  item={item}
-                  onAddToCart={onAddToCart}
-                  disabled={addDisabled(item)}
-                />
-              ))}
-            </Stack>
+            <>
+              <SearchDropdownScroll>
+                <Stack as="ul" gap="none" className={dropdownListStyle}>
+                  {searchResults.map((item) => (
+                    <SearchDropdownItem
+                      key={item.id}
+                      item={item}
+                      onAddToCart={onAddToCart}
+                      disabled={addDisabled(item)}
+                    />
+                  ))}
+                </Stack>
+              </SearchDropdownScroll>
+              {searchTotalItems > 0 ? (
+                <Box className={dropdownFooterStyle}>
+                  <Inline justify="between" align="center" width="full" gap="sm">
+                    <Text variant="caption" color="secondary">
+                      Showing {searchResults.length} of {searchTotalItems}
+                    </Text>
+                    {hasMoreResults ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={isLoadingMore}
+                        onClick={onLoadMore}
+                      >
+                        {isLoadingMore ? 'Loading…' : 'Load more'}
+                      </Button>
+                    ) : null}
+                  </Inline>
+                </Box>
+              ) : null}
+            </>
           )}
         </SearchDropdown>
       ) : null}
@@ -959,10 +996,11 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<InventoryItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [_searchPage, setSearchPage] = useState(0);
-  const [searchPageSize, setSearchPageSize] = useState(10);
-  const [_searchTotalPages, setSearchTotalPages] = useState(0);
-  const [_searchTotalItems, setSearchTotalItems] = useState(0);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [searchPage, setSearchPage] = useState(0);
+  const [searchPageSize, setSearchPageSize] = useState(SCAN_SELL_SEARCH_PAGE_SIZE);
+  const [searchTotalPages, setSearchTotalPages] = useState(0);
+  const [searchTotalItems, setSearchTotalItems] = useState(0);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [cartData, setCartData] = useState<CartResponse | null>(null);
   /** Built once per cart response so each line looks its margin up instead of scanning the cart. */
@@ -1257,7 +1295,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
 
   // Product search for dropdown (only on Enter or Search button)
   const runSearch = useCallback(
-    async (query: string, pageNum = 0, pageSize = 8) => {
+    async (query: string, pageNum = 0, pageSize = SCAN_SELL_SEARCH_PAGE_SIZE, append = false) => {
       if (!query.trim()) {
         setSearchResults([]);
         setSearchPage(0);
@@ -1267,13 +1305,19 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       }
       setSearchPage(pageNum);
       if (pageSize !== searchPageSize) setSearchPageSize(pageSize);
-      setIsSearching(true);
+      if (append) {
+        setIsLoadingMore(true);
+      } else {
+        setIsSearching(true);
+      }
       setError(null);
       try {
         // Sold-out lots cannot be added to a bill, so the counter never sees them here.
         const response = await inventoryApi.search({
           q: query.trim(),
           limit: pageSize,
+          page: pageNum,
+          sort: 'expiryDate:asc',
           includeZeroStock: false,
         });
         let items: InventoryItem[] = [];
@@ -1296,13 +1340,28 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
           setSearchTotalItems(response.page.totalItems);
           setSearchPage(response.page.page);
         }
-        setSearchResults(sortInventoryByExpirySoonest(items));
+        const sortedItems = sortInventoryByExpirySoonest(items);
+        setSearchResults((prev) => {
+          const combined = append ? [...prev, ...sortedItems] : sortedItems;
+          const seen = new Set<string>();
+          const unique = combined.filter((item) => {
+            const id = item.id;
+            if (!id || seen.has(id)) return false;
+            seen.add(id);
+            return true;
+          });
+          return append ? sortInventoryByExpirySoonest(unique) : unique;
+        });
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Search failed';
         notifyError(msg);
-        setSearchResults([]);
+        if (!append) setSearchResults([]);
       } finally {
-        setIsSearching(false);
+        if (append) {
+          setIsLoadingMore(false);
+        } else {
+          setIsSearching(false);
+        }
       }
     },
     [searchPageSize, notifyError],
@@ -1314,13 +1373,25 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       if (!searchQuery.trim()) {
         setSearchResults([]);
         setShowSearchDropdown(false);
+        setSearchPage(0);
+        setSearchTotalPages(0);
+        setSearchTotalItems(0);
         return;
       }
       setShowSearchDropdown(true);
-      runSearch(searchQuery, 0, 8);
+      runSearch(searchQuery, 0, SCAN_SELL_SEARCH_PAGE_SIZE, false);
     },
     [searchQuery, runSearch],
   );
+
+  const handleLoadMoreSearch = useCallback(() => {
+    if (!searchQuery.trim() || isSearching || isLoadingMore) return;
+    const nextPage = searchPage + 1;
+    if (searchTotalPages > 0 && nextPage >= searchTotalPages) return;
+    void runSearch(searchQuery, nextPage, SCAN_SELL_SEARCH_PAGE_SIZE, true);
+  }, [searchQuery, isSearching, isLoadingMore, searchPage, searchTotalPages, runSearch]);
+
+  const hasMoreSearchResults = searchTotalItems > 0 && searchResults.length < searchTotalItems;
 
   // Close search dropdown when clicking outside
   useEffect(() => {
@@ -3218,9 +3289,13 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                         searchQuery={searchQuery}
                         setSearchQuery={setSearchQuery}
                         isSearching={isSearching}
+                        isLoadingMore={isLoadingMore}
                         showSearchDropdown={showSearchDropdown}
                         searchResults={searchResults}
+                        searchTotalItems={searchTotalItems}
+                        hasMoreResults={hasMoreSearchResults}
                         onSearch={() => handleSearchSubmit()}
+                        onLoadMore={handleLoadMoreSearch}
                         placeholder="Filter menu, or search more products…"
                         onAddToCart={handleAddToCart}
                         rowClassName={searchRowCafeStyle}
@@ -3231,14 +3306,16 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                           isUpdatingCart
                         }
                       />
-                      <CafeSellCatalogPanel
-                        catalog={sellCatalog}
-                        loading={isLoadingCatalog}
-                        disabled={isUpdatingCart || isLoadingCart}
-                        filterQuery={searchQuery}
-                        onAddMenuItem={(item) => void handleAddMenuItem(item)}
-                        onAddDirectStock={handleAddDirectStock}
-                      />
+                      <Box className={cartSectionBodyStyle}>
+                        <CafeSellCatalogPanel
+                          catalog={sellCatalog}
+                          loading={isLoadingCatalog}
+                          disabled={isUpdatingCart || isLoadingCart}
+                          filterQuery={searchQuery}
+                          onAddMenuItem={(item) => void handleAddMenuItem(item)}
+                          onAddDirectStock={handleAddDirectStock}
+                        />
+                      </Box>
                     </Stack>
                   </Box>
 
@@ -3339,9 +3416,13 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                       searchQuery={searchQuery}
                       setSearchQuery={setSearchQuery}
                       isSearching={isSearching}
+                      isLoadingMore={isLoadingMore}
                       showSearchDropdown={showSearchDropdown}
                       searchResults={searchResults}
+                      searchTotalItems={searchTotalItems}
+                      hasMoreResults={hasMoreSearchResults}
                       onSearch={() => handleSearchSubmit()}
+                      onLoadMore={handleLoadMoreSearch}
                       placeholder="Search products..."
                       autoFocus
                       onAddToCart={handleAddToCart}
@@ -3353,630 +3434,283 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                       }
                     />
 
-                    {cartItems.length > 0 ? (
-                      <Inline gap="sm" align="center" mb="md" flexShrink={0}>
-                        <ViewModeToggle
-                          value={cartViewMode}
-                          aria-label="Cart view mode"
-                          onChange={(mode) => {
-                            setCartViewMode(mode);
-                            localStorage.setItem('scan-sell-view-mode', mode);
-                          }}
-                        />
-                      </Inline>
-                    ) : null}
+                    <Box className={cartSectionBodyStyle}>
+                      {cartItems.length > 0 ? (
+                        <Inline gap="sm" align="center" mb="md" flexShrink={0}>
+                          <ViewModeToggle
+                            value={cartViewMode}
+                            aria-label="Cart view mode"
+                            onChange={(mode) => {
+                              setCartViewMode(mode);
+                              localStorage.setItem('scan-sell-view-mode', mode);
+                            }}
+                          />
+                        </Inline>
+                      ) : null}
 
-                    <Box className={cartItemsStyle}>
-                      {isLoadingCart ? (
-                        <CenteredLoader label="Loading cart..." />
-                      ) : cartItems.length === 0 ? (
-                        <Box padding="lg">
-                          <EmptyState title="Cart is empty" />
-                        </Box>
-                      ) : cartViewMode === 'grid' ? (
-                        <DenseTable>
-                          <DenseTableSurface>
-                            <TableHead>
-                              <DenseTableRow>
-                                <DenseTableHeaderCell>#</DenseTableHeaderCell>
-                                <DenseTableHeaderCell>Product</DenseTableHeaderCell>
-                                <DenseTableHeaderCell>Company</DenseTableHeaderCell>
-                                <DenseTableHeaderCell>Qty</DenseTableHeaderCell>
-                                <DenseTableHeaderCell>Unit</DenseTableHeaderCell>
-                                <DenseTableHeaderCell>Amount</DenseTableHeaderCell>
-                                {!hidePurchaseDetailsInSell ? (
-                                  <DenseTableHeaderCell>Margin</DenseTableHeaderCell>
-                                ) : null}
-                                <DenseTableHeaderCell>Price</DenseTableHeaderCell>
-                                <DenseTableHeaderCell>Discount</DenseTableHeaderCell>
-                                <DenseTableHeaderCell>Scheme</DenseTableHeaderCell>
-                                <DenseTableHeaderCell>Actions</DenseTableHeaderCell>
-                              </DenseTableRow>
-                            </TableHead>
-                            <TableBody>
-                              {cartItems.map((cartItem, idx) => {
-                                const isPackOnlySale =
-                                  cartItem.inventoryItem.sellUnitRule === 'PACK_ONLY';
-                                const isBaseUnitSelected =
-                                  !isPackOnlySale &&
-                                  ((cartItem.inventoryItem.baseUnit != null &&
-                                    cartItem.unit === cartItem.inventoryItem.baseUnit) ||
-                                    cartItem.availableUnits.some(
-                                      (u) => u.baseUnit && u.unit === cartItem.unit,
-                                    ));
-                                const quantityInputValue = isBaseUnitSelected
-                                  ? cartItem.baseQuantity
-                                  : cartItem.quantity;
-                                const lineTotal = cartLineNetAmount(
-                                  cartItem,
-                                  getEffectiveAdditionalDiscount(
-                                    cartItem.inventoryItem.id,
+                      <Box className={cartItemsStyle}>
+                        {isLoadingCart ? (
+                          <CenteredLoader label="Loading cart..." />
+                        ) : cartItems.length === 0 ? (
+                          <Box padding="lg">
+                            <EmptyState title="Cart is empty" />
+                          </Box>
+                        ) : cartViewMode === 'grid' ? (
+                          <DenseTable>
+                            <DenseTableSurface>
+                              <TableHead>
+                                <DenseTableRow>
+                                  <DenseTableHeaderCell>#</DenseTableHeaderCell>
+                                  <DenseTableHeaderCell>Product</DenseTableHeaderCell>
+                                  <DenseTableHeaderCell>Company</DenseTableHeaderCell>
+                                  <DenseTableHeaderCell>Qty</DenseTableHeaderCell>
+                                  <DenseTableHeaderCell>Unit</DenseTableHeaderCell>
+                                  <DenseTableHeaderCell>Amount</DenseTableHeaderCell>
+                                  {!hidePurchaseDetailsInSell ? (
+                                    <DenseTableHeaderCell>Margin</DenseTableHeaderCell>
+                                  ) : null}
+                                  <DenseTableHeaderCell>Price</DenseTableHeaderCell>
+                                  <DenseTableHeaderCell>Discount</DenseTableHeaderCell>
+                                  <DenseTableHeaderCell>Scheme</DenseTableHeaderCell>
+                                  <DenseTableHeaderCell>Actions</DenseTableHeaderCell>
+                                </DenseTableRow>
+                              </TableHead>
+                              <TableBody>
+                                {cartItems.map((cartItem, idx) => {
+                                  const isPackOnlySale =
+                                    cartItem.inventoryItem.sellUnitRule === 'PACK_ONLY';
+                                  const isBaseUnitSelected =
+                                    !isPackOnlySale &&
+                                    ((cartItem.inventoryItem.baseUnit != null &&
+                                      cartItem.unit === cartItem.inventoryItem.baseUnit) ||
+                                      cartItem.availableUnits.some(
+                                        (u) => u.baseUnit && u.unit === cartItem.unit,
+                                      ));
+                                  const quantityInputValue = isBaseUnitSelected
+                                    ? cartItem.baseQuantity
+                                    : cartItem.quantity;
+                                  const lineTotal = cartLineNetAmount(
                                     cartItem,
-                                  ),
-                                );
-                                const formatPrice = (n: number) =>
-                                  new Intl.NumberFormat('en-IN', {
-                                    style: 'currency',
-                                    currency: 'INR',
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  }).format(n);
-                                const pricingId =
-                                  cartItem.inventoryItem.pricingId ??
-                                  inventoryToPricingId[cartItem.inventoryItem.id];
-                                const pricing = pricingId ? pricingCache[pricingId] : undefined;
-                                const rateOpts = getRateOptions(cartItem.inventoryItem, pricing);
-                                const showRateDropdown =
-                                  pricingId || cartItem.inventoryItem.id || rateOpts.length > 1;
-                                const matched = rateOpts.find(
-                                  (o) => Math.abs(o.price - cartItem.price) < 0.01,
-                                );
-                                const isLoading =
-                                  pricingLoading[pricingId ?? ''] ||
-                                  pricingLoading[`inv:${cartItem.inventoryItem.id}`];
-                                const showHistorySubrow = shouldShowCustomerHistorySubrow(
-                                  inventorySellableRef(cartItem.inventoryItem.id),
-                                  customerProductHistory,
-                                  customerProductHistoryLoading,
-                                );
-                                return (
-                                  <Fragment key={cartItem.inventoryItem.id}>
-                                    <DenseTableRow>
-                                      <DenseTableCell>{idx + 1}</DenseTableCell>
-                                      <DenseTableCell>
-                                        <Button
-                                          type="button"
-                                          variant="ghost"
-                                          className={denseTableClassNames.productBtn}
-                                          onClick={() => setDetailModalItem(cartItem)}
-                                        >
-                                          {cartItem.inventoryItem.name || '—'}
-                                        </Button>
-                                      </DenseTableCell>
-                                      <DenseTableCell>
-                                        {cartItem.inventoryItem.companyName || '—'}
-                                      </DenseTableCell>
-                                      <DenseTableCell>
-                                        <Box className={denseTableClassNames.cellInput}>
-                                          <CartQuantityInput
-                                            value={quantityInputValue}
-                                            disabled={isUpdatingCart}
-                                            onCommit={async (newQty) => {
-                                              const delta = newQty - quantityInputValue;
-                                              if (delta !== 0) {
-                                                await handleUpdateQuantity(
-                                                  cartItem.inventoryItem.id,
-                                                  delta,
-                                                  isBaseUnitSelected,
-                                                );
-                                              }
-                                            }}
-                                          />
-                                        </Box>
-                                      </DenseTableCell>
-                                      <DenseTableCell>
-                                        <Select
-                                          className={denseTableClassNames.select}
-                                          value={cartItem.unit}
-                                          onChange={(e) =>
-                                            handleUnitChange(
-                                              cartItem.inventoryItem.id,
-                                              e.currentTarget.value,
-                                            )
-                                          }
-                                          disabled={
-                                            isUpdatingCart ||
-                                            cartItem.inventoryItem.sellUnitRule === 'PACK_ONLY'
-                                          }
-                                          options={(cartItem.availableUnits.length > 0
-                                            ? cartItem.availableUnits
-                                            : [{ unit: cartItem.unit, baseUnit: false }]
-                                          ).map((uo) => ({
-                                            value: uo.unit,
-                                            label: `${uo.unit}${uo.baseUnit ? ' (base)' : ''}`,
-                                          }))}
-                                        />
-                                      </DenseTableCell>
-                                      <DenseTableCell>{formatPrice(lineTotal)}</DenseTableCell>
-                                      {!hidePurchaseDetailsInSell ? (
+                                    getEffectiveAdditionalDiscount(
+                                      cartItem.inventoryItem.id,
+                                      cartItem,
+                                    ),
+                                  );
+                                  const formatPrice = (n: number) =>
+                                    new Intl.NumberFormat('en-IN', {
+                                      style: 'currency',
+                                      currency: 'INR',
+                                      minimumFractionDigits: 2,
+                                      maximumFractionDigits: 2,
+                                    }).format(n);
+                                  const pricingId =
+                                    cartItem.inventoryItem.pricingId ??
+                                    inventoryToPricingId[cartItem.inventoryItem.id];
+                                  const pricing = pricingId ? pricingCache[pricingId] : undefined;
+                                  const rateOpts = getRateOptions(cartItem.inventoryItem, pricing);
+                                  const showRateDropdown =
+                                    pricingId || cartItem.inventoryItem.id || rateOpts.length > 1;
+                                  const matched = rateOpts.find(
+                                    (o) => Math.abs(o.price - cartItem.price) < 0.01,
+                                  );
+                                  const isLoading =
+                                    pricingLoading[pricingId ?? ''] ||
+                                    pricingLoading[`inv:${cartItem.inventoryItem.id}`];
+                                  const showHistorySubrow = shouldShowCustomerHistorySubrow(
+                                    inventorySellableRef(cartItem.inventoryItem.id),
+                                    customerProductHistory,
+                                    customerProductHistoryLoading,
+                                  );
+                                  return (
+                                    <Fragment key={cartItem.inventoryItem.id}>
+                                      <DenseTableRow>
+                                        <DenseTableCell>{idx + 1}</DenseTableCell>
                                         <DenseTableCell>
-                                          <CartLineMargin
-                                            compact
-                                            figures={
-                                              cartLineMarginById.get(cartItem.inventoryItem.id) ??
-                                              null
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            className={denseTableClassNames.productBtn}
+                                            onClick={() => setDetailModalItem(cartItem)}
+                                          >
+                                            {cartItem.inventoryItem.name || '—'}
+                                          </Button>
+                                        </DenseTableCell>
+                                        <DenseTableCell>
+                                          {cartItem.inventoryItem.companyName || '—'}
+                                        </DenseTableCell>
+                                        <DenseTableCell>
+                                          <Box className={denseTableClassNames.cellInput}>
+                                            <CartQuantityInput
+                                              value={quantityInputValue}
+                                              disabled={isUpdatingCart}
+                                              onCommit={async (newQty) => {
+                                                const delta = newQty - quantityInputValue;
+                                                if (delta !== 0) {
+                                                  await handleUpdateQuantity(
+                                                    cartItem.inventoryItem.id,
+                                                    delta,
+                                                    isBaseUnitSelected,
+                                                  );
+                                                }
+                                              }}
+                                            />
+                                          </Box>
+                                        </DenseTableCell>
+                                        <DenseTableCell>
+                                          <Select
+                                            className={denseTableClassNames.select}
+                                            value={cartItem.unit}
+                                            onChange={(e) =>
+                                              handleUnitChange(
+                                                cartItem.inventoryItem.id,
+                                                e.currentTarget.value,
+                                              )
                                             }
+                                            disabled={
+                                              isUpdatingCart ||
+                                              cartItem.inventoryItem.sellUnitRule === 'PACK_ONLY'
+                                            }
+                                            options={(cartItem.availableUnits.length > 0
+                                              ? cartItem.availableUnits
+                                              : [{ unit: cartItem.unit, baseUnit: false }]
+                                            ).map((uo) => ({
+                                              value: uo.unit,
+                                              label: `${uo.unit}${uo.baseUnit ? ' (base)' : ''}`,
+                                            }))}
                                           />
                                         </DenseTableCell>
-                                      ) : null}
-                                      <DenseTableCell>
-                                        <Stack gap="xs" className={denseTableClassNames.priceCell}>
-                                          <CartSellingPriceInput
-                                            value={cartItem.price}
-                                            onCommit={(n) =>
-                                              handleSellingPriceChange(cartItem.inventoryItem.id, n)
-                                            }
-                                            disabled={isUpdatingCart}
-                                          />
-                                          {showRateDropdown ? (
-                                            <Select
-                                              className={denseTableClassNames.rateSelect}
-                                              value={matched ? matched.label : '__custom__'}
-                                              onChange={(e) => {
-                                                const sel = e.target.value;
-                                                if (sel === '__custom__') return;
-                                                const opt = rateOpts.find((o) => o.label === sel);
-                                                if (opt)
-                                                  handleSellingPriceChange(
-                                                    cartItem.inventoryItem.id,
-                                                    opt.price,
-                                                  );
-                                              }}
-                                              onMouseDown={() =>
-                                                loadPricingOnDropdownClick(
-                                                  cartItem.inventoryItem.pricingId ?? undefined,
-                                                  cartItem.inventoryItem.id,
-                                                )
+                                        <DenseTableCell>{formatPrice(lineTotal)}</DenseTableCell>
+                                        {!hidePurchaseDetailsInSell ? (
+                                          <DenseTableCell>
+                                            <CartLineMargin
+                                              compact
+                                              figures={
+                                                cartLineMarginById.get(cartItem.inventoryItem.id) ??
+                                                null
                                               }
-                                              disabled={isUpdatingCart || isLoading}
-                                              options={[
-                                                { value: '__custom__', label: 'Custom' },
-                                                ...rateOpts.map((opt) => ({
-                                                  value: opt.label,
-                                                  label: `${opt.label} (${formatPrice(opt.price)})`,
-                                                })),
-                                              ]}
                                             />
-                                          ) : null}
-                                        </Stack>
-                                      </DenseTableCell>
-                                      <DenseTableCell>
-                                        <Stack gap="xs">
-                                          {!hidePurchaseDetailsInSell ? (
-                                            <Text
-                                              variant="caption"
-                                              className={productChrome.microLabel}
-                                            >
-                                              {(() => {
-                                                const v = getPurchaseAdditionalDiscount(
-                                                  cartItem.inventoryItem,
-                                                );
-                                                return v != null ? `${v}%` : '—';
-                                              })()}
-                                            </Text>
-                                          ) : null}
-                                          <Box className={productChrome.fontSemibold}>
-                                            <CartAdditionalDiscountInput
-                                              value={getEffectiveAdditionalDiscount(
-                                                cartItem.inventoryItem.id,
-                                                cartItem,
-                                              )}
+                                          </DenseTableCell>
+                                        ) : null}
+                                        <DenseTableCell>
+                                          <Stack
+                                            gap="xs"
+                                            className={denseTableClassNames.priceCell}
+                                          >
+                                            <CartSellingPriceInput
+                                              value={cartItem.price}
                                               onCommit={(n) =>
-                                                handleAdditionalDiscountChange(
+                                                handleSellingPriceChange(
                                                   cartItem.inventoryItem.id,
                                                   n,
                                                 )
                                               }
                                               disabled={isUpdatingCart}
                                             />
-                                          </Box>
-                                        </Stack>
-                                      </DenseTableCell>
-                                      <DenseTableCell>
-                                        <Stack gap="xs">
-                                          {!hidePurchaseDetailsInSell ? (
-                                            <Text
-                                              variant="caption"
-                                              className={productChrome.microLabel}
-                                            >
-                                              {formatPurchaseSchemeLabel(cartItem.inventoryItem)}
-                                            </Text>
-                                          ) : null}
-                                          <Box className={productChrome.fontSemibold}>
-                                            <CartSchemeInput
-                                              schemeType={cartItem.schemeType ?? null}
-                                              payFor={cartItem.schemePayFor ?? null}
-                                              free={cartItem.schemeFree ?? null}
-                                              percentage={cartItem.schemePercentage ?? null}
-                                              onCommitUnits={(pf, f) =>
-                                                handleSchemeChange(cartItem.inventoryItem.id, pf, f)
-                                              }
-                                              onCommitPercentage={(p) =>
-                                                handleSchemePercentageChange(
-                                                  cartItem.inventoryItem.id,
-                                                  p,
-                                                )
-                                              }
-                                              disabled={isUpdatingCart}
-                                            />
-                                          </Box>
-                                        </Stack>
-                                      </DenseTableCell>
-                                      <DenseTableCell>
-                                        <Button
-                                          type="button"
-                                          variant="danger"
-                                          size="sm"
-                                          onClick={() =>
-                                            handleRemoveItem(cartItem.inventoryItem.id)
-                                          }
-                                          disabled={isUpdatingCart}
-                                        >
-                                          Remove
-                                        </Button>
-                                      </DenseTableCell>
-                                    </DenseTableRow>
-                                    {showHistorySubrow ? (
-                                      <DenseTableRow className={productChrome.historySubrowTr}>
-                                        <DenseTableCell
-                                          colSpan={hidePurchaseDetailsInSell ? 10 : 11}
-                                          className={productChrome.historySubrowCell}
-                                        >
-                                          <CustomerProductHistoryHint
-                                            variant="subrow"
-                                            sellableRef={inventorySellableRef(
-                                              cartItem.inventoryItem.id,
-                                            )}
-                                            history={customerProductHistory}
-                                            loading={customerProductHistoryLoading}
-                                          />
-                                        </DenseTableCell>
-                                      </DenseTableRow>
-                                    ) : null}
-                                  </Fragment>
-                                );
-                              })}
-                            </TableBody>
-                          </DenseTableSurface>
-                        </DenseTable>
-                      ) : (
-                        cartItems.map((cartItem) =>
-                          (() => {
-                            const isBaseUnitSelected =
-                              (cartItem.inventoryItem.baseUnit != null &&
-                                cartItem.unit === cartItem.inventoryItem.baseUnit) ||
-                              cartItem.availableUnits.some(
-                                (unitOption) =>
-                                  unitOption.baseUnit && unitOption.unit === cartItem.unit,
-                              );
-                            const quantityInputValue = isBaseUnitSelected
-                              ? cartItem.baseQuantity
-                              : cartItem.quantity;
-                            return (
-                              <Card key={cartItem.inventoryItem.id} className={cartLineFlushStyle}>
-                                <CardBody className={productChrome.cartLineBody}>
-                                  <Stack gap="md" flex="1" minWidth="0">
-                                    <Stack gap="xs">
-                                      <Inline
-                                        gap="sm"
-                                        align="center"
-                                        justify="between"
-                                        width="full"
-                                        flexWrap
-                                      >
-                                        <Button
-                                          type="button"
-                                          variant="ghost"
-                                          className={productChrome.cartLineName}
-                                          onClick={() => setDetailModalItem(cartItem)}
-                                          aria-label="View pricing details"
-                                        >
-                                          {cartItem.inventoryItem.name || 'Unnamed Product'}
-                                        </Button>
-                                        <Badge variant="info">
-                                          {normalizeBillingMode(cartItem.inventoryItem.billingMode)}
-                                        </Badge>
-                                      </Inline>
-                                      {cartItem.inventoryItem.companyName ? (
-                                        <Text variant="caption" color="secondary">
-                                          {cartItem.inventoryItem.companyName}
-                                        </Text>
-                                      ) : null}
-                                      <CustomerProductHistoryHint
-                                        sellableRef={inventorySellableRef(
-                                          cartItem.inventoryItem.id,
-                                        )}
-                                        history={customerProductHistory}
-                                        loading={customerProductHistoryLoading}
-                                      />
-                                      <Inline gap="sm" align="center" flexWrap>
-                                        <Text variant="caption" color="secondary">
-                                          {formatCartPackagingMeta(cartItem)}
-                                        </Text>
-                                      </Inline>
-                                      {cartItem.inventoryItem.maximumRetailPrice >
-                                      cartItem.price ? (
-                                        <Text variant="caption" color="success">
-                                          {(
-                                            ((cartItem.inventoryItem.maximumRetailPrice -
-                                              cartItem.price) /
-                                              cartItem.inventoryItem.maximumRetailPrice) *
-                                            100
-                                          ).toFixed(1)}
-                                          % off MRP
-                                        </Text>
-                                      ) : null}
-                                    </Stack>
-                                    <Inline align="start" gap="lg" width="full" flexWrap>
-                                      <Stack gap="md" className={itemEditFieldsStyle}>
-                                        <FormField
-                                          label="Price"
-                                          id={`price-${cartItem.inventoryItem.id}`}
-                                        >
-                                          <Inline
-                                            gap="sm"
-                                            align="center"
-                                            width="full"
-                                            className={itemPriceBlockStyle}
-                                          >
-                                            <CartSellingPriceInput
-                                              id={`price-${cartItem.inventoryItem.id}`}
-                                              value={cartItem.price}
-                                              onCommit={(num) =>
-                                                handleSellingPriceChange(
-                                                  cartItem.inventoryItem.id,
-                                                  num,
-                                                )
-                                              }
-                                              disabled={isUpdatingCart}
-                                            />
-                                            <Text
-                                              variant="caption"
-                                              color="secondary"
-                                              className={microLabelStyle}
-                                            >
-                                              per {cartItem.unit}
-                                            </Text>
-                                            {(() => {
-                                              const pricingId =
-                                                cartItem.inventoryItem.pricingId ??
-                                                inventoryToPricingId[cartItem.inventoryItem.id];
-                                              const pricing = pricingId
-                                                ? pricingCache[pricingId]
-                                                : undefined;
-                                              const invId = cartItem.inventoryItem.id;
-                                              const isLoading =
-                                                pricingLoading[pricingId ?? ''] ||
-                                                pricingLoading[`inv:${invId}`];
-                                              const rateOpts = getRateOptions(
-                                                cartItem.inventoryItem,
-                                                pricing,
-                                              );
-                                              const formatPrice = (n: number) =>
-                                                new Intl.NumberFormat('en-IN', {
-                                                  style: 'currency',
-                                                  currency: 'INR',
-                                                  minimumFractionDigits: 2,
-                                                  maximumFractionDigits: 2,
-                                                }).format(n);
-                                              const showDropdown =
-                                                pricingId || invId || rateOpts.length > 1;
-                                              if (!showDropdown) return null;
-                                              const matched = rateOpts.find(
-                                                (o) => Math.abs(o.price - cartItem.price) < 0.01,
-                                              );
-                                              const selectValue = matched
-                                                ? matched.label
-                                                : '__custom__';
-                                              // Never switch select value to loading - keep current selection to avoid flicker
-                                              const displayValue =
-                                                isLoading && rateOpts.length === 0
-                                                  ? '__custom__'
-                                                  : selectValue;
-                                              const selectedOpt = rateOpts.find(
-                                                (o) => o.label === displayValue,
-                                              );
-                                              return (
-                                                <Select
-                                                  className={itemRateSelectStyle}
-                                                  value={displayValue}
-                                                  onChange={(e) => {
-                                                    const sel = e.target.value;
-                                                    if (sel === '__custom__') return;
-                                                    const opt = rateOpts.find(
-                                                      (o) => o.label === sel,
+                                            {showRateDropdown ? (
+                                              <Select
+                                                className={denseTableClassNames.rateSelect}
+                                                value={matched ? matched.label : '__custom__'}
+                                                onChange={(e) => {
+                                                  const sel = e.target.value;
+                                                  if (sel === '__custom__') return;
+                                                  const opt = rateOpts.find((o) => o.label === sel);
+                                                  if (opt)
+                                                    handleSellingPriceChange(
+                                                      cartItem.inventoryItem.id,
+                                                      opt.price,
                                                     );
-                                                    if (opt) {
-                                                      handleSellingPriceChange(
-                                                        cartItem.inventoryItem.id,
-                                                        opt.price,
-                                                      );
-                                                    }
-                                                  }}
-                                                  onMouseDown={() => {
-                                                    loadPricingOnDropdownClick(
-                                                      cartItem.inventoryItem.pricingId ?? undefined,
-                                                      invId,
-                                                    );
-                                                  }}
-                                                  disabled={isUpdatingCart || isLoading}
-                                                  aria-label={
-                                                    isLoading
-                                                      ? 'Loading rates'
-                                                      : selectedOpt
-                                                      ? `Rate: ${selectedOpt.label}, ${formatPrice(
-                                                          selectedOpt.price,
-                                                        )}`
-                                                      : 'Select selling rate'
-                                                  }
-                                                  options={[
-                                                    { value: '__custom__', label: 'Custom' },
-                                                    ...rateOpts.map((opt) => ({
-                                                      value: opt.label,
-                                                      label: `${opt.label} · ${formatPrice(
-                                                        opt.price,
-                                                      )}`,
-                                                    })),
-                                                  ]}
-                                                />
-                                              );
-                                            })()}
-                                          </Inline>
-                                        </FormField>
-                                        <Inline
-                                          className={itemSaleRowInlineStyle}
-                                          gap="md"
-                                          align="start"
-                                        >
-                                          <FormField label="Disc">
-                                            <Stack gap="xs">
-                                              {!hidePurchaseDetailsInSell ? (
-                                                <Text
-                                                  variant="caption"
-                                                  className={productChrome.microLabel}
-                                                >
-                                                  {(() => {
-                                                    const v = getPurchaseAdditionalDiscount(
-                                                      cartItem.inventoryItem,
-                                                    );
-                                                    return v != null ? `${v}%` : '—';
-                                                  })()}
-                                                </Text>
-                                              ) : null}
-                                              <Box className={productChrome.fontSemibold}>
-                                                <CartAdditionalDiscountInput
-                                                  value={getEffectiveAdditionalDiscount(
+                                                }}
+                                                onMouseDown={() =>
+                                                  loadPricingOnDropdownClick(
+                                                    cartItem.inventoryItem.pricingId ?? undefined,
                                                     cartItem.inventoryItem.id,
-                                                    cartItem,
-                                                  )}
-                                                  onCommit={(num) =>
-                                                    handleAdditionalDiscountChange(
-                                                      cartItem.inventoryItem.id,
-                                                      num,
-                                                    )
-                                                  }
-                                                  disabled={isUpdatingCart}
-                                                />
-                                              </Box>
-                                            </Stack>
-                                          </FormField>
-
-                                          <FormField label="Scheme">
-                                            <Stack gap="xs">
-                                              {!hidePurchaseDetailsInSell ? (
-                                                <Text
-                                                  variant="caption"
-                                                  className={productChrome.microLabel}
-                                                >
-                                                  {formatPurchaseSchemeLabel(
+                                                  )
+                                                }
+                                                disabled={isUpdatingCart || isLoading}
+                                                options={[
+                                                  { value: '__custom__', label: 'Custom' },
+                                                  ...rateOpts.map((opt) => ({
+                                                    value: opt.label,
+                                                    label: `${opt.label} (${formatPrice(
+                                                      opt.price,
+                                                    )})`,
+                                                  })),
+                                                ]}
+                                              />
+                                            ) : null}
+                                          </Stack>
+                                        </DenseTableCell>
+                                        <DenseTableCell>
+                                          <Stack gap="xs">
+                                            {!hidePurchaseDetailsInSell ? (
+                                              <Text
+                                                variant="caption"
+                                                className={productChrome.microLabel}
+                                              >
+                                                {(() => {
+                                                  const v = getPurchaseAdditionalDiscount(
                                                     cartItem.inventoryItem,
-                                                  )}
-                                                </Text>
-                                              ) : null}
-                                              <Box className={productChrome.fontSemibold}>
-                                                <CartSchemeInput
-                                                  schemeType={cartItem.schemeType ?? null}
-                                                  payFor={cartItem.schemePayFor ?? null}
-                                                  free={cartItem.schemeFree ?? null}
-                                                  percentage={cartItem.schemePercentage ?? null}
-                                                  onCommitUnits={(pf, f) =>
-                                                    handleSchemeChange(
-                                                      cartItem.inventoryItem.id,
-                                                      pf,
-                                                      f,
-                                                    )
-                                                  }
-                                                  onCommitPercentage={(p) =>
-                                                    handleSchemePercentageChange(
-                                                      cartItem.inventoryItem.id,
-                                                      p,
-                                                    )
-                                                  }
-                                                  disabled={isUpdatingCart}
-                                                />
-                                              </Box>
-                                            </Stack>
-                                          </FormField>
-
-                                          <FormField label="Unit">
-                                            <Select
-                                              className={itemUnitSelectStyle}
-                                              value={cartItem.unit}
-                                              onChange={(e) =>
-                                                handleUnitChange(
+                                                  );
+                                                  return v != null ? `${v}%` : '—';
+                                                })()}
+                                              </Text>
+                                            ) : null}
+                                            <Box className={productChrome.fontSemibold}>
+                                              <CartAdditionalDiscountInput
+                                                value={getEffectiveAdditionalDiscount(
                                                   cartItem.inventoryItem.id,
-                                                  e.currentTarget.value,
-                                                )
-                                              }
-                                              disabled={isUpdatingCart}
-                                              options={(cartItem.availableUnits.length > 0
-                                                ? cartItem.availableUnits
-                                                : [
-                                                    {
-                                                      unit: cartItem.unit,
-                                                      baseUnit: false,
-                                                    },
-                                                  ]
-                                              ).map((unitOption) => ({
-                                                value: unitOption.unit,
-                                                label: `${unitOption.unit}${
-                                                  unitOption.baseUnit ? ' (base)' : ''
-                                                }`,
-                                              }))}
-                                            />
-                                          </FormField>
-                                        </Inline>
-                                      </Stack>
-                                      <Stack
-                                        gap="sm"
-                                        align="end"
-                                        flexShrink={0}
-                                        className={productChrome.mlAuto}
-                                      >
-                                        <Inline gap="sm" align="center">
-                                          <CartQtyStepper
-                                            value={quantityInputValue}
-                                            disabled={isUpdatingCart}
-                                            onDecrement={() =>
-                                              handleUpdateQuantity(
-                                                cartItem.inventoryItem.id,
-                                                -1,
-                                                isBaseUnitSelected,
-                                              )
-                                            }
-                                            onIncrement={() =>
-                                              handleUpdateQuantity(
-                                                cartItem.inventoryItem.id,
-                                                1,
-                                                isBaseUnitSelected,
-                                              )
-                                            }
-                                            onCommit={async (newQty) => {
-                                              const delta = newQty - quantityInputValue;
-                                              if (delta !== 0) {
-                                                await handleUpdateQuantity(
-                                                  cartItem.inventoryItem.id,
-                                                  delta,
-                                                  isBaseUnitSelected,
-                                                );
-                                              }
-                                            }}
-                                          />
+                                                  cartItem,
+                                                )}
+                                                onCommit={(n) =>
+                                                  handleAdditionalDiscountChange(
+                                                    cartItem.inventoryItem.id,
+                                                    n,
+                                                  )
+                                                }
+                                                disabled={isUpdatingCart}
+                                              />
+                                            </Box>
+                                          </Stack>
+                                        </DenseTableCell>
+                                        <DenseTableCell>
+                                          <Stack gap="xs">
+                                            {!hidePurchaseDetailsInSell ? (
+                                              <Text
+                                                variant="caption"
+                                                className={productChrome.microLabel}
+                                              >
+                                                {formatPurchaseSchemeLabel(cartItem.inventoryItem)}
+                                              </Text>
+                                            ) : null}
+                                            <Box className={productChrome.fontSemibold}>
+                                              <CartSchemeInput
+                                                schemeType={cartItem.schemeType ?? null}
+                                                payFor={cartItem.schemePayFor ?? null}
+                                                free={cartItem.schemeFree ?? null}
+                                                percentage={cartItem.schemePercentage ?? null}
+                                                onCommitUnits={(pf, f) =>
+                                                  handleSchemeChange(
+                                                    cartItem.inventoryItem.id,
+                                                    pf,
+                                                    f,
+                                                  )
+                                                }
+                                                onCommitPercentage={(p) =>
+                                                  handleSchemePercentageChange(
+                                                    cartItem.inventoryItem.id,
+                                                    p,
+                                                  )
+                                                }
+                                                disabled={isUpdatingCart}
+                                              />
+                                            </Box>
+                                          </Stack>
+                                        </DenseTableCell>
+                                        <DenseTableCell>
                                           <Button
                                             type="button"
-                                            variant="ghost"
+                                            variant="danger"
                                             size="sm"
-                                            className={surfaceChrome.flexShrink0}
                                             onClick={() =>
                                               handleRemoveItem(cartItem.inventoryItem.id)
                                             }
@@ -3984,34 +3718,401 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                           >
                                             Remove
                                           </Button>
+                                        </DenseTableCell>
+                                      </DenseTableRow>
+                                      {showHistorySubrow ? (
+                                        <DenseTableRow className={productChrome.historySubrowTr}>
+                                          <DenseTableCell
+                                            colSpan={hidePurchaseDetailsInSell ? 10 : 11}
+                                            className={productChrome.historySubrowCell}
+                                          >
+                                            <CustomerProductHistoryHint
+                                              variant="subrow"
+                                              sellableRef={inventorySellableRef(
+                                                cartItem.inventoryItem.id,
+                                              )}
+                                              history={customerProductHistory}
+                                              loading={customerProductHistoryLoading}
+                                            />
+                                          </DenseTableCell>
+                                        </DenseTableRow>
+                                      ) : null}
+                                    </Fragment>
+                                  );
+                                })}
+                              </TableBody>
+                            </DenseTableSurface>
+                          </DenseTable>
+                        ) : (
+                          cartItems.map((cartItem) =>
+                            (() => {
+                              const isBaseUnitSelected =
+                                (cartItem.inventoryItem.baseUnit != null &&
+                                  cartItem.unit === cartItem.inventoryItem.baseUnit) ||
+                                cartItem.availableUnits.some(
+                                  (unitOption) =>
+                                    unitOption.baseUnit && unitOption.unit === cartItem.unit,
+                                );
+                              const quantityInputValue = isBaseUnitSelected
+                                ? cartItem.baseQuantity
+                                : cartItem.quantity;
+                              return (
+                                <Card
+                                  key={cartItem.inventoryItem.id}
+                                  className={cartLineFlushStyle}
+                                >
+                                  <CardBody className={productChrome.cartLineBody}>
+                                    <Stack gap="md" flex="1" minWidth="0">
+                                      <Stack gap="xs">
+                                        <Inline
+                                          gap="sm"
+                                          align="center"
+                                          justify="between"
+                                          width="full"
+                                          flexWrap
+                                        >
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            className={productChrome.cartLineName}
+                                            onClick={() => setDetailModalItem(cartItem)}
+                                            aria-label="View pricing details"
+                                          >
+                                            {cartItem.inventoryItem.name || 'Unnamed Product'}
+                                          </Button>
+                                          <Badge variant="info">
+                                            {normalizeBillingMode(
+                                              cartItem.inventoryItem.billingMode,
+                                            )}
+                                          </Badge>
                                         </Inline>
-                                        <Text weight="semibold" className={lineTotalAmountStyle}>
-                                          ₹
-                                          {cartLineNetAmount(
-                                            cartItem,
-                                            getEffectiveAdditionalDiscount(
-                                              cartItem.inventoryItem.id,
-                                              cartItem,
-                                            ),
-                                          ).toFixed(2)}
-                                        </Text>
-                                        {!hidePurchaseDetailsInSell ? (
-                                          <CartLineMargin
-                                            figures={
-                                              cartLineMarginById.get(cartItem.inventoryItem.id) ??
-                                              null
-                                            }
-                                          />
+                                        {cartItem.inventoryItem.companyName ? (
+                                          <Text variant="caption" color="secondary">
+                                            {cartItem.inventoryItem.companyName}
+                                          </Text>
+                                        ) : null}
+                                        <CustomerProductHistoryHint
+                                          sellableRef={inventorySellableRef(
+                                            cartItem.inventoryItem.id,
+                                          )}
+                                          history={customerProductHistory}
+                                          loading={customerProductHistoryLoading}
+                                        />
+                                        <Inline gap="sm" align="center" flexWrap>
+                                          <Text variant="caption" color="secondary">
+                                            {formatCartPackagingMeta(cartItem)}
+                                          </Text>
+                                        </Inline>
+                                        {cartItem.inventoryItem.maximumRetailPrice >
+                                        cartItem.price ? (
+                                          <Text variant="caption" color="success">
+                                            {(
+                                              ((cartItem.inventoryItem.maximumRetailPrice -
+                                                cartItem.price) /
+                                                cartItem.inventoryItem.maximumRetailPrice) *
+                                              100
+                                            ).toFixed(1)}
+                                            % off MRP
+                                          </Text>
                                         ) : null}
                                       </Stack>
-                                    </Inline>
-                                  </Stack>
-                                </CardBody>
-                              </Card>
-                            );
-                          })(),
-                        )
-                      )}
+                                      <Inline align="start" gap="lg" width="full" flexWrap>
+                                        <Stack gap="md" className={itemEditFieldsStyle}>
+                                          <FormField
+                                            label="Price"
+                                            id={`price-${cartItem.inventoryItem.id}`}
+                                          >
+                                            <Inline
+                                              gap="sm"
+                                              align="center"
+                                              width="full"
+                                              className={itemPriceBlockStyle}
+                                            >
+                                              <CartSellingPriceInput
+                                                id={`price-${cartItem.inventoryItem.id}`}
+                                                value={cartItem.price}
+                                                onCommit={(num) =>
+                                                  handleSellingPriceChange(
+                                                    cartItem.inventoryItem.id,
+                                                    num,
+                                                  )
+                                                }
+                                                disabled={isUpdatingCart}
+                                              />
+                                              <Text
+                                                variant="caption"
+                                                color="secondary"
+                                                className={microLabelStyle}
+                                              >
+                                                per {cartItem.unit}
+                                              </Text>
+                                              {(() => {
+                                                const pricingId =
+                                                  cartItem.inventoryItem.pricingId ??
+                                                  inventoryToPricingId[cartItem.inventoryItem.id];
+                                                const pricing = pricingId
+                                                  ? pricingCache[pricingId]
+                                                  : undefined;
+                                                const invId = cartItem.inventoryItem.id;
+                                                const isLoading =
+                                                  pricingLoading[pricingId ?? ''] ||
+                                                  pricingLoading[`inv:${invId}`];
+                                                const rateOpts = getRateOptions(
+                                                  cartItem.inventoryItem,
+                                                  pricing,
+                                                );
+                                                const formatPrice = (n: number) =>
+                                                  new Intl.NumberFormat('en-IN', {
+                                                    style: 'currency',
+                                                    currency: 'INR',
+                                                    minimumFractionDigits: 2,
+                                                    maximumFractionDigits: 2,
+                                                  }).format(n);
+                                                const showDropdown =
+                                                  pricingId || invId || rateOpts.length > 1;
+                                                if (!showDropdown) return null;
+                                                const matched = rateOpts.find(
+                                                  (o) => Math.abs(o.price - cartItem.price) < 0.01,
+                                                );
+                                                const selectValue = matched
+                                                  ? matched.label
+                                                  : '__custom__';
+                                                // Never switch select value to loading - keep current selection to avoid flicker
+                                                const displayValue =
+                                                  isLoading && rateOpts.length === 0
+                                                    ? '__custom__'
+                                                    : selectValue;
+                                                const selectedOpt = rateOpts.find(
+                                                  (o) => o.label === displayValue,
+                                                );
+                                                return (
+                                                  <Select
+                                                    className={itemRateSelectStyle}
+                                                    value={displayValue}
+                                                    onChange={(e) => {
+                                                      const sel = e.target.value;
+                                                      if (sel === '__custom__') return;
+                                                      const opt = rateOpts.find(
+                                                        (o) => o.label === sel,
+                                                      );
+                                                      if (opt) {
+                                                        handleSellingPriceChange(
+                                                          cartItem.inventoryItem.id,
+                                                          opt.price,
+                                                        );
+                                                      }
+                                                    }}
+                                                    onMouseDown={() => {
+                                                      loadPricingOnDropdownClick(
+                                                        cartItem.inventoryItem.pricingId ??
+                                                          undefined,
+                                                        invId,
+                                                      );
+                                                    }}
+                                                    disabled={isUpdatingCart || isLoading}
+                                                    aria-label={
+                                                      isLoading
+                                                        ? 'Loading rates'
+                                                        : selectedOpt
+                                                        ? `Rate: ${
+                                                            selectedOpt.label
+                                                          }, ${formatPrice(selectedOpt.price)}`
+                                                        : 'Select selling rate'
+                                                    }
+                                                    options={[
+                                                      { value: '__custom__', label: 'Custom' },
+                                                      ...rateOpts.map((opt) => ({
+                                                        value: opt.label,
+                                                        label: `${opt.label} · ${formatPrice(
+                                                          opt.price,
+                                                        )}`,
+                                                      })),
+                                                    ]}
+                                                  />
+                                                );
+                                              })()}
+                                            </Inline>
+                                          </FormField>
+                                          <Inline
+                                            className={itemSaleRowInlineStyle}
+                                            gap="md"
+                                            align="start"
+                                          >
+                                            <FormField label="Disc">
+                                              <Stack gap="xs">
+                                                {!hidePurchaseDetailsInSell ? (
+                                                  <Text
+                                                    variant="caption"
+                                                    className={productChrome.microLabel}
+                                                  >
+                                                    {(() => {
+                                                      const v = getPurchaseAdditionalDiscount(
+                                                        cartItem.inventoryItem,
+                                                      );
+                                                      return v != null ? `${v}%` : '—';
+                                                    })()}
+                                                  </Text>
+                                                ) : null}
+                                                <Box className={productChrome.fontSemibold}>
+                                                  <CartAdditionalDiscountInput
+                                                    value={getEffectiveAdditionalDiscount(
+                                                      cartItem.inventoryItem.id,
+                                                      cartItem,
+                                                    )}
+                                                    onCommit={(num) =>
+                                                      handleAdditionalDiscountChange(
+                                                        cartItem.inventoryItem.id,
+                                                        num,
+                                                      )
+                                                    }
+                                                    disabled={isUpdatingCart}
+                                                  />
+                                                </Box>
+                                              </Stack>
+                                            </FormField>
+
+                                            <FormField label="Scheme">
+                                              <Stack gap="xs">
+                                                {!hidePurchaseDetailsInSell ? (
+                                                  <Text
+                                                    variant="caption"
+                                                    className={productChrome.microLabel}
+                                                  >
+                                                    {formatPurchaseSchemeLabel(
+                                                      cartItem.inventoryItem,
+                                                    )}
+                                                  </Text>
+                                                ) : null}
+                                                <Box className={productChrome.fontSemibold}>
+                                                  <CartSchemeInput
+                                                    schemeType={cartItem.schemeType ?? null}
+                                                    payFor={cartItem.schemePayFor ?? null}
+                                                    free={cartItem.schemeFree ?? null}
+                                                    percentage={cartItem.schemePercentage ?? null}
+                                                    onCommitUnits={(pf, f) =>
+                                                      handleSchemeChange(
+                                                        cartItem.inventoryItem.id,
+                                                        pf,
+                                                        f,
+                                                      )
+                                                    }
+                                                    onCommitPercentage={(p) =>
+                                                      handleSchemePercentageChange(
+                                                        cartItem.inventoryItem.id,
+                                                        p,
+                                                      )
+                                                    }
+                                                    disabled={isUpdatingCart}
+                                                  />
+                                                </Box>
+                                              </Stack>
+                                            </FormField>
+
+                                            <FormField label="Unit">
+                                              <Select
+                                                className={itemUnitSelectStyle}
+                                                value={cartItem.unit}
+                                                onChange={(e) =>
+                                                  handleUnitChange(
+                                                    cartItem.inventoryItem.id,
+                                                    e.currentTarget.value,
+                                                  )
+                                                }
+                                                disabled={isUpdatingCart}
+                                                options={(cartItem.availableUnits.length > 0
+                                                  ? cartItem.availableUnits
+                                                  : [
+                                                      {
+                                                        unit: cartItem.unit,
+                                                        baseUnit: false,
+                                                      },
+                                                    ]
+                                                ).map((unitOption) => ({
+                                                  value: unitOption.unit,
+                                                  label: `${unitOption.unit}${
+                                                    unitOption.baseUnit ? ' (base)' : ''
+                                                  }`,
+                                                }))}
+                                              />
+                                            </FormField>
+                                          </Inline>
+                                        </Stack>
+                                        <Stack
+                                          gap="sm"
+                                          align="end"
+                                          flexShrink={0}
+                                          className={productChrome.mlAuto}
+                                        >
+                                          <Inline gap="sm" align="center">
+                                            <CartQtyStepper
+                                              value={quantityInputValue}
+                                              disabled={isUpdatingCart}
+                                              onDecrement={() =>
+                                                handleUpdateQuantity(
+                                                  cartItem.inventoryItem.id,
+                                                  -1,
+                                                  isBaseUnitSelected,
+                                                )
+                                              }
+                                              onIncrement={() =>
+                                                handleUpdateQuantity(
+                                                  cartItem.inventoryItem.id,
+                                                  1,
+                                                  isBaseUnitSelected,
+                                                )
+                                              }
+                                              onCommit={async (newQty) => {
+                                                const delta = newQty - quantityInputValue;
+                                                if (delta !== 0) {
+                                                  await handleUpdateQuantity(
+                                                    cartItem.inventoryItem.id,
+                                                    delta,
+                                                    isBaseUnitSelected,
+                                                  );
+                                                }
+                                              }}
+                                            />
+                                            <Button
+                                              type="button"
+                                              variant="ghost"
+                                              size="sm"
+                                              className={surfaceChrome.flexShrink0}
+                                              onClick={() =>
+                                                handleRemoveItem(cartItem.inventoryItem.id)
+                                              }
+                                              disabled={isUpdatingCart}
+                                            >
+                                              Remove
+                                            </Button>
+                                          </Inline>
+                                          <Text weight="semibold" className={lineTotalAmountStyle}>
+                                            ₹
+                                            {cartLineNetAmount(
+                                              cartItem,
+                                              getEffectiveAdditionalDiscount(
+                                                cartItem.inventoryItem.id,
+                                                cartItem,
+                                              ),
+                                            ).toFixed(2)}
+                                          </Text>
+                                          {!hidePurchaseDetailsInSell ? (
+                                            <CartLineMargin
+                                              figures={
+                                                cartLineMarginById.get(cartItem.inventoryItem.id) ??
+                                                null
+                                              }
+                                            />
+                                          ) : null}
+                                        </Stack>
+                                      </Inline>
+                                    </Stack>
+                                  </CardBody>
+                                </Card>
+                              );
+                            })(),
+                          )
+                        )}
+                      </Box>
                     </Box>
                   </Stack>
                 </Box>

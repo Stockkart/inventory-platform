@@ -595,6 +595,8 @@ export interface InventorySearchParams {
   q?: string;
   sort?: string;
   limit?: number;
+  /** 0-based page index (used with limit for offset pagination). */
+  page?: number;
   /** Extension field filters, e.g. sellDirect=true */
   filters?: Record<string, string>;
   /**
