@@ -65,6 +65,7 @@ import {
   Percent,
   Receipt,
   Tag,
+  Trash2,
   TrendingDown,
   X,
 } from 'lucide-react';
@@ -1014,8 +1015,11 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   });
   /** When true, purchase scheme / purchase add. discount read-only rows are hidden in cart (sale inputs stay). */
   const [hidePurchaseDetailsInSell, setHidePurchaseDetailsInSell] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('scan-sell-hide-purchase-details') === '1';
+    // Hidden unless the operator has explicitly turned them on. Purchase cost and
+    // margin are the shop's own figures and are read over the counter by whoever is
+    // standing there, so the safe default is off, and only an explicit '0' shows them.
+    if (typeof window === 'undefined') return true;
+    return localStorage.getItem('scan-sell-hide-purchase-details') !== '0';
   });
   const [pricingCache, setPricingCache] = useState<Record<string, PricingResponse>>({});
   const [pricingLoading, setPricingLoading] = useState<Record<string, boolean>>({});
@@ -1891,6 +1895,11 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     if (isLoadingCart) return;
     const c = scanSellCustomerPrefillRef.current;
     if (!c || scanSellCustomerPrefillConsumedRef.current) return;
+    // The picker names its quotation in the URL, but the page only adopts it once that cart has
+    // loaded. Applying the customer before then wrote it to whichever quotation happened to be
+    // open, renaming that one and leaving two quotations under the same customer.
+    const targetPurchaseId = estimatePurchaseIdParam?.trim();
+    if (targetPurchaseId && targetPurchaseId !== activePurchaseId) return;
     scanSellCustomerPrefillConsumedRef.current = true;
     scanSellCustomerPrefillRef.current = null;
     applySelectedCustomer(c);
@@ -1910,7 +1919,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     // picker is a navigation to this same route, so the cart never reloads and
     // `isLoadingCart` never changes. Keyed only on that, this effect would not
     // run again and the customer left in the ref would never be applied.
-  }, [isLoadingCart, location.key]);
+  }, [isLoadingCart, location.key, activePurchaseId, estimatePurchaseIdParam]);
 
   /** Build CartItem[] from cart response, reusing existing inventoryItem when possible (no API calls). */
   const mergeCartResponseToItems = useCallback(
@@ -3359,17 +3368,16 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                               <DenseTableRow>
                                 <DenseTableHeaderCell>#</DenseTableHeaderCell>
                                 <DenseTableHeaderCell>Product</DenseTableHeaderCell>
-                                <DenseTableHeaderCell>Company</DenseTableHeaderCell>
-                                <DenseTableHeaderCell>Qty</DenseTableHeaderCell>
                                 <DenseTableHeaderCell>Unit</DenseTableHeaderCell>
-                                <DenseTableHeaderCell>Amount</DenseTableHeaderCell>
-                                {!hidePurchaseDetailsInSell ? (
-                                  <DenseTableHeaderCell>Margin</DenseTableHeaderCell>
-                                ) : null}
+                                <DenseTableHeaderCell>Qty</DenseTableHeaderCell>
                                 <DenseTableHeaderCell>Price</DenseTableHeaderCell>
-                                <DenseTableHeaderCell>Discount</DenseTableHeaderCell>
+                                <DenseTableHeaderCell>Disc</DenseTableHeaderCell>
                                 <DenseTableHeaderCell>Scheme</DenseTableHeaderCell>
-                                <DenseTableHeaderCell>Actions</DenseTableHeaderCell>
+                                <DenseTableHeaderCell>Amount</DenseTableHeaderCell>
+                                <DenseTableHeaderCell
+                                  aria-label="Actions"
+                                  className={productChrome.rowActionsCell}
+                                />
                               </DenseTableRow>
                             </TableHead>
                             <TableBody>
@@ -3433,27 +3441,6 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                         </Button>
                                       </DenseTableCell>
                                       <DenseTableCell>
-                                        {cartItem.inventoryItem.companyName || '—'}
-                                      </DenseTableCell>
-                                      <DenseTableCell>
-                                        <Box className={denseTableClassNames.cellInput}>
-                                          <CartQuantityInput
-                                            value={quantityInputValue}
-                                            disabled={isUpdatingCart}
-                                            onCommit={async (newQty) => {
-                                              const delta = newQty - quantityInputValue;
-                                              if (delta !== 0) {
-                                                await handleUpdateQuantity(
-                                                  cartItem.inventoryItem.id,
-                                                  delta,
-                                                  isBaseUnitSelected,
-                                                );
-                                              }
-                                            }}
-                                          />
-                                        </Box>
-                                      </DenseTableCell>
-                                      <DenseTableCell>
                                         <Select
                                           className={denseTableClassNames.select}
                                           value={cartItem.unit}
@@ -3476,18 +3463,24 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                           }))}
                                         />
                                       </DenseTableCell>
-                                      <DenseTableCell>{formatPrice(lineTotal)}</DenseTableCell>
-                                      {!hidePurchaseDetailsInSell ? (
-                                        <DenseTableCell>
-                                          <CartLineMargin
-                                            compact
-                                            figures={
-                                              cartLineMarginById.get(cartItem.inventoryItem.id) ??
-                                              null
-                                            }
+                                      <DenseTableCell>
+                                        <Box className={denseTableClassNames.cellInput}>
+                                          <CartQuantityInput
+                                            value={quantityInputValue}
+                                            disabled={isUpdatingCart}
+                                            onCommit={async (newQty) => {
+                                              const delta = newQty - quantityInputValue;
+                                              if (delta !== 0) {
+                                                await handleUpdateQuantity(
+                                                  cartItem.inventoryItem.id,
+                                                  delta,
+                                                  isBaseUnitSelected,
+                                                );
+                                              }
+                                            }}
                                           />
-                                        </DenseTableCell>
-                                      ) : null}
+                                        </Box>
+                                      </DenseTableCell>
                                       <DenseTableCell>
                                         <Stack gap="xs" className={denseTableClassNames.priceCell}>
                                           <CartSellingPriceInput
@@ -3591,24 +3584,27 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                           </Box>
                                         </Stack>
                                       </DenseTableCell>
-                                      <DenseTableCell>
-                                        <Button
+                                      <DenseTableCell>{formatPrice(lineTotal)}</DenseTableCell>
+                                      <DenseTableCell className={productChrome.rowActionsCell}>
+                                        <IconButton
                                           type="button"
-                                          variant="danger"
                                           size="sm"
+                                          className={productChrome.rowRemoveButton}
                                           onClick={() =>
                                             handleRemoveItem(cartItem.inventoryItem.id)
                                           }
                                           disabled={isUpdatingCart}
+                                          label={`Remove ${cartItem.inventoryItem.name || 'item'}`}
+                                          title="Remove"
                                         >
-                                          Remove
-                                        </Button>
+                                          <Icon icon={Trash2} size="sm" />
+                                        </IconButton>
                                       </DenseTableCell>
                                     </DenseTableRow>
                                     {showHistorySubrow ? (
                                       <DenseTableRow className={productChrome.historySubrowTr}>
                                         <DenseTableCell
-                                          colSpan={hidePurchaseDetailsInSell ? 10 : 11}
+                                          colSpan={9}
                                           className={productChrome.historySubrowCell}
                                         >
                                           <CustomerProductHistoryHint
@@ -3951,18 +3947,24 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                               }
                                             }}
                                           />
-                                          <Button
+                                          <IconButton
                                             type="button"
-                                            variant="ghost"
                                             size="sm"
-                                            className={surfaceChrome.flexShrink0}
+                                            className={cn(
+                                              surfaceChrome.flexShrink0,
+                                              productChrome.rowRemoveButton,
+                                            )}
                                             onClick={() =>
                                               handleRemoveItem(cartItem.inventoryItem.id)
                                             }
                                             disabled={isUpdatingCart}
+                                            label={`Remove ${
+                                              cartItem.inventoryItem.name || 'item'
+                                            }`}
+                                            title="Remove"
                                           >
-                                            Remove
-                                          </Button>
+                                            <Icon icon={Trash2} size="sm" />
+                                          </IconButton>
                                         </Inline>
                                         <Text weight="semibold" className={lineTotalAmountStyle}>
                                           ₹

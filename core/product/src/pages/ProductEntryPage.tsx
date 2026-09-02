@@ -8,14 +8,19 @@ import { inventoryApi } from '../api/inventory.api';
 import { productApi } from '../api/product.api';
 import { barcodesApi } from '../api/barcodes.api';
 import { mapLastInventoryToRegistrationPatch } from '../lib/registrationPrefill';
+import { TypeaheadPortal } from '../ui/TypeaheadPortal';
 import {
-  clearProductEntryVendor,
-  readProductEntryVendor,
-  rememberProductEntryVendor,
-} from '../lib/sellSession';
+  clearProductEntryDraft,
+  readProductEntryDraft,
+  saveProductEntryDraft,
+} from '../lib/productEntryDraft';
 import { PrintBarcodeLabelsModal } from '../ui/PrintBarcodeLabelsModal';
 import { openLocalBarcodeLabelPrint } from '../lib/printBarcodeLabels';
 import { vendorsApi } from '@inventory-platform/user/vendors';
+import {
+  partyNameHasLetters,
+  PARTY_NAME_LETTERS_MESSAGE,
+} from '@inventory-platform/user/customers';
 import type {
   CreateInventoryDto,
   BulkCreateInventoryDto,
@@ -115,6 +120,7 @@ import {
   Textarea,
   denseDataGrid,
   fileDropzone,
+  IconButton,
   productChrome,
   cn,
   Icon,
@@ -130,6 +136,7 @@ import {
   Printer,
   QrCode,
   Receipt,
+  Trash2,
   Upload,
   Wand2,
 } from 'lucide-react';
@@ -140,6 +147,61 @@ import {
   uploadLayoutStyles,
   vendorStyles,
 } from '../ui/registration-layout-styles';
+
+/**
+ * The product-name field of one registration-grid row, with its suggestions.
+ *
+ * The menu is portalled rather than positioned inside the cell: the grid scrolls in
+ * both axes, and an absolutely positioned menu was clipped to that scroll box, so on
+ * lower rows the suggestions never appeared even though the search had returned them.
+ * The wrapper Box is the measurement anchor because the ui-kit Input does not forward
+ * a ref.
+ */
+function GridProductNameCell({
+  rowId,
+  value,
+  disabled,
+  open,
+  suggestions,
+  onChange,
+  onBlur,
+  onApply,
+}: {
+  rowId: string;
+  value: string;
+  disabled: boolean;
+  open: boolean;
+  suggestions: ProductSuggestion[];
+  onChange: (rowId: string, value: string) => void;
+  onBlur: (rowId: string) => void;
+  onApply: (rowId: string, suggestion: ProductSuggestion) => Promise<void> | void;
+}) {
+  const anchorRef = useRef<HTMLElement | null>(null);
+  return (
+    <Box ref={anchorRef} className={productChrome.typeaheadWrap}>
+      <Input
+        type="text"
+        className={denseDataGrid.input}
+        placeholder="Product name"
+        value={value}
+        autoComplete="off"
+        onChange={(e) => onChange(rowId, e.target.value)}
+        onBlur={() => onBlur(rowId)}
+        disabled={disabled}
+        required
+      />
+      <TypeaheadPortal anchorRef={anchorRef} open={open}>
+        <Box as="ul" className={productChrome.typeaheadMenu}>
+          {suggestions.map((s) => (
+            <Box as="li" key={s.id}>
+              <ProductSuggestionOption suggestion={s} onSelect={() => void onApply(rowId, s)} />
+            </Box>
+          ))}
+        </Box>
+      </TypeaheadPortal>
+    </Box>
+  );
+}
 
 function VendorDetailField({
   icon,
@@ -900,6 +962,80 @@ export function ProductEntryPage() {
   // Multiple products state
   const [products, setProducts] = useState<ProductFormData[]>([]);
   const [packagingUnits, setPackagingUnits] = useState<PackagingUnit[]>([]);
+
+  /**
+   * Bring back a half-finished entry after a refresh.
+   *
+   * Scanning a vendor bill fills this grid from OCR and the operator then corrects it
+   * by hand; before this, a refresh threw all of that away and the bill had to be
+   * scanned again. Restores silently, the way the vendor field already does.
+   *
+   * The ref guards the persist effect below: without it, the first render would write
+   * an empty grid over the very draft we are about to read.
+   */
+  const draftRestoredRef = useRef(false);
+  useLayoutEffect(() => {
+    if (draftRestoredRef.current) return;
+    draftRestoredRef.current = true;
+    const draft = readProductEntryDraft<ProductFormData, Vendor>();
+    if (!draft) return;
+    setProducts(draft.products);
+    if (draft.billingMode) setBillingMode(draft.billingMode as BillingMode);
+    if (draft.vendorInvoiceNo) setVendorInvoiceNo(draft.vendorInvoiceNo);
+    if (draft.vendorInvoiceDate) setVendorInvoiceDate(draft.vendorInvoiceDate);
+    if (draft.vendorLineSubTotal) setVendorLineSubTotal(draft.vendorLineSubTotal);
+    if (draft.vendorTaxTotal) setVendorTaxTotal(draft.vendorTaxTotal);
+    if (draft.vendorShippingCharge) setVendorShippingCharge(draft.vendorShippingCharge);
+    if (draft.vendorOtherCharges) setVendorOtherCharges(draft.vendorOtherCharges);
+    if (draft.vendorOverallDiscount) setVendorOverallDiscount(draft.vendorOverallDiscount);
+    if (draft.vendorRoundOff) setVendorRoundOff(draft.vendorRoundOff);
+    if (draft.vendorInvoiceTotal) setVendorInvoiceTotal(draft.vendorInvoiceTotal);
+  }, []);
+
+  /**
+   * Persist the entry as it is edited. Debounced so typing does not hit storage on
+   * every keystroke. An empty grid clears the draft rather than saving nothing over
+   * it, which is what makes the post-submit reset tidy up after itself.
+   */
+  useEffect(() => {
+    if (!draftRestoredRef.current) return;
+    // A vendor is normally picked before the bill is scanned, so an empty grid with a
+    // vendor on it is still worth keeping. Only a genuinely empty form clears.
+    if (products.length === 0 && !selectedVendor) {
+      clearProductEntryDraft();
+      return;
+    }
+    const timer = setTimeout(() => {
+      saveProductEntryDraft<ProductFormData, Vendor>({
+        products,
+        vendor: selectedVendor,
+        billingMode,
+        vendorInvoiceNo,
+        vendorInvoiceDate,
+        vendorLineSubTotal,
+        vendorTaxTotal,
+        vendorShippingCharge,
+        vendorOtherCharges,
+        vendorOverallDiscount,
+        vendorRoundOff,
+        vendorInvoiceTotal,
+      });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [
+    products,
+    selectedVendor,
+    billingMode,
+    vendorInvoiceNo,
+    vendorInvoiceDate,
+    vendorLineSubTotal,
+    vendorTaxTotal,
+    vendorShippingCharge,
+    vendorOtherCharges,
+    vendorOverallDiscount,
+    vendorRoundOff,
+    vendorInvoiceTotal,
+  ]);
 
   useEffect(() => {
     inventoryApi
@@ -2368,6 +2504,10 @@ export function ProductEntryPage() {
               : `Successfully registered ${count} products`,
           );
 
+          // Saved is saved. The form only resets after 5s below, and a refresh inside
+          // that window would otherwise restore an entry that is already in the books.
+          clearProductEntryDraft();
+
           const createdBarcodes = items
             .map((item) => item.barcode)
             .filter((code): code is string => Boolean(code?.trim()));
@@ -2405,6 +2545,7 @@ export function ProductEntryPage() {
               ? 'Product registered successfully'
               : `Successfully registered ${count} products`,
           );
+          clearProductEntryDraft();
           setTimeout(() => {
             setProducts([]);
             handleClearVendor();
@@ -2473,7 +2614,6 @@ export function ProductEntryPage() {
 
   const handleSelectVendor = (vendor: Vendor) => {
     setSelectedVendor(vendor);
-    rememberProductEntryVendor(vendor);
     setVendorSearchQuery(vendor.name);
     setShowVendorDropdown(false);
     setVendorSearchResults([]);
@@ -2483,7 +2623,10 @@ export function ProductEntryPage() {
     if (vendorPrefillConsumedRef.current) return;
     const fromNav = (location.state as { prefillVendor?: VendorResponse } | null | undefined)
       ?.prefillVendor;
-    const raw = fromNav?.vendorId ? fromNav : readProductEntryVendor<VendorResponse>();
+    // Navigation state wins (arriving from Contacts with a vendor chosen); otherwise
+    // take the vendor off the draft, which is where it now lives alongside the rows.
+    const fromDraft = readProductEntryDraft<ProductFormData, VendorResponse>()?.vendor ?? null;
+    const raw = fromNav?.vendorId ? fromNav : fromDraft;
     if (!raw?.vendorId) return;
     vendorPrefillConsumedRef.current = true;
     const vendor: Vendor = {
@@ -2561,6 +2704,12 @@ export function ProductEntryPage() {
         return;
       }
 
+      if (!partyNameHasLetters(vendorFormData.name)) {
+        notifyError(PARTY_NAME_LETTERS_MESSAGE);
+        setIsCreatingVendor(false);
+        return;
+      }
+
       if (showCustomBusinessType && !customBusinessType.trim()) {
         notifyError('Please enter a custom business type');
         setIsCreatingVendor(false);
@@ -2584,7 +2733,6 @@ export function ProductEntryPage() {
       };
       const vendor = await vendorsApi.create(vendorPayload);
       setSelectedVendor(vendor);
-      rememberProductEntryVendor(vendor);
       setVendorSearchQuery(vendor.contactPhone);
       handleCloseVendorModal();
     } catch (err) {
@@ -2596,7 +2744,6 @@ export function ProductEntryPage() {
   };
 
   const handleClearVendor = () => {
-    clearProductEntryVendor();
     setSelectedVendor(null);
     setVendorSearchQuery('');
     setVendorSearchResults([]);
@@ -3422,34 +3569,19 @@ export function ProductEntryPage() {
                                   }
                                 />
                                 <TableCell className={denseDataGrid.td}>
-                                  <Box className={productChrome.typeaheadWrap}>
-                                    <Input
-                                      type="text"
-                                      className={denseDataGrid.input}
-                                      placeholder="Product name"
-                                      value={product.name}
-                                      autoComplete="off"
-                                      onChange={(e) => handleNameChange(product.id, e.target.value)}
-                                      onBlur={() => handleNameBlur(product.id)}
-                                      disabled={isLoading}
-                                      required
-                                    />
-                                    {suggestionRowId === product.id &&
-                                    productSuggestions.length > 0 ? (
-                                      <Box as="ul" className={productChrome.typeaheadMenu}>
-                                        {productSuggestions.map((s) => (
-                                          <Box as="li" key={s.id}>
-                                            <ProductSuggestionOption
-                                              suggestion={s}
-                                              onSelect={() =>
-                                                void applyProductPrefill(product.id, s)
-                                              }
-                                            />
-                                          </Box>
-                                        ))}
-                                      </Box>
-                                    ) : null}
-                                  </Box>
+                                  <GridProductNameCell
+                                    rowId={product.id}
+                                    value={product.name}
+                                    disabled={isLoading}
+                                    open={
+                                      suggestionRowId === product.id &&
+                                      productSuggestions.length > 0
+                                    }
+                                    suggestions={productSuggestions}
+                                    onChange={handleNameChange}
+                                    onBlur={handleNameBlur}
+                                    onApply={applyProductPrefill}
+                                  />
                                 </TableCell>
                                 <VerticalRegistrationGridCells
                                   fields={verticalRegistrationFields}
@@ -4067,15 +4199,17 @@ export function ProductEntryPage() {
                                   </>
                                 )}
                                 <TableCell className={denseDataGrid.td}>
-                                  <Button
+                                  <IconButton
                                     type="button"
-                                    className={denseDataGrid.removeBtn}
+                                    size="sm"
+                                    className={productChrome.rowRemoveButton}
                                     onClick={() => handleRemoveProduct(product.id)}
                                     disabled={isLoading}
-                                    aria-label="Remove product"
+                                    label="Remove product"
+                                    title="Remove"
                                   >
-                                    ×
-                                  </Button>
+                                    <Icon icon={Trash2} size="sm" />
+                                  </IconButton>
                                 </TableCell>
                               </TableRow>
                             ))}
@@ -5124,18 +5258,20 @@ function ProductAccordion({
             </Text>
           )}
         </Box>
-        <Button
+        <IconButton
           type="button"
-          className={accordionStyles.removeProductBtn}
+          size="sm"
+          className={productChrome.rowRemoveButton}
           onClick={(e) => {
             e.stopPropagation();
             onRemove();
           }}
           disabled={isLoading}
-          aria-label="Remove product"
+          label="Remove product"
+          title="Remove"
         >
-          ×
-        </Button>
+          <Icon icon={Trash2} size="sm" />
+        </IconButton>
       </Box>
 
       {product.isExpanded && (
