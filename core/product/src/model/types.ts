@@ -476,6 +476,9 @@ export interface InventoryItem {
   soldCount: number;
   thresholdCount?: number;
   currentCount: number;
+  /** Physical stock minus open sale quotation reservations (shop-wide). */
+  availableCount?: number | null;
+  availableBaseCount?: number | null;
   location: string;
   /** Optional; medical expiry often lives in verticalFields instead of core. */
   expiryDate?: string;

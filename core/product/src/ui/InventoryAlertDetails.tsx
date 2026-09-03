@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, type ReactNode } from 'react';
 import { Link as RouterLink } from 'react-router';
 import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
+import { getShopAvailableDisplayCount } from '../lib/inventoryAvailability';
 import { barcodesApi } from '../api/barcodes.api';
 import { openLocalBarcodeLabelPrint } from '../lib/printBarcodeLabels';
 import { vendorsApi } from '@inventory-platform/user/vendors';
@@ -845,6 +846,11 @@ export function InventoryAlertDetails({
                   ) : null}
                 </DetailValue>
               </DetailField>
+              {item.availableCount != null || item.availableBaseCount != null ? (
+                <DetailField icon={Package} label="Available">
+                  <DetailValue>{getShopAvailableDisplayCount(item)}</DetailValue>
+                </DetailField>
+              ) : null}
               <DetailField icon={PackagePlus} label="Received">
                 <DetailValue>{item.receivedCount}</DetailValue>
               </DetailField>

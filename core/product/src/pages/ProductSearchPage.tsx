@@ -30,6 +30,7 @@ import { Search } from 'lucide-react';
 import { InventoryAlertDetails, ProductSearchCard, normalizedBillingMode } from '../ui';
 import { sortInventoryByExpirySoonest } from '@inventory-platform/schema';
 import { rememberOpenQuotationId } from '../lib/sellSession';
+import { getShopAvailableBaseCount } from '../lib/inventoryAvailability';
 import {
   useAuthStore,
   useNotify,
@@ -208,7 +209,11 @@ export function ProductSearchPage() {
     setSelectedItem(item);
     try {
       const full = await inventoryApi.getById(inventoryId);
-      setSelectedItem(full);
+      setSelectedItem({
+        ...full,
+        availableCount: item.availableCount,
+        availableBaseCount: item.availableBaseCount,
+      });
     } catch (err) {
       notifyError(err instanceof Error ? err.message : 'Failed to load product details');
       setSelectedItem(null);
@@ -297,6 +302,7 @@ export function ProductSearchPage() {
       const quotation = quotations.find((q) => q.purchaseId === purchaseId);
       notifyAddedToQuotation(item, quotation);
       setQuotationPickerItem(null);
+      void handleSearch(searchPage, searchPageSize);
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
       handleAddToCartDocumentError(err, 'quotation');
@@ -336,7 +342,7 @@ export function ProductSearchPage() {
       notifyError('Cannot add: missing inventory id');
       return;
     }
-    if (item.currentCount <= 0) {
+    if (getShopAvailableBaseCount(item) <= 0) {
       notifyError('Product is out of stock');
       return;
     }
@@ -368,7 +374,7 @@ export function ProductSearchPage() {
       notifyError('Cannot add: missing inventory id');
       return;
     }
-    if (item.currentCount <= 0) {
+    if (getShopAvailableBaseCount(item) <= 0) {
       notifyError('Product is out of stock');
       return;
     }
@@ -396,7 +402,7 @@ export function ProductSearchPage() {
       notifyError('Cannot add: missing inventory id');
       return;
     }
-    if (item.currentCount <= 0) {
+    if (getShopAvailableBaseCount(item) <= 0) {
       notifyError('Product is out of stock');
       return;
     }

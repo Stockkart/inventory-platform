@@ -80,6 +80,11 @@ import {
   isLegacyEstimateWorkspacePath,
 } from '../lib/estimatePaths';
 import { rememberOpenQuotationId, readOpenQuotationId } from '../lib/sellSession';
+import {
+  getCartAvailableBaseCount,
+  getShopAvailableBaseCount,
+  getShopAvailableDisplayCount,
+} from '../lib/inventoryAvailability';
 import { sellCatalogApi } from '../api/sell-catalog.api';
 import { pricingClient } from '../api/pricing-client.api';
 import { gstAmountRowLabel, uniqueGstRateLabel } from '../lib/gstRateLabel';
@@ -2466,6 +2471,9 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       // Merge response into local state (no extra inventory/search API calls)
       setCartItems(mergeCartResponseToItems(updatedCart, items));
       void refreshQuotationList();
+      if (searchQuery.trim()) {
+        void runSearch(searchQuery.trim(), searchPage, searchPageSize, false);
+      }
       setError(null);
     } catch (err) {
       // Handle API errors - might include stock validation errors
@@ -2510,7 +2518,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       return;
     }
 
-    const availableBase = item.currentBaseCount ?? item.currentCount;
+    const availableBase = getShopAvailableBaseCount(item);
     if (availableBase <= 0) {
       notifyError('Product is out of stock');
       return;
@@ -2531,8 +2539,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
         // Update quantity if item already in cart
         const newQuantity = existingItem.quantity + 1;
         const newBaseQuantity = existingItem.baseQuantity + existingItem.unitFactor;
-        // Validate stock: compare base quantities (currentBaseCount is in base units)
-        const availableBase = item.currentBaseCount ?? item.currentCount;
+        const availableBase = getCartAvailableBaseCount(item, existingItem.baseQuantity);
         if (availableBase > 0 && newBaseQuantity > availableBase) {
           notifyError(`Only ${availableBase} items available in stock`);
           return prev;
@@ -2551,8 +2558,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
         const unitFactor = getUnitFactorForUnit(item, defaultUnit, 1);
         const availableUnits = getAvailableUnitsFromInventory(item);
         const baseQuantity = unitFactor;
-        // Add new item to cart: validate stock in base units (currentBaseCount)
-        const availableBase = item.currentBaseCount ?? item.currentCount;
+        const availableBase = getShopAvailableBaseCount(item);
         if (availableBase > 0 && availableBase < baseQuantity) {
           notifyError('Product is out of stock');
           return prev;
@@ -2588,8 +2594,10 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     const factor = Math.max(1, originalItem.unitFactor);
     const newQuantity = Number((newBaseQuantity / factor).toFixed(3));
 
-    const availableBase =
-      originalItem.inventoryItem.currentBaseCount ?? originalItem.inventoryItem.currentCount;
+    const availableBase = getCartAvailableBaseCount(
+      originalItem.inventoryItem,
+      originalItem.baseQuantity,
+    );
     if (availableBase < 999999 && newBaseQuantity > availableBase) {
       setError(`Only ${availableBase} items available in stock`);
       throw new Error('Stock exceeded');
@@ -3301,7 +3309,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                         rowClassName={searchRowCafeStyle}
                         searchWrapperRef={searchWrapperRef}
                         addDisabled={(item) =>
-                          item.currentCount <= 0 ||
+                          getShopAvailableBaseCount(item) <= 0 ||
                           (item.sellingPrice ?? item.priceToRetail) == null ||
                           isUpdatingCart
                         }
@@ -3428,7 +3436,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                       onAddToCart={handleAddToCart}
                       searchWrapperRef={searchWrapperRef}
                       addDisabled={(item) =>
-                        item.currentCount <= 0 ||
+                        getShopAvailableBaseCount(item) <= 0 ||
                         (item.sellingPrice ?? item.priceToRetail) == null ||
                         isUpdatingCart
                       }
@@ -4394,9 +4402,12 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                             {formatInventoryExpiryDate(inv)}
                           </DetailField>
                         ) : null}
-                        {inv.currentCount != null || inv.currentBaseCount != null ? (
-                          <DetailField icon={Package} label="Stock (current)">
-                            {inv.currentCount ?? inv.currentBaseCount ?? '—'}
+                        {inv.currentCount != null ||
+                        inv.currentBaseCount != null ||
+                        inv.availableCount != null ||
+                        inv.availableBaseCount != null ? (
+                          <DetailField icon={Package} label="Stock (available)">
+                            {getShopAvailableDisplayCount(inv)}
                           </DetailField>
                         ) : null}
                         <DetailField icon={Hash} label="Quantity">
@@ -4567,7 +4578,7 @@ function SearchDropdownItem({
           </Text>
         ) : null}
         <Text variant="caption" color="secondary" truncate>
-          Current: {item.currentCount}
+          Available: {getShopAvailableDisplayCount(item)}
         </Text>
         <Text variant="caption" weight="semibold" truncate>
           MRP: ₹{item.maximumRetailPrice != null ? item.maximumRetailPrice.toFixed(2) : '—'}
