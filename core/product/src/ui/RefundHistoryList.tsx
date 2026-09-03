@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { formatCustomerDisplayName } from '../lib/customerDisplay';
 import { refundsApi } from '@inventory-platform/product/api';
 import type { Refund } from '@inventory-platform/product/types';
 import { useNotify } from '@inventory-platform/session';
@@ -207,7 +208,7 @@ export function RefundHistoryList({ refreshTrigger, filters }: RefundHistoryList
           const note = creditNoteLabel(refund);
           const hasNote = Boolean(refund.creditNoteNo?.trim());
           const invoice = refund.invoiceNo?.trim() || '—';
-          const customer = refund.customerName?.trim() || 'Walk-in customer';
+          const customer = formatCustomerDisplayName(refund.customerName);
           const phone = refund.customerPhone?.trim() || '—';
           const hasLines = Boolean(refund.refundedItems && refund.refundedItems.length > 0);
 

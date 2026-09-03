@@ -10,12 +10,22 @@ if (import.meta.env.DEV) {
 
 const X_SHOP_ID_KEY = 'x_shop_id';
 
+/** Auth routes where 401 is an expected credential failure, not session expiry. */
+function isPublicAuthRequest(url: string | undefined): boolean {
+  if (!url) return false;
+  return /\/auth\/(login|signup|logout|refresh|forgot-password|reset-password|accept-invite)(\/|$|\?)/.test(
+    url,
+  );
+}
+
 class ApiClient {
   private axiosInstance: AxiosInstance;
   private token: string | null = null;
   private shopId: string | null = null;
   private baseURL: string;
   private onPlanExpired: (() => void) | null = null;
+  private onUnauthorized: (() => void) | null = null;
+  private unauthorizedHandling = false;
 
   constructor(baseURL: string) {
     this.baseURL = baseURL.replace(/\/$/, '');
@@ -78,6 +88,22 @@ class ApiClient {
             this.onPlanExpired();
           }
 
+          if (
+            error.response.status === 401 &&
+            this.onUnauthorized &&
+            !isPublicAuthRequest(error.config?.url) &&
+            !this.unauthorizedHandling
+          ) {
+            this.unauthorizedHandling = true;
+            try {
+              this.onUnauthorized();
+            } finally {
+              window.setTimeout(() => {
+                this.unauthorizedHandling = false;
+              }, 2_000);
+            }
+          }
+
           throw new ApiError(message, {
             status: error.response.status,
             errors: errorData?.errors,
@@ -137,6 +163,10 @@ class ApiClient {
 
   setPlanExpiredHandler(handler: (() => void) | null) {
     this.onPlanExpired = handler;
+  }
+
+  setUnauthorizedHandler(handler: (() => void) | null) {
+    this.onUnauthorized = handler;
   }
 
   async get<T>(endpoint: string, params?: Record<string, string>): Promise<T> {

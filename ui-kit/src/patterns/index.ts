@@ -41,9 +41,11 @@ export {
 export {
   AsideLayout,
   SearchDropdown,
+  SearchDropdownScroll,
   StickyBar,
   type AsideLayoutProps,
   type SearchDropdownProps,
+  type SearchDropdownScrollProps,
   type StickyBarProps,
 } from './AsideLayout';
 export { DenseDataGridWrap, denseDataGrid, type DenseDataGridWrapProps } from './DenseDataGrid';
@@ -125,3 +127,22 @@ export {
   vendorStyles,
   uploadLayoutStyles,
 } from './RegistrationChrome';
+export {
+  CalculatorPanel,
+  CALCULATOR_KEYBOARD_SCOPE,
+  type CalculatorPanelProps,
+} from './CalculatorPanel';
+export {
+  calculatorReducer,
+  createCalculatorState,
+  formatDisplay,
+  formatPending,
+  formatNumber,
+  MAX_ENTRY_DIGITS,
+  MAX_TAPE_ENTRIES,
+  DIVIDE_BY_ZERO,
+  type CalculatorState,
+  type CalculatorAction,
+  type CalculatorOp,
+  type TapeEntry,
+} from './calculatorEngine';

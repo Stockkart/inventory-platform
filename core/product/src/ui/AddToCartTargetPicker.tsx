@@ -1,5 +1,6 @@
 import type { KeyboardEvent, ReactNode } from 'react';
 import { Box, Button, Inline, Modal, Stack, Text, surfaceChrome } from '@inventory-platform/ui-kit';
+import { formatCustomerDisplayName } from '../lib/customerDisplay';
 
 function formatMoney(n: number): string {
   return new Intl.NumberFormat('en-IN', {
@@ -115,7 +116,7 @@ export function AddToCartTargetPicker({
                   onKeyDown={(event) => onRowKeyDown(event, target.purchaseId)}
                 >
                   <Stack gap="xs">
-                    <Text weight="semibold">{target.label || 'Walk-in'}</Text>
+                    <Text weight="semibold">{formatCustomerDisplayName(target.label)}</Text>
                     <Text variant="caption" color="muted">
                       {targetMeta(target)}
                     </Text>

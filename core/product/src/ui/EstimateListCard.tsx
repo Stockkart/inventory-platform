@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { EstimateSummary } from '@inventory-platform/product/types';
 import { useNotify } from '@inventory-platform/session';
+import { formatCustomerDisplayName } from '../lib/customerDisplay';
 import {
   Alert,
   Badge,
@@ -130,7 +131,7 @@ export function EstimateListCard({
   const [showPrintModal, setShowPrintModal] = useState(false);
   const isOpen = estimate.estimateState === 'OPEN';
   const estimateNo = estimate.estimateNo?.trim() || null;
-  const customer = estimate.customerName?.trim() || 'Walk-in';
+  const customer = formatCustomerDisplayName(estimate.customerName);
   const phone = estimate.customerPhone?.trim() || '—';
   const email = estimate.customerEmail?.trim() || '—';
 

@@ -34,7 +34,27 @@ export type SearchDropdownProps = {
 /** Absolutely positioned results panel under a search field. */
 export function SearchDropdown({ children, className, ...rest }: SearchDropdownProps) {
   return (
-    <Box className={cn(styles.dropdown, className)} {...rest}>
+    <Box
+      display="flex"
+      flexDirection="column"
+      overflow="hidden"
+      className={cn(styles.dropdown, className)}
+      {...rest}
+    >
+      {children}
+    </Box>
+  );
+}
+
+export type SearchDropdownScrollProps = {
+  children: ReactNode;
+  className?: string;
+} & Omit<HTMLAttributes<HTMLElement>, 'children' | 'className'>;
+
+/** Scrollable list region inside {@link SearchDropdown}; keeps footer actions visible. */
+export function SearchDropdownScroll({ children, className, ...rest }: SearchDropdownScrollProps) {
+  return (
+    <Box className={cn(styles.dropdownScroll, className)} {...rest}>
       {children}
     </Box>
   );

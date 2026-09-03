@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { formatCustomerDisplayName } from '../lib/customerDisplay';
 import { useLocation } from 'react-router';
 import { refundsApi } from '@inventory-platform/product/api';
 import type {
@@ -156,7 +157,7 @@ function saleInvoiceNo(purchase: Purchase): string | null {
 }
 
 function saleCustomerLabel(purchase: Purchase): string {
-  return purchase.customerName?.trim() || 'Walk-in customer';
+  return formatCustomerDisplayName(purchase.customerName);
 }
 
 function SalePickField({

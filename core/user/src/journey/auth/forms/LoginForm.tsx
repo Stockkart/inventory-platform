@@ -96,6 +96,7 @@ export function LoginForm() {
   };
 
   const displayError = localError || error;
+  const sessionExpired = Boolean((location.state as { sessionExpired?: boolean })?.sessionExpired);
 
   return (
     <Box className={journeyChrome.authShell}>
@@ -106,6 +107,10 @@ export function LoginForm() {
               Welcome back
             </Text>
           </Box>
+
+          {sessionExpired ? (
+            <Alert variant="info">Your session has expired. Please sign in again.</Alert>
+          ) : null}
 
           {displayError ? <Alert variant="danger">{displayError}</Alert> : null}
 
