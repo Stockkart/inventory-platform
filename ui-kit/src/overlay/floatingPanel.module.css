@@ -1,0 +1,95 @@
+.panel {
+  position: fixed;
+  z-index: var(--sk-z-floating);
+  display: flex;
+  flex-direction: column;
+  background: var(--sk-color-bg-elevated);
+  border: 1px solid var(--sk-color-border-default);
+  border-radius: var(--sk-radius-lg);
+  box-shadow: var(--sk-shadow-lg);
+  max-height: calc(100vh - 32px);
+  overflow: hidden;
+  animation: floatingPanelIn 0.16s ease-out;
+}
+
+.panel:focus-visible {
+  outline: none;
+  box-shadow: var(--sk-shadow-lg), 0 0 0 3px var(--sk-color-focus-ring);
+}
+
+.dragging {
+  animation: none;
+  user-select: none;
+  cursor: grabbing;
+  box-shadow: var(--sk-shadow-marketing);
+}
+
+/* The drag handle. `touch-action: none` is scoped to the handle so the body of
+   the panel (the tape list) still scrolls with a finger. */
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-sm);
+  padding: var(--sk-space-sm) var(--sk-space-sm) var(--sk-space-sm) var(--sk-space-md);
+  border-bottom: 1px solid var(--sk-color-border-default);
+  background: var(--sk-color-bg-header);
+  cursor: grab;
+  touch-action: none;
+  border-radius: var(--sk-radius-lg) var(--sk-radius-lg) 0 0;
+}
+
+.dragging .header {
+  cursor: grabbing;
+}
+
+.header:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--sk-color-focus-ring);
+}
+
+.grip {
+  display: flex;
+  color: var(--sk-color-text-muted);
+  flex: 0 0 auto;
+}
+
+.title {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--sk-color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-xs);
+  flex: 0 0 auto;
+}
+
+.body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+@keyframes floatingPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    animation: none;
+  }
+}
