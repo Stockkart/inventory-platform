@@ -376,8 +376,16 @@ function CartQuantityInput({
   disabled: boolean;
 }) {
   const [draft, setDraft] = useState(value.toString());
+  // Enter commits and then blurs, and the blur would commit a second time. The first commit's
+  // response resets the draft from the server in between, so that second call posted the value
+  // the server already had and overwrote the one just typed.
+  const skipNextBlurCommitRef = useRef(false);
+  // While the field has focus the draft is the user's, not the server's: a response arriving
+  // mid-typing used to overwrite what was being entered, and then blur would post that back.
+  const focusedRef = useRef(false);
 
   useEffect(() => {
+    if (focusedRef.current) return;
     setDraft(value.toString());
   }, [value]);
 
@@ -403,14 +411,25 @@ function CartQuantityInput({
       min={1}
       disabled={disabled}
       onChange={(e) => setDraft(e.target.value)}
-      onBlur={commit}
+      onFocus={(e) => {
+        focusedRef.current = true;
+        e.currentTarget.select();
+      }}
+      onBlur={() => {
+        focusedRef.current = false;
+        if (skipNextBlurCommitRef.current) {
+          skipNextBlurCommitRef.current = false;
+          return;
+        }
+        commit();
+      }}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
+          skipNextBlurCommitRef.current = true;
           commit();
           e.currentTarget.blur();
         }
       }}
-      onFocus={(e) => e.currentTarget.select()}
     />
   );
 }
@@ -427,8 +446,16 @@ function CartSellingPriceInput({
   disabled: boolean;
 }) {
   const [draft, setDraft] = useState(value.toFixed(2));
+  // Enter commits and then blurs, and the blur would commit a second time. The first commit's
+  // response resets the draft from the server in between, so that second call posted the value
+  // the server already had and overwrote the one just typed.
+  const skipNextBlurCommitRef = useRef(false);
+  // While the field has focus the draft is the user's, not the server's: a response arriving
+  // mid-typing used to overwrite what was being entered, and then blur would post that back.
+  const focusedRef = useRef(false);
 
   useEffect(() => {
+    if (focusedRef.current) return;
     setDraft(value.toFixed(2));
   }, [value]);
 
@@ -452,9 +479,20 @@ function CartSellingPriceInput({
       step={0.01}
       disabled={disabled}
       onChange={(e: ChangeEvent<HTMLInputElement>) => setDraft(e.target.value)}
-      onBlur={commit}
+      onFocus={() => {
+        focusedRef.current = true;
+      }}
+      onBlur={() => {
+        focusedRef.current = false;
+        if (skipNextBlurCommitRef.current) {
+          skipNextBlurCommitRef.current = false;
+          return;
+        }
+        commit();
+      }}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
+          skipNextBlurCommitRef.current = true;
           commit();
           e.currentTarget.blur();
         }
@@ -475,8 +513,16 @@ function CartAdditionalDiscountInput({
   disabled: boolean;
 }) {
   const [draft, setDraft] = useState(value !== null && value !== undefined ? value.toString() : '');
+  // Enter commits and then blurs, and the blur would commit a second time. The first commit's
+  // response resets the draft from the server in between, so that second call posted the value
+  // the server already had and overwrote the one just typed.
+  const skipNextBlurCommitRef = useRef(false);
+  // While the field has focus the draft is the user's, not the server's: a response arriving
+  // mid-typing used to overwrite what was being entered, and then blur would post that back.
+  const focusedRef = useRef(false);
 
   useEffect(() => {
+    if (focusedRef.current) return;
     const next = value !== null && value !== undefined ? value.toString() : '';
     setDraft(next);
   }, [value]);
@@ -508,9 +554,20 @@ function CartAdditionalDiscountInput({
       step={0.01}
       disabled={disabled}
       onChange={(e: ChangeEvent<HTMLInputElement>) => setDraft(e.target.value)}
-      onBlur={commit}
+      onFocus={() => {
+        focusedRef.current = true;
+      }}
+      onBlur={() => {
+        focusedRef.current = false;
+        if (skipNextBlurCommitRef.current) {
+          skipNextBlurCommitRef.current = false;
+          return;
+        }
+        commit();
+      }}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
+          skipNextBlurCommitRef.current = true;
           commit();
           e.currentTarget.blur();
         }
