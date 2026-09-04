@@ -1065,6 +1065,8 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   const cartLineMarginById = useMemo(() => buildCartLineMarginIndex(cartData), [cartData]);
   const [quotations, setQuotations] = useState<QuotationSummary[]>([]);
   const [activePurchaseId, setActivePurchaseId] = useState<string | null>(null);
+  const activePurchaseIdRef = useRef<string | null>(null);
+  activePurchaseIdRef.current = activePurchaseId;
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoadingCart, setIsLoadingCart] = useState(true);
@@ -1491,6 +1493,38 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     cartLoadedRef.current = true;
     void loadCart();
   }, [isEstimateMode, location.pathname]);
+
+  /**
+   * The destination picker lives on this page, so choosing a quotation is a navigation to the
+   * same route: the bootstrap above does not run again and the tab strip keeps the quotation
+   * list it loaded on mount. Adopt whatever the URL now names.
+   */
+  const handledPurchaseParamRef = useRef<string | null>(null);
+  useEffect(() => {
+    const target = estimatePurchaseIdParam?.trim() || null;
+    if (handledPurchaseParamRef.current === target) return;
+    handledPurchaseParamRef.current = target;
+    if (!target || isEstimateMode) return;
+    void (async () => {
+      if (quotationBootstrapRef.current) {
+        await quotationBootstrapRef.current;
+      }
+      if (target === activePurchaseIdRef.current) {
+        await refreshQuotationList();
+        return;
+      }
+      setIsLoadingCart(true);
+      try {
+        await refreshQuotationList();
+        await loadQuotation(target);
+      } catch (err) {
+        handledPurchaseParamRef.current = null;
+        notifyError(err instanceof Error ? err.message : 'Failed to open quotation');
+      } finally {
+        setIsLoadingCart(false);
+      }
+    })();
+  }, [estimatePurchaseIdParam, isEstimateMode]);
 
   // Auto-dismiss error message after 5 seconds
   useEffect(() => {
