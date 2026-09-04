@@ -156,7 +156,17 @@ export function KeyboardShortcutsModal({
 
   return (
     <Modal open={open} onClose={onClose} size="lg">
-      <Box {...{ 'data-keyboard-nav': KEYBOARD_NAV_SKIP }}>
+      {/* This wrapper carries the keyboard-nav opt-out, so it sits between the dialog and its
+          body and becomes the flex child in its place. Without these it is a plain block that
+          grows past the dialog's max height, the body never shrinks enough to scroll, and
+          everything below the fold is clipped. */}
+      <Box
+        display="flex"
+        flexDirection="column"
+        flex="1"
+        style={{ minHeight: 0 }}
+        {...{ 'data-keyboard-nav': KEYBOARD_NAV_SKIP }}
+      >
         <Modal.Header title="Keyboard shortcuts" onClose={onClose} />
         <Modal.Body>
           <Box mb="md">
