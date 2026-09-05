@@ -1,4 +1,5 @@
 import { MAX_TAPE_ENTRIES, type TapeEntry } from '@inventory-platform/ui-kit';
+import { apiClient } from '@inventory-platform/api-client';
 
 /**
  * Calculator panel persistence. Client-only: the tape, memory register, panel
@@ -18,14 +19,17 @@ export interface CalculatorPanelSnapshot {
 }
 
 /**
- * The shop the tape belongs to. Read from the same key the API layer sends as
+ * The shop the tape belongs to. Read from the same source the API layer sends as
  * X-Shop-Id: counter machines are shared, so one shop's working numbers must not
  * surface for the next.
  */
 function calculatorKey(): string | null {
   if (typeof localStorage === 'undefined') return null;
   try {
-    const shopId = localStorage.getItem('x_shop_id')?.trim();
+    // apiClient owns the shop id; reading its accessor rather than the raw
+    // 'x_shop_id' key keeps that ownership in one place and picks up the
+    // in-memory value before localStorage has been written.
+    const shopId = apiClient.getShopId()?.trim();
     return shopId ? `${CALC_KEY_PREFIX}:${shopId}` : null;
   } catch {
     // Browsers set to block site data throw on access rather than returning null.
