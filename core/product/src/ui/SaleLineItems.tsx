@@ -1,4 +1,5 @@
 import type { CheckoutItemResponse } from '@inventory-platform/product/types';
+import { formatPercent, schemeLabel } from '../lib/billedLineLabels';
 import {
   Box,
   Inline,
@@ -31,25 +32,6 @@ export function formatCurrency(value: number): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value);
-}
-
-/** Percent as it was entered, without the trailing zeros a fixed format would add. */
-export function formatPercent(value: number): string {
-  return `${Number(value.toFixed(2))}%`;
-}
-
-/**
- * The scheme the line was billed on: a percentage, or a pay-for/free pair, or nothing. Reads the
- * sale-side fields; the purchase-side ones are what the stock was bought on, not sold on.
- */
-export function schemeLabel(item: CheckoutItemResponse): string {
-  if (item.schemeType === 'PERCENTAGE' && item.schemePercentage) {
-    return formatPercent(item.schemePercentage);
-  }
-  if (item.schemePayFor != null && item.schemeFree != null) {
-    return `${item.schemePayFor}+${item.schemeFree}`;
-  }
-  return '—';
 }
 
 /** CGST and SGST are carried as strings on the line; the bill shows their sum. */
