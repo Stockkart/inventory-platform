@@ -246,30 +246,6 @@
   border-color: #3b82f6;
 }
 
-.removeBtn {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.75rem;
-  border: 1px solid #f87171;
-  background: #fef2f2;
-  color: #dc2626;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.removeBtn:hover:not(:disabled) {
-  background: #fee2e2;
-}
-
-[data-theme='dark'] .removeBtn {
-  background: color-mix(in srgb, #dc2626 18%, transparent);
-  border-color: #f87171;
-  color: #fca5a5;
-}
-
-[data-theme='dark'] .removeBtn:hover:not(:disabled) {
-  background: color-mix(in srgb, #dc2626 28%, transparent);
-}
-
 .cellDash {
   display: inline-block;
   min-width: 1.25rem;

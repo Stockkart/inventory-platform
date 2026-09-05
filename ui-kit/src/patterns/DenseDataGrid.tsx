@@ -20,7 +20,6 @@ export const denseDataGrid = {
   inputNarrow: styles.inputNarrow,
   inputDate: styles.inputDate,
   select: styles.select,
-  removeBtn: styles.removeBtn,
   cellDash: styles.cellDash,
   footnote: styles.footnote,
 } as const;
