@@ -2,13 +2,14 @@
 
 **Status:** Active
 
-Cafe vertical plugin: ingredient-oriented stock, menu admin, and menu sell — loaded by `verticalId` via the plugin registry.
+Cafe vertical plugin: ingredient-oriented stock, menu admin, and sell (ScanSellPage
+cafe layout with menu catalog + quotations) — loaded by `verticalId` via the plugin registry.
 
 ## Owns
 
-- Routes: menu, menu-sell, manual-stock (ingredient search), and related cafe pages
+- Routes: menu, menu-sell (→ ScanSellPage cafe layout), manual-stock (ingredient search)
 - Nav contribution **Cafe** (ingredient registration/search labels, Menu, Sell)
-- Cafe-specific page UI under `pages/`
+- Cafe-specific page UI under `pages/` (MenuAdmin, ManualStock; Sell reuses core ScanSellPage)
 
 ## Does not own
 
