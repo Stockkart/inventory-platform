@@ -14,6 +14,8 @@
  * today's work is worse than losing it.
  */
 
+import { apiClient } from '@inventory-platform/api-client';
+
 const DRAFT_KEY_PREFIX = 'sk-product-entry-draft';
 
 /**
@@ -49,13 +51,16 @@ export interface ProductEntryDraft<TProduct = unknown, TVendor = unknown> {
 }
 
 /**
- * The shop the draft belongs to. Read from the same key the API layer sends as
+ * The shop the draft belongs to. Read from the same source the API layer sends as
  * X-Shop-Id, so a draft cannot outlive a shop switch.
  */
 function draftKey(): string | null {
   if (typeof localStorage === 'undefined') return null;
   try {
-    const shopId = localStorage.getItem('x_shop_id')?.trim();
+    // apiClient owns the shop id; reading its accessor rather than the raw
+    // 'x_shop_id' key keeps that ownership in one place and picks up the
+    // in-memory value before localStorage has been written.
+    const shopId = apiClient.getShopId()?.trim();
     return shopId ? `${DRAFT_KEY_PREFIX}:${shopId}` : null;
   } catch {
     // Browsers set to block site data throw on access rather than returning null.
