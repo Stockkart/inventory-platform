@@ -156,7 +156,7 @@
 
 .unitDropdown {
   position: fixed;
-  z-index: 1400;
+  z-index: var(--sk-z-popover);
   margin: 0;
   padding: 0.25rem 0;
   list-style: none;
@@ -194,7 +194,7 @@
 
 .unitDropdownEmpty {
   position: fixed;
-  z-index: 1400;
+  z-index: var(--sk-z-popover);
   padding: 0.6rem 0.85rem;
   font-size: 0.85rem;
   color: var(--text-tertiary);

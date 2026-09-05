@@ -62,6 +62,10 @@
 
   --sk-z-dropdown: 1000;
   --sk-z-sticky: 1100;
+  /* Menus that escape a scroll container by portalling to <body>: the registration
+     grid's unit dropdown and product typeahead. They are siblings there, so they
+     must share one declared layer rather than each picking a literal. */
+  --sk-z-popover: 1400;
   --sk-z-modal: 9000;
   --sk-z-toast: 9500;
 

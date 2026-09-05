@@ -8,7 +8,6 @@ import { inventoryApi } from '../api/inventory.api';
 import { productApi } from '../api/product.api';
 import { barcodesApi } from '../api/barcodes.api';
 import { mapLastInventoryToRegistrationPatch } from '../lib/registrationPrefill';
-import { TypeaheadPortal } from '../ui/TypeaheadPortal';
 import {
   clearProductEntryDraft,
   readProductEntryDraft,
@@ -92,6 +91,7 @@ import {
 } from '../ui/PackagingFactorInput';
 import {
   Alert,
+  AnchoredPortal,
   Badge,
   Box,
   Button,
@@ -186,7 +186,7 @@ function GridProductNameCell({
         disabled={disabled}
         required
       />
-      <TypeaheadPortal anchorRef={anchorRef} open={open}>
+      <AnchoredPortal anchorRef={anchorRef} open={open}>
         <Box as="ul" className={productChrome.typeaheadMenu}>
           {suggestions.map((s) => (
             <Box as="li" key={s.id}>
@@ -194,7 +194,7 @@ function GridProductNameCell({
             </Box>
           ))}
         </Box>
-      </TypeaheadPortal>
+      </AnchoredPortal>
     </Box>
   );
 }
