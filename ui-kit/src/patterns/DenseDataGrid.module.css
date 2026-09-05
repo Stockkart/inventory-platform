@@ -21,6 +21,13 @@
   border-radius: 8px;
 }
 
+/* Table always wraps itself in an overflow-x container. Disable that here so
+   this wrap is the only scroller — otherwise the bar sits between the rows
+   and the footnote instead of at the bottom of the grid. */
+.wrap > :first-child {
+  overflow: visible;
+}
+
 [data-theme='dark'] .wrap {
   color-scheme: dark;
 }
@@ -278,6 +285,10 @@
 
 .footnote {
   margin: 0.5rem 0 0;
+  padding: 0 0.6rem 0.6rem;
   font-size: 0.8rem;
   color: var(--text-secondary);
+  position: sticky;
+  left: 0;
+  max-width: 100%;
 }

@@ -12,6 +12,10 @@ import {
   productChrome,
 } from '@inventory-platform/ui-kit';
 import { formatInventoryExpiryDate, getInventoryBatchNo } from '@inventory-platform/schema';
+import {
+  getShopAvailableBaseCount,
+  getShopAvailableDisplayCount,
+} from '../lib/inventoryAvailability';
 
 export function normalizedBillingMode(item: InventoryItem): BillingMode {
   return item.billingMode === 'BASIC' ? 'BASIC' : 'REGULAR';
@@ -97,14 +101,15 @@ export function ProductSearchCard({
 }: ProductSearchCardProps) {
   const mode = normalizedBillingMode(item);
   const price = effectivePrice(item);
-  const outOfStock = item.currentCount <= 0;
+  const availableDisplay = getShopAvailableDisplayCount(item);
+  const outOfStock = getShopAvailableBaseCount(item) <= 0;
   const priceMissing = price == null;
   // Quantity lives on the card, not on the page: each result carries its own count until it is
   // handed to a cart, and the stock on this lot is the ceiling. The stepper stays out of the way
   // until Add to Cart is pressed, so a card at a glance is still two buttons.
   const [quantity, setQuantity] = useState(1);
   const [pickingQuantity, setPickingQuantity] = useState(false);
-  const maxQuantity = Math.max(1, Math.floor(item.currentCount));
+  const maxQuantity = Math.max(1, Math.floor(availableDisplay));
   const clampQuantity = (next: number) => Math.min(Math.max(next, 1), maxQuantity);
   const addBlocked = isPageLoading || isAddingToCart || outOfStock || priceMissing;
 
@@ -202,7 +207,7 @@ export function ProductSearchCard({
 
         <Box className={cn(productChrome.searchResultStack, productChrome.searchResultStackTight)}>
           <Box as="p" className={productChrome.searchResultLine}>
-            Current: {item.currentCount}
+            Available: {availableDisplay}
           </Box>
           <Box as="p" className={productChrome.searchResultLine}>
             Received: {item.receivedCount} | Sold: {item.soldCount}
