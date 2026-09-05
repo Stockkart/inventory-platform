@@ -14,18 +14,9 @@ import {
   cn,
   productChrome,
 } from '@inventory-platform/ui-kit';
-import { SaleLineItemsTable, SaleTotals } from './SaleLineItems';
+import { SaleLineItemsTable, SaleTotals, formatCurrency } from './SaleLineItems';
 import { useEstimateDetailQuery } from '../queries/hooks';
 import { PrintInvoiceModal } from './PrintInvoiceModal';
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
 
 function formatDate(dateString?: string): string {
   if (!dateString) return '—';
