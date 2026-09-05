@@ -30,12 +30,12 @@ Theme: wrap with `ThemeProvider`, or `@import '@inventory-platform/ui-kit/theme/
 
 ## Layers
 
-| Layer       | Location                                     | Examples                                  |
-| ----------- | -------------------------------------------- | ----------------------------------------- |
-| Tokens      | `theme/`, `tokens/`                          | `--sk-*` CSS variables                    |
-| Primitives  | `forms/`, `layout/`, `feedback/`, `overlay/` | `Button`, `Box`, `Alert`, `Drawer`        |
-| Patterns    | `patterns/`                                  | `PageHeader`, `PaginationBar`, `AppShell` |
-| Chrome maps | `patterns/*Chrome*`                          | CSS module class bags for domains         |
+| Layer       | Location                                     | Examples                                                     |
+| ----------- | -------------------------------------------- | ------------------------------------------------------------ |
+| Tokens      | `theme/`, `tokens/`                          | `--sk-*` CSS variables                                       |
+| Primitives  | `forms/`, `layout/`, `feedback/`, `overlay/` | `Button`, `Box`, `Alert`, `Drawer`, `FloatingPanel`          |
+| Patterns    | `patterns/`                                  | `PageHeader`, `PaginationBar`, `AppShell`, `CalculatorPanel` |
+| Chrome maps | `patterns/*Chrome*`                          | CSS module class bags for domains                            |
 
 Domain widgets and pages stay in `core/*/ui` and `core/*/pages`.
 
@@ -69,6 +69,17 @@ Domain widgets and pages stay in `core/*/ui` and `core/*/pages`.
 ### Dashboard section
 
 `PageHeader` + `Card` / domain chrome classes — avoid nested card stacks without hierarchy.
+
+## Overlays
+
+| Export          | Use for                                                                                                    |
+| --------------- | ---------------------------------------------------------------------------------------------------------- |
+| `Modal`         | Exclusive dialogs — dims the page, closes on backdrop click and Escape                                     |
+| `Drawer`        | Side sheets; locks body scroll                                                                             |
+| `Popover`       | Anchored transient surfaces                                                                                |
+| `FloatingPanel` | Persistent, **non-modal** surfaces the page keeps working underneath — draggable, portalled, no focus trap |
+
+Reach for `FloatingPanel` only when the user needs the page while the surface is open (the calculator is the case it was built for). Anything exclusive is a `Modal`. Its `--sk-z-floating` sits below `--sk-z-modal`, so a real dialog covers it.
 
 ## Storybook
 

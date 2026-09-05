@@ -1,26 +1,20 @@
-.readout {
-  padding: var(--sk-space-sm) var(--sk-space-md);
-  background: var(--sk-color-bg-muted);
-  border-bottom: 1px solid var(--sk-color-border-default);
-  text-align: right;
-}
+/* Only what Box / Text props cannot express: the readout's numeric type, the
+   keypad grid, and the tape's scroll box. Spacing, colour, borders and
+   alignment all come from primitive props. */
 
 .pending {
+  display: block;
   min-height: 1rem;
-  font-size: 0.75rem;
-  color: var(--sk-color-text-muted);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  direction: ltr;
 }
 
 .value {
   font-size: 1.75rem;
   line-height: 1.2;
   font-weight: 600;
-  color: var(--sk-color-text-primary);
   font-variant-numeric: tabular-nums;
   overflow-x: auto;
   white-space: nowrap;
@@ -37,25 +31,17 @@
 }
 
 .flags {
-  display: flex;
-  justify-content: flex-start;
   min-height: 1rem;
   margin-top: 2px;
 }
 
 .memoryFlag {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
   color: var(--sk-color-accent);
   font-variant-numeric: tabular-nums;
 }
 
 .keypad {
-  display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: var(--sk-space-xs);
-  padding: var(--sk-space-sm);
 }
 
 .key {
@@ -64,67 +50,28 @@
   font-variant-numeric: tabular-nums;
 }
 
-.keyFunction {
+.keyCompact {
   font-size: 0.75rem;
-}
-
-.tape {
-  border-top: 1px solid var(--sk-color-border-default);
-  background: var(--sk-color-bg-surface);
-}
-
-.tapeHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sk-space-sm);
-  padding: var(--sk-space-xs) var(--sk-space-sm) var(--sk-space-xs) var(--sk-space-md);
-}
-
-.tapeTitle {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--sk-color-text-muted);
 }
 
 .tapeList {
   list-style: none;
   margin: 0;
-  padding: 0 var(--sk-space-sm) var(--sk-space-sm);
   max-height: 176px;
-  overflow-y: auto;
 }
 
 .tapeRow {
   display: block;
   width: 100%;
-  text-align: right;
-  padding: var(--sk-space-xs) var(--sk-space-sm);
   height: auto;
+  text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-.tapeExpression {
+.tapeExpression,
+.tapeResult {
   display: block;
-  font-size: 0.6875rem;
-  color: var(--sk-color-text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.tapeResult {
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--sk-color-text-primary);
-}
-
-.tapeEmpty {
-  padding: var(--sk-space-sm) var(--sk-space-md) var(--sk-space-md);
-  font-size: 0.75rem;
-  line-height: 1.5;
-  color: var(--sk-color-text-muted);
 }
