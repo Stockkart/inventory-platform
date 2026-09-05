@@ -66,6 +66,7 @@ import {
   Percent,
   Receipt,
   Tag,
+  Trash2,
   TrendingDown,
   X,
 } from 'lucide-react';
@@ -1069,6 +1070,8 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   const cartLineMarginById = useMemo(() => buildCartLineMarginIndex(cartData), [cartData]);
   const [quotations, setQuotations] = useState<QuotationSummary[]>([]);
   const [activePurchaseId, setActivePurchaseId] = useState<string | null>(null);
+  const activePurchaseIdRef = useRef<string | null>(null);
+  activePurchaseIdRef.current = activePurchaseId;
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoadingCart, setIsLoadingCart] = useState(true);
@@ -1496,6 +1499,38 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     void loadCart();
   }, [isEstimateMode, location.pathname]);
 
+  /**
+   * The destination picker lives on this page, so choosing a quotation is a navigation to the
+   * same route: the bootstrap above does not run again and the tab strip keeps the quotation
+   * list it loaded on mount. Adopt whatever the URL now names.
+   */
+  const handledPurchaseParamRef = useRef<string | null>(null);
+  useEffect(() => {
+    const target = estimatePurchaseIdParam?.trim() || null;
+    if (handledPurchaseParamRef.current === target) return;
+    handledPurchaseParamRef.current = target;
+    if (!target || isEstimateMode) return;
+    void (async () => {
+      if (quotationBootstrapRef.current) {
+        await quotationBootstrapRef.current;
+      }
+      if (target === activePurchaseIdRef.current) {
+        await refreshQuotationList();
+        return;
+      }
+      setIsLoadingCart(true);
+      try {
+        await refreshQuotationList();
+        await loadQuotation(target);
+      } catch (err) {
+        handledPurchaseParamRef.current = null;
+        notifyError(err instanceof Error ? err.message : 'Failed to open quotation');
+      } finally {
+        setIsLoadingCart(false);
+      }
+    })();
+  }, [estimatePurchaseIdParam, isEstimateMode]);
+
   // Auto-dismiss error message after 5 seconds
   useEffect(() => {
     if (error) {
@@ -1693,6 +1728,11 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       isUpdatingRef.current ||
       isSavingCustomerRef.current
     ) {
+      return;
+    }
+    // The loaded cart is what the customer fields were read from. While it still belongs to the
+    // quotation we are switching away from, a write here renames that one instead.
+    if (cartData && cartData.purchaseId !== activePurchaseId) {
       return;
     }
 
@@ -2045,6 +2085,11 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     if (isLoadingCart) return;
     const c = scanSellCustomerPrefillRef.current;
     if (!c || scanSellCustomerPrefillConsumedRef.current) return;
+    // The picker names its quotation in the URL, but the page only adopts it once that cart has
+    // loaded. Applying the customer before then wrote it to whichever quotation happened to be
+    // open, renaming that one and leaving two quotations under the same customer.
+    const targetPurchaseId = estimatePurchaseIdParam?.trim();
+    if (targetPurchaseId && targetPurchaseId !== activePurchaseId) return;
     scanSellCustomerPrefillConsumedRef.current = true;
     scanSellCustomerPrefillRef.current = null;
     applySelectedCustomer(c);
@@ -2064,7 +2109,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     // picker is a navigation to this same route, so the cart never reloads and
     // `isLoadingCart` never changes. Keyed only on that, this effect would not
     // run again and the customer left in the ref would never be applied.
-  }, [isLoadingCart, location.key]);
+  }, [isLoadingCart, location.key, activePurchaseId, estimatePurchaseIdParam]);
 
   /** Build CartItem[] from cart response, reusing existing inventoryItem when possible (no API calls). */
   const mergeCartResponseToItems = useCallback(
@@ -3527,7 +3572,6 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                 <DenseTableRow>
                                   <DenseTableHeaderCell>#</DenseTableHeaderCell>
                                   <DenseTableHeaderCell>Product</DenseTableHeaderCell>
-                                  <DenseTableHeaderCell>Company</DenseTableHeaderCell>
                                   <DenseTableHeaderCell>Qty</DenseTableHeaderCell>
                                   <DenseTableHeaderCell>Unit</DenseTableHeaderCell>
                                   <DenseTableHeaderCell>Amount</DenseTableHeaderCell>
@@ -3537,7 +3581,10 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                   <DenseTableHeaderCell>Price</DenseTableHeaderCell>
                                   <DenseTableHeaderCell>Discount</DenseTableHeaderCell>
                                   <DenseTableHeaderCell>Scheme</DenseTableHeaderCell>
-                                  <DenseTableHeaderCell>Actions</DenseTableHeaderCell>
+                                  <DenseTableHeaderCell
+                                    aria-label="Actions"
+                                    className={productChrome.rowActionsCell}
+                                  />
                                 </DenseTableRow>
                               </TableHead>
                               <TableBody>
@@ -3599,9 +3646,6 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                           >
                                             {cartItem.inventoryItem.name || '—'}
                                           </Button>
-                                        </DenseTableCell>
-                                        <DenseTableCell>
-                                          {cartItem.inventoryItem.companyName || '—'}
                                         </DenseTableCell>
                                         <DenseTableCell>
                                           <Box className={denseTableClassNames.cellInput}>
@@ -3771,24 +3815,28 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                                             </Box>
                                           </Stack>
                                         </DenseTableCell>
-                                        <DenseTableCell>
-                                          <Button
+                                        <DenseTableCell className={productChrome.rowActionsCell}>
+                                          <IconButton
                                             type="button"
-                                            variant="danger"
                                             size="sm"
+                                            className={productChrome.rowRemoveButton}
                                             onClick={() =>
                                               handleRemoveItem(cartItem.inventoryItem.id)
                                             }
                                             disabled={isUpdatingCart}
+                                            label={`Remove ${
+                                              cartItem.inventoryItem.name || 'item'
+                                            }`}
+                                            title="Remove"
                                           >
-                                            Remove
-                                          </Button>
+                                            <Icon icon={Trash2} size="sm" />
+                                          </IconButton>
                                         </DenseTableCell>
                                       </DenseTableRow>
                                       {showHistorySubrow ? (
                                         <DenseTableRow className={productChrome.historySubrowTr}>
                                           <DenseTableCell
-                                            colSpan={hidePurchaseDetailsInSell ? 10 : 11}
+                                            colSpan={hidePurchaseDetailsInSell ? 9 : 10}
                                             className={productChrome.historySubrowCell}
                                           >
                                             <CustomerProductHistoryHint

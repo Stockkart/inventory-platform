@@ -39,6 +39,7 @@ import {
 } from '../ui';
 import { useResolvedSellPath } from '@inventory-platform/routing';
 import { useAuthStore, useNotify, useShopCapabilitiesStore } from '@inventory-platform/session';
+import { schemeLabel } from '../ui/SaleLineItems';
 
 export function meta() {
   return [
@@ -84,7 +85,7 @@ export function CheckoutPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { error: notifyError } = useNotify;
+  const { error: notifyError, success: notifySuccess, info: notifyInfo } = useNotify;
   const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
   const fetchCapabilities = useShopCapabilitiesStore((s) => s.fetchCapabilities);
   const shopCapabilities = useShopCapabilitiesStore((s) =>
@@ -486,11 +487,7 @@ export function CheckoutPage() {
                               ? `${item.saleAdditionalDiscount.toFixed(2)}%`
                               : '—'}
                           </TableCell>
-                          <TableCell>
-                            {item.schemePayFor != null || item.schemeFree != null
-                              ? `${item.schemePayFor ?? '—'} + ${item.schemeFree ?? '—'}`
-                              : '—'}
-                          </TableCell>
+                          <TableCell>{schemeLabel(item)}</TableCell>
                           {billingMode === 'REGULAR' ? (
                             <TableCell>
                               {item.cgst !== null && item.cgst !== undefined
@@ -672,6 +669,8 @@ export function CheckoutPage() {
           purchaseId={checkoutData.purchaseId}
           invoiceNo={checkoutData.invoiceNo}
           onError={(msg) => msg && notifyError(msg)}
+          onSuccess={(msg) => msg && notifySuccess(msg)}
+          onInfo={(msg) => msg && notifyInfo(msg)}
         />
       )}
     </Stack>
