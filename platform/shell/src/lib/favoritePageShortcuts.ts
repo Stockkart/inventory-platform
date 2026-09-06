@@ -156,9 +156,13 @@ export function formatFavoriteShortcutDisplay(
   return [parts];
 }
 
-/** Reserved: ⌘/Ctrl + K / B without Alt (matches app chrome shortcuts). */
+/** Reserved: ⌘/Ctrl + K / B without Alt, and plain Alt+C (app chrome shortcuts). */
 export function bindingConflictsWithBuiltIns(b: FavoriteBinding): boolean {
   if (b.kind === 'fn') return false;
+  // Alt+C alone opens the calculator; without this a favourite would shadow it.
+  if (b.alt && !b.mod && !b.shift) {
+    return b.key.toLowerCase() === DASHBOARD_HOTKEY.calculatorToggleAltKey;
+  }
   if (b.alt || b.shift) return false;
   if (!b.mod) return false;
   const k = b.key.toLowerCase();

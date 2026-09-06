@@ -93,6 +93,10 @@ export {
   type PopoverProps,
   type TooltipProps,
   type DropdownMenuProps,
+  FloatingPanel,
+  clampToViewport,
+  type FloatingPanelProps,
+  type FloatingPanelPosition,
 } from './overlay';
 
 // Data display — Layer 5
@@ -240,6 +244,21 @@ export {
   ledgerLayoutClassName,
   templateChipClassName,
   navTabClassName,
+  CalculatorPanel,
+  CALCULATOR_KEYBOARD_SCOPE,
+  calculatorReducer,
+  createCalculatorState,
+  formatDisplay,
+  formatPending,
+  formatNumber,
+  MAX_ENTRY_DIGITS,
+  MAX_TAPE_ENTRIES,
+  DIVIDE_BY_ZERO,
+  type CalculatorPanelProps,
+  type CalculatorState,
+  type CalculatorAction,
+  type CalculatorOp,
+  type TapeEntry,
 } from './patterns';
 
 // Hooks

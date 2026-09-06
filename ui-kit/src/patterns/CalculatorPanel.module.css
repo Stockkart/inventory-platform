@@ -1,0 +1,77 @@
+/* Only what Box / Text props cannot express: the readout's numeric type, the
+   keypad grid, and the tape's scroll box. Spacing, colour, borders and
+   alignment all come from primitive props. */
+
+.pending {
+  display: block;
+  min-height: 1rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.value {
+  font-size: 1.75rem;
+  line-height: 1.2;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none;
+}
+
+.value::-webkit-scrollbar {
+  display: none;
+}
+
+.valueError {
+  color: var(--sk-color-danger);
+  font-size: 1.125rem;
+}
+
+.flags {
+  min-height: 1rem;
+  margin-top: 2px;
+}
+
+.memoryFlag {
+  color: var(--sk-color-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.keypad {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.key {
+  padding-left: 0;
+  padding-right: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.keyCompact {
+  font-size: 0.75rem;
+}
+
+.tapeList {
+  list-style: none;
+  margin: 0;
+  max-height: 176px;
+}
+
+.tapeRow {
+  display: block;
+  width: 100%;
+  height: auto;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.tapeExpression,
+.tapeResult {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
