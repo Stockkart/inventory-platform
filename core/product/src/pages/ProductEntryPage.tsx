@@ -761,6 +761,43 @@ function resolvePurchaseSchemeForTotals(
   };
 }
 
+/**
+ * What to tell the operator when the bill they typed does not reconcile with the lines.
+ *
+ * <p>Written for someone still holding the paper, so each case says which number to look at
+ * rather than naming the fault. The stock is already registered — this is the last cheap moment
+ * to settle a discrepancy, not a reason to undo anything.
+ */
+function headerReconciliationWarning(
+  verdict: string | null | undefined,
+  typedSubTotal: string,
+  typedTax: string,
+  computedSubTotal: number | null | undefined,
+  computedTax: number | null | undefined,
+): string | null {
+  if (!verdict || verdict === 'OK') return null;
+  const money = (v: number | null | undefined) => (v == null ? '—' : `₹${formatComputedAmount(v)}`);
+
+  switch (verdict) {
+    case 'MISSING':
+      return `Saved, but this bill has no invoice total. Its GST will be worked out from the line prices — ${money(
+        computedSubTotal,
+      )} taxable, ${money(
+        computedTax,
+      )} tax — which ignores any discount the bill gave. Add the totals from the paper when you can.`;
+    case 'MISMATCH':
+      return `Saved, but the totals do not tie out. You typed ${typedSubTotal || '—'} taxable and ${
+        typedTax || '—'
+      } tax; the lines come to ${money(computedSubTotal)} and ${money(
+        computedTax,
+      )}. Worth a look at the bill before this month is filed.`;
+    case 'RATE_CONFLICT':
+      return `Saved, but the tax you typed does not match any rate on these products. One of them is probably priced at the wrong GST slab — check the rates against the bill.`;
+    default:
+      return null;
+  }
+}
+
 /** Recompute supplier bill line subtotal + tax total from live product rows. */
 function computeVendorInvoiceTotalsFromProducts(
   productRows: ProductFormData[],
@@ -906,7 +943,7 @@ export function ProductEntryPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [generatingBarcodeId, setGeneratingBarcodeId] = useState<string | null>(null);
   const [printLabelCodes, setPrintLabelCodes] = useState<string[] | null>(null);
-  const { success: notifySuccess, error: notifyError } = useNotify;
+  const { success: notifySuccess, error: notifyError, warning: notifyWarning } = useNotify;
 
   // QR Code Upload state
   const [showQrModal, setShowQrModal] = useState(false);
@@ -2579,6 +2616,17 @@ export function ProductEntryPage() {
         const itemErrors = response?.itemErrors ?? [];
         const items = response?.items ?? [];
 
+        // The stock is in either way; this only says whether the bill's own totals stand up.
+        // Held on screen far longer than the success toast, because acting on it means finding
+        // the paper again.
+        const reconciliationWarning = headerReconciliationWarning(
+          response?.headerReconciliation,
+          vendorLineSubTotal,
+          vendorTaxTotal,
+          response?.computedLineSubTotal,
+          response?.computedTaxTotal,
+        );
+
         // If we have items or a positive createdCount, consider it successful
         if (createdCount > 0 || items.length > 0) {
           const count = createdCount || items.length;
@@ -2587,6 +2635,7 @@ export function ProductEntryPage() {
               ? 'Product registered successfully'
               : `Successfully registered ${count} products`,
           );
+          if (reconciliationWarning) notifyWarning(reconciliationWarning, 20000);
 
           // Saved is saved. The form only resets after 5s below, and a refresh inside
           // that window would otherwise restore an entry that is already in the books.
@@ -2630,6 +2679,7 @@ export function ProductEntryPage() {
               : `Successfully registered ${count} products`,
           );
           clearProductEntryDraft();
+          if (reconciliationWarning) notifyWarning(reconciliationWarning, 20000);
           setTimeout(() => {
             setProducts([]);
             handleClearVendor();

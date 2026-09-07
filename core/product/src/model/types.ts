@@ -214,6 +214,18 @@ export interface BulkCreateInventoryResponse {
   vendorPurchaseInvoiceId?: string | null;
   /** Set when stock-in leaves payable due in credit ledger. */
   creditEntryId?: string | null;
+  /**
+   * How the invoice header that was typed compares to what its lines come to.
+   *
+   * OK when they agree. MISSING when no header was given, MISMATCH when the stated subtotal and
+   * tax do not agree at the line rates, RATE_CONFLICT when the tax implies a GST slab none of the
+   * goods are priced at. Advisory only -- the stock is registered either way.
+   */
+  headerReconciliation?: 'OK' | 'MISSING' | 'MISMATCH' | 'RATE_CONFLICT' | null;
+  /** Taxable value the lines resolve to, for showing beside the typed subtotal. */
+  computedLineSubTotal?: number | null;
+  /** Tax the lines resolve to at their own rates, for showing beside the typed tax. */
+  computedTaxTotal?: number | null;
   items: Array<{
     id: string;
     lotId?: string;
