@@ -83,7 +83,7 @@ export function AmendInvoiceHeaderForm({ detail, onAmend, busy }: AmendInvoiceHe
   if (!open) {
     return (
       <Inline gap="sm" align="center">
-        <Button variant="secondary" onClick={() => setOpen(true)} disabled={busy}>
+        <Button variant="outline" onClick={() => setOpen(true)} disabled={busy}>
           Correct these totals
         </Button>
         {flagged ? (
@@ -196,13 +196,13 @@ export function AmendInvoiceHeaderForm({ detail, onAmend, busy }: AmendInvoiceHe
         />
       </Box>
 
-      {error ? <Alert variant="error">{error}</Alert> : null}
+      {error ? <Alert variant="danger">{error}</Alert> : null}
 
       <Inline gap="sm">
         <Button onClick={submit} disabled={busy}>
           Save correction
         </Button>
-        <Button variant="secondary" onClick={() => setOpen(false)} disabled={busy}>
+        <Button variant="outline" onClick={() => setOpen(false)} disabled={busy}>
           Cancel
         </Button>
       </Inline>
