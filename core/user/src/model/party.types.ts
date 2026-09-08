@@ -78,6 +78,9 @@ export interface LinkableUser {
 // Vendor types
 export type VendorBusinessType = 'WHOLESALE' | 'RETAIL' | 'MANUFACTURER' | 'DISTRIBUTOR';
 
+/** Whether a supplier's line amounts already contain GST. */
+export type PurchaseTaxTreatment = 'INCLUSIVE' | 'EXCLUSIVE';
+
 export interface Vendor {
   vendorId: string;
   name: string;
@@ -89,6 +92,16 @@ export interface Vendor {
   gstinUin?: string | null;
   /** Drug licence number, as printed on a pharmacy bill. */
   dlNo?: string | null;
+  /**
+   * How this supplier states the amounts on their bills.
+   *
+   * INCLUSIVE when they bill at MRP with GST already inside the line amount, EXCLUSIVE when they
+   * quote a rate and add the tax. Set once per supplier: it is a property of their billing
+   * software, not of any one invoice, so stock-in reads it rather than asking every time.
+   *
+   * Omitted reads as EXCLUSIVE, which is what every path assumed before the distinction existed.
+   */
+  defaultTaxTreatment?: PurchaseTaxTreatment | null;
   /** Optional. Set when vendor is linked to a registered user. */
   userId?: string | null;
   createdAt: string;
@@ -103,6 +116,16 @@ export interface CreateVendorDto {
   businessType: VendorBusinessType;
   gstinUin?: string;
   dlNo?: string;
+  /**
+   * How this supplier states the amounts on their bills.
+   *
+   * INCLUSIVE when they bill at MRP with GST already inside the line amount, EXCLUSIVE when they
+   * quote a rate and add the tax. Set once per supplier: it is a property of their billing
+   * software, not of any one invoice, so stock-in reads it rather than asking every time.
+   *
+   * Omitted reads as EXCLUSIVE, which is what every path assumed before the distinction existed.
+   */
+  defaultTaxTreatment?: PurchaseTaxTreatment | null;
   /** Optional. Links vendor to a registered user account. */
   userId?: string | null;
 }
@@ -210,4 +233,14 @@ export interface UpdateVendorDto {
   businessType?: string;
   gstinUin?: string;
   dlNo?: string;
+  /**
+   * How this supplier states the amounts on their bills.
+   *
+   * INCLUSIVE when they bill at MRP with GST already inside the line amount, EXCLUSIVE when they
+   * quote a rate and add the tax. Set once per supplier: it is a property of their billing
+   * software, not of any one invoice, so stock-in reads it rather than asking every time.
+   *
+   * Omitted reads as EXCLUSIVE, which is what every path assumed before the distinction existed.
+   */
+  defaultTaxTreatment?: PurchaseTaxTreatment | null;
 }

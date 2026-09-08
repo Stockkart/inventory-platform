@@ -2762,6 +2762,10 @@ export function ProductEntryPage() {
     setVendorSearchQuery(vendor.name);
     setShowVendorDropdown(false);
     setVendorSearchResults([]);
+    // Show what this vendor was last recorded as billing, rather than leaving the operator to
+    // recall it. Seeing it is also what makes changing it meaningful: the new answer is saved
+    // against the vendor and read on their next bill.
+    setVendorTaxTreatment(vendor.defaultTaxTreatment ?? null);
   };
 
   useLayoutEffect(() => {
@@ -2890,6 +2894,7 @@ export function ProductEntryPage() {
 
   const handleClearVendor = () => {
     setSelectedVendor(null);
+    setVendorTaxTreatment(null);
     setVendorSearchQuery('');
     setVendorSearchResults([]);
     setShowVendorDropdown(false);
@@ -3305,7 +3310,7 @@ export function ProductEntryPage() {
                         />
                       </Box>
                       <Box className={pageStyles.formGroup}>
-                        <Label htmlFor="vendorTaxTreatment">Line amounts</Label>
+                        <Label htmlFor="vendorTaxTreatment">How this vendor bills</Label>
                         <Select
                           id="vendorTaxTreatment"
                           value={vendorTaxTreatment ?? ''}
@@ -3316,7 +3321,7 @@ export function ProductEntryPage() {
                           }
                           disabled={isLoading}
                         >
-                          <option value="">As this vendor usually bills</option>
+                          <option value="">Not recorded yet</option>
                           <option value="EXCLUSIVE">GST added on top</option>
                           <option value="INCLUSIVE">GST already included (MRP billing)</option>
                         </Select>
