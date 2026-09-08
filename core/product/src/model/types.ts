@@ -379,6 +379,24 @@ export interface VendorPurchaseReturnLineSummary {
   centralGstAmount: number | null;
   stateGstAmount: number | null;
   lineNoteValue: number | null;
+
+  /**
+   * The purchase this line reverses, in the terms the supplier's bill stated it.
+   *
+   * A debit note is filed by restating the purchase, so it shows the same cost, scheme and
+   * discount as the stock-in entry. Absent on notes recorded before this was carried.
+   */
+  costPrice?: number | null;
+  priceToRetail?: number | null;
+  maximumRetailPrice?: number | null;
+  gstRatePct?: number | null;
+  /** IGST where the supplier is in another state; the two halves are then zero. */
+  integratedGstAmount?: number | null;
+  purchaseSchemeType?: string | null;
+  purchaseSchemePayFor?: number | null;
+  purchaseSchemeFree?: number | null;
+  purchaseSchemePercentage?: number | null;
+  purchaseAdditionalDiscount?: number | null;
 }
 
 /** One row from GET /vendor-purchase-returns (supplier return history). */
@@ -1086,6 +1104,24 @@ export interface RefundedItem {
   quantity: number;
   priceToRetail: number;
   itemRefundAmount: number;
+
+  /**
+   * The sale line as it was billed, restated on the note that credits it.
+   *
+   * A return is filed by stating the original supply, so a credit note shows the same MRP,
+   * discount, scheme and rate as the invoice. Absent on notes recorded before this was carried.
+   */
+  maximumRetailPrice?: number | null;
+  saleAdditionalDiscount?: number | null;
+  sgst?: string | null;
+  cgst?: string | null;
+  schemeType?: string | null;
+  schemePayFor?: number | null;
+  schemeFree?: number | null;
+  schemePercentage?: number | null;
+  taxableValue?: number | null;
+  cgstAmount?: number | null;
+  sgstAmount?: number | null;
 }
 
 export interface RefundResponse {
