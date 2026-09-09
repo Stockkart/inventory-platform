@@ -45,11 +45,6 @@ function formatAddress(addr: string | null | undefined) {
   return addr.trim();
 }
 
-function partyTypeLabel(partyType?: string | null) {
-  if (!partyType || partyType === 'CONSUMER') return 'Consumer';
-  return partyType.charAt(0) + partyType.slice(1).toLowerCase();
-}
-
 export function CustomersPage() {
   const navigate = useNavigate();
   const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
@@ -247,7 +242,6 @@ export function CustomersPage() {
             <TableHead>
               <TableRow>
                 <TableHeaderCell>Name</TableHeaderCell>
-                <TableHeaderCell>Type</TableHeaderCell>
                 <TableHeaderCell>Phone</TableHeaderCell>
                 <TableHeaderCell>Address</TableHeaderCell>
                 <TableHeaderCell>DL no.</TableHeaderCell>
@@ -256,14 +250,13 @@ export function CustomersPage() {
             </TableHead>
             <TableBody>
               {loading ? (
-                <TableLoadingRow colSpan={6} />
+                <TableLoadingRow colSpan={5} />
               ) : data.length === 0 ? (
-                <TableEmptyRow colSpan={6} message="No customers found" />
+                <TableEmptyRow colSpan={5} message="No customers found" />
               ) : (
                 data.map((customer) => (
                   <TableRow key={customer.customerId}>
                     <TableCell>{customer.name}</TableCell>
-                    <TableCell>{partyTypeLabel(customer.partyType)}</TableCell>
                     <TableCell>{customer.phone || '—'}</TableCell>
                     <TableCell>{formatAddress(customer.address)}</TableCell>
                     <TableCell>{customer.dlNo || '—'}</TableCell>

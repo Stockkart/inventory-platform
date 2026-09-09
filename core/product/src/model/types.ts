@@ -164,8 +164,16 @@ export interface BulkCreateInventoryItem {
 }
 
 /** Optional vendor invoice header on bulk stock-in. Omit for legacy behavior. */
+export type PurchaseTaxTreatment = 'INCLUSIVE' | 'EXCLUSIVE';
+
 export interface VendorPurchaseInvoicePayload {
   invoiceNo: string;
+  /**
+   * Whether the line amounts on this bill already include GST.
+   *
+   * Omitted falls back to the vendor's default, and then to EXCLUSIVE.
+   */
+  taxTreatment?: PurchaseTaxTreatment | null;
   invoiceDate?: string | null;
   lineSubTotal?: number | null;
   taxTotal?: number | null;
@@ -214,6 +222,25 @@ export interface BulkCreateInventoryResponse {
   vendorPurchaseInvoiceId?: string | null;
   /** Set when stock-in leaves payable due in credit ledger. */
   creditEntryId?: string | null;
+  /**
+   * How the invoice header that was typed compares to what its lines come to.
+   *
+   * OK when they agree. MISSING when no header was given, MISMATCH when the stated subtotal and
+   * tax do not agree at the line rates, RATE_CONFLICT when the tax implies a GST slab none of the
+   * goods are priced at. Advisory only -- the stock is registered either way.
+   */
+  headerReconciliation?: 'OK' | 'MISSING' | 'MISMATCH' | 'RATE_CONFLICT' | null;
+  /** Taxable value the lines resolve to, for showing beside the typed subtotal. */
+  computedLineSubTotal?: number | null;
+  /** Tax the lines resolve to at their own rates, for showing beside the typed tax. */
+  computedTaxTotal?: number | null;
+  /**
+   * Products whose GST rate disagrees with the rest of the catalogue under the same HSN.
+   *
+   * The one error a correct-looking bill can still hide: priced at the wrong slab, an invoice
+   * adds up perfectly against itself and is wrong all the same.
+   */
+  rateWarnings?: string[] | null;
   items: Array<{
     id: string;
     lotId?: string;
@@ -273,6 +300,35 @@ export interface VendorPurchaseInvoiceDetail {
   synthetic?: boolean | null;
   legacyLotId?: string | null;
   lines: VendorPurchaseInvoiceLineDto[];
+
+  /** How the stated header compares to what the lines come to. */
+  headerReconciliation?: 'OK' | 'MISSING' | 'MISMATCH' | 'RATE_CONFLICT' | null;
+  computedLineSubTotal?: number | null;
+  computedTaxTotal?: number | null;
+  taxTreatment?: PurchaseTaxTreatment | null;
+
+  /** Set once the header has been corrected against the paper bill. */
+  amendedAt?: string | null;
+  amendedByUserId?: string | null;
+  amendmentReason?: string | null;
+}
+
+/**
+ * Corrections to a purchase invoice header, keyed from the paper bill.
+ *
+ * Every money field is optional -- an omitted one is left as it stands, so adding totals to a
+ * bill that never had them does not mean restating everything else. The reason is required.
+ */
+export interface AmendVendorPurchaseInvoicePayload {
+  lineSubTotal?: number | null;
+  taxTotal?: number | null;
+  shippingCharge?: number | null;
+  otherCharges?: number | null;
+  overallDiscount?: number | null;
+  roundOff?: number | null;
+  invoiceTotal?: number | null;
+  taxTreatment?: PurchaseTaxTreatment | null;
+  reason: string;
 }
 
 export interface VendorPurchaseInvoiceListResponse {
@@ -323,6 +379,24 @@ export interface VendorPurchaseReturnLineSummary {
   centralGstAmount: number | null;
   stateGstAmount: number | null;
   lineNoteValue: number | null;
+
+  /**
+   * The purchase this line reverses, in the terms the supplier's bill stated it.
+   *
+   * A debit note is filed by restating the purchase, so it shows the same cost, scheme and
+   * discount as the stock-in entry. Absent on notes recorded before this was carried.
+   */
+  costPrice?: number | null;
+  priceToRetail?: number | null;
+  maximumRetailPrice?: number | null;
+  gstRatePct?: number | null;
+  /** IGST where the supplier is in another state; the two halves are then zero. */
+  integratedGstAmount?: number | null;
+  purchaseSchemeType?: string | null;
+  purchaseSchemePayFor?: number | null;
+  purchaseSchemeFree?: number | null;
+  purchaseSchemePercentage?: number | null;
+  purchaseAdditionalDiscount?: number | null;
 }
 
 /** One row from GET /vendor-purchase-returns (supplier return history). */
@@ -1030,6 +1104,24 @@ export interface RefundedItem {
   quantity: number;
   priceToRetail: number;
   itemRefundAmount: number;
+
+  /**
+   * The sale line as it was billed, restated on the note that credits it.
+   *
+   * A return is filed by stating the original supply, so a credit note shows the same MRP,
+   * discount, scheme and rate as the invoice. Absent on notes recorded before this was carried.
+   */
+  maximumRetailPrice?: number | null;
+  saleAdditionalDiscount?: number | null;
+  sgst?: string | null;
+  cgst?: string | null;
+  schemeType?: string | null;
+  schemePayFor?: number | null;
+  schemeFree?: number | null;
+  schemePercentage?: number | null;
+  taxableValue?: number | null;
+  cgstAmount?: number | null;
+  sgstAmount?: number | null;
 }
 
 export interface RefundResponse {

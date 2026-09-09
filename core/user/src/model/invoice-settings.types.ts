@@ -40,6 +40,7 @@ export interface InvoiceFieldVisibility {
   showAmountInWords: boolean;
   showAmountSaved: boolean;
   showAdditionalDiscount: boolean;
+  showPack: boolean;
   showHsn: boolean;
   showMfg: boolean;
   showExpiry: boolean;
@@ -158,6 +159,7 @@ export const INVOICE_FIELD_TOGGLES: Array<{
   { key: 'showAmountInWords', label: 'Amount in words', group: 'money' },
   { key: 'showAmountSaved', label: 'Amount saved', group: 'money' },
   { key: 'showAdditionalDiscount', label: 'Additional discount', group: 'money' },
+  { key: 'showPack', label: 'Pack', group: 'columns' },
   { key: 'showHsn', label: 'HSN', group: 'columns' },
   { key: 'showMfg', label: 'MFG / MKT', group: 'columns' },
   { key: 'showExpiry', label: 'Expiry', group: 'columns' },
