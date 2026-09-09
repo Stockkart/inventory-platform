@@ -1,4 +1,4 @@
-import type { CheckoutItemResponse } from '@inventory-platform/product/types';
+import { type BilledLineScheme, formatPercent, schemeLabel } from '../lib/billedLineLabels';
 import {
   Box,
   Inline,
@@ -33,27 +33,29 @@ export function formatCurrency(value: number): string {
   }).format(value);
 }
 
-/** Percent as it was entered, without the trailing zeros a fixed format would add. */
-export function formatPercent(value: number): string {
-  return `${Number(value.toFixed(2))}%`;
-}
-
 /**
- * The scheme the line was billed on: a percentage, or a pay-for/free pair, or nothing. Reads the
- * sale-side fields; the purchase-side ones are what the stock was bought on, not sold on.
+ * One line of a billed document, as this table reads it.
+ *
+ * Structural rather than tied to the sale response, because a credit note states the same line:
+ * a return is filed by restating the supply it reverses, so the note has to show the MRP, the
+ * discount, the scheme and the rate the goods were billed at. Sharing the table is what keeps
+ * the two documents from describing the same goods in different terms.
  */
-export function schemeLabel(item: CheckoutItemResponse): string {
-  if (item.schemeType === 'PERCENTAGE' && item.schemePercentage) {
-    return formatPercent(item.schemePercentage);
-  }
-  if (item.schemePayFor != null && item.schemeFree != null) {
-    return `${item.schemePayFor}+${item.schemeFree}`;
-  }
-  return '—';
+export interface BilledLine extends BilledLineScheme {
+  inventoryId?: string | null;
+  name?: string | null;
+  quantity?: number | null;
+  saleUnit?: string | null;
+  maximumRetailPrice?: number | null;
+  priceToRetail?: number | null;
+  saleAdditionalDiscount?: number | null;
+  cgst?: string | null;
+  sgst?: string | null;
+  totalAmount?: number | null;
 }
 
 /** CGST and SGST are carried as strings on the line; the bill shows their sum. */
-export function gstLabel(item: CheckoutItemResponse): string {
+export function gstLabel(item: BilledLine): string {
   const cgst = Number.parseFloat(item.cgst ?? '');
   const sgst = Number.parseFloat(item.sgst ?? '');
   const total = (Number.isNaN(cgst) ? 0 : cgst) + (Number.isNaN(sgst) ? 0 : sgst);
@@ -92,7 +94,7 @@ export function SummaryRow({
 }
 
 /** Every line of a billed document, with the same columns wherever it is opened. */
-export function SaleLineItemsTable({ items }: { items: CheckoutItemResponse[] }) {
+export function SaleLineItemsTable({ items }: { items: BilledLine[] }) {
   return (
     <Box overflow="auto">
       <Table className={cn(surfaceChrome.minW320, productChrome.historyItemsTable)}>

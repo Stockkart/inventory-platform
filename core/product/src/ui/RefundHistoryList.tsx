@@ -1,7 +1,8 @@
+import { SaleLineItemsTable, SaleTotals, type BilledLine } from './SaleLineItems';
 import { useState, useEffect, useCallback } from 'react';
 import { formatCustomerDisplayName } from '../lib/customerDisplay';
 import { refundsApi } from '@inventory-platform/product/api';
-import type { Refund } from '@inventory-platform/product/types';
+import type { Refund, RefundedItem } from '@inventory-platform/product/types';
 import { useNotify } from '@inventory-platform/session';
 import {
   Box,
@@ -9,20 +10,13 @@ import {
   Card,
   CardBody,
   CenteredLoader,
+  cn,
   EmptyState,
   Inline,
   PaginationBar,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeaderCell,
-  TableRow,
   Text,
-  cn,
   productChrome,
-  surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { HistoryListSummary } from './HistoryListSummary';
 import { PrintCreditNoteModal } from './PrintCreditNoteModal';
@@ -41,13 +35,6 @@ function formatCurrency(value: number): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value);
-}
-
-function moneyOrDash(n: number | null | undefined): string {
-  if (n === null || n === undefined || Number.isNaN(n)) {
-    return '—';
-  }
-  return formatCurrency(n);
 }
 
 function formatDate(dateString: string): string {
@@ -115,6 +102,40 @@ function applyRefundFilters(rows: Refund[], applied: HistoryFilters): Refund[] {
     .filter((r) =>
       matchesRegexField(applied.customer, r.customerName, r.customerPhone, r.customerEmail),
     );
+}
+
+/**
+ * A refunded line as the credit note states it: the sale line it reverses.
+ *
+ * The note carries what was billed -- MRP, discount, scheme, rate -- so it renders through the
+ * same table as the invoice. Older notes kept only a quantity and a refund total; those fields
+ * come back empty and the table shows a dash, which is honest about what was recorded.
+ */
+function creditedLine(row: RefundedItem): BilledLine {
+  return {
+    inventoryId: row.inventoryId,
+    name: row.name,
+    quantity: row.quantity,
+    maximumRetailPrice: row.maximumRetailPrice,
+    priceToRetail: row.priceToRetail,
+    saleAdditionalDiscount: row.saleAdditionalDiscount,
+    schemeType: row.schemeType,
+    schemePayFor: row.schemePayFor,
+    schemeFree: row.schemeFree,
+    schemePercentage: row.schemePercentage,
+    cgst: row.cgst,
+    sgst: row.sgst,
+    totalAmount: row.itemRefundAmount,
+  };
+}
+
+/** Sums a column across the credited lines, or undefined where no line carries it. */
+function sumOf(
+  rows: RefundedItem[] | null | undefined,
+  pick: (row: RefundedItem) => number | null | undefined,
+): number | undefined {
+  const values = (rows ?? []).map(pick).filter((v): v is number => typeof v === 'number');
+  return values.length > 0 ? values.reduce((a, b) => a + b, 0) : undefined;
 }
 
 export function RefundHistoryList({ refreshTrigger, filters }: RefundHistoryListProps) {
@@ -274,44 +295,13 @@ export function RefundHistoryList({ refreshTrigger, filters }: RefundHistoryList
                   <Text as="p" className={productChrome.historyItemsTitle}>
                     Returned items
                   </Text>
-                  <Box overflow="auto">
-                    <Table className={cn(surfaceChrome.minW320, productChrome.historyItemsTable)}>
-                      <TableHead>
-                        <TableRow>
-                          <TableHeaderCell>Product</TableHeaderCell>
-                          <TableHeaderCell className={surfaceChrome.numericCell}>
-                            Qty
-                          </TableHeaderCell>
-                          <TableHeaderCell className={surfaceChrome.numericCell}>
-                            Unit price
-                          </TableHeaderCell>
-                          <TableHeaderCell className={surfaceChrome.numericCell}>
-                            Line refund
-                          </TableHeaderCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {(refund.refundedItems ?? []).map((row, idx) => (
-                          <TableRow key={`${row.inventoryId}-${idx}`}>
-                            <TableCell>
-                              <Text weight="medium">
-                                {row.name?.trim() ? row.name : row.inventoryId ?? '—'}
-                              </Text>
-                            </TableCell>
-                            <TableCell className={surfaceChrome.numericCell}>
-                              {row.quantity}
-                            </TableCell>
-                            <TableCell className={surfaceChrome.numericCell}>
-                              {moneyOrDash(row.priceToRetail)}
-                            </TableCell>
-                            <TableCell className={surfaceChrome.numericCell}>
-                              <Text weight="semibold">{moneyOrDash(row.itemRefundAmount)}</Text>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </Box>
+                  <SaleLineItemsTable items={(refund.refundedItems ?? []).map(creditedLine)} />
+                  <SaleTotals
+                    subTotal={sumOf(refund.refundedItems, (row) => row.taxableValue)}
+                    sgstAmount={sumOf(refund.refundedItems, (row) => row.sgstAmount)}
+                    cgstAmount={sumOf(refund.refundedItems, (row) => row.cgstAmount)}
+                    grandTotal={refund.refundAmount}
+                  />
                 </Box>
               ) : (
                 <Box className={productChrome.historyItemsPanel}>

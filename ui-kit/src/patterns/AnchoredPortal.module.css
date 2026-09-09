@@ -1,0 +1,8 @@
+/**
+ * The portalled panel itself. Only the layer and the positioning scheme live here —
+ * the coordinates are measured at runtime and must stay inline.
+ */
+.panel {
+  position: fixed;
+  z-index: var(--sk-z-popover);
+}
