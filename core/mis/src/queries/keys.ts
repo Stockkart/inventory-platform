@@ -1,5 +1,6 @@
 import { createQueryKeyFactory } from '@inventory-platform/query';
 import type {
+  MisBankSummaryReportParams,
   MisMoneyReportParams,
   MisSalesReportParams,
   MisStockReportParams,
@@ -13,6 +14,8 @@ export const misKeys = {
   customerMoney: (params: MisMoneyReportParams) => [...base.all, 'customer-money', params] as const,
   sales: (params: MisSalesReportParams) => [...base.all, 'sales', params] as const,
   stock: (params: MisStockReportParams) => [...base.all, 'stock', params] as const,
+  bankSummary: (params: MisBankSummaryReportParams) =>
+    [...base.all, 'bank-summary', params] as const,
 };
 
 export const MIS_MODULE_VERSION = '0.1.0';
