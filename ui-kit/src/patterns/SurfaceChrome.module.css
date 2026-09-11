@@ -1441,7 +1441,21 @@
 }
 
 .customersNameCell {
-  width: 13%;
+  /* Widened from 13% when the Email column (17%) was dropped from both contact
+     tables and nothing reclaimed the space. A pharmacy name like "SHREE KAILASH
+     PHARMACEUTICALS GAYA" needs more than 13% of a 1120px table. Widened again
+     when Type / Business type were dropped; the address cell gave some back,
+     since it truncates with an ellipsis and the name does not. */
+  width: 24%;
+}
+
+.customersTable :global(tbody) .customersNameCell {
+  /* A single word longer than the column - "PHARMACEUTICALS" - cannot break at a
+     space, so it painted straight over the phone column. Break inside the word
+     when there is no other option, and clip as a backstop. Same failure the
+     phone cell above was already fixed for. */
+  overflow-wrap: anywhere;
+  overflow: hidden;
 }
 
 .customersPhoneCell {
@@ -1472,7 +1486,7 @@
 }
 
 .customersAddressCell {
-  width: 22%;
+  width: 16%;
 }
 
 .customersTable :global(tbody) .customersAddressCell {

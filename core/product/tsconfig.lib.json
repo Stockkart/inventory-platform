@@ -20,6 +20,7 @@
       "@inventory-platform/routing": ["../../platform/routing/src/index.ts"],
       "@inventory-platform/session": ["../../platform/session/src/index.ts"],
       "@inventory-platform/ui-kit": ["../../ui-kit/src/index.ts"],
+      "@inventory-platform/user/customers": ["../../core/user/src/api/customers.api.ts"],
       "@inventory-platform/user/vendors": ["../../core/user/src/api/vendors.api.ts"],
       "@inventory-platform/user/users": ["../../core/user/src/api/user-lookup.api.ts"],
       "@inventory-platform/schema": ["../../platform/schema/src/index.ts"],
