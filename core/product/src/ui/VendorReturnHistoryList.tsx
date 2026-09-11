@@ -1,3 +1,4 @@
+import { formatPercent, purchaseSchemeLabel } from '../lib/billedLineLabels';
 import { useCallback, useEffect, useState } from 'react';
 import { inventoryApi } from '../api/inventory.api';
 import type { VendorPurchaseReturnSummary } from '@inventory-platform/product/types';
@@ -298,6 +299,24 @@ export function VendorReturnHistoryList({ refreshTrigger, filters }: VendorRetur
                                 Qty returned
                               </TableHeaderCell>
                               <TableHeaderCell className={surfaceChrome.numericCell}>
+                                MRP
+                              </TableHeaderCell>
+                              <TableHeaderCell className={surfaceChrome.numericCell}>
+                                Cost
+                              </TableHeaderCell>
+                              <TableHeaderCell className={surfaceChrome.numericCell}>
+                                PTR
+                              </TableHeaderCell>
+                              <TableHeaderCell className={surfaceChrome.numericCell}>
+                                Discount
+                              </TableHeaderCell>
+                              <TableHeaderCell className={surfaceChrome.numericCell}>
+                                Scheme
+                              </TableHeaderCell>
+                              <TableHeaderCell className={surfaceChrome.numericCell}>
+                                GST
+                              </TableHeaderCell>
+                              <TableHeaderCell className={surfaceChrome.numericCell}>
                                 Taxable
                               </TableHeaderCell>
                               <TableHeaderCell className={surfaceChrome.numericCell}>
@@ -326,13 +345,37 @@ export function VendorReturnHistoryList({ refreshTrigger, filters }: VendorRetur
                                   {formatReturnedDisplayQty(line.displayQuantityReturned)}
                                 </TableCell>
                                 <TableCell className={surfaceChrome.numericCell}>
+                                  {moneyOrDash(line.maximumRetailPrice)}
+                                </TableCell>
+                                <TableCell className={surfaceChrome.numericCell}>
+                                  {moneyOrDash(line.costPrice)}
+                                </TableCell>
+                                <TableCell className={surfaceChrome.numericCell}>
+                                  {moneyOrDash(line.priceToRetail)}
+                                </TableCell>
+                                <TableCell className={surfaceChrome.numericCell}>
+                                  {line.purchaseAdditionalDiscount
+                                    ? formatPercent(line.purchaseAdditionalDiscount)
+                                    : '—'}
+                                </TableCell>
+                                <TableCell className={surfaceChrome.numericCell}>
+                                  {purchaseSchemeLabel(line)}
+                                </TableCell>
+                                <TableCell className={surfaceChrome.numericCell}>
+                                  {line.gstRatePct ? formatPercent(line.gstRatePct) : '—'}
+                                </TableCell>
+                                <TableCell className={surfaceChrome.numericCell}>
                                   {moneyOrDash(line.taxableValue)}
                                 </TableCell>
                                 <TableCell className={surfaceChrome.numericCell}>
-                                  {moneyOrDash(line.centralGstAmount)}
+                                  {line.integratedGstAmount
+                                    ? moneyOrDash(line.integratedGstAmount)
+                                    : moneyOrDash(line.centralGstAmount)}
                                 </TableCell>
                                 <TableCell className={surfaceChrome.numericCell}>
-                                  {moneyOrDash(line.stateGstAmount)}
+                                  {line.integratedGstAmount
+                                    ? '—'
+                                    : moneyOrDash(line.stateGstAmount)}
                                 </TableCell>
                                 <TableCell className={surfaceChrome.numericCell}>
                                   <Text weight="semibold">{moneyOrDash(line.lineNoteValue)}</Text>
