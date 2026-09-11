@@ -21,6 +21,7 @@ import {
   PARTY_NAME_LETTERS_MESSAGE,
 } from '@inventory-platform/user/customers';
 import type {
+  PurchaseTaxTreatment,
   CreateInventoryDto,
   BulkCreateInventoryDto,
   ParseInvoiceItem,
@@ -995,6 +996,8 @@ export function ProductEntryPage() {
   const [userSearchMessage, setUserSearchMessage] = useState<string | null>(null);
 
   const [vendorInvoiceNo, setVendorInvoiceNo] = useState('');
+  // Null means "as this vendor usually bills"; the server falls back to their default.
+  const [vendorTaxTreatment, setVendorTaxTreatment] = useState<PurchaseTaxTreatment | null>(null);
   const [vendorInvoiceDate, setVendorInvoiceDate] = useState('');
   const [vendorLineSubTotal, setVendorLineSubTotal] = useState('');
   const [vendorTaxTotal, setVendorTaxTotal] = useState('');
@@ -2590,6 +2593,7 @@ export function ProductEntryPage() {
       if (ro !== undefined) vendorPurchaseInvoice.roundOff = ro;
       const it = optionalNumFromString(vendorInvoiceTotal);
       if (it !== undefined) vendorPurchaseInvoice.invoiceTotal = it;
+      if (vendorTaxTreatment) vendorPurchaseInvoice.taxTreatment = vendorTaxTreatment;
       vendorPurchaseInvoice.paymentMethod = vendorPaymentMethod;
       vendorPurchaseInvoice.cashAmount = vendorPaymentSplit.cashAmount;
       vendorPurchaseInvoice.onlineAmount = vendorPaymentSplit.onlineAmount;
@@ -2640,6 +2644,7 @@ export function ProductEntryPage() {
               : `Successfully registered ${count} products`,
           );
           if (reconciliationWarning) notifyWarning(reconciliationWarning, 20000);
+          (response?.rateWarnings ?? []).forEach((warning) => notifyWarning(warning, 20000));
 
           // Saved is saved. The form only resets after 5s below, and a refresh inside
           // that window would otherwise restore an entry that is already in the books.
@@ -2657,6 +2662,7 @@ export function ProductEntryPage() {
             setProducts([]);
             handleClearVendor();
             setVendorInvoiceNo('');
+            setVendorTaxTreatment(null);
             setVendorInvoiceDate('');
             setVendorLineSubTotal('');
             setVendorTaxTotal('');
@@ -2684,6 +2690,7 @@ export function ProductEntryPage() {
           );
           clearProductEntryDraft();
           if (reconciliationWarning) notifyWarning(reconciliationWarning, 20000);
+          (response?.rateWarnings ?? []).forEach((warning) => notifyWarning(warning, 20000));
           setTimeout(() => {
             setProducts([]);
             handleClearVendor();
@@ -2755,6 +2762,10 @@ export function ProductEntryPage() {
     setVendorSearchQuery(vendor.name);
     setShowVendorDropdown(false);
     setVendorSearchResults([]);
+    // Show what this vendor was last recorded as billing, rather than leaving the operator to
+    // recall it. Seeing it is also what makes changing it meaningful: the new answer is saved
+    // against the vendor and read on their next bill.
+    setVendorTaxTreatment(vendor.defaultTaxTreatment ?? null);
   };
 
   useLayoutEffect(() => {
@@ -2883,6 +2894,7 @@ export function ProductEntryPage() {
 
   const handleClearVendor = () => {
     setSelectedVendor(null);
+    setVendorTaxTreatment(null);
     setVendorSearchQuery('');
     setVendorSearchResults([]);
     setShowVendorDropdown(false);
@@ -3296,6 +3308,23 @@ export function ProductEntryPage() {
                           onChange={(e) => setVendorInvoiceDate(e.target.value)}
                           disabled={isLoading}
                         />
+                      </Box>
+                      <Box className={pageStyles.formGroup}>
+                        <Label htmlFor="vendorTaxTreatment">How this vendor bills</Label>
+                        <Select
+                          id="vendorTaxTreatment"
+                          value={vendorTaxTreatment ?? ''}
+                          onChange={(e) =>
+                            setVendorTaxTreatment(
+                              e.target.value ? (e.target.value as PurchaseTaxTreatment) : null,
+                            )
+                          }
+                          disabled={isLoading}
+                        >
+                          <option value="">Not recorded yet</option>
+                          <option value="EXCLUSIVE">GST added on top</option>
+                          <option value="INCLUSIVE">GST already included (MRP billing)</option>
+                        </Select>
                       </Box>
                       <Box className={pageStyles.formGroup}>
                         <Label htmlFor="vendorLineSubTotal">Line subtotal</Label>
