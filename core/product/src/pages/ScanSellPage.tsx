@@ -1162,6 +1162,16 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     };
   }, [isCafeSell, activeShopId]);
 
+  const refreshSellCatalog = useCallback(() => {
+    if (!isCafeSell) return;
+    void sellCatalogApi
+      .get()
+      .then((catalog) => setSellCatalog(catalog))
+      .catch(() => {
+        /* keep last catalog on refresh failure */
+      });
+  }, [isCafeSell]);
+
   useEffect(() => {
     if (!detailModalItem) {
       setDetailModalFullItem(null);
@@ -2540,6 +2550,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       if (searchQuery.trim()) {
         void runSearch(searchQuery.trim(), searchPage, searchPageSize, false);
       }
+      refreshSellCatalog();
       setError(null);
     } catch (err) {
       // Handle API errors - might include stock validation errors
@@ -2739,6 +2750,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       });
       applyCartToState(updated, cartItems);
       await refreshQuotationList();
+      refreshSellCatalog();
     } catch (err) {
       notifyError(err instanceof Error ? err.message : 'Failed to update order');
     } finally {
@@ -3325,7 +3337,8 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
             <Badge variant="neutral">Converted — reprint only</Badge>
           ) : (
             <Text variant="caption" color="secondary">
-              Estimates do not reserve stock. Convert to invoice when the customer confirms.
+              Estimates soft-reserve stock like open quotations. Convert to invoice when the
+              customer confirms.
             </Text>
           )}
         </Inline>
