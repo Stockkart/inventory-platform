@@ -8,6 +8,7 @@ import { inventoryApi } from '../api/inventory.api';
 import { productApi } from '../api/product.api';
 import { barcodesApi } from '../api/barcodes.api';
 import { mapLastInventoryToRegistrationPatch } from '../lib/registrationPrefill';
+import { requiresExplicitPackSize } from '../lib/packagingPackSize';
 import {
   clearProductEntryDraft,
   readProductEntryDraft,
@@ -2242,11 +2243,7 @@ export function ProductEntryPage() {
             product.unitsPerPack ?? product.conversionFactor,
           );
           const normalizedUnitsPerPack = packagingFactorToUnitsPerPack(displayFactor, unitDef);
-          if (
-            unitDef?.allowsUnitsPerPack &&
-            unitDef.sellUnitRule === 'PACK_ONLY' &&
-            normalizedUnitsPerPack <= 0
-          ) {
+          if (requiresExplicitPackSize(unitDef) && normalizedUnitsPerPack <= 0) {
             notifyError(
               `Product "${product.name || 'Unnamed'}": enter pack size after 1 × (e.g. 1 × 100 ${
                 unitDef.uqc
