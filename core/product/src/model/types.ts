@@ -164,8 +164,16 @@ export interface BulkCreateInventoryItem {
 }
 
 /** Optional vendor invoice header on bulk stock-in. Omit for legacy behavior. */
+export type PurchaseTaxTreatment = 'INCLUSIVE' | 'EXCLUSIVE';
+
 export interface VendorPurchaseInvoicePayload {
   invoiceNo: string;
+  /**
+   * Whether the line amounts on this bill already include GST.
+   *
+   * Omitted falls back to the vendor's default, and then to EXCLUSIVE.
+   */
+  taxTreatment?: PurchaseTaxTreatment | null;
   invoiceDate?: string | null;
   lineSubTotal?: number | null;
   taxTotal?: number | null;
@@ -226,6 +234,13 @@ export interface BulkCreateInventoryResponse {
   computedLineSubTotal?: number | null;
   /** Tax the lines resolve to at their own rates, for showing beside the typed tax. */
   computedTaxTotal?: number | null;
+  /**
+   * Products whose GST rate disagrees with the rest of the catalogue under the same HSN.
+   *
+   * The one error a correct-looking bill can still hide: priced at the wrong slab, an invoice
+   * adds up perfectly against itself and is wrong all the same.
+   */
+  rateWarnings?: string[] | null;
   items: Array<{
     id: string;
     lotId?: string;
@@ -285,6 +300,35 @@ export interface VendorPurchaseInvoiceDetail {
   synthetic?: boolean | null;
   legacyLotId?: string | null;
   lines: VendorPurchaseInvoiceLineDto[];
+
+  /** How the stated header compares to what the lines come to. */
+  headerReconciliation?: 'OK' | 'MISSING' | 'MISMATCH' | 'RATE_CONFLICT' | null;
+  computedLineSubTotal?: number | null;
+  computedTaxTotal?: number | null;
+  taxTreatment?: PurchaseTaxTreatment | null;
+
+  /** Set once the header has been corrected against the paper bill. */
+  amendedAt?: string | null;
+  amendedByUserId?: string | null;
+  amendmentReason?: string | null;
+}
+
+/**
+ * Corrections to a purchase invoice header, keyed from the paper bill.
+ *
+ * Every money field is optional -- an omitted one is left as it stands, so adding totals to a
+ * bill that never had them does not mean restating everything else. The reason is required.
+ */
+export interface AmendVendorPurchaseInvoicePayload {
+  lineSubTotal?: number | null;
+  taxTotal?: number | null;
+  shippingCharge?: number | null;
+  otherCharges?: number | null;
+  overallDiscount?: number | null;
+  roundOff?: number | null;
+  invoiceTotal?: number | null;
+  taxTreatment?: PurchaseTaxTreatment | null;
+  reason: string;
 }
 
 export interface VendorPurchaseInvoiceListResponse {
