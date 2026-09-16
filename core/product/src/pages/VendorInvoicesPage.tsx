@@ -1,3 +1,4 @@
+import { formatDocumentDate } from '../lib/documentDate';
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import { inventoryApi } from '../api/inventory.api';
 import type {
@@ -61,21 +62,6 @@ function formatMoney(n: number | null | undefined): string {
     currency: 'INR',
     maximumFractionDigits: 2,
   }).format(n);
-}
-
-function formatDateShort(iso: string | null | undefined): string {
-  if (!iso) return '—';
-  try {
-    return new Date(iso).toLocaleDateString('en-IN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  } catch {
-    return iso;
-  }
 }
 
 function readInventoryIdentity(item: InventoryItem): string | null {
@@ -474,7 +460,7 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
                         Date
                       </Text>
                       <Text as="p" className={productChrome.salePickValue}>
-                        {formatDateShort(inv.invoiceDate)}
+                        {formatDocumentDate(inv.invoiceDate)}
                       </Text>
                     </Box>
                     <Box className={productChrome.salePickField}>
@@ -564,7 +550,7 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
                     <Text weight="semibold">{vendorDisplay(inv)}</Text>
                   </TableCell>
                   <TableCell>
-                    <Text color="secondary">{formatDateShort(inv.invoiceDate)}</Text>
+                    <Text color="secondary">{formatDocumentDate(inv.invoiceDate)}</Text>
                   </TableCell>
                   <TableCell className={surfaceChrome.numericCell}>
                     <Text color="secondary">{inv.lineCount}</Text>
