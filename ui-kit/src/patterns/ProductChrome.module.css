@@ -1184,6 +1184,12 @@
   font-weight: 600 !important;
 }
 
+.menuAdminItemDepartment {
+  flex: 1;
+  min-width: 0;
+  text-transform: uppercase;
+}
+
 .menuAdminItemMeta {
   display: flex;
   align-items: center;

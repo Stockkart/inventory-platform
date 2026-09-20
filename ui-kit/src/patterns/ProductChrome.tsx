@@ -152,6 +152,7 @@ export const productChrome = {
   menuAdminItemPriceRow: styles.menuAdminItemPriceRow,
   menuAdminItemPricePrefix: styles.menuAdminItemPricePrefix,
   menuAdminItemPrice: styles.menuAdminItemPrice,
+  menuAdminItemDepartment: styles.menuAdminItemDepartment,
   menuAdminItemMeta: styles.menuAdminItemMeta,
   menuAdminItemMetaLabel: styles.menuAdminItemMetaLabel,
   menuAdminDeleteSection: styles.menuAdminDeleteSection,

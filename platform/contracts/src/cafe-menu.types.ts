@@ -9,6 +9,8 @@ export interface MenuItem {
   available?: boolean;
   cgst?: string | null;
   sgst?: string | null;
+  /** Kitchen station that makes this item. Blank means the default kitchen. */
+  department?: string | null;
 }
 
 export interface MenuSection {

@@ -65,6 +65,9 @@ function normalizeSectionsForCompare(sections: MenuSection[]): string {
           sellingPrice: Number(i.sellingPrice) || 0,
           sellMode: 'menu' as const,
           available: i.available !== false,
+          // Must be compared too: without it, editing only the station leaves the menu looking
+          // unchanged and Save stays disabled.
+          department: (i.department ?? '').trim().toUpperCase(),
         })),
     })),
   );
@@ -512,6 +515,24 @@ export function MenuAdminPage() {
                                 placeholder="0.00"
                                 className={productChrome.menuAdminItemPrice}
                                 aria-label="Price"
+                              />
+                            </Box>
+
+                            <Box className={productChrome.menuAdminItemPriceRow}>
+                              <Text as="span" className={productChrome.menuAdminItemPricePrefix}>
+                                Station
+                              </Text>
+                              <Input
+                                value={item.department ?? ''}
+                                onChange={(e) =>
+                                  updateItem(section.id, item.id, {
+                                    department: e.target.value,
+                                  })
+                                }
+                                placeholder="KITCHEN"
+                                className={productChrome.menuAdminItemDepartment}
+                                aria-label="Kitchen station"
+                                title="Which counter makes this item. Blank routes it to the kitchen."
                               />
                             </Box>
 
