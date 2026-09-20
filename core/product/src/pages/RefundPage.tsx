@@ -100,40 +100,79 @@ function refundLineKey(line: CheckoutItemResponse, index: number): string {
   return lineSellableRef(line) ?? `line-${index}`;
 }
 
+/** Mirrors CheckoutUtils.getEffectiveSellingPricePerUnit: a percentage scheme comes off the SP. */
+function effectiveSellingPricePerUnit(line: CheckoutItemResponse): number {
+  const listed = Number(line.priceToRetail);
+  if (!Number.isFinite(listed) || listed < 0) return Number.NaN;
+  const pct = line.schemePercentage;
+  if (line.schemeType === 'PERCENTAGE' && pct != null && pct > 0) {
+    return listed * (1 - pct / 100);
+  }
+  return listed;
+}
+
 /**
- * Mirrors RefundService: credit = priceToRetail × return qty (per selling unit on the bill).
- * Optional tooltip lines assume tax-inclusive SP for a notional GST split (display only).
+ * Mirrors CheckoutUtils.isTaxApplicableForItem: GST rides on top of the taxable value only
+ * when the shop bills REGULAR and the line is not sold at MRP. MRP is tax-inclusive, so a
+ * line sold at MRP carries no GST on top of it.
+ */
+function isTaxApplicableForSaleLine(line: CheckoutItemResponse): boolean {
+  if (line.billingMode === 'BASIC') return false;
+  const ptr = Number(line.priceToRetail);
+  const mrp = Number(line.maximumRetailPrice);
+  if (!Number.isFinite(ptr) || !Number.isFinite(mrp)) return true;
+  return ptr !== mrp;
+}
+
+/**
+ * Mirrors SalesReturnValuation.lineAmounts — the figure the backend will actually credit.
+ *
+ * Percentage scheme and additional discount both come off before tax, exactly as they did
+ * on the sale. Reading `priceToRetail × qty` straight off the line overstates the credit by
+ * the whole discount, which on a 30% scheme is a third of the bill.
  */
 function estimateCustomerRefundLine(
   returnQty: number,
   line: CheckoutItemResponse,
-): { total: number; title: string } | null {
+): { total: number; taxable: number; cgst: number; sgst: number; title: string } | null {
   if (returnQty <= 0) return null;
-  const unit = Number(line.priceToRetail);
+  const unit = effectiveSellingPricePerUnit(line);
   if (!Number.isFinite(unit) || unit < 0) return null;
-  const total = roundMoney2(unit * returnQty);
 
-  const parts = [
-    `Refund ${formatCurrency(total)} (${formatCurrency(
-      unit,
-    )} × ${returnQty}); matches processed return.`,
-  ];
+  let taxable = roundMoney2(unit * returnQty);
+  const additional = line.saleAdditionalDiscount;
+  if (additional != null && additional > 0) {
+    taxable = roundMoney2(taxable * (1 - additional / 100));
+  }
 
   const cg = parseGstPct(line.cgst);
   const sg = parseGstPct(line.sgst);
-  const sumPct = cg + sg;
-  if (sumPct > 0) {
-    const taxable = roundMoney2(total / (1 + sumPct / 100));
-    const cgst = roundMoney2((taxable * cg) / 100);
-    const sgst = roundMoney2((taxable * sg) / 100);
+  const taxed = isTaxApplicableForSaleLine(line);
+  const cgst = taxed ? roundMoney2((taxable * cg) / 100) : 0;
+  const sgst = taxed ? roundMoney2((taxable * sg) / 100) : 0;
+  const total = roundMoney2(taxable + cgst + sgst);
+
+  const parts = [`Credit ${formatCurrency(total)} — ${formatCurrency(unit)} × ${returnQty}`];
+  const pct = line.schemePercentage;
+  if (line.schemeType === 'PERCENTAGE' && pct != null && pct > 0) {
+    parts.push(`after ${pct}% scheme on ${formatCurrency(Number(line.priceToRetail))}`);
+  }
+  if (additional != null && additional > 0) {
+    parts.push(`less ${additional}% discount`);
+  }
+  if (cgst > 0 || sgst > 0) {
     parts.push(
-      `If SP includes GST — taxable ${formatCurrency(taxable)}, CGST ${formatCurrency(
-        cgst,
-      )}, SGST ${formatCurrency(sgst)}`,
+      `taxable ${formatCurrency(taxable)}, CGST ${formatCurrency(cgst)}, SGST ${formatCurrency(
+        sgst,
+      )}`,
     );
+  } else if (taxed) {
+    parts.push(`taxable ${formatCurrency(taxable)}, no GST on this line`);
+  } else {
+    parts.push(`${formatCurrency(taxable)} — MRP is tax-inclusive, no GST added`);
   }
 
-  return { total, title: parts.join(' · ') };
+  return { total, taxable, cgst, sgst, title: parts.join(' · ') };
 }
 
 function formatDate(dateString: string): string {
@@ -451,9 +490,11 @@ export function RefundPage() {
 
   const estimatedRefund = useMemo(() => {
     if (!selectedPurchase) {
-      return { grandTotal: 0, linesWithQty: 0 };
+      return { grandTotal: 0, taxable: 0, cgst: 0, sgst: 0, roundOff: 0, linesWithQty: 0 };
     }
-    let grand = 0;
+    let taxable = 0;
+    let cgst = 0;
+    let sgst = 0;
     let linesWithQty = 0;
     for (let i = 0; i < selectedPurchase.items.length; i++) {
       const it = selectedPurchase.items[i];
@@ -462,12 +503,27 @@ export function RefundPage() {
       if (q <= 0) continue;
       const est = estimateCustomerRefundLine(q, it);
       if (est && est.total > 0) {
-        grand += est.total;
+        taxable += est.taxable;
+        cgst += est.cgst;
+        sgst += est.sgst;
         linesWithQty += 1;
       }
     }
+    if (linesWithQty === 0) {
+      return { grandTotal: 0, taxable: 0, cgst: 0, sgst: 0, roundOff: 0, linesWithQty: 0 };
+    }
+    // SalesReturnValuation.aggregate: heads rounded to paise, then the total to a whole rupee.
+    taxable = roundMoney2(taxable);
+    cgst = roundMoney2(cgst);
+    sgst = roundMoney2(sgst);
+    const preRound = roundMoney2(taxable + cgst + sgst);
+    const grandTotal = Math.round(preRound);
     return {
-      grandTotal: linesWithQty > 0 ? roundMoney2(grand) : 0,
+      grandTotal,
+      taxable,
+      cgst,
+      sgst,
+      roundOff: roundMoney2(grandTotal - preRound),
       linesWithQty,
     };
   }, [selectedPurchase, refundItems]);
@@ -832,9 +888,9 @@ export function RefundPage() {
                                         color="secondary"
                                         className={productChrome.blockHint}
                                       >
-                                        Selling price × return qty per line. Hover Est. credit for a
-                                        notional GST split when rates apply. Final amount is set
-                                        when you process the return.
+                                        Priced as the sale was — scheme and discount come off before
+                                        GST, and the total is rounded to a whole rupee. Hover Est.
+                                        credit for the split on any line.
                                       </Text>
                                     </Stack>
                                   ) : null}
