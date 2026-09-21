@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { cafeOrderApi } from '../api/cafe-order.api';
-import { keyAfter, toPunchBody, type Basket, type PunchOutcome } from '../lib/punchBasket';
+import { keyAfter, toPunchBody, type Basket } from '../lib/punchBasket';
 import type { CafeKot, OpenOrderBody } from '../types/order';
 import { cafeOrderKeys } from './keys';
+import { outcomeOf } from './outcome';
 
 export function useOpenOrdersQuery() {
   return useQuery({
@@ -30,14 +31,6 @@ export function useOpenOrderMutation() {
   });
 }
 
-/** Classifies a failure so the caller knows whether to keep the idempotency key. */
-export function outcomeOf(error: unknown): PunchOutcome {
-  const status = (error as { response?: { status?: number } })?.response?.status;
-  if (typeof status !== 'number') return 'NETWORK_ERROR';
-  if (status >= 500) return 'SERVER_ERROR';
-  return 'REJECTED';
-}
-
 export function usePunchMutation(orderId: string) {
   const client = useQueryClient();
   return useMutation<CafeKot[], unknown, Basket>({
@@ -49,4 +42,4 @@ export function usePunchMutation(orderId: string) {
   });
 }
 
-export { keyAfter };
+export { keyAfter, outcomeOf };
