@@ -28,7 +28,8 @@
       "@inventory-platform/ui-kit": ["../../ui-kit/src/index.ts"],
       "@inventory-platform/schema": ["../../platform/schema/src/index.ts"],
       "@inventory-platform/product": ["../../core/product/src/index.ts"],
-      "@inventory-platform/user/users": ["../../core/user/src/api/user-lookup.api.ts"]
+      "@inventory-platform/user/users": ["../../core/user/src/api/user-lookup.api.ts"],
+      "@inventory-platform/query": ["../../platform/query/src/index.ts"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
@@ -57,6 +58,9 @@
     },
     {
       "path": "../../core/user/tsconfig.lib.json"
+    },
+    {
+      "path": "../../platform/query/tsconfig.lib.json"
     }
   ]
 }

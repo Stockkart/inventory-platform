@@ -40,6 +40,7 @@
   },
   "dependencies": {
     "@inventory-platform/api-client": "workspace:*",
+    "@inventory-platform/query": "workspace:*",
     "@inventory-platform/user": "workspace:*",
     "@inventory-platform/product": "workspace:*",
     "@inventory-platform/routing": "workspace:*",
