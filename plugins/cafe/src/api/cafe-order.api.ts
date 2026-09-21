@@ -6,6 +6,27 @@ import type { CafeOrder, CafeKot, OpenOrderBody, PunchBody } from '../types/orde
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
+/**
+ * Same raw-axios pattern as `punch` above (and
+ * core/product/src/api/credit-note.api.ts): replicates the
+ * Authorization/X-Shop-Id headers apiClient's interceptor would otherwise
+ * add, with a blob response type for a PDF document.
+ */
+async function fetchPdfBlob(path: string): Promise<Blob> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+  const shopId = typeof window !== 'undefined' ? localStorage.getItem('x_shop_id') : null;
+
+  const response = await axios.get(`${API_BASE_URL}${path}`, {
+    responseType: 'blob',
+    headers: {
+      Authorization: token ? `Bearer ${token}` : '',
+      ...(shopId ? { 'X-Shop-Id': shopId } : {}),
+    },
+  });
+
+  return response.data;
+}
+
 export const cafeOrderApi = {
   listOpen: async (): Promise<CafeOrder[]> => {
     const res = await apiClient.get<ApiResponse<CafeOrder[]>>(CAFE_ORDER_ENDPOINTS.ORDERS);
@@ -49,4 +70,7 @@ export const cafeOrderApi = {
 
     return response.data.data;
   },
+
+  getKotPdf: async (kotId: string): Promise<Blob> =>
+    fetchPdfBlob(CAFE_ORDER_ENDPOINTS.KOT_DOCUMENT(kotId)),
 };
