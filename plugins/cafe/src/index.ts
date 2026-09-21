@@ -15,6 +15,12 @@ const cafePlugin: VerticalPlugin = {
         })),
     },
   ],
+  sellActions: [
+    {
+      id: 'cafe-print-kot',
+      load: () => import('./ui/CafeKotBar').then((m) => ({ default: m.CafeKotBar })),
+    },
+  ],
 };
 
 export default cafePlugin;
