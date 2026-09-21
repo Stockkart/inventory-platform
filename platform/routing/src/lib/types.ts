@@ -1,4 +1,3 @@
-import type { ComponentType } from 'react';
 import type { SellSurface } from '@inventory-platform/access';
 import type { NavIconName } from './nav-icon-name';
 
@@ -37,34 +36,11 @@ export interface VerticalPluginSellSurface {
   load: () => Promise<{ default: unknown }>;
 }
 
-/** Props the Sell screen hands to every plugin-contributed sell action. */
-export interface SellActionSlotProps {
-  /** Server-side cart the action operates on; `null` before one exists. */
-  purchaseId: string | null;
-  /** True while the cart is loading or saving, so actions can hold off. */
-  disabled?: boolean;
-}
-
-export interface VerticalPluginSellAction {
-  /** Stable key for the rendered slot (e.g. `cafe-print-kot`). */
-  id: string;
-  load: () => Promise<{ default: ComponentType<SellActionSlotProps> }>;
-}
-
 export interface VerticalPlugin {
   id: string;
   loadRoutes?: () => Promise<{ default: RouteModule | RouteModule[] }>;
   navContributions?: NavContribution[];
   sellSurfaces?: VerticalPluginSellSurface[];
-  /**
-   * Extra actions mounted on the Sell screen for this vertical.
-   *
-   * Must be referentially stable: `VerticalSellActions` memoises `lazy(action.load)` on
-   * this array's identity, so a vertical that builds it inline on every render hands the
-   * slot a new lazy component each time and the action remounts in a loop. Define it once
-   * at module scope.
-   */
-  sellActions?: VerticalPluginSellAction[];
 }
 
 export type VerticalPluginLoader = () => Promise<VerticalPlugin>;

@@ -169,7 +169,6 @@ import { ScanSellMenuCartLine } from '../ui/ScanSellMenuCartLine';
 import { ScanSellCafeStockLine } from '../ui/ScanSellCafeStockLine';
 import { useNotify, useAuthStore, useVerticalSchemaStore } from '@inventory-platform/session';
 import {
-  VerticalSellActions,
   isScanSellHidePurchaseKey,
   shouldSkipScanSellHidePurchaseKey,
 } from '@inventory-platform/routing';
@@ -3429,16 +3428,6 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                         </Stack>
                       </CardBody>
                     </Card>
-
-                    {/* Vertical-contributed sell actions (cafe: Print KOT). Sits with the
-                        order it punches rather than in the checkout bar, which has no room
-                        for the ticket strip. Estimates are not orders, so they get none. */}
-                    {!isEstimateMode ? (
-                      <VerticalSellActions
-                        purchaseId={activePurchaseId ?? cartData?.purchaseId ?? null}
-                        disabled={isUpdatingCart || isLoadingCart}
-                      />
-                    ) : null}
 
                     {/* Same figures as the Margins block below, in the cafe layout —
                         hidden by `~` too, or the numbers would just leak here instead. */}

@@ -8,10 +8,7 @@ export type {
   VerticalPlugin,
   VerticalPluginLoader,
   VerticalPluginSellSurface,
-  VerticalPluginSellAction,
-  SellActionSlotProps,
 } from './lib/types';
-export { VerticalSellActions } from './lib/VerticalSellActions';
 export {
   DEFAULT_SKU_SCAN_SELL_PATH,
   DEFAULT_MENU_LIST_SELL_PATH,

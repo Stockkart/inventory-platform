@@ -720,10 +720,10 @@ export interface CheckoutItemResponse {
   billingMode?: BillingMode;
   /**
    * Cafe only: how much of {@link baseQuantity} the kitchen has already been sent.
-   * A line is fully sent when `baseQuantity === kotPunchedQuantity`; absent on
+   * A line is fully sent when `baseQuantity === kotSentQuantity`; absent on
    * verticals that never punch.
    */
-  kotPunchedQuantity?: number | null;
+  kotSentQuantity?: number | null;
   /** Cafe only: kitchen station frozen onto the line at add time (e.g. `KITCHEN`, `BAR`). */
   department?: string | null;
   /** Cafe only: preparation instruction printed on the kitchen ticket, e.g. `no onion`. */

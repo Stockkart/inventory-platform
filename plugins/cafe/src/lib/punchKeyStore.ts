@@ -4,8 +4,8 @@ const PREFIX = 'cafe.kot.punchKey:';
  * Where the Idempotency-Key of an unsettled punch is parked.
  *
  * The key only has to survive one thing: the component that holds it going away while the
- * request it belongs to is still unaccounted for. `VerticalSellActions` remounts the cafe
- * action on every `purchaseId` change, and a reload takes it too — so a key kept only in a
+ * request it belongs to is still unaccounted for. The mounting UI can remount on a
+ * `purchaseId` change, and a reload takes it too — so a key kept only in a
  * ref is lost exactly when the network dropped mid-punch. The server, which recorded that
  * punch and created the tickets, then answers the next press with zero deltas: "Nothing new
  * to send", while the tickets exist and no paper ever printed. Replaying the same key

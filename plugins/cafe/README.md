@@ -10,8 +10,9 @@ cafe layout with menu catalog + quotations) — loaded by `verticalId` via the p
 - Routes: menu, menu-sell (→ ScanSellPage cafe layout), manual-stock (ingredient search)
 - Nav contribution **Cafe** (ingredient registration/search labels, Menu, Sell)
 - Cafe-specific page UI under `pages/` (MenuAdmin, ManualStock; Sell reuses core ScanSellPage)
-- Kitchen tickets (KOT): punch API, print queue, and the Print KOT action mounted on the
-  Sell screen through `VerticalPlugin.sellActions` (`ui/CafeKotBar.tsx`)
+- Kitchen tickets (KOT): punch API, print queue (with dedupe), and the ticket strip UI
+  (`ui/KotTicketStrip.tsx`) — the Sell screen no longer issues to the kitchen; that will
+  move to its own tabbed screen
 
 ## Does not own
 
@@ -26,9 +27,7 @@ cafe layout with menu catalog + quotations) — loaded by `verticalId` via the p
 
 - Ensure the dashboard layout loads the vertical plugin so cafe nav icons/labels resolve.
 - Prefer `productChrome` for stock/search cards consistent with medical Scan Sell.
-- `core/product` is `type:core` and may not import this package. Sell-screen UI owned by
-  cafe is contributed through `VerticalPlugin.sellActions` and rendered by
-  `VerticalSellActions` from `@inventory-platform/routing`.
+- `core/product` is `type:core` and may not import this package.
 
 ## Related
 
