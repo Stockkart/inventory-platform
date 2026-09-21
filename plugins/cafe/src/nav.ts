@@ -15,6 +15,7 @@ export const cafeNav: NavContribution = {
       label: 'Ingredient Search',
       icon: 'search',
     },
+    { path: '/dashboard/cafe-orders', label: 'Orders', icon: 'clipboard-list' },
     { path: '/dashboard/menu', label: 'Menu', icon: 'clipboard-list' },
     { path: '/dashboard/menu-sell', label: 'Sell', icon: 'shopping-cart' },
   ],

@@ -22,3 +22,4 @@ export { cafeNav } from './nav';
 export { MenuSellPage } from './pages/MenuSellPage';
 export { MenuAdminPage } from './pages/MenuAdminPage';
 export { ManualStockPage } from './pages/ManualStockPage';
+export { CafeOrdersPage } from './pages/CafeOrdersPage';
