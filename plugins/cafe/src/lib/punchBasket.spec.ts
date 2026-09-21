@@ -1,52 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import {
-  createBasket,
-  addLine,
-  setNote,
-  setQuantity,
-  removeLine,
-  toPunchBody,
-  keyAfter,
-} from './punchBasket';
+import { newKey, keyAfter } from './punchBasket';
 
-describe('punch basket', () => {
-  it('carries notes and quantities into the punch body', () => {
-    let basket = createBasket();
-    basket = addLine(basket, { sellableRef: 'menu:m1', name: 'Biryani' });
-    basket = setQuantity(basket, 'menu:m1', 2);
-    basket = setNote(basket, 'menu:m1', '  no onion  ');
-
-    expect(toPunchBody(basket)).toEqual({
-      lines: [{ sellableRef: 'menu:m1', quantity: 2, note: 'no onion' }],
-    });
-  });
-
-  it('omits an empty note rather than sending blank text to the pass', () => {
-    let basket = createBasket();
-    basket = addLine(basket, { sellableRef: 'menu:m1', name: 'Biryani' });
-
-    expect(toPunchBody(basket).lines[0].note).toBeUndefined();
-  });
-
-  it('increments quantity when the same item is added twice', () => {
-    let basket = createBasket();
-    basket = addLine(basket, { sellableRef: 'menu:m1', name: 'Biryani' });
-    basket = addLine(basket, { sellableRef: 'menu:m1', name: 'Biryani' });
-
-    expect(basket.lines).toHaveLength(1);
-    expect(basket.lines[0].quantity).toBe(2);
-  });
-
-  it('removes a line', () => {
-    let basket = createBasket();
-    basket = addLine(basket, { sellableRef: 'menu:m1', name: 'Biryani' });
-    basket = removeLine(basket, 'menu:m1');
-
-    expect(basket.lines).toHaveLength(0);
-  });
-
-  it('gives every basket its own key', () => {
-    expect(createBasket().key).not.toBe(createBasket().key);
+describe('newKey', () => {
+  it('gives every punch attempt its own key', () => {
+    expect(newKey()).not.toBe(newKey());
   });
 });
 

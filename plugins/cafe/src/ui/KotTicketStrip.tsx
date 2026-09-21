@@ -1,6 +1,6 @@
 import { Box, Button, Inline, Stack, Text, surfaceChrome } from '@inventory-platform/ui-kit';
 import type { PrintState } from '../lib/printQueue';
-import type { CafeKot } from '../types/order';
+import type { CafeKot } from '../types/kot';
 
 export interface KotTicketStripProps {
   tickets: Array<{ kot: CafeKot; state: PrintState }>;

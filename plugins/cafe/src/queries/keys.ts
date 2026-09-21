@@ -1,9 +1,7 @@
 import { createQueryKeyFactory } from '@inventory-platform/query';
 
-const base = createQueryKeyFactory('cafe-order');
+const base = createQueryKeyFactory('cafe-kot');
 
-export const cafeOrderKeys = {
+export const cafeKotKeys = {
   ...base,
-  openOrders: () => [...base.all, 'open'] as const,
-  order: (orderId: string) => [...base.all, 'order', orderId] as const,
 };

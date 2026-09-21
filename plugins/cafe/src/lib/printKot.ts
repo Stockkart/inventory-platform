@@ -1,4 +1,4 @@
-import { cafeOrderApi } from '../api/cafe-order.api';
+import { cafeKotApi } from '../api/cafe-kot.api';
 
 export type PrintHandoff = (blob: Blob, fileName: string) => void;
 
@@ -36,6 +36,6 @@ export async function printKot(
   kotId: string,
   handoff: PrintHandoff = openForPrinting,
 ): Promise<void> {
-  const blob = await cafeOrderApi.getKotPdf(kotId);
+  const blob = await cafeKotApi.getKotPdf(kotId);
   handoff(blob, `kot_${kotId}.pdf`);
 }

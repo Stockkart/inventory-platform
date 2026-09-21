@@ -1,2 +1,2 @@
-export { cafeOrderApi } from './cafe-order.api';
-export { CAFE_ORDER_ENDPOINTS } from './endpoints';
+export { cafeKotApi } from './cafe-kot.api';
+export { CAFE_KOT_ENDPOINTS } from './endpoints';

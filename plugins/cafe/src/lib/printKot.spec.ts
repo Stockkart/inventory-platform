@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const getKotPdf = vi.fn();
 const openForPrinting = vi.fn();
 
-vi.mock('../api/cafe-order.api', () => ({ cafeOrderApi: { getKotPdf } }));
+vi.mock('../api/cafe-kot.api', () => ({ cafeKotApi: { getKotPdf } }));
 
 describe('printKot', () => {
   beforeEach(() => {
