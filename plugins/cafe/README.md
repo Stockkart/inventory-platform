@@ -43,6 +43,25 @@ send"). A no-op dressed as an error makes a cashier press again.
   the strip and the print queue: only `/reprint` stamps a slip REPRINT, so a second unstamped
   copy of the same KOT number is exactly what a cook reads as a second order.
 
+### Menu portions
+
+An item is priced **either** by one `sellingPrice` **or** by a list of portions (`rates`), never
+both. `pages/MenuAdminPage.tsx` edits portions as rows of **name + price**, the same shape the
+pricing screen uses for custom rates (`core/pricing/src/pages/PriceEditPage.tsx`): Add portion,
+type a name and a price, × to remove. Once an item has a named portion the single price field
+steps aside, and its "Add to Sell" button says _Pick portion on Sell_ — that button cannot ask
+which portion, and the Sell screen's picker can.
+
+- **The id is frozen, the name is not.** A portion's id is a slug of the name it was first given
+  (`Half Cup` → `half-cup`, de-duplicated within the item) and is never regenerated. It is what
+  rides in `menu:<itemId>@<rateId>`, so renaming `Half` to `Half plate` changes only what the
+  shop reads; every cart line and kitchen ticket still points at the same portion.
+- **The dirty check includes `rates`.** `normalizeSectionsForCompare` must compare the portions
+  or Save stays grey over an edit the cashier can see on screen — exactly the bug that shipped
+  when `department` was added. `pages/MenuAdminPage.spec.tsx` asserts it against the real
+  button's real disabled state, and the assertion was confirmed to fail when `rates` is dropped
+  from the comparison.
+
 ### Known gap — a withdrawal is not told to the kitchen
 
 Reducing or removing a menu line on the Sell screen that the kitchen already has creates a

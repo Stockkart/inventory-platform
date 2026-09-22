@@ -99,7 +99,7 @@ import type {
 } from '@inventory-platform/product/types';
 import type { PricingResponse } from '@inventory-platform/contracts';
 import type { CustomerResponse } from '@inventory-platform/user/types';
-import type { MenuItem, SellCatalog } from '@inventory-platform/product/types';
+import type { MenuItem, MenuRate, SellCatalog } from '@inventory-platform/product/types';
 import {
   inventoryLotIdFromSellableRef,
   inventorySellableRef,
@@ -2750,13 +2750,21 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     }
   };
 
-  const handleAddMenuItem = async (item: MenuItem) => {
+  const handleAddMenuItem = async (item: MenuItem, rate?: MenuRate) => {
     if (item.available === false) {
       notifyError('This item is unavailable');
       return;
     }
+    // A portioned item has no single price, so adding one without a portion would bill an
+    // amount nobody chose. The catalog's picker supplies the portion; nothing else may.
+    const hasPortions = (item.rates ?? []).some((r) => r.id?.trim() && r.name?.trim());
+    if (hasPortions && !rate?.id?.trim()) {
+      notifyError(`Choose a portion for "${item.name}"`);
+      return;
+    }
     setShowSearchDropdown(false);
-    await applyMenuCartDelta(menuSellableRef(item.id), 1);
+    // Only the frozen rate id goes on the wire; the price is resolved server-side from the menu.
+    await applyMenuCartDelta(menuSellableRef(item.id, rate?.id), 1);
   };
 
   const handleAddDirectStock = (item: InventoryItem) => {
@@ -3388,7 +3396,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                           loading={isLoadingCatalog}
                           disabled={isUpdatingCart || isLoadingCart}
                           filterQuery={searchQuery}
-                          onAddMenuItem={(item) => void handleAddMenuItem(item)}
+                          onAddMenuItem={(item, rate) => void handleAddMenuItem(item, rate)}
                           onAddDirectStock={handleAddDirectStock}
                         />
                       </Box>

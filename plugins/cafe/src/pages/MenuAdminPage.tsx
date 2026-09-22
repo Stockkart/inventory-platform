@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Check, ChevronDown, ChevronRight, Search } from 'lucide-react';
 import { cartApi, shopMenuApi } from '@inventory-platform/product/api';
-import type { MenuItem, MenuSection, ShopMenu } from '@inventory-platform/plugin-cafe/types';
+import type {
+  MenuItem,
+  MenuRate,
+  MenuSection,
+  ShopMenu,
+} from '@inventory-platform/plugin-cafe/types';
 import { menuSellableRef } from '@inventory-platform/product/types';
 import { useNotify, useVerticalSchemaStore } from '@inventory-platform/session';
 import {
@@ -52,6 +57,36 @@ function emptySection(): MenuSection {
   };
 }
 
+/**
+ * A portion's id is a slug frozen the moment the portion is first named, and never regenerated.
+ * It is what rides in the sellable ref (`menu:<itemId>@<rateId>`), so a later rename — "Half" to
+ * "Half plate" — must leave it alone or every cart line and kitchen ticket pointing at it is
+ * orphaned.
+ */
+function slugifyPortion(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function freezePortionId(name: string, siblings: MenuRate[]): string {
+  const base = slugifyPortion(name) || 'portion';
+  let candidate = base;
+  let suffix = 2;
+  while (siblings.some((r) => r.id === candidate)) {
+    candidate = `${base}-${suffix}`;
+    suffix += 1;
+  }
+  return candidate;
+}
+
+/** The portions that are real enough to save and to offer on Sell. */
+function namedPortions(item: Pick<MenuItem, 'rates'>): MenuRate[] {
+  return (item.rates ?? []).filter((r) => r.name.trim());
+}
+
 function normalizeSectionsForCompare(sections: MenuSection[]): string {
   return JSON.stringify(
     sections.map((s, idx) => ({
@@ -68,6 +103,13 @@ function normalizeSectionsForCompare(sections: MenuSection[]): string {
           // Must be compared too: without it, editing only the station leaves the menu looking
           // unchanged and Save stays disabled.
           department: (i.department ?? '').trim().toUpperCase(),
+          // Same trap, same cost: leave the portions out and a cashier who renames Half or
+          // reprices Full finds Save greyed out with their edit sitting on screen.
+          rates: namedPortions(i).map((r) => ({
+            id: r.id,
+            name: r.name.trim(),
+            price: Number(r.price) || 0,
+          })),
         })),
     })),
   );
@@ -181,21 +223,18 @@ export function MenuAdminPage() {
     setSearchQuery('');
   };
 
-  const canAddItemToSell = (item: MenuItem): boolean => {
-    if (isDirty) return false;
-    if (!item.name.trim()) return false;
-    if (item.available === false) return false;
-    if (!item.sellingPrice || item.sellingPrice <= 0) return false;
-    return true;
-  };
-
   const addToSellDisabledReason = (item: MenuItem): string | null => {
     if (isDirty) return 'Save menu first';
     if (!item.name.trim()) return 'Name required';
     if (item.available === false) return 'Hidden from sell';
+    // A portioned item has no one price, and this button cannot ask which portion. The Sell
+    // screen's picker can, so send the cashier there rather than guessing a portion for them.
+    if (namedPortions(item).length > 0) return 'Pick portion on Sell';
     if (!item.sellingPrice || item.sellingPrice <= 0) return 'Price not set';
     return null;
   };
+
+  const canAddItemToSell = (item: MenuItem): boolean => addToSellDisabledReason(item) === null;
 
   const handleAddToSell = async (item: MenuItem) => {
     const disabledReason = addToSellDisabledReason(item);
@@ -254,6 +293,58 @@ export function MenuAdminPage() {
     );
   };
 
+  const updatePortions = (
+    sectionId: string,
+    itemId: string,
+    change: (rates: MenuRate[]) => MenuRate[],
+  ) => {
+    setSections((prev) =>
+      prev.map((s) =>
+        s.id !== sectionId
+          ? s
+          : {
+              ...s,
+              items: s.items.map((item) =>
+                item.id === itemId ? { ...item, rates: change(item.rates ?? []) } : item,
+              ),
+            },
+      ),
+    );
+  };
+
+  const addPortion = (sectionId: string, itemId: string) => {
+    updatePortions(sectionId, itemId, (rates) => [...rates, { id: '', name: '', price: 0 }]);
+  };
+
+  const removePortion = (sectionId: string, itemId: string, index: number) => {
+    updatePortions(sectionId, itemId, (rates) => rates.filter((_, i) => i !== index));
+  };
+
+  const renamePortion = (sectionId: string, itemId: string, index: number, name: string) => {
+    updatePortions(sectionId, itemId, (rates) =>
+      rates.map((rate, i) => {
+        if (i !== index) return rate;
+        // Freeze the id on the first real name and never touch it again, so renaming later
+        // changes only what the shop reads — not what the cart and the kitchen point at.
+        const id =
+          rate.id ||
+          (name.trim()
+            ? freezePortionId(
+                name,
+                rates.filter((_, j) => j !== index),
+              )
+            : '');
+        return { ...rate, id, name };
+      }),
+    );
+  };
+
+  const repricePortion = (sectionId: string, itemId: string, index: number, price: string) => {
+    updatePortions(sectionId, itemId, (rates) =>
+      rates.map((rate, i) => (i === index ? { ...rate, price: Number(price) || 0 } : rate)),
+    );
+  };
+
   const removeSection = (sectionId: string) => {
     setSections((prev) => {
       const next = prev.filter((s) => s.id !== sectionId);
@@ -287,13 +378,22 @@ export function MenuAdminPage() {
           title: s.title.trim() || 'Untitled',
           items: s.items
             .filter((i) => i.name.trim())
-            .map((i) => ({
-              ...i,
-              name: i.name.trim(),
-              sellingPrice: Number(i.sellingPrice) || 0,
-              sellMode: 'menu' as const,
-              inventoryId: null,
-            })),
+            .map((i) => {
+              const rates = namedPortions(i).map((r) => ({
+                id: r.id || freezePortionId(r.name, []),
+                name: r.name.trim(),
+                price: Number(r.price) || 0,
+              }));
+              return {
+                ...i,
+                name: i.name.trim(),
+                // One or the other, never both: a portioned item's price lives in its portions.
+                sellingPrice: rates.length ? null : Number(i.sellingPrice) || 0,
+                rates,
+                sellMode: 'menu' as const,
+                inventoryId: null,
+              };
+            }),
         }))
         .filter((s) => s.items.length > 0);
 
@@ -469,6 +569,8 @@ export function MenuAdminPage() {
                     <Box className={productChrome.menuAdminItemGrid}>
                       {section.items.map((item) => {
                         const isAvailable = item.available !== false;
+                        const portions = item.rates ?? [];
+                        const isPortioned = namedPortions(item).length > 0;
                         return (
                           <Box
                             key={item.id}
@@ -498,24 +600,95 @@ export function MenuAdminPage() {
                               </IconButton>
                             </Inline>
 
-                            <Box className={productChrome.menuAdminItemPriceRow}>
-                              <Text as="span" className={productChrome.menuAdminItemPricePrefix}>
-                                ₹
-                              </Text>
-                              <Input
-                                type="number"
-                                min={0}
-                                step="0.01"
-                                value={item.sellingPrice || ''}
-                                onChange={(e) =>
-                                  updateItem(section.id, item.id, {
-                                    sellingPrice: Number(e.target.value),
-                                  })
-                                }
-                                placeholder="0.00"
-                                className={productChrome.menuAdminItemPrice}
-                                aria-label="Price"
-                              />
+                            {isPortioned ? null : (
+                              <Box className={productChrome.menuAdminItemPriceRow}>
+                                <Text as="span" className={productChrome.menuAdminItemPricePrefix}>
+                                  ₹
+                                </Text>
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  step="0.01"
+                                  value={item.sellingPrice || ''}
+                                  onChange={(e) =>
+                                    updateItem(section.id, item.id, {
+                                      sellingPrice: Number(e.target.value),
+                                    })
+                                  }
+                                  placeholder="0.00"
+                                  className={productChrome.menuAdminItemPrice}
+                                  aria-label="Price"
+                                />
+                              </Box>
+                            )}
+
+                            {/*
+                              Portions are named and priced here exactly as custom rates are on
+                              the pricing screen: a row of name + price, added and removed one at
+                              a time. An item is priced one way or the other — once a portion is
+                              named, the single price above steps aside.
+                            */}
+                            <Box className={productChrome.menuAdminPortionSection}>
+                              <Box className={productChrome.menuAdminPortionHead}>
+                                <Text as="span" className={productChrome.menuAdminItemPricePrefix}>
+                                  Portions
+                                </Text>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => addPortion(section.id, item.id)}
+                                >
+                                  Add portion
+                                </Button>
+                              </Box>
+                              {portions.length === 0 ? (
+                                <Text as="p" className={productChrome.menuAdminPortionHint}>
+                                  None — this item sells at the single price above. Add Qtr, Half or
+                                  Full to price it by portion instead.
+                                </Text>
+                              ) : (
+                                <>
+                                  {portions.map((rate, i) => (
+                                    <Box
+                                      key={rate.id || `new-${i}`}
+                                      className={productChrome.menuAdminPortionRow}
+                                    >
+                                      <Input
+                                        value={rate.name}
+                                        onChange={(e) =>
+                                          renamePortion(section.id, item.id, i, e.target.value)
+                                        }
+                                        placeholder="e.g. Half"
+                                        aria-label={`Portion ${i + 1} name for ${
+                                          item.name.trim() || 'new item'
+                                        }`}
+                                      />
+                                      <Input
+                                        type="number"
+                                        min={0}
+                                        step="0.01"
+                                        value={rate.price || ''}
+                                        onChange={(e) =>
+                                          repricePortion(section.id, item.id, i, e.target.value)
+                                        }
+                                        placeholder="0.00"
+                                        className={productChrome.menuAdminPortionPrice}
+                                        aria-label={`Portion ${i + 1} price for ${
+                                          item.name.trim() || 'new item'
+                                        }`}
+                                      />
+                                      <IconButton
+                                        size="sm"
+                                        label={`Remove portion ${rate.name.trim() || i + 1}`}
+                                        onClick={() => removePortion(section.id, item.id, i)}
+                                      >
+                                        ×
+                                      </IconButton>
+                                    </Box>
+                                  ))}
+                                </>
+                              )}
                             </Box>
 
                             <Box className={productChrome.menuAdminItemPriceRow}>
