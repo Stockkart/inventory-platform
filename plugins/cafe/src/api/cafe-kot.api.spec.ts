@@ -16,7 +16,6 @@ vi.mock('@inventory-platform/api-client', () => ({
   apiClient: {
     get: vi.fn(),
     post: vi.fn(),
-    delete: vi.fn(),
     getBlob: vi.fn(),
     postBlob: vi.fn(),
   },
@@ -27,7 +26,6 @@ const mockedApiClient = vi.mocked(apiClient, true);
 beforeEach(() => {
   mockedApiClient.get.mockReset();
   mockedApiClient.post.mockReset();
-  mockedApiClient.delete.mockReset();
   mockedApiClient.getBlob.mockReset();
   mockedApiClient.postBlob.mockReset();
 });
@@ -85,132 +83,72 @@ describe('cafeKotApi.reprint', () => {
   });
 });
 
-describe('cafeTabApi', () => {
-  it('lists tabs from the tab collection URL', async () => {
-    const tabs = [{ id: 't1', tokenNo: '4', status: 'OPEN', lines: [] }];
-    mockedApiClient.get.mockResolvedValue({ success: true, data: tabs });
-    const { cafeTabApi } = await import('./cafe-kot.api');
+describe('cafeKotApi.punch', () => {
+  it('posts to the purchase punch URL with the Idempotency-Key header and no body', async () => {
+    mockedApiClient.post.mockResolvedValue({ success: true, data: [] });
+    const { cafeKotApi } = await import('./cafe-kot.api');
 
-    await expect(cafeTabApi.list()).resolves.toBe(tabs);
-    expect(mockedApiClient.get).toHaveBeenCalledWith('/cafe/tabs');
+    await cafeKotApi.punch('p1', 'key-1');
+
+    expect(mockedApiClient.post).toHaveBeenCalledTimes(1);
+    const [url, body, options] = mockedApiClient.post.mock.calls[0];
+    expect(url).toBe('/cafe/purchases/p1/kots');
+    // No body at all: the server derives the delta from the cart. A client-computed delta
+    // would be a second opinion about what the kitchen has already seen.
+    expect(body).toBeUndefined();
+    expect(
+      (options as { headers?: Record<string, string> } | undefined)?.headers?.['Idempotency-Key'],
+    ).toBe('key-1');
   });
 
-  it('rejects rather than resolving empty when the list request fails', async () => {
-    mockedApiClient.get.mockRejectedValue(new Error('offline'));
-    const { cafeTabApi } = await import('./cafe-kot.api');
+  it('resolves with the created tickets from the response envelope', async () => {
+    const tickets = [{ kotId: 'k1' }, { kotId: 'k2' }];
+    mockedApiClient.post.mockResolvedValue({ success: true, data: tickets });
+    const { cafeKotApi } = await import('./cafe-kot.api');
 
-    await expect(cafeTabApi.list()).rejects.toThrow('offline');
+    await expect(cafeKotApi.punch('p1', 'key-1')).resolves.toBe(tickets);
   });
 
-  it('opens a tab by posting to the tab collection URL', async () => {
-    const tab = { id: 't1', tokenNo: '4', status: 'OPEN', lines: [] };
-    mockedApiClient.post.mockResolvedValue({ success: true, data: tab });
-    const { cafeTabApi } = await import('./cafe-kot.api');
+  it('rejects rather than resolving empty when the server errors', async () => {
+    mockedApiClient.post.mockRejectedValue(
+      Object.assign(new Error('boom'), { response: { status: 500 } }),
+    );
+    const { cafeKotApi } = await import('./cafe-kot.api');
 
-    await expect(cafeTabApi.open()).resolves.toBe(tab);
-    expect(mockedApiClient.post).toHaveBeenCalledWith('/cafe/tabs');
+    await expect(cafeKotApi.punch('p1', 'key-1')).rejects.toThrow('boom');
   });
 
-  it('adds a line by posting the line body to the tab lines URL', async () => {
-    const tab = { id: 't1', tokenNo: '4', status: 'OPEN', lines: [] };
-    mockedApiClient.post.mockResolvedValue({ success: true, data: tab });
-    const { cafeTabApi } = await import('./cafe-kot.api');
+  it('reuses the same key across a retry of one punch attempt', async () => {
+    mockedApiClient.post.mockResolvedValue({ success: true, data: [] });
+    const { cafeKotApi } = await import('./cafe-kot.api');
 
-    const line = { sellableRef: 'sr1', quantity: 2, note: 'no onions' };
-    await cafeTabApi.addLine('t1', line);
+    const key = newKey();
+    await cafeKotApi.punch('p1', key);
+    await cafeKotApi.punch('p1', key); // retry of the same attempt
 
-    expect(mockedApiClient.post).toHaveBeenCalledWith('/cafe/tabs/t1/lines', line);
+    const headerOf = (call: number) =>
+      (mockedApiClient.post.mock.calls[call][2] as { headers?: Record<string, string> })?.headers?.[
+        'Idempotency-Key'
+      ];
+    expect(headerOf(0)).toBe(key);
+    expect(headerOf(1)).toBe(key);
   });
 
-  it('removes a line via DELETE on the tab line URL', async () => {
-    const tab = { id: 't1', tokenNo: '4', status: 'OPEN', lines: [] };
-    mockedApiClient.delete.mockResolvedValue({ success: true, data: tab });
-    const { cafeTabApi } = await import('./cafe-kot.api');
+  it('uses a different key for a second, independent punch attempt', async () => {
+    mockedApiClient.post.mockResolvedValue({ success: true, data: [] });
+    const { cafeKotApi } = await import('./cafe-kot.api');
 
-    await cafeTabApi.removeLine('t1', 'sr1');
+    const firstAttemptKey = newKey();
+    const secondAttemptKey = newKey();
+    expect(firstAttemptKey).not.toBe(secondAttemptKey);
 
-    expect(mockedApiClient.delete).toHaveBeenCalledWith('/cafe/tabs/t1/lines/sr1');
-  });
+    await cafeKotApi.punch('p1', firstAttemptKey);
+    await cafeKotApi.punch('p1', secondAttemptKey);
 
-  it('closes a tab via DELETE on the tab URL', async () => {
-    mockedApiClient.delete.mockResolvedValue({ success: true, data: null });
-    const { cafeTabApi } = await import('./cafe-kot.api');
-
-    await cafeTabApi.close('t1');
-
-    expect(mockedApiClient.delete).toHaveBeenCalledWith('/cafe/tabs/t1');
-  });
-
-  describe('flush', () => {
-    it('posts to the flush URL with the Idempotency-Key header and the chosen target', async () => {
-      mockedApiClient.post.mockResolvedValue({ success: true, data: [] });
-      const { cafeTabApi } = await import('./cafe-kot.api');
-
-      await cafeTabApi.flush('t1', { purchaseId: 'p1' }, 'key-1');
-
-      expect(mockedApiClient.post).toHaveBeenCalledTimes(1);
-      const [url, body, options] = mockedApiClient.post.mock.calls[0];
-      expect(url).toBe('/cafe/tabs/t1/flush');
-      expect(body).toEqual({ purchaseId: 'p1' });
-      expect(
-        (options as { headers?: Record<string, string> } | undefined)?.headers?.['Idempotency-Key'],
-      ).toBe('key-1');
-    });
-
-    it('posts a null purchaseId when the round asks for a new bill', async () => {
-      mockedApiClient.post.mockResolvedValue({ success: true, data: [] });
-      const { cafeTabApi } = await import('./cafe-kot.api');
-
-      await cafeTabApi.flush('t1', { purchaseId: null }, 'key-1');
-
-      const [, body] = mockedApiClient.post.mock.calls[0];
-      expect(body).toEqual({ purchaseId: null });
-    });
-
-    it('resolves with the created tickets from the response envelope', async () => {
-      const tickets = [{ kotId: 'k1' }, { kotId: 'k2' }];
-      mockedApiClient.post.mockResolvedValue({ success: true, data: tickets });
-      const { cafeTabApi } = await import('./cafe-kot.api');
-
-      await expect(cafeTabApi.flush('t1', { purchaseId: 'p1' }, 'key-1')).resolves.toBe(tickets);
-    });
-
-    it('rejects rather than resolving empty when the server errors', async () => {
-      mockedApiClient.post.mockRejectedValue(new Error('boom'));
-      const { cafeTabApi } = await import('./cafe-kot.api');
-
-      await expect(cafeTabApi.flush('t1', { purchaseId: 'p1' }, 'key-1')).rejects.toThrow('boom');
-    });
-
-    it('reuses the same key across a retry of one flush attempt', async () => {
-      mockedApiClient.post.mockResolvedValue({ success: true, data: [] });
-      const { cafeTabApi } = await import('./cafe-kot.api');
-
-      const key = newKey();
-      await cafeTabApi.flush('t1', { purchaseId: 'p1' }, key);
-      await cafeTabApi.flush('t1', { purchaseId: 'p1' }, key); // retry of the same attempt
-
-      const headerOf = (call: number) =>
-        (mockedApiClient.post.mock.calls[call][2] as { headers?: Record<string, string> })
-          ?.headers?.['Idempotency-Key'];
-      expect(headerOf(0)).toBe(key);
-      expect(headerOf(1)).toBe(key);
-    });
-
-    it('uses a different key for a second, independent flush attempt', async () => {
-      mockedApiClient.post.mockResolvedValue({ success: true, data: [] });
-      const { cafeTabApi } = await import('./cafe-kot.api');
-
-      const firstAttemptKey = newKey();
-      const secondAttemptKey = newKey();
-
-      await cafeTabApi.flush('t1', { purchaseId: 'p1' }, firstAttemptKey);
-      await cafeTabApi.flush('t1', { purchaseId: 'p1' }, secondAttemptKey);
-
-      const headerOf = (call: number) =>
-        (mockedApiClient.post.mock.calls[call][2] as { headers?: Record<string, string> })
-          ?.headers?.['Idempotency-Key'];
-      expect(headerOf(0)).not.toBe(headerOf(1));
-    });
+    const headerOf = (call: number) =>
+      (mockedApiClient.post.mock.calls[call][2] as { headers?: Record<string, string> })?.headers?.[
+        'Idempotency-Key'
+      ];
+    expect(headerOf(0)).not.toBe(headerOf(1));
   });
 });

@@ -8,8 +8,9 @@ import { cafeRoutes } from './routes';
  * `capabilityNav.pluginNavItemsForCapabilities` intersects the two, so an entry in one layer
  * and not the other silently yields no link at all.
  *
- * This has now shipped broken twice — the retired Orders screen, and the KOT screen — each
- * time with green tests, because nothing asserted the pairing.
+ * This has now shipped broken twice — the retired Orders screen, and the retired KOT screen —
+ * each time with green tests, because nothing asserted the pairing. It is the invariant, not
+ * any one screen, that is pinned here: it must hold whatever the cafe vertical routes next.
  */
 describe('cafe navigation', () => {
   const navPaths = new Set(cafeNav.items.map((item) => item.path));
@@ -34,9 +35,5 @@ describe('cafe navigation', () => {
     const dangling = [...navPaths].filter((path) => !routedPaths.has(path) && !coreOwned.has(path));
 
     expect(dangling, `sidebar links that route nowhere: ${dangling.join(', ')}`).toEqual([]);
-  });
-
-  it('lists the kitchen-order screen', () => {
-    expect(navPaths.has('/dashboard/cafe-kot')).toBe(true);
   });
 });

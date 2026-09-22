@@ -15,6 +15,14 @@ const cafePlugin: VerticalPlugin = {
         })),
     },
   ],
+  // Defined here at module scope, not inline in a render: `VerticalSellActions` memoises
+  // `lazy(action.load)` on this array's identity.
+  sellActions: [
+    {
+      id: 'cafe-print-kot',
+      load: () => import('./ui/CafeKotBar').then((m) => ({ default: m.CafeKotBar })),
+    },
+  ],
 };
 
 export default cafePlugin;
@@ -22,9 +30,3 @@ export { cafeNav } from './nav';
 export { MenuSellPage } from './pages/MenuSellPage';
 export { MenuAdminPage } from './pages/MenuAdminPage';
 export { ManualStockPage } from './pages/ManualStockPage';
-/**
- * `/dashboard/cafe-kot`. Reachable only once the backend `CafeUiContributor` contributes its
- * nav entry — `cafeNav` above deliberately does not, because a frontend-contributed entry for
- * this screen is dropped by the nav merge.
- */
-export { CafeKotPage } from './pages/CafeKotPage';
