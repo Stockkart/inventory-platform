@@ -7,12 +7,29 @@ cafe layout with menu catalog + quotations) — loaded by `verticalId` via the p
 
 ## Owns
 
-- Routes: menu, menu-sell (→ ScanSellPage cafe layout), manual-stock (ingredient search)
+- Routes: menu, menu-sell (→ ScanSellPage cafe layout), manual-stock (ingredient search),
+  cafe-kot (the kitchen-order screen)
 - Nav contribution **Cafe** (ingredient registration/search labels, Menu, Sell)
-- Cafe-specific page UI under `pages/` (MenuAdmin, ManualStock; Sell reuses core ScanSellPage)
-- Kitchen tickets (KOT): punch API, print queue (with dedupe), and the ticket strip UI
-  (`ui/KotTicketStrip.tsx`) — the Sell screen no longer issues to the kitchen; that will
-  move to its own tabbed screen
+- Cafe-specific page UI under `pages/` (MenuAdmin, ManualStock, CafeKot; Sell reuses core
+  ScanSellPage)
+- Kitchen tickets (KOT): the tab API and hooks, the print queue (with dedupe), the ticket
+  strip (`ui/KotTicketStrip.tsx`) and the KOT screen — the Sell screen no longer issues to
+  the kitchen
+
+### The KOT screen (`/dashboard/cafe-kot`)
+
+`pages/CafeKotPage.tsx` with `ui/CafeTabStrip.tsx`, `ui/CafeTabComposer.tsx` and
+`ui/FlushTargetDialog.tsx`. One tab per party, each with an auto token, each holding **only
+what has not yet been sent**. Print KOT asks which bill the round belongs to, sends one ticket
+per station, appends the lines to that bill, and empties the tab — which keeps its token.
+
+- The tab strip is deliberately the same control as `ScanSellQuotationStack` in `core/product`
+  (same chrome, same `+ New`, same confirm-before-close). Change one, change the other.
+- **The nav entry is contributed by the backend `CafeUiContributor`, not by `nav.ts` here.** A
+  nav item added in this layer does not reach the sidebar, and the screen stays unreachable.
+- `queries/screenData.ts` holds the hooks that import `@inventory-platform/product/api`; that
+  import constructs the shared `apiClient` at module load (it reads `localStorage`), so it is
+  kept out of `queries/hooks.ts`, which must stay importable from a plain-node test.
 
 ## Does not own
 

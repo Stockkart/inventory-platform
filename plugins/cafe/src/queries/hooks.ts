@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import {
   useMutation,
   useQuery,
+  useQueryClient,
   type UseMutationResult,
   type UseQueryResult,
 } from '@tanstack/react-query';
@@ -9,7 +10,7 @@ import { cafeKotApi, cafeTabApi } from '../api/cafe-kot.api';
 import { keyAfter, newKey } from '../lib/punchBasket';
 import { clearPunchKey, readPunchKey, writePunchKey } from '../lib/punchKeyStore';
 import type { CafeKot } from '../types/kot';
-import type { CafeFlushTarget, CafeTab } from '../types/tab';
+import type { CafeFlushTarget, CafeTab, CafeTabLineInput } from '../types/tab';
 import { cafeTabKeys } from './keys';
 import { outcomeOf } from './outcome';
 
@@ -109,6 +110,52 @@ export function useFlushTabMutation(
 /** Reprints ticket `kotId`. Creates no new ticket; the slip stamps REPRINT. */
 export function useReprintKotMutation(kotId: string): UseMutationResult<CafeKot, unknown, void> {
   return useIdempotentMutation<CafeKot, void>(kotId, (key) => cafeKotApi.reprint(kotId, key));
+}
+
+/**
+ * Composition writes: open a tab, add or update a line, drop a line, close a tab.
+ *
+ * None of these can reach the kitchen, so none of them carries an Idempotency-Key: the worst
+ * a repeated add can do is put one more portion on a tab the cashier is looking at, and the
+ * tab is the thing they can still edit. Every one of them settles by invalidating the tab
+ * list, which is the single source the screen renders from — there is no local copy of a
+ * tab's lines to drift from the server's.
+ */
+function useTabWriteMutation<TData, TVariables>(
+  write: (variables: TVariables) => Promise<TData>,
+): UseMutationResult<TData, unknown, TVariables> {
+  const queryClient = useQueryClient();
+
+  return useMutation<TData, unknown, TVariables>({
+    mutationFn: write,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: cafeTabKeys.list() });
+    },
+  });
+}
+
+/** Opens a new tab, which allocates its token. */
+export function useOpenTabMutation(): UseMutationResult<CafeTab, unknown, void> {
+  return useTabWriteMutation<CafeTab, void>(() => cafeTabApi.open());
+}
+
+/** Adds a line to `tabId`, or updates one already on it when `lineRef` is supplied. */
+export function useAddTabLineMutation(
+  tabId: string,
+): UseMutationResult<CafeTab, unknown, CafeTabLineInput> {
+  return useTabWriteMutation<CafeTab, CafeTabLineInput>((line) => cafeTabApi.addLine(tabId, line));
+}
+
+/** Drops an unsent line from `tabId`. Sent lines are not here to drop — they are on the bill. */
+export function useRemoveTabLineMutation(
+  tabId: string,
+): UseMutationResult<CafeTab, unknown, string> {
+  return useTabWriteMutation<CafeTab, string>((lineRef) => cafeTabApi.removeLine(tabId, lineRef));
+}
+
+/** Closes a tab. The only way a tab ends — there is no expiry and no rollover. */
+export function useCloseTabMutation(): UseMutationResult<void, unknown, string> {
+  return useTabWriteMutation<void, string>((tabId) => cafeTabApi.close(tabId));
 }
 
 export { keyAfter, outcomeOf };
