@@ -55,7 +55,7 @@ describe('cafeKotApi.reprint', () => {
   });
 
   it('posts to the reprint URL with the Idempotency-Key header', async () => {
-    mockedAxios.post.mockResolvedValue({ data: { data: { kotId: 'k1' } } });
+    mockedAxios.post.mockResolvedValue({ data: new Blob(['%PDF']) });
     const { cafeKotApi } = await import('./cafe-kot.api');
 
     await cafeKotApi.reprint('k1', 'key-1');
@@ -64,6 +64,21 @@ describe('cafeKotApi.reprint', () => {
     const [url, , config] = mockedAxios.post.mock.calls[0];
     expect(url).toBe('http://localhost:8080/api/v1/cafe/kots/k1/reprint');
     expect(config?.headers?.['Idempotency-Key']).toBe('key-1');
+  });
+
+  // The stamp lives only on the reprint render: GET .../document never stamps REPRINT, so
+  // reading this response as JSON and fetching the PDF separately would hand a cook an
+  // unstamped slip for food already being made.
+  it('reads the stamped slip itself rather than a JSON body', async () => {
+    const slip = new Blob(['%PDF']);
+    mockedAxios.post.mockResolvedValue({ data: slip });
+    const { cafeKotApi } = await import('./cafe-kot.api');
+
+    const result = await cafeKotApi.reprint('k1', 'key-1');
+
+    const [, , config] = mockedAxios.post.mock.calls[0];
+    expect(config?.responseType).toBe('blob');
+    expect(result).toBe(slip);
   });
 
   it('rejects rather than resolving empty when the server errors', async () => {

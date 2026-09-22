@@ -55,14 +55,38 @@ async function postWithIdempotencyKey<T>(
   return response.data.data;
 }
 
+/**
+ * POSTs with an `Idempotency-Key` and reads the response as a PDF rather than JSON.
+ *
+ * Reprint returns the rendered slip directly, and it has to: the stamp lives only on that
+ * render. `GET .../document` deliberately never stamps REPRINT, so fetching the PDF in a
+ * second call after reprinting would hand a cook an unstamped slip — which reads as a
+ * fresh order for food already being made.
+ */
+async function postForPdfBlob(path: string, idempotencyKey: string): Promise<Blob> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+  const shopId = typeof window !== 'undefined' ? localStorage.getItem('x_shop_id') : null;
+
+  const response = await axios.post(`${API_BASE_URL}${path}`, undefined, {
+    responseType: 'blob',
+    headers: {
+      Authorization: token ? `Bearer ${token}` : '',
+      ...(shopId ? { 'X-Shop-Id': shopId } : {}),
+      'Idempotency-Key': idempotencyKey,
+    },
+  });
+
+  return response.data;
+}
+
 export const cafeKotApi = {
   /**
-   * Reprints an already-issued ticket: no new ticket, the slip stamps REPRINT, and
-   * `reprintCount` increments. Requires a non-blank Idempotency-Key like every other
-   * kitchen-facing write.
+   * Reprints an already-issued ticket: no new ticket, `reprintCount` increments, and the
+   * returned PDF is stamped REPRINT so a cook cannot read it as a second order. Requires a
+   * non-blank Idempotency-Key like every other kitchen-facing write.
    */
-  reprint: (kotId: string, idempotencyKey: string): Promise<CafeKot> =>
-    postWithIdempotencyKey<CafeKot>(CAFE_KOT_ENDPOINTS.KOT_REPRINT(kotId), idempotencyKey),
+  reprint: (kotId: string, idempotencyKey: string): Promise<Blob> =>
+    postForPdfBlob(CAFE_KOT_ENDPOINTS.KOT_REPRINT(kotId), idempotencyKey),
 
   getKotPdf: async (kotId: string): Promise<Blob> =>
     fetchPdfBlob(CAFE_KOT_ENDPOINTS.KOT_DOCUMENT(kotId)),

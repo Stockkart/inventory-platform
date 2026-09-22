@@ -108,9 +108,15 @@ export function useFlushTabMutation(
   );
 }
 
-/** Reprints ticket `kotId`. Creates no new ticket; the slip stamps REPRINT. */
-export function useReprintKotMutation(kotId: string): UseMutationResult<CafeKot, unknown, void> {
-  return useIdempotentMutation<CafeKot, void>(kotId, (key) => cafeKotApi.reprint(kotId, key));
+/**
+ * Reprints ticket `kotId`, resolving to the stamped slip itself. Creates no new ticket.
+ *
+ * The PDF comes back from the reprint call rather than from a following `getKotPdf`,
+ * because only this render carries the REPRINT stamp — an unstamped slip for food already
+ * being made reads to a cook as a second order.
+ */
+export function useReprintKotMutation(kotId: string): UseMutationResult<Blob, unknown, void> {
+  return useIdempotentMutation<Blob, void>(kotId, (key) => cafeKotApi.reprint(kotId, key));
 }
 
 /**
