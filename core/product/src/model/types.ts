@@ -717,6 +717,14 @@ export interface CheckoutItem {
   unit?: string;
   quantity?: number;
   baseQuantity?: number;
+  /**
+   * Cafe only: preparation instruction printed on the kitchen ticket, e.g. `no onion`.
+   *
+   * It rides the add that *creates* the line. The cart merges by `sellableRef` and a merge
+   * keeps the existing line's note, so re-sending a note for a line that is already in the
+   * cart is a no-op on the server — the line has to be replaced for a new note to land.
+   */
+  note?: string | null;
   priceToRetail?: number;
   saleAdditionalDiscount?: number | null;
   // Scheme can be represented either as fixed units or percentage
@@ -772,6 +780,16 @@ export interface CheckoutItemResponse {
   profit?: number | null;
   marginPercent?: number | null;
   billingMode?: BillingMode;
+  /**
+   * Cafe only: how much of {@link baseQuantity} the kitchen has already been sent.
+   * A line is fully sent when `baseQuantity === kotSentQuantity`; absent on
+   * verticals that never punch.
+   */
+  kotSentQuantity?: number | null;
+  /** Cafe only: kitchen station frozen onto the line at add time (e.g. `KITCHEN`, `BAR`). */
+  department?: string | null;
+  /** Cafe only: preparation instruction printed on the kitchen ticket, e.g. `no onion`. */
+  note?: string | null;
   /** From registration: additional discount % (read-only at sale) */
   purchaseAdditionalDiscount?: number | null;
   /** From registration: scheme (read-only at sale) */

@@ -99,7 +99,7 @@ import type {
 } from '@inventory-platform/product/types';
 import type { PricingResponse } from '@inventory-platform/contracts';
 import type { CustomerResponse } from '@inventory-platform/user/types';
-import type { MenuItem, SellCatalog } from '@inventory-platform/product/types';
+import type { MenuItem, MenuRate, SellCatalog } from '@inventory-platform/product/types';
 import {
   inventoryLotIdFromSellableRef,
   inventorySellableRef,
@@ -169,6 +169,7 @@ import { ScanSellMenuCartLine } from '../ui/ScanSellMenuCartLine';
 import { ScanSellCafeStockLine } from '../ui/ScanSellCafeStockLine';
 import { useNotify, useAuthStore, useVerticalSchemaStore } from '@inventory-platform/session';
 import {
+  VerticalSellActions,
   isScanSellHidePurchaseKey,
   shouldSkipScanSellHidePurchaseKey,
 } from '@inventory-platform/routing';
@@ -2757,9 +2758,9 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
    * inventory-centric syncCartToAPI path and post deltas directly, then
    * reconcile from the server response.
    */
-  const applyMenuCartDelta = async (sellableRef: string, delta: number) => {
+  const applyMenuCartDelta = async (sellableRef: string, delta: number): Promise<boolean> => {
     if (delta === 0 || isUpdatingRef.current) {
-      return;
+      return true;
     }
     isUpdatingRef.current = true;
     setIsUpdatingCart(true);
@@ -2767,9 +2768,9 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     try {
       let targetPurchaseId = activePurchaseId;
       if (!targetPurchaseId) {
-        if (delta <= 0) return;
+        if (delta <= 0) return true;
         targetPurchaseId = await ensureActiveQuotationId();
-        if (!targetPurchaseId) return;
+        if (!targetPurchaseId) return true;
       }
       const updated = await cartApi.add({
         businessType: cartBusinessType,
@@ -2778,47 +2779,56 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       });
       applyCartToState(updated, cartItems);
       await refreshQuotationList();
+      return true;
     } catch (err) {
       notifyError(err instanceof Error ? err.message : 'Failed to update order');
+      return false;
     } finally {
       isUpdatingRef.current = false;
       setIsUpdatingCart(false);
     }
   };
 
-  const handleAddMenuItem = async (item: MenuItem) => {
+  const handleAddMenuItem = async (item: MenuItem, rate?: MenuRate) => {
     if (item.available === false) {
       notifyError('This item is unavailable');
       return;
     }
+    // A portioned item has no single price, so adding one without a portion would bill an
+    // amount nobody chose. The catalog's picker supplies the portion; nothing else may.
+    const hasPortions = (item.rates ?? []).some((r) => r.id?.trim() && r.name?.trim());
+    if (hasPortions && !rate?.id?.trim()) {
+      notifyError(`Choose a portion for "${item.name}"`);
+      return;
+    }
     setShowSearchDropdown(false);
-    await applyMenuCartDelta(menuSellableRef(item.id), 1);
+    // Only the frozen rate id goes on the wire; the price is resolved server-side from the menu.
+    await applyMenuCartDelta(menuSellableRef(item.id, rate?.id), 1);
   };
 
   const handleAddDirectStock = (item: InventoryItem) => {
     void handleAddToCart(item);
   };
 
-  const handleMenuQtyChange = (sellableRef: string, delta: number) => {
-    void applyMenuCartDelta(sellableRef, delta);
-  };
+  const handleMenuQtyChange = (sellableRef: string, delta: number): Promise<boolean> =>
+    applyMenuCartDelta(sellableRef, delta);
 
-  const handleMenuSetQuantity = async (sellableRef: string, newQty: number) => {
+  const handleMenuSetQuantity = async (sellableRef: string, newQty: number): Promise<boolean> => {
     const line = (cartData?.items ?? []).find((row) => lineSellableRef(row) === sellableRef);
-    if (!line) return;
+    if (!line) return true;
     const current = Math.trunc(Number(line.quantity));
     const next = Math.trunc(newQty);
     const delta = next - current;
-    if (delta === 0) return;
-    await applyMenuCartDelta(sellableRef, delta);
+    if (delta === 0) return true;
+    return applyMenuCartDelta(sellableRef, delta);
   };
 
-  const handleMenuRemove = (sellableRef: string) => {
+  const handleMenuRemove = (sellableRef: string): Promise<boolean> => {
     const line = (cartData?.items ?? []).find((row) => lineSellableRef(row) === sellableRef);
-    if (!line) return;
+    if (!line) return Promise.resolve(true);
     const qty = Math.trunc(Number(line.quantity));
-    if (qty <= 0) return;
-    void applyMenuCartDelta(sellableRef, -qty);
+    if (qty <= 0) return Promise.resolve(true);
+    return applyMenuCartDelta(sellableRef, -qty);
   };
 
   const handleAdditionalDiscountChange = (inventoryId: string, value: number | null) => {
@@ -3425,7 +3435,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                           loading={isLoadingCatalog}
                           disabled={isUpdatingCart || isLoadingCart}
                           filterQuery={searchQuery}
-                          onAddMenuItem={(item) => void handleAddMenuItem(item)}
+                          onAddMenuItem={(item, rate) => void handleAddMenuItem(item, rate)}
                           onAddDirectStock={handleAddDirectStock}
                         />
                       </Box>
@@ -3467,6 +3477,16 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                         </Stack>
                       </CardBody>
                     </Card>
+
+                    {/* Vertical-contributed sell actions (cafe: Print KOT). Sits with the
+                        order it punches rather than in the checkout bar, which has no room
+                        for the ticket strip. Estimates are not orders, so they get none. */}
+                    {!isEstimateMode ? (
+                      <VerticalSellActions
+                        purchaseId={activePurchaseId ?? cartData?.purchaseId ?? null}
+                        disabled={isUpdatingCart || isLoadingCart}
+                      />
+                    ) : null}
 
                     {/* Same figures as the Margins block below, in the cafe layout —
                         hidden by `~` too, or the numbers would just leak here instead. */}

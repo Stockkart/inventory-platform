@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Search, UserRound } from 'lucide-react';
-import { customersApi, customerHasUniqueIdentifier } from '@inventory-platform/user/customers';
+import {
+  customersApi,
+  customerHasUniqueIdentifier,
+  partyNameHasLetters,
+  PARTY_NAME_LETTERS_MESSAGE,
+} from '@inventory-platform/user/customers';
 import type {
   CreateCustomerDto,
   CustomerPartyType,
@@ -140,6 +145,10 @@ export function CustomerSearchPanel({
     const name = form.name?.trim() ?? '';
     if (!name) {
       setCreateError('Customer name is required');
+      return;
+    }
+    if (!partyNameHasLetters(name)) {
+      setCreateError(PARTY_NAME_LETTERS_MESSAGE);
       return;
     }
     const partyType = form.partyType ?? 'CONSUMER';

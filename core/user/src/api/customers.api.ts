@@ -31,6 +31,23 @@ export function customerHasUniqueIdentifier(input: {
   );
 }
 
+/**
+ * True when a party name carries at least one letter.
+ *
+ * A name made only of digits and punctuation is a phone number, an account code or a
+ * mistyped field - never a person or a firm. Such a name reaches invoices, GST returns
+ * and payment reminders, where "9828606899" is unusable as a bill-to.
+ *
+ * Letters from any script count, so Hindi and other Indian-language names pass. Digits
+ * inside a name are fine: "Shop 21" and "M/s 3M India" are real names.
+ */
+export function partyNameHasLetters(name: string | null | undefined): boolean {
+  return /\p{L}/u.test(name ?? '');
+}
+
+/** The message shown when a name is digits only, worded the same everywhere. */
+export const PARTY_NAME_LETTERS_MESSAGE = 'Name must include letters, not only numbers';
+
 export const customersApi = {
   create: async (data: CreateCustomerDto): Promise<CustomerResponse> => {
     const response = await apiClient.post<ApiResponse<CustomerResponse>>(
