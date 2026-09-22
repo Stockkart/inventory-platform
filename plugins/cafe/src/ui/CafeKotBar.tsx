@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { SellActionSlotProps } from '@inventory-platform/routing';
-import { Alert, Button, Inline, Stack, Text } from '@inventory-platform/ui-kit';
+import { Alert, Button, Inline, Stack, Text, productChrome } from '@inventory-platform/ui-kit';
 import {
   appendTickets,
   punchFailedNotice,
@@ -156,12 +156,15 @@ export function CafeKotBar({ purchaseId, disabled = false }: SellActionSlotProps
   return (
     <Stack gap="sm" width="full">
       <Inline justify="between" align="center" gap="sm" width="full">
+        {/* Short enough to sit on one line beside the button in the order column, which is
+            narrow. The long form wrapped onto two lines and crowded the button. */}
         <Text variant="caption" color="secondary">
-          Send the new items on this order to the kitchen
+          Only new items are sent
         </Text>
         <Button
           type="button"
           variant="solid"
+          className={productChrome.nowrap}
           onClick={() => void handlePunch()}
           disabled={disabled || punch.isPending || !purchaseId}
         >

@@ -985,6 +985,35 @@
   border-left: 3px solid #355a82;
 }
 
+.cafeCatalogTilePortioned {
+  min-height: 92px;
+  text-align: left;
+  border-left: 3px solid #b45309;
+}
+
+.cafeCatalogTileHint {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--sk-color-text-secondary, #64748b);
+}
+
+.cafeCatalogPortionList {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.cafeCatalogPortionRow {
+  min-height: 52px;
+  text-align: left;
+  border-left: 3px solid #b45309;
+}
+
+.cafeCatalogPortionPrice {
+  font-variant-numeric: tabular-nums;
+}
+
 .cafeCatalogTileStock {
   min-height: 92px;
   text-align: left;
@@ -1190,6 +1219,38 @@
   text-transform: uppercase;
 }
 
+.menuAdminPortionSection {
+  display: grid;
+  gap: 0.45rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
+}
+
+.menuAdminPortionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.menuAdminPortionRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 6.5rem auto;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.menuAdminPortionPrice {
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600 !important;
+}
+
+.menuAdminPortionHint {
+  font-size: 0.75rem;
+  color: var(--sk-color-text-secondary, #64748b);
+}
+
 .menuAdminItemMeta {
   display: flex;
   align-items: center;
@@ -1311,6 +1372,11 @@
 .historyHintInline {
   margin-top: 0.4rem;
   display: inline-flex;
+  /* inline-flex hugs its label only until a flex column stretches it: `align-items: stretch`
+     is the default, so inside a Stack the pill spanned the whole cart line instead of
+     sitting beside its text. */
+  align-self: flex-start;
+  max-width: 100%;
 }
 
 .historyHintNew {
