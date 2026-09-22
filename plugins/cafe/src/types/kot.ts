@@ -5,7 +5,7 @@ export interface CafeKotLine {
   note?: string | null;
 }
 
-/** ISSUE tickets punch a round to the kitchen; CANCEL tickets void one already punched. */
+/** ISSUE tickets send a round to the kitchen; CANCEL tickets void one already sent. */
 export type CafeKotKind = 'ISSUE' | 'CANCEL';
 
 export interface CafeKot {

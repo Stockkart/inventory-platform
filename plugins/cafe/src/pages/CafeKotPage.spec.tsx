@@ -38,7 +38,6 @@ vi.mock('../api/cafe-kot.api', () => ({
     flush: (...args: unknown[]) => tabFlush(...args),
   },
   cafeKotApi: {
-    punch: vi.fn(),
     reprint: vi.fn(),
     getKotPdf: (...args: unknown[]) => getKotPdf(...args),
   },

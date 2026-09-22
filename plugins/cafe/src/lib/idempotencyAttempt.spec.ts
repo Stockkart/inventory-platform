@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { newKey, keyAfter } from './punchBasket';
+import { newKey, keyAfter } from './idempotencyAttempt';
 
 describe('newKey', () => {
-  it('gives every punch attempt its own key', () => {
+  it('gives every write attempt its own key', () => {
     expect(newKey()).not.toBe(newKey());
   });
 });
 
 describe('keyAfter', () => {
-  it('discards the key once the punch has happened', () => {
+  it('discards the key once the write has succeeded', () => {
     expect(keyAfter('SUCCESS', 'k')).toBeNull();
   });
 
@@ -21,8 +21,8 @@ describe('keyAfter', () => {
   });
 
   it('retains the key when the request never resolved', () => {
-    // The dangerous direction: the punch may have been recorded, and a fresh key
-    // would cook the round a second time.
+    // The dangerous direction: the write may have been recorded, and a fresh key
+    // would repeat its effect a second time.
     expect(keyAfter('NETWORK_ERROR', 'k')).toBe('k');
   });
 });

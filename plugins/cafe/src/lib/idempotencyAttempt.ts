@@ -1,6 +1,6 @@
-export type PunchOutcome = 'SUCCESS' | 'REJECTED' | 'SERVER_ERROR' | 'NETWORK_ERROR';
+export type AttemptOutcome = 'SUCCESS' | 'REJECTED' | 'SERVER_ERROR' | 'NETWORK_ERROR';
 
-/** Generates an Idempotency-Key for one punch attempt. */
+/** Generates an Idempotency-Key for one kitchen-facing write attempt (flush, reprint). */
 export function newKey(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID();
@@ -9,13 +9,13 @@ export function newKey(): string {
 }
 
 /**
- * Whether to keep the idempotency key after a punch attempt.
+ * Whether to keep the idempotency key after a write attempt.
  *
  * Retaining a key after a permanent rejection strands the next attempt behind a request
  * that can never succeed. Discarding one after a timeout is the dangerous direction: the
- * punch may well have been recorded, and a fresh key would cook the round twice.
+ * write may well have been recorded, and a fresh key would repeat its effect twice.
  */
-export function keyAfter(outcome: PunchOutcome, key: string): string | null {
+export function keyAfter(outcome: AttemptOutcome, key: string): string | null {
   switch (outcome) {
     case 'SUCCESS':
     case 'REJECTED':
