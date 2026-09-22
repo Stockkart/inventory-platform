@@ -21,10 +21,14 @@ export interface CafeTabStripProps {
 /**
  * The kitchen tabs, one per party.
  *
- * Deliberately the same shape, chrome and affordances as `ScanSellQuotationStack` in
- * `core/product` — the open-quotation tabs on the Sell screen. A KOT tab and a bill tab are
+ * Modelled on `ScanSellQuotationStack` in `core/product` — the open-quotation tabs on the
+ * Sell screen — and matching its shape, chrome and affordances. A KOT tab and a bill tab are
  * the same idea to the cashier (an open thing identified only by its token, closed only on
- * purpose), so they are the same control. Anything that changes here should change there.
+ * purpose), so they read as the same control. Two differences are deliberate, not drift:
+ * this strip keeps a persistent "No tabs open" row where the original returns `null` (with
+ * no tabs and no row there is nowhere to press `+ New`), and closing goes through a ui-kit
+ * `ConfirmDialog` naming the token and the item count rather than a bare `window.confirm`.
+ * Keep the chrome and wording in step with the original; leave those two alone.
  *
  * The count under each label is *pending* items: what is still on the tab and has not gone to
  * the kitchen. A tab showing "0 items" is an open tab whose round has already been printed,

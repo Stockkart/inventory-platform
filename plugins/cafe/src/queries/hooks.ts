@@ -22,13 +22,15 @@ import { outcomeOf } from './outcome';
  * so whatever happens next gets a fresh one — see `keyAfter` in `lib/punchBasket.ts` for the
  * retention rule itself.
  *
- * The key is written to `sessionStorage` (`lib/punchKeyStore.ts`), keyed by `scopeId`,
- * *before* the request goes out and removed once it settles. A ref alone is not enough: the
+ * The key, and the variables the request was made with, are written to `sessionStorage`
+ * (`lib/punchKeyStore.ts`) keyed by `scopeId`, *before* the request goes out, and removed
+ * once it settles. A ref alone is not enough: the
  * component driving this can remount when `scopeId` changes and is destroyed by a reload, so
  * a request whose response never arrived would leave the server holding an effect (tickets
  * punched, or flushed) that the client can no longer reach — press the button again and the
  * server, correctly, finds nothing new to do, while nothing has printed. Replaying the
- * parked key makes the server replay its answer instead.
+ * parked key makes the server replay its answer instead — which is what `CafeKotPage`'s
+ * resume effect does on mount, using the parked variables as the request body.
  *
  * Shared by `usePunchMutation`, `useFlushTabMutation` and `useReprintKotMutation` — one
  * scope id (a purchase, a tab, or a ticket) per caller, one request shape per caller.
@@ -37,23 +39,29 @@ function useIdempotentMutation<TData, TVariables>(
   scopeId: string,
   request: (idempotencyKey: string, variables: TVariables) => Promise<TData>,
 ): UseMutationResult<TData, unknown, TVariables> {
-  const keyRef = useRef<string | null>(null);
+  // Stamped with the scope it belongs to: one hook instance outlives a `scopeId` change
+  // (the KOT screen rebinds it as the cashier switches tabs), and a key retained after a
+  // server error must never be carried onto a different tab's flush.
+  const keyRef = useRef<{ scopeId: string; key: string } | null>(null);
+  const keyFor = (id: string) => (keyRef.current?.scopeId === id ? keyRef.current.key : null);
 
   return useMutation<TData, unknown, TVariables>({
     mutationFn: (variables: TVariables) => {
-      const key = keyRef.current ?? readPunchKey(scopeId) ?? newKey();
-      keyRef.current = key;
+      const key = keyFor(scopeId) ?? readPunchKey(scopeId) ?? newKey();
+      keyRef.current = { scopeId, key };
       // Parked before the request, not after: the case this exists for is the response
-      // that never comes back.
-      writePunchKey(scopeId, key);
+      // that never comes back. The variables ride along because replaying the key needs
+      // the same request body, and after a reload nothing else remembers it.
+      writePunchKey(scopeId, key, variables);
       return request(key, variables);
     },
-    onSettled: (_data, error) => {
+    onSettled: (_data, error, variables) => {
       const outcome = error ? outcomeOf(error) : 'SUCCESS';
-      const retained = keyRef.current ? keyAfter(outcome, keyRef.current) : null;
-      keyRef.current = retained;
+      const current = keyFor(scopeId);
+      const retained = current ? keyAfter(outcome, current) : null;
+      keyRef.current = retained ? { scopeId, key: retained } : null;
       if (retained) {
-        writePunchKey(scopeId, retained);
+        writePunchKey(scopeId, retained, variables);
       } else {
         clearPunchKey(scopeId);
       }

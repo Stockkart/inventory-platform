@@ -49,9 +49,26 @@ vi.mock('@inventory-platform/product/api', () => ({
   sellCatalogApi: { get: (...args: unknown[]) => sellCatalogGet(...args) },
 }));
 
-// The print transport opens a window and prints; here it only needs to resolve. The queue's
-// own behaviour is covered by lib/printQueue.spec.ts.
-vi.mock('../lib/printKot', () => ({ printKot: vi.fn().mockResolvedValue(undefined) }));
+/**
+ * `../lib/printKot` is deliberately **not** mocked.
+ *
+ * Mocking it wholesale severed the page from the print queue, which made
+ * `expect(getKotPdf).not.toHaveBeenCalled()` true whatever the failure path did — an
+ * enqueue injected into the `catch` passed the test. The real `printKot` runs here instead,
+ * so `getKotPdf` is called exactly when a ticket actually reaches the printer, and only the
+ * two browser calls at the very end of the transport are stubbed out.
+ */
+const openedWindows: Array<{ print: ReturnType<typeof vi.fn> }> = [];
+
+function stubPrintTransport() {
+  window.URL.createObjectURL = vi.fn(() => 'blob:kot');
+  window.URL.revokeObjectURL = vi.fn();
+  vi.spyOn(window, 'open').mockImplementation(() => {
+    const win = { addEventListener: vi.fn(), print: vi.fn() };
+    openedWindows.push(win);
+    return win as unknown as Window;
+  });
+}
 
 const MENU = {
   menu: {
@@ -106,6 +123,8 @@ async function renderPage() {
 }
 
 beforeEach(() => {
+  openedWindows.length = 0;
+  stubPrintTransport();
   sellCatalogGet.mockResolvedValue(MENU);
   listQuotations.mockResolvedValue({ quotations: [] });
   tabList.mockResolvedValue([tab()]);
@@ -116,6 +135,7 @@ afterEach(() => {
   // This workspace runs vitest with `globals: false`, so RTL never registers its own
   // auto-cleanup and every rendered screen would otherwise pile up in the same document.
   cleanup();
+  vi.restoreAllMocks();
   vi.clearAllMocks();
   window.sessionStorage.clear();
 });
@@ -176,6 +196,11 @@ describe('CafeKotPage', () => {
     await waitFor(() => expect(tabFlush).toHaveBeenCalledTimes(1));
     expect(tabFlush.mock.calls[0][1]).toEqual({ purchaseId: null });
 
+    // The ticket reached the printer through the real printKot -> getKotPdf chain. This is
+    // the live wiring that gives the failure test's `not.toHaveBeenCalled()` its meaning.
+    await waitFor(() => expect(getKotPdf).toHaveBeenCalledWith('k1'));
+    expect(await screen.findByText(/KOT 12 · KITCHEN/)).toBeTruthy();
+
     // The tab is still there, still Token 7, with nothing pending on it.
     expect(await screen.findByText(/Token 7 is still open and now empty/)).toBeTruthy();
     await waitFor(() => expect(screen.queryByText('2 × Masala Dosa')).toBeNull());
@@ -197,8 +222,13 @@ describe('CafeKotPage', () => {
 
     const alert = await screen.findByRole('alert');
     expect(alert.textContent).toContain('Kitchen printer unreachable');
-    // Nothing printed, and the round is still on the tab to try again.
+    // Nothing printed: no ticket fetched, and no print dialog opened. `printKot` is real in
+    // this file, so an enqueue reaching the queue from the `catch` fails both of these.
+    await act(async () => Promise.resolve());
     expect(getKotPdf).not.toHaveBeenCalled();
+    expect(openedWindows).toHaveLength(0);
+    expect(screen.queryByText(/^KOT /)).toBeNull();
+    // And the round is still on the tab to try again.
     expect(screen.getByText('2 × Masala Dosa')).toBeTruthy();
   });
 
@@ -237,6 +267,66 @@ describe('CafeKotPage', () => {
     });
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(tabFlush).toHaveBeenCalledTimes(1);
+  });
+
+  it('replays a flush whose answer was lost, and tells the cashier the round was recovered', async () => {
+    // What the cashier reopens after the response was lost: the server already claimed and
+    // emptied the tab, so there are no lines and Print KOT is disabled. Only the parked key
+    // knows a round is outstanding.
+    tabList.mockResolvedValue([tab({ lines: [] })]);
+    window.sessionStorage.setItem(
+      'cafe.kot.punchKey:t1',
+      JSON.stringify({ key: 'parked-key-1', variables: { purchaseId: 'p1' } }),
+    );
+    tabFlush.mockResolvedValue([{ kotId: 'k1', kotNo: '12', department: 'KITCHEN' }]);
+
+    await renderPage();
+
+    // Same key, same bill — the server replays the tickets it already made rather than
+    // cooking the round a second time.
+    await waitFor(() => expect(tabFlush).toHaveBeenCalledTimes(1));
+    expect(tabFlush.mock.calls[0]).toEqual(['t1', { purchaseId: 'p1' }, 'parked-key-1']);
+
+    // Those tickets reach the printer, and the cashier is told what happened rather than
+    // watching paper appear for a round they do not remember pressing.
+    await waitFor(() => expect(getKotPdf).toHaveBeenCalledWith('k1'));
+    expect(await screen.findByText(/Recovered an unfinished round on token 7/)).toBeTruthy();
+    expect(screen.getByText(/Nothing was ordered twice/)).toBeTruthy();
+
+    // Settled, so the next press starts a fresh round rather than replaying this one.
+    await waitFor(() => expect(window.sessionStorage.getItem('cafe.kot.punchKey:t1')).toBeNull());
+  });
+
+  it('surfaces a failed resume on the page, where there is no dialog to show it on', async () => {
+    tabList.mockResolvedValue([tab({ lines: [] })]);
+    window.sessionStorage.setItem(
+      'cafe.kot.punchKey:t1',
+      JSON.stringify({ key: 'parked-key-1', variables: { purchaseId: 'p1' } }),
+    );
+    tabFlush.mockRejectedValue(
+      Object.assign(new Error('boom'), {
+        response: { status: 503, data: { message: 'Kitchen service down' } },
+      }),
+    );
+
+    await renderPage();
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('Could not recover an unfinished round on token 7');
+    expect(alert.textContent).toContain('Kitchen service down');
+    expect(getKotPdf).not.toHaveBeenCalled();
+    // A 5xx keeps the key: the round is still outstanding and still resumable.
+    expect(window.sessionStorage.getItem('cafe.kot.punchKey:t1')).toContain('parked-key-1');
+  });
+
+  it('does not resume when there is nothing parked', async () => {
+    tabList.mockResolvedValue([tab({ lines: [DOSA_LINE] })]);
+
+    await renderPage();
+    await screen.findByRole('button', { name: 'Print KOT' });
+    await act(async () => Promise.resolve());
+
+    expect(tabFlush).not.toHaveBeenCalled();
   });
 
   it('asks before closing a tab, and closes only once confirmed', async () => {

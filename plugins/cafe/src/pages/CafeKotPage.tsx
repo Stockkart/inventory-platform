@@ -9,6 +9,7 @@ import {
   productChrome,
 } from '@inventory-platform/ui-kit';
 import { printKot } from '../lib/printKot';
+import { clearPunchKey, readParkedAttempt } from '../lib/punchKeyStore';
 import { createPrintQueue, type PrintState } from '../lib/printQueue';
 import {
   useAddTabLineMutation,
@@ -80,6 +81,7 @@ export function CafeKotPage() {
   const [targetOpen, setTargetOpen] = useState(false);
   const [flushError, setFlushError] = useState<string | null>(null);
   const [closingTabId, setClosingTabId] = useState<string | null>(null);
+  const [resumeTabId, setResumeTabId] = useState<string | null>(null);
 
   const tabs = useMemo(() => tabsQuery.data ?? [], [tabsQuery.data]);
   const activeTab = tabs.find((tab) => tab.id === activeTabId) ?? tabs[0] ?? null;
@@ -90,6 +92,28 @@ export function CafeKotPage() {
     if (activeTabId && tabs.some((tab) => tab.id === activeTabId)) return;
     setActiveTabId(tabs[0]?.id ?? null);
   }, [tabs, activeTabId]);
+
+  /**
+   * A flush whose response never arrived leaves its key parked in `sessionStorage`, and
+   * until this mount nothing ever read it back.
+   *
+   * The server claims and empties the tab *before* it creates the tickets, so the cashier
+   * who reloads mid-flush reopens a tab that is empty, with Print KOT disabled — there is no
+   * press left on this screen that could reach the tickets the server already made. So look
+   * for a parked round once per mount, as soon as the tab list is known, and select the tab
+   * it belongs to; the effect below replays it. Once per mount only: a resume that keeps
+   * failing must not become a loop.
+   */
+  const resumeScannedRef = useRef(false);
+
+  useEffect(() => {
+    if (resumeScannedRef.current || !tabsQuery.isSuccess) return;
+    resumeScannedRef.current = true;
+    const parkedTab = tabs.find((tab) => readParkedAttempt(tab.id) !== null);
+    if (!parkedTab) return;
+    setActiveTabId(parkedTab.id);
+    setResumeTabId(parkedTab.id);
+  }, [tabs, tabsQuery.isSuccess]);
 
   const addLine = useAddTabLineMutation(activeTab?.id ?? '');
   const removeLine = useRemoveTabLineMutation(activeTab?.id ?? '');
@@ -134,7 +158,8 @@ export function CafeKotPage() {
   const flushInFlightRef = useRef(false);
 
   const handleChooseTarget = useCallback(
-    async (target: CafeFlushTarget) => {
+    async (target: CafeFlushTarget, options?: { resumed?: boolean }) => {
+      const resumed = options?.resumed ?? false;
       if (flushInFlightRef.current || !activeTab) return;
       flushInFlightRef.current = true;
       setFlushError(null);
@@ -160,22 +185,60 @@ export function CafeKotPage() {
         void queryClient.invalidateQueries({ queryKey: cafeTabKeys.list() });
         void queryClient.invalidateQueries({ queryKey: cafeKotScreenKeys.openBills() });
         setTargetOpen(false);
+        const tickets = `${sent.length} ticket${sent.length === 1 ? '' : 's'}`;
         setNotice({
           tone: 'success',
-          text: `Sent ${sent.length} ticket${
-            sent.length === 1 ? '' : 's'
-          } to the kitchen. Token ${token} is still open and now empty — add the next round to it.`,
+          text: resumed
+            ? `Recovered an unfinished round on token ${token}: the kitchen had already taken it, so ${tickets} ${
+                sent.length === 1 ? 'was' : 'were'
+              } re-sent to the printer. Nothing was ordered twice.`
+            : `Sent ${tickets} to the kitchen. Token ${token} is still open and now empty — add the next round to it.`,
         });
       } catch (error) {
-        // Stays on the dialog, where the press happened. A flush that fails quietly is an
-        // order the kitchen never sees.
-        setFlushError(errorText(error));
+        // A flush that fails quietly is an order the kitchen never sees. A press stays on
+        // the dialog it was made from; a resume has no dialog, so it surfaces on the page.
+        if (resumed) {
+          setNotice({
+            tone: 'danger',
+            text: `Could not recover an unfinished round on token ${token}: ${errorText(
+              error,
+            )}. The kitchen may already have it — check with them before sending it again.`,
+          });
+        } else {
+          setFlushError(errorText(error));
+        }
       } finally {
         flushInFlightRef.current = false;
       }
     },
     [activeTab, flushTab, queryClient, queue],
   );
+
+  /**
+   * Replays the parked round once the strip has actually switched to its tab — `flushTab` is
+   * bound to the active tab, so firing before then would flush the wrong one.
+   *
+   * This is a replay, not a second round: `useIdempotentMutation` picks the parked key back
+   * up out of `sessionStorage`, and the server answers a key it has already seen with the
+   * tickets it made for it, which then go to the print queue like any other.
+   */
+  useEffect(() => {
+    if (!resumeTabId || !activeTab || activeTab.id !== resumeTabId) return;
+    setResumeTabId(null);
+    const parked = readParkedAttempt<CafeFlushTarget>(resumeTabId);
+    if (!parked) return;
+    if (!parked.variables) {
+      // A key parked without its target — an older build's record. Which bill the round
+      // belongs to is unknowable, and guessing would open a bill nobody asked for.
+      clearPunchKey(resumeTabId);
+      setNotice({
+        tone: 'danger',
+        text: `Token ${activeTab.tokenNo} has an unfinished round from an earlier session that cannot be re-sent automatically. Check with the kitchen before sending it again.`,
+      });
+      return;
+    }
+    void handleChooseTarget(parked.variables, { resumed: true });
+  }, [resumeTabId, activeTab, handleChooseTarget]);
 
   const handleAddLine = useCallback(
     (line: CafeTabLineInput) => {

@@ -23,8 +23,21 @@ cafe layout with menu catalog + quotations) — loaded by `verticalId` via the p
 what has not yet been sent**. Print KOT asks which bill the round belongs to, sends one ticket
 per station, appends the lines to that bill, and empties the tab — which keeps its token.
 
-- The tab strip is deliberately the same control as `ScanSellQuotationStack` in `core/product`
-  (same chrome, same `+ New`, same confirm-before-close). Change one, change the other.
+- The tab strip follows `ScanSellQuotationStack` in `core/product` as its model — same
+  chrome, same `+ New`, same confirm-before-close — so a cashier does not learn two tab
+  idioms for one concept. It is a sibling, not a copy, and deliberately differs twice: it
+  keeps a persistent "No tabs open" row where the original returns `null` (with no tabs and
+  no row there is nowhere to press `+ New`), and its confirm is a ui-kit `ConfirmDialog`
+  naming the token and the item count instead of a bare `window.confirm`. Keep the two in
+  step on chrome and wording; do not propagate either of those two behaviours.
+- **A flush whose response is lost resumes on the next mount.** The server claims and
+  empties the tab before it creates any ticket, so a reload mid-flush would otherwise leave
+  an empty tab, a disabled Print KOT, and tickets nothing on the screen can reach. The
+  idempotency key is parked in `sessionStorage` **with the chosen bill** (`lib/punchKeyStore.ts`
+  — the key alone cannot rebuild the request body once the cashier's choice is out of memory);
+  on mount the page finds the parked round, replays it under the same key, prints what the
+  server replays, and says so in a "Recovered an unfinished round on token N" notice. A resume
+  that fails surfaces as a page-level alert, since there is no dialog open to carry it.
 - **The nav entry is contributed by the backend `CafeUiContributor`, not by `nav.ts` here.** A
   nav item added in this layer does not reach the sidebar, and the screen stays unreachable.
 - `queries/screenData.ts` holds the hooks that import `@inventory-platform/product/api`; that
