@@ -1,48 +1,49 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import axios from 'axios';
 import { apiClient } from '@inventory-platform/api-client';
 import { newKey } from '../lib/idempotencyAttempt';
 
-vi.mock('axios', () => ({
-  default: {
-    post: vi.fn(),
-    get: vi.fn(),
-  },
-}));
-
-// cafeTabApi's non-idempotent routes go through apiClient (platform/api-client), not raw
-// axios, so the fixture is mocked directly rather than trying to make the real
-// ApiClient's internal `axios.create()` work against the minimal axios mock above.
+/**
+ * Every call in this module — the kitchen-facing writes included — goes through
+ * `apiClient`, so the session interceptors (401 → re-login, 402 → plan expired, AxiosError →
+ * ApiError) apply to them. These tests mock that client directly rather than trying to make
+ * the real `ApiClient`'s internal `axios.create()` work against a stub: what they assert is
+ * the path, the body and the per-call `Idempotency-Key` header this layer is responsible for.
+ *
+ * `axios` itself is deliberately NOT mocked here. If a call ever slips back onto raw axios it
+ * will fail these assertions rather than quietly bypassing the interceptors again.
+ */
 vi.mock('@inventory-platform/api-client', () => ({
   apiClient: {
     get: vi.fn(),
     post: vi.fn(),
     delete: vi.fn(),
+    getBlob: vi.fn(),
+    postBlob: vi.fn(),
   },
 }));
 
-const mockedAxios = vi.mocked(axios, true);
 const mockedApiClient = vi.mocked(apiClient, true);
 
-describe('cafeKotApi.getKotPdf', () => {
-  beforeEach(() => {
-    mockedAxios.post.mockReset();
-    mockedAxios.get.mockReset();
-  });
+beforeEach(() => {
+  mockedApiClient.get.mockReset();
+  mockedApiClient.post.mockReset();
+  mockedApiClient.delete.mockReset();
+  mockedApiClient.getBlob.mockReset();
+  mockedApiClient.postBlob.mockReset();
+});
 
+describe('cafeKotApi.getKotPdf', () => {
   it('fetches the ticket document as a blob', async () => {
     const blob = new Blob(['%PDF'], { type: 'application/pdf' });
-    mockedAxios.get.mockResolvedValue({ data: blob });
+    mockedApiClient.getBlob.mockResolvedValue(blob);
     const { cafeKotApi } = await import('./cafe-kot.api');
 
     await expect(cafeKotApi.getKotPdf('k1')).resolves.toBe(blob);
-    const [url, config] = mockedAxios.get.mock.calls[0];
-    expect(url).toBe('http://localhost:8080/api/v1/cafe/kots/k1/document');
-    expect(config?.responseType).toBe('blob');
+    expect(mockedApiClient.getBlob).toHaveBeenCalledWith('/cafe/kots/k1/document');
   });
 
   it('rejects rather than resolving empty when the document fetch fails', async () => {
-    mockedAxios.get.mockRejectedValue(new Error('offline'));
+    mockedApiClient.getBlob.mockRejectedValue(new Error('offline'));
     const { cafeKotApi } = await import('./cafe-kot.api');
 
     await expect(cafeKotApi.getKotPdf('k1')).rejects.toThrow('offline');
@@ -50,20 +51,17 @@ describe('cafeKotApi.getKotPdf', () => {
 });
 
 describe('cafeKotApi.reprint', () => {
-  beforeEach(() => {
-    mockedAxios.post.mockReset();
-  });
-
   it('posts to the reprint URL with the Idempotency-Key header', async () => {
-    mockedAxios.post.mockResolvedValue({ data: new Blob(['%PDF']) });
+    mockedApiClient.postBlob.mockResolvedValue(new Blob(['%PDF']));
     const { cafeKotApi } = await import('./cafe-kot.api');
 
     await cafeKotApi.reprint('k1', 'key-1');
 
-    expect(mockedAxios.post).toHaveBeenCalledTimes(1);
-    const [url, , config] = mockedAxios.post.mock.calls[0];
-    expect(url).toBe('http://localhost:8080/api/v1/cafe/kots/k1/reprint');
-    expect(config?.headers?.['Idempotency-Key']).toBe('key-1');
+    expect(mockedApiClient.postBlob).toHaveBeenCalledTimes(1);
+    const [url, body, options] = mockedApiClient.postBlob.mock.calls[0];
+    expect(url).toBe('/cafe/kots/k1/reprint');
+    expect(body).toBeUndefined();
+    expect(options?.headers?.['Idempotency-Key']).toBe('key-1');
   });
 
   // The stamp lives only on the reprint render: GET .../document never stamps REPRINT, so
@@ -71,20 +69,16 @@ describe('cafeKotApi.reprint', () => {
   // unstamped slip for food already being made.
   it('reads the stamped slip itself rather than a JSON body', async () => {
     const slip = new Blob(['%PDF']);
-    mockedAxios.post.mockResolvedValue({ data: slip });
+    mockedApiClient.postBlob.mockResolvedValue(slip);
     const { cafeKotApi } = await import('./cafe-kot.api');
 
-    const result = await cafeKotApi.reprint('k1', 'key-1');
-
-    const [, , config] = mockedAxios.post.mock.calls[0];
-    expect(config?.responseType).toBe('blob');
-    expect(result).toBe(slip);
+    await expect(cafeKotApi.reprint('k1', 'key-1')).resolves.toBe(slip);
+    // A blob-bodied POST, not the JSON `post` helper.
+    expect(mockedApiClient.post).not.toHaveBeenCalled();
   });
 
   it('rejects rather than resolving empty when the server errors', async () => {
-    mockedAxios.post.mockRejectedValue(
-      Object.assign(new Error('boom'), { response: { status: 500 } }),
-    );
+    mockedApiClient.postBlob.mockRejectedValue(new Error('boom'));
     const { cafeKotApi } = await import('./cafe-kot.api');
 
     await expect(cafeKotApi.reprint('k1', 'key-1')).rejects.toThrow('boom');
@@ -92,13 +86,6 @@ describe('cafeKotApi.reprint', () => {
 });
 
 describe('cafeTabApi', () => {
-  beforeEach(() => {
-    mockedAxios.post.mockReset();
-    mockedApiClient.get.mockReset();
-    mockedApiClient.post.mockReset();
-    mockedApiClient.delete.mockReset();
-  });
-
   it('lists tabs from the tab collection URL', async () => {
     const tabs = [{ id: 't1', tokenNo: '4', status: 'OPEN', lines: [] }];
     mockedApiClient.get.mockResolvedValue({ success: true, data: tabs });
@@ -156,61 +143,62 @@ describe('cafeTabApi', () => {
 
   describe('flush', () => {
     it('posts to the flush URL with the Idempotency-Key header and the chosen target', async () => {
-      mockedAxios.post.mockResolvedValue({ data: { data: [] } });
+      mockedApiClient.post.mockResolvedValue({ success: true, data: [] });
       const { cafeTabApi } = await import('./cafe-kot.api');
 
       await cafeTabApi.flush('t1', { purchaseId: 'p1' }, 'key-1');
 
-      expect(mockedAxios.post).toHaveBeenCalledTimes(1);
-      const [url, body, config] = mockedAxios.post.mock.calls[0];
-      expect(url).toBe('http://localhost:8080/api/v1/cafe/tabs/t1/flush');
+      expect(mockedApiClient.post).toHaveBeenCalledTimes(1);
+      const [url, body, options] = mockedApiClient.post.mock.calls[0];
+      expect(url).toBe('/cafe/tabs/t1/flush');
       expect(body).toEqual({ purchaseId: 'p1' });
-      expect(config?.headers?.['Idempotency-Key']).toBe('key-1');
+      expect(
+        (options as { headers?: Record<string, string> } | undefined)?.headers?.['Idempotency-Key'],
+      ).toBe('key-1');
     });
 
     it('posts a null purchaseId when the round asks for a new bill', async () => {
-      mockedAxios.post.mockResolvedValue({ data: { data: [] } });
+      mockedApiClient.post.mockResolvedValue({ success: true, data: [] });
       const { cafeTabApi } = await import('./cafe-kot.api');
 
       await cafeTabApi.flush('t1', { purchaseId: null }, 'key-1');
 
-      const [, body] = mockedAxios.post.mock.calls[0];
+      const [, body] = mockedApiClient.post.mock.calls[0];
       expect(body).toEqual({ purchaseId: null });
     });
 
     it('resolves with the created tickets from the response envelope', async () => {
       const tickets = [{ kotId: 'k1' }, { kotId: 'k2' }];
-      mockedAxios.post.mockResolvedValue({ data: { data: tickets } });
+      mockedApiClient.post.mockResolvedValue({ success: true, data: tickets });
       const { cafeTabApi } = await import('./cafe-kot.api');
 
       await expect(cafeTabApi.flush('t1', { purchaseId: 'p1' }, 'key-1')).resolves.toBe(tickets);
     });
 
     it('rejects rather than resolving empty when the server errors', async () => {
-      mockedAxios.post.mockRejectedValue(
-        Object.assign(new Error('boom'), { response: { status: 500 } }),
-      );
+      mockedApiClient.post.mockRejectedValue(new Error('boom'));
       const { cafeTabApi } = await import('./cafe-kot.api');
 
       await expect(cafeTabApi.flush('t1', { purchaseId: 'p1' }, 'key-1')).rejects.toThrow('boom');
     });
 
     it('reuses the same key across a retry of one flush attempt', async () => {
-      mockedAxios.post.mockResolvedValue({ data: { data: [] } });
+      mockedApiClient.post.mockResolvedValue({ success: true, data: [] });
       const { cafeTabApi } = await import('./cafe-kot.api');
 
       const key = newKey();
       await cafeTabApi.flush('t1', { purchaseId: 'p1' }, key);
       await cafeTabApi.flush('t1', { purchaseId: 'p1' }, key); // retry of the same attempt
 
-      const first = mockedAxios.post.mock.calls[0][2]?.headers?.['Idempotency-Key'];
-      const second = mockedAxios.post.mock.calls[1][2]?.headers?.['Idempotency-Key'];
-      expect(first).toBe(key);
-      expect(second).toBe(key);
+      const headerOf = (call: number) =>
+        (mockedApiClient.post.mock.calls[call][2] as { headers?: Record<string, string> })
+          ?.headers?.['Idempotency-Key'];
+      expect(headerOf(0)).toBe(key);
+      expect(headerOf(1)).toBe(key);
     });
 
     it('uses a different key for a second, independent flush attempt', async () => {
-      mockedAxios.post.mockResolvedValue({ data: { data: [] } });
+      mockedApiClient.post.mockResolvedValue({ success: true, data: [] });
       const { cafeTabApi } = await import('./cafe-kot.api');
 
       const firstAttemptKey = newKey();
@@ -219,9 +207,10 @@ describe('cafeTabApi', () => {
       await cafeTabApi.flush('t1', { purchaseId: 'p1' }, firstAttemptKey);
       await cafeTabApi.flush('t1', { purchaseId: 'p1' }, secondAttemptKey);
 
-      const first = mockedAxios.post.mock.calls[0][2]?.headers?.['Idempotency-Key'];
-      const second = mockedAxios.post.mock.calls[1][2]?.headers?.['Idempotency-Key'];
-      expect(first).not.toBe(second);
+      const headerOf = (call: number) =>
+        (mockedApiClient.post.mock.calls[call][2] as { headers?: Record<string, string> })
+          ?.headers?.['Idempotency-Key'];
+      expect(headerOf(0)).not.toBe(headerOf(1));
     });
   });
 });

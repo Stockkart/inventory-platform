@@ -38,14 +38,21 @@ import { outcomeOf } from './outcome';
 function useIdempotentMutation<TData, TVariables>(
   scopeId: string,
   request: (idempotencyKey: string, variables: TVariables) => Promise<TData>,
-): UseMutationResult<TData, unknown, TVariables> {
+): UseMutationResult<TData, unknown, TVariables, { scopeId: string }> {
   // Stamped with the scope it belongs to: one hook instance outlives a `scopeId` change
   // (the KOT screen rebinds it as the cashier switches tabs), and a key retained after a
   // server error must never be carried onto a different tab's flush.
   const keyRef = useRef<{ scopeId: string; key: string } | null>(null);
   const keyFor = (id: string) => (keyRef.current?.scopeId === id ? keyRef.current.key : null);
 
-  return useMutation<TData, unknown, TVariables>({
+  return useMutation<TData, unknown, TVariables, { scopeId: string }>({
+    // The scope the request goes out under, captured at `mutate()` time and handed to
+    // `onSettled` as its context. `onSettled` runs from whichever render is current when the
+    // response lands, and `scopeId` in that closure is whatever tab is selected by then — not
+    // necessarily the one that was flushed. Settling against the current render's scope
+    // cleared the wrong tab's parked key (stranding its round for good) and left the flushed
+    // tab's key parked even on success, which the next mount then replays as a phantom resume.
+    onMutate: () => ({ scopeId }),
     mutationFn: (variables: TVariables) => {
       const key = keyFor(scopeId) ?? readPunchKey(scopeId) ?? newKey();
       keyRef.current = { scopeId, key };
@@ -55,15 +62,18 @@ function useIdempotentMutation<TData, TVariables>(
       writePunchKey(scopeId, key, variables);
       return request(key, variables);
     },
-    onSettled: (_data, error, variables) => {
+    onSettled: (_data, error, variables, context) => {
+      // `context` first; `keyRef` is the fallback for the one path that reaches `onSettled`
+      // without an `onMutate` context (a mutation rejected before it was dispatched).
+      const settledScopeId = context?.scopeId ?? keyRef.current?.scopeId ?? scopeId;
       const outcome = error ? outcomeOf(error) : 'SUCCESS';
-      const current = keyFor(scopeId);
+      const current = keyFor(settledScopeId);
       const retained = current ? keyAfter(outcome, current) : null;
-      keyRef.current = retained ? { scopeId, key: retained } : null;
+      keyRef.current = retained ? { scopeId: settledScopeId, key: retained } : null;
       if (retained) {
-        writePunchKey(scopeId, retained, variables);
+        writePunchKey(settledScopeId, retained, variables);
       } else {
-        clearPunchKey(scopeId);
+        clearPunchKey(settledScopeId);
       }
     },
   });

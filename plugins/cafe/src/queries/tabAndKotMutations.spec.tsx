@@ -101,6 +101,52 @@ describe('useFlushTabMutation', () => {
     expect(secondKey).not.toBe(firstKey);
   });
 
+  /**
+   * A tab switch mid-flush used to settle against whatever tab was selected when the response
+   * landed, not the tab the request went out under: the flushed tab's key stayed parked even
+   * on success (so the next mount replayed it as a phantom resume, re-printing an UNSTAMPED
+   * slip), while a different tab's parked key was deleted, stranding that round for good.
+   */
+  it('settles the key of the tab the request went out under, not the one now selected', async () => {
+    window.sessionStorage.setItem(
+      'cafe.kot.punchKey:t2',
+      JSON.stringify({ key: 'parked-t2', variables: { purchaseId: 'p9' } }),
+    );
+    let release: ((value: unknown) => void) | undefined;
+    flush.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          release = resolve;
+        }),
+    );
+    const { useFlushTabMutation } = await import('./hooks');
+
+    const { result, rerender } = renderHook(
+      ({ tabId }: { tabId: string }) => useFlushTabMutation(tabId),
+      { wrapper, initialProps: { tabId: 't1' } },
+    );
+
+    let pending: Promise<unknown> | undefined;
+    act(() => {
+      pending = result.current.mutateAsync({ purchaseId: 'p1' });
+    });
+    await waitFor(() => expect(flush).toHaveBeenCalledTimes(1));
+    expect(window.sessionStorage.getItem('cafe.kot.punchKey:t1')).toContain('p1');
+
+    // The cashier switches to the other tab while the flush is still open.
+    rerender({ tabId: 't2' });
+
+    await act(async () => {
+      release?.([{ kotId: 'k1' }]);
+      await pending;
+    });
+
+    // t1's round is settled, so nothing replays it.
+    expect(window.sessionStorage.getItem('cafe.kot.punchKey:t1')).toBeNull();
+    // t2's own stranded round is untouched, and still resumable.
+    expect(window.sessionStorage.getItem('cafe.kot.punchKey:t2')).toContain('parked-t2');
+  });
+
   it('survives a remount: a flush whose response never arrived is retried under the same key', async () => {
     let resolveFlush: ((value: unknown) => void) | undefined;
     flush.mockImplementationOnce(

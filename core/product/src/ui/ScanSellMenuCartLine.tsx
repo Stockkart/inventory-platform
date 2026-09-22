@@ -33,13 +33,21 @@ function money(n: number): string {
 
 /**
  * Asks the cashier to confirm before a reduction reaches below what the
- * kitchen already has, or a fully-sent line is removed. Names the station
- * so the confirmation reads as "this dish is being thrown away", not a
- * generic undo.
+ * kitchen already has, or a fully-sent line is removed. Names the station,
+ * and says plainly that the station is **not** told.
+ *
+ * The server does create a CANCEL ticket for this reduction, stamped and routed to the
+ * station — but nothing prints it. The browser is the only printer in this system
+ * (`plugins/cafe/src/lib/printKot.ts` is the only transport, and the Go print bridge is
+ * deferred), the reduction path returns no ticket id, and `core/product` may not import
+ * the cafe plugin that owns the transport. So the slip stays in Mongo and the cook keeps
+ * cooking. Until that round trip exists, this confirmation must not imply otherwise: a
+ * cashier who reads "that food will be thrown away" stops telling the kitchen, which is
+ * worse than no confirmation at all. See `plugins/cafe/README.md`, "Known gap".
  */
 function confirmWithdrawal(withdrawnQty: number, itemName: string, station: string): boolean {
   return window.confirm(
-    `${station} already has ${withdrawnQty} ${itemName}. This will withdraw ${withdrawnQty} from ${station} — that food will be thrown away. Continue?`,
+    `${station} already has ${withdrawnQty} ${itemName}. This changes the bill only — no cancellation slip is printed, so ${station} will keep making it unless you tell them yourself. Continue?`,
   );
 }
 
@@ -72,12 +80,15 @@ export function ScanSellMenuCartLine({
   const itemName = line.name || 'this item';
 
   const sentQty = Math.trunc(Number(line.kotSentQuantity ?? 0));
-  // Paired against baseQuantity, not quantity: kotSentQuantity counts base units, and the two
-  // coincide only while every menu item has a unit factor of 1. Menu portions (Qtr/Half/Full) are
-  // the next feature, and they are what makes a sale-unit count diverge from a base-unit one — at
-  // which point comparing against `quantity` would badge the wrong number and confirm withdrawing
-  // a quantity nobody is withdrawing. Fall back to quantity only when the server omits the field.
-  const totalQty = Math.trunc(Number(line.baseQuantity ?? line.quantity));
+  // Everything the kitchen knows about is counted in BASE units: kotSentQuantity, baseQuantity.
+  // Everything the stepper deals in is counted in SALE units: line.quantity, the value the
+  // cashier types, the delta handed to onChangeQty. The two coincide only while every menu item
+  // has a unit factor of 1. Menu portions (Qtr/Half/Full) are the next feature and are exactly
+  // what makes them diverge — so every comparison against sentQty converts the sale-unit figure
+  // to base units first, via `toBaseQty`, instead of comparing the two scales directly.
+  const unitFactor = Number(line.unitFactor ?? 1) || 1;
+  const toBaseQty = (saleQty: number) => Math.trunc(saleQty * unitFactor);
+  const totalQty = Math.trunc(Number(line.baseQuantity ?? toBaseQty(line.quantity)));
   const isFullySent = sentQty > 0 && sentQty === totalQty;
   const isPartlySent = sentQty > 0 && sentQty < totalQty;
   const station = line.department?.trim() || 'the kitchen';
@@ -88,9 +99,10 @@ export function ScanSellMenuCartLine({
   };
 
   const handleDecrement = () => {
-    const nextQty = totalQty - 1;
-    if (sentQty > 0 && nextQty < sentQty) {
-      if (!confirmWithdrawal(sentQty - nextQty, itemName, station)) return;
+    // One step down is one SALE unit; what it leaves the kitchen holding is measured in base.
+    const nextBaseQty = toBaseQty(line.quantity - 1);
+    if (sentQty > 0 && nextBaseQty < sentQty) {
+      if (!confirmWithdrawal(sentQty - nextBaseQty, itemName, station)) return;
     }
     void runWithdrawal(() => onChangeQty(ref, -1));
   };
@@ -100,8 +112,10 @@ export function ScanSellMenuCartLine({
   };
 
   const handleCommit = async (newQty: number) => {
-    if (sentQty > 0 && newQty < sentQty) {
-      if (!confirmWithdrawal(sentQty - newQty, itemName, station)) {
+    // `newQty` is what the cashier typed into the stepper — a SALE-unit count.
+    const nextBaseQty = toBaseQty(newQty);
+    if (sentQty > 0 && nextBaseQty < sentQty) {
+      if (!confirmWithdrawal(sentQty - nextBaseQty, itemName, station)) {
         // Reject so CartQtyStepper resets the draft input to the current quantity.
         throw new Error('withdrawal declined');
       }

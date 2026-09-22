@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { CafeKot } from '../types/kot';
 import type { CafeTab } from '../types/tab';
 
 /**
@@ -98,6 +99,26 @@ const DOSA_LINE = {
   department: 'KITCHEN',
 };
 
+/**
+ * A ticket in the shape the server actually returns. The fixtures used to be a three-field
+ * object literal that `CafeKot` would not accept — invisible, because this package's
+ * `tsconfig.lib.json` excludes specs from typechecking. Annotating the factory puts the
+ * fixture back under the wire contract, so a field that moves on the server breaks here.
+ */
+function kot(overrides: Partial<CafeKot> = {}): CafeKot {
+  return {
+    kotId: 'k1',
+    shopId: 'shop-1',
+    purchaseId: 'p1',
+    kotNo: 12,
+    department: 'KITCHEN',
+    roundNo: 1,
+    kind: 'ISSUE',
+    lines: [{ lineId: 'l1', name: 'Masala Dosa', quantity: 2, note: 'no onion' }],
+    ...overrides,
+  };
+}
+
 function bill(purchaseId: string, tokenNo: string, itemCount: number) {
   return {
     purchaseId,
@@ -186,7 +207,7 @@ describe('CafeKotPage', () => {
     tabList
       .mockResolvedValueOnce([tab({ lines: [DOSA_LINE] })])
       .mockResolvedValue([tab({ lines: [] })]);
-    tabFlush.mockResolvedValue([{ kotId: 'k1', kotNo: '12', department: 'KITCHEN' }]);
+    tabFlush.mockResolvedValue([kot()]);
 
     await renderPage();
     fireEvent.click(await screen.findByRole('button', { name: 'Print KOT' }));
@@ -262,7 +283,7 @@ describe('CafeKotPage', () => {
     expect(tabFlush).toHaveBeenCalledTimes(1);
 
     await act(async () => {
-      release([{ kotId: 'k1', kotNo: '12', department: 'KITCHEN' }]);
+      release([kot()]);
     });
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(tabFlush).toHaveBeenCalledTimes(1);
@@ -277,7 +298,7 @@ describe('CafeKotPage', () => {
       'cafe.kot.punchKey:t1',
       JSON.stringify({ key: 'parked-key-1', variables: { purchaseId: 'p1' } }),
     );
-    tabFlush.mockResolvedValue([{ kotId: 'k1', kotNo: '12', department: 'KITCHEN' }]);
+    tabFlush.mockResolvedValue([kot()]);
 
     await renderPage();
 
@@ -294,6 +315,78 @@ describe('CafeKotPage', () => {
 
     // Settled, so the next press starts a fresh round rather than replaying this one.
     await waitFor(() => expect(window.sessionStorage.getItem('cafe.kot.punchKey:t1')).toBeNull());
+  });
+
+  /**
+   * A bad connection does not politely strand one party. Taking only the first parked tab left
+   * the second one billed to a customer, ticketed on the server, never printed, and never
+   * mentioned — which is the silence the resume exists to prevent.
+   */
+  it('resumes every stranded round, not just the first', async () => {
+    tabList.mockResolvedValue([
+      tab({ id: 't1', tokenNo: '7', lines: [] }),
+      tab({ id: 't2', tokenNo: '8', lines: [] }),
+    ]);
+    window.sessionStorage.setItem(
+      'cafe.kot.punchKey:t1',
+      JSON.stringify({ key: 'key-t1', variables: { purchaseId: 'p1' } }),
+    );
+    window.sessionStorage.setItem(
+      'cafe.kot.punchKey:t2',
+      JSON.stringify({ key: 'key-t2', variables: { purchaseId: 'p2' } }),
+    );
+    tabFlush.mockImplementation((tabId: string) =>
+      Promise.resolve([
+        tabId === 't1'
+          ? kot({ kotId: 'k-t1', kotNo: 12 })
+          : kot({ kotId: 'k-t2', kotNo: 13, purchaseId: 'p2' }),
+      ]),
+    );
+
+    await renderPage();
+
+    // Each round replayed on its own tab, under its own parked key and its own bill.
+    await waitFor(() => expect(tabFlush).toHaveBeenCalledTimes(2));
+    expect(tabFlush.mock.calls[0]).toEqual(['t1', { purchaseId: 'p1' }, 'key-t1']);
+    expect(tabFlush.mock.calls[1]).toEqual(['t2', { purchaseId: 'p2' }, 'key-t2']);
+
+    // Both rounds reached paper, and both are on the page — one notice cannot overwrite the
+    // other, or the cashier only ever learns about the last party.
+    await waitFor(() => expect(getKotPdf).toHaveBeenCalledWith('k-t1'));
+    await waitFor(() => expect(getKotPdf).toHaveBeenCalledWith('k-t2'));
+    expect(await screen.findByText(/Recovered an unfinished round on token 7/)).toBeTruthy();
+    expect(await screen.findByText(/Recovered an unfinished round on token 8/)).toBeTruthy();
+
+    // Both settled, so neither replays again on the next mount.
+    await waitFor(() => expect(window.sessionStorage.getItem('cafe.kot.punchKey:t1')).toBeNull());
+    expect(window.sessionStorage.getItem('cafe.kot.punchKey:t2')).toBeNull();
+  });
+
+  /**
+   * The strip used to dedupe on its own while every returned ticket was enqueued, so a
+   * replayed response drove a second print of a slip that is NOT stamped REPRINT — the exact
+   * "reads as a second order" failure the stamp exists to prevent.
+   */
+  it('does not print a ticket twice when the server replays one already printed here', async () => {
+    tabList
+      .mockResolvedValueOnce([tab({ lines: [DOSA_LINE] })])
+      .mockResolvedValue([tab({ lines: [DOSA_LINE] })]);
+    tabFlush.mockResolvedValue([kot({ kotId: 'k1', kotNo: 12 })]);
+
+    await renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: 'Print KOT' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'New bill' }));
+    await waitFor(() => expect(getKotPdf).toHaveBeenCalledWith('k1'));
+
+    // The same ticket comes back a second time — a retried flush the server answers from its
+    // idempotency record.
+    fireEvent.click(await screen.findByRole('button', { name: 'Print KOT' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'New bill' }));
+    await waitFor(() => expect(tabFlush).toHaveBeenCalledTimes(2));
+    await act(async () => Promise.resolve());
+
+    expect(getKotPdf.mock.calls.filter(([id]) => id === 'k1')).toHaveLength(1);
+    expect(openedWindows).toHaveLength(1);
   });
 
   it('surfaces a failed resume on the page, where there is no dialog to show it on', async () => {

@@ -40,6 +40,30 @@ per station, appends the lines to that bill, and empties the tab — which keeps
   that fails surfaces as a page-level alert, since there is no dialog open to carry it.
 - **The nav entry is contributed by the backend `CafeUiContributor`, not by `nav.ts` here.** A
   nav item added in this layer does not reach the sidebar, and the screen stays unreachable.
+
+### Known gap — a withdrawal is not told to the kitchen
+
+Reducing or removing a menu line on the Sell screen that the kitchen already has creates a
+CANCEL ticket server-side, correctly stamped and routed to the station. **Nothing prints it.**
+The browser is the only printer in this system (`lib/printKot.ts` is the only transport; the Go
+print bridge is deferred), and no code path fetches that ticket, because:
+
+- `CartLineReductionPort.lineReduced` is `void` and `CheckoutResponse` carries no ticket ids,
+  so the cancel `kotId` never reaches the client; and
+- the transport lives here, in `plugins/cafe`, while the cart line that triggers the reduction
+  lives in `core/product`, which may not import this package (`AGENTS.md` layer table).
+
+So the cook keeps cooking. Until the reduction path returns the cancel ticket id — and a seam
+exists for the Sell screen to reach a printer it is not allowed to import — the confirmation in
+`core/product/src/ui/ScanSellMenuCartLine.tsx` tells the cashier plainly that the bill changed
+and the station was **not** told, and to tell them. It used to say "that food will be thrown
+away", which is worse than no confirmation: it converts uncertainty into false confidence.
+
+Closing it needs, in order: the backend returning the cancel ticket id (see
+`branch-review-fix-frontend.md` for the contract this frontend would code against), a registry
+seam so `core/product` can hand a ticket id to the cafe plugin's print queue without importing
+it, and then `printKot` on that id exactly as a flush does.
+
 - `queries/screenData.ts` holds the hooks that import `@inventory-platform/product/api`; that
   import constructs the shared `apiClient` at module load (it reads `localStorage`), so it is
   kept out of `queries/hooks.ts`, which must stay importable from a plain-node test.

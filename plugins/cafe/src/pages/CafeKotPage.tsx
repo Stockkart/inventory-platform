@@ -77,11 +77,19 @@ export function CafeKotPage() {
 
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [tickets, setTickets] = useState<TicketView[]>([]);
-  const [notice, setNotice] = useState<Notice | null>(null);
+  // A list, not one slot: a mount can resume several stranded rounds in a row, and each
+  // outcome has to stay on the page. A single notice would leave the cashier reading only the
+  // last one — the exact silence F2 is about.
+  const [notices, setNotices] = useState<Notice[]>([]);
   const [targetOpen, setTargetOpen] = useState(false);
   const [flushError, setFlushError] = useState<string | null>(null);
   const [closingTabId, setClosingTabId] = useState<string | null>(null);
-  const [resumeTabId, setResumeTabId] = useState<string | null>(null);
+  const [resumeQueue, setResumeQueue] = useState<string[]>([]);
+
+  const pushNotice = useCallback(
+    (notice: Notice) => setNotices((current) => [...current, notice]),
+    [],
+  );
 
   const tabs = useMemo(() => tabsQuery.data ?? [], [tabsQuery.data]);
   const activeTab = tabs.find((tab) => tab.id === activeTabId) ?? tabs[0] ?? null;
@@ -100,19 +108,26 @@ export function CafeKotPage() {
    * The server claims and empties the tab *before* it creates the tickets, so the cashier
    * who reloads mid-flush reopens a tab that is empty, with Print KOT disabled — there is no
    * press left on this screen that could reach the tickets the server already made. So look
-   * for a parked round once per mount, as soon as the tab list is known, and select the tab
-   * it belongs to; the effect below replays it. Once per mount only: a resume that keeps
-   * failing must not become a loop.
+   * for parked rounds once per mount, as soon as the tab list is known, and queue *every* tab
+   * that has one; the effect below works through them one at a time. Once per mount only: a
+   * resume that keeps failing must not become a loop.
+   *
+   * Every parked tab, because a bad connection does not politely strand one party: flush tab A
+   * and lose the response, switch to tab B and lose that one too, and taking only the first
+   * leaves B's round billed to a customer, ticketed on the server, and never printed — with
+   * nothing said to the cashier. Each round is replayed under its own parked key on its own
+   * tab, so they cannot be run in parallel; the queue is drained head-first.
    */
   const resumeScannedRef = useRef(false);
+  const resumingRef = useRef(false);
 
   useEffect(() => {
     if (resumeScannedRef.current || !tabsQuery.isSuccess) return;
     resumeScannedRef.current = true;
-    const parkedTab = tabs.find((tab) => readParkedAttempt(tab.id) !== null);
-    if (!parkedTab) return;
-    setActiveTabId(parkedTab.id);
-    setResumeTabId(parkedTab.id);
+    const parked = tabs.filter((tab) => readParkedAttempt(tab.id) !== null).map((tab) => tab.id);
+    if (parked.length === 0) return;
+    setActiveTabId(parked[0]);
+    setResumeQueue(parked);
   }, [tabs, tabsQuery.isSuccess]);
 
   const addLine = useAddTabLineMutation(activeTab?.id ?? '');
@@ -157,48 +172,73 @@ export function CafeKotPage() {
    */
   const flushInFlightRef = useRef(false);
 
+  /**
+   * Every kotId this screen has already put on the print queue.
+   *
+   * The ticket strip used to dedupe on its own while `queue.enqueue` was called for every
+   * ticket the server returned, so a replayed response — a resume, a retried flush — sent a
+   * ticket to the printer a second time while the strip showed nothing new. The second slip
+   * carries the same KOT number and is NOT stamped REPRINT (only `/reprint` stamps), which is
+   * precisely what a cook reads as a second order. One set now decides both: a ticket the
+   * strip does not add is a ticket the queue does not get.
+   *
+   * A ref, not the `tickets` state: the decision is made inside an async handler, where a
+   * state snapshot from an earlier render would be stale.
+   */
+  const queuedKotIdsRef = useRef<Set<string>>(new Set());
+
   const handleChooseTarget = useCallback(
     async (target: CafeFlushTarget, options?: { resumed?: boolean }) => {
       const resumed = options?.resumed ?? false;
       if (flushInFlightRef.current || !activeTab) return;
       flushInFlightRef.current = true;
       setFlushError(null);
-      setNotice(null);
+      // A resume appends to whatever earlier resumes have already reported; a press the
+      // cashier made starts the page clean.
+      if (!resumed) setNotices([]);
       const token = activeTab.tokenNo;
       try {
         const sent = await flushTab.mutateAsync(target);
         // Print only once the server has recorded the flush: a slip on paper for a round the
         // server never took is worse than no slip at all.
-        setTickets((current) => {
-          const known = new Set(current.map((entry) => entry.kot.kotId));
-          return [
-            ...current,
-            ...sent
-              .filter((kot) => !known.has(kot.kotId))
-              .map((kot) => ({ kot, state: 'QUEUED' as PrintState })),
-          ];
-        });
-        sent.forEach((kot) => queue.enqueue(kot.kotId));
+        const fresh = sent.filter((kot) => !queuedKotIdsRef.current.has(kot.kotId));
+        fresh.forEach((kot) => queuedKotIdsRef.current.add(kot.kotId));
+        setTickets((current) => [
+          ...current,
+          ...fresh.map((kot) => ({ kot, state: 'QUEUED' as PrintState })),
+        ]);
+        fresh.forEach((kot) => queue.enqueue(kot.kotId));
         // The tab is now empty on the server and the chosen bill has grown. Refetch both
         // rather than editing a local copy: the emptied tab the cashier sees is the server's
         // tab, not a guess about it.
         void queryClient.invalidateQueries({ queryKey: cafeTabKeys.list() });
         void queryClient.invalidateQueries({ queryKey: cafeKotScreenKeys.openBills() });
         setTargetOpen(false);
-        const tickets = `${sent.length} ticket${sent.length === 1 ? '' : 's'}`;
-        setNotice({
-          tone: 'success',
-          text: resumed
-            ? `Recovered an unfinished round on token ${token}: the kitchen had already taken it, so ${tickets} ${
-                sent.length === 1 ? 'was' : 'were'
-              } re-sent to the printer. Nothing was ordered twice.`
-            : `Sent ${tickets} to the kitchen. Token ${token} is still open and now empty — add the next round to it.`,
-        });
+        if (resumed) {
+          // Count what actually reached the printer, not what the server replayed: a ticket
+          // already printed this session is deliberately not sent again.
+          const reprinted = `${fresh.length} ticket${fresh.length === 1 ? '' : 's'}`;
+          pushNotice({
+            tone: 'success',
+            text:
+              fresh.length === 0
+                ? `Recovered an unfinished round on token ${token}: the kitchen had already taken it and its tickets have already printed here. Nothing was ordered twice.`
+                : `Recovered an unfinished round on token ${token}: the kitchen had already taken it, so ${reprinted} ${
+                    fresh.length === 1 ? 'was' : 'were'
+                  } re-sent to the printer. Nothing was ordered twice.`,
+          });
+        } else {
+          const tickets = `${sent.length} ticket${sent.length === 1 ? '' : 's'}`;
+          pushNotice({
+            tone: 'success',
+            text: `Sent ${tickets} to the kitchen. Token ${token} is still open and now empty — add the next round to it.`,
+          });
+        }
       } catch (error) {
         // A flush that fails quietly is an order the kitchen never sees. A press stays on
         // the dialog it was made from; a resume has no dialog, so it surfaces on the page.
         if (resumed) {
-          setNotice({
+          pushNotice({
             tone: 'danger',
             text: `Could not recover an unfinished round on token ${token}: ${errorText(
               error,
@@ -211,68 +251,103 @@ export function CafeKotPage() {
         flushInFlightRef.current = false;
       }
     },
-    [activeTab, flushTab, queryClient, queue],
+    [activeTab, flushTab, pushNotice, queryClient, queue],
   );
 
   /**
-   * Replays the parked round once the strip has actually switched to its tab — `flushTab` is
-   * bound to the active tab, so firing before then would flush the wrong one.
+   * Drains the resume queue one tab at a time, replaying each parked round only once the strip
+   * has actually switched to its tab — `flushTab` is bound to the active tab, so firing before
+   * then would flush the wrong one. `resumingRef` keeps the drain strictly sequential: a
+   * replay refetches the tab list, which re-runs this effect while the replay is still open.
    *
-   * This is a replay, not a second round: `useIdempotentMutation` picks the parked key back
+   * Each is a replay, not a second round: `useIdempotentMutation` picks the parked key back
    * up out of `sessionStorage`, and the server answers a key it has already seen with the
    * tickets it made for it, which then go to the print queue like any other.
+   *
+   * Every exit from a head entry — resumed, unresumable, or gone — drops it from the queue and
+   * says so on the page. A round that silently stays parked is the failure F2 named.
    */
   useEffect(() => {
-    if (!resumeTabId || !activeTab || activeTab.id !== resumeTabId) return;
-    setResumeTabId(null);
-    const parked = readParkedAttempt<CafeFlushTarget>(resumeTabId);
-    if (!parked) return;
+    const tabId = resumeQueue[0];
+    if (!tabId || resumingRef.current) return;
+    const advance = () => setResumeQueue((current) => current.slice(1));
+
+    const tab = tabs.find((entry) => entry.id === tabId);
+    if (!tab) {
+      // Its tab is no longer open, so there is nothing left to flush it against — but the
+      // round is on a bill and its tickets exist, so the cashier has to hear about it.
+      clearPunchKey(tabId);
+      pushNotice({
+        tone: 'danger',
+        text: 'An unfinished round could not be recovered: the tab it belongs to is no longer open. Check with the kitchen before sending it again.',
+      });
+      advance();
+      return;
+    }
+
+    // Switch first, replay on the next pass, once `flushTab` is bound to this tab.
+    if (!activeTab || activeTab.id !== tabId) {
+      setActiveTabId(tabId);
+      return;
+    }
+
+    const parked = readParkedAttempt<CafeFlushTarget>(tabId);
+    if (!parked) {
+      advance();
+      return;
+    }
     if (!parked.variables) {
       // A key parked without its target — an older build's record. Which bill the round
       // belongs to is unknowable, and guessing would open a bill nobody asked for.
-      clearPunchKey(resumeTabId);
-      setNotice({
+      clearPunchKey(tabId);
+      pushNotice({
         tone: 'danger',
-        text: `Token ${activeTab.tokenNo} has an unfinished round from an earlier session that cannot be re-sent automatically. Check with the kitchen before sending it again.`,
+        text: `Token ${tab.tokenNo} has an unfinished round from an earlier session that cannot be re-sent automatically. Check with the kitchen before sending it again.`,
       });
+      advance();
       return;
     }
-    void handleChooseTarget(parked.variables, { resumed: true });
-  }, [resumeTabId, activeTab, handleChooseTarget]);
+
+    resumingRef.current = true;
+    void handleChooseTarget(parked.variables, { resumed: true }).finally(() => {
+      resumingRef.current = false;
+      advance();
+    });
+  }, [resumeQueue, tabs, activeTab, handleChooseTarget, pushNotice]);
 
   const handleAddLine = useCallback(
     (line: CafeTabLineInput) => {
-      setNotice(null);
+      setNotices([]);
       addLine.mutate(line, {
-        onError: (error) => setNotice({ tone: 'danger', text: errorText(error) }),
+        onError: (error) => pushNotice({ tone: 'danger', text: errorText(error) }),
       });
     },
-    [addLine],
+    [addLine, pushNotice],
   );
 
   const handleRemoveLine = useCallback(
     (lineRef: string) => {
       removeLine.mutate(lineRef, {
-        onError: (error) => setNotice({ tone: 'danger', text: errorText(error) }),
+        onError: (error) => pushNotice({ tone: 'danger', text: errorText(error) }),
       });
     },
-    [removeLine],
+    [removeLine, pushNotice],
   );
 
   const handleNewTab = useCallback(() => {
     openTab.mutate(undefined, {
       onSuccess: (tab) => setActiveTabId(tab.id),
-      onError: (error) => setNotice({ tone: 'danger', text: errorText(error) }),
+      onError: (error) => pushNotice({ tone: 'danger', text: errorText(error) }),
     });
-  }, [openTab]);
+  }, [openTab, pushNotice]);
 
   const handleConfirmClose = useCallback(() => {
     if (!closingTabId) return;
     closeTab.mutate(closingTabId, {
       onSettled: () => setClosingTabId(null),
-      onError: (error) => setNotice({ tone: 'danger', text: errorText(error) }),
+      onError: (error) => pushNotice({ tone: 'danger', text: errorText(error) }),
     });
-  }, [closeTab, closingTabId]);
+  }, [closeTab, closingTabId, pushNotice]);
 
   const closingTab = tabs.find((tab) => tab.id === closingTabId) ?? null;
   const sending = flushTab.isPending;
@@ -284,14 +359,15 @@ export function CafeKotPage() {
         description="One tab per party. Print KOT sends the round and leaves the tab open for the next one."
       />
 
-      {notice ? (
+      {notices.map((entry, index) => (
         <Alert
-          variant={notice.tone === 'danger' ? 'danger' : 'success'}
-          role={notice.tone === 'danger' ? 'alert' : 'status'}
+          key={`${entry.tone}-${index}-${entry.text}`}
+          variant={entry.tone === 'danger' ? 'danger' : 'success'}
+          role={entry.tone === 'danger' ? 'alert' : 'status'}
         >
-          {notice.text}
+          {entry.text}
         </Alert>
-      ) : null}
+      ))}
 
       <CafeTabStrip
         tabs={tabs}

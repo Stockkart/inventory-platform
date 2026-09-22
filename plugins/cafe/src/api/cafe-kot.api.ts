@@ -1,82 +1,23 @@
-import axios from 'axios';
 import { apiClient } from '@inventory-platform/api-client';
 import type { ApiResponse } from '@inventory-platform/contracts';
 import { CAFE_KOT_ENDPOINTS, CAFE_TAB_ENDPOINTS } from './endpoints';
 import type { CafeKot } from '../types/kot';
 import type { CafeFlushTarget, CafeTab, CafeTabLineInput } from '../types/tab';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
-
 /**
- * Replicates the Authorization/X-Shop-Id headers apiClient's interceptor would
- * otherwise add (same raw-axios pattern as `flush`/`reprint` below, and
- * core/product/src/api/credit-note.api.ts), with a blob response type for a PDF
- * document.
- */
-async function fetchPdfBlob(path: string): Promise<Blob> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
-  const shopId = typeof window !== 'undefined' ? localStorage.getItem('x_shop_id') : null;
-
-  const response = await axios.get(`${API_BASE_URL}${path}`, {
-    responseType: 'blob',
-    headers: {
-      Authorization: token ? `Bearer ${token}` : '',
-      ...(shopId ? { 'X-Shop-Id': shopId } : {}),
-    },
-  });
-
-  return response.data;
-}
-
-/**
- * POSTs with a non-blank `Idempotency-Key` header. `apiClient.post(endpoint, data)` takes
- * no per-call headers argument (see platform/api-client/src/lib/client.ts), so every
- * kitchen-facing write that requires this header (tab `flush`, KOT `reprint`) goes
- * through raw axios instead, replicating the Authorization/X-Shop-Id headers apiClient's
- * interceptor would otherwise add — the same pattern as `fetchPdfBlob` above and
- * core/product/src/api/credit-note.api.ts / inventory.api.ts.
- */
-async function postWithIdempotencyKey<T>(
-  path: string,
-  idempotencyKey: string,
-  data?: unknown,
-): Promise<T> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
-  const shopId = typeof window !== 'undefined' ? localStorage.getItem('x_shop_id') : null;
-
-  const response = await axios.post<ApiResponse<T>>(`${API_BASE_URL}${path}`, data, {
-    headers: {
-      Authorization: token ? `Bearer ${token}` : '',
-      ...(shopId ? { 'X-Shop-Id': shopId } : {}),
-      'Idempotency-Key': idempotencyKey,
-    },
-  });
-
-  return response.data.data;
-}
-
-/**
- * POSTs with an `Idempotency-Key` and reads the response as a PDF rather than JSON.
+ * Every call here goes through `apiClient`, including the kitchen-facing writes.
  *
- * Reprint returns the rendered slip directly, and it has to: the stamp lives only on that
- * render. `GET .../document` deliberately never stamps REPRINT, so fetching the PDF in a
- * second call after reprinting would hand a cook an unstamped slip — which reads as a
- * fresh order for food already being made.
+ * They used to be issued through raw `axios`, hand-copying the Authorization/X-Shop-Id
+ * headers, because `apiClient.post` took no per-call headers and this module needs to send a
+ * non-blank `Idempotency-Key`. The cost was the whole response interceptor: a token that
+ * expires mid-shift returned a bare `AxiosError`, so the 401 handler never bounced the
+ * cashier to login and the dialog showed "Request failed with status code 401" next to a
+ * button they could press forever. 402 plan-expired never fired either, and nothing became
+ * an `ApiError`. `apiClient` now carries `ApiRequestOptions.headers` and blob-bodied
+ * `getBlob`/`postBlob`, so there is no longer a reason to leave this layer.
  */
-async function postForPdfBlob(path: string, idempotencyKey: string): Promise<Blob> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
-  const shopId = typeof window !== 'undefined' ? localStorage.getItem('x_shop_id') : null;
-
-  const response = await axios.post(`${API_BASE_URL}${path}`, undefined, {
-    responseType: 'blob',
-    headers: {
-      Authorization: token ? `Bearer ${token}` : '',
-      ...(shopId ? { 'X-Shop-Id': shopId } : {}),
-      'Idempotency-Key': idempotencyKey,
-    },
-  });
-
-  return response.data;
+function idempotent(idempotencyKey: string) {
+  return { headers: { 'Idempotency-Key': idempotencyKey } };
 }
 
 export const cafeKotApi = {
@@ -84,12 +25,21 @@ export const cafeKotApi = {
    * Reprints an already-issued ticket: no new ticket, `reprintCount` increments, and the
    * returned PDF is stamped REPRINT so a cook cannot read it as a second order. Requires a
    * non-blank Idempotency-Key like every other kitchen-facing write.
+   *
+   * Reads the response as the slip itself rather than as JSON, and it has to: the stamp lives
+   * only on that render. `GET .../document` deliberately never stamps REPRINT, so fetching
+   * the PDF in a second call after reprinting would hand a cook an unstamped slip — which
+   * reads as a fresh order for food already being made.
    */
   reprint: (kotId: string, idempotencyKey: string): Promise<Blob> =>
-    postForPdfBlob(CAFE_KOT_ENDPOINTS.KOT_REPRINT(kotId), idempotencyKey),
+    apiClient.postBlob(
+      CAFE_KOT_ENDPOINTS.KOT_REPRINT(kotId),
+      undefined,
+      idempotent(idempotencyKey),
+    ),
 
-  getKotPdf: async (kotId: string): Promise<Blob> =>
-    fetchPdfBlob(CAFE_KOT_ENDPOINTS.KOT_DOCUMENT(kotId)),
+  getKotPdf: (kotId: string): Promise<Blob> =>
+    apiClient.getBlob(CAFE_KOT_ENDPOINTS.KOT_DOCUMENT(kotId)),
 };
 
 export const cafeTabApi = {
@@ -134,6 +84,16 @@ export const cafeTabApi = {
    * flush whose response never arrived then leaves the server holding tickets the client
    * can no longer reach.
    */
-  flush: (tabId: string, target: CafeFlushTarget, idempotencyKey: string): Promise<CafeKot[]> =>
-    postWithIdempotencyKey<CafeKot[]>(CAFE_TAB_ENDPOINTS.TAB_FLUSH(tabId), idempotencyKey, target),
+  flush: async (
+    tabId: string,
+    target: CafeFlushTarget,
+    idempotencyKey: string,
+  ): Promise<CafeKot[]> => {
+    const response = await apiClient.post<ApiResponse<CafeKot[]>>(
+      CAFE_TAB_ENDPOINTS.TAB_FLUSH(tabId),
+      target,
+      idempotent(idempotencyKey),
+    );
+    return response.data;
+  },
 };
