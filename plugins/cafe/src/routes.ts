@@ -18,9 +18,14 @@ export const manualStockRoutes: RouteModule = {
 };
 
 /**
- * The kitchen-order screen. Its **nav entry is contributed by the backend**
- * `CafeUiContributor`, not by `nav.ts` here — a nav item added in this layer does not reach
- * the sidebar and leaves the route unreachable. Registering the route is all the frontend owes.
+ * The kitchen-order screen.
+ *
+ * Reaching it needs **both** layers, and it is easy to get wrong in either direction:
+ * `CafeUiContributor` on the backend *enables* the path, and `nav.ts` here *supplies* the
+ * item. `capabilityNav.pluginNavItemsForCapabilities` walks this plugin's own contributions
+ * and keeps only those whose path the API enabled — so an entry present in one layer and
+ * missing from the other yields no sidebar link and a screen nobody can open. `nav.spec.ts`
+ * pins the pairing.
  */
 export const cafeKotRoutes: RouteModule = {
   path: 'cafe-kot',
