@@ -40,7 +40,6 @@ import {
 import { schemeLabel } from '../lib/billedLineLabels';
 import { useResolvedSellPath } from '@inventory-platform/routing';
 import { useAuthStore, useNotify, useShopCapabilitiesStore } from '@inventory-platform/session';
-import { schemeLabel } from '../lib/billedLineLabels';
 
 export function meta() {
   return [
