@@ -15,7 +15,6 @@ import {
   cn,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
-import { CustomerProductHistoryHint } from './CustomerProductHistoryHint';
 import {
   cartLineActionsStyle,
   cartLineFooterStyle,
@@ -57,7 +56,13 @@ const WITHDRAW_FAILURE_MESSAGE =
 export interface ScanSellMenuCartLineProps {
   line: CheckoutItemResponse;
   disabled?: boolean;
+  /**
+   * Accepted and ignored. A cafe line shows no purchase history — a counter serves walk-ins,
+   * so a guest's last order is noise here. The props stay so the shared Sell screen can pass
+   * the same pair to every cart line without branching on the vertical.
+   */
   customerProductHistory?: CustomerProductHistoryResponse | null;
+  /** Accepted and ignored — see {@link customerProductHistory}. */
   customerProductHistoryLoading?: boolean;
   /** Resolves `false` when the update failed so the line can surface it. */
   onChangeQty: (sellableRef: string, delta: number) => Promise<boolean>;
@@ -68,8 +73,6 @@ export interface ScanSellMenuCartLineProps {
 export function ScanSellMenuCartLine({
   line,
   disabled = false,
-  customerProductHistory,
-  customerProductHistoryLoading = false,
   onChangeQty,
   onSetQuantity,
   onRemove,
@@ -150,13 +153,10 @@ export function ScanSellMenuCartLine({
               </Badge>
             ) : null}
           </Inline>
-          {ref ? (
-            <CustomerProductHistoryHint
-              sellableRef={ref}
-              history={customerProductHistory ?? null}
-              loading={customerProductHistoryLoading}
-            />
-          ) : null}
+          {/* No purchase history on a cafe line. A counter serves walk-ins, so what this guest
+              bought last time is noise the cashier reads past — and it pushed the station badge
+              and the price down the line. The hint stays on the inventory lines, where a
+              returning customer's last purchase genuinely informs the sale. */}
           <Text variant="caption" className={cartLineMetaStyle}>
             {money(line.priceToRetail)} each
           </Text>
