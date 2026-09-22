@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import type {
   CheckoutItemResponse,
   CustomerProductHistoryResponse,
 } from '@inventory-platform/product/types';
 import { lineSellableRef } from '@inventory-platform/product/types';
 import {
+  Alert,
   Badge,
   Button,
   CartQtyStepper,
@@ -29,14 +31,30 @@ function money(n: number): string {
   return `₹${n.toFixed(2)}`;
 }
 
+/**
+ * Asks the cashier to confirm before a reduction reaches below what the
+ * kitchen already has, or a fully-sent line is removed. Names the station
+ * so the confirmation reads as "this dish is being thrown away", not a
+ * generic undo.
+ */
+function confirmWithdrawal(withdrawnQty: number, itemName: string, station: string): boolean {
+  return window.confirm(
+    `${station} already has ${withdrawnQty} ${itemName}. This will withdraw ${withdrawnQty} from ${station} — that food will be thrown away. Continue?`,
+  );
+}
+
+const WITHDRAW_FAILURE_MESSAGE =
+  "Couldn't update this order. The kitchen may still have the old quantity — try again.";
+
 export interface ScanSellMenuCartLineProps {
   line: CheckoutItemResponse;
   disabled?: boolean;
   customerProductHistory?: CustomerProductHistoryResponse | null;
   customerProductHistoryLoading?: boolean;
-  onChangeQty: (sellableRef: string, delta: number) => void;
-  onSetQuantity: (sellableRef: string, newQty: number) => Promise<void>;
-  onRemove: (sellableRef: string) => void;
+  /** Resolves `false` when the update failed so the line can surface it. */
+  onChangeQty: (sellableRef: string, delta: number) => Promise<boolean>;
+  onSetQuantity: (sellableRef: string, newQty: number) => Promise<boolean>;
+  onRemove: (sellableRef: string) => Promise<boolean>;
 }
 
 export function ScanSellMenuCartLine({
@@ -48,8 +66,54 @@ export function ScanSellMenuCartLine({
   onSetQuantity,
   onRemove,
 }: ScanSellMenuCartLineProps) {
+  const [withdrawError, setWithdrawError] = useState(false);
   const ref = lineSellableRef(line) ?? line.name ?? '';
   const lineTotal = line.totalAmount ?? line.priceToRetail * line.quantity;
+  const itemName = line.name || 'this item';
+
+  const sentQty = Math.trunc(Number(line.kotSentQuantity ?? 0));
+  const totalQty = Math.trunc(Number(line.quantity));
+  const isFullySent = sentQty > 0 && sentQty === totalQty;
+  const isPartlySent = sentQty > 0 && sentQty < totalQty;
+  const station = line.department?.trim() || 'the kitchen';
+
+  const runWithdrawal = async (action: () => Promise<boolean>) => {
+    const ok = await action();
+    setWithdrawError(!ok);
+  };
+
+  const handleDecrement = () => {
+    const nextQty = totalQty - 1;
+    if (sentQty > 0 && nextQty < sentQty) {
+      if (!confirmWithdrawal(sentQty - nextQty, itemName, station)) return;
+    }
+    void runWithdrawal(() => onChangeQty(ref, -1));
+  };
+
+  const handleIncrement = () => {
+    void runWithdrawal(() => onChangeQty(ref, 1));
+  };
+
+  const handleCommit = async (newQty: number) => {
+    if (sentQty > 0 && newQty < sentQty) {
+      if (!confirmWithdrawal(sentQty - newQty, itemName, station)) {
+        // Reject so CartQtyStepper resets the draft input to the current quantity.
+        throw new Error('withdrawal declined');
+      }
+    }
+    const ok = await onSetQuantity(ref, newQty);
+    setWithdrawError(!ok);
+    if (!ok) {
+      throw new Error('withdrawal failed');
+    }
+  };
+
+  const handleRemove = () => {
+    if (sentQty > 0) {
+      if (!confirmWithdrawal(sentQty, itemName, station)) return;
+    }
+    void runWithdrawal(() => onRemove(ref));
+  };
 
   return (
     <Stack className={cn(cartLineStyle, cartLineMenuStyle)} gap="xs" width="full">
@@ -60,6 +124,12 @@ export function ScanSellMenuCartLine({
               {line.name || 'Menu item'}
             </Text>
             <Badge variant="info">Menu</Badge>
+            {isFullySent ? <Badge variant="success">Sent · {station}</Badge> : null}
+            {isPartlySent ? (
+              <Badge variant="warning">
+                {sentQty}/{totalQty} sent · {station}
+              </Badge>
+            ) : null}
           </Inline>
           {ref ? (
             <CustomerProductHistoryHint
@@ -76,19 +146,20 @@ export function ScanSellMenuCartLine({
           <CartQtyStepper
             value={line.quantity}
             disabled={disabled}
-            onDecrement={() => onChangeQty(ref, -1)}
-            onIncrement={() => onChangeQty(ref, 1)}
-            onCommit={(newQty) => onSetQuantity(ref, newQty)}
+            onDecrement={handleDecrement}
+            onIncrement={handleIncrement}
+            onCommit={handleCommit}
           />
         </Stack>
       </Inline>
+      {withdrawError ? <Alert variant="danger">{WITHDRAW_FAILURE_MESSAGE}</Alert> : null}
       <Inline className={cartLineFooterStyle} justify="between" align="center" width="full">
         <Button
           type="button"
           variant="ghost"
           size="sm"
           className={cartLineRemoveStyle}
-          onClick={() => onRemove(ref)}
+          onClick={handleRemove}
           disabled={disabled}
         >
           Remove
