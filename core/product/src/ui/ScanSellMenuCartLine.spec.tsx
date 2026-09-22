@@ -72,6 +72,16 @@ describe('ScanSellMenuCartLine', () => {
     expect(screen.queryByText('Sent · BAR')).toBeNull();
   });
 
+  // kotSentQuantity counts base units. Today every menu item has a unit factor of 1 so quantity and
+  // baseQuantity coincide, but menu portions (Qtr/Half/Full) are the next feature and are exactly
+  // what makes them diverge. Comparing against the sale-unit count would badge "1/1 sent" on a line
+  // the kitchen has only half of.
+  it('measures what was sent against base units, not the sale-unit count', () => {
+    renderLine({ quantity: 1, baseQuantity: 4, kotSentQuantity: 2, department: 'KITCHEN' });
+    expect(screen.getByText('2/4 sent · KITCHEN')).toBeTruthy();
+    expect(screen.queryByText('Sent · KITCHEN')).toBeNull();
+  });
+
   it('asks for confirmation, naming the station, before reducing a sent line below what was sent', () => {
     (window.confirm as ReturnType<typeof vi.fn>).mockReturnValue(true);
     const { onChangeQty } = renderLine({ quantity: 3, kotSentQuantity: 3, department: 'KITCHEN' });

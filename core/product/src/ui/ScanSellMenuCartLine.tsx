@@ -72,7 +72,12 @@ export function ScanSellMenuCartLine({
   const itemName = line.name || 'this item';
 
   const sentQty = Math.trunc(Number(line.kotSentQuantity ?? 0));
-  const totalQty = Math.trunc(Number(line.quantity));
+  // Paired against baseQuantity, not quantity: kotSentQuantity counts base units, and the two
+  // coincide only while every menu item has a unit factor of 1. Menu portions (Qtr/Half/Full) are
+  // the next feature, and they are what makes a sale-unit count diverge from a base-unit one — at
+  // which point comparing against `quantity` would badge the wrong number and confirm withdrawing
+  // a quantity nobody is withdrawing. Fall back to quantity only when the server omits the field.
+  const totalQty = Math.trunc(Number(line.baseQuantity ?? line.quantity));
   const isFullySent = sentQty > 0 && sentQty === totalQty;
   const isPartlySent = sentQty > 0 && sentQty < totalQty;
   const station = line.department?.trim() || 'the kitchen';
