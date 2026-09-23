@@ -82,7 +82,8 @@ export function CafeKotBar({ purchaseId, disabled = false }: SellActionSlotProps
       const fresh = punched.filter((kot) => !queuedKotIdsRef.current.has(kot.kotId));
       fresh.forEach((kot) => queuedKotIdsRef.current.add(kot.kotId));
       setTickets((current) => appendTickets(current, fresh));
-      fresh.forEach((kot) => queue.enqueue(kot.kotId));
+      // Only the first: see `appendTickets`. The rest are READY and print from their own row.
+      if (fresh.length > 0) queue.enqueue(fresh[0].kotId);
       return fresh;
       // `queue` is created once per mount and never changes identity.
     },

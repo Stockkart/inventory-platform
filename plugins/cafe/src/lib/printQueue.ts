@@ -1,4 +1,11 @@
-export type PrintState = 'QUEUED' | 'PRINTING' | 'PRINTED' | 'FAILED';
+/**
+ * `READY` is a ticket waiting for the cashier to press Print on its own row.
+ *
+ * A browser grants one popup per user gesture, so a punch spanning two stations could open
+ * only its first ticket — the second was blocked and silently became a download. Every
+ * ticket after the first therefore waits for a press of its own.
+ */
+export type PrintState = 'READY' | 'QUEUED' | 'PRINTING' | 'PRINTED' | 'FAILED';
 
 export type PrintStateListener = (kotId: string, state: PrintState) => void;
 
