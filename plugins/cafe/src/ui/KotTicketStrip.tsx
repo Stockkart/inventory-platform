@@ -8,6 +8,7 @@ export interface KotTicketStripProps {
 }
 
 const STATE_LABEL: Record<PrintState, string> = {
+  READY: 'Ready to print',
   QUEUED: 'Queued',
   PRINTING: 'Printing…',
   PRINTED: 'Printed',
@@ -37,9 +38,9 @@ export function KotTicketStrip({ tickets, onRetry }: KotTicketStripProps) {
         <Box as="li" key={kot.kotId} border rounded="md" padding="sm">
           <Inline justify="between" align="center" width="full" gap="sm">
             <Text>{`KOT ${kot.kotNo} · ${kot.department} · ${STATE_LABEL[state]}`}</Text>
-            {state === 'FAILED' ? (
+            {state === 'FAILED' || state === 'READY' ? (
               <Button type="button" variant="solid" size="sm" onClick={() => onRetry(kot.kotId)}>
-                Retry
+                {state === 'READY' ? 'Print' : 'Retry'}
               </Button>
             ) : null}
           </Inline>

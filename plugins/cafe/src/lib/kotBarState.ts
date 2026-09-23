@@ -29,9 +29,14 @@ export function punchedNotice(tickets: CafeKot[]): PunchNotice {
     };
   }
   const count = tickets.length;
+  // Say what the cashier must still do. Only the first ticket opens on its own, so with two
+  // stations "Printing…" would read as finished while a slip sat waiting for a press.
   return {
     tone: 'success',
-    text: `Sent ${count} kitchen ticket${count === 1 ? '' : 's'}. Printing…`,
+    text:
+      count === 1
+        ? 'Sent 1 kitchen ticket. Opening it to print…'
+        : `Sent ${count} kitchen tickets. Opening the first — press Print on each of the others.`,
   };
 }
 
@@ -88,11 +93,21 @@ function errorText(error: unknown): string {
 }
 
 /** Appends newly punched tickets, skipping any id already on the strip. */
-export function appendTickets(existing: KotTicketView[], incoming: CafeKot[]): KotTicketView[] {
+export function appendTickets(
+  existing: KotTicketView[],
+  incoming: CafeKot[],
+  autoPrintFirst = true,
+): KotTicketView[] {
   const known = new Set(existing.map((entry) => entry.kot.kotId));
-  const added = incoming
-    .filter((kot) => !known.has(kot.kotId))
-    .map((kot) => ({ kot, state: 'QUEUED' as PrintState }));
+  const fresh = incoming.filter((kot) => !known.has(kot.kotId));
+  // Only the first ticket of a round may open itself: it rides the press the cashier just
+  // made, and a browser grants exactly one popup per gesture. Opening the rest under that
+  // same gesture got them blocked, and the blocked ones silently became downloads. Each
+  // waits for a press of its own instead.
+  const added = fresh.map((kot, index) => ({
+    kot,
+    state: (autoPrintFirst && index === 0 ? 'QUEUED' : 'READY') as PrintState,
+  }));
   return added.length === 0 ? existing : [...existing, ...added];
 }
 

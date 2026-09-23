@@ -43,10 +43,16 @@ describe('punchFailedNotice', () => {
 });
 
 describe('appendTickets', () => {
-  it('queues new tickets', () => {
-    const next = appendTickets([], [kot('a'), kot('b')]);
-    expect(next.map((entry) => entry.kot.kotId)).toEqual(['a', 'b']);
-    expect(next.every((entry) => entry.state === 'QUEUED')).toBe(true);
+  // One popup per user gesture: opening every ticket under the single press that made them
+  // got all but the first blocked, and a blocked one silently became a download.
+  it('queues only the first ticket, and leaves the rest for a press of their own', () => {
+    const next = appendTickets([], [kot('a'), kot('b'), kot('c')]);
+    expect(next.map((entry) => entry.kot.kotId)).toEqual(['a', 'b', 'c']);
+    expect(next.map((entry) => entry.state)).toEqual(['QUEUED', 'READY', 'READY']);
+  });
+
+  it('queues a lone ticket, so the common one-station round still needs no extra press', () => {
+    expect(appendTickets([], [kot('a')])[0].state).toBe('QUEUED');
   });
 
   it('does not re-add a ticket already on the strip, so a replayed punch cannot duplicate a row', () => {
