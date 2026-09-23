@@ -1,28 +1,22 @@
+import { openPdfPreview } from '@inventory-platform/product/print';
 import { cafeKotApi } from '../api/cafe-kot.api';
 
 export type PrintHandoff = (blob: Blob, fileName: string) => void;
 
 /**
- * Opens the document in a new tab and asks the browser to print it.
+ * Hands a ticket to the printer the same way every other document in this app is printed.
  *
- * This is v1's transport. It shows one print dialog per ticket, so a punch spanning two
- * departments shows two. That is the accepted v1 behaviour, not a defect to work around.
- * A silent transport would need a KOT document type in the Go print bridge, whose
- * PrintDocType is 'INVOICE' and nothing else, plus a re-release to every shop — neither
- * is frontend work.
+ * This is `openPdfPreview` from the invoice path (`core/product/src/lib/printDocument.ts`),
+ * not a second mechanism: the server renders the thermal PDF, the browser opens it, and the
+ * operator prints from the viewer, with a download fallback when a popup blocker refuses
+ * the tab.
+ *
+ * It deliberately does not force `window.print()`. A kitchen ticket that opens a dialog by
+ * itself behaves unlike the invoice beside it, and on a counter with one browser and two
+ * printers it fires at whichever happens to be default rather than the kitchen roll.
  */
 export const openForPrinting: PrintHandoff = (blob, fileName) => {
-  const url = window.URL.createObjectURL(blob);
-  const win = window.open(url, '_blank');
-  if (win) {
-    win.addEventListener('load', () => win.print(), { once: true });
-    return;
-  }
-  // Popup blocked: fall back to a download so the ticket is not simply lost.
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = fileName;
-  link.click();
+  openPdfPreview(blob, fileName);
 };
 
 /**

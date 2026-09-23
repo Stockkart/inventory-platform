@@ -129,6 +129,7 @@ export function generateInventoryWorkspaceAliases({
     '@inventory-platform/pricing': core('pricing', 'src/index.ts'),
     '@inventory-platform/product/api': core('product', 'src/api/index.ts'),
     '@inventory-platform/product/ui': core('product', 'src/ui/index.ts'),
+    '@inventory-platform/product/print': core('product', 'src/lib/printDocument.ts'),
     '@inventory-platform/product': core('product', 'src/index.ts'),
     '@inventory-platform/plugin-registry/routes': plugins('registry/src/routes/index.ts'),
     '@inventory-platform/plugin-registry': plugins('registry/src/index.ts'),
