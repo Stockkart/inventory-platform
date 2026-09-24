@@ -819,10 +819,10 @@ function computeVendorInvoiceTotalsFromProducts(
   billingModeForGst: BillingMode,
   schemeDrafts?: Record<string, { sale?: string; purchase?: string }>,
   treatment?: PurchaseTaxTreatment | null,
+  overallDiscount?: number,
 ): { lineSubTotal: number; taxTotal: number } {
   const taxIsInsideTheAmount = treatment === 'INCLUSIVE';
-  let lineSubTotal = 0;
-  let taxTotal = 0;
+  const lines: { amount: number; cgst: number; sgst: number; pct: number }[] = [];
 
   for (const p of productRows) {
     const qtyRaw = p.count;
@@ -849,24 +849,55 @@ function computeVendorInvoiceTotalsFromProducts(
         : parseGstPercent(typeof p.cgst === 'string' ? p.cgst : undefined);
     const pct = sgst + cgst;
 
-    if (pct <= 0 || lineAmount <= 0) {
-      lineSubTotal += lineAmount;
-    } else if (taxIsInsideTheAmount) {
-      // Tax comes out of the amount, and is what is left after the taxable value rather than a
-      // second multiplication -- so taxable + tax re-sums to the amount with no stray paisa.
-      const taxable = roundMoney((lineAmount * 100) / (100 + pct));
-      lineSubTotal += taxable;
-      taxTotal += roundMoney(lineAmount - taxable);
-    } else {
-      const cgstAmt = roundMoney((lineAmount * cgst) / 100);
-      const sgstAmt = roundMoney((lineAmount * sgst) / 100);
-      lineSubTotal += lineAmount;
-      taxTotal += roundMoney(cgstAmt + sgstAmt);
+    lines.push({ amount: lineAmount, cgst, sgst, pct });
+  }
+
+  const lineSubTotal = roundMoney(lines.reduce((sum, line) => sum + line.amount, 0));
+
+  // A discount taken on the bill as a whole reduces what the tax is due on, so it comes off the
+  // lines before they are taxed. Spread across them in proportion to what each is worth, which is
+  // how the server splits the stated subtotal, with the rounding remainder left on the last line
+  // so the parts still add up to the whole.
+  //
+  // Only on a bill quoted ex-GST. Where the amounts already hold the tax, the invoice total
+  // subtracts the discount itself, and taking it off here as well would remove it twice; such a
+  // bill states its reductions on the rows, which are already in the amounts above.
+  const discount =
+    !taxIsInsideTheAmount && overallDiscount != null && overallDiscount > 0 ? overallDiscount : 0;
+  const taxBases = lines.map((line) => line.amount);
+  if (discount > 0 && lineSubTotal > 0) {
+    const net = Math.max(0, roundMoney(lineSubTotal - discount));
+    let allocated = 0;
+    for (let i = 0; i < taxBases.length; i += 1) {
+      if (i === taxBases.length - 1) {
+        taxBases[i] = roundMoney(net - allocated);
+      } else {
+        taxBases[i] = roundMoney((lines[i].amount * net) / lineSubTotal);
+        allocated = roundMoney(allocated + taxBases[i]);
+      }
     }
   }
 
+  let taxTotal = 0;
+  for (let i = 0; i < lines.length; i += 1) {
+    const { cgst, sgst, pct } = lines[i];
+    const base = taxBases[i];
+    if (pct <= 0 || base <= 0) continue;
+    if (taxIsInsideTheAmount) {
+      // Tax comes out of the amount, and is what is left after the taxable value rather than a
+      // second multiplication -- so taxable + tax re-sums to the amount with no stray paisa.
+      taxTotal += roundMoney(base - roundMoney((base * 100) / (100 + pct)));
+    } else {
+      taxTotal += roundMoney(roundMoney((base * cgst) / 100) + roundMoney((base * sgst) / 100));
+    }
+  }
+
+  // Under MRP billing the tax was inside the line amounts, so the taxable value is what is left
+  // once it is taken out -- the subtotal the bill states, not the amounts the rows carry.
+  const subTotal = taxIsInsideTheAmount ? roundMoney(lineSubTotal - taxTotal) : lineSubTotal;
+
   return {
-    lineSubTotal: roundMoney(lineSubTotal),
+    lineSubTotal: roundMoney(subTotal),
     taxTotal: roundMoney(taxTotal),
   };
 }
@@ -884,12 +915,14 @@ function computeProductsRegistrationSummary(
   billingModeForGst: BillingMode,
   schemeDrafts?: Record<string, { sale?: string; purchase?: string }>,
   treatment?: PurchaseTaxTreatment | null,
+  overallDiscount?: number,
 ): ProductsRegistrationSummary {
   const { lineSubTotal, taxTotal } = computeVendorInvoiceTotalsFromProducts(
     productRows,
     billingModeForGst,
     schemeDrafts,
     treatment,
+    overallDiscount,
   );
   let totalQuantity = 0;
   for (const p of productRows) {
@@ -1218,10 +1251,11 @@ export function ProductEntryPage() {
       billingMode,
       gridSchemeDrafts,
       vendorTaxTreatment,
+      optionalNumFromString(vendorOverallDiscount),
     );
     setVendorLineSubTotal(formatComputedAmount(lineSubTotal));
     setVendorTaxTotal(formatComputedAmount(taxTotal));
-  }, [products, billingMode, gridSchemeDrafts, vendorTaxTreatment]);
+  }, [products, billingMode, gridSchemeDrafts, vendorTaxTreatment, vendorOverallDiscount]);
 
   const productsRegistrationSummary = useMemo(
     () =>
@@ -1230,8 +1264,9 @@ export function ProductEntryPage() {
         billingMode,
         gridSchemeDrafts,
         vendorTaxTreatment,
+        optionalNumFromString(vendorOverallDiscount),
       ),
-    [products, billingMode, gridSchemeDrafts, vendorTaxTreatment],
+    [products, billingMode, gridSchemeDrafts, vendorTaxTreatment, vendorOverallDiscount],
   );
 
   // Product view mode: list (accordion) or grid (Excel-style)
