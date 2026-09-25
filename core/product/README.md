@@ -19,7 +19,19 @@ Inventory and sell flows: product registration, search, stock corrections, scan-
 
 ## Layout
 
-`api/` · `queries/` · `pages/` · `ui/` · `vertical/` · `routes.ts` · `nav.ts`
+`api/` · `queries/` · `pages/` · `ui/` · `vertical/` · `lib/` · `routes.ts` · `nav.ts`
+
+### Public entry points
+
+`@inventory-platform/product` (the barrel) · `/types` · `/api` · `/print`
+
+`/print` is deliberately narrow. `lib/printDocument.ts` is how every printed document in this
+app reaches a printer — the server renders a PDF, `openPdfPreview` opens it, and the operator
+prints from the viewer, falling back to a download when a popup blocker refuses the tab.
+Invoices, credit notes and cafe kitchen tickets all go through it, so they cannot drift apart.
+It is its own subpath rather than part of the barrel because the barrel pulls in `api/` and so
+`apiClient`, which reads `localStorage` at module load — importing it from a plugin (or a test)
+that only wants to print would drag a session dependency along with it.
 
 ### Menu portions on the Sell screen
 
