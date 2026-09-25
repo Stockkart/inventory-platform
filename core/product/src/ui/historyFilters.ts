@@ -120,16 +120,6 @@ export function isDateInRange(
   return true;
 }
 
-/** Regex `q` for vendor purchase invoice list (invoice no. and/or vendor name). */
-export function buildVendorInvoiceSearchQuery(filters: HistoryFilters): string | undefined {
-  const inv = filters.invoiceNo.trim();
-  const ven = filters.vendor.trim();
-  if (inv && ven) return `(?:${inv}|${ven})`;
-  if (inv) return inv;
-  if (ven) return ven;
-  return undefined;
-}
-
 export function paginateLocal<T>(
   items: T[],
   page: number,

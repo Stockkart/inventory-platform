@@ -73,7 +73,6 @@ export {
   isDateInRange,
   paginateLocal,
   matchesRegexField,
-  buildVendorInvoiceSearchQuery,
   emptyPaymentSplit,
   formatPaymentMethod,
   formatPaymentSplit,
