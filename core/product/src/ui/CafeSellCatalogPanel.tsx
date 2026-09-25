@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { InventoryItem } from '@inventory-platform/product/types';
-import type { MenuItem, SellCatalog } from '@inventory-platform/product/types';
+import type { MenuItem, MenuRate, SellCatalog } from '@inventory-platform/product/types';
 import {
   Badge,
   Box,
@@ -8,6 +8,7 @@ import {
   CenteredLoader,
   EmptyState,
   Inline,
+  Modal,
   Stack,
   Text,
   productChrome,
@@ -19,12 +20,31 @@ function money(n: number): string {
 
 type CafeTab = { id: string; label: string; kind: 'all' | 'menu' | 'stock' };
 
+/**
+ * The portions a cashier may actually pick: a row with no frozen id or no name is a half-typed
+ * menu row, and offering it would put a ref on the wire that resolves to nothing.
+ */
+export function sellablePortions(item: MenuItem): MenuRate[] {
+  return (item.rates ?? []).filter((rate) => rate.id?.trim() && rate.name?.trim());
+}
+
+function portionPriceRange(portions: MenuRate[]): string {
+  const prices = portions.map((rate) => Number(rate.price) || 0);
+  const low = Math.min(...prices);
+  const high = Math.max(...prices);
+  return low === high ? money(low) : `${money(low)} – ${money(high)}`;
+}
+
 export interface CafeSellCatalogPanelProps {
   catalog: SellCatalog | null;
   loading?: boolean;
   disabled?: boolean;
   filterQuery?: string;
-  onAddMenuItem: (item: MenuItem) => void;
+  /**
+   * Called with the portion the cashier chose, or with no portion for an unportioned item. A
+   * portioned item never reaches here without one: the picker is the only way in.
+   */
+  onAddMenuItem: (item: MenuItem, rate?: MenuRate) => void;
   onAddDirectStock: (item: InventoryItem) => void;
 }
 
@@ -97,6 +117,9 @@ export function CafeSellCatalogPanel({
   }, [visibleSections, filteredDirectStock.length]);
 
   const [activeTab, setActiveTab] = useState('all');
+  /** The item whose portion picker is open. Null means no picker. */
+  const [portionItem, setPortionItem] = useState<MenuItem | null>(null);
+  const openPortions = portionItem ? sellablePortions(portionItem) : [];
 
   const resolvedTab = tabs.some((tab) => tab.id === activeTab) ? activeTab : 'all';
 
@@ -188,28 +211,45 @@ export function CafeSellCatalogPanel({
               <Badge variant="neutral">{section.items.length}</Badge>
             </Inline>
             <Box className={productChrome.cafeCatalogGrid}>
-              {section.items.map((item) => (
-                <Button
-                  key={item.id}
-                  type="button"
-                  variant="outline"
-                  disabled={disabled}
-                  onClick={() => onAddMenuItem(item)}
-                  className={productChrome.cafeCatalogTile}
-                >
-                  <Stack gap="xs" width="full">
-                    <Text weight="semibold" truncate>
-                      {item.name}
-                    </Text>
-                    <Inline justify="between" align="center" width="full">
-                      <Text weight="semibold">{money(item.sellingPrice)}</Text>
-                      <Text aria-hidden className={productChrome.cafeCatalogAddBadge}>
-                        +
+              {section.items.map((item) => {
+                const portions = sellablePortions(item);
+                const isPortioned = portions.length > 0;
+                return (
+                  <Button
+                    key={item.id}
+                    type="button"
+                    variant="outline"
+                    disabled={disabled}
+                    onClick={() => (isPortioned ? setPortionItem(item) : onAddMenuItem(item))}
+                    className={
+                      isPortioned
+                        ? productChrome.cafeCatalogTilePortioned
+                        : productChrome.cafeCatalogTile
+                    }
+                  >
+                    <Stack gap="xs" width="full">
+                      <Text weight="semibold" truncate>
+                        {item.name}
                       </Text>
-                    </Inline>
-                  </Stack>
-                </Button>
-              ))}
+                      <Inline justify="between" align="center" width="full">
+                        <Text weight="semibold">
+                          {isPortioned
+                            ? portionPriceRange(portions)
+                            : money(item.sellingPrice ?? 0)}
+                        </Text>
+                        <Text aria-hidden className={productChrome.cafeCatalogAddBadge}>
+                          +
+                        </Text>
+                      </Inline>
+                      {isPortioned ? (
+                        <Text className={productChrome.cafeCatalogTileHint}>
+                          {portions.length} portions
+                        </Text>
+                      ) : null}
+                    </Stack>
+                  </Button>
+                );
+              })}
             </Box>
           </Box>
         ))}
@@ -266,6 +306,48 @@ export function CafeSellCatalogPanel({
           </Box>
         ) : null}
       </Box>
+
+      {/*
+        The picker is the only way a portioned item enters the cart. Each row carries its own
+        price beside its own name: a cashier reading "Half" next to a range would have to guess
+        which half of the range it is, and a guess at the counter becomes a wrong bill.
+      */}
+      <Modal open={portionItem !== null} onClose={() => setPortionItem(null)} size="sm">
+        <Modal.Header
+          title={portionItem ? `Choose portion — ${portionItem.name}` : 'Choose portion'}
+        />
+        <Modal.Body>
+          <Box className={productChrome.cafeCatalogPortionList}>
+            {openPortions.map((rate) => (
+              <Button
+                key={rate.id}
+                type="button"
+                variant="outline"
+                disabled={disabled}
+                className={productChrome.cafeCatalogPortionRow}
+                onClick={() => {
+                  if (!portionItem) return;
+                  const item = portionItem;
+                  setPortionItem(null);
+                  onAddMenuItem(item, rate);
+                }}
+              >
+                <Inline justify="between" align="center" width="full" gap="md">
+                  <Text weight="semibold">{rate.name}</Text>
+                  <Text weight="semibold" className={productChrome.cafeCatalogPortionPrice}>
+                    {money(Number(rate.price) || 0)}
+                  </Text>
+                </Inline>
+              </Button>
+            ))}
+          </Box>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button type="button" variant="ghost" onClick={() => setPortionItem(null)}>
+            Cancel
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Stack>
   );
 }
