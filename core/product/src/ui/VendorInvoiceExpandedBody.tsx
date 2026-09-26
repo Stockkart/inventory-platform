@@ -33,6 +33,34 @@ function formatMoney(n: number | null | undefined): string {
   }).format(n);
 }
 
+function formatDate(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  try {
+    return new Date(iso).toLocaleString(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    });
+  } catch {
+    return iso;
+  }
+}
+
+/**
+ * A lot field that a vertical may keep in its extension instead of on the lot. Medical stores
+ * batch and expiry there, so reading only the core field showed a dash for every medical bill.
+ */
+function lotField(
+  inv: InventoryItem | null | undefined,
+  key: 'batchNo' | 'expiryDate',
+): string | null {
+  if (!inv) return null;
+  const core = inv[key];
+  if (typeof core === 'string' && core.trim()) return core.trim();
+  const ext = inv.verticalFields?.[key];
+  if (typeof ext === 'string' && ext.trim()) return ext.trim();
+  return null;
+}
+
 function formatCompactDate(iso: string | null | undefined): string {
   if (!iso) return '—';
   try {
@@ -187,9 +215,11 @@ export function VendorInvoiceExpandedBody({
                     <TableCell className={surfaceChrome.mutedCell}>
                       {line.barcode ?? inv?.barcode ?? '—'}
                     </TableCell>
-                    <TableCell className={surfaceChrome.mutedCell}>{inv?.batchNo ?? '—'}</TableCell>
                     <TableCell className={surfaceChrome.mutedCell}>
-                      {formatCompactDate(inv?.expiryDate)}
+                      {lotField(inv, 'batchNo') ?? '—'}
+                    </TableCell>
+                    <TableCell className={surfaceChrome.mutedCell}>
+                      {formatCompactDate(lotField(inv, 'expiryDate'))}
                     </TableCell>
                     <TableCell>{line.count ?? '—'}</TableCell>
                     <TableCell className={surfaceChrome.moneyCell}>
