@@ -16,6 +16,9 @@ export const cafeNav: NavContribution = {
       icon: 'search',
     },
     { path: '/dashboard/menu', label: 'Menu', icon: 'clipboard-list' },
+    // Kitchen tickets are issued from this screen: Print KOT sits with the order it punches
+    // (`ui/CafeKotBar.tsx`, mounted through `VerticalPlugin.sellActions`). There is no
+    // separate KOT screen, and so no nav entry for one.
     { path: '/dashboard/menu-sell', label: 'Sell', icon: 'shopping-cart' },
   ],
 };

@@ -42,6 +42,12 @@
       "types": "./dist/nav.d.ts",
       "import": "./src/nav.ts",
       "default": "./src/nav.ts"
+    },
+    "./print": {
+      "@inventory-platform/source": "./src/lib/printDocument.ts",
+      "types": "./dist/lib/printDocument.d.ts",
+      "import": "./src/lib/printDocument.ts",
+      "default": "./src/lib/printDocument.ts"
     }
   },
   "nx": {

@@ -19,6 +19,7 @@ import type {
   ParseInvoiceResponse,
   UpdateInventoryRequest,
   InventoryItem,
+  AmendVendorPurchaseInvoicePayload,
   VendorPurchaseInvoiceDetail,
   VendorPurchaseInvoiceListResponse,
   VendorPurchaseReturnPayload,
@@ -305,16 +306,25 @@ export const inventoryApi = {
     return response.data.data;
   },
 
+  /**
+   * `query` may match invoice no., vendor or a line; each of `filters` must hold. Dates are
+   * `yyyy-mm-dd` bill days, both inclusive, applied on the server before paging.
+   */
   listVendorPurchaseInvoices: async (
     page = 0,
     size = 20,
     query?: string,
+    filters?: { invoiceNo?: string; vendor?: string; from?: string; to?: string },
   ): Promise<VendorPurchaseInvoiceListResponse> => {
     const params: Record<string, string> = {
       page: String(page),
       size: String(size),
     };
     if (query && query.trim() !== '') params.q = query.trim();
+    if (filters?.invoiceNo?.trim()) params.invoiceNo = filters.invoiceNo.trim();
+    if (filters?.vendor?.trim()) params.vendor = filters.vendor.trim();
+    if (filters?.from) params.from = filters.from;
+    if (filters?.to) params.to = filters.to;
     const response = await apiClient.get<ApiResponse<VendorPurchaseInvoiceListResponse>>(
       VENDOR_PURCHASE_INVOICES_ENDPOINTS.BASE,
       params,
@@ -325,6 +335,18 @@ export const inventoryApi = {
   getVendorPurchaseInvoice: async (id: string): Promise<VendorPurchaseInvoiceDetail> => {
     const response = await apiClient.get<ApiResponse<VendorPurchaseInvoiceDetail>>(
       VENDOR_PURCHASE_INVOICES_ENDPOINTS.BY_ID(id),
+    );
+    return response.data;
+  },
+
+  /** Corrects a purchase invoice header against the paper bill. Header only; lines are fixed. */
+  amendVendorPurchaseInvoice: async (
+    id: string,
+    payload: AmendVendorPurchaseInvoicePayload,
+  ): Promise<VendorPurchaseInvoiceDetail> => {
+    const response = await apiClient.patch<ApiResponse<VendorPurchaseInvoiceDetail>>(
+      VENDOR_PURCHASE_INVOICES_ENDPOINTS.BY_ID(id),
+      payload,
     );
     return response.data;
   },

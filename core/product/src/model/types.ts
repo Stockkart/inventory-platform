@@ -164,8 +164,16 @@ export interface BulkCreateInventoryItem {
 }
 
 /** Optional vendor invoice header on bulk stock-in. Omit for legacy behavior. */
+export type PurchaseTaxTreatment = 'INCLUSIVE' | 'EXCLUSIVE';
+
 export interface VendorPurchaseInvoicePayload {
   invoiceNo: string;
+  /**
+   * Whether the line amounts on this bill already include GST.
+   *
+   * Omitted falls back to the vendor's default, and then to EXCLUSIVE.
+   */
+  taxTreatment?: PurchaseTaxTreatment | null;
   invoiceDate?: string | null;
   lineSubTotal?: number | null;
   taxTotal?: number | null;
@@ -226,6 +234,13 @@ export interface BulkCreateInventoryResponse {
   computedLineSubTotal?: number | null;
   /** Tax the lines resolve to at their own rates, for showing beside the typed tax. */
   computedTaxTotal?: number | null;
+  /**
+   * Products whose GST rate disagrees with the rest of the catalogue under the same HSN.
+   *
+   * The one error a correct-looking bill can still hide: priced at the wrong slab, an invoice
+   * adds up perfectly against itself and is wrong all the same.
+   */
+  rateWarnings?: string[] | null;
   items: Array<{
     id: string;
     lotId?: string;
@@ -285,6 +300,35 @@ export interface VendorPurchaseInvoiceDetail {
   synthetic?: boolean | null;
   legacyLotId?: string | null;
   lines: VendorPurchaseInvoiceLineDto[];
+
+  /** How the stated header compares to what the lines come to. */
+  headerReconciliation?: 'OK' | 'MISSING' | 'MISMATCH' | 'RATE_CONFLICT' | null;
+  computedLineSubTotal?: number | null;
+  computedTaxTotal?: number | null;
+  taxTreatment?: PurchaseTaxTreatment | null;
+
+  /** Set once the header has been corrected against the paper bill. */
+  amendedAt?: string | null;
+  amendedByUserId?: string | null;
+  amendmentReason?: string | null;
+}
+
+/**
+ * Corrections to a purchase invoice header, keyed from the paper bill.
+ *
+ * Every money field is optional -- an omitted one is left as it stands, so adding totals to a
+ * bill that never had them does not mean restating everything else. The reason is required.
+ */
+export interface AmendVendorPurchaseInvoicePayload {
+  lineSubTotal?: number | null;
+  taxTotal?: number | null;
+  shippingCharge?: number | null;
+  otherCharges?: number | null;
+  overallDiscount?: number | null;
+  roundOff?: number | null;
+  invoiceTotal?: number | null;
+  taxTreatment?: PurchaseTaxTreatment | null;
+  reason: string;
 }
 
 export interface VendorPurchaseInvoiceListResponse {
@@ -335,6 +379,24 @@ export interface VendorPurchaseReturnLineSummary {
   centralGstAmount: number | null;
   stateGstAmount: number | null;
   lineNoteValue: number | null;
+
+  /**
+   * The purchase this line reverses, in the terms the supplier's bill stated it.
+   *
+   * A debit note is filed by restating the purchase, so it shows the same cost, scheme and
+   * discount as the stock-in entry. Absent on notes recorded before this was carried.
+   */
+  costPrice?: number | null;
+  priceToRetail?: number | null;
+  maximumRetailPrice?: number | null;
+  gstRatePct?: number | null;
+  /** IGST where the supplier is in another state; the two halves are then zero. */
+  integratedGstAmount?: number | null;
+  purchaseSchemeType?: string | null;
+  purchaseSchemePayFor?: number | null;
+  purchaseSchemeFree?: number | null;
+  purchaseSchemePercentage?: number | null;
+  purchaseAdditionalDiscount?: number | null;
 }
 
 /** One row from GET /vendor-purchase-returns (supplier return history). */
@@ -655,6 +717,14 @@ export interface CheckoutItem {
   unit?: string;
   quantity?: number;
   baseQuantity?: number;
+  /**
+   * Cafe only: preparation instruction printed on the kitchen ticket, e.g. `no onion`.
+   *
+   * It rides the add that *creates* the line. The cart merges by `sellableRef` and a merge
+   * keeps the existing line's note, so re-sending a note for a line that is already in the
+   * cart is a no-op on the server — the line has to be replaced for a new note to land.
+   */
+  note?: string | null;
   priceToRetail?: number;
   saleAdditionalDiscount?: number | null;
   // Scheme can be represented either as fixed units or percentage
@@ -710,6 +780,16 @@ export interface CheckoutItemResponse {
   profit?: number | null;
   marginPercent?: number | null;
   billingMode?: BillingMode;
+  /**
+   * Cafe only: how much of {@link baseQuantity} the kitchen has already been sent.
+   * A line is fully sent when `baseQuantity === kotSentQuantity`; absent on
+   * verticals that never punch.
+   */
+  kotSentQuantity?: number | null;
+  /** Cafe only: kitchen station frozen onto the line at add time (e.g. `KITCHEN`, `BAR`). */
+  department?: string | null;
+  /** Cafe only: preparation instruction printed on the kitchen ticket, e.g. `no onion`. */
+  note?: string | null;
   /** From registration: additional discount % (read-only at sale) */
   purchaseAdditionalDiscount?: number | null;
   /** From registration: scheme (read-only at sale) */
@@ -1042,6 +1122,24 @@ export interface RefundedItem {
   quantity: number;
   priceToRetail: number;
   itemRefundAmount: number;
+
+  /**
+   * The sale line as it was billed, restated on the note that credits it.
+   *
+   * A return is filed by stating the original supply, so a credit note shows the same MRP,
+   * discount, scheme and rate as the invoice. Absent on notes recorded before this was carried.
+   */
+  maximumRetailPrice?: number | null;
+  saleAdditionalDiscount?: number | null;
+  sgst?: string | null;
+  cgst?: string | null;
+  schemeType?: string | null;
+  schemePayFor?: number | null;
+  schemeFree?: number | null;
+  schemePercentage?: number | null;
+  taxableValue?: number | null;
+  cgstAmount?: number | null;
+  sgstAmount?: number | null;
 }
 
 export interface RefundResponse {

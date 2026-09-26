@@ -35,3 +35,28 @@ export function schemeLabel(item: BilledLineScheme): string {
   }
   return '—';
 }
+
+/** The purchase-side scheme a line was bought on, read the same way as the sale-side one. */
+export interface PurchasedLineScheme {
+  purchaseSchemeType?: string | null;
+  purchaseSchemePercentage?: number | null;
+  purchaseSchemePayFor?: number | null;
+  purchaseSchemeFree?: number | null;
+}
+
+/**
+ * The scheme the goods were bought on, for a debit note restating a purchase.
+ *
+ * Separate from {@link schemeLabel} because the two are different deals on the same goods: what
+ * a supplier gave, and what the shop passed on. A note that reversed a purchase while showing
+ * the sale scheme would state terms that were never agreed with that supplier.
+ */
+export function purchaseSchemeLabel(line: PurchasedLineScheme): string {
+  if (line.purchaseSchemeType === 'PERCENTAGE' && line.purchaseSchemePercentage) {
+    return formatPercent(line.purchaseSchemePercentage);
+  }
+  if (line.purchaseSchemePayFor != null && line.purchaseSchemeFree != null) {
+    return `${line.purchaseSchemePayFor}+${line.purchaseSchemeFree}`;
+  }
+  return '—';
+}

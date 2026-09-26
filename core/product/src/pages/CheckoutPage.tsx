@@ -85,7 +85,7 @@ export function CheckoutPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { error: notifyError } = useNotify;
+  const { error: notifyError, success: notifySuccess, info: notifyInfo } = useNotify;
   const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
   const fetchCapabilities = useShopCapabilitiesStore((s) => s.fetchCapabilities);
   const shopCapabilities = useShopCapabilitiesStore((s) =>
@@ -669,6 +669,8 @@ export function CheckoutPage() {
           purchaseId={checkoutData.purchaseId}
           invoiceNo={checkoutData.invoiceNo}
           onError={(msg) => msg && notifyError(msg)}
+          onSuccess={(msg) => msg && notifySuccess(msg)}
+          onInfo={(msg) => msg && notifyInfo(msg)}
         />
       )}
     </Stack>

@@ -65,7 +65,7 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
   const [isItemsExpanded, setIsItemsExpanded] = useState(false);
   const [isPriceExpanded, setIsPriceExpanded] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
-  const { error: notifyError } = useNotify;
+  const { error: notifyError, success: notifySuccess, info: notifyInfo } = useNotify;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -317,6 +317,8 @@ export function PurchaseCard({ purchase }: PurchaseCardProps) {
               purchaseId={purchase.purchaseId}
               invoiceNo={purchase.invoiceNo}
               onError={(msg) => msg && notifyError(msg)}
+              onSuccess={(msg) => msg && notifySuccess(msg)}
+              onInfo={(msg) => msg && notifyInfo(msg)}
             />
           ) : null}
         </Stack>

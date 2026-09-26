@@ -14,6 +14,7 @@ import {
 } from '@inventory-platform/ui-kit';
 import { SaleLineItemsTable, SaleTotals, formatCurrency } from './SaleLineItems';
 import { PrintInvoiceModal } from './PrintInvoiceModal';
+import { useNotify } from '@inventory-platform/session';
 import { formatPaymentMethod, formatPaymentSplit } from './paymentMethod';
 
 function formatDate(dateString: string): string {
@@ -71,6 +72,7 @@ function HistoryField({
 export function SaleHistoryCard({ purchase }: { purchase: Purchase }) {
   const [expanded, setExpanded] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const { error: notifyError, success: notifySuccess, info: notifyInfo } = useNotify;
 
   const paymentSplitLine = formatPaymentSplit({
     cashAmount: purchase.cashAmount ?? undefined,
@@ -181,6 +183,9 @@ export function SaleHistoryCard({ purchase }: { purchase: Purchase }) {
         onClose={() => setShowPrintModal(false)}
         purchaseId={purchase.purchaseId}
         invoiceNo={purchase.invoiceNo}
+        onError={(msg) => msg && notifyError(msg)}
+        onSuccess={(msg) => msg && notifySuccess(msg)}
+        onInfo={(msg) => msg && notifyInfo(msg)}
       />
     </>
   );
