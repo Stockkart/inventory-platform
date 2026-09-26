@@ -33,18 +33,6 @@ function formatMoney(n: number | null | undefined): string {
   }).format(n);
 }
 
-function formatDate(iso: string | null | undefined): string {
-  if (!iso) return '—';
-  try {
-    return new Date(iso).toLocaleString(undefined, {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    });
-  } catch {
-    return iso;
-  }
-}
-
 /**
  * A lot field that a vertical may keep in its extension instead of on the lot. Medical stores
  * batch and expiry there, so reading only the core field showed a dash for every medical bill.
