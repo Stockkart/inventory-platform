@@ -982,13 +982,13 @@
 .cafeCatalogTile {
   min-height: 92px;
   text-align: left;
-  border-left: 3px solid #355a82;
+  border-left: 3px solid var(--sk-color-border-strong);
 }
 
 .cafeCatalogTilePortioned {
   min-height: 92px;
   text-align: left;
-  border-left: 3px solid #b45309;
+  border-left: 3px solid var(--sk-color-accent);
 }
 
 .cafeCatalogTileHint {
@@ -1007,7 +1007,7 @@
 .cafeCatalogPortionRow {
   min-height: 52px;
   text-align: left;
-  border-left: 3px solid #b45309;
+  border-left: 3px solid var(--sk-color-accent);
 }
 
 .cafeCatalogPortionPrice {
