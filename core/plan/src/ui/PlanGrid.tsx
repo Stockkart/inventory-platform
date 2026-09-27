@@ -1,28 +1,19 @@
-import type { PlanFeature, PlanResponse } from '@inventory-platform/plan/types';
+import type { PlanResponse } from '@inventory-platform/plan/types';
 import {
   Badge,
   Box,
   Button,
   Text,
+  VisuallyHidden,
   chartChrome,
   surfaceChrome,
   cn,
 } from '@inventory-platform/ui-kit';
+import { FEATURE_LABELS, formatRupees, planListPriceLabel, planYearlyPrice } from './planPricing';
 
 const EXTRA_USER_PLAN = 'Extra User Plan';
 const EXTRA_SHOP_PLAN = 'Extra Shop Plan';
 const EXTRA_PLANS = [EXTRA_USER_PLAN, EXTRA_SHOP_PLAN];
-
-const FEATURE_LABELS: Record<PlanFeature, string> = {
-  CREDIT_BALANCE: 'Credit balance',
-  ACCOUNTING: 'Accounting',
-  BARCODE_GENERATOR: 'Barcode generator',
-  LOW_STOCK_NOTIFICATION: 'Reminder & low-stock notifications',
-  MARKETING: 'Marketing (SMS/WhatsApp)',
-  SALARY: 'Salary',
-  BIOMETRIC_ATTENDANCE: 'Biometric attendance',
-  ADVANCED_ACCESS_CONTROL: 'Advanced access control',
-};
 
 /** The backend decides which plan is highlighted. */
 export function isMostPopular(plan: PlanResponse): boolean {
@@ -105,6 +96,7 @@ function PlanTile({
 }) {
   const features = buildPlanFeatures(plan);
   const isExtra = EXTRA_PLANS.includes(plan.planName);
+  const listPriceLabel = planListPriceLabel(plan);
 
   return (
     <Box
@@ -132,8 +124,14 @@ function PlanTile({
         ) : null}
 
         <Box className={surfaceChrome.planCardPriceRow}>
+          {listPriceLabel ? (
+            <Text as="s" className={surfaceChrome.planCardListPrice}>
+              <VisuallyHidden>Was </VisuallyHidden>
+              {listPriceLabel}
+            </Text>
+          ) : null}
           <Text as="p" className={surfaceChrome.planCardPrice}>
-            ₹{(plan.arcPrice ?? plan.price)?.toLocaleString('en-IN') ?? 0}
+            {formatRupees(planYearlyPrice(plan))}
           </Text>
           <Text as="span" className={surfaceChrome.planCardPeriod}>
             {plan.planName === EXTRA_USER_PLAN ? '/user/year' : '/year'}

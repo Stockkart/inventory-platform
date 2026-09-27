@@ -11,9 +11,11 @@ import {
   PageHeader,
   Stack,
   Text,
+  VisuallyHidden,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { getPaymentCheckout } from '../payment/index.js';
+import { planListPriceLabel } from '../ui/planPricing';
 import { useAuthStore, usePlanStatusStore } from '@inventory-platform/session';
 import {
   useCreatePlanCheckoutMutation,
@@ -46,6 +48,7 @@ export function PlanPaymentPage() {
     () => plans.find((p) => p.id === planIdFromUrl) ?? planById ?? null,
     [plans, planIdFromUrl, planById],
   );
+  const selectedListPrice = selectedPlan ? planListPriceLabel(selectedPlan) : null;
 
   const createCheckoutMutation = useCreatePlanCheckoutMutation();
   const verifyPaymentMutation = useVerifyPlanPaymentMutation();
@@ -115,6 +118,12 @@ export function PlanPaymentPage() {
                   <Text variant="heading4" weight="semibold">
                     {selectedPlan.planName}
                   </Text>
+                  {selectedListPrice ? (
+                    <Text as="s" color="secondary">
+                      <VisuallyHidden>Was </VisuallyHidden>
+                      {selectedListPrice}
+                    </Text>
+                  ) : null}
                   <Text variant="title" weight="bold">
                     ₹{selectedPlan.arcPrice?.toLocaleString('en-IN')} /{' '}
                     {selectedPlan.planName === 'Extra User Plan' ? 'user/year' : 'year'}
