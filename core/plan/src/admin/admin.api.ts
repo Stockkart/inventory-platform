@@ -1,8 +1,14 @@
 import { apiClient } from '@inventory-platform/api-client';
 import type { ApiResponse } from '@inventory-platform/contracts';
 import type {
+  AdminActiveRequest,
+  AdminAddOn,
   AdminReferralAttribution,
   AdminReferralReward,
+  AdminVoucher,
+  AdminVoucherRedemption,
+  VoucherGenerateRequest,
+  VoucherUpdateRequest,
   ReferralApprovalRequest,
   ReferralAttributionStatus,
   ReferralRewardStatus,
@@ -58,6 +64,50 @@ export const planAdminApi = {
     const response = await apiClient.post<ApiResponse<AdminReferralReward>>(
       PLAN_ENDPOINTS.ADMIN_REFERRAL_REWARD_ACTION(id, action),
       { reason },
+    );
+    return response.data;
+  },
+
+  listAddOns: async (): Promise<AdminAddOn[]> => {
+    const response = await apiClient.get<ApiResponse<AdminAddOn[]>>(PLAN_ENDPOINTS.ADMIN_ADDONS);
+    return response.data;
+  },
+
+  listVouchers: async (addOnCode: string | null): Promise<AdminVoucher[]> => {
+    const response = await apiClient.get<ApiResponse<AdminVoucher[]>>(
+      PLAN_ENDPOINTS.ADMIN_VOUCHERS,
+      addOnCode ? { addOnCode } : undefined,
+    );
+    return response.data;
+  },
+
+  generateVouchers: async (body: VoucherGenerateRequest): Promise<AdminVoucher[]> => {
+    const response = await apiClient.post<ApiResponse<AdminVoucher[]>>(
+      PLAN_ENDPOINTS.ADMIN_VOUCHERS,
+      body,
+    );
+    return response.data;
+  },
+
+  updateVoucher: async (id: string, body: VoucherUpdateRequest): Promise<AdminVoucher> => {
+    const response = await apiClient.put<ApiResponse<AdminVoucher>>(
+      PLAN_ENDPOINTS.ADMIN_VOUCHER(id),
+      body,
+    );
+    return response.data;
+  },
+
+  setVoucherActive: async (id: string, body: AdminActiveRequest): Promise<AdminVoucher> => {
+    const response = await apiClient.patch<ApiResponse<AdminVoucher>>(
+      PLAN_ENDPOINTS.ADMIN_VOUCHER_ACTIVE(id),
+      body,
+    );
+    return response.data;
+  },
+
+  listVoucherRedemptions: async (id: string): Promise<AdminVoucherRedemption[]> => {
+    const response = await apiClient.get<ApiResponse<AdminVoucherRedemption[]>>(
+      PLAN_ENDPOINTS.ADMIN_VOUCHER_REDEMPTIONS(id),
     );
     return response.data;
   },

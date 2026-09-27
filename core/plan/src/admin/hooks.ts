@@ -1,5 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+  AdminActiveRequest,
+  VoucherGenerateRequest,
+  VoucherUpdateRequest,
   ReferralApprovalRequest,
   ReferralAttributionStatus,
   ReferralRewardStatus,
@@ -68,6 +71,59 @@ export function useRewardActionMutation() {
         queryClient.invalidateQueries({ queryKey: planKeys.adminReferrals() }),
         queryClient.invalidateQueries({ queryKey: [...planKeys.all, 'admin-wallet'] }),
       ]),
+  });
+}
+
+export function useAdminAddOnsQuery() {
+  return useQuery({
+    queryKey: planKeys.adminAddOns(),
+    queryFn: () => planAdminApi.listAddOns(),
+  });
+}
+
+export function useAdminVouchersQuery(addOnCode: string | null) {
+  return useQuery({
+    queryKey: planKeys.adminVoucherList(addOnCode),
+    queryFn: () => planAdminApi.listVouchers(addOnCode),
+  });
+}
+
+export function useVoucherRedemptionsQuery(id: string | null) {
+  return useQuery({
+    queryKey: planKeys.adminVoucherRedemptions(id ?? ''),
+    queryFn: () => planAdminApi.listVoucherRedemptions(id ?? ''),
+    enabled: Boolean(id),
+  });
+}
+
+function useInvalidateVouchers() {
+  const queryClient = useQueryClient();
+  return () => queryClient.invalidateQueries({ queryKey: planKeys.adminVouchers() });
+}
+
+export function useGenerateVouchersMutation() {
+  const invalidate = useInvalidateVouchers();
+  return useMutation({
+    mutationFn: (body: VoucherGenerateRequest) => planAdminApi.generateVouchers(body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useUpdateVoucherMutation() {
+  const invalidate = useInvalidateVouchers();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: VoucherUpdateRequest }) =>
+      planAdminApi.updateVoucher(id, body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useSetVoucherActiveMutation() {
+  const invalidate = useInvalidateVouchers();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: AdminActiveRequest }) =>
+      planAdminApi.setVoucherActive(id, body),
+    onSuccess: invalidate,
   });
 }
 

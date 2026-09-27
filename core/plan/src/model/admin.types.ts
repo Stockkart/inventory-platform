@@ -1,4 +1,9 @@
-import type { ReferralAttributionStatus, ReferralRewardStatus } from './types.js';
+import type {
+  AddOnResponse,
+  ReferralAttributionStatus,
+  ReferralRewardStatus,
+  VoucherType,
+} from './types.js';
 
 /** Platform admin API shapes (/admin/**). Every mutating call needs a reason, kept in the audit log. */
 
@@ -49,6 +54,84 @@ export interface AdminReferralReward {
 export interface ReferralApprovalRequest {
   /** Required when the referral has no referring shop yet (name only or unknown code). */
   referrerShopId?: string;
+  reason: string;
+}
+
+/** GET /admin/addons: the catalogue including hidden add-ons. */
+export interface AdminAddOn extends AddOnResponse {
+  id: string;
+  active: boolean;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface AdminVoucher {
+  id: string;
+  code: string;
+  addOnCode: string;
+  type: VoucherType;
+  value: number | null;
+  quantity: number;
+  maxRedemptions: number | null;
+  reservedCount: number;
+  redemptionCount: number;
+  singleUsePerShop: boolean;
+  issuedToShopId: string | null;
+  validFrom: string | null;
+  validTo: string | null;
+  active: boolean;
+  note: string | null;
+  batchId: string | null;
+  createdByUserId: string | null;
+  createdAt: string | null;
+}
+
+/** One chosen `code`, or `count` generated codes (`prefix`-XXXXXX) sharing every other setting. */
+export interface VoucherGenerateRequest {
+  code?: string;
+  count?: number;
+  prefix?: string;
+  addOnCode: string;
+  type: VoucherType;
+  /** Percent or rupees; omitted for FREE_ADDON. */
+  value?: number;
+  quantity?: number;
+  maxRedemptions?: number;
+  singleUsePerShop: boolean;
+  issuedToShopId?: string;
+  validFrom?: string;
+  validTo?: string;
+  note?: string;
+}
+
+/**
+ * Replaces all three fields; null clears one. Type, value and add-on are fixed after issue so
+ * past redemptions stay explainable.
+ */
+export interface VoucherUpdateRequest {
+  validTo: string | null;
+  maxRedemptions: number | null;
+  note: string | null;
+}
+
+export type VoucherRedemptionStatus = 'RESERVED' | 'REDEEMED' | 'RELEASED';
+
+export interface AdminVoucherRedemption {
+  id: string;
+  voucherCode: string;
+  shopId: string;
+  orderId: string;
+  addOnCode: string;
+  discount: number;
+  status: VoucherRedemptionStatus;
+  reservedAt: string | null;
+  redeemedAt: string | null;
+  releasedAt: string | null;
+}
+
+/** Body for the PATCH …/active endpoints. */
+export interface AdminActiveRequest {
+  active: boolean;
   reason: string;
 }
 
