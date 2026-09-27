@@ -1,4 +1,5 @@
 export { useAuthStore } from './lib/useAuthStore';
+export { isPlatformAdmin, type PlatformRole } from './model/auth.types';
 export { useShopCapabilitiesStore } from './lib/useShopCapabilitiesStore';
 export { useVerticalSchemaStore, shopSchemaCacheKey } from './lib/useVerticalSchemaStore';
 export { useShopAccessStore } from './lib/useShopAccessStore';

@@ -102,7 +102,8 @@ export type WalletEntrySource =
   | 'RESERVATION_RELEASE'
   | 'ORDER_REDEMPTION'
   | 'MANUAL_ADJUSTMENT'
-  | 'CLAWBACK';
+  | 'CLAWBACK'
+  | 'ORDER_REFUND';
 
 export interface WalletEntryResponse {
   source: WalletEntrySource;
@@ -172,4 +173,72 @@ export interface ReferralRewardsResponse {
   pendingAmount: number;
   creditedAmount: number;
   rewards: ReferralRewardResponse[];
+}
+
+/** GET /admin/mis/plans — platform admins only. Days are inclusive, Asia/Kolkata. */
+export interface PlanMisParams {
+  from: string;
+  to: string;
+}
+
+export interface PlanMisResponse {
+  from: string;
+  to: string;
+  currency: string;
+  /** Orders paid in the range; refunds count on the day they happened. */
+  revenue: {
+    paidOrders: number;
+    grossRevenue: number;
+    discounts: number;
+    walletCreditApplied: number;
+    refundedOrders: number;
+    refundedAmount: number;
+    netRevenue: number;
+  };
+  planSales: Array<{
+    planCode: string | null;
+    planName: string | null;
+    orders: number;
+    revenue: number;
+  }>;
+  addOns: {
+    planOrders: number;
+    planOrdersWithAddOn: number;
+    /** 0–100; null with no plan orders. */
+    attachRatePercent: number | null;
+    items: Array<{
+      code: string;
+      name: string | null;
+      orders: number;
+      units: number;
+      revenue: number;
+    }>;
+  };
+  ocrTopUps: { orders: number; units: number; credits: number; revenue: number };
+  vouchers: {
+    redemptions: number;
+    discountValue: number;
+    topCodes: Array<{ voucherCode: string; redemptions: number; discountValue: number }>;
+  };
+  referrals: {
+    rewardsEarned: number;
+    rewardCost: number;
+    rewardsVoided: number;
+    creditedAmount: number;
+    clawedBackAmount: number;
+    newShops: number;
+    newRevenue: number;
+    /** null with no new revenue. */
+    costPercentOfNewRevenue: number | null;
+  };
+  wallet: {
+    rewardsCredited: number;
+    spentOnOrders: number;
+    refundedToWallet: number;
+    clawedBack: number;
+    manualAdjustmentsNet: number;
+    /** Current balances across all wallets, not limited to the range. */
+    outstandingLiability: number;
+    unrecoveredClawback: number;
+  };
 }
