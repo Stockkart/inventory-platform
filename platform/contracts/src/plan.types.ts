@@ -130,6 +130,8 @@ export interface QuoteItem {
   itemSource: QuoteItemSource;
   /** Voucher that added or discounted this line. */
   voucherCode?: string | null;
+  /** Wallet credit spent on this line; the line is paid `lineTotal - walletCredit`. */
+  walletCredit?: number | null;
 }
 
 export type AddOnBillingType = 'ANNUAL' | 'ONE_TIME';

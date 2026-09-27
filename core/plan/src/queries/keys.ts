@@ -13,6 +13,9 @@ export const planKeys = {
   quote: (request: QuoteRequest) => [...base.all, 'quote', request] as const,
   activeCampaign: () => [...base.all, 'active-campaign'] as const,
   addOns: () => [...base.all, 'addons'] as const,
+  wallet: () => [...base.all, 'wallet'] as const,
+  referralSummary: () => [...base.all, 'referral-summary'] as const,
+  referralRewards: () => [...base.all, 'referral-rewards'] as const,
 };
 
 export const PLAN_MODULE_VERSION = '0.1.0';

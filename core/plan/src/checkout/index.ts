@@ -4,6 +4,7 @@ export {
   maxQuantityFor,
   newIdempotencyKey,
   normaliseVoucherCode,
+  paidFromWallet,
   readVoucherRejection,
   sellableAddOns,
   voucherRejectionMessage,

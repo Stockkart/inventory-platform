@@ -95,3 +95,81 @@ export interface PlanTransactionResponse {
   providerPaymentId?: string | null;
   createdAt: string;
 }
+
+export type WalletEntrySource =
+  | 'REFERRAL_REWARD'
+  | 'ORDER_RESERVATION'
+  | 'RESERVATION_RELEASE'
+  | 'ORDER_REDEMPTION'
+  | 'MANUAL_ADJUSTMENT'
+  | 'CLAWBACK';
+
+export interface WalletEntryResponse {
+  source: WalletEntrySource;
+  sourceId: string;
+  amount: number;
+  availableDelta: number;
+  reservedDelta: number;
+  availableAfter: number;
+  reservedAfter: number;
+  outstandingAfter: number;
+  note?: string | null;
+  createdAt: string;
+}
+
+/** GET /plans/shop/wallet */
+export interface WalletResponse {
+  /** Spendable at checkout now. */
+  availableBalance: number;
+  /** Held by checkouts that have not been paid yet. */
+  reservedBalance: number;
+  /** Owed back after a refunded referral; settled from future credit first. */
+  outstandingClawback: number;
+  /** Most recent first. */
+  entries: WalletEntryResponse[];
+}
+
+export type ReferralAttributionStatus =
+  | 'RESOLVED'
+  | 'PENDING_REVIEW'
+  | 'SELF_REFERRAL'
+  | 'DUPLICATE'
+  | 'REJECTED';
+
+/** GET /referrals/me */
+export interface ReferralSummaryResponse {
+  referralCode: string | null;
+  resolvedReferrals: number;
+  pendingReviewReferrals: number;
+  /** How this shop's own attribution stands; null when nobody referred it. */
+  referredByStatus: ReferralAttributionStatus | null;
+}
+
+export type ReferralRewardStatus =
+  | 'PENDING'
+  | 'APPROVED'
+  | 'CREDITING'
+  | 'CREDITED'
+  | 'VOID'
+  | 'CLAWED_BACK';
+
+export interface ReferralRewardResponse {
+  id: string;
+  refereeShopName: string | null;
+  planCode: string | null;
+  basePlanAmount: number;
+  rewardPercent: number;
+  rewardAmount: number;
+  status: ReferralRewardStatus;
+  /** Reaches the wallet after this, unless the purchase is refunded first. */
+  holdUntil: string | null;
+  creditedAt: string | null;
+  createdAt: string;
+}
+
+/** GET /referrals/rewards */
+export interface ReferralRewardsResponse {
+  pendingAmount: number;
+  creditedAmount: number;
+  rewards: ReferralRewardResponse[];
+}

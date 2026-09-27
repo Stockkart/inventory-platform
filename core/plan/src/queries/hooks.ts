@@ -15,10 +15,13 @@ import type {
   PlanTransactionResponse,
   QuoteRequest,
   QuoteResponse,
+  ReferralRewardsResponse,
+  ReferralSummaryResponse,
   ShopPlanStatusResponse,
   VerifyPlanPaymentRequest,
   VerifyPlanPaymentResponse,
   VoucherCheckResponse,
+  WalletResponse,
 } from '@inventory-platform/plan/types';
 import { plansApi } from '../api/plans.api';
 import { planKeys } from './keys';
@@ -111,6 +114,36 @@ export function useValidateVoucherMutation(
 ) {
   return useMutation({
     mutationFn: (code) => plansApi.validateVoucher(code),
+    ...options,
+  });
+}
+
+export function useWalletQuery(
+  options?: Omit<UseQueryOptions<WalletResponse>, 'queryKey' | 'queryFn'>,
+) {
+  return useQuery({
+    queryKey: planKeys.wallet(),
+    queryFn: () => plansApi.getWallet(),
+    ...options,
+  });
+}
+
+export function useReferralSummaryQuery(
+  options?: Omit<UseQueryOptions<ReferralSummaryResponse>, 'queryKey' | 'queryFn'>,
+) {
+  return useQuery({
+    queryKey: planKeys.referralSummary(),
+    queryFn: () => plansApi.getReferralSummary(),
+    ...options,
+  });
+}
+
+export function useReferralRewardsQuery(
+  options?: Omit<UseQueryOptions<ReferralRewardsResponse>, 'queryKey' | 'queryFn'>,
+) {
+  return useQuery({
+    queryKey: planKeys.referralRewards(),
+    queryFn: () => plansApi.getReferralRewards(),
     ...options,
   });
 }
