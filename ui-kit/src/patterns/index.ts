@@ -79,6 +79,12 @@ export { MarketingFooter, type MarketingFooterProps } from './MarketingFooter';
 export { PlanCard, type PlanCardProps } from './PlanCard';
 export { PlanCardGrid, type PlanCardGridProps } from './PlanCardGrid';
 export {
+  ComparisonTable,
+  type ComparisonColumn,
+  type ComparisonRow,
+  type ComparisonTableProps,
+} from './ComparisonTable';
+export {
   DenseTable,
   DenseTableSurface,
   DenseTableRow,

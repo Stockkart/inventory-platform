@@ -647,6 +647,13 @@
   font-variant-numeric: tabular-nums;
 }
 
+.planCardListPrice {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--sk-color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 .planCardPeriod {
   margin: 0;
   font-size: 0.8125rem;

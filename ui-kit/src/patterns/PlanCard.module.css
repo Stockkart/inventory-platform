@@ -93,6 +93,13 @@
   color: var(--sk-color-text-primary);
 }
 
+.listPrice {
+  color: var(--sk-color-text-muted);
+  font-size: 1.1rem;
+  font-weight: 600;
+  padding-bottom: 0.25rem;
+}
+
 .period {
   color: var(--sk-color-text-secondary);
   font-size: 0.95rem;

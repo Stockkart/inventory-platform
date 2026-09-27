@@ -32,6 +32,8 @@ export interface PlanResponse {
   features?: PlanFeature[] | null;
   /** Marketing highlight chosen by the backend, e.g. MOST_POPULAR. */
   badge?: string | null;
+  /** Struck-through anchor shown beside arcPrice. Display only, never charged; null on legacy plans. */
+  listPrice?: number | null;
 }
 
 export interface UsageResponse {

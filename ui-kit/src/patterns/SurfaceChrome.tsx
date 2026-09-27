@@ -97,6 +97,7 @@ export const surfaceChrome = {
   planCardBestFor: styles.planCardBestFor,
   planCardPriceRow: styles.planCardPriceRow,
   planCardPrice: styles.planCardPrice,
+  planCardListPrice: styles.planCardListPrice,
   planCardPeriod: styles.planCardPeriod,
   planCardOneTime: styles.planCardOneTime,
   planCardFeatures: styles.planCardFeatures,
