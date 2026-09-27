@@ -1,5 +1,7 @@
 import type {
   AddOnResponse,
+  CampaignState,
+  CampaignTheme,
   ReferralAttributionStatus,
   ReferralRewardStatus,
   VoucherType,
@@ -127,6 +129,32 @@ export interface AdminVoucherRedemption {
   reservedAt: string | null;
   redeemedAt: string | null;
   releasedAt: string | null;
+}
+
+/** Create or full edit; `code` is fixed after create and ignored on edit. */
+export interface CampaignRequest {
+  code: string;
+  headline: string;
+  subtext: string | null;
+  upcomingHeadline: string | null;
+  ctaLabel: string | null;
+  ctaPath: string | null;
+  theme: CampaignTheme;
+  startsAt: string;
+  endsAt: string;
+  announceFrom: string | null;
+  imminentThresholdDays: number | null;
+  dismissible: boolean;
+  priority: number;
+}
+
+export interface AdminCampaign extends CampaignRequest {
+  id: string;
+  active: boolean;
+  /** What shops would see now; null when hidden (not yet announced, ended, or off). */
+  state: CampaignState | null;
+  createdAt: string | null;
+  updatedAt: string | null;
 }
 
 /** Body for the PATCH …/active endpoints. */

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   AdminActiveRequest,
+  CampaignRequest,
   VoucherGenerateRequest,
   VoucherUpdateRequest,
   ReferralApprovalRequest,
@@ -123,6 +124,41 @@ export function useSetVoucherActiveMutation() {
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: AdminActiveRequest }) =>
       planAdminApi.setVoucherActive(id, body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useAdminCampaignsQuery() {
+  return useQuery({
+    queryKey: planKeys.adminCampaigns(),
+    queryFn: () => planAdminApi.listCampaigns(),
+  });
+}
+
+/** Also refreshes the banner query so the admin sees the effect right away. */
+function useInvalidateCampaigns() {
+  const queryClient = useQueryClient();
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: planKeys.adminCampaigns() }),
+      queryClient.invalidateQueries({ queryKey: planKeys.activeCampaign() }),
+    ]);
+}
+
+export function useSaveCampaignMutation() {
+  const invalidate = useInvalidateCampaigns();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string | null; body: CampaignRequest }) =>
+      id ? planAdminApi.updateCampaign(id, body) : planAdminApi.createCampaign(body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useSetCampaignActiveMutation() {
+  const invalidate = useInvalidateCampaigns();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: AdminActiveRequest }) =>
+      planAdminApi.setCampaignActive(id, body),
     onSuccess: invalidate,
   });
 }

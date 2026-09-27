@@ -24,5 +24,6 @@ export const platformAdminNav: NavContribution = {
       icon: 'handshake',
     },
     { path: '/dashboard/platform-admin/vouchers', label: 'Vouchers', icon: 'receipt' },
+    { path: '/dashboard/platform-admin/campaigns', label: 'Sale campaigns', icon: 'megaphone' },
   ],
 };
