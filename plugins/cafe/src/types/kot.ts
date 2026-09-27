@@ -17,4 +17,8 @@ export interface CafeKot {
   roundNo: number;
   kind: CafeKotKind;
   lines: CafeKotLine[];
+  /** How many times this ticket has been reprinted. Absent on a ticket just punched. */
+  reprintCount?: number | null;
+  /** ISO instant the ticket was written. Absent on tickets issued before this was recorded. */
+  createdAt?: string | null;
 }

@@ -1,2 +1,8 @@
 export { cafeKotKeys } from './keys';
-export { usePunchMutation, useReprintKotMutation, outcomeOf, keyAfter } from './hooks';
+export {
+  usePunchMutation,
+  useReprintKotMutation,
+  useBillKotsQuery,
+  outcomeOf,
+  keyAfter,
+} from './hooks';
