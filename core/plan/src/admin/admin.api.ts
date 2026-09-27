@@ -3,6 +3,8 @@ import type { ApiResponse } from '@inventory-platform/contracts';
 import type {
   AdminActiveRequest,
   AdminAddOn,
+  AdminCampaign,
+  CampaignRequest,
   AdminReferralAttribution,
   AdminReferralReward,
   AdminVoucher,
@@ -108,6 +110,37 @@ export const planAdminApi = {
   listVoucherRedemptions: async (id: string): Promise<AdminVoucherRedemption[]> => {
     const response = await apiClient.get<ApiResponse<AdminVoucherRedemption[]>>(
       PLAN_ENDPOINTS.ADMIN_VOUCHER_REDEMPTIONS(id),
+    );
+    return response.data;
+  },
+
+  listCampaigns: async (): Promise<AdminCampaign[]> => {
+    const response = await apiClient.get<ApiResponse<AdminCampaign[]>>(
+      PLAN_ENDPOINTS.ADMIN_CAMPAIGNS,
+    );
+    return response.data;
+  },
+
+  createCampaign: async (body: CampaignRequest): Promise<AdminCampaign> => {
+    const response = await apiClient.post<ApiResponse<AdminCampaign>>(
+      PLAN_ENDPOINTS.ADMIN_CAMPAIGNS,
+      body,
+    );
+    return response.data;
+  },
+
+  updateCampaign: async (id: string, body: CampaignRequest): Promise<AdminCampaign> => {
+    const response = await apiClient.put<ApiResponse<AdminCampaign>>(
+      PLAN_ENDPOINTS.ADMIN_CAMPAIGN(id),
+      body,
+    );
+    return response.data;
+  },
+
+  setCampaignActive: async (id: string, body: AdminActiveRequest): Promise<AdminCampaign> => {
+    const response = await apiClient.patch<ApiResponse<AdminCampaign>>(
+      PLAN_ENDPOINTS.ADMIN_CAMPAIGN_ACTIVE(id),
+      body,
     );
     return response.data;
   },
