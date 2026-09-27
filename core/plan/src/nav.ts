@@ -16,5 +16,12 @@ export const platformAdminNav: NavContribution = {
   groupId: 'platform-admin',
   label: 'Platform admin',
   icon: 'lock',
-  items: [{ path: '/dashboard/platform-admin/mis', label: 'Revenue MIS', icon: 'trending-up' }],
+  items: [
+    { path: '/dashboard/platform-admin/mis', label: 'Revenue MIS', icon: 'trending-up' },
+    {
+      path: '/dashboard/platform-admin/referrals',
+      label: 'Referral operations',
+      icon: 'handshake',
+    },
+  ],
 };

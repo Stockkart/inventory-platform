@@ -18,4 +18,13 @@ export const PLAN_ENDPOINTS = {
   VOUCHER_VALIDATE: '/plans/vouchers/validate',
   CAMPAIGN_ACTIVE: '/campaigns/active',
   ADMIN_MIS: '/admin/mis/plans',
+  ADMIN_REFERRAL_ATTRIBUTIONS: '/admin/referrals/attributions',
+  ADMIN_REFERRAL_ATTRIBUTION_ACTION: (id: string, action: 'approve' | 'reject') =>
+    `/admin/referrals/attributions/${id}/${action}`,
+  ADMIN_REFERRAL_REWARDS: '/admin/referrals/rewards',
+  ADMIN_REFERRAL_REWARD_ACTION: (id: string, action: 'approve' | 'void' | 'clawback') =>
+    `/admin/referrals/rewards/${id}/${action}`,
+  ADMIN_WALLET: (shopId: string) => `/admin/wallets/${encodeURIComponent(shopId)}`,
+  ADMIN_WALLET_ADJUSTMENTS: (shopId: string) =>
+    `/admin/wallets/${encodeURIComponent(shopId)}/adjustments`,
 } as const;
