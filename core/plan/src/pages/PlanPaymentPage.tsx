@@ -16,7 +16,11 @@ import {
 } from '@inventory-platform/ui-kit';
 import { getPaymentCheckout } from '../payment/index.js';
 import { planListPriceLabel } from '../ui/planPricing';
-import { useAuthStore, usePlanStatusStore } from '@inventory-platform/session';
+import {
+  useAuthStore,
+  usePlanEntitlementsStore,
+  usePlanStatusStore,
+} from '@inventory-platform/session';
 import {
   useCreatePlanCheckoutMutation,
   usePlanQuery,
@@ -28,6 +32,7 @@ import {
 export function PlanPaymentPage() {
   const { user } = useAuthStore();
   const fetchPlanStatus = usePlanStatusStore((s) => s.fetchPlanStatus);
+  const fetchEntitlements = usePlanEntitlementsStore((s) => s.fetchEntitlements);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const planIdFromUrl = searchParams.get('planId');
@@ -75,7 +80,7 @@ export function PlanPaymentPage() {
         razorpaySignature: result.razorpay_signature,
       });
 
-      await fetchPlanStatus({ force: true });
+      await Promise.all([fetchPlanStatus({ force: true }), fetchEntitlements({ force: true })]);
       await refetchTransactions();
       navigate('/dashboard', { replace: true });
     } catch (err) {

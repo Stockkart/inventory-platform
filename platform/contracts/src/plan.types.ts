@@ -63,6 +63,44 @@ export interface ShopPlanStatusResponse {
   userLimitReached: boolean;
 }
 
+/** Why a shop has its entitlements. LEGACY_GRANDFATHERED keeps every feature until migrated. */
+export type EntitlementSource = 'PLAN' | 'TRIAL' | 'LEGACY_GRANDFATHERED';
+
+/** OFF and LOG_ONLY never block; only ENFORCE does. */
+export type EntitlementEnforcement = 'OFF' | 'LOG_ONLY' | 'ENFORCE';
+
+/** GET /plans/shop/entitlements. Null limits mean unlimited. */
+export interface ShopEntitlementsResponse {
+  planId: string | null;
+  planCode: string | null;
+  source: EntitlementSource;
+  features: PlanFeature[];
+  enforcement: EntitlementEnforcement;
+  userLimit: number | null;
+  userCount: number;
+  ocrLimit: number | null;
+  ocrUsed: number;
+  expiresAt: string | null;
+}
+
+/** `code` on a 402 when the plan does not allow an action. */
+export type EntitlementErrorCode =
+  | 'FEATURE_NOT_IN_PLAN'
+  | 'SEAT_LIMIT_REACHED'
+  | 'OCR_QUOTA_EXCEEDED';
+
+/** `details` on an entitlement 402; fields depend on the code. */
+export interface EntitlementErrorDetails {
+  source?: EntitlementSource;
+  currentPlanCode?: string;
+  feature?: PlanFeature;
+  requiredPlanCode?: string;
+  userLimit?: number;
+  userCount?: number;
+  ocrLimit?: number;
+  ocrUsed?: number;
+}
+
 export interface QuoteAddOnLine {
   code: string;
   quantity: number;

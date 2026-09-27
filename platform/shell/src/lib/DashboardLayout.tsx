@@ -4,6 +4,7 @@ import {
   useAuthStore,
   useNotify,
   useShopCapabilitiesStore,
+  usePlanEntitlementsStore,
   useShopAccessStore,
 } from '@inventory-platform/session';
 import { useNotifications } from './useNotifications';
@@ -155,13 +156,18 @@ export function DashboardLayout({
   const shopAccess = useShopAccessStore((s) =>
     user?.shopId ? s.byShopId[user.shopId] : undefined,
   );
+  const fetchEntitlements = usePlanEntitlementsStore((s) => s.fetchEntitlements);
+  const planEntitlements = usePlanEntitlementsStore((s) =>
+    user?.shopId ? s.byShopId[user.shopId] : undefined,
+  );
 
   useEffect(() => {
     if (user?.shopId) {
       void fetchCapabilities();
       void fetchAccess();
+      void fetchEntitlements();
     }
-  }, [user?.shopId, fetchCapabilities, fetchAccess]);
+  }, [user?.shopId, fetchCapabilities, fetchAccess, fetchEntitlements]);
 
   useEffect(() => {
     const onFocus = () => {
@@ -263,8 +269,9 @@ export function DashboardLayout({
         shopCapabilities ?? null,
         shopAccess ?? null,
         verticalPlugin ?? null,
+        planEntitlements ?? null,
       ),
-    [baseMenuGroups, user?.role, shopCapabilities, shopAccess, verticalPlugin],
+    [baseMenuGroups, user?.role, shopCapabilities, shopAccess, verticalPlugin, planEntitlements],
   );
 
   const navRowsForPalette = useMemo(

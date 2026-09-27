@@ -5,7 +5,9 @@ import {
   usePlanStatusStore,
   useVerticalSchemaStore,
   useShopAccessStore,
+  usePlanEntitlementsStore,
 } from '@inventory-platform/session';
+import { isPathEntitled } from '@inventory-platform/access';
 import { apiClient } from '@inventory-platform/api-client';
 import { isPlanExpiryAllowedPath } from '@inventory-platform/contracts';
 import { CenteredLoader } from '@inventory-platform/ui-kit';
@@ -32,6 +34,9 @@ export function useDashboardRouteGuard(): DashboardRouteGuardState {
   const accessLoading = useShopAccessStore((s) => s.loading);
   const fetchAccess = useShopAccessStore((s) => s.fetchAccess);
   const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
+  const planEntitlements = usePlanEntitlementsStore((s) =>
+    user?.shopId ? s.byShopId[user.shopId] : undefined,
+  );
   const hasCheckedAuth = useRef(false);
   const isCheckingRef = useRef(false);
 
@@ -113,8 +118,13 @@ export function useDashboardRouteGuard(): DashboardRouteGuardState {
     }
     if (planStatus?.planExpired && !isPlanExpiryAllowedPath(location.pathname)) {
       navigate('/dashboard/plan-status', { replace: true });
+      return;
+    }
+    if (!isPathEntitled(location.pathname, planEntitlements)) {
+      navigate('/dashboard/plan-status', { replace: true });
     }
   }, [
+    planEntitlements,
     isAuthenticated,
     user?.shopId,
     planStatus?.planExpired,

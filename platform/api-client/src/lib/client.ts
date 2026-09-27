@@ -72,11 +72,13 @@ class ApiClient {
           const errorData = error.response.data as {
             message?: string;
             error?: string;
-            data?: { message?: string };
+            data?: { message?: string; code?: string; details?: unknown };
             errors?: Record<string, string[]>;
             code?: string;
             details?: unknown;
           };
+          const code = errorData?.code ?? errorData?.data?.code;
+          const details = errorData?.details ?? errorData?.data?.details;
 
           const message =
             errorData?.data?.message ||
@@ -84,7 +86,12 @@ class ApiClient {
             errorData?.message ||
             error.response.statusText;
 
-          if (error.response.status === 402 && this.onPlanExpired) {
+          // Entitlement 402s carry a code; only an uncoded 402 means the plan expired.
+          if (
+            error.response.status === 402 &&
+            this.onPlanExpired &&
+            (!code || code === 'PLAN_EXPIRED')
+          ) {
             this.onPlanExpired();
           }
 
@@ -107,8 +114,8 @@ class ApiClient {
           throw new ApiError(message, {
             status: error.response.status,
             errors: errorData?.errors,
-            code: errorData?.code,
-            details: errorData?.details,
+            code,
+            details,
           });
         }
 
