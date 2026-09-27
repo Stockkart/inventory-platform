@@ -10,14 +10,17 @@ import {
   Inline,
   PageHeader,
   Stack,
+  Switch,
   Text,
   VisuallyHidden,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
+import { useQueryClient } from '@tanstack/react-query';
 import type { CreatePlanCheckoutRequest } from '@inventory-platform/plan/types';
 import {
   buildQuoteRequest,
   newIdempotencyKey,
+  paidFromWallet,
   readVoucherRejection,
   sellableAddOns,
   type AddOnSelection,
@@ -40,13 +43,16 @@ import {
   usePlansQuery,
   usePlanTransactionsQuery,
   useVerifyPlanPaymentMutation,
+  useWalletQuery,
 } from '../queries/hooks';
+import { planKeys } from '../queries/keys';
 
 export function PlanPaymentPage() {
   const { user } = useAuthStore();
   const fetchPlanStatus = usePlanStatusStore((s) => s.fetchPlanStatus);
   const fetchEntitlements = usePlanEntitlementsStore((s) => s.fetchEntitlements);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const planIdFromUrl = searchParams.get('planId');
   const [error, setError] = useState<string | null>(null);
@@ -74,11 +80,17 @@ export function PlanPaymentPage() {
   const [voucherCodes, setVoucherCodes] = useState<string[]>([]);
   const [voucherError, setVoucherError] = useState<string | null>(null);
 
+  const [useWalletCredit, setUseWalletCredit] = useState(false);
+
   useEffect(() => {
     setAddOnSelection({});
     setVoucherCodes([]);
     setVoucherError(null);
   }, [selectedPlan?.id]);
+
+  const { data: wallet } = useWalletQuery({ enabled: planCode != null });
+  const walletBalance = wallet?.availableBalance ?? 0;
+  const applyWalletCredit = useWalletCredit && walletBalance > 0;
 
   const { data: addOnCatalogue = [] } = useAddOnsQuery({ enabled: planCode != null });
   const addOns = useMemo(
@@ -87,11 +99,15 @@ export function PlanPaymentPage() {
   );
 
   const quoteRequest = useMemo(
-    () => (planCode ? buildQuoteRequest(planCode, addOnSelection, voucherCodes) : null),
-    [planCode, addOnSelection, voucherCodes],
+    () =>
+      planCode
+        ? buildQuoteRequest(planCode, addOnSelection, voucherCodes, applyWalletCredit)
+        : null,
+    [planCode, addOnSelection, voucherCodes, applyWalletCredit],
   );
   const quoteQuery = usePlanQuoteQuery(quoteRequest, { retry: false });
   const quote = quoteQuery.isError ? undefined : quoteQuery.data;
+  const walletCoversAll = quote != null && quote.grandTotal === 0 && quote.walletCredit > 0;
 
   const dropRejectedVoucher = useCallback((err: unknown): boolean => {
     const rejection = readVoucherRejection(err);
@@ -142,17 +158,21 @@ export function PlanPaymentPage() {
         idempotencyKey: idempotency.current.key,
       });
 
-      const paymentCheckout = getPaymentCheckout(checkout.provider);
-      const result = await paymentCheckout.openCheckout(checkout, {
-        customerEmail: user.email ?? undefined,
-      });
+      if (paidFromWallet(checkout)) {
+        await queryClient.invalidateQueries({ queryKey: planKeys.all });
+      } else {
+        const paymentCheckout = getPaymentCheckout(checkout.provider);
+        const result = await paymentCheckout.openCheckout(checkout, {
+          customerEmail: user.email ?? undefined,
+        });
 
-      await verifyPaymentMutation.mutateAsync({
-        orderId: checkout.orderId,
-        razorpayPaymentId: result.razorpay_payment_id,
-        razorpayOrderId: result.razorpay_order_id,
-        razorpaySignature: result.razorpay_signature,
-      });
+        await verifyPaymentMutation.mutateAsync({
+          orderId: checkout.orderId,
+          razorpayPaymentId: result.razorpay_payment_id,
+          razorpayOrderId: result.razorpay_order_id,
+          razorpaySignature: result.razorpay_signature,
+        });
+      }
 
       idempotency.current = null;
       await Promise.all([fetchPlanStatus({ force: true }), fetchEntitlements({ force: true })]);
@@ -244,6 +264,15 @@ export function PlanPaymentPage() {
                       quoteError={voucherError}
                       disabled={paying}
                     />
+                    {walletBalance > 0 ? (
+                      <Switch
+                        id="use-wallet-credit"
+                        label={`Use wallet credit (${formatRupees(walletBalance)} available)`}
+                        checked={useWalletCredit}
+                        disabled={paying}
+                        onChange={(event) => setUseWalletCredit(event.target.checked)}
+                      />
+                    ) : null}
                     <Divider />
                     <QuoteSummary quote={quote} loading={quoteQuery.isFetching} />
                     {quoteFailure ? <Alert variant="danger">{quoteFailure}</Alert> : null}
@@ -260,17 +289,23 @@ export function PlanPaymentPage() {
                     className={surfaceChrome.maxW400}
                   >
                     {paying
-                      ? 'Opening Razorpay…'
+                      ? walletCoversAll
+                        ? 'Paying from wallet…'
+                        : 'Opening Razorpay…'
                       : planCode
                       ? quote
-                        ? `Pay ${formatRupees(quote.grandTotal)}`
+                        ? walletCoversAll
+                          ? 'Pay with wallet credit'
+                          : `Pay ${formatRupees(quote.grandTotal)}`
                         : 'Pricing your order…'
                       : `Pay ₹${selectedPlan.arcPrice?.toLocaleString('en-IN')}${
                           selectedPlan.planName === 'Extra User Plan' ? ' per user/year' : '/year'
                         }`}
                   </Button>
                   <Text variant="caption" color="secondary">
-                    Secured by Razorpay. Choose your payment method in the checkout window.
+                    {walletCoversAll
+                      ? 'Your wallet credit covers this order; no card or UPI payment is needed.'
+                      : 'Secured by Razorpay. Choose your payment method in the checkout window.'}
                   </Text>
                 </Stack>
               </Stack>

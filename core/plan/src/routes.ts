@@ -14,4 +14,13 @@ export const planPaymentRoutes: RouteModule = {
   ],
 };
 
-export const planDashboardRoutes: RouteModule[] = [planPaymentRoutes, planStatusRoutes];
+export const referralRoutes: RouteModule = {
+  path: 'referrals',
+  children: [{ path: '', file: 'routes/referrals.tsx', lazy: () => import('./routes/referrals') }],
+};
+
+export const planDashboardRoutes: RouteModule[] = [
+  planPaymentRoutes,
+  planStatusRoutes,
+  referralRoutes,
+];

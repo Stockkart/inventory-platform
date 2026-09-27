@@ -6,6 +6,7 @@ import {
   buildQuoteRequest,
   maxQuantityFor,
   normaliseVoucherCode,
+  paidFromWallet,
   readVoucherRejection,
   sellableAddOns,
 } from './cart';
@@ -83,6 +84,29 @@ describe('buildQuoteRequest', () => {
       ],
       voucherCodes: ['A', 'B'],
     });
+  });
+
+  it('asks for wallet credit only when chosen', () => {
+    expect(buildQuoteRequest('GROWTH', {}, [], true)).toEqual({
+      planCode: 'GROWTH',
+      durationMonths: 12,
+      applyWalletCredit: true,
+    });
+    expect(buildQuoteRequest('GROWTH', {}, [], false)).not.toHaveProperty('applyWalletCredit');
+  });
+});
+
+describe('paidFromWallet', () => {
+  it('is true only for wallet-provider checkouts', () => {
+    const checkout = {
+      orderId: 'o',
+      provider: 'wallet',
+      amount: 0,
+      currency: 'INR',
+      planName: 'G',
+    };
+    expect(paidFromWallet(checkout)).toBe(true);
+    expect(paidFromWallet({ ...checkout, provider: 'razorpay' })).toBe(false);
   });
 });
 

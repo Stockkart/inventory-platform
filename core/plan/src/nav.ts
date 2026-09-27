@@ -7,5 +7,6 @@ export const planNav: NavContribution = {
   items: [
     { path: '/dashboard/plan-payment', label: 'Payment', icon: 'credit-card' },
     { path: '/dashboard/plan-status', label: 'My Plan', icon: 'clipboard-list' },
+    { path: '/dashboard/referrals', label: 'Referrals & Wallet', icon: 'handshake' },
   ],
 };
