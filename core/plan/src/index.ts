@@ -9,4 +9,5 @@ export { PlanStatusPage } from './pages/PlanStatusPage';
 export { PlanPaymentPage } from './pages/PlanPaymentPage';
 export { PlanGrid, buildPlanFeatures } from './ui/PlanGrid';
 export { CampaignBanner, type CampaignBannerProps } from './campaign';
+export { readEntitlementError, type EntitlementDenial } from './entitlements';
 export { Header, Hero, Stats, Features, Pricing, PlanCarousel, CTA, Footer } from './ui';
