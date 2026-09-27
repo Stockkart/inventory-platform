@@ -1,7 +1,11 @@
 import type {
+  AddOnBillingType,
+  AddOnGrantType,
   AddOnResponse,
   CampaignState,
   CampaignTheme,
+  PlanFeature,
+  PlanResponse,
   ReferralAttributionStatus,
   ReferralRewardStatus,
   VoucherType,
@@ -65,6 +69,74 @@ export interface AdminAddOn extends AddOnResponse {
   active: boolean;
   createdAt: string | null;
   updatedAt: string | null;
+}
+
+/** Create or full edit; `code` is fixed after create, as is `grantType`. */
+export interface AddOnAdminRequest {
+  code: string;
+  name: string;
+  description: string | null;
+  price: number;
+  billingType: AddOnBillingType;
+  grantType: AddOnGrantType;
+  grantsFeature: PlanFeature | null;
+  grantsQuantity: number | null;
+  stackable: boolean;
+  maxQuantity: number | null;
+  displayOrder: number | null;
+}
+
+/** GET /admin/plans: the catalogue including hidden plans. */
+export interface AdminPlan extends PlanResponse {
+  active: boolean;
+}
+
+/** Create or full edit; `code` is fixed after create. `listPrice` is not editable here. */
+export interface PlanAdminRequest {
+  code: string;
+  planName: string;
+  arcPrice: number;
+  price: number | null;
+  billingLimit: number | null;
+  billCountLimit: number | null;
+  smsLimit: number | null;
+  whatsappLimit: number | null;
+  userLimit: number | null;
+  ocrLimit: number | null;
+  unlimited: boolean;
+  features: PlanFeature[];
+  displayOrder: number | null;
+  badge: string | null;
+  bestFor: string | null;
+  linkedId: string | null;
+}
+
+export interface AddOnGrantRequest {
+  shopId: string;
+  addOnCode: string;
+  quantity: number;
+  /** Defaults to the end of the shop's current term; ignored for OCR credits. */
+  expiresAt?: string;
+  reason: string;
+}
+
+export type ShopAddOnSource = 'ORDER' | 'ADMIN';
+
+export interface ShopAddOn {
+  id: string;
+  shopId: string;
+  addOnCode: string;
+  name: string | null;
+  grantType: AddOnGrantType;
+  grantsFeature: PlanFeature | null;
+  quantity: number;
+  grantedQuantity: number;
+  remainingCredits: number | null;
+  purchasedAt: string | null;
+  expiresAt: string | null;
+  source: ShopAddOnSource;
+  sourceOrderId: string | null;
+  live: boolean;
 }
 
 export interface AdminVoucher {
