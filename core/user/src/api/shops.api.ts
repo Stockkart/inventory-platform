@@ -11,6 +11,7 @@ import type {
   OwnerShopSummary,
   ProcessJoinRequestDto,
   ProcessJoinRequestResponse,
+  ReferralCodeCheckResponse,
   ShopDetailResponse,
   UpdateShopDto,
   InvoiceSettingsResponse,
@@ -39,6 +40,15 @@ export const shopsApi = {
     const response = await apiClient.post<{ success: boolean; data: RegisterShopResponse }>(
       SHOP_ENDPOINTS.REGISTER,
       data,
+    );
+    return response.data;
+  },
+
+  /** Rate-limited server-side; call on submit, not per keystroke. */
+  checkReferralCode: async (code: string): Promise<ReferralCodeCheckResponse> => {
+    const response = await apiClient.get<ApiResponse<ReferralCodeCheckResponse>>(
+      SHOP_ENDPOINTS.REFERRAL_VALIDATE,
+      { code },
     );
     return response.data;
   },

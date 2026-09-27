@@ -40,6 +40,7 @@ export const SHOP_ENDPOINTS = {
   JOIN_REQUEST: '/shops/join-request',
   JOIN_REQUESTS: '/shops/join-requests',
   PROCESS_JOIN_REQUEST: (requestId: string) => `/shops/join-requests/${requestId}/process`,
+  REFERRAL_VALIDATE: '/referrals/validate',
 } as const;
 
 /** User lookup paths (vendor/customer linking). */
