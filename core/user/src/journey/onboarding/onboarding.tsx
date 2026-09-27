@@ -28,6 +28,7 @@ import {
   journeyChrome,
 } from '@inventory-platform/ui-kit';
 import { CircleHelp } from 'lucide-react';
+import { REFERRED_BY_NAME_MAX, normaliseReferralCode, referralCodeFromSearch } from './referral';
 
 const STEPS: OnboardingStep[] = [
   'name',
@@ -38,6 +39,7 @@ const STEPS: OnboardingStep[] = [
   'contactEmail',
   'location',
   'businessDetails',
+  'referral',
   'invoiceNumbering',
 ];
 
@@ -49,6 +51,7 @@ const STEP_LABELS: Record<OnboardingStep, string> = {
   contactEmail: 'Contact Email',
   location: 'Location Details',
   businessDetails: 'Business Details',
+  referral: 'Referral',
   invoiceNumbering: 'Invoice numbering',
   tagline: 'Tagline',
 };
@@ -85,6 +88,10 @@ const STEP_COPY: Record<OnboardingStep, { title: string; subtitle: string }> = {
   businessDetails: {
     title: 'Business details',
     subtitle: 'Add tax and compliance info now, or skip and fill them later.',
+  },
+  referral: {
+    title: 'Were you referred?',
+    subtitle: 'Enter the referral code from the shop that told you about StockKart. Optional.',
   },
   invoiceNumbering: {
     title: 'Invoice numbering',
@@ -142,7 +149,10 @@ export default function OnboardingPage() {
     tagline: '',
     continueFromPreviousApp: false,
     lastInvoiceNo: '',
+    referredByCode: referralCodeFromSearch(location.search),
+    referredByName: '',
   });
+  const [referrerName, setReferrerName] = useState<string | null>(null);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 768px)');
@@ -220,8 +230,36 @@ export default function OnboardingPage() {
     return '';
   };
 
+  const checkReferralAndContinue = async () => {
+    const code = normaliseReferralCode(formData.referredByCode);
+    if (code) {
+      setIsLoading(true);
+      try {
+        const check = await shopsApi.checkReferralCode(code);
+        if (!check.valid) {
+          notifyError('We could not find that referral code. Check it, or leave it empty.');
+          return;
+        }
+        setReferrerName(check.displayName ?? null);
+      } catch (err) {
+        notifyError(err instanceof Error ? err.message : 'Could not check the referral code');
+        return;
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    setFormData((prev) => ({ ...prev, referredByCode: code }));
+    setCurrentStep((s) => s + 1);
+    setError(null);
+  };
+
   const handleContinue = () => {
     const step = STEPS[currentStep];
+
+    if (step === 'referral') {
+      void checkReferralAndContinue();
+      return;
+    }
 
     if (step === 'vertical') {
       if (!formData.verticalId?.trim()) {
@@ -351,6 +389,8 @@ export default function OnboardingPage() {
         sgst: formData.sgst || undefined,
         cgst: formData.cgst || undefined,
         tagline: formData.tagline || undefined,
+        referredByCode: formData.referredByCode || undefined,
+        referredByName: formData.referredByName.trim() || undefined,
       });
 
       if (response && response.shopId) {
@@ -548,6 +588,41 @@ export default function OnboardingPage() {
               disabled={isLoading}
             />
           </FormRow>
+        </>
+      );
+    }
+
+    if (step === 'referral') {
+      return (
+        <>
+          <FormField
+            label="Referral code"
+            id="referredByCode"
+            placeholder="SK-AB2CD3"
+            value={formData.referredByCode}
+            onChange={(v) => {
+              setFormData({ ...formData, referredByCode: v });
+              setReferrerName(null);
+              clearError();
+            }}
+            disabled={isLoading}
+          />
+          {referrerName ? (
+            <Text color="secondary" variant="caption">
+              Referred by {referrerName}
+            </Text>
+          ) : null}
+          <FormField
+            label="No code? Who referred you"
+            id="referredByName"
+            placeholder="Shop or person's name"
+            value={formData.referredByName}
+            onChange={(v) => {
+              setFormData({ ...formData, referredByName: v.slice(0, REFERRED_BY_NAME_MAX) });
+              clearError();
+            }}
+            disabled={isLoading}
+          />
         </>
       );
     }
