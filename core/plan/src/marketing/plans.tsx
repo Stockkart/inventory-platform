@@ -2,6 +2,7 @@ import { Link as RouterLink, useNavigate } from 'react-router';
 import { usePlansQuery } from '../queries/hooks';
 import { FormKeyboardNavScope } from '@inventory-platform/routing';
 import { PlanGrid, PlanComparisonTable, Header, Footer } from '../ui';
+import { CampaignBanner } from '../campaign';
 import { useAuthStore } from '@inventory-platform/session';
 import { Alert, Box, CenteredLoader, Stack, Text } from '@inventory-platform/ui-kit';
 
@@ -35,6 +36,7 @@ export default function PlansPage() {
       <Box as="main" padding="xl" flex="1">
         <FormKeyboardNavScope>
           <Stack gap="xl" maxWidth="lg" mx="auto">
+            <CampaignBanner ctaVariant="brand" />
             <Stack gap="sm" align="center">
               <RouterLink to="/">
                 <Text color="secondary">← Back to home</Text>

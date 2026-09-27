@@ -1,0 +1,112 @@
+.banner {
+  --sale-tint: var(--sk-color-brand-soft);
+  --sale-mark: var(--sk-color-brand);
+
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sk-space-sm) var(--sk-space-lg);
+  padding: 0.85rem 3rem 0.85rem 1.1rem;
+  border: 1px solid var(--sk-color-border-default);
+  border-left: 4px solid var(--sale-mark);
+  border-radius: var(--sk-radius-lg);
+  background: var(--sale-tint);
+}
+
+/* The info tokens equal brand, so monsoon mixes its tint from brand-cyan. */
+.monsoon {
+  --sale-tint: color-mix(in srgb, var(--sk-color-brand-cyan) 12%, transparent);
+  --sale-mark: var(--sk-color-brand-cyan);
+}
+
+.summer {
+  --sale-tint: var(--sk-color-warning-soft);
+  --sale-mark: var(--sk-color-warning);
+}
+
+.diwali {
+  --sale-tint: var(--sk-color-warning-soft);
+  --sale-mark: var(--sk-color-danger);
+}
+
+.newYear {
+  --sale-tint: var(--sk-color-success-soft);
+  --sale-mark: var(--sk-color-success);
+}
+
+.copy {
+  flex: 1 1 18rem;
+  min-width: 0;
+}
+
+.eyebrow {
+  margin: 0 0 0.15rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sale-mark);
+}
+
+.headline {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--sk-color-text-primary);
+}
+
+.subtext {
+  margin: 0.15rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--sk-color-text-secondary);
+}
+
+.side {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sk-space-sm);
+}
+
+.countdown {
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: var(--sk-color-bg-elevated);
+  border: 1px solid var(--sk-color-border-default);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--sk-color-text-primary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.urgent {
+  border-color: var(--sk-color-danger);
+  color: var(--sk-color-danger);
+  animation: sale-pulse 2s ease-in-out infinite;
+}
+
+.dismiss {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+}
+
+@keyframes sale-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--sk-color-danger-soft);
+  }
+  50% {
+    box-shadow: 0 0 0 5px var(--sk-color-danger-soft);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urgent {
+    animation: none;
+  }
+}

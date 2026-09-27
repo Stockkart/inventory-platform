@@ -64,6 +64,9 @@ export type {
   QuoteItemSource,
   QuoteItem,
   QuoteResponse,
+  CampaignState,
+  CampaignTheme,
+  CampaignResponse,
 } from './plan.types.js';
 export { PLAN_EXPIRY_ALLOWED_PATHS, isPlanExpiryAllowedPath } from './plan-guards.js';
 export type { MenuItem, MenuSection, ShopMenu, MenuSellMode } from './cafe-menu.types.js';

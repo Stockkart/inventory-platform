@@ -11,4 +11,5 @@ export const PLAN_ENDPOINTS = {
   PAYMENT_CHECKOUT: '/plans/payment/checkout',
   PAYMENT_VERIFY: '/plans/payment/verify',
   ORDER_QUOTE: '/plans/orders/quote',
+  CAMPAIGN_ACTIVE: '/campaigns/active',
 } as const;

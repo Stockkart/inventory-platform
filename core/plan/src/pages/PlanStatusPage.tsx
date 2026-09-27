@@ -13,6 +13,7 @@ import {
   cn,
 } from '@inventory-platform/ui-kit';
 import { PlanGrid } from '../ui/PlanGrid';
+import { CampaignBanner } from '../campaign';
 import type { PlanResponse } from '@inventory-platform/plan/types';
 import { usePlansQuery, useShopPlanStatusQuery } from '../queries/hooks';
 
@@ -94,6 +95,8 @@ export function PlanStatusPage() {
   return (
     <Stack gap="md" width="full" maxWidth="xl" mx="auto">
       <PageHeader description="Subscription, monthly usage, and upgrade options." />
+
+      <CampaignBanner />
 
       <Box className={surfaceChrome.planStatusSummary}>
         <Box className={surfaceChrome.planStatusSummaryMain}>
