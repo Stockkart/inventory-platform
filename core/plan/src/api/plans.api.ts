@@ -7,6 +7,8 @@ import type {
   PlanCheckoutResponse,
   PlanResponse,
   PlanTransactionResponse,
+  QuoteRequest,
+  QuoteResponse,
   ShopPlanStatusResponse,
   UsageResponse,
   VerifyPlanPaymentRequest,
@@ -69,6 +71,14 @@ export const plansApi = {
   createCheckout: async (data: CreatePlanCheckoutRequest): Promise<PlanCheckoutResponse> => {
     const response = await apiClient.post<ApiResponse<PlanCheckoutResponse>>(
       PLAN_ENDPOINTS.PAYMENT_CHECKOUT,
+      data,
+    );
+    return response.data;
+  },
+
+  quote: async (data: QuoteRequest): Promise<QuoteResponse> => {
+    const response = await apiClient.post<ApiResponse<QuoteResponse>>(
+      PLAN_ENDPOINTS.ORDER_QUOTE,
       data,
     );
     return response.data;

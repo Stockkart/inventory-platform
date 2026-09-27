@@ -10,4 +10,5 @@ export const PLAN_ENDPOINTS = {
   PAYMENT_CONFIG: '/plans/payment/config',
   PAYMENT_CHECKOUT: '/plans/payment/checkout',
   PAYMENT_VERIFY: '/plans/payment/verify',
+  ORDER_QUOTE: '/plans/orders/quote',
 } as const;
