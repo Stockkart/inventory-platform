@@ -1,9 +1,10 @@
 import { apiClient } from '@inventory-platform/api-client';
 import type { ApiResponse } from '@inventory-platform/contracts';
 import type {
+  AddOnResponse,
   AssignPlanRequest,
   CampaignResponse,
-  CreatePlanCheckoutRequest,
+  CreatePlanCheckoutInput,
   PaymentConfigResponse,
   PlanCheckoutResponse,
   PlanResponse,
@@ -14,6 +15,7 @@ import type {
   UsageResponse,
   VerifyPlanPaymentRequest,
   VerifyPlanPaymentResponse,
+  VoucherCheckResponse,
 } from '@inventory-platform/plan/types';
 import { PLAN_ENDPOINTS } from './endpoints';
 
@@ -69,10 +71,27 @@ export const plansApi = {
     return response.data;
   },
 
-  createCheckout: async (data: CreatePlanCheckoutRequest): Promise<PlanCheckoutResponse> => {
+  createCheckout: async ({
+    request,
+    idempotencyKey,
+  }: CreatePlanCheckoutInput): Promise<PlanCheckoutResponse> => {
     const response = await apiClient.post<ApiResponse<PlanCheckoutResponse>>(
       PLAN_ENDPOINTS.PAYMENT_CHECKOUT,
-      data,
+      request,
+      { headers: { 'Idempotency-Key': idempotencyKey } },
+    );
+    return response.data;
+  },
+
+  listAddOns: async (): Promise<AddOnResponse[]> => {
+    const response = await apiClient.get<ApiResponse<AddOnResponse[]>>(PLAN_ENDPOINTS.ADDONS);
+    return response.data;
+  },
+
+  validateVoucher: async (code: string): Promise<VoucherCheckResponse> => {
+    const response = await apiClient.get<ApiResponse<VoucherCheckResponse>>(
+      PLAN_ENDPOINTS.VOUCHER_VALIDATE,
+      { code },
     );
     return response.data;
   },

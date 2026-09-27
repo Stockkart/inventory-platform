@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import {
   Alert,
@@ -14,16 +14,29 @@ import {
   VisuallyHidden,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
+import type { CreatePlanCheckoutRequest } from '@inventory-platform/plan/types';
+import {
+  buildQuoteRequest,
+  newIdempotencyKey,
+  readVoucherRejection,
+  sellableAddOns,
+  type AddOnSelection,
+} from '../checkout';
 import { getPaymentCheckout } from '../payment/index.js';
-import { planListPriceLabel } from '../ui/planPricing';
+import { AddOnPicker } from '../ui/AddOnPicker';
+import { formatRupees, planListPriceLabel } from '../ui/planPricing';
+import { QuoteSummary } from '../ui/QuoteSummary';
+import { VoucherField } from '../ui/VoucherField';
 import {
   useAuthStore,
   usePlanEntitlementsStore,
   usePlanStatusStore,
 } from '@inventory-platform/session';
 import {
+  useAddOnsQuery,
   useCreatePlanCheckoutMutation,
   usePlanQuery,
+  usePlanQuoteQuery,
   usePlansQuery,
   usePlanTransactionsQuery,
   useVerifyPlanPaymentMutation,
@@ -54,6 +67,59 @@ export function PlanPaymentPage() {
     [plans, planIdFromUrl, planById],
   );
   const selectedListPrice = selectedPlan ? planListPriceLabel(selectedPlan) : null;
+  /** Legacy plans have no catalogue code: no add-ons, vouchers or quote, just the plan price. */
+  const planCode = selectedPlan?.code ?? null;
+
+  const [addOnSelection, setAddOnSelection] = useState<AddOnSelection>({});
+  const [voucherCodes, setVoucherCodes] = useState<string[]>([]);
+  const [voucherError, setVoucherError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setAddOnSelection({});
+    setVoucherCodes([]);
+    setVoucherError(null);
+  }, [selectedPlan?.id]);
+
+  const { data: addOnCatalogue = [] } = useAddOnsQuery({ enabled: planCode != null });
+  const addOns = useMemo(
+    () => (selectedPlan ? sellableAddOns(addOnCatalogue, selectedPlan) : []),
+    [addOnCatalogue, selectedPlan],
+  );
+
+  const quoteRequest = useMemo(
+    () => (planCode ? buildQuoteRequest(planCode, addOnSelection, voucherCodes) : null),
+    [planCode, addOnSelection, voucherCodes],
+  );
+  const quoteQuery = usePlanQuoteQuery(quoteRequest, { retry: false });
+  const quote = quoteQuery.isError ? undefined : quoteQuery.data;
+
+  const dropRejectedVoucher = useCallback((err: unknown): boolean => {
+    const rejection = readVoucherRejection(err);
+    if (!rejection) return false;
+    if (rejection.voucherCode) {
+      setVoucherCodes((codes) => codes.filter((code) => code !== rejection.voucherCode));
+    }
+    setVoucherError(rejection.message);
+    return true;
+  }, []);
+
+  useEffect(() => {
+    if (quoteQuery.error) dropRejectedVoucher(quoteQuery.error);
+  }, [quoteQuery.error, dropRejectedVoucher]);
+
+  const quoteFailure =
+    quoteQuery.error && !readVoucherRejection(quoteQuery.error)
+      ? quoteQuery.error instanceof Error
+        ? quoteQuery.error.message
+        : 'Could not price this order'
+      : null;
+
+  const changeAddOn = (code: string, quantity: number) => {
+    setAddOnSelection((current) => ({ ...current, [code]: quantity }));
+  };
+
+  /** One key per cart, reused across retries so a retry replays the open order. */
+  const idempotency = useRef<{ cart: string; key: string } | null>(null);
 
   const createCheckoutMutation = useCreatePlanCheckoutMutation();
   const verifyPaymentMutation = useVerifyPlanPaymentMutation();
@@ -62,10 +128,18 @@ export function PlanPaymentPage() {
     if (!user?.shopId || !selectedPlan) return;
     setPaying(true);
     setError(null);
+    const request: CreatePlanCheckoutRequest = quoteRequest ?? {
+      planId: selectedPlan.id,
+      durationMonths: 12,
+    };
+    const cart = JSON.stringify(request);
+    if (idempotency.current?.cart !== cart) {
+      idempotency.current = { cart, key: newIdempotencyKey() };
+    }
     try {
       const checkout = await createCheckoutMutation.mutateAsync({
-        planId: selectedPlan.id,
-        durationMonths: 12,
+        request,
+        idempotencyKey: idempotency.current.key,
       });
 
       const paymentCheckout = getPaymentCheckout(checkout.provider);
@@ -80,10 +154,12 @@ export function PlanPaymentPage() {
         razorpaySignature: result.razorpay_signature,
       });
 
+      idempotency.current = null;
       await Promise.all([fetchPlanStatus({ force: true }), fetchEntitlements({ force: true })]);
       await refetchTransactions();
       navigate('/dashboard', { replace: true });
     } catch (err) {
+      if (dropRejectedVoucher(err)) return;
       setError(err instanceof Error ? err.message : 'Failed to process payment');
     } finally {
       setPaying(false);
@@ -147,17 +223,48 @@ export function PlanPaymentPage() {
 
                 <Divider />
 
+                {planCode ? (
+                  <>
+                    <AddOnPicker
+                      addOns={addOns}
+                      selection={addOnSelection}
+                      onChange={changeAddOn}
+                      disabled={paying}
+                    />
+                    <VoucherField
+                      applied={voucherCodes}
+                      onApply={(code) => {
+                        setVoucherError(null);
+                        setVoucherCodes((codes) => [...codes, code]);
+                      }}
+                      onRemove={(code) => {
+                        setVoucherError(null);
+                        setVoucherCodes((codes) => codes.filter((c) => c !== code));
+                      }}
+                      quoteError={voucherError}
+                      disabled={paying}
+                    />
+                    <Divider />
+                    <QuoteSummary quote={quote} loading={quoteQuery.isFetching} />
+                    {quoteFailure ? <Alert variant="danger">{quoteFailure}</Alert> : null}
+                  </>
+                ) : null}
+
                 <Stack gap="sm">
                   <Button
                     type="button"
                     variant="solid"
                     onClick={() => void handlePay()}
-                    disabled={paying}
+                    disabled={paying || (planCode != null && (!quote || quoteQuery.isFetching))}
                     loading={paying}
                     className={surfaceChrome.maxW400}
                   >
                     {paying
                       ? 'Opening Razorpay…'
+                      : planCode
+                      ? quote
+                        ? `Pay ${formatRupees(quote.grandTotal)}`
+                        : 'Pricing your order…'
                       : `Pay ₹${selectedPlan.arcPrice?.toLocaleString('en-IN')}${
                           selectedPlan.planName === 'Extra User Plan' ? ' per user/year' : '/year'
                         }`}

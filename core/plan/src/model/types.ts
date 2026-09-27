@@ -1,4 +1,4 @@
-import type { PlanResponse } from '@inventory-platform/contracts';
+import type { PlanResponse, QuoteItem, QuoteRequest } from '@inventory-platform/contracts';
 
 export type {
   PlanFeature,
@@ -19,6 +19,13 @@ export type {
   ShopEntitlementsResponse,
   EntitlementErrorCode,
   EntitlementErrorDetails,
+  AddOnBillingType,
+  AddOnGrantType,
+  AddOnResponse,
+  VoucherRejection,
+  VoucherType,
+  VoucherCheckResponse,
+  VoucherRejectedDetails,
 } from '@inventory-platform/contracts';
 
 export interface AssignPlanRequest {
@@ -34,19 +41,33 @@ export interface PaymentConfigResponse {
 
 export interface PlanCheckoutResponse {
   orderId: string;
+  status?: string;
   provider: string;
+  /** Amount charged, after discounts and wallet credit. */
   amount: number;
   currency: string;
   planName: string;
+  items?: QuoteItem[];
+  subtotal?: number;
+  discountTotal?: number;
+  walletCredit?: number;
+  /** Pay before this or the order expires. */
+  expiresAt?: string;
   razorpay?: {
     keyId: string;
     orderId: string;
   };
 }
 
-export interface CreatePlanCheckoutRequest {
-  planId: string;
-  durationMonths?: number;
+/** Same cart as the quote. `planId` is only for legacy plans without a catalogue code. */
+export interface CreatePlanCheckoutRequest extends Partial<QuoteRequest> {
+  planId?: string;
+}
+
+export interface CreatePlanCheckoutInput {
+  request: CreatePlanCheckoutRequest;
+  /** Same key for every retry of one cart, so a retry replays the order instead of opening another. */
+  idempotencyKey: string;
 }
 
 export interface VerifyPlanPaymentRequest {
