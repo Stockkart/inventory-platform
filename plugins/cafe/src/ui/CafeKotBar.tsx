@@ -17,6 +17,7 @@ import { readParkedAttempt } from '../lib/punchKeyStore';
 import { usePunchMutation } from '../queries/hooks';
 import type { CafeKot } from '../types/kot';
 import { KotTicketStrip } from './KotTicketStrip';
+import { SentRounds } from './SentRounds';
 
 /**
  * Print KOT for the cafe Sell screen.
@@ -182,6 +183,9 @@ export function CafeKotBar({ purchaseId, disabled = false }: SellActionSlotProps
         </Alert>
       ) : null}
       <KotTicketStrip tickets={tickets} onRetry={handleRetry} />
+      {/* Below the tickets of this screen, because the rounds already on paper are the rarer
+          need: the cashier reaches for them only when the kitchen says a slip never arrived. */}
+      <SentRounds purchaseId={purchaseId ?? null} />
     </Stack>
   );
 }

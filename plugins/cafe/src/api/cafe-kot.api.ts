@@ -43,6 +43,20 @@ export const cafeKotApi = {
   },
 
   /**
+   * Every ticket `purchaseId` has issued, newest first.
+   *
+   * A plain read, so no Idempotency-Key: listing is what the cashier does while working out
+   * which round the kitchen never got, and it must not be the thing that puts paper anywhere.
+   * Only `reprint` does that.
+   */
+  listBillKots: async (purchaseId: string): Promise<CafeKot[]> => {
+    const response = await apiClient.get<ApiResponse<CafeKot[]>>(
+      CAFE_KOT_ENDPOINTS.BILL_KOTS(purchaseId),
+    );
+    return response.data;
+  },
+
+  /**
    * Reprints an already-issued ticket: no new ticket, `reprintCount` increments, and the
    * returned PDF is stamped REPRINT so a cook cannot read it as a second order. Requires a
    * non-blank Idempotency-Key like every other kitchen-facing write.

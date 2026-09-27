@@ -1,6 +1,12 @@
 import { useRef } from 'react';
-import { useMutation, type UseMutationResult } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQuery,
+  type UseMutationResult,
+  type UseQueryResult,
+} from '@tanstack/react-query';
 import { cafeKotApi } from '../api/cafe-kot.api';
+import { cafeKotKeys } from './keys';
 import { keyAfter, newKey } from '../lib/idempotencyAttempt';
 import { clearPunchKey, readPunchKey, writePunchKey } from '../lib/punchKeyStore';
 import type { CafeKot } from '../types/kot';
@@ -96,6 +102,28 @@ export function usePunchMutation(purchaseId: string): UseMutationResult<CafeKot[
  */
 export function useReprintKotMutation(kotId: string): UseMutationResult<Blob, unknown, void> {
   return useIdempotentMutation<Blob, void>(kotId, (key) => cafeKotApi.reprint(kotId, key));
+}
+
+/**
+ * Every ticket this bill has already sent to the kitchen, newest first.
+ *
+ * This exists because `CafeKotBar`'s own ticket list is component state: it dies when the bar
+ * unmounts, which happens every time the cashier switches carts or reloads. Without a server
+ * read, a slip lost in the kitchen has no way back — pressing Print KOT again correctly sends
+ * nothing, because the cart owes the kitchen nothing.
+ *
+ * Disabled without a `purchaseId`: a bill that does not exist yet has no rounds, and asking
+ * would be a request for every ticket in the shop.
+ */
+export function useBillKotsQuery(purchaseId: string | null): UseQueryResult<CafeKot[], unknown> {
+  return useQuery<CafeKot[], unknown>({
+    queryKey: cafeKotKeys.billKots(purchaseId ?? ''),
+    queryFn: () => cafeKotApi.listBillKots(purchaseId as string),
+    enabled: Boolean(purchaseId),
+    // A round the cashier punched seconds ago must appear here, so this is not cached across
+    // the gesture that would make it stale.
+    staleTime: 0,
+  });
 }
 
 export { keyAfter, outcomeOf };
