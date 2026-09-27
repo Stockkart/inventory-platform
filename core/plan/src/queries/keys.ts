@@ -17,6 +17,12 @@ export const planKeys = {
   referralSummary: () => [...base.all, 'referral-summary'] as const,
   referralRewards: () => [...base.all, 'referral-rewards'] as const,
   adminMis: (params: PlanMisParams) => [...base.all, 'admin-mis', params] as const,
+  adminReferrals: () => [...base.all, 'admin-referrals'] as const,
+  adminAttributions: (status: string) =>
+    [...base.all, 'admin-referrals', 'attributions', status] as const,
+  adminRewards: (status: string | null) =>
+    [...base.all, 'admin-referrals', 'rewards', status ?? 'all'] as const,
+  adminWallet: (shopId: string) => [...base.all, 'admin-wallet', shopId] as const,
 };
 
 export const PLAN_MODULE_VERSION = '0.1.0';
