@@ -7,7 +7,7 @@ import {
   useShopAccessStore,
   usePlanEntitlementsStore,
 } from '@inventory-platform/session';
-import { isPathEntitled } from '@inventory-platform/access';
+import { isPathEntitled, planFeatureForPath } from '@inventory-platform/access';
 import { apiClient } from '@inventory-platform/api-client';
 import { isPlanExpiryAllowedPath } from '@inventory-platform/contracts';
 import { CenteredLoader } from '@inventory-platform/ui-kit';
@@ -121,7 +121,8 @@ export function useDashboardRouteGuard(): DashboardRouteGuardState {
       return;
     }
     if (!isPathEntitled(location.pathname, planEntitlements)) {
-      navigate('/dashboard/plan-status', { replace: true });
+      const feature = planFeatureForPath(location.pathname);
+      navigate(`/dashboard/plan-status${feature ? `?locked=${feature}` : ''}`, { replace: true });
     }
   }, [
     planEntitlements,
