@@ -1,5 +1,5 @@
 import { createQueryKeyFactory } from '@inventory-platform/query';
-import type { QuoteRequest } from '@inventory-platform/plan/types';
+import type { PlanMisParams, QuoteRequest } from '@inventory-platform/plan/types';
 
 const base = createQueryKeyFactory('plan');
 
@@ -16,6 +16,7 @@ export const planKeys = {
   wallet: () => [...base.all, 'wallet'] as const,
   referralSummary: () => [...base.all, 'referral-summary'] as const,
   referralRewards: () => [...base.all, 'referral-rewards'] as const,
+  adminMis: (params: PlanMisParams) => [...base.all, 'admin-mis', params] as const,
 };
 
 export const PLAN_MODULE_VERSION = '0.1.0';

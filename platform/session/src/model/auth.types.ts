@@ -19,6 +19,14 @@ export interface User {
   createdAt?: string;
   /** All shops the user can access (multi-shop support) */
   shops?: ShopMembership[];
+  /** Omitted for ordinary users. The server enforces admin access; this only shapes the UI. */
+  platformRoles?: PlatformRole[];
+}
+
+export type PlatformRole = 'PLATFORM_ADMIN';
+
+export function isPlatformAdmin(user: Pick<User, 'platformRoles'> | null | undefined): boolean {
+  return Boolean(user?.platformRoles?.includes('PLATFORM_ADMIN'));
 }
 
 export interface Shop {

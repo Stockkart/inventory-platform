@@ -30,6 +30,7 @@ const WALLET_SOURCE_LABELS: Record<WalletEntrySource, string> = {
   ORDER_REDEMPTION: 'Spent on a plan',
   MANUAL_ADJUSTMENT: 'Adjustment',
   CLAWBACK: 'Referral reversed',
+  ORDER_REFUND: 'Refunded to wallet',
 };
 
 export function walletSourceLabel(source: WalletEntrySource): string {

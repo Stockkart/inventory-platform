@@ -108,6 +108,28 @@ export function filterDashboardMenuGroupsByAccess(
   return withAccessControl.filter((group) => group.items.length > 0);
 }
 
+const PLATFORM_ADMIN_PREFIX = '/dashboard/platform-admin';
+
+/** Pages for StockKart operators rather than shops; the API rejects anyone else. */
+export function isPlatformAdminPath(path: string): boolean {
+  return path === PLATFORM_ADMIN_PREFIX || path.startsWith(`${PLATFORM_ADMIN_PREFIX}/`);
+}
+
+export function filterPlatformAdminGroups(
+  groups: DashboardMenuGroup[],
+  platformAdmin: boolean,
+): DashboardMenuGroup[] {
+  if (platformAdmin) {
+    return groups;
+  }
+  return groups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => !isPlatformAdminPath(item.path)),
+    }))
+    .filter((group) => group.items.length > 0);
+}
+
 export function canAccessDashboardPath(
   path: string,
   access: ShopAccess | null | undefined,

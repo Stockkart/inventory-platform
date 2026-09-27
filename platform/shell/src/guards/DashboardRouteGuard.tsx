@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import {
+  isPlatformAdmin,
   useAuthStore,
   usePlanStatusStore,
   useVerticalSchemaStore,
@@ -11,7 +12,7 @@ import { isPathEntitled, planFeatureForPath } from '@inventory-platform/access';
 import { apiClient } from '@inventory-platform/api-client';
 import { isPlanExpiryAllowedPath } from '@inventory-platform/contracts';
 import { CenteredLoader } from '@inventory-platform/ui-kit';
-import { canAccessDashboardPath } from '../lib/accessNav';
+import { canAccessDashboardPath, isPlatformAdminPath } from '../lib/accessNav';
 
 export type DashboardRouteGuardState = {
   isReady: boolean;
@@ -66,6 +67,17 @@ export function useDashboardRouteGuard(): DashboardRouteGuardState {
       navigate('/dashboard', { replace: true });
     }
   }, [isAuthenticated, user?.shopId, accessLoading, shopAccess, location.pathname, navigate]);
+
+  useEffect(() => {
+    if (
+      isAuthenticated &&
+      user &&
+      isPlatformAdminPath(location.pathname) &&
+      !isPlatformAdmin(user)
+    ) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, user, location.pathname, navigate]);
 
   useEffect(() => {
     if (isAuthenticated) {
