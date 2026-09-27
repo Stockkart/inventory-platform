@@ -181,8 +181,12 @@ class ApiClient {
     return r.data;
   }
 
-  async post<T>(endpoint: string, data?: unknown): Promise<T> {
-    const r = await this.axiosInstance.post<T>(endpoint, data);
+  async post<T>(
+    endpoint: string,
+    data?: unknown,
+    options?: { headers?: Record<string, string> },
+  ): Promise<T> {
+    const r = await this.axiosInstance.post<T>(endpoint, data, { headers: options?.headers });
     return r.data;
   }
 
