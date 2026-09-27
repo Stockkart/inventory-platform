@@ -6,6 +6,7 @@ import {
   type UseQueryOptions,
 } from '@tanstack/react-query';
 import type {
+  CampaignResponse,
   CreatePlanCheckoutRequest,
   PlanCheckoutResponse,
   PlanResponse,
@@ -73,6 +74,19 @@ export function usePlanQuoteQuery(
       return plansApi.quote(request);
     },
     enabled: request != null,
+    ...options,
+  });
+}
+
+/** A failed fetch simply hides the banner; it never blocks the page. */
+export function useActiveCampaignQuery(
+  options?: Omit<UseQueryOptions<CampaignResponse | null>, 'queryKey' | 'queryFn'>,
+) {
+  return useQuery({
+    queryKey: planKeys.activeCampaign(),
+    queryFn: () => plansApi.getActiveCampaign(),
+    staleTime: 60_000,
+    retry: 1,
     ...options,
   });
 }

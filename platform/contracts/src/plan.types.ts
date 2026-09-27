@@ -110,3 +110,29 @@ export interface QuoteResponse {
   quotedAt: string;
   expiresAt: string;
 }
+
+/** Derived on the server from the campaign dates (Asia/Kolkata calendar days). */
+export type CampaignState = 'UPCOMING' | 'STARTING_SOON' | 'LIVE' | 'ENDING_SOON';
+
+export type CampaignTheme = 'DEFAULT' | 'MONSOON' | 'SUMMER' | 'DIWALI' | 'NEW_YEAR';
+
+/** The one sale banner to show, from GET /campaigns/active (null when none). */
+export interface CampaignResponse {
+  code: string;
+  /** Authoritative. The client only ticks a countdown between refetches. */
+  state: CampaignState;
+  /** Teaser headline before the start, live headline after. */
+  headline: string;
+  subtext: string | null;
+  ctaLabel: string | null;
+  /** App-relative path, e.g. /plans. */
+  ctaPath: string | null;
+  theme: CampaignTheme;
+  startsAt: string;
+  endsAt: string;
+  dismissible: boolean;
+  /** Server clock at response time; corrects the countdown for device clock skew. */
+  serverNow: string;
+  /** When state next changes; refetch then instead of recomputing state locally. */
+  nextTransitionAt: string;
+}

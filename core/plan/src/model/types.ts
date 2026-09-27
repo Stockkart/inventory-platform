@@ -11,6 +11,9 @@ export type {
   QuoteItemSource,
   QuoteItem,
   QuoteResponse,
+  CampaignState,
+  CampaignTheme,
+  CampaignResponse,
 } from '@inventory-platform/contracts';
 
 export interface AssignPlanRequest {

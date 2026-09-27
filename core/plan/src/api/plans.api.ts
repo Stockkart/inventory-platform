@@ -2,6 +2,7 @@ import { apiClient } from '@inventory-platform/api-client';
 import type { ApiResponse } from '@inventory-platform/contracts';
 import type {
   AssignPlanRequest,
+  CampaignResponse,
   CreatePlanCheckoutRequest,
   PaymentConfigResponse,
   PlanCheckoutResponse,
@@ -82,6 +83,13 @@ export const plansApi = {
       data,
     );
     return response.data;
+  },
+
+  getActiveCampaign: async (): Promise<CampaignResponse | null> => {
+    const response = await apiClient.get<ApiResponse<CampaignResponse | null>>(
+      PLAN_ENDPOINTS.CAMPAIGN_ACTIVE,
+    );
+    return response.data ?? null;
   },
 
   verifyPayment: async (data: VerifyPlanPaymentRequest): Promise<VerifyPlanPaymentResponse> => {

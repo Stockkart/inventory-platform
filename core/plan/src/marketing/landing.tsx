@@ -1,6 +1,7 @@
 import { FormKeyboardNavScope } from '@inventory-platform/routing';
 import { Box } from '@inventory-platform/ui-kit';
 import { Header, Hero, Stats, Features, Pricing, CTA, Footer } from '../ui';
+import { CampaignBanner } from '../campaign';
 
 export function meta() {
   return [
@@ -19,6 +20,7 @@ export default function LandingPage() {
       <Header />
       <Box as="main" flex="1">
         <FormKeyboardNavScope>
+          <CampaignBanner ctaVariant="brand" inset />
           <Hero />
           <Stats />
           <Features />

@@ -84,6 +84,7 @@ export {
   type ComparisonRow,
   type ComparisonTableProps,
 } from './ComparisonTable';
+export { SaleBanner, type SaleBannerProps, type SaleBannerTheme } from './SaleBanner';
 export {
   DenseTable,
   DenseTableSurface,
