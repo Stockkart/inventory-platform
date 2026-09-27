@@ -5,6 +5,12 @@ export type {
   PlanResponse,
   UsageResponse,
   ShopPlanStatusResponse,
+  QuoteAddOnLine,
+  QuoteRequest,
+  QuoteItemType,
+  QuoteItemSource,
+  QuoteItem,
+  QuoteResponse,
 } from '@inventory-platform/contracts';
 
 export interface AssignPlanRequest {

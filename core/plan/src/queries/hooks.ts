@@ -10,6 +10,8 @@ import type {
   PlanCheckoutResponse,
   PlanResponse,
   PlanTransactionResponse,
+  QuoteRequest,
+  QuoteResponse,
   ShopPlanStatusResponse,
   VerifyPlanPaymentRequest,
   VerifyPlanPaymentResponse,
@@ -55,6 +57,22 @@ export function usePlanTransactionsQuery(
   return useQuery({
     queryKey: planKeys.transactions(),
     queryFn: () => plansApi.listTransactions(),
+    ...options,
+  });
+}
+
+/** Server-priced cart. Pass null until the cart has a plan. */
+export function usePlanQuoteQuery(
+  request: QuoteRequest | null,
+  options?: Omit<UseQueryOptions<QuoteResponse>, 'queryKey' | 'queryFn' | 'enabled'>,
+) {
+  return useQuery({
+    queryKey: request ? planKeys.quote(request) : [...planKeys.all, 'quote', null],
+    queryFn: () => {
+      if (!request) throw new Error('Quote requested without a cart');
+      return plansApi.quote(request);
+    },
+    enabled: request != null,
     ...options,
   });
 }

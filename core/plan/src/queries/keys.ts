@@ -1,4 +1,5 @@
 import { createQueryKeyFactory } from '@inventory-platform/query';
+import type { QuoteRequest } from '@inventory-platform/plan/types';
 
 const base = createQueryKeyFactory('plan');
 
@@ -9,6 +10,7 @@ export const planKeys = {
   shopStatus: () => [...base.all, 'shop-status'] as const,
   transactions: () => [...base.all, 'transactions'] as const,
   usage: () => [...base.all, 'usage'] as const,
+  quote: (request: QuoteRequest) => [...base.all, 'quote', request] as const,
 };
 
 export const PLAN_MODULE_VERSION = '0.1.0';
