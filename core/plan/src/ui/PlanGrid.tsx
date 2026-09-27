@@ -1,4 +1,4 @@
-import type { PlanResponse } from '@inventory-platform/plan/types';
+import type { PlanFeature, PlanResponse } from '@inventory-platform/plan/types';
 import {
   Badge,
   Box,
@@ -12,7 +12,22 @@ import {
 const EXTRA_USER_PLAN = 'Extra User Plan';
 const EXTRA_SHOP_PLAN = 'Extra Shop Plan';
 const EXTRA_PLANS = [EXTRA_USER_PLAN, EXTRA_SHOP_PLAN];
-const POPULAR_PLAN = 'Silver';
+
+const FEATURE_LABELS: Record<PlanFeature, string> = {
+  CREDIT_BALANCE: 'Credit balance',
+  ACCOUNTING: 'Accounting',
+  BARCODE_GENERATOR: 'Barcode generator',
+  LOW_STOCK_NOTIFICATION: 'Reminder & low-stock notifications',
+  MARKETING: 'Marketing (SMS/WhatsApp)',
+  SALARY: 'Salary',
+  BIOMETRIC_ATTENDANCE: 'Biometric attendance',
+  ADVANCED_ACCESS_CONTROL: 'Advanced access control',
+};
+
+/** The backend decides which plan is highlighted. */
+export function isMostPopular(plan: PlanResponse): boolean {
+  return plan.badge === 'MOST_POPULAR';
+}
 
 export function buildPlanFeatures(plan: PlanResponse): string[] {
   if (EXTRA_PLANS.includes(plan.planName)) {
@@ -53,6 +68,14 @@ export function buildPlanFeatures(plan: PlanResponse): string[] {
 
   if (plan.userLimit != null) {
     features.push(`${plan.userLimit} user${plan.userLimit > 1 ? 's' : ''}`);
+  }
+
+  if (plan.ocrLimit != null) {
+    features.push(`${plan.ocrLimit.toLocaleString('en-IN')} OCR invoices/month`);
+  }
+
+  for (const feature of plan.features ?? []) {
+    features.push(FEATURE_LABELS[feature] ?? feature);
   }
 
   return features;
@@ -171,7 +194,7 @@ export function PlanGrid({
             key={plan.id}
             plan={plan}
             isCurrent={currentPlanId != null && plan.id === currentPlanId}
-            isPopular={plan.planName === POPULAR_PLAN}
+            isPopular={isMostPopular(plan)}
             onSelectPlan={onSelectPlan}
             ctaLabel={ctaLabel}
             showTrialBadge={showTrialBadge}
