@@ -54,20 +54,19 @@ export function buildPlanFeatures(plan: PlanResponse): string[] {
     features.push(`${plan.billCountLimit} bills/month`);
   }
 
-  if (plan.smsLimit != null && plan.smsLimit > 0) {
-    features.push(`${plan.smsLimit} SMS/month`);
-  } else {
-    features.push('No SMS');
+  // A null limit is unmetered on the backend, not "none".
+  if (plan.smsLimit != null) {
+    features.push(plan.smsLimit > 0 ? `${plan.smsLimit} SMS/month` : 'No SMS');
   }
 
-  if (plan.whatsappLimit != null && plan.whatsappLimit > 0) {
-    features.push(`${plan.whatsappLimit} WhatsApp/month`);
-  } else {
-    features.push('No WhatsApp');
+  if (plan.whatsappLimit != null) {
+    features.push(plan.whatsappLimit > 0 ? `${plan.whatsappLimit} WhatsApp/month` : 'No WhatsApp');
   }
 
   if (plan.userLimit != null) {
     features.push(`${plan.userLimit} user${plan.userLimit > 1 ? 's' : ''}`);
+  } else if (plan.code) {
+    features.push('Unlimited users');
   }
 
   if (plan.ocrLimit != null) {
