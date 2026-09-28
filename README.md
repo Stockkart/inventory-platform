@@ -6,7 +6,8 @@ Nx + React monorepo for the StockKart inventory web app. Domains live under `cor
 
 ```text
 inventory-platform/
-├── apps/inventory/     # App shell: providers, route composer, env
+├── apps/inventory/     # Shop app: providers, route composer, env
+├── apps/admin/         # StockKart admin app (separate sign-in), port 4400
 ├── platform/           # Infra only (no business UI)
 ├── ui-kit/             # Design system (primitives + chrome patterns)
 ├── core/               # Domain modules (api, queries, pages, routes, nav)
@@ -43,12 +44,24 @@ docker-compose up
 
 ```sh
 pnpm nx dev inventory          # Vite / React Router app
+pnpm nx dev admin-app          # Admin app on http://localhost:4400
 pnpm nx build inventory
 pnpm nx lint <project>
 pnpm nx typecheck <project>
 pnpm nx storybook ui-kit
 pnpm nx graph                  # dependency graph
 ```
+
+## Admin app
+
+`apps/admin` is the StockKart staff app. It has its own sign-in (email + password against the
+API's `admin_users`), so shop accounts can't reach it. It builds to a static single-page app
+(`ssr: false`); serve `apps/admin/build/client` with a fallback to `index.html`.
+
+- The API must allow the admin origin: set `ADMIN_CLIENT_URL` (e.g. `http://localhost:4400`).
+- First admins come from the API's `PLATFORM_ADMIN_EMAILS` + `PLATFORM_ADMIN_BOOTSTRAP_PASSWORD`;
+  they must set a new password on first sign-in. After that, admins add each other on the Admins
+  page.
 
 ## Where work lives
 
@@ -63,6 +76,7 @@ pnpm nx graph                  # dependency graph
 | Scan & sell, stock, returns         | `core/product`        |
 | Login / onboarding / shops / CRM    | `core/user`           |
 | Cafe menu / ingredient stock        | `plugins/cafe`        |
+| Admin sign-in, admins, admin chrome | `core/admin`          |
 
 ## Conventions
 

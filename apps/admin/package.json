@@ -1,0 +1,30 @@
+{
+  "name": "@inventory-platform/admin-app",
+  "private": true,
+  "type": "module",
+  "scripts": {},
+  "sideEffects": false,
+  "dependencies": {
+    "@inventory-platform/plugin-registry": "workspace:*",
+    "@inventory-platform/query": "workspace:*",
+    "@inventory-platform/shell": "workspace:*",
+    "@react-router/node": "^7.2.0",
+    "@tanstack/react-query": "^5.90.12",
+    "isbot": "^5",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router": "^7.2.0"
+  },
+  "devDependencies": {
+    "@react-router/dev": "^7.2.0",
+    "@types/node": "^20.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0"
+  },
+  "nx": {
+    "tags": [
+      "type:app",
+      "scope:admin"
+    ]
+  }
+}

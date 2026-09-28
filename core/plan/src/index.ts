@@ -7,6 +7,7 @@ export {
   planPaymentRoutes,
   referralRoutes,
   platformAdminRoutes,
+  planAdminToolRoutes,
   planDashboardRoutes,
 } from './routes';
 export { planNav, platformAdminNav } from './nav';
