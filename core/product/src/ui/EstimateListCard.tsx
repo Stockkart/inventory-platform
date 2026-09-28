@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { EstimateSummary } from '@inventory-platform/product/types';
+import { useNotify } from '@inventory-platform/session';
 import { formatCustomerDisplayName } from '../lib/customerDisplay';
 import {
   Alert,
@@ -118,6 +119,7 @@ export function EstimateListCard({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const { error: notifyError, success: notifySuccess, info: notifyInfo } = useNotify;
   const isOpen = estimate.estimateState === 'OPEN';
   const estimateNo = estimate.estimateNo?.trim() || null;
   const customer = formatCustomerDisplayName(estimate.customerName);
@@ -276,6 +278,10 @@ export function EstimateListCard({
         purchaseId={estimate.purchaseId}
         invoiceNo={estimate.estimateNo ?? undefined}
         documentLabel="Estimate"
+        documentKind="ESTIMATE"
+        onError={(msg) => msg && notifyError(msg)}
+        onSuccess={(msg) => msg && notifySuccess(msg)}
+        onInfo={(msg) => msg && notifyInfo(msg)}
       />
     </>
   );

@@ -23,7 +23,8 @@ export interface BridgeHealth {
   ready: boolean;
 }
 
-export type PrintDocType = 'INVOICE';
+/** The bridge picks its page length by this; an estimate uses a shorter form than a tax invoice. */
+export type PrintDocType = 'INVOICE' | 'ESTIMATE';
 
 export interface PrintJobRequest {
   docType: PrintDocType;

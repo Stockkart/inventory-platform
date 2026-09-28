@@ -11,7 +11,7 @@ import {
   pollJobOutcome,
   sendToBridge,
 } from '../lib/printBridge';
-import type { BridgeHealth, PrintOutcomeReport } from '../lib/printBridge';
+import type { BridgeHealth, PrintDocType, PrintOutcomeReport } from '../lib/printBridge';
 import type { PrinterType } from '../api/endpoints';
 import {
   Alert,
@@ -37,6 +37,8 @@ interface PrintInvoiceModalProps {
   invoiceNo?: string;
   /** Defaults to "Invoice"; use "Estimate" for quote PDFs. */
   documentLabel?: string;
+  /** Sent to the print bridge, which sets the page length from it. Defaults to INVOICE. */
+  documentKind?: PrintDocType;
   onError?: (message: string) => void;
   /** Called once the bridge confirms a print actually reached the printer. */
   onSuccess?: (message: string) => void;
@@ -101,6 +103,7 @@ export function PrintInvoiceModal({
   purchaseId,
   invoiceNo,
   documentLabel = 'Invoice',
+  documentKind = 'INVOICE',
   onError,
   onSuccess,
   onInfo,
@@ -172,9 +175,10 @@ export function PrintInvoiceModal({
     setIsGenerating(true);
     try {
       const textBlob = await cartApi.getInvoiceDotMatrixText(purchaseId);
-      // .prn, not .txt. The file is a printer stream: it opens with the codes
-      // that reset the printer and set its pitch, and Windows hands a .txt to
-      // Notepad, which reads those bytes as characters and prints what it read.
+      // .prn, not .txt. The text carries the printer's bold and double-width
+      // codes, and Windows hands a .txt to Notepad, which prints those bytes as
+      // characters. It does not set the pitch: the bridge adds that, so without
+      // it the operator has to set the pitch on the printer.
       const slug = documentLabel.toLowerCase().replace(/\s+/g, '-');
       downloadBlob(textBlob, `${slug}-${invoiceNo || purchaseId}.prn`);
       onClose();
@@ -212,7 +216,7 @@ export function PrintInvoiceModal({
       // `defaultCopies` (e.g. original + customer copy for GST). Hardcoding
       // 1 here would silently override that setting on every print.
       const { jobId } = await sendToBridge({
-        docType: 'INVOICE',
+        docType: documentKind,
         docId: purchaseId,
         copies: 0,
         text,
@@ -310,7 +314,9 @@ export function PrintInvoiceModal({
                 ? `Prints directly to ${
                     bridge.selectedPrinter ?? 'the selected printer'
                   } via the print bridge on this computer.`
-                : 'Print bridge not detected on this computer. The bill downloads as a .prn printer file. Send it straight to the printer - copy /b <file> PRN on Windows - and do not open it first: it carries the codes that set the pitch, and only the printer reads them as codes. Anything that opens it prints them as characters. Never print the PDF on a dot-matrix printer.'}
+                : `Print bridge not detected on this computer. The bill downloads as a .prn printer file. Set the printer to ${
+                    documentKind === 'ESTIMATE' ? '10 CPI (pica)' : 'condensed, 17 CPI'
+                  } first, then send the file straight to the printer - copy /b <file> PRN on Windows. Do not open it first: it carries bold and wide-print codes that anything else prints as characters. Never print the PDF on a dot-matrix printer.`}
             </Alert>
           ) : null}
         </Stack>
