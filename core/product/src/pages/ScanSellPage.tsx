@@ -1076,6 +1076,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   const [isUpdatingCart, setIsUpdatingCart] = useState(false);
   const [printEstimateOpen, setPrintEstimateOpen] = useState(false);
   const [isConvertingEstimate, setIsConvertingEstimate] = useState(false);
+  const [isLockingEstimate, setIsLockingEstimate] = useState(false);
   const cartLoadedRef = useRef(false);
   const isUpdatingRef = useRef(false);
   const syncVersionRef = useRef(0);
@@ -3030,6 +3031,12 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       notifyError('Convert the estimate to an invoice before taking payment');
       return;
     }
+    if (cartBillingMode === 'BASIC') {
+      notifyError(
+        'BASIC / estimate-only stock cannot be invoiced here. Use Sell Estimate (lock + print).',
+      );
+      return;
+    }
     if (cartItems.length === 0 && menuCartLines.length === 0) {
       notifyError('Cart is empty');
       return;
@@ -3093,7 +3100,36 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     }
   };
 
-  const isEstimateEditable = !isEstimateMode || cartData?.estimateState !== 'CONVERTED';
+  const estimateState = cartData?.estimateState ?? null;
+  const isEstimateEditable = !isEstimateMode || estimateState === 'OPEN';
+  const isEstimatePrintable =
+    isEstimateMode && (estimateState === 'LOCKED' || estimateState === 'CONVERTED');
+  const isEstimateConvertible =
+    isEstimateMode &&
+    (estimateState === 'OPEN' || estimateState === 'LOCKED') &&
+    cartBillingMode === 'REGULAR';
+
+  const handleLockEstimate = async () => {
+    const estimateId = activePurchaseId ?? cartData?.purchaseId;
+    if (!estimateId) {
+      notifyError('No estimate to lock');
+      return;
+    }
+    if (cartItems.length === 0 && menuCartLines.length === 0) {
+      notifyError('Add items before locking');
+      return;
+    }
+    setIsLockingEstimate(true);
+    try {
+      await syncCustomerToQuotation();
+      const locked = await estimatesApi.lock(estimateId);
+      applyCartToState(locked, cartItems);
+    } catch (err) {
+      notifyError(err instanceof Error ? err.message : 'Failed to lock estimate');
+    } finally {
+      setIsLockingEstimate(false);
+    }
+  };
 
   const handleConvertEstimate = async () => {
     const estimateId = activePurchaseId ?? cartData?.purchaseId;
@@ -3103,6 +3139,10 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     }
     if (cartItems.length === 0 && menuCartLines.length === 0) {
       notifyError('Add items before converting');
+      return;
+    }
+    if (cartBillingMode === 'BASIC') {
+      notifyError('BASIC / estimate-only stock cannot convert to invoice. Lock and print instead.');
       return;
     }
     setIsConvertingEstimate(true);
@@ -3247,11 +3287,29 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
           </Button>
           {isEstimateMode ? (
             <>
+              {estimateState === 'OPEN' ? (
+                <Button
+                  type="button"
+                  variant="solid"
+                  className={cafeCheckoutPayBtnStyle}
+                  onClick={() => void handleLockEstimate()}
+                  disabled={
+                    !activePurchaseId ||
+                    (cartItems.length === 0 && menuCartLines.length === 0) ||
+                    isLockingEstimate ||
+                    isUpdatingCart ||
+                    isLoadingCart
+                  }
+                >
+                  {isLockingEstimate ? 'Locking…' : 'Lock estimate'}
+                </Button>
+              ) : null}
               <Button
                 type="button"
                 variant="outline"
                 className={shellChrome.nowrap}
                 disabled={
+                  !isEstimatePrintable ||
                   !activePurchaseId ||
                   (cartItems.length === 0 && menuCartLines.length === 0) ||
                   isUpdatingCart ||
@@ -3261,21 +3319,22 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
               >
                 Print
               </Button>
-              <Button
-                type="button"
-                variant="solid"
-                className={cafeCheckoutPayBtnStyle}
-                onClick={() => void handleConvertEstimate()}
-                disabled={
-                  !isEstimateEditable ||
-                  (cartItems.length === 0 && menuCartLines.length === 0) ||
-                  isConvertingEstimate ||
-                  isUpdatingCart ||
-                  isLoadingCart
-                }
-              >
-                {isConvertingEstimate ? 'Converting…' : 'Convert to invoice'}
-              </Button>
+              {isEstimateConvertible ? (
+                <Button
+                  type="button"
+                  variant="solid"
+                  className={cafeCheckoutPayBtnStyle}
+                  onClick={() => void handleConvertEstimate()}
+                  disabled={
+                    (cartItems.length === 0 && menuCartLines.length === 0) ||
+                    isConvertingEstimate ||
+                    isUpdatingCart ||
+                    isLoadingCart
+                  }
+                >
+                  {isConvertingEstimate ? 'Converting…' : 'Convert to invoice'}
+                </Button>
+              ) : null}
             </>
           ) : (
             <Button
@@ -3287,7 +3346,8 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                 (cartItems.length === 0 && menuCartLines.length === 0) ||
                 isProcessing ||
                 isUpdatingCart ||
-                isLoadingCart
+                isLoadingCart ||
+                cartBillingMode === 'BASIC'
               }
             >
               {isProcessing ? 'Processing…' : isUpdatingCart ? 'Updating…' : 'Process Payment'}
@@ -3311,7 +3371,7 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       <PageHeader
         description={
           isEstimateMode
-            ? 'Build a printable estimate (with tax when products are Regular), then convert to invoice'
+            ? 'Lock to print. Convert REGULAR estimates to invoice anytime; BASIC stock is lock + print only.'
             : isCafeSell
             ? 'Tap menu items or direct stock to build the order'
             : 'Speed up sales with barcode scanning'
@@ -3335,10 +3395,12 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
           <Badge variant="info">{cartData.estimateNo}</Badge>
           {cartData.estimateState === 'CONVERTED' ? (
             <Badge variant="neutral">Converted — reprint only</Badge>
+          ) : cartData.estimateState === 'LOCKED' ? (
+            <Badge variant="info">Locked — printable</Badge>
           ) : (
             <Text variant="caption" color="secondary">
-              Estimates soft-reserve stock like open quotations. Convert to invoice when the
-              customer confirms.
+              Lock to print. REGULAR stock can convert to invoice anytime; BASIC / estimate-only
+              stock finalizes with lock + print only.
             </Text>
           )}
         </Inline>
@@ -4341,11 +4403,29 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                     </Button>
                     {isEstimateMode ? (
                       <>
+                        {estimateState === 'OPEN' ? (
+                          <Button
+                            type="button"
+                            variant="solid"
+                            className={productChrome.flexGrow2}
+                            onClick={() => void handleLockEstimate()}
+                            disabled={
+                              !activePurchaseId ||
+                              (cartItems.length === 0 && menuCartLines.length === 0) ||
+                              isLockingEstimate ||
+                              isUpdatingCart ||
+                              isLoadingCart
+                            }
+                          >
+                            {isLockingEstimate ? 'Locking…' : 'Lock estimate'}
+                          </Button>
+                        ) : null}
                         <Button
                           type="button"
                           variant="outline"
                           className={surfaceChrome.flexMin0}
                           disabled={
+                            !isEstimatePrintable ||
                             !activePurchaseId ||
                             (cartItems.length === 0 && menuCartLines.length === 0) ||
                             isUpdatingCart ||
@@ -4355,21 +4435,22 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                         >
                           Print estimate
                         </Button>
-                        <Button
-                          type="button"
-                          variant="solid"
-                          className={productChrome.flexGrow2}
-                          onClick={() => void handleConvertEstimate()}
-                          disabled={
-                            !isEstimateEditable ||
-                            (cartItems.length === 0 && menuCartLines.length === 0) ||
-                            isConvertingEstimate ||
-                            isUpdatingCart ||
-                            isLoadingCart
-                          }
-                        >
-                          {isConvertingEstimate ? 'Converting…' : 'Convert to invoice'}
-                        </Button>
+                        {isEstimateConvertible ? (
+                          <Button
+                            type="button"
+                            variant="solid"
+                            className={productChrome.flexGrow2}
+                            onClick={() => void handleConvertEstimate()}
+                            disabled={
+                              (cartItems.length === 0 && menuCartLines.length === 0) ||
+                              isConvertingEstimate ||
+                              isUpdatingCart ||
+                              isLoadingCart
+                            }
+                          >
+                            {isConvertingEstimate ? 'Converting…' : 'Convert to invoice'}
+                          </Button>
+                        ) : null}
                       </>
                     ) : (
                       <Button
@@ -4381,7 +4462,8 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                           (cartItems.length === 0 && menuCartLines.length === 0) ||
                           isProcessing ||
                           isUpdatingCart ||
-                          isLoadingCart
+                          isLoadingCart ||
+                          cartBillingMode === 'BASIC'
                         }
                       >
                         {isProcessing

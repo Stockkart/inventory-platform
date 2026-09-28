@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
-import { useNavigate, useLocation } from 'react-router';
+import { useNavigate, useLocation, useSearchParams } from 'react-router';
 import { QRCodeSVG } from 'qrcode.react';
 import { uploadApi } from '@inventory-platform/product/api';
 import { apiClient } from '@inventory-platform/api-client';
@@ -7,6 +7,7 @@ import { userLookupApi } from '@inventory-platform/user/users';
 import { inventoryApi } from '../api/inventory.api';
 import { productApi } from '../api/product.api';
 import { barcodesApi } from '../api/barcodes.api';
+import { stockEntryEstimatesApi } from '../api/stockEntryEstimates.api';
 import { mapLastInventoryToRegistrationPatch } from '../lib/registrationPrefill';
 import {
   clearProductEntryDraft,
@@ -30,6 +31,7 @@ import type {
   PackagingUnit,
   BillingMode,
   ProductSuggestion,
+  StockEntryEstimateLine,
 } from '@inventory-platform/product/types';
 import type { CustomReminderInput } from '@inventory-platform/contracts';
 import type {
@@ -102,6 +104,7 @@ import {
   Input,
   Label,
   Modal,
+  ConfirmDialog,
   PageHeader,
   Select,
   Spinner,
@@ -900,7 +903,14 @@ export function ProductEntryPage() {
   const showRateTiers = !isSimplePricing && !isRetailPricing;
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const sourceEstimateId = searchParams.get('estimateId')?.trim() || null;
+  const estimateWorkspace =
+    searchParams.get('mode') === 'estimate' ||
+    Boolean(sourceEstimateId) ||
+    location.pathname.includes('entry-estimates');
   const vendorPrefillConsumedRef = useRef(false);
+  const estimateHydratedRef = useRef<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -928,7 +938,19 @@ export function ProductEntryPage() {
   const [showVendorDropdown, setShowVendorDropdown] = useState(false);
   const [showVendorModal, setShowVendorModal] = useState(false);
   const [isCreatingVendor, setIsCreatingVendor] = useState(false);
-  const [billingMode, setBillingMode] = useState<BillingMode>('REGULAR');
+  const [billingMode, setBillingMode] = useState<BillingMode>(() => {
+    // Product Entry is taxable-only. Estimate (no tax) lives on Entry Estimate.
+    if (estimateWorkspace && searchParams.get('billingMode') !== 'REGULAR') {
+      return 'BASIC';
+    }
+    return 'REGULAR';
+  });
+  const [activeEstimateId, setActiveEstimateId] = useState<string | null>(sourceEstimateId);
+  const [activeEstimateNo, setActiveEstimateNo] = useState<string | null>(null);
+  const [isSavingEstimateDraft, setIsSavingEstimateDraft] = useState(false);
+  const [isLockingEstimate, setIsLockingEstimate] = useState(false);
+  const [showLockConfirm, setShowLockConfirm] = useState(false);
+  const [showRegisterConfirm, setShowRegisterConfirm] = useState(false);
   const billingSchemaMode = schemaModeForBilling(billingMode);
   const shopSchema = useVerticalSchemaStore((s) =>
     activeShopId
@@ -1048,10 +1070,17 @@ export function ProductEntryPage() {
   useLayoutEffect(() => {
     if (draftRestoredRef.current) return;
     draftRestoredRef.current = true;
+    if (sourceEstimateId) return;
     const draft = readProductEntryDraft<ProductFormData, Vendor>();
     if (!draft) return;
     setProducts(draft.products);
-    if (draft.billingMode) setBillingMode(draft.billingMode as BillingMode);
+    if (estimateWorkspace && draft.billingMode === 'BASIC') {
+      setBillingMode('BASIC');
+    } else if (!estimateWorkspace) {
+      setBillingMode('REGULAR');
+    } else if (draft.billingMode) {
+      setBillingMode(draft.billingMode as BillingMode);
+    }
     if (draft.vendorInvoiceNo) setVendorInvoiceNo(draft.vendorInvoiceNo);
     if (draft.vendorInvoiceDate) setVendorInvoiceDate(draft.vendorInvoiceDate);
     if (draft.vendorLineSubTotal) setVendorLineSubTotal(draft.vendorLineSubTotal);
@@ -1061,7 +1090,7 @@ export function ProductEntryPage() {
     if (draft.vendorOverallDiscount) setVendorOverallDiscount(draft.vendorOverallDiscount);
     if (draft.vendorRoundOff) setVendorRoundOff(draft.vendorRoundOff);
     if (draft.vendorInvoiceTotal) setVendorInvoiceTotal(draft.vendorInvoiceTotal);
-  }, []);
+  }, [sourceEstimateId]);
 
   /**
    * Persist the entry as it is edited. Debounced so typing does not hit storage on
@@ -1226,6 +1255,107 @@ export function ProductEntryPage() {
     verticalFields: shopSchema?.verticalId === 'cafe' ? { sellDirect: 'no' } : {},
   });
 
+  const mapEstimateLineToProduct = useCallback(
+    (line: StockEntryEstimateLine): ProductFormData => ({
+      ...createEmptyProduct(),
+      id: `product-${Date.now()}-${Math.random()}`,
+      productId: line.productId ?? undefined,
+      barcode: line.barcode ?? '',
+      name: line.name ?? '',
+      companyName: line.companyName ?? '',
+      description: line.description ?? '',
+      maximumRetailPrice: line.maximumRetailPrice ?? 0,
+      costPrice: line.costPrice ?? 0,
+      priceToRetail: line.priceToRetail ?? 0,
+      sellingPrice: line.sellingPrice ?? 0,
+      rates: line.rates ?? [],
+      defaultRate: line.defaultRate ?? '',
+      saleAdditionalDiscount: line.saleAdditionalDiscount ?? null,
+      businessType: line.businessType ?? shopSchema?.verticalId ?? 'medical',
+      location: line.location ?? '',
+      itemType: (line.itemType as ItemType) ?? 'NORMAL',
+      itemTypeDegree: line.itemTypeDegree ?? undefined,
+      discountApplicable: (line.discountApplicable as DiscountApplicable) ?? undefined,
+      count: line.count ?? 0,
+      baseUnit: line.baseUnit ?? '',
+      unitsPerPack: line.unitsPerPack ?? 0,
+      thresholdCount: line.thresholdCount ?? undefined,
+      expiryDate: line.expiryDate ?? '',
+      hsn: line.hsn ?? '',
+      batchNo: line.batchNo ?? '',
+      schemeType: (line.schemeType as SchemeType) ?? 'FIXED_UNITS',
+      scheme: line.scheme ?? null,
+      schemePayFor: line.schemePayFor ?? null,
+      schemeFree: line.schemeFree ?? null,
+      schemePercentage: line.schemePercentage ?? null,
+      purchaseSchemeType: (line.purchaseSchemeType as PurchaseSchemeInputType) ?? 'FIXED_UNITS',
+      purchaseSchemePayFor: line.purchaseSchemePayFor ?? null,
+      purchaseSchemeFree: line.purchaseSchemeFree ?? null,
+      purchaseSchemePercentage: line.purchaseSchemePercentage ?? null,
+      purchaseAdditionalDiscount: line.purchaseAdditionalDiscount ?? null,
+      sgst: line.sgst ?? '',
+      cgst: line.cgst ?? '',
+      verticalFields: line.verticalFields ?? {},
+      billingMode:
+        estimateWorkspace && searchParams.get('billingMode') !== 'REGULAR' ? 'BASIC' : billingMode,
+    }),
+    // createEmptyProduct closes over billingMode/shopSchema; recreate when those change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [billingMode, shopSchema, estimateWorkspace, searchParams],
+  );
+
+  useEffect(() => {
+    if (!sourceEstimateId) return;
+    if (estimateHydratedRef.current === sourceEstimateId) return;
+    estimateHydratedRef.current = sourceEstimateId;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const draft = await stockEntryEstimatesApi.get(sourceEstimateId);
+        if (cancelled) return;
+        setActiveEstimateId(draft.id);
+        setActiveEstimateNo(draft.estimateNo ?? null);
+        if (searchParams.get('billingMode') === 'REGULAR') {
+          setBillingMode('REGULAR');
+        } else if (estimateWorkspace) {
+          setBillingMode('BASIC');
+        }
+        if (draft.vendorInvoiceNo) setVendorInvoiceNo(draft.vendorInvoiceNo);
+        if (draft.vendorInvoiceDate) {
+          setVendorInvoiceDate(String(draft.vendorInvoiceDate).slice(0, 10));
+        }
+        if (draft.lineSubTotal != null) setVendorLineSubTotal(String(draft.lineSubTotal));
+        if (draft.taxTotal != null) setVendorTaxTotal(String(draft.taxTotal));
+        if (draft.shippingCharge != null) setVendorShippingCharge(String(draft.shippingCharge));
+        if (draft.otherCharges != null) setVendorOtherCharges(String(draft.otherCharges));
+        if (draft.overallDiscount != null) setVendorOverallDiscount(String(draft.overallDiscount));
+        if (draft.roundOff != null) setVendorRoundOff(String(draft.roundOff));
+        if (draft.invoiceTotal != null) setVendorInvoiceTotal(String(draft.invoiceTotal));
+        if (draft.paymentMethod) {
+          setVendorPaymentMethod(draft.paymentMethod as PaymentMethod);
+        }
+        if (draft.vendorId) {
+          try {
+            const vendor = await vendorsApi.getById(draft.vendorId);
+            setSelectedVendor(vendor as Vendor);
+            setVendorSearchQuery(vendor.name ?? '');
+          } catch {
+            // vendor hydrate is best-effort
+          }
+        }
+        const lines = draft.lines ?? [];
+        if (lines.length > 0) {
+          setProducts(lines.map((line) => mapEstimateLineToProduct(line)));
+        }
+      } catch (err) {
+        notifyError(err instanceof Error ? err.message : 'Failed to load entry estimate');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [sourceEstimateId, estimateWorkspace, searchParams, mapEstimateLineToProduct, notifyError]);
+
   const registrationFields = useMemo(
     () =>
       filterRegistrationFieldsForSimplePricing(
@@ -1292,15 +1422,30 @@ export function ProductEntryPage() {
     setError(null);
   };
 
-  const handleBillingModeChange = (mode: BillingMode) => {
-    setBillingMode(mode);
-    setProducts((prev) =>
-      prev.map((product) => ({
+  const parsedItemHasTax = (item: ParseInvoiceItem): boolean =>
+    Boolean(String(item.sgst ?? '').trim() || String(item.cgst ?? '').trim());
+
+  /** Apply OCR lines; auto-enable REGULAR when tax rates are present (vendor optional until Lock). */
+  const applyParsedInvoiceItems = (
+    items: ParseInvoiceItem[],
+    vendorPurchaseInvoice?: ParsedVendorInvoiceDto | null,
+  ) => {
+    const ocrHasTax = items.some(parsedItemHasTax);
+    const nextMode: BillingMode = estimateWorkspace && ocrHasTax ? 'REGULAR' : billingMode;
+    if (nextMode !== billingMode) {
+      setBillingMode(nextMode);
+    }
+    const parsedProducts = items.map((item) => {
+      const product = transformParsedItemToProduct(item);
+      return {
         ...product,
-        billingMode: mode,
-        ...(mode === 'BASIC' ? { sgst: '', cgst: '' } : {}),
-      })),
-    );
+        billingMode: nextMode,
+        sgst: item.sgst || '',
+        cgst: item.cgst || '',
+      };
+    });
+    setProducts(parsedProducts);
+    applyParsedVendorInvoice(vendorPurchaseInvoice, items);
   };
 
   const transformParsedItemToProduct = (item: ParseInvoiceItem): ProductFormData => {
@@ -1392,8 +1537,8 @@ export function ProductEntryPage() {
                 ? item.schemePercentage
                 : parseFloat(String(item.schemePercentage))) || null
             : null,
-        sgst: billingMode === 'BASIC' ? '' : item.sgst || '',
-        cgst: billingMode === 'BASIC' ? '' : item.cgst || '',
+        sgst: item.sgst || '',
+        cgst: item.cgst || '',
         saleAdditionalDiscount: item.saleAdditionalDiscount ?? null,
         purchaseSchemePercentage: item.purchaseSchemePercentage ?? null,
         purchaseSchemeFreeQty: null,
@@ -1556,9 +1701,7 @@ export function ProductEntryPage() {
       const response = await inventoryApi.parseInvoices(compressedFiles);
 
       if (response && response.items && response.items.length > 0) {
-        const parsedProducts = response.items.map(transformParsedItemToProduct);
-        setProducts(parsedProducts);
-        applyParsedVendorInvoice(response.vendorPurchaseInvoice, response.items);
+        applyParsedInvoiceItems(response.items, response.vendorPurchaseInvoice);
         const pageNote = selectedFiles.length > 1 ? ` from ${selectedFiles.length} images` : '';
         notifySuccess(
           `Successfully parsed invoice${pageNote}! Found ${response.totalItems} item(s).`,
@@ -1647,9 +1790,7 @@ export function ProductEntryPage() {
           try {
             const parsedResponse = await uploadApi.getParsedItems(token);
             if (parsedResponse && parsedResponse.items && parsedResponse.items.length > 0) {
-              const parsedProducts = parsedResponse.items.map(transformParsedItemToProduct);
-              setProducts(parsedProducts);
-              applyParsedVendorInvoice(parsedResponse.vendorPurchaseInvoice, parsedResponse.items);
+              applyParsedInvoiceItems(parsedResponse.items, parsedResponse.vendorPurchaseInvoice);
               notifySuccess(
                 `✅ Successfully parsed invoice! Found ${parsedResponse.totalItems} item(s).`,
               );
@@ -2073,6 +2214,347 @@ export function ProductEntryPage() {
     notifySuccess('Updated all rows with the values you entered above.');
   };
 
+  const buildEstimateLinesFromProducts = (): StockEntryEstimateLine[] =>
+    products.map((product) => ({
+      productId: product.productId ?? null,
+      barcode: product.barcode || null,
+      name: product.name || null,
+      description: product.description || null,
+      companyName: product.companyName || null,
+      maximumRetailPrice: numericProductMoney(product.maximumRetailPrice),
+      costPrice: numericProductMoney(product.costPrice),
+      priceToRetail: numericProductMoney(product.priceToRetail),
+      sellingPrice: numericProductMoney(product.sellingPrice),
+      rates: product.rates ?? null,
+      defaultRate: product.defaultRate || null,
+      saleAdditionalDiscount: product.saleAdditionalDiscount ?? null,
+      businessType: product.businessType || null,
+      location: product.location || null,
+      itemType: product.itemType ?? null,
+      itemTypeDegree: product.itemTypeDegree ?? null,
+      discountApplicable: product.discountApplicable ?? null,
+      count: Number(product.count) || 0,
+      baseUnit: product.baseUnit || null,
+      unitsPerPack: product.unitsPerPack ?? null,
+      thresholdCount: product.thresholdCount ?? null,
+      expiryDate: product.expiryDate || null,
+      hsn: product.hsn || null,
+      batchNo: product.batchNo || null,
+      billingMode: (product.billingMode ?? billingMode) === 'REGULAR' ? 'REGULAR' : 'BASIC',
+      schemeType: product.schemeType ?? null,
+      scheme: product.scheme ?? null,
+      schemePayFor: product.schemePayFor ?? null,
+      schemeFree: product.schemeFree ?? null,
+      schemePercentage: product.schemePercentage ?? null,
+      purchaseSchemeType: product.purchaseSchemeType ?? null,
+      purchaseSchemePayFor: product.purchaseSchemePayFor ?? null,
+      purchaseSchemeFree: product.purchaseSchemeFree ?? null,
+      purchaseSchemePercentage: product.purchaseSchemePercentage ?? null,
+      purchaseAdditionalDiscount: product.purchaseAdditionalDiscount ?? null,
+      // Persist OCR / manual tax as-is; vendor is only required at Lock / Register.
+      sgst: product.sgst || '',
+      cgst: product.cgst || '',
+      verticalFields: product.verticalFields ?? null,
+    }));
+
+  const buildEstimateUpsertPayload = () => ({
+    vendorId: selectedVendor?.vendorId ?? null,
+    vendorInvoiceNo: vendorInvoiceNo.trim() || null,
+    vendorInvoiceDate: vendorInvoiceDate.trim()
+      ? `${vendorInvoiceDate.trim().slice(0, 10)}T00:00:00.000Z`
+      : null,
+    lineSubTotal: optionalNumFromString(vendorLineSubTotal) ?? null,
+    taxTotal: optionalNumFromString(vendorTaxTotal) ?? null,
+    shippingCharge: optionalNumFromString(vendorShippingCharge) ?? null,
+    otherCharges: optionalNumFromString(vendorOtherCharges) ?? null,
+    overallDiscount: optionalNumFromString(vendorOverallDiscount) ?? null,
+    roundOff: optionalNumFromString(vendorRoundOff) ?? null,
+    invoiceTotal: optionalNumFromString(vendorInvoiceTotal) ?? null,
+    paymentMethod: estimateWorkspace ? null : vendorPaymentMethod,
+    cashAmount: estimateWorkspace ? null : vendorPaymentSplit.cashAmount,
+    onlineAmount: estimateWorkspace ? null : vendorPaymentSplit.onlineAmount,
+    creditAmount: estimateWorkspace ? null : vendorPaymentSplit.creditAmount,
+    paidAmount: estimateWorkspace
+      ? null
+      : (vendorPaymentSplit.cashAmount || 0) + (vendorPaymentSplit.onlineAmount || 0) || null,
+    lines: buildEstimateLinesFromProducts(),
+  });
+
+  const handleSaveEstimateDraft = async () => {
+    if (products.length === 0) {
+      notifyError('Add at least one product line');
+      return;
+    }
+    setIsSavingEstimateDraft(true);
+    try {
+      const payload = buildEstimateUpsertPayload();
+      const saved = activeEstimateId
+        ? await stockEntryEstimatesApi.update(activeEstimateId, payload)
+        : await stockEntryEstimatesApi.create(payload);
+      setActiveEstimateId(saved.id);
+      setActiveEstimateNo(saved.estimateNo ?? null);
+      estimateHydratedRef.current = saved.id;
+      notifySuccess(`Entry estimate ${saved.estimateNo ?? ''} saved`);
+      syncEstimateWorkspaceParams({
+        estimateId: saved.id,
+        withTax: billingMode === 'REGULAR',
+      });
+    } catch (err) {
+      notifyError(err instanceof Error ? err.message : 'Failed to save entry estimate');
+    } finally {
+      setIsSavingEstimateDraft(false);
+    }
+  };
+
+  const estimateHasTaxableFields =
+    billingMode === 'REGULAR' ||
+    products.some(
+      (product) =>
+        product.billingMode === 'REGULAR' ||
+        Boolean(product.sgst?.trim()) ||
+        Boolean(product.cgst?.trim()),
+    );
+
+  const requestLockEntryEstimate = () => {
+    if (products.length === 0) {
+      notifyError('Add at least one product before locking');
+      return;
+    }
+    if (estimateHasTaxableFields && !selectedVendor?.vendorId) {
+      notifyError('Select a vendor before locking a taxable estimate');
+      return;
+    }
+    setShowLockConfirm(true);
+  };
+
+  const handleLockEntryEstimate = async () => {
+    setIsLockingEstimate(true);
+    try {
+      const payload = buildEstimateUpsertPayload();
+      let id = activeEstimateId;
+      if (id) {
+        await stockEntryEstimatesApi.update(id, payload);
+      } else {
+        const created = await stockEntryEstimatesApi.create(payload);
+        id = created.id;
+        setActiveEstimateId(created.id);
+        setActiveEstimateNo(created.estimateNo ?? null);
+      }
+      const locked = await stockEntryEstimatesApi.lock(id);
+      setShowLockConfirm(false);
+      notifySuccess(`Locked ${locked.estimateNo ?? 'estimate'} — estimate-only stock created`);
+      clearProductEntryDraft();
+      navigate('/dashboard/entry-estimates');
+    } catch (err) {
+      notifyError(err instanceof Error ? err.message : 'Failed to lock entry estimate');
+    } finally {
+      setIsLockingEstimate(false);
+    }
+  };
+
+  const syncEstimateWorkspaceParams = (opts: { estimateId: string; withTax: boolean }) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('mode', 'estimate');
+    next.set('estimateId', opts.estimateId);
+    next.delete('fresh');
+    if (opts.withTax) {
+      next.set('billingMode', 'REGULAR');
+    } else {
+      next.delete('billingMode');
+    }
+    const current = searchParams.toString();
+    const upcoming = next.toString();
+    if (current === upcoming) {
+      return;
+    }
+    setSearchParams(next, { replace: true, preventScrollReset: true });
+  };
+
+  const restoreScrollAfterTaxToggle = (scrollY: number) => {
+    // Billing-mode switch remounts the product grid; keep the viewport where the user was.
+    const pin = () => window.scrollTo(0, scrollY);
+    pin();
+    requestAnimationFrame(() => {
+      pin();
+      requestAnimationFrame(pin);
+    });
+  };
+
+  const handleAddTax = async () => {
+    if (billingMode === 'REGULAR') {
+      return;
+    }
+    if (products.length === 0) {
+      notifyError('Add at least one product before adding tax');
+      return;
+    }
+    const scrollY = window.scrollY;
+    setIsSavingEstimateDraft(true);
+    try {
+      // Enable tax locally first (vendor is only required at Lock / Register).
+      const taxedProducts = products.map((product) => ({
+        ...product,
+        billingMode: 'REGULAR' as BillingMode,
+      }));
+      setBillingMode('REGULAR');
+      setProducts(taxedProducts);
+
+      const payload = {
+        ...buildEstimateUpsertPayload(),
+        lines: taxedProducts.map((product) => ({
+          productId: product.productId ?? null,
+          barcode: product.barcode || null,
+          name: product.name || null,
+          description: product.description || null,
+          companyName: product.companyName || null,
+          maximumRetailPrice: numericProductMoney(product.maximumRetailPrice),
+          costPrice: numericProductMoney(product.costPrice),
+          priceToRetail: numericProductMoney(product.priceToRetail),
+          sellingPrice: numericProductMoney(product.sellingPrice),
+          rates: product.rates ?? null,
+          defaultRate: product.defaultRate || null,
+          saleAdditionalDiscount: product.saleAdditionalDiscount ?? null,
+          businessType: product.businessType || null,
+          location: product.location || null,
+          itemType: product.itemType ?? null,
+          itemTypeDegree: product.itemTypeDegree ?? null,
+          discountApplicable: product.discountApplicable ?? null,
+          count: Number(product.count) || 0,
+          baseUnit: product.baseUnit || null,
+          unitsPerPack: product.unitsPerPack ?? null,
+          thresholdCount: product.thresholdCount ?? null,
+          expiryDate: product.expiryDate || null,
+          hsn: product.hsn || null,
+          batchNo: product.batchNo || null,
+          billingMode: 'REGULAR' as BillingMode,
+          schemeType: product.schemeType ?? null,
+          scheme: product.scheme ?? null,
+          schemePayFor: product.schemePayFor ?? null,
+          schemeFree: product.schemeFree ?? null,
+          schemePercentage: product.schemePercentage ?? null,
+          purchaseSchemeType: product.purchaseSchemeType ?? null,
+          purchaseSchemePayFor: product.purchaseSchemePayFor ?? null,
+          purchaseSchemeFree: product.purchaseSchemeFree ?? null,
+          purchaseSchemePercentage: product.purchaseSchemePercentage ?? null,
+          purchaseAdditionalDiscount: product.purchaseAdditionalDiscount ?? null,
+          sgst: product.sgst || '',
+          cgst: product.cgst || '',
+          verticalFields: product.verticalFields ?? null,
+        })),
+      };
+      const saved = activeEstimateId
+        ? await stockEntryEstimatesApi.update(activeEstimateId, payload)
+        : await stockEntryEstimatesApi.create(payload);
+      setActiveEstimateId(saved.id);
+      setActiveEstimateNo(saved.estimateNo ?? null);
+      estimateHydratedRef.current = saved.id;
+      syncEstimateWorkspaceParams({ estimateId: saved.id, withTax: true });
+      restoreScrollAfterTaxToggle(scrollY);
+    } catch (err) {
+      notifyError(err instanceof Error ? err.message : 'Failed to enable tax on estimate');
+    } finally {
+      setIsSavingEstimateDraft(false);
+      restoreScrollAfterTaxToggle(scrollY);
+    }
+  };
+
+  const handleClearTax = async () => {
+    if (!estimateWorkspace || billingMode !== 'REGULAR') {
+      return;
+    }
+    const scrollY = window.scrollY;
+    setIsSavingEstimateDraft(true);
+    try {
+      const clearedProducts = products.map((product) => ({
+        ...product,
+        billingMode: 'BASIC' as BillingMode,
+        sgst: '',
+        cgst: '',
+      }));
+
+      if (clearedProducts.length > 0) {
+        const payload = {
+          ...buildEstimateUpsertPayload(),
+          lines: clearedProducts.map((product) => ({
+            productId: product.productId ?? null,
+            barcode: product.barcode || null,
+            name: product.name || null,
+            description: product.description || null,
+            companyName: product.companyName || null,
+            maximumRetailPrice: numericProductMoney(product.maximumRetailPrice),
+            costPrice: numericProductMoney(product.costPrice),
+            priceToRetail: numericProductMoney(product.priceToRetail),
+            sellingPrice: numericProductMoney(product.sellingPrice),
+            rates: product.rates ?? null,
+            defaultRate: product.defaultRate || null,
+            saleAdditionalDiscount: product.saleAdditionalDiscount ?? null,
+            businessType: product.businessType || null,
+            location: product.location || null,
+            itemType: product.itemType ?? null,
+            itemTypeDegree: product.itemTypeDegree ?? null,
+            discountApplicable: product.discountApplicable ?? null,
+            count: Number(product.count) || 0,
+            baseUnit: product.baseUnit || null,
+            unitsPerPack: product.unitsPerPack ?? null,
+            thresholdCount: product.thresholdCount ?? null,
+            expiryDate: product.expiryDate || null,
+            hsn: product.hsn || null,
+            batchNo: product.batchNo || null,
+            billingMode: 'BASIC' as BillingMode,
+            schemeType: product.schemeType ?? null,
+            scheme: product.scheme ?? null,
+            schemePayFor: product.schemePayFor ?? null,
+            schemeFree: product.schemeFree ?? null,
+            schemePercentage: product.schemePercentage ?? null,
+            purchaseSchemeType: product.purchaseSchemeType ?? null,
+            purchaseSchemePayFor: product.purchaseSchemePayFor ?? null,
+            purchaseSchemeFree: product.purchaseSchemeFree ?? null,
+            purchaseSchemePercentage: product.purchaseSchemePercentage ?? null,
+            purchaseAdditionalDiscount: product.purchaseAdditionalDiscount ?? null,
+            sgst: '',
+            cgst: '',
+            verticalFields: product.verticalFields ?? null,
+          })),
+        };
+        const saved = activeEstimateId
+          ? await stockEntryEstimatesApi.update(activeEstimateId, payload)
+          : await stockEntryEstimatesApi.create(payload);
+        setActiveEstimateId(saved.id);
+        setActiveEstimateNo(saved.estimateNo ?? null);
+        estimateHydratedRef.current = saved.id;
+        // Flip mode only after save succeeds so Add tax does not appear mid-request (disabled).
+        setBillingMode('BASIC');
+        setProducts(clearedProducts);
+        syncEstimateWorkspaceParams({ estimateId: saved.id, withTax: false });
+      } else {
+        setBillingMode('BASIC');
+        setProducts(clearedProducts);
+      }
+      restoreScrollAfterTaxToggle(scrollY);
+    } catch (err) {
+      notifyError(err instanceof Error ? err.message : 'Failed to clear tax on estimate');
+    } finally {
+      setIsSavingEstimateDraft(false);
+      restoreScrollAfterTaxToggle(scrollY);
+    }
+  };
+
+  const requestRegisterFromEstimate = () => {
+    if (!registrationSchemaReady) {
+      notifyError('Product fields are still loading. Please wait and try again.');
+      return;
+    }
+    if (!selectedVendor?.vendorId) {
+      notifyError('Vendor information is required. Please search and select a vendor.');
+      return;
+    }
+    if (products.length === 0) {
+      notifyError('Add at least one product before registering');
+      return;
+    }
+    setShowRegisterConfirm(true);
+  };
+
   const handleSubmit = async () => {
     setError(null);
     setSuccess(null);
@@ -2089,6 +2571,7 @@ export function ProductEntryPage() {
       if (!selectedVendor || !selectedVendor.vendorId) {
         notifyError('Vendor information is required. Please search and select a vendor.');
         setIsLoading(false);
+        setShowRegisterConfirm(false);
         return;
       }
 
@@ -2522,11 +3005,15 @@ export function ProductEntryPage() {
         return attachVerticalFieldsToBulkItem(coreItem, product, registrationFields);
       });
 
-      if (!vendorPaymentMethod) {
-        throw new Error('Select a payment method for the vendor invoice.');
-      }
-      if (!vendorPaymentSplitValidation.ok && vendorInvoiceTotalNum > 0) {
-        throw new Error(vendorPaymentSplitValidation.message || 'Vendor payment split is invalid.');
+      if (!estimateWorkspace) {
+        if (!vendorPaymentMethod) {
+          throw new Error('Select a payment method for the vendor invoice.');
+        }
+        if (!vendorPaymentSplitValidation.ok && vendorInvoiceTotalNum > 0) {
+          throw new Error(
+            vendorPaymentSplitValidation.message || 'Vendor payment split is invalid.',
+          );
+        }
       }
 
       const vendorPurchaseInvoice: VendorPurchaseInvoicePayload = {
@@ -2549,16 +3036,19 @@ export function ProductEntryPage() {
       if (ro !== undefined) vendorPurchaseInvoice.roundOff = ro;
       const it = optionalNumFromString(vendorInvoiceTotal);
       if (it !== undefined) vendorPurchaseInvoice.invoiceTotal = it;
-      vendorPurchaseInvoice.paymentMethod = vendorPaymentMethod;
-      vendorPurchaseInvoice.cashAmount = vendorPaymentSplit.cashAmount;
-      vendorPurchaseInvoice.onlineAmount = vendorPaymentSplit.onlineAmount;
-      vendorPurchaseInvoice.creditAmount = vendorPaymentSplit.creditAmount;
-      // Legacy `paidAmount` = cash + online; kept so older servers still
-      // record the correct vendor receipt amount until they pick up the
-      // new split fields.
-      vendorPurchaseInvoice.paidAmount = roundMoney(
-        vendorPaymentSplit.cashAmount + vendorPaymentSplit.onlineAmount,
-      );
+      // Estimate drafts never capture payment; Product Entry sets it when converting to invoice.
+      if (!estimateWorkspace && vendorPaymentMethod) {
+        vendorPurchaseInvoice.paymentMethod = vendorPaymentMethod;
+        vendorPurchaseInvoice.cashAmount = vendorPaymentSplit.cashAmount;
+        vendorPurchaseInvoice.onlineAmount = vendorPaymentSplit.onlineAmount;
+        vendorPurchaseInvoice.creditAmount = vendorPaymentSplit.creditAmount;
+        // Legacy `paidAmount` = cash + online; kept so older servers still
+        // record the correct vendor receipt amount until they pick up the
+        // new split fields.
+        vendorPurchaseInvoice.paidAmount = roundMoney(
+          vendorPaymentSplit.cashAmount + vendorPaymentSplit.onlineAmount,
+        );
+      }
 
       // Create bulk request
       const bulkData: BulkCreateInventoryDto = {
@@ -2582,15 +3072,32 @@ export function ProductEntryPage() {
         // If we have items or a positive createdCount, consider it successful
         if (createdCount > 0 || items.length > 0) {
           const count = createdCount || items.length;
+          setShowRegisterConfirm(false);
           notifySuccess(
             count === 1
               ? 'Product registered successfully'
               : `Successfully registered ${count} products`,
           );
 
+          if (activeEstimateId && billingMode === 'REGULAR' && response?.vendorPurchaseInvoiceId) {
+            try {
+              await stockEntryEstimatesApi.markConverted(
+                activeEstimateId,
+                response.vendorPurchaseInvoiceId,
+              );
+            } catch {
+              // Inventory was created; conversion link is best-effort
+            }
+          }
+
           // Saved is saved. The form only resets after 5s below, and a refresh inside
           // that window would otherwise restore an entry that is already in the books.
           clearProductEntryDraft();
+
+          if (estimateWorkspace) {
+            navigate('/dashboard/entry-estimates');
+            return;
+          }
 
           const createdBarcodes = items
             .map((item) => item.barcode)
@@ -2863,7 +3370,13 @@ export function ProductEntryPage() {
 
   return (
     <Stack gap="md" maxWidth="xl" mx="auto">
-      <PageHeader description="Register multiple products at once with shared vendor and stock-in (invoice) information" />
+      <PageHeader
+        description={
+          estimateWorkspace
+            ? 'Draft stock-in without tax. Lock for estimate-only stock, or Add tax here to enter HSN / CGST / SGST on this page.'
+            : 'Register taxable stock with shared vendor and invoice details. Set HSN / CGST / SGST in each product’s Tax section.'
+        }
+      />
 
       <Card>
         <CardBody>
@@ -3021,30 +3534,33 @@ export function ProductEntryPage() {
                 </Box>
               </Box>
 
-              {/* Shared vendor & billing */}
+              {/* Shared vendor (billing mode is fixed: Product Entry = taxable, Entry Estimate = no tax) */}
               <Box className={vendorStyles.sharedSection}>
                 <Text variant="heading3">Shared Information</Text>
                 <Box className={vendorStyles.sharedTopRow}>
                   <Text as="span" className={vendorStyles.sharedHint}>
                     Applies to all products.
+                    {estimateWorkspace
+                      ? billingMode === 'REGULAR'
+                        ? ' Tax enabled — vendor is required to Register. Fill HSN / CGST / SGST below.'
+                        : ' Estimate (no tax). Vendor is optional for Lock. Add tax (then Register) requires a vendor.'
+                      : ' Taxable stock-in — fill HSN / CGST / SGST in each product’s Tax section.'}
                   </Text>
-                  <Select
-                    className={vendorStyles.sharedModeSelect}
-                    value={billingMode}
-                    onChange={(e) => handleBillingModeChange(e.target.value as BillingMode)}
-                    disabled={isLoading}
-                    aria-label="Billing mode"
-                  >
-                    <option value="REGULAR">REGULAR</option>
-                    <option value="BASIC">BASIC</option>
-                  </Select>
                 </Box>
 
-                {/* Vendor Section */}
+                {/* Vendor Section — optional on no-tax estimates; required when tax is enabled / Register */}
                 <Box className={vendorStyles.vendorSection}>
-                  <Text variant="heading4">Vendor Information *</Text>
+                  <Text variant="heading4">
+                    {estimateWorkspace && !estimateHasTaxableFields
+                      ? 'Vendor Information'
+                      : 'Vendor Information *'}
+                  </Text>
                   <Box className={pageStyles.formGroup}>
-                    <Label htmlFor="vendorSearch">Vendor Search *</Label>
+                    <Label htmlFor="vendorSearch">
+                      {estimateWorkspace && !estimateHasTaxableFields
+                        ? 'Vendor Search'
+                        : 'Vendor Search *'}
+                    </Label>
                     <Box position="relative">
                       <Box className={vendorStyles.searchRow}>
                         <Input
@@ -3449,6 +3965,43 @@ export function ProductEntryPage() {
                   </Box>
                 ) : (
                   <>
+                    {estimateWorkspace && products.length > 0 ? (
+                      <Box className={accordionStyles.ratesSection}>
+                        <Box className={accordionStyles.ratesHeader}>
+                          <Text as="span" className={accordionStyles.ratesTitle}>
+                            Tax
+                          </Text>
+                          {billingMode === 'BASIC' ? (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => void handleAddTax()}
+                              disabled={isLoading || isSavingEstimateDraft || isLockingEstimate}
+                              className={accordionStyles.addRateBtn}
+                            >
+                              {isSavingEstimateDraft ? 'Enabling…' : 'Add tax'}
+                            </Button>
+                          ) : (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => void handleClearTax()}
+                              disabled={isLoading || isSavingEstimateDraft || isLockingEstimate}
+                              className={accordionStyles.addRateBtn}
+                            >
+                              {isSavingEstimateDraft ? 'Clearing…' : 'Clear tax'}
+                            </Button>
+                          )}
+                        </Box>
+                        <Text as="span" className={accordionStyles.unitHint}>
+                          {billingMode === 'BASIC'
+                            ? 'Without tax this stays an estimate — Lock creates estimate-only stock. Add tax to enter HSN, CGST, and SGST on this page, then Register.'
+                            : 'Tax is enabled. Enter HSN / CGST / SGST on each product below, then Register. Clear tax to go back to estimate-only (Lock).'}
+                        </Text>
+                      </Box>
+                    ) : null}
                     {products.length > 0 && (
                       <Text className={pageStyles.keyboardNavHint}>
                         <Text as="span" className={pageStyles.keyboardNavHintLabel}>
@@ -3529,9 +4082,6 @@ export function ProductEntryPage() {
                                   {fieldLabel(sellDirectField)} *
                                 </TableHeaderCell>
                               )}
-                              {billingMode !== 'BASIC' && (
-                                <TableHeaderCell className={denseDataGrid.th}>HSN</TableHeaderCell>
-                              )}
                               {isCompactPriceUi ? (
                                 <>
                                   <TableHeaderCell className={denseDataGrid.th}>
@@ -3584,10 +4134,13 @@ export function ProductEntryPage() {
                               ) : null}
                               {billingMode === 'REGULAR' && (
                                 <>
-                                  <TableHeaderCell className={denseDataGrid.th}>
+                                  <TableHeaderCell className={denseDataGrid.th} title="Tax section">
+                                    HSN
+                                  </TableHeaderCell>
+                                  <TableHeaderCell className={denseDataGrid.th} title="Tax section">
                                     CGST %
                                   </TableHeaderCell>
-                                  <TableHeaderCell className={denseDataGrid.th}>
+                                  <TableHeaderCell className={denseDataGrid.th} title="Tax section">
                                     SGST %
                                   </TableHeaderCell>
                                 </>
@@ -3757,22 +4310,6 @@ export function ProductEntryPage() {
                                       <option value="yes">Yes</option>
                                     </Select>
                                   </TableCell>
-                                )}
-                                {billingMode !== 'BASIC' && (
-                                  <>
-                                    <TableCell className={denseDataGrid.td}>
-                                      <Input
-                                        type="text"
-                                        className={denseDataGrid.input}
-                                        placeholder="HSN"
-                                        value={product.hsn || ''}
-                                        onChange={(e) =>
-                                          handleProductChange(product.id, 'hsn', e.target.value)
-                                        }
-                                        disabled={isLoading}
-                                      />
-                                    </TableCell>
-                                  </>
                                 )}
                                 {isCompactPriceUi ? (
                                   <>
@@ -4270,9 +4807,23 @@ export function ProductEntryPage() {
                                     <TableCell className={denseDataGrid.td}>
                                       <Input
                                         type="text"
+                                        className={denseDataGrid.input}
+                                        placeholder="HSN"
+                                        aria-label="HSN (tax)"
+                                        value={product.hsn || ''}
+                                        onChange={(e) =>
+                                          handleProductChange(product.id, 'hsn', e.target.value)
+                                        }
+                                        disabled={isLoading}
+                                      />
+                                    </TableCell>
+                                    <TableCell className={denseDataGrid.td}>
+                                      <Input
+                                        type="text"
                                         inputMode="decimal"
                                         className={denseDataGrid.inputNarrow}
                                         placeholder="CGST"
+                                        aria-label="CGST % (tax)"
                                         value={product.cgst || ''}
                                         onChange={(e) =>
                                           handleProductChange(product.id, 'cgst', e.target.value)
@@ -4286,6 +4837,7 @@ export function ProductEntryPage() {
                                         inputMode="decimal"
                                         className={denseDataGrid.inputNarrow}
                                         placeholder="SGST"
+                                        aria-label="SGST % (tax)"
                                         value={product.sgst || ''}
                                         onChange={(e) =>
                                           handleProductChange(product.id, 'sgst', e.target.value)
@@ -4321,6 +4873,9 @@ export function ProductEntryPage() {
                             : isSimplePricing
                             ? ' Customer price is set on the Menu; sell price here is optional reference only. Use list view for custom reminders.'
                             : ' Use list view for rate tiers, description, and reminders.'}
+                          {billingMode === 'REGULAR'
+                            ? ' Tax columns (HSN, CGST %, SGST %) are grouped at the end of each row.'
+                            : ''}
                         </Text>
                       </Box>
                     ) : (
@@ -4360,6 +4915,8 @@ export function ProductEntryPage() {
                             onPrintBarcode={() => handlePrintRowBarcode(product)}
                             isoToLocalDateTime={isoToLocalDateTime}
                             localDateTimeToIso={localDateTimeToIso}
+                            onAddTax={estimateWorkspace ? () => void handleAddTax() : undefined}
+                            addTaxBusy={isSavingEstimateDraft}
                           />
                         ))}
                       </Box>
@@ -4370,56 +4927,125 @@ export function ProductEntryPage() {
 
               {products.length > 0 && (
                 <>
-                  <Stack gap="sm" className={pageStyles.actionsDividerLg}>
-                    <PaymentMethodSplit
-                      context="purchase"
-                      title="Payment to vendor"
-                      intro="Pick how this invoice was settled. Any amount left on credit posts to Credit balances under what you owe this vendor."
-                      total={vendorInvoiceTotalNum}
-                      value={{
-                        method: vendorPaymentMethod,
-                        split: vendorPaymentSplit,
-                      }}
-                      onChange={(next) => {
-                        setVendorPaymentMethod(next.method);
-                        setVendorPaymentSplit(next.split);
-                      }}
-                      disabled={isLoading}
-                    />
-                    {vendorPaymentMethod &&
-                    vendorInvoiceTotalNum > 0 &&
-                    isCreditMethod(vendorPaymentMethod) ? (
-                      <Text variant="caption" color="secondary" aria-live="polite">
-                        ₹{vendorCreditLedgerOutstandingNum.toFixed(2)} will be tracked in{' '}
-                        <Text as="span" weight="bold">
-                          Credit balances
-                        </Text>{' '}
-                        (settle later in partial payments).
-                      </Text>
-                    ) : null}
-                  </Stack>
+                  {!estimateWorkspace ? (
+                    <Stack gap="sm" className={pageStyles.actionsDividerLg}>
+                      <PaymentMethodSplit
+                        context="purchase"
+                        title="Payment to vendor"
+                        intro="Pick how this invoice was settled. Any amount left on credit posts to Credit balances under what you owe this vendor."
+                        total={vendorInvoiceTotalNum}
+                        value={{
+                          method: vendorPaymentMethod,
+                          split: vendorPaymentSplit,
+                        }}
+                        onChange={(next) => {
+                          setVendorPaymentMethod(next.method);
+                          setVendorPaymentSplit(next.split);
+                        }}
+                        disabled={isLoading}
+                      />
+                      {vendorPaymentMethod &&
+                      vendorInvoiceTotalNum > 0 &&
+                      isCreditMethod(vendorPaymentMethod) ? (
+                        <Text variant="caption" color="secondary" aria-live="polite">
+                          ₹{vendorCreditLedgerOutstandingNum.toFixed(2)} will be tracked in{' '}
+                          <Text as="span" weight="bold">
+                            Credit balances
+                          </Text>{' '}
+                          (settle later in partial payments).
+                        </Text>
+                      ) : null}
+                    </Stack>
+                  ) : null}
                   <Inline gap="md" justify="end" className={pageStyles.actionsDivider}>
                     <Button
                       type="button"
                       variant="outline"
                       onClick={handleCancel}
-                      disabled={isLoading}
+                      disabled={isLoading || isSavingEstimateDraft || isLockingEstimate}
                     >
                       Cancel
                     </Button>
-                    <Button
-                      type="button"
-                      variant="solid"
-                      onClick={() => void handleSubmit()}
-                      disabled={isLoading || !vendorPaymentMethod}
-                      title={
-                        !vendorPaymentMethod ? 'Select a payment method to continue' : undefined
-                      }
-                    >
-                      {isLoading
-                        ? `Registering ${products.length} Product(s)...`
-                        : `Register ${products.length} Product(s)`}
-                    </Button>
+                    {billingMode === 'BASIC' && estimateWorkspace ? (
+                      <>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => void handleSaveEstimateDraft()}
+                          disabled={isSavingEstimateDraft || isLockingEstimate || isLoading}
+                        >
+                          {isSavingEstimateDraft ? 'Saving…' : 'Save draft'}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => void handleAddTax()}
+                          disabled={isSavingEstimateDraft || isLockingEstimate || isLoading}
+                        >
+                          {isSavingEstimateDraft ? 'Enabling…' : 'Add tax'}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="solid"
+                          onClick={requestLockEntryEstimate}
+                          disabled={
+                            isSavingEstimateDraft ||
+                            isLockingEstimate ||
+                            isLoading ||
+                            (estimateHasTaxableFields && !selectedVendor?.vendorId)
+                          }
+                          title={
+                            estimateHasTaxableFields && !selectedVendor?.vendorId
+                              ? 'Select a vendor before locking a taxable estimate'
+                              : 'Lock without tax — creates estimate-only stock (vendor optional)'
+                          }
+                        >
+                          {isLockingEstimate
+                            ? 'Locking…'
+                            : `Lock ${products.length} line(s) as estimate`}
+                        </Button>
+                      </>
+                    ) : estimateWorkspace ? (
+                      <>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => void handleSaveEstimateDraft()}
+                          disabled={isSavingEstimateDraft || isLoading}
+                        >
+                          {isSavingEstimateDraft ? 'Saving…' : 'Save draft'}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="solid"
+                          onClick={requestRegisterFromEstimate}
+                          disabled={isLoading || !selectedVendor?.vendorId}
+                          title={
+                            !selectedVendor?.vendorId
+                              ? 'Select a vendor before registering'
+                              : 'Register taxable stock from this estimate'
+                          }
+                        >
+                          {isLoading
+                            ? `Registering ${products.length} Product(s)...`
+                            : `Register ${products.length} Product(s)`}
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="solid"
+                        onClick={() => void handleSubmit()}
+                        disabled={isLoading || !vendorPaymentMethod}
+                        title={
+                          !vendorPaymentMethod ? 'Select a payment method to continue' : undefined
+                        }
+                      >
+                        {isLoading
+                          ? `Registering ${products.length} Product(s)...`
+                          : `Register ${products.length} Product(s)`}
+                      </Button>
+                    )}
                   </Inline>
                 </>
               )}
@@ -4684,6 +5310,49 @@ export function ProductEntryPage() {
         codes={printLabelCodes ?? undefined}
         onError={(message) => notifyError(message)}
       />
+
+      <ConfirmDialog
+        open={showLockConfirm}
+        title="Lock this estimate?"
+        confirmLabel={isLockingEstimate ? 'Locking…' : 'Lock estimate'}
+        loading={isLockingEstimate}
+        onCancel={() => {
+          if (!isLockingEstimate) setShowLockConfirm(false);
+        }}
+        onConfirm={() => void handleLockEntryEstimate()}
+        message={
+          <Stack gap="sm">
+            <Text>Please acknowledge before locking:</Text>
+            <Text>• You won’t be able to edit this estimate after locking.</Text>
+            <Text>• Lock: adds stock for estimate sales only.</Text>
+            <Text>
+              • Register: use this when you’ve filled HSN / CGST / SGST to complete stock-in against
+              a vendor bill.
+            </Text>
+          </Stack>
+        }
+      />
+
+      <ConfirmDialog
+        open={showRegisterConfirm}
+        title="Register stock?"
+        confirmLabel={isLoading ? 'Registering…' : 'Register'}
+        loading={isLoading}
+        onCancel={() => {
+          if (!isLoading) setShowRegisterConfirm(false);
+        }}
+        onConfirm={() => void handleSubmit()}
+        message={
+          <Stack gap="sm">
+            <Text>Please acknowledge before registering:</Text>
+            <Text>• You won’t be able to edit this estimate afterward.</Text>
+            <Text>
+              • Register completes stock-in against a vendor bill when HSN / CGST / SGST are filled.
+            </Text>
+            <Text>• A vendor is required for this step.</Text>
+          </Stack>
+        }
+      />
     </Stack>
   );
 }
@@ -4874,13 +5543,6 @@ function GridBulkFillRow({
           </Select>
         </TableHeaderCell>
       )}
-      {billingMode !== 'BASIC' && (
-        <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
-          <Text as="span" className={denseDataGrid.bulkDisabled} title="HSN must be set per row">
-            —
-          </Text>
-        </TableHeaderCell>
-      )}
       {compactPriceUi ? (
         <>
           <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
@@ -5019,11 +5681,17 @@ function GridBulkFillRow({
       {billingMode === 'REGULAR' && (
         <>
           <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
+            <Text as="span" className={denseDataGrid.bulkDisabled} title="HSN must be set per row">
+              —
+            </Text>
+          </TableHeaderCell>
+          <TableHeaderCell className={`${denseDataGrid.th} ${denseDataGrid.bulkTh}`}>
             <Input
               type="text"
               inputMode="decimal"
               className={denseDataGrid.inputNarrow}
               placeholder="CGST"
+              aria-label="Fill CGST %"
               value={bulk.cgst ?? ''}
               onChange={(e) => onBulkChange('cgst', e.target.value)}
               disabled={isLoading}
@@ -5035,6 +5703,7 @@ function GridBulkFillRow({
               inputMode="decimal"
               className={denseDataGrid.inputNarrow}
               placeholder="SGST"
+              aria-label="Fill SGST %"
               value={bulk.sgst ?? ''}
               onChange={(e) => onBulkChange('sgst', e.target.value)}
               disabled={isLoading}
@@ -5152,6 +5821,8 @@ interface ProductAccordionProps {
   onPrintBarcode: () => void;
   isoToLocalDateTime: (iso: string) => string;
   localDateTimeToIso: (local: string) => string;
+  onAddTax?: () => void | Promise<void>;
+  addTaxBusy?: boolean;
 }
 
 function ProductAccordion({
@@ -5185,6 +5856,8 @@ function ProductAccordion({
   onPrintBarcode,
   isoToLocalDateTime,
   localDateTimeToIso,
+  onAddTax,
+  addTaxBusy,
 }: ProductAccordionProps) {
   const productNumber = index + 1;
   const productName = product.name?.trim() || null;
@@ -5523,37 +6196,6 @@ function ProductAccordion({
                   disabled={isLoading}
                 />
               </Box>
-              {billingMode !== 'BASIC' ? (
-                <Box className={pageStyles.formGroup}>
-                  <Label htmlFor={`hsn-${product.id}`}>HSN Code</Label>
-                  <Input
-                    type="text"
-                    id={`hsn-${product.id}`}
-                    placeholder="Enter the HSN code"
-                    value={product.hsn || ''}
-                    onChange={(e) => onChange(product.id, 'hsn', e.target.value)}
-                    disabled={isLoading}
-                  />
-                </Box>
-              ) : (
-                <FormRowEmpty />
-              )}
-            </Box>
-          ) : null}
-
-          {companyField && billingMode !== 'BASIC' && simplePricing && !showCommercialTerms ? (
-            <Box className={accordionStyles.formRow}>
-              <Box className={pageStyles.formGroup}>
-                <Label htmlFor={`hsn-${product.id}`}>HSN Code</Label>
-                <Input
-                  type="text"
-                  id={`hsn-${product.id}`}
-                  placeholder="Enter the HSN code"
-                  value={product.hsn || ''}
-                  onChange={(e) => onChange(product.id, 'hsn', e.target.value)}
-                  disabled={isLoading}
-                />
-              </Box>
               <FormRowEmpty />
             </Box>
           ) : null}
@@ -5561,62 +6203,27 @@ function ProductAccordion({
           {showCommercialTerms && (
             <>
               <Box className={accordionStyles.formRow}>
-                {companyField && billingMode !== 'BASIC' ? (
-                  <Box className={pageStyles.formGroup}>
-                    <Label htmlFor={`hsn-${product.id}`}>HSN Code</Label>
-                    <Input
-                      type="text"
-                      id={`hsn-${product.id}`}
-                      placeholder="Enter the HSN code"
-                      value={product.hsn || ''}
-                      onChange={(e) => onChange(product.id, 'hsn', e.target.value)}
-                      disabled={isLoading}
-                    />
-                  </Box>
-                ) : (
-                  <Box className={pageStyles.formGroup}>
-                    <Label htmlFor={`schemeType-${product.id}`}>Sale scheme/deal type</Label>
-                    <Select
-                      id={`schemeType-${product.id}`}
-                      value={product.schemeType ?? 'FIXED_UNITS'}
-                      onChange={(e) => {
-                        const val = e.target.value as SchemeType;
-                        onChange(product.id, 'schemeType', val);
-                        if (val === 'PERCENTAGE') {
-                          onChange(product.id, 'scheme', null);
-                        } else {
-                          onChange(product.id, 'schemePercentage', null);
-                        }
-                      }}
-                      disabled={isLoading}
-                    >
-                      <option value="FIXED_UNITS">Free units</option>
-                      <option value="PERCENTAGE">Percentage</option>
-                    </Select>
-                  </Box>
-                )}
-                {companyField && billingMode !== 'BASIC' ? (
-                  <Box className={pageStyles.formGroup}>
-                    <Label htmlFor={`schemeType-${product.id}`}>Sale scheme/deal type</Label>
-                    <Select
-                      id={`schemeType-${product.id}`}
-                      value={product.schemeType ?? 'FIXED_UNITS'}
-                      onChange={(e) => {
-                        const val = e.target.value as SchemeType;
-                        onChange(product.id, 'schemeType', val);
-                        if (val === 'PERCENTAGE') {
-                          onChange(product.id, 'scheme', null);
-                        } else {
-                          onChange(product.id, 'schemePercentage', null);
-                        }
-                      }}
-                      disabled={isLoading}
-                    >
-                      <option value="FIXED_UNITS">Free units</option>
-                      <option value="PERCENTAGE">Percentage</option>
-                    </Select>
-                  </Box>
-                ) : (product.schemeType ?? 'FIXED_UNITS') === 'FIXED_UNITS' ? (
+                <Box className={pageStyles.formGroup}>
+                  <Label htmlFor={`schemeType-${product.id}`}>Sale scheme/deal type</Label>
+                  <Select
+                    id={`schemeType-${product.id}`}
+                    value={product.schemeType ?? 'FIXED_UNITS'}
+                    onChange={(e) => {
+                      const val = e.target.value as SchemeType;
+                      onChange(product.id, 'schemeType', val);
+                      if (val === 'PERCENTAGE') {
+                        onChange(product.id, 'scheme', null);
+                      } else {
+                        onChange(product.id, 'schemePercentage', null);
+                      }
+                    }}
+                    disabled={isLoading}
+                  >
+                    <option value="FIXED_UNITS">Free units</option>
+                    <option value="PERCENTAGE">Percentage</option>
+                  </Select>
+                </Box>
+                {(product.schemeType ?? 'FIXED_UNITS') === 'FIXED_UNITS' ? (
                   <Box className={pageStyles.formGroup}>
                     <Label htmlFor={`scheme-fixed-${product.id}`}>Pay + free (e.g. 10 + 2)</Label>
                     <Input
@@ -5669,125 +6276,38 @@ function ProductAccordion({
               </Box>
 
               <Box className={accordionStyles.formRow}>
-                {companyField && billingMode !== 'BASIC' ? (
-                  (product.schemeType ?? 'FIXED_UNITS') === 'FIXED_UNITS' ? (
-                    <Box className={pageStyles.formGroup}>
-                      <Label htmlFor={`scheme-fixed-${product.id}`}>Pay + free (e.g. 10 + 2)</Label>
-                      <Input
-                        type="text"
-                        id={`scheme-fixed-${product.id}`}
-                        placeholder="Optional, e.g. 10 + 2"
-                        value={schemeFixedDraft}
-                        onChange={(e) => setSchemeFixedDraft(e.target.value)}
-                        onFocus={() => setSchemeFixedFocused(true)}
-                        onBlur={() => {
-                          setSchemeFixedFocused(false);
-                          commitSchemeFixed();
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.currentTarget.blur();
-                          }
-                        }}
-                        disabled={isLoading}
-                      />
-                    </Box>
-                  ) : (
-                    <Box className={pageStyles.formGroup}>
-                      <Label htmlFor={`schemePercentage-${product.id}`} required>
-                        Sale Scheme/Deal %
-                      </Label>
-                      <Input
-                        type="number"
-                        id={`schemePercentage-${product.id}`}
-                        placeholder="e.g. 10 or -5 for markup"
-                        min={-100}
-                        max={100}
-                        step={0.01}
-                        value={product.schemePercentage != null ? product.schemePercentage : ''}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val === '') {
-                            onChange(product.id, 'schemePercentage', null);
-                          } else {
-                            const num = parseFloat(val);
-                            if (!isNaN(num) && num >= -100 && num <= 100) {
-                              onChange(product.id, 'schemePercentage', num);
-                            }
-                          }
-                        }}
-                        disabled={isLoading}
-                      />
-                    </Box>
-                  )
-                ) : (
-                  <Box className={pageStyles.formGroup}>
-                    <Label htmlFor={`saleAdditionalDiscount-${product.id}`}>
-                      Sale add. discount (%)
-                    </Label>
-                    <Input
-                      type="number"
-                      id={`saleAdditionalDiscount-${product.id}`}
-                      placeholder="Discount or negative markup"
-                      step="0.01"
-                      min={-100}
-                      max={100}
-                      value={
-                        product.saleAdditionalDiscount === null ||
-                        product.saleAdditionalDiscount === undefined
-                          ? ''
-                          : product.saleAdditionalDiscount
-                      }
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === '') {
-                          onChange(product.id, 'saleAdditionalDiscount', null);
-                        } else {
-                          const numValue = parseFloat(value);
-                          if (!isNaN(numValue) && numValue >= -100 && numValue <= 100) {
-                            onChange(product.id, 'saleAdditionalDiscount', numValue);
-                          }
+                <Box className={pageStyles.formGroup}>
+                  <Label htmlFor={`saleAdditionalDiscount-${product.id}`}>
+                    Sale add. discount (%)
+                  </Label>
+                  <Input
+                    type="number"
+                    id={`saleAdditionalDiscount-${product.id}`}
+                    placeholder="Discount or negative markup"
+                    step="0.01"
+                    min={-100}
+                    max={100}
+                    value={
+                      product.saleAdditionalDiscount === null ||
+                      product.saleAdditionalDiscount === undefined
+                        ? ''
+                        : product.saleAdditionalDiscount
+                    }
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '') {
+                        onChange(product.id, 'saleAdditionalDiscount', null);
+                      } else {
+                        const numValue = parseFloat(value);
+                        if (!isNaN(numValue) && numValue >= -100 && numValue <= 100) {
+                          onChange(product.id, 'saleAdditionalDiscount', numValue);
                         }
-                      }}
-                      disabled={isLoading}
-                    />
-                  </Box>
-                )}
-                {companyField && billingMode !== 'BASIC' ? (
-                  <Box className={pageStyles.formGroup}>
-                    <Label htmlFor={`saleAdditionalDiscount-${product.id}`}>
-                      Sale add. discount (%)
-                    </Label>
-                    <Input
-                      type="number"
-                      id={`saleAdditionalDiscount-${product.id}`}
-                      placeholder="Discount or negative markup"
-                      step="0.01"
-                      min={-100}
-                      max={100}
-                      value={
-                        product.saleAdditionalDiscount === null ||
-                        product.saleAdditionalDiscount === undefined
-                          ? ''
-                          : product.saleAdditionalDiscount
                       }
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === '') {
-                          onChange(product.id, 'saleAdditionalDiscount', null);
-                        } else {
-                          const numValue = parseFloat(value);
-                          if (!isNaN(numValue) && numValue >= -100 && numValue <= 100) {
-                            onChange(product.id, 'saleAdditionalDiscount', numValue);
-                          }
-                        }
-                      }}
-                      disabled={isLoading}
-                    />
-                  </Box>
-                ) : (
-                  <FormRowEmpty />
-                )}
+                    }}
+                    disabled={isLoading}
+                  />
+                </Box>
+                <FormRowEmpty />
               </Box>
 
               {/* Purchase (from vendor) - for comparison at sale */}
@@ -6070,33 +6590,84 @@ function ProductAccordion({
             </>
           )}
 
-          {billingMode === 'REGULAR' && (
-            <Box className={accordionStyles.formRow}>
-              <Box className={pageStyles.formGroup}>
-                <Label htmlFor={`cgst-${product.id}`}>CGST (%)</Label>
-                <Input
-                  type="text"
-                  inputMode="decimal"
-                  pattern="[0-9]*\.?[0-9]*"
-                  id={`cgst-${product.id}`}
-                  placeholder="Leave empty for shop default"
-                  value={product.cgst || ''}
-                  onChange={(e) => onChange(product.id, 'cgst', e.target.value)}
-                  disabled={isLoading}
-                />
+          {billingMode === 'BASIC' ? (
+            <Box className={accordionStyles.ratesSection}>
+              <Box className={accordionStyles.ratesHeader}>
+                <Text as="span" className={accordionStyles.ratesTitle}>
+                  Tax
+                </Text>
+                {onAddTax ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void onAddTax()}
+                    disabled={isLoading || addTaxBusy}
+                    className={accordionStyles.addRateBtn}
+                  >
+                    {addTaxBusy ? 'Enabling…' : 'Add tax'}
+                  </Button>
+                ) : null}
               </Box>
-              <Box className={pageStyles.formGroup}>
-                <Label htmlFor={`sgst-${product.id}`}>SGST (%)</Label>
-                <Input
-                  type="text"
-                  inputMode="decimal"
-                  pattern="[0-9]*\.?[0-9]*"
-                  id={`sgst-${product.id}`}
-                  placeholder="Leave empty for shop default"
-                  value={product.sgst || ''}
-                  onChange={(e) => onChange(product.id, 'sgst', e.target.value)}
-                  disabled={isLoading}
-                />
+              <Text as="span" className={accordionStyles.unitHint}>
+                No tax on this estimate. Lock to keep it estimate-only, or Add tax to enter HSN /
+                CGST / SGST on this page.
+              </Text>
+            </Box>
+          ) : null}
+
+          {billingMode === 'REGULAR' && (
+            <Box className={accordionStyles.ratesSection}>
+              <Box className={accordionStyles.ratesHeader}>
+                <Text as="span" className={accordionStyles.ratesTitle}>
+                  Tax
+                </Text>
+              </Box>
+              <Text as="span" className={accordionStyles.unitHint}>
+                Taxable product entry — enter HSN and GST rates for this line. Leave CGST/SGST empty
+                to use the shop default.
+              </Text>
+              <Box className={accordionStyles.formRow}>
+                <Box className={pageStyles.formGroup}>
+                  <Label htmlFor={`hsn-${product.id}`}>HSN Code</Label>
+                  <Input
+                    type="text"
+                    id={`hsn-${product.id}`}
+                    placeholder="Enter the HSN code"
+                    value={product.hsn || ''}
+                    onChange={(e) => onChange(product.id, 'hsn', e.target.value)}
+                    disabled={isLoading}
+                  />
+                </Box>
+                <FormRowEmpty />
+              </Box>
+              <Box className={accordionStyles.formRow}>
+                <Box className={pageStyles.formGroup}>
+                  <Label htmlFor={`cgst-${product.id}`}>CGST (%)</Label>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
+                    id={`cgst-${product.id}`}
+                    placeholder="Leave empty for shop default"
+                    value={product.cgst || ''}
+                    onChange={(e) => onChange(product.id, 'cgst', e.target.value)}
+                    disabled={isLoading}
+                  />
+                </Box>
+                <Box className={pageStyles.formGroup}>
+                  <Label htmlFor={`sgst-${product.id}`}>SGST (%)</Label>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
+                    id={`sgst-${product.id}`}
+                    placeholder="Leave empty for shop default"
+                    value={product.sgst || ''}
+                    onChange={(e) => onChange(product.id, 'sgst', e.target.value)}
+                    disabled={isLoading}
+                  />
+                </Box>
               </Box>
             </Box>
           )}

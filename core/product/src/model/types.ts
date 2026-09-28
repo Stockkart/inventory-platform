@@ -17,7 +17,123 @@ export type BillingMode = 'REGULAR' | 'BASIC';
 /** SALE cart/invoice vs ESTIMATE quote document. Orthogonal to BillingMode. */
 export type DocumentType = 'SALE' | 'ESTIMATE';
 
-export type EstimateState = 'OPEN' | 'CONVERTED' | 'DISCARDED';
+export type EstimateState = 'OPEN' | 'LOCKED' | 'CONVERTED' | 'DISCARDED';
+
+/** Lot sell-path policy: estimate-only lots cannot complete as tax invoices. */
+export type InventorySellRestriction = 'ANY' | 'ESTIMATE_ONLY';
+
+/** Product-entry (stock-in) estimate lifecycle. */
+export type StockEntryEstimateState = 'OPEN' | 'LOCKED' | 'CONVERTED' | 'DISCARDED';
+
+export interface StockEntryEstimateLine {
+  productId?: string | null;
+  barcode?: string | null;
+  name?: string | null;
+  description?: string | null;
+  companyName?: string | null;
+  maximumRetailPrice?: number | null;
+  costPrice?: number | null;
+  priceToRetail?: number | null;
+  sellingPrice?: number | null;
+  rates?: PricingRate[] | null;
+  defaultRate?: string | null;
+  saleAdditionalDiscount?: number | null;
+  businessType?: string | null;
+  location?: string | null;
+  itemType?: ItemType | null;
+  itemTypeDegree?: number | null;
+  discountApplicable?: DiscountApplicable | null;
+  purchaseDate?: string | null;
+  count?: number | null;
+  baseUnit?: string | null;
+  unitsPerPack?: number | null;
+  unitConversions?: UnitConversion | null;
+  thresholdCount?: number | null;
+  expiryDate?: string | null;
+  hsn?: string | null;
+  batchNo?: string | null;
+  billingMode?: BillingMode | null;
+  schemeType?: SchemeType | null;
+  scheme?: number | null;
+  schemePayFor?: number | null;
+  schemeFree?: number | null;
+  schemePercentage?: number | null;
+  purchaseSchemeType?: SchemeType | null;
+  purchaseSchemePayFor?: number | null;
+  purchaseSchemeFree?: number | null;
+  purchaseSchemePercentage?: number | null;
+  purchaseAdditionalDiscount?: number | null;
+  sgst?: string | null;
+  cgst?: string | null;
+  verticalFields?: Record<string, unknown> | null;
+  inventoryId?: string | null;
+}
+
+export interface UpsertStockEntryEstimateDto {
+  vendorId?: string | null;
+  vendorInvoiceNo?: string | null;
+  vendorInvoiceDate?: string | null;
+  lineSubTotal?: number | null;
+  taxTotal?: number | null;
+  shippingCharge?: number | null;
+  otherCharges?: number | null;
+  overallDiscount?: number | null;
+  roundOff?: number | null;
+  invoiceTotal?: number | null;
+  paymentMethod?: string | null;
+  cashAmount?: number | null;
+  onlineAmount?: number | null;
+  creditAmount?: number | null;
+  paidAmount?: number | null;
+  lines?: StockEntryEstimateLine[] | null;
+}
+
+export interface StockEntryEstimateResponse {
+  id: string;
+  estimateNo?: string | null;
+  state: StockEntryEstimateState;
+  vendorId?: string | null;
+  vendorInvoiceNo?: string | null;
+  vendorInvoiceDate?: string | null;
+  lineSubTotal?: number | null;
+  taxTotal?: number | null;
+  shippingCharge?: number | null;
+  otherCharges?: number | null;
+  overallDiscount?: number | null;
+  roundOff?: number | null;
+  invoiceTotal?: number | null;
+  paymentMethod?: string | null;
+  cashAmount?: number | null;
+  onlineAmount?: number | null;
+  creditAmount?: number | null;
+  paidAmount?: number | null;
+  lines?: StockEntryEstimateLine[] | null;
+  vendorPurchaseInvoiceId?: string | null;
+  convertedToVendorPurchaseInvoiceId?: string | null;
+  lockedAt?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface StockEntryEstimateSummary {
+  id: string;
+  estimateNo?: string | null;
+  state: StockEntryEstimateState;
+  vendorId?: string | null;
+  vendorInvoiceNo?: string | null;
+  itemCount: number;
+  invoiceTotal?: number | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+
+export interface StockEntryEstimateListResponse {
+  estimates: StockEntryEstimateSummary[];
+  total: number;
+  page: number;
+  size: number;
+  totalPages: number;
+}
 
 export interface UnitConversion {
   unit: string;
@@ -501,6 +617,8 @@ export interface InventoryItem {
   itemTypeDegree?: number;
   discountApplicable?: DiscountApplicable;
   billingMode?: BillingMode;
+  /** When ESTIMATE_ONLY, lot may only be sold on sell-estimate documents. */
+  sellRestriction?: InventorySellRestriction | null;
   purchaseDate?: string;
   baseUnit?: string | null;
   uqc?: string | null;

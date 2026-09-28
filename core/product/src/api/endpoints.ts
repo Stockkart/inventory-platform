@@ -70,7 +70,16 @@ export const CART_ENDPOINTS = {
 export const ESTIMATE_ENDPOINTS = {
   BASE: '/estimates',
   BY_ID: (purchaseId: string) => `/estimates/${purchaseId}`,
+  LOCK: (purchaseId: string) => `/estimates/${purchaseId}/lock`,
   CONVERT: (purchaseId: string) => `/estimates/${purchaseId}/convert`,
+} as const;
+
+/** Product-entry (stock-in) estimate drafts. */
+export const STOCK_ENTRY_ESTIMATE_ENDPOINTS = {
+  BASE: '/stock-entry-estimates',
+  BY_ID: (id: string) => `/stock-entry-estimates/${id}`,
+  LOCK: (id: string) => `/stock-entry-estimates/${id}/lock`,
+  MARK_CONVERTED: (id: string) => `/stock-entry-estimates/${id}/mark-converted`,
 } as const;
 
 /** Checkout paths. */

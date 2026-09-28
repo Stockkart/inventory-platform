@@ -11,6 +11,11 @@ export const productNav: NavContribution = {
       icon: 'package',
     },
     {
+      path: '/dashboard/entry-estimates',
+      label: 'Entry Estimate',
+      icon: 'clipboard-list',
+    },
+    {
       path: '/dashboard/product-search',
       label: 'Product Search',
       icon: 'search',
