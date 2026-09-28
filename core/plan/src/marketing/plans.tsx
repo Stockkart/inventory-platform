@@ -53,6 +53,8 @@ export default function PlansPage() {
 
             {error ? <Alert variant="danger">{error}</Alert> : null}
 
+            {!loading && !error ? <PlanComparisonTable plans={plans} /> : null}
+
             {!loading && !error && plans.length > 0 ? (
               <PlanGrid
                 plans={plans}
@@ -61,8 +63,6 @@ export default function PlansPage() {
                 showTrialBadge
               />
             ) : null}
-
-            {!loading && !error ? <PlanComparisonTable plans={plans} /> : null}
           </Stack>
         </FormKeyboardNavScope>
       </Box>
