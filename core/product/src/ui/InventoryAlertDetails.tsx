@@ -248,11 +248,11 @@ function parsePurchaseSchemeDraft(raw: string): {
 
 function packagingFactorDisplay(item: InventoryItem): string {
   const factor = item.unitConversions?.factor ?? item.unitsPerPack ?? null;
+  const baseUnit = item.baseUnit?.trim() || item.uqc?.trim() || '';
   if (factor != null && factor > 0) {
-    const unit = item.unitConversions?.unit?.trim() || 'sale unit';
-    return `1 × ${factor} (${unit})`;
+    return `1 × ${factor} ${baseUnit || 'units'}`;
   }
-  return '—';
+  return baseUnit || '—';
 }
 
 export interface InventoryAlertDetailsProps {

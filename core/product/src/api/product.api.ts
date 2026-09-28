@@ -15,6 +15,17 @@ export const productApi = {
     return response.data ?? [];
   },
 
+  /** Catalog product that owns this exact barcode, or null. */
+  getByBarcode: async (barcode: string): Promise<ProductSuggestion | null> => {
+    const code = barcode.trim();
+    if (!code) return null;
+    const response = await apiClient.get<ApiResponse<ProductSuggestion | null>>(
+      PRODUCT_ENDPOINTS.BY_BARCODE,
+      { code },
+    );
+    return response.data ?? null;
+  },
+
   /** Full catalog identity for a selected product (prefill source). */
   getById: async (id: string): Promise<ProductSuggestion> => {
     const response = await apiClient.get<ApiResponse<ProductSuggestion>>(

@@ -10,6 +10,14 @@ import { barcodesApi } from '../api/barcodes.api';
 import { stockEntryEstimatesApi } from '../api/stockEntryEstimates.api';
 import { mapLastInventoryToRegistrationPatch } from '../lib/registrationPrefill';
 import {
+  type CatalogPackaging,
+  catalogPackagingFromProduct,
+  catalogPackagingPatch,
+  describeCatalogPackaging,
+  isCatalogPackagingActive,
+  rowMatchesCatalogPackaging,
+} from '../lib/catalogPackaging';
+import {
   clearProductEntryDraft,
   readProductEntryDraft,
   saveProductEntryDraft,
@@ -87,9 +95,11 @@ import {
 } from '../vertical/VerticalRegistrationGridCells';
 import {
   PackagingUnitInput,
+  isSelfPackUnit,
   packagingFactorForDisplay,
   packagingFactorToUnitsPerPack,
   resolvePackagingUqc,
+  selfPackUnitMessage,
 } from '../ui/PackagingFactorInput';
 import {
   Alert,
@@ -421,6 +431,8 @@ interface ProductFormData
   rates?: PricingRate[];
   defaultRate?: string;
   verticalFields?: Record<string, unknown>;
+  /** Packaging of the existing product that owns this row's barcode (locks the pack factor). */
+  catalogPackaging?: CatalogPackaging | null;
 }
 
 /** Parse numeric-ish form fields used for GST valuation (same precedence as OCR lines). */
@@ -1949,8 +1961,12 @@ export function ProductEntryPage() {
   };
 
   const applyProductPrefill = async (rowId: string, suggestion: ProductSuggestion) => {
+    const catalog = catalogPackagingFromProduct(suggestion);
     // Catalog identity first; then load the most recent lot for pricing + extension defaults.
     handleApplyPurchasePatch(rowId, {
+      unitsPerPack: 0,
+      conversionFactor: 0,
+      catalogPackaging: catalog,
       productId: suggestion.id,
       name: suggestion.name,
       barcode: suggestion.barcode ?? '',
@@ -1984,6 +2000,67 @@ export function ProductEntryPage() {
     } catch {
       // Identity prefill already applied; ignore missing/failed last-lot lookup.
     }
+  };
+
+  const handleBarcodeBlur = async (rowId: string, barcode: string) => {
+    const code = barcode.trim();
+    if (!code) return;
+    try {
+      const owner = await productApi.getByBarcode(code);
+      const catalog = owner ? catalogPackagingFromProduct(owner) : null;
+      setProducts((prev) =>
+        prev.map((p) => {
+          if (p.id !== rowId || (p.barcode?.trim() ?? '') !== code) return p;
+          if (!catalog) return p.catalogPackaging ? { ...p, catalogPackaging: null } : p;
+          return { ...p, ...catalogPackagingPatch(catalog) };
+        }),
+      );
+    } catch {
+      // Lookup is advisory; submit re-checks before registering.
+    }
+  };
+
+  /**
+   * Stock-in with a barcode already owned by a product joins that product and uses its packaging,
+   * so quantities typed against a different pack size would be misread. Align such rows and stop
+   * so the user can confirm quantities.
+   */
+  const alignRowsToCatalogPackaging = async (): Promise<boolean> => {
+    const codes = [
+      ...new Set(products.map((p) => p.barcode?.trim() ?? '').filter((c) => c.length > 0)),
+    ];
+    if (codes.length === 0) return true;
+    const owners = new Map<string, CatalogPackaging>();
+    await Promise.all(
+      codes.map(async (code) => {
+        try {
+          const owner = await productApi.getByBarcode(code);
+          const catalog = owner ? catalogPackagingFromProduct(owner) : null;
+          if (catalog) owners.set(code, catalog);
+        } catch {
+          // Server still registers against the owner's packaging; nothing to align here.
+        }
+      }),
+    );
+    if (owners.size === 0) return true;
+    const mismatched = products.flatMap((p) => {
+      const catalog = owners.get(p.barcode?.trim() ?? '');
+      return catalog && !rowMatchesCatalogPackaging(p.unitsPerPack ?? p.conversionFactor, catalog)
+        ? [`${p.name || catalog.productName} (${describeCatalogPackaging(catalog)})`]
+        : [];
+    });
+    setProducts((prev) =>
+      prev.map((p) => {
+        const catalog = owners.get(p.barcode?.trim() ?? '');
+        return catalog ? { ...p, ...catalogPackagingPatch(catalog) } : p;
+      }),
+    );
+    if (mismatched.length === 0) return true;
+    notifyError(
+      `Packaging changed to match the existing product for: ${mismatched.join(', ')}. ` +
+        'Check the quantities are in that packaging, then register again.',
+    );
+    return false;
   };
 
   const handleNameBlur = (rowId: string) => {
@@ -2049,7 +2126,10 @@ export function ProductEntryPage() {
           const n = parseInt(trim(b.count), 10);
           if (!isNaN(n) && n > 0) next = { ...next, count: n };
         }
-        if (hasText(b.conversionFactor)) {
+        if (
+          hasText(b.conversionFactor) &&
+          !isCatalogPackagingActive(product, product.catalogPackaging)
+        ) {
           const factor = parsePackagingBulkFactor(trim(b.conversionFactor));
           if (factor != null) {
             const upp = packagingFactorToUnitsPerPack(factor);
@@ -2688,6 +2768,7 @@ export function ProductEntryPage() {
           if (
             unitDef?.allowsUnitsPerPack &&
             unitDef.sellUnitRule === 'PACK_ONLY' &&
+            !isSelfPackUnit(baseUqcForValidation, packagingUnits) &&
             normalizedUnitsPerPack <= 0
           ) {
             notifyError(
@@ -2698,6 +2779,18 @@ export function ProductEntryPage() {
             setIsLoading(false);
             return;
           }
+        }
+
+        const rowUnitsPerPack = Number(product.unitsPerPack ?? product.conversionFactor) || 0;
+        if (rowUnitsPerPack > 1 && isSelfPackUnit(product.baseUnit, packagingUnits)) {
+          notifyError(
+            `Product "${product.name || 'Unnamed'}": ${selfPackUnitMessage(
+              resolvePackagingUqc(product.baseUnit, packagingUnits),
+              rowUnitsPerPack,
+            )}`,
+          );
+          setIsLoading(false);
+          return;
         }
 
         const ptr = Number(product.priceToRetail);
@@ -2840,6 +2933,12 @@ export function ProductEntryPage() {
             }
           }
         }
+      }
+
+      if (!(await alignRowsToCatalogPackaging())) {
+        setIsLoading(false);
+        setShowRegisterConfirm(false);
+        return;
       }
 
       // Transform products to bulk API format
@@ -4177,6 +4276,9 @@ export function ProductEntryPage() {
                                       onChange={(e) =>
                                         handleProductChange(product.id, 'barcode', e.target.value)
                                       }
+                                      onBlur={(e) =>
+                                        void handleBarcodeBlur(product.id, e.target.value)
+                                      }
                                       disabled={isLoading}
                                     />
                                     <Button
@@ -4257,7 +4359,16 @@ export function ProductEntryPage() {
                                     required
                                   />
                                 </TableCell>
-                                <TableCell className={denseDataGrid.tdPackaging}>
+                                <TableCell
+                                  className={denseDataGrid.tdPackaging}
+                                  title={
+                                    isCatalogPackagingActive(product, product.catalogPackaging)
+                                      ? `Set on existing product: ${describeCatalogPackaging(
+                                          product.catalogPackaging,
+                                        )}`
+                                      : undefined
+                                  }
+                                >
                                   <PackagingUnitInput
                                     label=""
                                     compact
@@ -4273,7 +4384,10 @@ export function ProductEntryPage() {
                                       handleProductChange(product.id, 'unitsPerPack', upp);
                                       handleProductChange(product.id, 'conversionFactor', upp);
                                     }}
-                                    disabled={isLoading}
+                                    disabled={
+                                      isLoading ||
+                                      isCatalogPackagingActive(product, product.catalogPackaging)
+                                    }
                                   />
                                 </TableCell>
                                 <TableCell className={denseDataGrid.td}>
@@ -4909,6 +5023,7 @@ export function ProductEntryPage() {
                             onNameChange={handleNameChange}
                             onApplyProductPrefill={applyProductPrefill}
                             onNameBlur={handleNameBlur}
+                            onBarcodeBlur={(code) => void handleBarcodeBlur(product.id, code)}
                             isLoading={isLoading}
                             generatingBarcode={generatingBarcodeId === product.id}
                             onGenerateBarcode={() => void handleGenerateBarcode(product.id)}
@@ -5815,6 +5930,7 @@ interface ProductAccordionProps {
   onNameChange: (rowId: string, value: string) => void;
   onApplyProductPrefill: (rowId: string, suggestion: ProductSuggestion) => void | Promise<void>;
   onNameBlur: (rowId: string) => void;
+  onBarcodeBlur: (barcode: string) => void;
   isLoading: boolean;
   generatingBarcode: boolean;
   onGenerateBarcode: () => void;
@@ -5850,6 +5966,7 @@ function ProductAccordion({
   onNameChange,
   onApplyProductPrefill,
   onNameBlur,
+  onBarcodeBlur,
   isLoading,
   generatingBarcode,
   onGenerateBarcode,
@@ -5976,7 +6093,7 @@ function ProductAccordion({
         packagingUnitDef.sellUnitRule === 'PACK_ONLY'
           ? ` · Sold in full ${packagingUnitDef.defaultPackUqc ?? 'pack'} only.`
           : ''
-      } · e.g. 1 × 50 tablets, 1 × 100 ml`
+      }${isSelfPackUnit(baseUqc, packagingUnits) ? '' : ' · e.g. 1 × 50 tablets, 1 × 100 ml'}`
     : 'e.g. 1 × 50 tablets — GST UQC unit after the number';
   const applyPackaging = (uqc: string, f: number) => {
     const nextDef = packagingUnits.find((u) => u.uqc === uqc);
@@ -5985,6 +6102,9 @@ function ProductAccordion({
     onChange(product.id, 'unitsPerPack', upp);
     onChange(product.id, 'conversionFactor', upp);
   };
+  const lockedCatalog = isCatalogPackagingActive(product, product.catalogPackaging)
+    ? product.catalogPackaging
+    : null;
   const packagingInput = (
     <PackagingUnitInput
       id={`packaging-${product.id}`}
@@ -5993,9 +6113,15 @@ function ProductAccordion({
       factor={packagingFactor}
       packagingUnits={packagingUnits}
       onChange={applyPackaging}
-      disabled={isLoading}
+      disabled={isLoading || lockedCatalog != null}
       required
-      hint={packagingHint}
+      hint={
+        lockedCatalog
+          ? `Set on existing product ${lockedCatalog.productName} (${describeCatalogPackaging(
+              lockedCatalog,
+            )}). Enter the quantity in this packaging.`
+          : packagingHint
+      }
     />
   );
 
@@ -6113,6 +6239,7 @@ function ProductAccordion({
                   placeholder="Enter barcode (optional)"
                   value={product.barcode}
                   onChange={(e) => onChange(product.id, 'barcode', e.target.value)}
+                  onBlur={(e) => onBarcodeBlur(e.target.value)}
                   disabled={isLoading}
                 />
                 <Button
