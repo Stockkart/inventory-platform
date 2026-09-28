@@ -10,14 +10,6 @@ import { barcodesApi } from '../api/barcodes.api';
 import { stockEntryEstimatesApi } from '../api/stockEntryEstimates.api';
 import { mapLastInventoryToRegistrationPatch } from '../lib/registrationPrefill';
 import {
-  type CatalogPackaging,
-  catalogPackagingFromProduct,
-  catalogPackagingPatch,
-  describeCatalogPackaging,
-  isCatalogPackagingActive,
-  rowMatchesCatalogPackaging,
-} from '../lib/catalogPackaging';
-import {
   clearProductEntryDraft,
   readProductEntryDraft,
   saveProductEntryDraft,
@@ -177,6 +169,7 @@ function GridProductNameCell({
   onChange,
   onBlur,
   onApply,
+  onAddAsNew,
 }: {
   rowId: string;
   value: string;
@@ -186,6 +179,8 @@ function GridProductNameCell({
   onChange: (rowId: string, value: string) => void;
   onBlur: (rowId: string) => void;
   onApply: (rowId: string, suggestion: ProductSuggestion) => Promise<void> | void;
+  /** Set when the menu lists barcode matches, so the row can stay a new product. */
+  onAddAsNew?: () => void;
 }) {
   const anchorRef = useRef<HTMLElement | null>(null);
   return (
@@ -208,6 +203,11 @@ function GridProductNameCell({
               <ProductSuggestionOption suggestion={s} onSelect={() => void onApply(rowId, s)} />
             </Box>
           ))}
+          {onAddAsNew ? (
+            <Box as="li">
+              <NewProductOption onSelect={onAddAsNew} />
+            </Box>
+          ) : null}
         </Box>
       </AnchoredPortal>
     </Box>
@@ -431,8 +431,6 @@ interface ProductFormData
   rates?: PricingRate[];
   defaultRate?: string;
   verticalFields?: Record<string, unknown>;
-  /** Packaging of the existing product that owns this row's barcode (locks the pack factor). */
-  catalogPackaging?: CatalogPackaging | null;
 }
 
 /** Parse numeric-ish form fields used for GST valuation (same precedence as OCR lines). */
@@ -1924,6 +1922,7 @@ export function ProductEntryPage() {
   // --- Catalog product typeahead (prefill identity from an existing product) ---
   const [productSuggestions, setProductSuggestions] = useState<ProductSuggestion[]>([]);
   const [suggestionRowId, setSuggestionRowId] = useState<string | null>(null);
+  const [suggestionSource, setSuggestionSource] = useState<'name' | 'barcode'>('name');
   const suggestTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearProductSuggestions = useCallback(() => {
@@ -1933,6 +1932,7 @@ export function ProductEntryPage() {
     }
     setProductSuggestions([]);
     setSuggestionRowId(null);
+    setSuggestionSource('name');
   }, []);
 
   const handleNameChange = (rowId: string, value: string) => {
@@ -1940,6 +1940,7 @@ export function ProductEntryPage() {
     // server will fork a new product if identity fields differ on submit.
     handleProductChange(rowId, 'name', value);
     handleProductChange(rowId, 'productId', undefined);
+    setSuggestionSource('name');
     setSuggestionRowId(rowId);
     if (suggestTimerRef.current) clearTimeout(suggestTimerRef.current);
     const q = value.trim();
@@ -1961,12 +1962,10 @@ export function ProductEntryPage() {
   };
 
   const applyProductPrefill = async (rowId: string, suggestion: ProductSuggestion) => {
-    const catalog = catalogPackagingFromProduct(suggestion);
     // Catalog identity first; then load the most recent lot for pricing + extension defaults.
     handleApplyPurchasePatch(rowId, {
       unitsPerPack: 0,
       conversionFactor: 0,
-      catalogPackaging: catalog,
       productId: suggestion.id,
       name: suggestion.name,
       barcode: suggestion.barcode ?? '',
@@ -2002,65 +2001,27 @@ export function ProductEntryPage() {
     }
   };
 
+  /**
+   * A barcode can belong to several products (one per pack size or variant). Offer the matches
+   * in the row's product picker; the user picks one or keeps the row as a new product.
+   */
   const handleBarcodeBlur = async (rowId: string, barcode: string) => {
     const code = barcode.trim();
     if (!code) return;
+    const linkedProductId = products.find((p) => p.id === rowId)?.productId;
     try {
-      const owner = await productApi.getByBarcode(code);
-      const catalog = owner ? catalogPackagingFromProduct(owner) : null;
-      setProducts((prev) =>
-        prev.map((p) => {
-          if (p.id !== rowId || (p.barcode?.trim() ?? '') !== code) return p;
-          if (!catalog) return p.catalogPackaging ? { ...p, catalogPackaging: null } : p;
-          return { ...p, ...catalogPackagingPatch(catalog) };
-        }),
-      );
+      const matches = await productApi.listByBarcode(code);
+      if (matches.length === 0 || matches.some((m) => m.id === linkedProductId)) return;
+      if (suggestTimerRef.current) {
+        clearTimeout(suggestTimerRef.current);
+        suggestTimerRef.current = null;
+      }
+      setSuggestionSource('barcode');
+      setSuggestionRowId(rowId);
+      setProductSuggestions(matches);
     } catch {
-      // Lookup is advisory; submit re-checks before registering.
+      // Lookup is advisory; the server resolves the product by full identity on submit.
     }
-  };
-
-  /**
-   * Stock-in with a barcode already owned by a product joins that product and uses its packaging,
-   * so quantities typed against a different pack size would be misread. Align such rows and stop
-   * so the user can confirm quantities.
-   */
-  const alignRowsToCatalogPackaging = async (): Promise<boolean> => {
-    const codes = [
-      ...new Set(products.map((p) => p.barcode?.trim() ?? '').filter((c) => c.length > 0)),
-    ];
-    if (codes.length === 0) return true;
-    const owners = new Map<string, CatalogPackaging>();
-    await Promise.all(
-      codes.map(async (code) => {
-        try {
-          const owner = await productApi.getByBarcode(code);
-          const catalog = owner ? catalogPackagingFromProduct(owner) : null;
-          if (catalog) owners.set(code, catalog);
-        } catch {
-          // Server still registers against the owner's packaging; nothing to align here.
-        }
-      }),
-    );
-    if (owners.size === 0) return true;
-    const mismatched = products.flatMap((p) => {
-      const catalog = owners.get(p.barcode?.trim() ?? '');
-      return catalog && !rowMatchesCatalogPackaging(p.unitsPerPack ?? p.conversionFactor, catalog)
-        ? [`${p.name || catalog.productName} (${describeCatalogPackaging(catalog)})`]
-        : [];
-    });
-    setProducts((prev) =>
-      prev.map((p) => {
-        const catalog = owners.get(p.barcode?.trim() ?? '');
-        return catalog ? { ...p, ...catalogPackagingPatch(catalog) } : p;
-      }),
-    );
-    if (mismatched.length === 0) return true;
-    notifyError(
-      `Packaging changed to match the existing product for: ${mismatched.join(', ')}. ` +
-        'Check the quantities are in that packaging, then register again.',
-    );
-    return false;
   };
 
   const handleNameBlur = (rowId: string) => {
@@ -2126,10 +2087,7 @@ export function ProductEntryPage() {
           const n = parseInt(trim(b.count), 10);
           if (!isNaN(n) && n > 0) next = { ...next, count: n };
         }
-        if (
-          hasText(b.conversionFactor) &&
-          !isCatalogPackagingActive(product, product.catalogPackaging)
-        ) {
+        if (hasText(b.conversionFactor)) {
           const factor = parsePackagingBulkFactor(trim(b.conversionFactor));
           if (factor != null) {
             const upp = packagingFactorToUnitsPerPack(factor);
@@ -2933,12 +2891,6 @@ export function ProductEntryPage() {
             }
           }
         }
-      }
-
-      if (!(await alignRowsToCatalogPackaging())) {
-        setIsLoading(false);
-        setShowRegisterConfirm(false);
-        return;
       }
 
       // Transform products to bulk API format
@@ -4333,6 +4285,11 @@ export function ProductEntryPage() {
                                     onChange={handleNameChange}
                                     onBlur={handleNameBlur}
                                     onApply={applyProductPrefill}
+                                    onAddAsNew={
+                                      suggestionSource === 'barcode'
+                                        ? clearProductSuggestions
+                                        : undefined
+                                    }
                                   />
                                 </TableCell>
                                 <VerticalRegistrationGridCells
@@ -4359,16 +4316,7 @@ export function ProductEntryPage() {
                                     required
                                   />
                                 </TableCell>
-                                <TableCell
-                                  className={denseDataGrid.tdPackaging}
-                                  title={
-                                    isCatalogPackagingActive(product, product.catalogPackaging)
-                                      ? `Set on existing product: ${describeCatalogPackaging(
-                                          product.catalogPackaging,
-                                        )}`
-                                      : undefined
-                                  }
-                                >
+                                <TableCell className={denseDataGrid.tdPackaging}>
                                   <PackagingUnitInput
                                     label=""
                                     compact
@@ -4384,10 +4332,7 @@ export function ProductEntryPage() {
                                       handleProductChange(product.id, 'unitsPerPack', upp);
                                       handleProductChange(product.id, 'conversionFactor', upp);
                                     }}
-                                    disabled={
-                                      isLoading ||
-                                      isCatalogPackagingActive(product, product.catalogPackaging)
-                                    }
+                                    disabled={isLoading}
                                   />
                                 </TableCell>
                                 <TableCell className={denseDataGrid.td}>
@@ -5024,6 +4969,9 @@ export function ProductEntryPage() {
                             onApplyProductPrefill={applyProductPrefill}
                             onNameBlur={handleNameBlur}
                             onBarcodeBlur={(code) => void handleBarcodeBlur(product.id, code)}
+                            onAddAsNewProduct={
+                              suggestionSource === 'barcode' ? clearProductSuggestions : undefined
+                            }
                             isLoading={isLoading}
                             generatingBarcode={generatingBarcodeId === product.id}
                             onGenerateBarcode={() => void handleGenerateBarcode(product.id)}
@@ -5855,6 +5803,28 @@ function FormRowEmpty() {
 }
 
 // Product Accordion Component
+function NewProductOption({ onSelect }: { onSelect: () => void }) {
+  return (
+    <Box
+      as="button"
+      className={productChrome.typeaheadItem}
+      onMouseDown={(e) => {
+        e.preventDefault();
+        onSelect();
+      }}
+    >
+      <Text as="span" className={productChrome.typeaheadItemName}>
+        Add as new product
+      </Text>
+      <Box className={productChrome.typeaheadItemMeta}>
+        <Text as="span" className={productChrome.typeaheadItemMetaText}>
+          Same barcode, different pack size or variant
+        </Text>
+      </Box>
+    </Box>
+  );
+}
+
 function ProductSuggestionOption({
   suggestion,
   onSelect,
@@ -5931,6 +5901,8 @@ interface ProductAccordionProps {
   onApplyProductPrefill: (rowId: string, suggestion: ProductSuggestion) => void | Promise<void>;
   onNameBlur: (rowId: string) => void;
   onBarcodeBlur: (barcode: string) => void;
+  /** Set when the suggestions are barcode matches, so the row can stay a new product. */
+  onAddAsNewProduct?: () => void;
   isLoading: boolean;
   generatingBarcode: boolean;
   onGenerateBarcode: () => void;
@@ -5967,6 +5939,7 @@ function ProductAccordion({
   onApplyProductPrefill,
   onNameBlur,
   onBarcodeBlur,
+  onAddAsNewProduct,
   isLoading,
   generatingBarcode,
   onGenerateBarcode,
@@ -6102,9 +6075,6 @@ function ProductAccordion({
     onChange(product.id, 'unitsPerPack', upp);
     onChange(product.id, 'conversionFactor', upp);
   };
-  const lockedCatalog = isCatalogPackagingActive(product, product.catalogPackaging)
-    ? product.catalogPackaging
-    : null;
   const packagingInput = (
     <PackagingUnitInput
       id={`packaging-${product.id}`}
@@ -6113,15 +6083,9 @@ function ProductAccordion({
       factor={packagingFactor}
       packagingUnits={packagingUnits}
       onChange={applyPackaging}
-      disabled={isLoading || lockedCatalog != null}
+      disabled={isLoading}
       required
-      hint={
-        lockedCatalog
-          ? `Set on existing product ${lockedCatalog.productName} (${describeCatalogPackaging(
-              lockedCatalog,
-            )}). Enter the quantity in this packaging.`
-          : packagingHint
-      }
+      hint={packagingHint}
     />
   );
 
@@ -6207,6 +6171,11 @@ function ProductAccordion({
                         />
                       </Box>
                     ))}
+                    {onAddAsNewProduct ? (
+                      <Box as="li">
+                        <NewProductOption onSelect={onAddAsNewProduct} />
+                      </Box>
+                    ) : null}
                   </Box>
                 ) : null}
               </Box>
