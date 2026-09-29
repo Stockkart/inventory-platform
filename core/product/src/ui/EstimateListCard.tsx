@@ -265,9 +265,12 @@ export function EstimateListCard({
               </Text>
             ) : (
               <>
-                <SaleLineItemsTable items={items} />
-                <SaleTotals
+                <SaleLineItemsTable
                   items={items}
+                  lineRates={detailQuery.data?.taxSummary?.lineRates}
+                />
+                <SaleTotals
+                  taxSummary={detailQuery.data?.taxSummary}
                   subTotal={detailQuery.data?.subTotal}
                   saleAdditionalDiscountTotal={detailQuery.data?.saleAdditionalDiscountTotal}
                   sgstAmount={detailQuery.data?.sgstAmount}

@@ -1,7 +1,6 @@
 import { Fragment } from 'react';
-import type { CheckoutItemResponse } from '@inventory-platform/product/types';
+import type { CheckoutItemResponse, SaleTaxSummary } from '@inventory-platform/product/types';
 import { formatPercent, schemeLabel } from '../lib/billedLineLabels';
-import { summariseSaleTax, taxableRate } from '../lib/saleTaxSummary';
 import {
   Box,
   Inline,
@@ -76,7 +75,14 @@ export function SummaryRow({
 }
 
 /** Every line of a billed document, with the same columns wherever it is opened. */
-export function SaleLineItemsTable({ items }: { items: CheckoutItemResponse[] }) {
+export function SaleLineItemsTable({
+  items,
+  lineRates,
+}: {
+  items: CheckoutItemResponse[];
+  /** Each line's rate before tax, from the bill's tax summary. */
+  lineRates?: Array<number | null> | null;
+}) {
   return (
     <Box overflow="auto">
       <Table className={cn(surfaceChrome.minW320, productChrome.historyItemsTable)}>
@@ -108,7 +114,7 @@ export function SaleLineItemsTable({ items }: { items: CheckoutItemResponse[] })
               <TableCell className={surfaceChrome.numericCell}>
                 {/* Before tax, as the invoice's RATE column prints it: a line sold at MRP has
                     the GST inside its price taken out. */}
-                {formatCurrency(taxableRate(item))}
+                {formatCurrency(lineRates?.[idx] ?? item.priceToRetail ?? 0)}
               </TableCell>
               <TableCell className={surfaceChrome.numericCell}>
                 {/* The discount rate the operator applied at sale, not the rupee value of it.
@@ -139,13 +145,12 @@ export function SaleLineItemsTable({ items }: { items: CheckoutItemResponse[] })
 /**
  * Subtotal through to the billed total, in the order the printed invoice states them.
  *
- * Worked from the lines where it can be, as the invoice is, so GST is stated at each rate and a
- * sale whose header held MRP-inclusive tax as taxable value still reads right. The discount
- * shown is the additional discount: the gap between MRP and rate is already inside the rate,
- * so subtracting it again left Subtotal − Discount + GST not adding up to the Total.
+ * The figures come from the API's tax summary, which is the same calculation the invoice prints,
+ * so GST is shown at each rate. Nothing is calculated here. The discount shown is the additional
+ * discount: the gap between MRP and rate is already inside the rate.
  */
 export function SaleTotals({
-  items,
+  taxSummary,
   subTotal,
   saleAdditionalDiscountTotal,
   sgstAmount,
@@ -153,7 +158,7 @@ export function SaleTotals({
   taxTotal,
   grandTotal,
 }: {
-  items: CheckoutItemResponse[];
+  taxSummary?: SaleTaxSummary | null;
   subTotal?: number | null;
   saleAdditionalDiscountTotal?: number | null;
   sgstAmount?: number | null;
@@ -161,33 +166,32 @@ export function SaleTotals({
   taxTotal?: number | null;
   grandTotal?: number | null;
 }) {
-  const summary = summariseSaleTax(items);
-  if (summary) {
-    const tax = summary.rows.reduce((sum, row) => sum + row.cgstAmount + row.sgstAmount, 0);
-    const roundOff = Math.round(((grandTotal ?? 0) - summary.taxableValue - tax) * 100) / 100;
+  if (taxSummary) {
     return (
       <Box className={productChrome.historyTotalsPanel}>
-        <SummaryRow label="Subtotal" value={formatCurrency(summary.subTotal)} />
-        {summary.additionalDiscount ? (
+        <SummaryRow label="Subtotal" value={formatCurrency(taxSummary.subTotal)} />
+        {taxSummary.additionalDiscount ? (
           <SummaryRow
             label="Additional discount"
-            value={`− ${formatCurrency(summary.additionalDiscount)}`}
+            value={`− ${formatCurrency(taxSummary.additionalDiscount)}`}
           />
         ) : null}
-        <SummaryRow label="Taxable value" value={formatCurrency(summary.taxableValue)} />
-        {summary.rows.map((row) => (
-          <Fragment key={`${row.cgstRate}|${row.sgstRate}`}>
+        <SummaryRow label="Taxable value" value={formatCurrency(taxSummary.taxableValue)} />
+        {taxSummary.rates.map((row) => (
+          <Fragment key={`${row.cgstPercent}|${row.sgstPercent}`}>
             <SummaryRow
-              label={`SGST ${formatPercent(row.sgstRate)}`}
+              label={`SGST ${formatPercent(row.sgstPercent)}`}
               value={formatCurrency(row.sgstAmount)}
             />
             <SummaryRow
-              label={`CGST ${formatPercent(row.cgstRate)}`}
+              label={`CGST ${formatPercent(row.cgstPercent)}`}
               value={formatCurrency(row.cgstAmount)}
             />
           </Fragment>
         ))}
-        {roundOff ? <SummaryRow label="Round off" value={formatCurrency(roundOff)} /> : null}
+        {taxSummary.roundOff ? (
+          <SummaryRow label="Round off" value={formatCurrency(taxSummary.roundOff)} />
+        ) : null}
         <SummaryRow label="Total" value={formatCurrency(grandTotal ?? 0)} total />
       </Box>
     );
