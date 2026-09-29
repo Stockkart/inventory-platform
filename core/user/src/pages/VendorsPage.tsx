@@ -23,6 +23,7 @@ import {
   Text,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
+import { partyNameHasLetters, PARTY_NAME_LETTERS_MESSAGE } from '../api/customers.api';
 import { vendorsApi } from '../api/vendors.api';
 import { VendorEditForm } from '../ui';
 import type {
@@ -41,19 +42,6 @@ export function meta() {
 function formatAddress(addr: string | null | undefined) {
   if (!addr?.trim()) return '—';
   return addr.trim();
-}
-
-function formatBusinessType(value: string | null | undefined) {
-  if (!value) return '—';
-  const labels: Record<string, string> = {
-    WHOLESALE: 'Wholesale',
-    RETAIL: 'Retail',
-    MANUFACTURER: 'Manufacturer',
-    DISTRIBUTOR: 'Distributor',
-    'C&F': 'C&F',
-    OTHER: 'Other',
-  };
-  return labels[value] ?? value;
 }
 
 export function VendorsPage() {
@@ -142,6 +130,10 @@ export function VendorsPage() {
       setSaveError('Name is required');
       return;
     }
+    if (!partyNameHasLetters(createForm.name)) {
+      setSaveError(PARTY_NAME_LETTERS_MESSAGE);
+      return;
+    }
     if (!createForm.contactPhone?.trim() && !createForm.contactEmail?.trim()) {
       setSaveError('Either phone or email is required');
       return;
@@ -169,6 +161,10 @@ export function VendorsPage() {
 
   const handleSave = async () => {
     if (!editModal) return;
+    if (editForm.name !== undefined && !partyNameHasLetters(editForm.name)) {
+      setSaveError(PARTY_NAME_LETTERS_MESSAGE);
+      return;
+    }
     setSaving(true);
     setSaveError(null);
     try {
@@ -244,9 +240,6 @@ export function VendorsPage() {
                   Address
                 </TableHeaderCell>
                 <TableHeaderCell className={surfaceChrome.customersIdCell}>DL no.</TableHeaderCell>
-                <TableHeaderCell className={surfaceChrome.vendorsBusinessCell}>
-                  Business type
-                </TableHeaderCell>
                 <TableHeaderCell className={surfaceChrome.customersIdCell}>GSTIN</TableHeaderCell>
                 <TableHeaderCell className={surfaceChrome.customersActionCell}>
                   Actions
@@ -255,10 +248,10 @@ export function VendorsPage() {
             </TableHead>
             <TableBody>
               {loading ? (
-                <TableLoadingRow colSpan={7} label="Loading vendors…" />
+                <TableLoadingRow colSpan={6} label="Loading vendors…" />
               ) : data.length === 0 ? (
                 <TableEmptyRow
-                  colSpan={7}
+                  colSpan={6}
                   message={
                     query
                       ? 'No vendors match your search.'
@@ -284,9 +277,6 @@ export function VendorsPage() {
                     </TableCell>
                     <TableCell className={surfaceChrome.customersIdCell}>
                       {vendor.dlNo ?? '—'}
-                    </TableCell>
-                    <TableCell className={surfaceChrome.vendorsBusinessCell}>
-                      {formatBusinessType(vendor.businessType)}
                     </TableCell>
                     <TableCell className={surfaceChrome.customersIdCell}>
                       {vendor.gstinUin ?? '—'}
