@@ -236,14 +236,18 @@ export function EstimateListCard({
               </Text>
             ) : (
               <>
-                <SaleLineItemsTable items={items} />
+                <SaleLineItemsTable
+                  items={items}
+                  lineRates={detailQuery.data?.taxSummary?.lineRates}
+                />
 
                 {/* An estimate is a cart read before conversion, so it carries the same
                     totals a completed sale does. Showing only Qty, Unit price and Line
                     total made the same document look thinner here than in History. */}
                 <SaleTotals
+                  taxSummary={detailQuery.data?.taxSummary}
                   subTotal={detailQuery.data?.subTotal}
-                  discountTotal={detailQuery.data?.discountTotal}
+                  saleAdditionalDiscountTotal={detailQuery.data?.saleAdditionalDiscountTotal}
                   sgstAmount={detailQuery.data?.sgstAmount}
                   cgstAmount={detailQuery.data?.cgstAmount}
                   taxTotal={detailQuery.data?.taxTotal}
