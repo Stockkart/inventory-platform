@@ -177,12 +177,19 @@ export function CafeKotBar({ purchaseId, disabled = false }: SellActionSlotProps
           </Button>
         </Inline>
       </Box>
+      {/* Same inset as the cart lines and sent rounds, so every box in the column is one width. */}
       {notice ? (
-        <Alert variant={notice.tone} role={notice.tone === 'danger' ? 'alert' : 'status'}>
-          {notice.text}
-        </Alert>
+        <Box px="md" width="full">
+          <Alert variant={notice.tone} role={notice.tone === 'danger' ? 'alert' : 'status'}>
+            {notice.text}
+          </Alert>
+        </Box>
       ) : null}
-      <KotTicketStrip tickets={tickets} onRetry={handleRetry} />
+      {tickets.length > 0 ? (
+        <Box px="md" width="full">
+          <KotTicketStrip tickets={tickets} onRetry={handleRetry} />
+        </Box>
+      ) : null}
       {/* Below the tickets of this screen, because the rounds already on paper are the rarer
           need: the cashier reaches for them only when the kitchen says a slip never arrived. */}
       <SentRounds purchaseId={purchaseId ?? null} />
