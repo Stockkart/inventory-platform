@@ -841,6 +841,28 @@ export interface CheckoutItemResponse {
   purchaseSchemePercentage?: number | null;
 }
 
+/** GST at one rate on a bill, as the API works it out. */
+export interface GstRateRow {
+  cgstPercent: number;
+  sgstPercent: number;
+  taxableValue: number;
+  cgstAmount: number;
+  sgstAmount: number;
+}
+
+/** A bill's totals as the printed invoice states them, computed by the API from the lines. */
+export interface SaleTaxSummary {
+  subTotal: number;
+  additionalDiscount: number;
+  taxableValue: number;
+  rates: GstRateRow[];
+  cgstTotal: number;
+  sgstTotal: number;
+  roundOff: number;
+  /** Each line's rate before tax, in line order. */
+  lineRates: Array<number | null>;
+}
+
 export interface CheckoutResponse {
   invoiceId: string;
   invoiceNo: string;
@@ -885,6 +907,8 @@ export interface CartResponse {
   discountTotal: number;
   saleAdditionalDiscountTotal: number;
   grandTotal: number;
+  /** Null when no line carries tax. */
+  taxSummary?: SaleTaxSummary | null;
   status: string;
   customerName?: string;
   customerAddress?: string;
@@ -1047,7 +1071,10 @@ export interface Purchase {
   sgstAmount?: number;
   cgstAmount?: number;
   discountTotal: number;
+  saleAdditionalDiscountTotal?: number | null;
   grandTotal: number;
+  /** Null when no line carries tax. */
+  taxSummary?: SaleTaxSummary | null;
   soldAt: string;
   status: string;
   paymentMethod: PaymentMethod | string;
