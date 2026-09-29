@@ -1047,6 +1047,7 @@ export interface Purchase {
   sgstAmount?: number;
   cgstAmount?: number;
   discountTotal: number;
+  saleAdditionalDiscountTotal?: number | null;
   grandTotal: number;
   soldAt: string;
   status: string;

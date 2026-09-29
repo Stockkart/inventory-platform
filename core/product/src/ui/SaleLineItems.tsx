@@ -1,5 +1,7 @@
+import { Fragment } from 'react';
 import type { CheckoutItemResponse } from '@inventory-platform/product/types';
 import { formatPercent, schemeLabel } from '../lib/billedLineLabels';
+import { summariseSaleTax, taxableRate } from '../lib/saleTaxSummary';
 import {
   Box,
   Inline,
@@ -104,7 +106,9 @@ export function SaleLineItemsTable({ items }: { items: CheckoutItemResponse[] })
                 {item.maximumRetailPrice ? formatCurrency(item.maximumRetailPrice) : '—'}
               </TableCell>
               <TableCell className={surfaceChrome.numericCell}>
-                {formatCurrency(item.priceToRetail ?? 0)}
+                {/* Before tax, as the invoice's RATE column prints it: a line sold at MRP has
+                    the GST inside its price taken out. */}
+                {formatCurrency(taxableRate(item))}
               </TableCell>
               <TableCell className={surfaceChrome.numericCell}>
                 {/* The discount rate the operator applied at sale, not the rupee value of it.
@@ -132,27 +136,70 @@ export function SaleLineItemsTable({ items }: { items: CheckoutItemResponse[] })
   );
 }
 
-/** Subtotal through to the billed total, in the order the printed invoice states them. */
+/**
+ * Subtotal through to the billed total, in the order the printed invoice states them.
+ *
+ * Worked from the lines where it can be, as the invoice is, so GST is stated at each rate and a
+ * sale whose header held MRP-inclusive tax as taxable value still reads right. The discount
+ * shown is the additional discount: the gap between MRP and rate is already inside the rate,
+ * so subtracting it again left Subtotal − Discount + GST not adding up to the Total.
+ */
 export function SaleTotals({
+  items,
   subTotal,
-  discountTotal,
+  saleAdditionalDiscountTotal,
   sgstAmount,
   cgstAmount,
   taxTotal,
   grandTotal,
 }: {
+  items: CheckoutItemResponse[];
   subTotal?: number | null;
-  discountTotal?: number | null;
+  saleAdditionalDiscountTotal?: number | null;
   sgstAmount?: number | null;
   cgstAmount?: number | null;
   taxTotal?: number | null;
   grandTotal?: number | null;
 }) {
+  const summary = summariseSaleTax(items);
+  if (summary) {
+    const tax = summary.rows.reduce((sum, row) => sum + row.cgstAmount + row.sgstAmount, 0);
+    const roundOff = Math.round(((grandTotal ?? 0) - summary.taxableValue - tax) * 100) / 100;
+    return (
+      <Box className={productChrome.historyTotalsPanel}>
+        <SummaryRow label="Subtotal" value={formatCurrency(summary.subTotal)} />
+        {summary.additionalDiscount ? (
+          <SummaryRow
+            label="Additional discount"
+            value={`− ${formatCurrency(summary.additionalDiscount)}`}
+          />
+        ) : null}
+        <SummaryRow label="Taxable value" value={formatCurrency(summary.taxableValue)} />
+        {summary.rows.map((row) => (
+          <Fragment key={`${row.cgstRate}|${row.sgstRate}`}>
+            <SummaryRow
+              label={`SGST ${formatPercent(row.sgstRate)}`}
+              value={formatCurrency(row.sgstAmount)}
+            />
+            <SummaryRow
+              label={`CGST ${formatPercent(row.cgstRate)}`}
+              value={formatCurrency(row.cgstAmount)}
+            />
+          </Fragment>
+        ))}
+        {roundOff ? <SummaryRow label="Round off" value={formatCurrency(roundOff)} /> : null}
+        <SummaryRow label="Total" value={formatCurrency(grandTotal ?? 0)} total />
+      </Box>
+    );
+  }
   return (
     <Box className={productChrome.historyTotalsPanel}>
       <SummaryRow label="Subtotal" value={formatCurrency(subTotal ?? 0)} />
-      {discountTotal ? (
-        <SummaryRow label="Discount" value={`− ${formatCurrency(discountTotal)}`} />
+      {saleAdditionalDiscountTotal ? (
+        <SummaryRow
+          label="Additional discount"
+          value={`− ${formatCurrency(saleAdditionalDiscountTotal)}`}
+        />
       ) : null}
       {sgstAmount ? <SummaryRow label="SGST" value={formatCurrency(sgstAmount)} /> : null}
       {cgstAmount ? <SummaryRow label="CGST" value={formatCurrency(cgstAmount)} /> : null}

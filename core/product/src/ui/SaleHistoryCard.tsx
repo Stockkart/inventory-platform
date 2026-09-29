@@ -166,8 +166,9 @@ export function SaleHistoryCard({ purchase }: { purchase: Purchase }) {
             <SaleLineItemsTable items={purchase.items} />
 
             <SaleTotals
+              items={purchase.items}
               subTotal={purchase.subTotal}
-              discountTotal={purchase.discountTotal}
+              saleAdditionalDiscountTotal={purchase.saleAdditionalDiscountTotal}
               sgstAmount={purchase.sgstAmount}
               cgstAmount={purchase.cgstAmount}
               taxTotal={purchase.taxTotal}
