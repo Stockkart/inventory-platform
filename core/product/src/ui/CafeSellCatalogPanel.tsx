@@ -11,6 +11,7 @@ import {
   Modal,
   Stack,
   Text,
+  cn,
   productChrome,
 } from '@inventory-platform/ui-kit';
 
@@ -18,7 +19,24 @@ function money(n: number): string {
   return `₹${n.toFixed(2)}`;
 }
 
-type CafeTab = { id: string; label: string; kind: 'all' | 'menu' | 'stock' };
+type CafeTab = { id: string; label: string; kind: 'all' | 'menu' | 'stock'; tone?: string };
+
+const SECTION_TONES = [
+  productChrome.cafeTone0,
+  productChrome.cafeTone1,
+  productChrome.cafeTone2,
+  productChrome.cafeTone3,
+  productChrome.cafeTone4,
+  productChrome.cafeTone5,
+];
+
+/**
+ * A section's tone follows its position in the whole menu, not in the filtered view, so a search
+ * or a tab switch never repaints Starter in Main Course's colour.
+ */
+export function sectionTone(position: number): string {
+  return SECTION_TONES[position % SECTION_TONES.length];
+}
 
 /**
  * The portions a cashier may actually pick: a row with no frozen id or no name is a half-typed
@@ -64,8 +82,8 @@ export function CafeSellCatalogPanel({
   onAddMenuItem,
   onAddDirectStock,
 }: CafeSellCatalogPanelProps) {
-  const sections = catalog?.menu?.sections ?? [];
-  const directStock = catalog?.directStock ?? [];
+  const sections = useMemo(() => catalog?.menu?.sections ?? [], [catalog]);
+  const directStock = useMemo(() => catalog?.directStock ?? [], [catalog]);
   const normalizedFilter = filterQuery.trim().toLowerCase();
 
   const visibleSections = useMemo(
@@ -101,6 +119,11 @@ export function CafeSellCatalogPanel({
     [directStock, normalizedFilter],
   );
 
+  const tonesBySectionId = useMemo(
+    () => new Map(sections.map((section, position) => [section.id, sectionTone(position)])),
+    [sections],
+  );
+
   const tabs = useMemo((): CafeTab[] => {
     const next: CafeTab[] = [{ id: 'all', label: 'All', kind: 'all' }];
     for (const section of visibleSections) {
@@ -108,13 +131,19 @@ export function CafeSellCatalogPanel({
         id: section.id,
         label: section.title || 'Menu',
         kind: 'menu',
+        tone: tonesBySectionId.get(section.id),
       });
     }
     if (filteredDirectStock.length > 0) {
-      next.push({ id: '__stock__', label: 'Stock', kind: 'stock' });
+      next.push({
+        id: '__stock__',
+        label: 'Stock',
+        kind: 'stock',
+        tone: productChrome.cafeToneStock,
+      });
     }
     return next;
-  }, [visibleSections, filteredDirectStock.length]);
+  }, [visibleSections, filteredDirectStock.length, tonesBySectionId]);
 
   const [activeTab, setActiveTab] = useState('all');
   /** The item whose portion picker is open. Null means no picker. */
@@ -182,7 +211,11 @@ export function CafeSellCatalogPanel({
                 role="tab"
                 aria-selected={isActive}
                 onClick={() => setActiveTab(tab.id)}
-                className={productChrome.cafeCatalogTab}
+                className={cn(
+                  productChrome.cafeCatalogTab,
+                  tab.tone && productChrome.cafeCatalogTabToned,
+                  tab.tone,
+                )}
               >
                 {tab.label}
               </Button>
@@ -193,22 +226,22 @@ export function CafeSellCatalogPanel({
 
       <Box padding="md" className={productChrome.cafeCatalogScroll}>
         {menuSectionsToRender.map((section) => (
-          <Box key={section.id} className={productChrome.cafeCatalogSection}>
+          <Box
+            key={section.id}
+            className={cn(productChrome.cafeCatalogSection, tonesBySectionId.get(section.id))}
+          >
             <Inline
               justify="between"
               align="center"
               gap="sm"
               className={productChrome.cafeCatalogSectionHeader}
             >
-              <Text
-                variant="caption"
-                weight="bold"
-                color="secondary"
-                className={productChrome.sectionLabel}
-              >
+              <Text weight="bold" className={productChrome.cafeCatalogSectionTitle}>
                 {section.title || 'Menu'}
               </Text>
-              <Badge variant="neutral">{section.items.length}</Badge>
+              <Badge variant="neutral" className={productChrome.cafeCatalogCount}>
+                {section.items.length}
+              </Badge>
             </Inline>
             <Box className={productChrome.cafeCatalogGrid}>
               {section.items.map((item) => {
@@ -255,22 +288,19 @@ export function CafeSellCatalogPanel({
         ))}
 
         {showStock && hasDirectStock ? (
-          <Box>
+          <Box className={cn(productChrome.cafeCatalogSection, productChrome.cafeToneStock)}>
             <Inline
               justify="between"
               align="center"
               gap="sm"
               className={productChrome.cafeCatalogSectionHeader}
             >
-              <Text
-                variant="caption"
-                weight="bold"
-                color="secondary"
-                className={productChrome.sectionLabel}
-              >
+              <Text weight="bold" className={productChrome.cafeCatalogSectionTitle}>
                 Direct stock
               </Text>
-              <Badge variant="neutral">{filteredDirectStock.length}</Badge>
+              <Badge variant="neutral" className={productChrome.cafeCatalogCount}>
+                {filteredDirectStock.length}
+              </Badge>
             </Inline>
             <Box className={productChrome.cafeCatalogGrid}>
               {filteredDirectStock.map((item) => {

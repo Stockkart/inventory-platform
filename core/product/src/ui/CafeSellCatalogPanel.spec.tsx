@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { Box } from '@inventory-platform/ui-kit';
+import { Box, productChrome } from '@inventory-platform/ui-kit';
 import type {
   InventoryItem,
   MenuItem,
@@ -10,7 +10,7 @@ import type {
   SellCatalog,
 } from '@inventory-platform/product/types';
 import { lineSellableRef, menuSellableRef } from '@inventory-platform/product/types';
-import { CafeSellCatalogPanel } from './CafeSellCatalogPanel';
+import { CafeSellCatalogPanel, sectionTone } from './CafeSellCatalogPanel';
 
 /**
  * These tests drive the rendered catalog. The behaviour at stake — that a portioned item cannot
@@ -242,5 +242,50 @@ describe('portioned lines in a ref-keyed cart', () => {
     const rows = cartRows();
     expect(rows).toHaveLength(1);
     expect(rows[0].textContent).toContain('Chicken Biryani (Half) × 2');
+  });
+});
+
+describe('CafeSellCatalogPanel section tones', () => {
+  function twoSectionCatalog(): SellCatalog {
+    return {
+      menu: {
+        sections: [
+          { id: 'mains', title: 'Main Course', items: [menuItem()] },
+          { id: 'starters', title: 'Starter', items: [plainItem] },
+        ],
+      },
+      directStock: [] as InventoryItem[],
+    };
+  }
+
+  /** The section wrapper holding a heading. The tab bar repeats the title, so skip matches outside a section. */
+  function sectionOf(title: string): HTMLElement {
+    const section = screen
+      .getAllByText(title)
+      .map((el) => el.closest(`.${productChrome.cafeCatalogSection}`))
+      .find((el): el is HTMLElement => el instanceof HTMLElement);
+    if (!section) throw new Error(`no section for ${title}`);
+    return section;
+  }
+
+  it('gives each section its own tone, and the stock section its own', () => {
+    expect(new Set([sectionTone(0), sectionTone(1), productChrome.cafeToneStock]).size).toBe(3);
+    renderPanel(twoSectionCatalog());
+    expect(sectionOf('Main Course').classList).toContain(sectionTone(0));
+    expect(sectionOf('Starter').classList).toContain(sectionTone(1));
+  });
+
+  it('keeps a section in its tone when a search hides the sections before it', () => {
+    render(
+      <CafeSellCatalogPanel
+        catalog={twoSectionCatalog()}
+        filterQuery="chai"
+        onAddMenuItem={vi.fn()}
+        onAddDirectStock={vi.fn()}
+      />,
+    );
+    // Main Course is filtered out, so Starter renders first — and must still wear tone 1.
+    expect(screen.queryAllByText('Main Course')).toHaveLength(0);
+    expect(sectionOf('Starter').classList).toContain(sectionTone(1));
   });
 });
