@@ -118,7 +118,7 @@ export function SentRounds({ purchaseId }: SentRoundsProps) {
   if (!purchaseId) return null;
 
   return (
-    <Box px="md" width="full">
+    <Box px="md" pb="md" width="full">
       <Stack gap="xs" width="full">
         <Button
           type="button"
