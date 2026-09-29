@@ -18,6 +18,7 @@ import {
   productChrome,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
+import { downloadBlob, openPdfPreview } from '../lib/printDocument';
 
 export type { PrinterType };
 
@@ -56,27 +57,6 @@ const PRINTER_OPTIONS: Array<{
     icon: Receipt,
   },
 ];
-
-function downloadBlob(blob: Blob, filename: string) {
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-}
-
-function openPdfPreview(blob: Blob, fallbackName: string) {
-  const url = window.URL.createObjectURL(blob);
-  const newWindow = window.open(url, '_blank');
-  if (!newWindow) {
-    downloadBlob(blob, fallbackName);
-  } else {
-    window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-  }
-}
 
 export function PrintInvoiceModal({
   isOpen,
