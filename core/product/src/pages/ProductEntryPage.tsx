@@ -13,6 +13,7 @@ import {
   clearProductEntryDraft,
   readProductEntryDraft,
   saveProductEntryDraft,
+  type ProductEntryDraftScope,
 } from '../lib/productEntryDraft';
 import { PrintBarcodeLabelsModal } from '../ui/PrintBarcodeLabelsModal';
 import { openLocalBarcodeLabelPrint } from '../lib/printBarcodeLabels';
@@ -431,6 +432,13 @@ interface ProductFormData
   rates?: PricingRate[];
   defaultRate?: string;
   verticalFields?: Record<string, unknown>;
+  thresholdCount?: number | null;
+}
+
+/** FREE_QUANTITY is UI-only; the API persists it as FIXED_UNITS (same as Register). */
+function toApiPurchaseSchemeType(t: PurchaseSchemeInputType | null | undefined): SchemeType | null {
+  if (t == null) return null;
+  return t === 'FREE_QUANTITY' ? 'FIXED_UNITS' : t;
 }
 
 /** Parse numeric-ish form fields used for GST valuation (same precedence as OCR lines). */
@@ -919,6 +927,13 @@ export function ProductEntryPage() {
     searchParams.get('mode') === 'estimate' ||
     Boolean(sourceEstimateId) ||
     location.pathname.includes('entry-estimates');
+  const draftScope: ProductEntryDraftScope = estimateWorkspace ? 'estimate' : 'entry';
+  const startFresh = searchParams.get('fresh') === '1';
+  /** Product Entry prefilled from an entry estimate; Register posts payment and converts it. */
+  const convertEstimateId = estimateWorkspace
+    ? null
+    : searchParams.get('convertEstimateId')?.trim() || null;
+  const hydrateEstimateId = sourceEstimateId ?? convertEstimateId;
   const vendorPrefillConsumedRef = useRef(false);
   const estimateHydratedRef = useRef<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -955,12 +970,11 @@ export function ProductEntryPage() {
     }
     return 'REGULAR';
   });
-  const [activeEstimateId, setActiveEstimateId] = useState<string | null>(sourceEstimateId);
+  const [activeEstimateId, setActiveEstimateId] = useState<string | null>(hydrateEstimateId);
   const [activeEstimateNo, setActiveEstimateNo] = useState<string | null>(null);
   const [isSavingEstimateDraft, setIsSavingEstimateDraft] = useState(false);
   const [isLockingEstimate, setIsLockingEstimate] = useState(false);
   const [showLockConfirm, setShowLockConfirm] = useState(false);
-  const [showRegisterConfirm, setShowRegisterConfirm] = useState(false);
   const billingSchemaMode = schemaModeForBilling(billingMode);
   const shopSchema = useVerticalSchemaStore((s) =>
     activeShopId
@@ -1080,8 +1094,17 @@ export function ProductEntryPage() {
   useLayoutEffect(() => {
     if (draftRestoredRef.current) return;
     draftRestoredRef.current = true;
-    if (sourceEstimateId) return;
-    const draft = readProductEntryDraft<ProductFormData, Vendor>();
+    if (hydrateEstimateId) return;
+    if (startFresh) {
+      // "New entry estimate" must open blank. Drop `fresh` afterwards so a refresh
+      // mid-entry restores what was typed since, like any other draft.
+      clearProductEntryDraft(draftScope);
+      const next = new URLSearchParams(searchParams);
+      next.delete('fresh');
+      setSearchParams(next, { replace: true });
+      return;
+    }
+    const draft = readProductEntryDraft<ProductFormData, Vendor>(draftScope);
     if (!draft) return;
     setProducts(draft.products);
     if (estimateWorkspace && draft.billingMode === 'BASIC') {
@@ -1100,7 +1123,7 @@ export function ProductEntryPage() {
     if (draft.vendorOverallDiscount) setVendorOverallDiscount(draft.vendorOverallDiscount);
     if (draft.vendorRoundOff) setVendorRoundOff(draft.vendorRoundOff);
     if (draft.vendorInvoiceTotal) setVendorInvoiceTotal(draft.vendorInvoiceTotal);
-  }, [sourceEstimateId]);
+  }, [hydrateEstimateId]);
 
   /**
    * Persist the entry as it is edited. Debounced so typing does not hit storage on
@@ -1109,30 +1132,45 @@ export function ProductEntryPage() {
    */
   useEffect(() => {
     if (!draftRestoredRef.current) return;
+    // Converting reloads from the estimate; leave any unrelated Product Entry draft alone.
+    if (convertEstimateId) return;
     // A vendor is normally picked before the bill is scanned, so an empty grid with a
     // vendor on it is still worth keeping. Only a genuinely empty form clears.
     if (products.length === 0 && !selectedVendor) {
-      clearProductEntryDraft();
+      clearProductEntryDraft(draftScope);
+      return;
+    }
+    // A saved estimate reloads from the server; keeping a local copy would only
+    // resurface it inside the next "New entry estimate".
+    if (estimateWorkspace && activeEstimateId) {
+      clearProductEntryDraft(draftScope);
       return;
     }
     const timer = setTimeout(() => {
-      saveProductEntryDraft<ProductFormData, Vendor>({
-        products,
-        vendor: selectedVendor,
-        billingMode,
-        vendorInvoiceNo,
-        vendorInvoiceDate,
-        vendorLineSubTotal,
-        vendorTaxTotal,
-        vendorShippingCharge,
-        vendorOtherCharges,
-        vendorOverallDiscount,
-        vendorRoundOff,
-        vendorInvoiceTotal,
-      });
+      saveProductEntryDraft<ProductFormData, Vendor>(
+        {
+          products,
+          vendor: selectedVendor,
+          billingMode,
+          vendorInvoiceNo,
+          vendorInvoiceDate,
+          vendorLineSubTotal,
+          vendorTaxTotal,
+          vendorShippingCharge,
+          vendorOtherCharges,
+          vendorOverallDiscount,
+          vendorRoundOff,
+          vendorInvoiceTotal,
+        },
+        draftScope,
+      );
     }, 500);
     return () => clearTimeout(timer);
   }, [
+    draftScope,
+    convertEstimateId,
+    estimateWorkspace,
+    activeEstimateId,
     products,
     selectedVendor,
     billingMode,
@@ -1314,21 +1352,44 @@ export function ProductEntryPage() {
     [billingMode, shopSchema, estimateWorkspace, searchParams],
   );
 
+  const mapEstimateLineRef = useRef(mapEstimateLineToProduct);
+  mapEstimateLineRef.current = mapEstimateLineToProduct;
+
   useEffect(() => {
-    if (!sourceEstimateId) return;
-    if (estimateHydratedRef.current === sourceEstimateId) return;
-    estimateHydratedRef.current = sourceEstimateId;
+    if (!hydrateEstimateId) return;
+    if (estimateHydratedRef.current === hydrateEstimateId) return;
+    estimateHydratedRef.current = hydrateEstimateId;
     let cancelled = false;
+    let completed = false;
     void (async () => {
       try {
-        const draft = await stockEntryEstimatesApi.get(sourceEstimateId);
+        const draft = await stockEntryEstimatesApi.get(hydrateEstimateId);
         if (cancelled) return;
+        if (convertEstimateId) {
+          const convertible =
+            draft.state === 'OPEN' || (draft.state === 'LOCKED' && !draft.vendorPurchaseInvoiceId);
+          if (!convertible) {
+            completed = true;
+            setActiveEstimateId(null);
+            notifyError(
+              `Estimate ${draft.estimateNo ?? ''} can't be converted (status: ${draft.state}).`,
+            );
+            return;
+          }
+        }
         setActiveEstimateId(draft.id);
         setActiveEstimateNo(draft.estimateNo ?? null);
-        if (searchParams.get('billingMode') === 'REGULAR') {
-          setBillingMode('REGULAR');
-        } else if (estimateWorkspace) {
-          setBillingMode('BASIC');
+        const lines = draft.lines ?? [];
+        const draftHasTax = lines.some(
+          (line) =>
+            line.billingMode === 'REGULAR' ||
+            Boolean(line.sgst?.trim()) ||
+            Boolean(line.cgst?.trim()),
+        );
+        const hydratedMode: BillingMode =
+          searchParams.get('billingMode') === 'REGULAR' || draftHasTax ? 'REGULAR' : 'BASIC';
+        if (estimateWorkspace) {
+          setBillingMode(hydratedMode);
         }
         if (draft.vendorInvoiceNo) setVendorInvoiceNo(draft.vendorInvoiceNo);
         if (draft.vendorInvoiceDate) {
@@ -1344,27 +1405,41 @@ export function ProductEntryPage() {
         if (draft.paymentMethod) {
           setVendorPaymentMethod(draft.paymentMethod as PaymentMethod);
         }
+        if (lines.length > 0) {
+          setProducts(
+            lines.map((line) => ({
+              ...mapEstimateLineRef.current(line),
+              billingMode: estimateWorkspace ? hydratedMode : billingMode,
+            })),
+          );
+        }
+        completed = true;
         if (draft.vendorId) {
           try {
             const vendor = await vendorsApi.getById(draft.vendorId);
+            if (cancelled) return;
             setSelectedVendor(vendor as Vendor);
             setVendorSearchQuery(vendor.name ?? '');
           } catch {
             // vendor hydrate is best-effort
           }
         }
-        const lines = draft.lines ?? [];
-        if (lines.length > 0) {
-          setProducts(lines.map((line) => mapEstimateLineToProduct(line)));
-        }
       } catch (err) {
-        notifyError(err instanceof Error ? err.message : 'Failed to load entry estimate');
+        if (!cancelled) {
+          notifyError(err instanceof Error ? err.message : 'Failed to load entry estimate');
+        }
       }
     })();
     return () => {
       cancelled = true;
+      // Let the next run (StrictMode remount / id change) fetch again if this one never landed.
+      if (!completed && estimateHydratedRef.current === hydrateEstimateId) {
+        estimateHydratedRef.current = null;
+      }
     };
-  }, [sourceEstimateId, estimateWorkspace, searchParams, mapEstimateLineToProduct, notifyError]);
+    // Only re-hydrate when the estimate id changes; mapper is read via ref.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrateEstimateId]);
 
   const registrationFields = useMemo(
     () =>
@@ -2284,7 +2359,7 @@ export function ProductEntryPage() {
       schemePayFor: product.schemePayFor ?? null,
       schemeFree: product.schemeFree ?? null,
       schemePercentage: product.schemePercentage ?? null,
-      purchaseSchemeType: product.purchaseSchemeType ?? null,
+      purchaseSchemeType: toApiPurchaseSchemeType(product.purchaseSchemeType),
       purchaseSchemePayFor: product.purchaseSchemePayFor ?? null,
       purchaseSchemeFree: product.purchaseSchemeFree ?? null,
       purchaseSchemePercentage: product.purchaseSchemePercentage ?? null,
@@ -2359,7 +2434,7 @@ export function ProductEntryPage() {
       return;
     }
     if (estimateHasTaxableFields && !selectedVendor?.vendorId) {
-      notifyError('Select a vendor before locking a taxable estimate');
+      notifyError('Select a vendor before locking');
       return;
     }
     setShowLockConfirm(true);
@@ -2380,8 +2455,14 @@ export function ProductEntryPage() {
       }
       const locked = await stockEntryEstimatesApi.lock(id);
       setShowLockConfirm(false);
-      notifySuccess(`Locked ${locked.estimateNo ?? 'estimate'} — estimate-only stock created`);
-      clearProductEntryDraft();
+      notifySuccess(
+        estimateHasTaxableFields
+          ? `Locked ${
+              locked.estimateNo ?? 'estimate'
+            } — use Convert to invoice to add payment and register it`
+          : `Locked ${locked.estimateNo ?? 'estimate'} — estimate-only stock created`,
+      );
+      clearProductEntryDraft(draftScope);
       navigate('/dashboard/entry-estimates');
     } catch (err) {
       notifyError(err instanceof Error ? err.message : 'Failed to lock entry estimate');
@@ -2470,7 +2551,7 @@ export function ProductEntryPage() {
           schemePayFor: product.schemePayFor ?? null,
           schemeFree: product.schemeFree ?? null,
           schemePercentage: product.schemePercentage ?? null,
-          purchaseSchemeType: product.purchaseSchemeType ?? null,
+          purchaseSchemeType: toApiPurchaseSchemeType(product.purchaseSchemeType),
           purchaseSchemePayFor: product.purchaseSchemePayFor ?? null,
           purchaseSchemeFree: product.purchaseSchemeFree ?? null,
           purchaseSchemePercentage: product.purchaseSchemePercentage ?? null,
@@ -2544,7 +2625,7 @@ export function ProductEntryPage() {
             schemePayFor: product.schemePayFor ?? null,
             schemeFree: product.schemeFree ?? null,
             schemePercentage: product.schemePercentage ?? null,
-            purchaseSchemeType: product.purchaseSchemeType ?? null,
+            purchaseSchemeType: toApiPurchaseSchemeType(product.purchaseSchemeType),
             purchaseSchemePayFor: product.purchaseSchemePayFor ?? null,
             purchaseSchemeFree: product.purchaseSchemeFree ?? null,
             purchaseSchemePercentage: product.purchaseSchemePercentage ?? null,
@@ -2577,20 +2658,25 @@ export function ProductEntryPage() {
     }
   };
 
-  const requestRegisterFromEstimate = () => {
-    if (!registrationSchemaReady) {
-      notifyError('Product fields are still loading. Please wait and try again.');
-      return;
-    }
-    if (!selectedVendor?.vendorId) {
-      notifyError('Vendor information is required. Please search and select a vendor.');
-      return;
-    }
+  /** Save the estimate, then open Product Entry prefilled so payment is captured there. */
+  const handleConvertToInvoice = async () => {
     if (products.length === 0) {
-      notifyError('Add at least one product before registering');
+      notifyError('Add at least one product before converting');
       return;
     }
-    setShowRegisterConfirm(true);
+    setIsSavingEstimateDraft(true);
+    try {
+      const payload = buildEstimateUpsertPayload();
+      const saved = activeEstimateId
+        ? await stockEntryEstimatesApi.update(activeEstimateId, payload)
+        : await stockEntryEstimatesApi.create(payload);
+      clearProductEntryDraft(draftScope);
+      navigate(`/dashboard/product-entry?convertEstimateId=${encodeURIComponent(saved.id)}`);
+    } catch (err) {
+      notifyError(err instanceof Error ? err.message : 'Failed to save entry estimate');
+    } finally {
+      setIsSavingEstimateDraft(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -2609,7 +2695,6 @@ export function ProductEntryPage() {
       if (!selectedVendor || !selectedVendor.vendorId) {
         notifyError('Vendor information is required. Please search and select a vendor.');
         setIsLoading(false);
-        setShowRegisterConfirm(false);
         return;
       }
 
@@ -3123,7 +3208,6 @@ export function ProductEntryPage() {
         // If we have items or a positive createdCount, consider it successful
         if (createdCount > 0 || items.length > 0) {
           const count = createdCount || items.length;
-          setShowRegisterConfirm(false);
           notifySuccess(
             count === 1
               ? 'Product registered successfully'
@@ -3141,9 +3225,19 @@ export function ProductEntryPage() {
             }
           }
 
+          if (convertEstimateId) {
+            // Stay on Product Entry (barcode labels, reset) but drop the estimate link so a
+            // refresh can't reload an estimate that is already converted.
+            setActiveEstimateId(null);
+            setActiveEstimateNo(null);
+            const next = new URLSearchParams(searchParams);
+            next.delete('convertEstimateId');
+            setSearchParams(next, { replace: true });
+          }
+
           // Saved is saved. The form only resets after 5s below, and a refresh inside
           // that window would otherwise restore an entry that is already in the books.
-          clearProductEntryDraft();
+          clearProductEntryDraft(draftScope);
 
           if (estimateWorkspace) {
             navigate('/dashboard/entry-estimates');
@@ -3187,7 +3281,7 @@ export function ProductEntryPage() {
               ? 'Product registered successfully'
               : `Successfully registered ${count} products`,
           );
-          clearProductEntryDraft();
+          clearProductEntryDraft(draftScope);
           setTimeout(() => {
             setProducts([]);
             handleClearVendor();
@@ -3267,7 +3361,10 @@ export function ProductEntryPage() {
       ?.prefillVendor;
     // Navigation state wins (arriving from Contacts with a vendor chosen); otherwise
     // take the vendor off the draft, which is where it now lives alongside the rows.
-    const fromDraft = readProductEntryDraft<ProductFormData, VendorResponse>()?.vendor ?? null;
+    const fromDraft =
+      hydrateEstimateId || startFresh
+        ? null
+        : readProductEntryDraft<ProductFormData, VendorResponse>(draftScope)?.vendor ?? null;
     const raw = fromNav?.vendorId ? fromNav : fromDraft;
     if (!raw?.vendorId) return;
     vendorPrefillConsumedRef.current = true;
@@ -3424,7 +3521,11 @@ export function ProductEntryPage() {
       <PageHeader
         description={
           estimateWorkspace
-            ? 'Draft stock-in without tax. Lock for estimate-only stock, or Add tax here to enter HSN / CGST / SGST on this page.'
+            ? 'Draft stock-in. Lock to add estimate-only stock, or fill HSN / CGST / SGST and convert it to a vendor bill.'
+            : convertEstimateId
+            ? `Converting entry estimate${
+                activeEstimateNo ? ` ${activeEstimateNo}` : ''
+              }. Review the lines, add payment details, then Register.`
             : 'Register taxable stock with shared vendor and invoice details. Set HSN / CGST / SGST in each product’s Tax section.'
         }
       />
@@ -3593,8 +3694,8 @@ export function ProductEntryPage() {
                     Applies to all products.
                     {estimateWorkspace
                       ? billingMode === 'REGULAR'
-                        ? ' Tax enabled — vendor is required to Register. Fill HSN / CGST / SGST below.'
-                        : ' Estimate (no tax). Vendor is optional for Lock. Add tax (then Register) requires a vendor.'
+                        ? ' Fill HSN / CGST / SGST below. A vendor is required to Lock; you can also pick one while converting.'
+                        : ' Vendor is optional for Lock.'
                       : ' Taxable stock-in — fill HSN / CGST / SGST in each product’s Tax section.'}
                   </Text>
                 </Box>
@@ -4048,8 +4149,8 @@ export function ProductEntryPage() {
                         </Box>
                         <Text as="span" className={accordionStyles.unitHint}>
                           {billingMode === 'BASIC'
-                            ? 'Without tax this stays an estimate — Lock creates estimate-only stock. Add tax to enter HSN, CGST, and SGST on this page, then Register.'
-                            : 'Tax is enabled. Enter HSN / CGST / SGST on each product below, then Register. Clear tax to go back to estimate-only (Lock).'}
+                            ? 'Lock adds estimate-only stock. Add tax to enter HSN, CGST, and SGST on this page, then Convert to invoice.'
+                            : 'Enter HSN / CGST / SGST on each product below, then Lock or Convert to invoice. Clear tax to go back to estimate-only stock.'}
                         </Text>
                       </Box>
                     ) : null}
@@ -5059,8 +5160,8 @@ export function ProductEntryPage() {
                           }
                           title={
                             estimateHasTaxableFields && !selectedVendor?.vendorId
-                              ? 'Select a vendor before locking a taxable estimate'
-                              : 'Lock without tax — creates estimate-only stock (vendor optional)'
+                              ? 'Select a vendor before locking'
+                              : 'Lock — adds estimate-only stock (vendor optional)'
                           }
                         >
                           {isLockingEstimate
@@ -5074,24 +5175,36 @@ export function ProductEntryPage() {
                           type="button"
                           variant="outline"
                           onClick={() => void handleSaveEstimateDraft()}
-                          disabled={isSavingEstimateDraft || isLoading}
+                          disabled={isSavingEstimateDraft || isLockingEstimate || isLoading}
                         >
                           {isSavingEstimateDraft ? 'Saving…' : 'Save draft'}
                         </Button>
                         <Button
                           type="button"
-                          variant="solid"
-                          onClick={requestRegisterFromEstimate}
-                          disabled={isLoading || !selectedVendor?.vendorId}
+                          variant="outline"
+                          onClick={requestLockEntryEstimate}
+                          disabled={
+                            isSavingEstimateDraft ||
+                            isLockingEstimate ||
+                            isLoading ||
+                            !selectedVendor?.vendorId
+                          }
                           title={
                             !selectedVendor?.vendorId
-                              ? 'Select a vendor before registering'
-                              : 'Register taxable stock from this estimate'
+                              ? 'Select a vendor before locking'
+                              : 'Lock — freezes this estimate; convert it later'
                           }
                         >
-                          {isLoading
-                            ? `Registering ${products.length} Product(s)...`
-                            : `Register ${products.length} Product(s)`}
+                          {isLockingEstimate ? 'Locking…' : 'Lock'}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="solid"
+                          onClick={() => void handleConvertToInvoice()}
+                          disabled={isSavingEstimateDraft || isLockingEstimate || isLoading}
+                          title="Open in Product Entry to add payment details and register"
+                        >
+                          {isSavingEstimateDraft ? 'Saving…' : 'Convert to invoice'}
                         </Button>
                       </>
                     ) : (
@@ -5384,36 +5497,27 @@ export function ProductEntryPage() {
         }}
         onConfirm={() => void handleLockEntryEstimate()}
         message={
-          <Stack gap="sm">
-            <Text>Please acknowledge before locking:</Text>
-            <Text>• You won’t be able to edit this estimate after locking.</Text>
-            <Text>• Lock: adds stock for estimate sales only.</Text>
-            <Text>
-              • Register: use this when you’ve filled HSN / CGST / SGST to complete stock-in against
-              a vendor bill.
-            </Text>
-          </Stack>
-        }
-      />
-
-      <ConfirmDialog
-        open={showRegisterConfirm}
-        title="Register stock?"
-        confirmLabel={isLoading ? 'Registering…' : 'Register'}
-        loading={isLoading}
-        onCancel={() => {
-          if (!isLoading) setShowRegisterConfirm(false);
-        }}
-        onConfirm={() => void handleSubmit()}
-        message={
-          <Stack gap="sm">
-            <Text>Please acknowledge before registering:</Text>
-            <Text>• You won’t be able to edit this estimate afterward.</Text>
-            <Text>
-              • Register completes stock-in against a vendor bill when HSN / CGST / SGST are filled.
-            </Text>
-            <Text>• A vendor is required for this step.</Text>
-          </Stack>
+          estimateHasTaxableFields ? (
+            <Stack gap="sm">
+              <Text>Please acknowledge before locking:</Text>
+              <Text>• You won’t be able to edit this estimate after locking.</Text>
+              <Text>• Lock: no stock is added yet.</Text>
+              <Text>
+                • Next, use Convert to invoice to add payment details and complete stock-in against
+                a vendor bill.
+              </Text>
+            </Stack>
+          ) : (
+            <Stack gap="sm">
+              <Text>Please acknowledge before locking:</Text>
+              <Text>• You won’t be able to edit this estimate after locking.</Text>
+              <Text>• Lock: adds stock for estimate sales only.</Text>
+              <Text>
+                • To complete stock-in against a vendor bill instead, fill HSN / CGST / SGST and use
+                Convert to invoice.
+              </Text>
+            </Stack>
+          )
         }
       />
     </Stack>

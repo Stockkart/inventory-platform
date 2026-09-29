@@ -2,12 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import {
   Alert,
-  Badge,
   Box,
   Button,
-  Card,
-  CardBody,
   CenteredLoader,
+  ConfirmDialog,
   EmptyState,
   Inline,
   PageHeader,
@@ -15,7 +13,6 @@ import {
   Stack,
   Text,
   accountingChrome,
-  productChrome,
 } from '@inventory-platform/ui-kit';
 import { useNotify } from '@inventory-platform/session';
 import { stockEntryEstimatesApi } from '../api/stockEntryEstimates.api';
@@ -23,6 +20,7 @@ import type {
   StockEntryEstimateState,
   StockEntryEstimateSummary,
 } from '@inventory-platform/product/types';
+import { StockEntryEstimateListCard } from '../ui/StockEntryEstimateListCard';
 import { ProductEntryPage } from './ProductEntryPage';
 
 type FilterTab = 'OPEN' | 'LOCKED' | 'CONVERTED' | 'ALL';
@@ -60,6 +58,7 @@ function StockEntryEstimatesListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [lockTarget, setLockTarget] = useState<StockEntryEstimateSummary | null>(null);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(20);
   const [total, setTotal] = useState(0);
@@ -112,11 +111,16 @@ function StockEntryEstimatesListPage() {
     );
   };
 
+  const handleConvert = (estimate: StockEntryEstimateSummary) => {
+    navigate(`/dashboard/product-entry?convertEstimateId=${encodeURIComponent(estimate.id)}`);
+  };
+
   const handleLock = async (estimate: StockEntryEstimateSummary) => {
     if (estimate.state !== 'OPEN' || estimate.itemCount <= 0) return;
     setBusyId(estimate.id);
     try {
       await stockEntryEstimatesApi.lock(estimate.id);
+      setLockTarget(null);
       await load();
     } catch (err) {
       notifyError(err instanceof Error ? err.message : 'Failed to lock entry estimate');
@@ -126,7 +130,7 @@ function StockEntryEstimatesListPage() {
   };
 
   const handleDiscard = async (estimate: StockEntryEstimateSummary) => {
-    if (estimate.state !== 'OPEN') return;
+    if (estimate.state !== 'OPEN' && !estimate.awaitingConversion) return;
     if (!window.confirm(`Discard entry estimate ${estimate.estimateNo ?? ''}?`)) return;
     setBusyId(estimate.id);
     try {
@@ -143,7 +147,7 @@ function StockEntryEstimatesListPage() {
     <Stack gap="md" maxWidth="xl" mx="auto">
       <PageHeader
         title="Entry Estimate"
-        description="Draft stock-in without tax. Lock for estimate-only stock, or open a draft and Add tax on that page."
+        description="Draft stock-in. Lock to add estimate-only stock, or fill HSN / CGST / SGST on a draft and convert it to a vendor bill."
         actions={
           <Button type="button" variant="solid" onClick={handleNew}>
             New entry estimate
@@ -190,7 +194,7 @@ function StockEntryEstimatesListPage() {
       ) : estimates.length === 0 ? (
         <EmptyState
           title="No entry estimates yet"
-          description="Draft stock-in without tax. Lock for estimate-only stock, or open a draft and Add tax on that page."
+          description="Draft stock-in. Lock to add estimate-only stock, or fill HSN / CGST / SGST on a draft and convert it to a vendor bill."
           action={
             <Button type="button" variant="solid" onClick={handleNew}>
               New entry estimate
@@ -199,67 +203,69 @@ function StockEntryEstimatesListPage() {
         />
       ) : (
         <Stack gap="md">
-          {estimates.map((estimate) => (
-            <Card key={estimate.id} className={productChrome.historyRecordCard}>
-              <CardBody>
-                <Inline justify="between" align="start" gap="md" wrap>
-                  <Stack gap="xs">
-                    <Inline gap="sm" align="center">
-                      <Text weight="bold">{estimate.estimateNo ?? estimate.id}</Text>
-                      <Badge
-                        variant={
-                          estimate.state === 'OPEN'
-                            ? 'success'
-                            : estimate.state === 'LOCKED'
-                            ? 'info'
-                            : 'neutral'
-                        }
-                      >
-                        {estimate.state}
-                      </Badge>
-                    </Inline>
-                    <Text variant="caption" color="secondary">
-                      {estimate.itemCount} item{estimate.itemCount === 1 ? '' : 's'}
-                      {estimate.vendorInvoiceNo ? ` · Inv ${estimate.vendorInvoiceNo}` : ''}
-                    </Text>
-                  </Stack>
-                  <Inline gap="xs" wrap>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      disabled={busyId === estimate.id}
-                      onClick={() => handleOpen(estimate)}
-                    >
-                      {estimate.state === 'OPEN' ? 'Edit' : 'Open'}
-                    </Button>
-                    {estimate.state === 'OPEN' ? (
-                      <>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="solid"
-                          disabled={busyId === estimate.id || estimate.itemCount <= 0}
-                          onClick={() => void handleLock(estimate)}
-                        >
-                          Lock
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          disabled={busyId === estimate.id}
-                          onClick={() => void handleDiscard(estimate)}
-                        >
-                          Discard
-                        </Button>
-                      </>
-                    ) : null}
-                  </Inline>
-                </Inline>
-              </CardBody>
-            </Card>
-          ))}
+          {estimates.map((estimate) => {
+            const busy = busyId === estimate.id;
+            const actions = estimate.awaitingConversion ? (
+              <>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="solid"
+                  disabled={busy}
+                  onClick={() => handleConvert(estimate)}
+                >
+                  Convert to invoice
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  disabled={busy}
+                  onClick={() => void handleDiscard(estimate)}
+                >
+                  Discard
+                </Button>
+              </>
+            ) : estimate.state === 'OPEN' ? (
+              <>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => handleOpen(estimate)}
+                >
+                  Edit
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="solid"
+                  disabled={busy || estimate.itemCount <= 0}
+                  onClick={() => setLockTarget(estimate)}
+                >
+                  Lock
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  disabled={busy}
+                  onClick={() => void handleDiscard(estimate)}
+                >
+                  Discard
+                </Button>
+              </>
+            ) : null;
+            return (
+              <StockEntryEstimateListCard
+                key={estimate.id}
+                estimate={estimate}
+                busy={busy}
+                actions={actions}
+              />
+            );
+          })}
         </Stack>
       )}
 
@@ -279,6 +285,42 @@ function StockEntryEstimatesListPage() {
           aria-label="Entry estimate pages"
         />
       ) : null}
+
+      <ConfirmDialog
+        open={lockTarget != null}
+        title={`Lock ${lockTarget?.estimateNo ?? 'this estimate'}?`}
+        confirmLabel={busyId && busyId === lockTarget?.id ? 'Locking…' : 'Lock estimate'}
+        loading={busyId != null && busyId === lockTarget?.id}
+        onCancel={() => {
+          if (!busyId) setLockTarget(null);
+        }}
+        onConfirm={() => {
+          if (lockTarget) void handleLock(lockTarget);
+        }}
+        message={
+          lockTarget?.taxable ? (
+            <Stack gap="sm">
+              <Text>Please acknowledge before locking:</Text>
+              <Text>• You won’t be able to edit this estimate after locking.</Text>
+              <Text>• Lock: no stock is added yet.</Text>
+              <Text>
+                • Next, use Convert to invoice to add payment details and complete stock-in against
+                a vendor bill.
+              </Text>
+            </Stack>
+          ) : (
+            <Stack gap="sm">
+              <Text>Please acknowledge before locking:</Text>
+              <Text>• You won’t be able to edit this estimate after locking.</Text>
+              <Text>• Lock: adds stock for estimate sales only.</Text>
+              <Text>
+                • To complete stock-in against a vendor bill instead, open the draft, fill HSN /
+                CGST / SGST and use Convert to invoice.
+              </Text>
+            </Stack>
+          )
+        }
+      />
     </Stack>
   );
 }

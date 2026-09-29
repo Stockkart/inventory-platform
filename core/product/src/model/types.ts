@@ -125,6 +125,10 @@ export interface StockEntryEstimateSummary {
   invoiceTotal?: number | null;
   updatedAt?: string | null;
   createdAt?: string | null;
+  /** Lines carry HSN / CGST / SGST; Lock freezes instead of creating stock. */
+  taxable?: boolean;
+  /** LOCKED with no stock yet — convert in Product Entry to register it. */
+  awaitingConversion?: boolean;
 }
 
 export interface StockEntryEstimateListResponse {
