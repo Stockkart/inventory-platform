@@ -1,6 +1,7 @@
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
-import type { CartResponse } from '@inventory-platform/product/types';
+import type { CartResponse, StockEntryEstimateResponse } from '@inventory-platform/product/types';
 import { estimatesApi } from '../api/estimates.api';
+import { stockEntryEstimatesApi } from '../api/stockEntryEstimates.api';
 import { productKeys } from './keys';
 
 export { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
@@ -22,5 +23,20 @@ export function useEstimateDetailQuery(
     queryFn: () => estimatesApi.get(id),
     enabled: Boolean(id) && extraEnabled,
     staleTime: 60_000,
+  });
+}
+
+export function useStockEntryEstimateDetailQuery(
+  id: string | null | undefined,
+  options?: Omit<UseQueryOptions<StockEntryEstimateResponse>, 'queryKey' | 'queryFn'>,
+) {
+  const estimateId = id?.trim() ?? '';
+  const extraEnabled = options?.enabled ?? true;
+  return useQuery({
+    ...options,
+    queryKey: productKeys.stockEntryEstimateDetail(estimateId),
+    queryFn: () => stockEntryEstimatesApi.get(estimateId),
+    enabled: Boolean(estimateId) && extraEnabled,
+    staleTime: 30_000,
   });
 }
