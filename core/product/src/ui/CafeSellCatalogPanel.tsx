@@ -74,6 +74,27 @@ function stockAvailable(item: InventoryItem): number {
   return item.currentBaseCount ?? item.currentCount ?? 0;
 }
 
+export type LinkedStockBlock = 'missing' | 'outOfStock';
+
+/**
+ * What a menu placement of a stock lot can sell right now. The lot comes from `directStock`, which
+ * holds only sell-direct lots: a lot deleted or no longer sell-direct is simply absent, and reads
+ * as missing.
+ */
+export function linkedStockState(
+  item: MenuItem,
+  lotsById: Map<string, InventoryItem>,
+): { lot: InventoryItem | null; blocked: LinkedStockBlock | null } {
+  const lot = item.inventoryId ? lotsById.get(item.inventoryId) ?? null : null;
+  if (!lot) return { lot: null, blocked: 'missing' };
+  return { lot, blocked: stockAvailable(lot) <= 0 ? 'outOfStock' : null };
+}
+
+const BLOCKED_LABEL: Record<LinkedStockBlock, string> = {
+  missing: 'Stock item missing',
+  outOfStock: 'Out of stock',
+};
+
 export function CafeSellCatalogPanel({
   catalog,
   loading = false,
@@ -105,10 +126,28 @@ export function CafeSellCatalogPanel({
     [sections, normalizedFilter],
   );
 
+  const lotsById = useMemo(
+    () => new Map(directStock.map((lot) => [lot.id, lot] as const)),
+    [directStock],
+  );
+
+  /** Lots placed in a section. They sell from there, so Direct stock does not list them twice. */
+  const linkedIds = useMemo(
+    () =>
+      new Set(
+        sections.flatMap((section) =>
+          (section.items ?? [])
+            .filter((item) => item.sellMode === 'direct' && item.inventoryId)
+            .map((item) => item.inventoryId as string),
+        ),
+      ),
+    [sections],
+  );
+
   const filteredDirectStock = useMemo(
     () =>
       directStock.filter((item) => {
-        if (!item.name?.trim()) {
+        if (!item.name?.trim() || linkedIds.has(item.id)) {
           return false;
         }
         if (!normalizedFilter) {
@@ -116,7 +155,7 @@ export function CafeSellCatalogPanel({
         }
         return item.name.toLowerCase().includes(normalizedFilter);
       }),
-    [directStock, normalizedFilter],
+    [directStock, normalizedFilter, linkedIds],
   );
 
   const tonesBySectionId = useMemo(
@@ -245,6 +284,38 @@ export function CafeSellCatalogPanel({
             </Inline>
             <Box className={productChrome.cafeCatalogGrid}>
               {section.items.map((item) => {
+                if (item.sellMode === 'direct') {
+                  const { lot, blocked } = linkedStockState(item, lotsById);
+                  return (
+                    <Button
+                      key={item.id}
+                      type="button"
+                      variant="outline"
+                      disabled={disabled || blocked !== null}
+                      onClick={() => {
+                        if (lot) onAddDirectStock(lot);
+                      }}
+                      className={productChrome.cafeCatalogTileStock}
+                    >
+                      <Stack gap="xs" width="full">
+                        <Text weight="semibold" truncate>
+                          {lot?.name || item.name}
+                        </Text>
+                        <Text variant="caption" color="secondary">
+                          {blocked
+                            ? BLOCKED_LABEL[blocked]
+                            : `${stockAvailable(lot as InventoryItem)} in stock`}
+                        </Text>
+                        <Inline justify="between" align="center" width="full">
+                          <Text weight="semibold">{lot ? money(stockPrice(lot)) : '—'}</Text>
+                          <Text aria-hidden className={productChrome.cafeCatalogAddBadgeStock}>
+                            +
+                          </Text>
+                        </Inline>
+                      </Stack>
+                    </Button>
+                  );
+                }
                 const portions = sellablePortions(item);
                 const isPortioned = portions.length > 0;
                 return (
