@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import type { LucideIcon } from 'lucide-react';
 import { FileText, Printer, Receipt } from 'lucide-react';
 import { cartApi } from '../api/cart.api';
@@ -7,12 +8,12 @@ import {
   PrintBridgeError,
   describeDuplicateJob,
   describePrintOutcome,
-  isBridgeUp,
   pollJobOutcome,
   sendToBridge,
 } from '../lib/printBridge';
 import type { BridgeHealth, PrintDocType, PrintOutcomeReport } from '../lib/printBridge';
 import type { PrinterType } from '../api/endpoints';
+import { productKeys, usePrintBridgeHealthQuery } from '../queries/hooks';
 import {
   Alert,
   Box,
@@ -111,7 +112,7 @@ export function PrintInvoiceModal({
   const [printerType, setPrinterType] = useState<PrinterType>('NORMAL');
   const [shopDefault, setShopDefault] = useState<PrinterType | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [bridge, setBridge] = useState<BridgeHealth | null>(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -136,22 +137,11 @@ export function PrintInvoiceModal({
   }, [isOpen]);
 
   // Probe the local print bridge whenever the modal opens. Never blocks the UI:
-  // isBridgeUp resolves to null on any failure, and the modal stays usable.
-  useEffect(() => {
-    if (!isOpen) {
-      setBridge(null);
-      return;
-    }
-    let cancelled = false;
-    void isBridgeUp().then((health) => {
-      if (!cancelled) {
-        setBridge(health);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen]);
+  // isBridgeUp resolves to null on any failure, and the modal stays usable. A probe
+  // in flight counts as "no bridge", as does a closed modal.
+  const bridgeQuery = usePrintBridgeHealthQuery(isOpen);
+  const bridge: BridgeHealth | null =
+    isOpen && !bridgeQuery.isFetching ? bridgeQuery.data ?? null : null;
 
   const handlePreviewPdf = async () => {
     setIsGenerating(true);
@@ -232,7 +222,7 @@ export function PrintInvoiceModal({
       if (err instanceof PrintBridgeError && err.kind === 'UNREACHABLE' && textBlob) {
         const slug = documentLabel.toLowerCase().replace(/\s+/g, '-');
         downloadBlob(textBlob, `${slug}-${invoiceNo || purchaseId}.prn`);
-        setBridge(null);
+        queryClient.setQueryData(productKeys.printBridgeHealth(), null);
         onError?.('Print bridge not running. Printer file downloaded instead.');
         onClose();
         return;

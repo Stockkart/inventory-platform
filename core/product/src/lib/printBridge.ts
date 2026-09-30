@@ -4,6 +4,10 @@
  *
  * The bridge is optional. Every failure path here is recoverable: callers fall back to
  * downloading the print file so billing is never blocked by a missing bridge.
+ *
+ * This file uses raw `fetch` on purpose. The bridge is a loopback app, not the StockKart
+ * API, so `apiClient` (base URL, auth and shop headers) would be wrong here. See the
+ * package README, "Dot matrix printing".
  */
 
 /** Loopback origin the bridge listens on. Never a LAN address. */

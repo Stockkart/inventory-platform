@@ -12,9 +12,9 @@ import {
   cn,
   productChrome,
 } from '@inventory-platform/ui-kit';
+import { useNotify } from '@inventory-platform/session';
 import { SaleLineItemsTable, SaleTotals, formatCurrency } from './SaleLineItems';
 import { PrintInvoiceModal } from './PrintInvoiceModal';
-import { useNotify } from '@inventory-platform/session';
 import { formatPaymentMethod, formatPaymentSplit } from './paymentMethod';
 
 function formatDate(dateString: string): string {

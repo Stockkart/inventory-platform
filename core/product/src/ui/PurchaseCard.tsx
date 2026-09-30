@@ -13,9 +13,9 @@ import {
   Text,
   productChrome,
 } from '@inventory-platform/ui-kit';
+import { useNotify } from '@inventory-platform/session';
 import { Printer } from 'lucide-react';
 import { PrintInvoiceModal } from './PrintInvoiceModal';
-import { useNotify } from '@inventory-platform/session';
 import { formatPaymentMethod, formatPaymentSplit } from './paymentMethod';
 
 interface PurchaseCardProps {
