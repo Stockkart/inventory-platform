@@ -1,4 +1,5 @@
-import type { CheckoutItemResponse } from '@inventory-platform/product/types';
+import { Fragment } from 'react';
+import type { CheckoutItemResponse, SaleTaxSummary } from '@inventory-platform/product/types';
 import { formatPercent, schemeLabel } from '../lib/billedLineLabels';
 import {
   Box,
@@ -74,7 +75,14 @@ export function SummaryRow({
 }
 
 /** Every line of a billed document, with the same columns wherever it is opened. */
-export function SaleLineItemsTable({ items }: { items: CheckoutItemResponse[] }) {
+export function SaleLineItemsTable({
+  items,
+  lineRates,
+}: {
+  items: CheckoutItemResponse[];
+  /** Each line's rate before tax, from the bill's tax summary. */
+  lineRates?: Array<number | null> | null;
+}) {
   return (
     <Box overflow="auto">
       <Table className={cn(surfaceChrome.minW320, productChrome.historyItemsTable)}>
@@ -104,7 +112,9 @@ export function SaleLineItemsTable({ items }: { items: CheckoutItemResponse[] })
                 {item.maximumRetailPrice ? formatCurrency(item.maximumRetailPrice) : '—'}
               </TableCell>
               <TableCell className={surfaceChrome.numericCell}>
-                {formatCurrency(item.priceToRetail ?? 0)}
+                {/* Before tax, as the invoice's RATE column prints it: a line sold at MRP has
+                    the GST inside its price taken out. */}
+                {formatCurrency(lineRates?.[idx] ?? item.priceToRetail ?? 0)}
               </TableCell>
               <TableCell className={surfaceChrome.numericCell}>
                 {/* The discount rate the operator applied at sale, not the rupee value of it.
@@ -132,27 +142,68 @@ export function SaleLineItemsTable({ items }: { items: CheckoutItemResponse[] })
   );
 }
 
-/** Subtotal through to the billed total, in the order the printed invoice states them. */
+/**
+ * Subtotal through to the billed total, in the order the printed invoice states them.
+ *
+ * The figures come from the API's tax summary, which is the same calculation the invoice prints,
+ * so GST is shown at each rate. Nothing is calculated here. The discount shown is the additional
+ * discount: the gap between MRP and rate is already inside the rate.
+ */
 export function SaleTotals({
+  taxSummary,
   subTotal,
-  discountTotal,
+  saleAdditionalDiscountTotal,
   sgstAmount,
   cgstAmount,
   taxTotal,
   grandTotal,
 }: {
+  taxSummary?: SaleTaxSummary | null;
   subTotal?: number | null;
-  discountTotal?: number | null;
+  saleAdditionalDiscountTotal?: number | null;
   sgstAmount?: number | null;
   cgstAmount?: number | null;
   taxTotal?: number | null;
   grandTotal?: number | null;
 }) {
+  if (taxSummary) {
+    return (
+      <Box className={productChrome.historyTotalsPanel}>
+        <SummaryRow label="Subtotal" value={formatCurrency(taxSummary.subTotal)} />
+        {taxSummary.additionalDiscount ? (
+          <SummaryRow
+            label="Additional discount"
+            value={`− ${formatCurrency(taxSummary.additionalDiscount)}`}
+          />
+        ) : null}
+        <SummaryRow label="Taxable value" value={formatCurrency(taxSummary.taxableValue)} />
+        {taxSummary.rates.map((row) => (
+          <Fragment key={`${row.cgstPercent}|${row.sgstPercent}`}>
+            <SummaryRow
+              label={`SGST ${formatPercent(row.sgstPercent)}`}
+              value={formatCurrency(row.sgstAmount)}
+            />
+            <SummaryRow
+              label={`CGST ${formatPercent(row.cgstPercent)}`}
+              value={formatCurrency(row.cgstAmount)}
+            />
+          </Fragment>
+        ))}
+        {taxSummary.roundOff ? (
+          <SummaryRow label="Round off" value={formatCurrency(taxSummary.roundOff)} />
+        ) : null}
+        <SummaryRow label="Total" value={formatCurrency(grandTotal ?? 0)} total />
+      </Box>
+    );
+  }
   return (
     <Box className={productChrome.historyTotalsPanel}>
       <SummaryRow label="Subtotal" value={formatCurrency(subTotal ?? 0)} />
-      {discountTotal ? (
-        <SummaryRow label="Discount" value={`− ${formatCurrency(discountTotal)}`} />
+      {saleAdditionalDiscountTotal ? (
+        <SummaryRow
+          label="Additional discount"
+          value={`− ${formatCurrency(saleAdditionalDiscountTotal)}`}
+        />
       ) : null}
       {sgstAmount ? <SummaryRow label="SGST" value={formatCurrency(sgstAmount)} /> : null}
       {cgstAmount ? <SummaryRow label="CGST" value={formatCurrency(cgstAmount)} /> : null}

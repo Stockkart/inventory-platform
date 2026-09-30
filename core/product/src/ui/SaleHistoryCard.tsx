@@ -165,11 +165,12 @@ export function SaleHistoryCard({ purchase }: { purchase: Purchase }) {
             <Text as="p" className={productChrome.historyItemsTitle}>
               Line items
             </Text>
-            <SaleLineItemsTable items={purchase.items} />
+            <SaleLineItemsTable items={purchase.items} lineRates={purchase.taxSummary?.lineRates} />
 
             <SaleTotals
+              taxSummary={purchase.taxSummary}
               subTotal={purchase.subTotal}
-              discountTotal={purchase.discountTotal}
+              saleAdditionalDiscountTotal={purchase.saleAdditionalDiscountTotal}
               sgstAmount={purchase.sgstAmount}
               cgstAmount={purchase.cgstAmount}
               taxTotal={purchase.taxTotal}
