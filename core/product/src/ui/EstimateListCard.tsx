@@ -64,40 +64,57 @@ function HistoryField({
 }
 
 function EstimateCardActions({
-  isOpen,
+  estimateState,
   busy,
   canConvert,
+  canPrint,
   onEdit,
+  onLock,
   onConvert,
   onDiscard,
+  onPrint,
 }: {
-  isOpen: boolean;
+  estimateState: EstimateSummary['estimateState'];
   busy: boolean;
   canConvert: boolean;
+  canPrint: boolean;
   onEdit: () => void;
+  onLock: () => void;
   onConvert: () => void;
   onDiscard: () => void;
+  onPrint: () => void;
 }) {
+  const isOpen = estimateState === 'OPEN';
+  const isLocked = estimateState === 'LOCKED';
   return (
     <>
       <Button type="button" size="sm" variant="outline" disabled={busy} onClick={onEdit}>
         {isOpen ? 'Edit' : 'Open'}
       </Button>
+      {canPrint ? (
+        <Button type="button" size="sm" variant="ghost" disabled={busy} onClick={onPrint}>
+          Print
+        </Button>
+      ) : null}
       {isOpen ? (
         <>
-          <Button
-            type="button"
-            size="sm"
-            variant="solid"
-            disabled={busy || !canConvert}
-            onClick={onConvert}
-          >
-            {busy ? 'Converting…' : 'Convert to invoice'}
+          <Button type="button" size="sm" variant="solid" disabled={busy} onClick={onLock}>
+            {busy ? 'Locking…' : 'Lock'}
           </Button>
+          {canConvert ? (
+            <Button type="button" size="sm" variant="outline" disabled={busy} onClick={onConvert}>
+              Convert to invoice
+            </Button>
+          ) : null}
           <Button type="button" size="sm" variant="outline" disabled={busy} onClick={onDiscard}>
             Discard
           </Button>
         </>
+      ) : null}
+      {isLocked && canConvert ? (
+        <Button type="button" size="sm" variant="solid" disabled={busy} onClick={onConvert}>
+          {busy ? 'Converting…' : 'Convert to invoice'}
+        </Button>
       ) : null}
     </>
   );
@@ -107,18 +124,24 @@ export function EstimateListCard({
   estimate,
   busy,
   onEdit,
+  onLock,
   onConvert,
   onDiscard,
 }: {
   estimate: EstimateSummary;
   busy: boolean;
   onEdit: () => void;
+  onLock: () => void;
   onConvert: () => void;
   onDiscard: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
-  const isOpen = estimate.estimateState === 'OPEN';
+  const canPrint = estimate.estimateState === 'LOCKED' || estimate.estimateState === 'CONVERTED';
+  const canConvert =
+    estimate.itemCount > 0 &&
+    (estimate.estimateState === 'OPEN' || estimate.estimateState === 'LOCKED') &&
+    estimate.billingMode !== 'BASIC';
   const estimateNo = estimate.estimateNo?.trim() || null;
   const customer = formatCustomerDisplayName(estimate.customerName);
   const phone = estimate.customerPhone?.trim() || '—';
@@ -129,8 +152,32 @@ export function EstimateListCard({
   });
   const items = detailQuery.data?.items ?? [];
 
-  const statusVariant = isOpen ? 'success' : 'info';
-  const statusLabel = isOpen ? 'Open' : 'Converted';
+  const statusVariant =
+    estimate.estimateState === 'OPEN'
+      ? 'success'
+      : estimate.estimateState === 'LOCKED'
+      ? 'info'
+      : 'neutral';
+  const statusLabel =
+    estimate.estimateState === 'OPEN'
+      ? 'Open'
+      : estimate.estimateState === 'LOCKED'
+      ? 'Locked'
+      : estimate.estimateState === 'CONVERTED'
+      ? 'Converted'
+      : 'Discarded';
+
+  const actionProps = {
+    estimateState: estimate.estimateState,
+    busy,
+    canConvert,
+    canPrint,
+    onEdit,
+    onLock,
+    onConvert,
+    onDiscard,
+    onPrint: () => setShowPrintModal(true),
+  };
 
   return (
     <>
@@ -155,7 +202,7 @@ export function EstimateListCard({
                 {estimate.billingMode === 'REGULAR' ? (
                   <Badge variant="warning">Tax</Badge>
                 ) : estimate.billingMode === 'BASIC' ? (
-                  <Badge variant="neutral">Basic</Badge>
+                  <Badge variant="neutral">Estimate-only</Badge>
                 ) : null}
               </Box>
               <Box className={productChrome.historyRecordActions}>
@@ -163,15 +210,6 @@ export function EstimateListCard({
                   {formatCurrency(estimate.grandTotal)}
                 </Text>
                 <Inline gap="xs" align="center">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    disabled={busy}
-                    onClick={() => setShowPrintModal(true)}
-                  >
-                    Print
-                  </Button>
                   <Button
                     type="button"
                     size="sm"
@@ -202,14 +240,7 @@ export function EstimateListCard({
 
             {!expanded ? (
               <Box className={productChrome.historyRecordFooter}>
-                <EstimateCardActions
-                  isOpen={isOpen}
-                  busy={busy}
-                  canConvert={estimate.itemCount > 0}
-                  onEdit={onEdit}
-                  onConvert={onConvert}
-                  onDiscard={onDiscard}
-                />
+                <EstimateCardActions {...actionProps} />
               </Box>
             ) : null}
           </Box>
@@ -234,14 +265,14 @@ export function EstimateListCard({
               </Text>
             ) : (
               <>
-                <SaleLineItemsTable items={items} />
-
-                {/* An estimate is a cart read before conversion, so it carries the same
-                    totals a completed sale does. Showing only Qty, Unit price and Line
-                    total made the same document look thinner here than in History. */}
+                <SaleLineItemsTable
+                  items={items}
+                  lineRates={detailQuery.data?.taxSummary?.lineRates}
+                />
                 <SaleTotals
+                  taxSummary={detailQuery.data?.taxSummary}
                   subTotal={detailQuery.data?.subTotal}
-                  discountTotal={detailQuery.data?.discountTotal}
+                  saleAdditionalDiscountTotal={detailQuery.data?.saleAdditionalDiscountTotal}
                   sgstAmount={detailQuery.data?.sgstAmount}
                   cgstAmount={detailQuery.data?.cgstAmount}
                   taxTotal={detailQuery.data?.taxTotal}
@@ -259,14 +290,7 @@ export function EstimateListCard({
               productChrome.historyRecordFooterAfterItems,
             )}
           >
-            <EstimateCardActions
-              isOpen={isOpen}
-              busy={busy}
-              canConvert={estimate.itemCount > 0}
-              onEdit={onEdit}
-              onConvert={onConvert}
-              onDiscard={onDiscard}
-            />
+            <EstimateCardActions {...actionProps} />
           </Box>
         ) : null}
       </Card>

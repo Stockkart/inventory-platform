@@ -15,6 +15,17 @@ export const productApi = {
     return response.data ?? [];
   },
 
+  /** Catalog products sharing this exact barcode (one per pack size / variant). */
+  listByBarcode: async (barcode: string): Promise<ProductSuggestion[]> => {
+    const code = barcode.trim();
+    if (!code) return [];
+    const response = await apiClient.get<ApiResponse<ProductSuggestion[]>>(
+      PRODUCT_ENDPOINTS.BY_BARCODE,
+      { code },
+    );
+    return response.data ?? [];
+  },
+
   /** Full catalog identity for a selected product (prefill source). */
   getById: async (id: string): Promise<ProductSuggestion> => {
     const response = await apiClient.get<ApiResponse<ProductSuggestion>>(
