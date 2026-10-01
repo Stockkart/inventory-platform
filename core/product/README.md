@@ -21,6 +21,19 @@ Inventory and sell flows: product registration, search, stock corrections, scan-
 
 `api/` · `queries/` · `pages/` · `ui/` · `vertical/` · `routes.ts` · `nav.ts`
 
+### Supplier bills: tax treatment, preview and corrections
+
+- **Tax treatment.** Stock-in asks whether the bill's line amounts already include GST
+  (`EXCLUSIVE` / `INCLUSIVE`, the vendor's `defaultTaxTreatment` when left blank). The type is
+  owned by `@inventory-platform/user` (vendors) and re-exported from `/types`.
+- **Bill preview.** The header subtotal, tax, invoice total and the summary bar come from
+  `POST /vendor-purchase-invoices/preview-totals` (`usePurchaseTaxPreviewQuery`, debounced). The
+  page sends the same rows as stock-in (`buildBulkItems`) and shows what comes back; it does not
+  compute GST, schemes, discounts or totals itself. Needs inventory-api #190 deployed first.
+- **Correcting a header.** `VendorInvoicesPage` → `AmendInvoiceHeaderForm` sends
+  `PATCH /vendor-purchase-invoices/{id}` through `useAmendVendorPurchaseInvoiceMutation`. Header
+  only, with a required reason; the server re-resolves the tax and reposts the journal.
+
 ## UI chrome
 
 Prefer `productChrome` / `registrationChrome` from ui-kit for Scan Sell, carts, and registration grids.

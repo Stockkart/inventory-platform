@@ -6,12 +6,11 @@ import type {
 } from '@inventory-platform/product/types';
 import {
   Alert,
-  Box,
   Button,
+  FormField,
   Grid,
   Inline,
   Input,
-  Label,
   Select,
   Stack,
   Text,
@@ -120,8 +119,7 @@ export function AmendInvoiceHeaderForm({ detail, onAmend, busy }: AmendInvoiceHe
       ) : null}
 
       <Grid columns={3} gap="sm">
-        <Box>
-          <Label htmlFor="amendLineSubTotal">Line subtotal</Label>
+        <FormField label="Line subtotal" htmlFor="amendLineSubTotal">
           <Input
             id="amendLineSubTotal"
             inputMode="decimal"
@@ -129,9 +127,8 @@ export function AmendInvoiceHeaderForm({ detail, onAmend, busy }: AmendInvoiceHe
             onChange={(e) => setLineSubTotal(e.target.value)}
             disabled={busy}
           />
-        </Box>
-        <Box>
-          <Label htmlFor="amendTaxTotal">Tax total</Label>
+        </FormField>
+        <FormField label="Tax total" htmlFor="amendTaxTotal">
           <Input
             id="amendTaxTotal"
             inputMode="decimal"
@@ -139,9 +136,8 @@ export function AmendInvoiceHeaderForm({ detail, onAmend, busy }: AmendInvoiceHe
             onChange={(e) => setTaxTotal(e.target.value)}
             disabled={busy}
           />
-        </Box>
-        <Box>
-          <Label htmlFor="amendOverallDiscount">Bill discount</Label>
+        </FormField>
+        <FormField label="Bill discount" htmlFor="amendOverallDiscount">
           <Input
             id="amendOverallDiscount"
             inputMode="decimal"
@@ -149,9 +145,8 @@ export function AmendInvoiceHeaderForm({ detail, onAmend, busy }: AmendInvoiceHe
             onChange={(e) => setOverallDiscount(e.target.value)}
             disabled={busy}
           />
-        </Box>
-        <Box>
-          <Label htmlFor="amendRoundOff">Round off</Label>
+        </FormField>
+        <FormField label="Round off" htmlFor="amendRoundOff">
           <Input
             id="amendRoundOff"
             inputMode="decimal"
@@ -159,9 +154,8 @@ export function AmendInvoiceHeaderForm({ detail, onAmend, busy }: AmendInvoiceHe
             onChange={(e) => setRoundOff(e.target.value)}
             disabled={busy}
           />
-        </Box>
-        <Box>
-          <Label htmlFor="amendInvoiceTotal">Invoice total</Label>
+        </FormField>
+        <FormField label="Invoice total" htmlFor="amendInvoiceTotal">
           <Input
             id="amendInvoiceTotal"
             inputMode="decimal"
@@ -169,9 +163,8 @@ export function AmendInvoiceHeaderForm({ detail, onAmend, busy }: AmendInvoiceHe
             onChange={(e) => setInvoiceTotal(e.target.value)}
             disabled={busy}
           />
-        </Box>
-        <Box>
-          <Label htmlFor="amendTaxTreatment">Line amounts</Label>
+        </FormField>
+        <FormField label="Line amounts" htmlFor="amendTaxTreatment">
           <Select
             id="amendTaxTreatment"
             value={taxTreatment}
@@ -182,11 +175,10 @@ export function AmendInvoiceHeaderForm({ detail, onAmend, busy }: AmendInvoiceHe
             <option value="EXCLUSIVE">GST added on top</option>
             <option value="INCLUSIVE">GST already included (MRP billing)</option>
           </Select>
-        </Box>
+        </FormField>
       </Grid>
 
-      <Box>
-        <Label htmlFor="amendReason">Why</Label>
+      <FormField label="Why" htmlFor="amendReason" required>
         <Input
           id="amendReason"
           value={reason}
@@ -194,12 +186,12 @@ export function AmendInvoiceHeaderForm({ detail, onAmend, busy }: AmendInvoiceHe
           placeholder="e.g. totals keyed from the paper bill"
           disabled={busy}
         />
-      </Box>
+      </FormField>
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
       <Inline gap="sm">
-        <Button onClick={submit} disabled={busy}>
+        <Button variant="solid" onClick={submit} disabled={busy}>
           Save correction
         </Button>
         <Button variant="outline" onClick={() => setOpen(false)} disabled={busy}>
