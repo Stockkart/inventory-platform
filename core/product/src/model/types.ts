@@ -1,3 +1,4 @@
+import type { PurchaseTaxTreatment } from '@inventory-platform/user/types';
 import type {
   PaymentMethod,
   CustomReminderInput,
@@ -283,8 +284,10 @@ export interface BulkCreateInventoryItem {
   verticalFields?: Record<string, unknown> | null;
 }
 
+/** How a vendor's bill states tax; owned by the vendor (user domain), re-exported here. */
+export type { PurchaseTaxTreatment } from '@inventory-platform/user/types';
+
 /** Optional vendor invoice header on bulk stock-in. Omit for legacy behavior. */
-export type PurchaseTaxTreatment = 'INCLUSIVE' | 'EXCLUSIVE';
 
 export interface VendorPurchaseInvoicePayload {
   invoiceNo: string;
@@ -328,6 +331,44 @@ export interface BulkCreateInventoryDto {
   /** When set, persists invoice metadata and links created inventory rows. */
   vendorPurchaseInvoice?: VendorPurchaseInvoicePayload | null;
   items: BulkCreateInventoryItem[];
+}
+
+/**
+ * The stock-in screen as it stands, sent to POST /vendor-purchase-invoices/preview-totals. The
+ * server works out tax and totals with the stock-in rules; the screen only shows them.
+ */
+export interface PurchaseTaxPreviewRequest {
+  vendorId?: string | null;
+  taxTreatment?: PurchaseTaxTreatment | null;
+  items: BulkCreateInventoryItem[];
+  lineSubTotal?: number;
+  taxTotal?: number;
+  shippingCharge?: number;
+  otherCharges?: number;
+  overallDiscount?: number;
+  roundOff?: number;
+}
+
+export interface PurchaseTaxPreviewLine {
+  taxable: number;
+  ratePct: number;
+  centralTax: number;
+  stateTax: number;
+  integratedTax: number;
+  tax: number;
+}
+
+export interface PurchaseTaxPreviewResponse {
+  taxTreatment: PurchaseTaxTreatment | null;
+  lineSubTotal: number;
+  taxTotal: number;
+  /** Items only: taxable value plus tax, before header charges. */
+  itemsTotal: number;
+  /** Typed subtotal/tax where given (else resolved), plus charges, less discount. */
+  invoiceTotal: number;
+  productCount: number;
+  totalQuantity: number;
+  lines: PurchaseTaxPreviewLine[];
 }
 
 export interface BulkCreateInventoryResponse {

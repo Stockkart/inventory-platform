@@ -5,6 +5,7 @@ import { uploadApi } from '@inventory-platform/product/api';
 import { apiClient } from '@inventory-platform/api-client';
 import { userLookupApi } from '@inventory-platform/user/users';
 import { inventoryApi } from '../api/inventory.api';
+import { usePurchaseTaxPreviewQuery } from '../queries/hooks';
 import { productApi } from '../api/product.api';
 import { barcodesApi } from '../api/barcodes.api';
 import { stockEntryEstimatesApi } from '../api/stockEntryEstimates.api';
@@ -38,6 +39,8 @@ import type {
   BillingMode,
   ProductSuggestion,
   StockEntryEstimateLine,
+  BulkCreateInventoryItem,
+  PurchaseTaxPreviewRequest,
 } from '@inventory-platform/product/types';
 import type { CustomReminderInput } from '@inventory-platform/contracts';
 import type {
@@ -316,87 +319,10 @@ function mapCustomRemindersForBulkApi(
   return mapped.length > 0 ? mapped : null;
 }
 
-/** Parse GST rate from OCR strings like "9", "9%", " 9 ". */
-function parseGstPercent(rate: string | null | undefined): number {
-  if (rate == null) return 0;
-  const s = String(rate).trim().replace(/%/g, '');
-  if (!s) return 0;
-  const n = Number(s);
-  return Number.isFinite(n) ? n : 0;
-}
-
 function numOr0(v: number | null | undefined): number {
   if (v == null) return 0;
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
-}
-
-/**
- * Line subtotal = sum of tax-exclusive line values (PTS/PTR × qty before GST).
- * Tax total = SGST + CGST computed on top of that taxable (not reverse-calculated
- * from a tax-inclusive lump). Matches typical purchase bills: line amount ex-GST + tax.
- */
-function computeVendorInvoiceTotalsFromParseItems(items: ParseInvoiceItem[]): {
-  lineSubTotal: number;
-  taxTotal: number;
-} {
-  let lineSubTotal = 0;
-  let taxTotal = 0;
-  for (const item of items) {
-    const qtyRaw = item.count;
-    const q = qtyRaw != null && Number.isFinite(Number(qtyRaw)) ? Math.max(0, Number(qtyRaw)) : 0;
-    // Purchase valuation: PTS (costPrice / stockist) when present — including 0.
-    // Do not fall through to PTR (retailer transfer) when PTS is intentionally 0;
-    // use PTR only if stockist price was omitted (matches OCR-only-PTR lines).
-    const pts = item.costPrice != null ? Number(item.costPrice) : Number.NaN;
-    const ptr = Number(item.priceToRetail);
-    let unit = 0;
-    if (item.costPrice != null && Number.isFinite(pts) && pts >= 0) {
-      unit = pts;
-    } else if (Number.isFinite(ptr) && ptr > 0) {
-      unit = ptr;
-    }
-    const lineTaxableExclusive = roundMoney(q * unit);
-    const sgst = parseGstPercent(item.sgst ?? undefined);
-    const cgst = parseGstPercent(item.cgst ?? undefined);
-    const pct = sgst + cgst;
-    if (pct > 0 && lineTaxableExclusive > 0) {
-      const cgstAmt = roundMoney((lineTaxableExclusive * cgst) / 100);
-      const sgstAmt = roundMoney((lineTaxableExclusive * sgst) / 100);
-      const lineTax = roundMoney(cgstAmt + sgstAmt);
-      lineSubTotal += lineTaxableExclusive;
-      taxTotal += lineTax;
-    } else {
-      lineSubTotal += lineTaxableExclusive;
-    }
-  }
-  return {
-    lineSubTotal: roundMoney(lineSubTotal),
-    taxTotal: roundMoney(taxTotal),
-  };
-}
-
-function computeVendorInvoiceTotalFromFields(
-  lineSubTotal: string,
-  taxTotal: string,
-  shippingCharge: string,
-  otherCharges: string,
-  overallDiscount: string,
-  roundOff: string,
-): string {
-  const values = [lineSubTotal, taxTotal, shippingCharge, otherCharges, overallDiscount, roundOff];
-  const hasAnyValue = values.some((v) => v.trim() !== '');
-  if (!hasAnyValue) return '';
-
-  const total = roundMoney(
-    numOr0(optionalNumFromString(lineSubTotal)) +
-      numOr0(optionalNumFromString(taxTotal)) +
-      numOr0(optionalNumFromString(shippingCharge)) +
-      numOr0(optionalNumFromString(otherCharges)) +
-      numOr0(optionalNumFromString(roundOff)) -
-      numOr0(optionalNumFromString(overallDiscount)),
-  );
-  return formatComputedAmount(Math.max(0, total));
 }
 
 export function meta() {
@@ -693,101 +619,6 @@ interface GridBulkFillDraft {
 }
 
 /**
- * Apply vendor purchase scheme + additional discount to a tax-exclusive line.
- * FIXED_UNITS "8+2" → pay 8/10 of line (20% off). PERCENTAGE → price × (1 − pct/100).
- */
-function applyPurchaseDiscountsToLine(
-  lineTaxableExclusive: number,
-  scheme: PurchaseSchemeFields,
-): number {
-  if (lineTaxableExclusive <= 0) return 0;
-  let line = lineTaxableExclusive;
-  const schemeType = scheme.purchaseSchemeType ?? 'FIXED_UNITS';
-
-  if (schemeType === 'PERCENTAGE') {
-    const pct = scheme.purchaseSchemePercentage;
-    if (pct != null && pct > 0) {
-      line = roundMoney(line * (1 - pct / 100));
-    }
-  } else {
-    const payFor = scheme.purchaseSchemePayFor;
-    const free = scheme.purchaseSchemeFree;
-    if (payFor != null && payFor > 0 && free != null && free >= 0) {
-      const sum = payFor + free;
-      if (sum > 0) {
-        line = roundMoney((line * payFor) / sum);
-      }
-    }
-  }
-
-  const addDisc = scheme.purchaseAdditionalDiscount;
-  if (addDisc != null && addDisc !== 0) {
-    line = roundMoney(line * (1 - addDisc / 100));
-  }
-  return line;
-}
-
-/**
- * Tax-exclusive purchase line.
- * Free-quantity flow: count is total received (e.g. 100); billable = count − freeQty (80);
- * line = billable × unit only — free units are the scheme, not an extra % off billable.
- * Deal-ratio / % flows: discount via applyPurchaseDiscountsToLine on gross or billable.
- */
-function purchaseLineTaxableExclusive(
-  count: number,
-  unit: number,
-  scheme: PurchaseSchemeFields,
-): number {
-  const gross = roundMoney(count * unit);
-  if (gross <= 0) return 0;
-
-  const freeQty = scheme.purchaseSchemeFreeQty;
-  const schemeType = scheme.purchaseSchemeType ?? 'FIXED_UNITS';
-
-  if (
-    freeQty != null &&
-    freeQty > 0 &&
-    schemeType !== 'PERCENTAGE' &&
-    schemeType !== 'FREE_QUANTITY'
-  ) {
-    const billable =
-      count >= freeQty
-        ? count - freeQty
-        : Math.max(
-            0,
-            Math.round(
-              (count * (scheme.purchaseSchemePayFor ?? 0)) /
-                ((scheme.purchaseSchemePayFor ?? 0) + (scheme.purchaseSchemeFree ?? 0)),
-            ),
-          );
-    return roundMoney(Math.max(0, billable) * unit);
-  }
-
-  return applyPurchaseDiscountsToLine(gross, scheme);
-}
-
-function resolvePurchaseSchemeForTotals(
-  product: ProductFormData,
-  purchaseDraft?: string,
-): PurchaseSchemeFields {
-  const parsed = purchaseDraft ? parsePurchaseSchemeDraft(purchaseDraft) : null;
-  if (parsed) {
-    return {
-      ...parsed,
-      purchaseAdditionalDiscount: product.purchaseAdditionalDiscount,
-    };
-  }
-  return {
-    purchaseSchemeType: product.purchaseSchemeType,
-    purchaseSchemePayFor: product.purchaseSchemePayFor,
-    purchaseSchemeFree: product.purchaseSchemeFree,
-    purchaseSchemePercentage: product.purchaseSchemePercentage,
-    purchaseSchemeFreeQty: product.purchaseSchemeFreeQty,
-    purchaseAdditionalDiscount: product.purchaseAdditionalDiscount,
-  };
-}
-
-/**
  * What to tell the operator when the bill they typed does not reconcile with the lines.
  *
  * <p>Written for someone still holding the paper, so each case says which number to look at
@@ -824,106 +655,12 @@ function headerReconciliationWarning(
   }
 }
 
-/** Recompute supplier bill line subtotal + tax total from live product rows. */
-/**
- * The invoice header the supplier's bill would state, worked out from the rows.
- *
- * <p>What a row is worth after its scheme and discount is one number; whether the tax is already
- * inside that number is a separate question the supplier answers, not the row. Under MRP billing
- * the amount holds the tax, so the taxable value is backed out of it rather than taxed again --
- * the same arithmetic the server applies, per line and to the paisa, so the two cannot drift and
- * the reconciliation warning never fires on a bill that is right.
- */
-function computeVendorInvoiceTotalsFromProducts(
-  productRows: ProductFormData[],
-  billingModeForGst: BillingMode,
-  schemeDrafts?: Record<string, { sale?: string; purchase?: string }>,
-  treatment?: PurchaseTaxTreatment | null,
-): { lineSubTotal: number; taxTotal: number } {
-  const taxIsInsideTheAmount = treatment === 'INCLUSIVE';
-  let lineSubTotal = 0;
-  let taxTotal = 0;
-
-  for (const p of productRows) {
-    const qtyRaw = p.count;
-    const q = qtyRaw != null && Number.isFinite(Number(qtyRaw)) ? Math.max(0, Number(qtyRaw)) : 0;
-    const pts = numericProductMoney(p.costPrice);
-    const ptr = numericProductMoney(p.priceToRetail);
-    let unit = 0;
-    if (pts != null && pts >= 0) {
-      unit = pts;
-    } else if (ptr != null && ptr > 0) {
-      unit = ptr;
-    }
-
-    const scheme = resolvePurchaseSchemeForTotals(p, schemeDrafts?.[p.id]?.purchase);
-    const lineAmount = purchaseLineTaxableExclusive(q, unit, scheme);
-
-    const sgst =
-      billingModeForGst === 'BASIC'
-        ? 0
-        : parseGstPercent(typeof p.sgst === 'string' ? p.sgst : undefined);
-    const cgst =
-      billingModeForGst === 'BASIC'
-        ? 0
-        : parseGstPercent(typeof p.cgst === 'string' ? p.cgst : undefined);
-    const pct = sgst + cgst;
-
-    if (pct <= 0 || lineAmount <= 0) {
-      lineSubTotal += lineAmount;
-    } else if (taxIsInsideTheAmount) {
-      // Tax comes out of the amount, and is what is left after the taxable value rather than a
-      // second multiplication -- so taxable + tax re-sums to the amount with no stray paisa.
-      const taxable = roundMoney((lineAmount * 100) / (100 + pct));
-      lineSubTotal += taxable;
-      taxTotal += roundMoney(lineAmount - taxable);
-    } else {
-      const cgstAmt = roundMoney((lineAmount * cgst) / 100);
-      const sgstAmt = roundMoney((lineAmount * sgst) / 100);
-      lineSubTotal += lineAmount;
-      taxTotal += roundMoney(cgstAmt + sgstAmt);
-    }
-  }
-
-  return {
-    lineSubTotal: roundMoney(lineSubTotal),
-    taxTotal: roundMoney(taxTotal),
-  };
-}
-
 interface ProductsRegistrationSummary {
   productCount: number;
   totalQuantity: number;
   lineSubTotal: number;
   taxTotal: number;
   grandTotal: number;
-}
-
-function computeProductsRegistrationSummary(
-  productRows: ProductFormData[],
-  billingModeForGst: BillingMode,
-  schemeDrafts?: Record<string, { sale?: string; purchase?: string }>,
-  treatment?: PurchaseTaxTreatment | null,
-): ProductsRegistrationSummary {
-  const { lineSubTotal, taxTotal } = computeVendorInvoiceTotalsFromProducts(
-    productRows,
-    billingModeForGst,
-    schemeDrafts,
-    treatment,
-  );
-  let totalQuantity = 0;
-  for (const p of productRows) {
-    const qtyRaw = p.count;
-    const q = qtyRaw != null && Number.isFinite(Number(qtyRaw)) ? Math.max(0, Number(qtyRaw)) : 0;
-    totalQuantity += q;
-  }
-  return {
-    productCount: productRows.length,
-    totalQuantity,
-    lineSubTotal,
-    taxTotal,
-    grandTotal: roundMoney(lineSubTotal + taxTotal),
-  };
 }
 
 function ProductsRegistrationSummaryBar({ summary }: { summary: ProductsRegistrationSummary }) {
@@ -1104,32 +841,9 @@ export function ProductEntryPage() {
       }
     }
 
-    if (hasItems) {
-      const { lineSubTotal, taxTotal } = computeVendorInvoiceTotalsFromParseItems(parsedItems);
-      setVendorLineSubTotal(formatComputedAmount(lineSubTotal));
-      setVendorTaxTotal(formatComputedAmount(taxTotal));
-    }
+    // With parsed items the subtotal and tax come from the server's bill preview once the rows
+    // are on the page (see usePurchaseTaxPreviewQuery below), not from arithmetic here.
   };
-
-  useEffect(() => {
-    setVendorInvoiceTotal(
-      computeVendorInvoiceTotalFromFields(
-        vendorLineSubTotal,
-        vendorTaxTotal,
-        vendorShippingCharge,
-        vendorOtherCharges,
-        vendorOverallDiscount,
-        vendorRoundOff,
-      ),
-    );
-  }, [
-    vendorLineSubTotal,
-    vendorTaxTotal,
-    vendorShippingCharge,
-    vendorOtherCharges,
-    vendorOverallDiscount,
-    vendorRoundOff,
-  ]);
 
   const vendorInvoiceTotalNum = optionalNumFromString(vendorInvoiceTotal) ?? 0;
   const vendorCreditLedgerOutstandingNum = roundMoney(Math.max(vendorPaymentSplit.creditAmount, 0));
@@ -1276,39 +990,6 @@ export function ProductEntryPage() {
   >({});
 
   const prevRegisteredProductCountRef = useRef(0);
-
-  // Keep invoice line subtotal / tax in sync whenever product rows or GST mode change.
-  useEffect(() => {
-    const n = products.length;
-    if (n === 0) {
-      if (prevRegisteredProductCountRef.current > 0) {
-        setVendorLineSubTotal('');
-        setVendorTaxTotal('');
-      }
-      prevRegisteredProductCountRef.current = 0;
-      return;
-    }
-    prevRegisteredProductCountRef.current = n;
-    const { lineSubTotal, taxTotal } = computeVendorInvoiceTotalsFromProducts(
-      products,
-      billingMode,
-      gridSchemeDrafts,
-      vendorTaxTreatment,
-    );
-    setVendorLineSubTotal(formatComputedAmount(lineSubTotal));
-    setVendorTaxTotal(formatComputedAmount(taxTotal));
-  }, [products, billingMode, gridSchemeDrafts, vendorTaxTreatment]);
-
-  const productsRegistrationSummary = useMemo(
-    () =>
-      computeProductsRegistrationSummary(
-        products,
-        billingMode,
-        gridSchemeDrafts,
-        vendorTaxTreatment,
-      ),
-    [products, billingMode, gridSchemeDrafts, vendorTaxTreatment],
-  );
 
   // Product view mode: list (accordion) or grid (Excel-style)
   const [productViewMode, setProductViewMode] = useState<'list' | 'grid'>(() => {
@@ -1525,6 +1206,249 @@ export function ProductEntryPage() {
     sellDirectField,
     otherFields: verticalRegistrationFields,
   } = useMemo(() => partitionRegistrationFields(registrationFields), [registrationFields]);
+
+  /**
+   * The rows bulk stock-in sends, built once for both stock-in and the bill preview so the server
+   * previews exactly what it will record.
+   */
+  const buildBulkItems = useCallback(
+    (rows: ProductFormData[], purchaseDateFromInvoice?: string): BulkCreateInventoryItem[] =>
+      rows.map((product) => {
+        const validRates = (product.rates ?? []).filter(
+          (r) => r.name.trim() && !isNaN(r.price) && r.price >= 0,
+        );
+        const hasValidDefaultRate =
+          product.defaultRate &&
+          product.defaultRate.trim() &&
+          (['priceToRetail', 'maximumRetailPrice', 'costPrice'].includes(
+            product.defaultRate.trim(),
+          ) ||
+            (product.rates ?? []).some((r) => r.name.trim() === product.defaultRate?.trim()));
+
+        // Format reminderAt if provided
+        let reminderAtISO: string | undefined;
+        if (product.reminderAt) {
+          if (product.reminderAt.includes('T')) {
+            reminderAtISO = new Date(product.reminderAt).toISOString();
+          } else {
+            reminderAtISO = new Date(product.reminderAt).toISOString();
+          }
+        }
+
+        const expiryField = registrationFields.find((f) => f.key === 'expiryDate');
+        const productExpiryRaw = expiryField
+          ? getVerticalFieldValue(product, expiryField)
+          : product.expiryDate?.trim() || '';
+
+        // Custom reminders: send reminderAt/endDate/notes (works for all verticals)
+        const customReminders = mapCustomRemindersForBulkApi(
+          product.customReminders,
+          productExpiryRaw,
+        );
+
+        const unitsPerPackForApi = Number(product.unitsPerPack ?? product.conversionFactor) || 0;
+
+        const batchField = registrationFields.find((f) => f.key === 'batchNo');
+        const resolvedExpiryRaw = expiryField
+          ? getVerticalFieldValue(product, expiryField)
+          : product.expiryDate?.trim() || '';
+        const resolvedBatchNo = batchField
+          ? getVerticalFieldValue(product, batchField)
+          : product.batchNo?.trim() || '';
+        const expiryOnExtension = expiryField?.storage === 'extension';
+        const batchOnExtension = batchField?.storage === 'extension';
+
+        const coreItem = {
+          ...(product.productId ? { productId: product.productId } : {}),
+          ...(product.barcode?.trim() ? { barcode: product.barcode.trim() } : {}),
+          name: product.name,
+          description: product.description || undefined,
+          companyName: product.companyName,
+          ...(isCompactPriceUi
+            ? {
+                maximumRetailPrice: 0,
+                costPrice: Number(product.costPrice) || 0,
+                priceToRetail: 0,
+                ...(product.sellingPrice != null &&
+                product.sellingPrice !== '' &&
+                Number(product.sellingPrice) > 0
+                  ? { sellingPrice: Number(product.sellingPrice) }
+                  : {}),
+              }
+            : {
+                maximumRetailPrice: Number(product.maximumRetailPrice) || 0,
+                costPrice: Number(product.costPrice) || 0,
+                priceToRetail: Number(product.priceToRetail) || 0,
+              }),
+          businessType: (shopSchema?.verticalId ?? product.businessType).toUpperCase(),
+          location: product.location,
+          count: product.count,
+          baseUnit: resolvePackagingUqc(product.baseUnit ?? '', packagingUnits),
+          ...(unitsPerPackForApi > 0 ? { unitsPerPack: unitsPerPackForApi } : {}),
+          ...(resolvedExpiryRaw && !expiryOnExtension
+            ? { expiryDate: formatCoreExpiryDateForApi(resolvedExpiryRaw) }
+            : {}),
+          reminderAt: reminderAtISO,
+          customReminders: customReminders,
+          hsn: product.hsn || null,
+          ...(resolvedBatchNo && !batchOnExtension ? { batchNo: resolvedBatchNo } : {}),
+          ...(showCommercialTerms
+            ? (product.schemeType ?? 'FIXED_UNITS') === 'PERCENTAGE'
+              ? {
+                  schemeType: 'PERCENTAGE' as const,
+                  schemePercentage: product.schemePercentage ?? null,
+                }
+              : product.schemePayFor != null || product.schemeFree != null
+              ? {
+                  schemeType: 'FIXED_UNITS' as const,
+                  schemePayFor: product.schemePayFor ?? null,
+                  schemeFree: product.schemeFree ?? null,
+                  scheme: null,
+                }
+              : {
+                  schemeType: (product.schemeType ?? 'FIXED_UNITS') as 'FIXED_UNITS',
+                  scheme: product.scheme ?? null,
+                }
+            : {}),
+          billingMode: billingMode as BillingMode,
+          ...(billingMode !== 'BASIC' && product.sgst && product.sgst.trim()
+            ? { sgst: product.sgst.trim() }
+            : {}),
+          ...(billingMode !== 'BASIC' && product.cgst && product.cgst.trim()
+            ? { cgst: product.cgst.trim() }
+            : {}),
+          ...(showCommercialTerms &&
+          product.saleAdditionalDiscount !== null &&
+          product.saleAdditionalDiscount !== undefined
+            ? { saleAdditionalDiscount: product.saleAdditionalDiscount }
+            : {}),
+          ...(showCommercialTerms &&
+          (product.purchaseSchemeType != null ||
+            product.purchaseSchemePayFor != null ||
+            product.purchaseSchemeFree != null ||
+            product.purchaseSchemePercentage != null ||
+            product.purchaseSchemeFreeQty != null)
+            ? (product.purchaseSchemeType ?? 'FIXED_UNITS') === 'PERCENTAGE'
+              ? {
+                  purchaseSchemeType: 'PERCENTAGE' as const,
+                  purchaseSchemePercentage: product.purchaseSchemePercentage ?? null,
+                  purchaseSchemePayFor: null,
+                  purchaseSchemeFree: null,
+                }
+              : {
+                  purchaseSchemeType: 'FIXED_UNITS' as const,
+                  purchaseSchemePayFor: product.purchaseSchemePayFor ?? null,
+                  purchaseSchemeFree: product.purchaseSchemeFree ?? null,
+                  purchaseSchemePercentage: null,
+                }
+            : {}),
+          ...(showCommercialTerms &&
+          product.purchaseAdditionalDiscount !== null &&
+          product.purchaseAdditionalDiscount !== undefined
+            ? {
+                purchaseAdditionalDiscount: product.purchaseAdditionalDiscount,
+              }
+            : {}),
+          ...(product.itemType ? { itemType: product.itemType as ItemType } : {}),
+          ...(product.itemType === 'DEGREE' &&
+          product.itemTypeDegree != null &&
+          Number(product.itemTypeDegree) > 0
+            ? { itemTypeDegree: Number(product.itemTypeDegree) }
+            : {}),
+          ...(product.discountApplicable != null && showCommercialTerms
+            ? { discountApplicable: product.discountApplicable }
+            : {}),
+          ...(purchaseDateFromInvoice ? { purchaseDate: purchaseDateFromInvoice } : {}),
+          ...(showRateTiers && validRates.length > 0
+            ? {
+                rates: validRates.map((r) => ({
+                  name: r.name.trim(),
+                  price: Number(r.price),
+                })),
+              }
+            : {}),
+          ...(showRateTiers && hasValidDefaultRate && product.defaultRate
+            ? { defaultRate: product.defaultRate.trim() }
+            : {}),
+        };
+
+        return attachVerticalFieldsToBulkItem(coreItem, product, registrationFields);
+      }),
+    [
+      isCompactPriceUi,
+      shopSchema,
+      packagingUnits,
+      showCommercialTerms,
+      showRateTiers,
+      billingMode,
+      registrationFields,
+    ],
+  );
+
+  // Tax and totals for the bill on screen come from the server, worked out with the stock-in
+  // rules; this page only shows them. Typed header figures are sent so the invoice total matches.
+  const purchaseTaxPreviewRequest = useMemo<PurchaseTaxPreviewRequest | null>(() => {
+    if (products.length === 0) return null;
+    return {
+      vendorId: selectedVendor?.vendorId ?? null,
+      taxTreatment: vendorTaxTreatment ?? null,
+      items: buildBulkItems(products),
+      shippingCharge: optionalNumFromString(vendorShippingCharge),
+      otherCharges: optionalNumFromString(vendorOtherCharges),
+      overallDiscount: optionalNumFromString(vendorOverallDiscount),
+      roundOff: optionalNumFromString(vendorRoundOff),
+      lineSubTotal: optionalNumFromString(vendorLineSubTotal),
+      taxTotal: optionalNumFromString(vendorTaxTotal),
+    };
+  }, [
+    products,
+    selectedVendor?.vendorId,
+    vendorTaxTreatment,
+    buildBulkItems,
+    vendorShippingCharge,
+    vendorOtherCharges,
+    vendorOverallDiscount,
+    vendorRoundOff,
+    vendorLineSubTotal,
+    vendorTaxTotal,
+  ]);
+  const purchaseTaxPreview = usePurchaseTaxPreviewQuery(purchaseTaxPreviewRequest).data;
+  const previewLineSubTotal = purchaseTaxPreview?.lineSubTotal;
+  const previewTaxTotal = purchaseTaxPreview?.taxTotal;
+
+  // Keep the header's subtotal and tax in step with the rows, as the server works them out. They
+  // only move when the rows do, so a figure the operator types afterwards is left alone.
+  useEffect(() => {
+    if (products.length === 0) {
+      if (prevRegisteredProductCountRef.current > 0) {
+        setVendorLineSubTotal('');
+        setVendorTaxTotal('');
+      }
+      prevRegisteredProductCountRef.current = 0;
+      return;
+    }
+    prevRegisteredProductCountRef.current = products.length;
+    if (previewLineSubTotal == null || previewTaxTotal == null) return;
+    setVendorLineSubTotal(formatComputedAmount(previewLineSubTotal));
+    setVendorTaxTotal(formatComputedAmount(previewTaxTotal));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the server's figures change
+  }, [previewLineSubTotal, previewTaxTotal, products.length === 0]);
+
+  useEffect(() => {
+    setVendorInvoiceTotal(
+      products.length > 0 && purchaseTaxPreview
+        ? formatComputedAmount(purchaseTaxPreview.invoiceTotal)
+        : '',
+    );
+  }, [products.length, purchaseTaxPreview]);
+
+  const productsRegistrationSummary: ProductsRegistrationSummary = {
+    productCount: products.length,
+    totalQuantity: purchaseTaxPreview?.totalQuantity ?? 0,
+    lineSubTotal: purchaseTaxPreview?.lineSubTotal ?? 0,
+    taxTotal: purchaseTaxPreview?.taxTotal ?? 0,
+    grandTotal: purchaseTaxPreview?.itemsTotal ?? 0,
+  };
 
   const registrationSchemaReady = useMemo(
     () =>
@@ -3049,167 +2973,7 @@ export function ProductEntryPage() {
       }
 
       // Transform products to bulk API format
-      const items = products.map((product) => {
-        const validRates = (product.rates ?? []).filter(
-          (r) => r.name.trim() && !isNaN(r.price) && r.price >= 0,
-        );
-        const hasValidDefaultRate =
-          product.defaultRate &&
-          product.defaultRate.trim() &&
-          (['priceToRetail', 'maximumRetailPrice', 'costPrice'].includes(
-            product.defaultRate.trim(),
-          ) ||
-            (product.rates ?? []).some((r) => r.name.trim() === product.defaultRate?.trim()));
-
-        // Format reminderAt if provided
-        let reminderAtISO: string | undefined;
-        if (product.reminderAt) {
-          if (product.reminderAt.includes('T')) {
-            reminderAtISO = new Date(product.reminderAt).toISOString();
-          } else {
-            reminderAtISO = new Date(product.reminderAt).toISOString();
-          }
-        }
-
-        const expiryField = registrationFields.find((f) => f.key === 'expiryDate');
-        const productExpiryRaw = expiryField
-          ? getVerticalFieldValue(product, expiryField)
-          : product.expiryDate?.trim() || '';
-
-        // Custom reminders: send reminderAt/endDate/notes (works for all verticals)
-        const customReminders = mapCustomRemindersForBulkApi(
-          product.customReminders,
-          productExpiryRaw,
-        );
-
-        const unitsPerPackForApi = Number(product.unitsPerPack ?? product.conversionFactor) || 0;
-
-        const batchField = registrationFields.find((f) => f.key === 'batchNo');
-        const resolvedExpiryRaw = expiryField
-          ? getVerticalFieldValue(product, expiryField)
-          : product.expiryDate?.trim() || '';
-        const resolvedBatchNo = batchField
-          ? getVerticalFieldValue(product, batchField)
-          : product.batchNo?.trim() || '';
-        const expiryOnExtension = expiryField?.storage === 'extension';
-        const batchOnExtension = batchField?.storage === 'extension';
-
-        const coreItem = {
-          ...(product.productId ? { productId: product.productId } : {}),
-          ...(product.barcode?.trim() ? { barcode: product.barcode.trim() } : {}),
-          name: product.name,
-          description: product.description || undefined,
-          companyName: product.companyName,
-          ...(isCompactPriceUi
-            ? {
-                maximumRetailPrice: 0,
-                costPrice: Number(product.costPrice) || 0,
-                priceToRetail: 0,
-                ...(product.sellingPrice != null &&
-                product.sellingPrice !== '' &&
-                Number(product.sellingPrice) > 0
-                  ? { sellingPrice: Number(product.sellingPrice) }
-                  : {}),
-              }
-            : {
-                maximumRetailPrice: Number(product.maximumRetailPrice) || 0,
-                costPrice: Number(product.costPrice) || 0,
-                priceToRetail: Number(product.priceToRetail) || 0,
-              }),
-          businessType: (shopSchema?.verticalId ?? product.businessType).toUpperCase(),
-          location: product.location,
-          count: product.count,
-          baseUnit: resolvePackagingUqc(product.baseUnit ?? '', packagingUnits),
-          ...(unitsPerPackForApi > 0 ? { unitsPerPack: unitsPerPackForApi } : {}),
-          ...(resolvedExpiryRaw && !expiryOnExtension
-            ? { expiryDate: formatCoreExpiryDateForApi(resolvedExpiryRaw) }
-            : {}),
-          reminderAt: reminderAtISO,
-          customReminders: customReminders,
-          hsn: product.hsn || null,
-          ...(resolvedBatchNo && !batchOnExtension ? { batchNo: resolvedBatchNo } : {}),
-          ...(showCommercialTerms
-            ? (product.schemeType ?? 'FIXED_UNITS') === 'PERCENTAGE'
-              ? {
-                  schemeType: 'PERCENTAGE' as const,
-                  schemePercentage: product.schemePercentage ?? null,
-                }
-              : product.schemePayFor != null || product.schemeFree != null
-              ? {
-                  schemeType: 'FIXED_UNITS' as const,
-                  schemePayFor: product.schemePayFor ?? null,
-                  schemeFree: product.schemeFree ?? null,
-                  scheme: null,
-                }
-              : {
-                  schemeType: (product.schemeType ?? 'FIXED_UNITS') as 'FIXED_UNITS',
-                  scheme: product.scheme ?? null,
-                }
-            : {}),
-          billingMode: billingMode as BillingMode,
-          ...(billingMode !== 'BASIC' && product.sgst && product.sgst.trim()
-            ? { sgst: product.sgst.trim() }
-            : {}),
-          ...(billingMode !== 'BASIC' && product.cgst && product.cgst.trim()
-            ? { cgst: product.cgst.trim() }
-            : {}),
-          ...(showCommercialTerms &&
-          product.saleAdditionalDiscount !== null &&
-          product.saleAdditionalDiscount !== undefined
-            ? { saleAdditionalDiscount: product.saleAdditionalDiscount }
-            : {}),
-          ...(showCommercialTerms &&
-          (product.purchaseSchemeType != null ||
-            product.purchaseSchemePayFor != null ||
-            product.purchaseSchemeFree != null ||
-            product.purchaseSchemePercentage != null ||
-            product.purchaseSchemeFreeQty != null)
-            ? (product.purchaseSchemeType ?? 'FIXED_UNITS') === 'PERCENTAGE'
-              ? {
-                  purchaseSchemeType: 'PERCENTAGE' as const,
-                  purchaseSchemePercentage: product.purchaseSchemePercentage ?? null,
-                  purchaseSchemePayFor: null,
-                  purchaseSchemeFree: null,
-                }
-              : {
-                  purchaseSchemeType: 'FIXED_UNITS' as const,
-                  purchaseSchemePayFor: product.purchaseSchemePayFor ?? null,
-                  purchaseSchemeFree: product.purchaseSchemeFree ?? null,
-                  purchaseSchemePercentage: null,
-                }
-            : {}),
-          ...(showCommercialTerms &&
-          product.purchaseAdditionalDiscount !== null &&
-          product.purchaseAdditionalDiscount !== undefined
-            ? {
-                purchaseAdditionalDiscount: product.purchaseAdditionalDiscount,
-              }
-            : {}),
-          ...(product.itemType ? { itemType: product.itemType as ItemType } : {}),
-          ...(product.itemType === 'DEGREE' &&
-          product.itemTypeDegree != null &&
-          Number(product.itemTypeDegree) > 0
-            ? { itemTypeDegree: Number(product.itemTypeDegree) }
-            : {}),
-          ...(product.discountApplicable != null && showCommercialTerms
-            ? { discountApplicable: product.discountApplicable }
-            : {}),
-          ...(purchaseDateFromInvoice ? { purchaseDate: purchaseDateFromInvoice } : {}),
-          ...(showRateTiers && validRates.length > 0
-            ? {
-                rates: validRates.map((r) => ({
-                  name: r.name.trim(),
-                  price: Number(r.price),
-                })),
-              }
-            : {}),
-          ...(showRateTiers && hasValidDefaultRate && product.defaultRate
-            ? { defaultRate: product.defaultRate.trim() }
-            : {}),
-        };
-
-        return attachVerticalFieldsToBulkItem(coreItem, product, registrationFields);
-      });
+      const items = buildBulkItems(products, purchaseDateFromInvoice);
 
       if (!estimateWorkspace) {
         if (!vendorPaymentMethod) {
