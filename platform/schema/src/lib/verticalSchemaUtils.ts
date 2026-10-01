@@ -99,14 +99,16 @@ export function filterRegistrationFieldsForSimplePricing(
   return fields.filter((field) => !SIMPLE_PRICING_REGISTRATION_EXCLUDED_KEYS.has(field.key));
 }
 
-/** True when shop schema is loaded and matches the active billing mode. */
-export function isRegistrationSchemaReady(
-  shopSchema: {
-    shopId?: string;
-    verticalId?: string;
-    mode?: string;
-    entities?: Record<string, unknown>;
-  } | null,
+type LoadedShopSchema = {
+  shopId?: string;
+  verticalId?: string;
+  mode?: string;
+  entities?: Record<string, unknown>;
+} | null;
+
+/** True when the shop schema for this shop and billing mode has arrived (it may have no fields). */
+export function isRegistrationSchemaLoaded(
+  shopSchema: LoadedShopSchema,
   billingMode: 'REGULAR' | 'BASIC',
   options?: { shopId?: string | null },
 ): boolean {
@@ -119,8 +121,16 @@ export function isRegistrationSchemaReady(
   if (shopSchema.shopId && options?.shopId && shopSchema.shopId !== options.shopId) {
     return false;
   }
-  const expectedMode = schemaModeForBilling(billingMode);
-  if (shopSchema.mode !== expectedMode) {
+  return shopSchema.mode === schemaModeForBilling(billingMode);
+}
+
+/** True when shop schema is loaded, matches the active billing mode and has registration fields. */
+export function isRegistrationSchemaReady(
+  shopSchema: LoadedShopSchema,
+  billingMode: 'REGULAR' | 'BASIC',
+  options?: { shopId?: string | null },
+): boolean {
+  if (!shopSchema || !isRegistrationSchemaLoaded(shopSchema, billingMode, options)) {
     return false;
   }
   return (

@@ -66,6 +66,7 @@ import {
   partitionRegistrationFields,
   registrationFieldsForBilling,
   filterRegistrationFieldsForSimplePricing,
+  isRegistrationSchemaLoaded,
   isRegistrationSchemaReady,
   schemaModeForBilling,
   setVerticalFieldPatch,
@@ -1504,6 +1505,9 @@ export function ProductEntryPage() {
       }),
     [shopSchema, billingMode, activeShopId],
   );
+  const registrationSchemaEmpty =
+    !registrationSchemaReady &&
+    isRegistrationSchemaLoaded(shopSchema, billingMode, { shopId: activeShopId });
 
   useEffect(() => {
     if (!activeShopId) {
@@ -4160,6 +4164,17 @@ export function ProductEntryPage() {
                         </Text>
                         <Text variant="caption" color="secondary">
                           {schemaLoadError}
+                        </Text>
+                      </>
+                    ) : registrationSchemaEmpty ? (
+                      <>
+                        <Text variant="body" weight="semibold">
+                          No product fields set up
+                        </Text>
+                        <Text variant="caption" color="secondary">
+                          Your shop schema has no product fields for{' '}
+                          {billingMode === 'BASIC' ? 'Basic' : 'Regular'} entry. Contact support to
+                          add them.
                         </Text>
                       </>
                     ) : (
