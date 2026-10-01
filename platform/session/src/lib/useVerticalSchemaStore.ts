@@ -81,6 +81,11 @@ export const useVerticalSchemaStore = create<VerticalSchemaState>((set, get) => 
         const raw = await verticalsApi.getShopSchema(mode);
         const schema = normalizeShopSchema(raw, shopId);
         if (schema.shopId !== shopId) {
+          set((state) => {
+            const loadingKeys = new Set(state.loadingKeys);
+            loadingKeys.delete(key);
+            return { loadingKeys };
+          });
           return null;
         }
         const cacheKey = shopKey(schema.shopId, mode);
