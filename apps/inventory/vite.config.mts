@@ -13,6 +13,13 @@ export default defineConfig({
   server: {
     port: 4200,
     host: 'localhost',
+    ...(process.env.VITE_ALLOWED_HOSTS
+      ? {
+          allowedHosts: process.env.VITE_ALLOWED_HOSTS.split(',')
+            .map((h) => h.trim())
+            .filter(Boolean),
+        }
+      : {}),
   },
   preview: {
     port: 4300,
