@@ -3,6 +3,7 @@ export { productApi } from './api/product.api';
 export { barcodesApi } from './api/barcodes.api';
 export { cartApi } from './api/cart.api';
 export { estimatesApi } from './api/estimates.api';
+export { stockEntryEstimatesApi } from './api/stockEntryEstimates.api';
 export { checkoutApi } from './api/checkout.api';
 export { shopMenuApi } from './api/menu.api';
 export { sellCatalogApi } from './api/sell-catalog.api';
@@ -15,6 +16,7 @@ export {
   INVENTORY_CORRECTIONS_ENDPOINTS,
   CART_ENDPOINTS,
   ESTIMATE_ENDPOINTS,
+  STOCK_ENTRY_ESTIMATE_ENDPOINTS,
   CHECKOUT_ENDPOINTS,
   SHOP_SELL_ENDPOINTS,
   INVOICE_ENDPOINTS,
@@ -30,6 +32,7 @@ export {
   vendorInvoicesRoutes,
   scanSellRoutes,
   estimatesRoutes,
+  entryEstimatesRoutes,
   estimateWorkspaceRoutes,
   checkoutRoutes,
   historyRoutes,
@@ -48,6 +51,7 @@ export { StockCorrectionsPage } from './pages/StockCorrectionsPage';
 export { VendorInvoicesPage } from './pages/VendorInvoicesPage';
 export { ScanSellPage } from './pages/ScanSellPage';
 export { EstimatesPage } from './pages/EstimatesPage';
+export { StockEntryEstimatesPage } from './pages/StockEntryEstimatesPage';
 export { CheckoutPage } from './pages/CheckoutPage';
 export { HistoryPage } from './pages/HistoryPage';
 export { RefundPage } from './pages/RefundPage';

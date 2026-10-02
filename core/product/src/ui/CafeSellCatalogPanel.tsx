@@ -14,6 +14,7 @@ import {
   cn,
   productChrome,
 } from '@inventory-platform/ui-kit';
+import { getShopAvailableDisplayCount } from '../lib/inventoryAvailability';
 
 function money(n: number): string {
   return `₹${n.toFixed(2)}`;
@@ -71,7 +72,7 @@ function stockPrice(item: InventoryItem): number {
 }
 
 function stockAvailable(item: InventoryItem): number {
-  return item.currentBaseCount ?? item.currentCount ?? 0;
+  return getShopAvailableDisplayCount(item);
 }
 
 export function CafeSellCatalogPanel({

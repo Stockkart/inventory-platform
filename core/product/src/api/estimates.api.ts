@@ -61,6 +61,14 @@ export const estimatesApi = {
     return response.data;
   },
 
+  lock: async (purchaseId: string): Promise<CartResponse> => {
+    const response = await apiClient.post<ApiResponse<CartResponse>>(
+      ESTIMATE_ENDPOINTS.LOCK(purchaseId),
+      {},
+    );
+    return response.data;
+  },
+
   discard: async (purchaseId: string): Promise<void> => {
     await apiClient.delete<ApiResponse<null>>(ESTIMATE_ENDPOINTS.BY_ID(purchaseId));
   },

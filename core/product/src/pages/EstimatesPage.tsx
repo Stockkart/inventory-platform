@@ -22,14 +22,14 @@ import type { EstimateState, EstimateSummary } from '@inventory-platform/product
 import { EstimateListCard } from '../ui/EstimateListCard';
 import { ScanSellPage } from './ScanSellPage';
 
-type FilterTab = 'OPEN' | 'CONVERTED' | 'ALL';
+type FilterTab = 'OPEN' | 'LOCKED' | 'CONVERTED' | 'ALL';
 
 export function meta() {
   return [
     { title: 'Sell Estimate - StockKart' },
     {
       name: 'description',
-      content: 'Create printable estimates and convert them to invoices',
+      content: 'Create printable estimates, lock them, and convert REGULAR ones to invoices',
     },
   ];
 }
@@ -62,7 +62,13 @@ function EstimatesListPage() {
     setError(null);
     try {
       const state: EstimateState | undefined =
-        filter === 'ALL' ? undefined : filter === 'OPEN' ? 'OPEN' : 'CONVERTED';
+        filter === 'ALL'
+          ? undefined
+          : filter === 'OPEN'
+          ? 'OPEN'
+          : filter === 'LOCKED'
+          ? 'LOCKED'
+          : 'CONVERTED';
       const res = await estimatesApi.list(state, {
         q: query || undefined,
         page,
@@ -85,6 +91,7 @@ function EstimatesListPage() {
   const tabs: Array<{ id: FilterTab; label: string }> = useMemo(
     () => [
       { id: 'OPEN', label: 'Open' },
+      { id: 'LOCKED', label: 'Locked' },
       { id: 'CONVERTED', label: 'Converted' },
       { id: 'ALL', label: 'All' },
     ],
@@ -110,7 +117,11 @@ function EstimatesListPage() {
   };
 
   const handleConvert = async (estimate: EstimateSummary) => {
-    if (estimate.estimateState !== 'OPEN') return;
+    if (estimate.estimateState !== 'OPEN' && estimate.estimateState !== 'LOCKED') return;
+    if (estimate.billingMode === 'BASIC') {
+      notifyError('BASIC / estimate-only stock cannot convert to invoice. Lock and print instead.');
+      return;
+    }
     setBusyId(estimate.purchaseId);
     try {
       const result = await estimatesApi.convert(estimate.purchaseId);
@@ -122,8 +133,25 @@ function EstimatesListPage() {
     }
   };
 
-  const handleDiscard = async (estimate: EstimateSummary) => {
+  const handleLock = async (estimate: EstimateSummary) => {
     if (estimate.estimateState !== 'OPEN') return;
+    if (estimate.itemCount <= 0) {
+      notifyError('Add items before locking');
+      return;
+    }
+    setBusyId(estimate.purchaseId);
+    try {
+      await estimatesApi.lock(estimate.purchaseId);
+      await load();
+    } catch (err) {
+      notifyError(err instanceof Error ? err.message : 'Failed to lock estimate');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleDiscard = async (estimate: EstimateSummary) => {
+    if (estimate.estimateState !== 'OPEN' && estimate.estimateState !== 'LOCKED') return;
     if (!window.confirm(`Discard estimate ${estimate.estimateNo ?? ''}?`)) return;
     setBusyId(estimate.purchaseId);
     try {
@@ -140,7 +168,7 @@ function EstimatesListPage() {
     <Stack gap="md" maxWidth="xl" mx="auto">
       <PageHeader
         title="Sell Estimate"
-        description="Build quotes with tax, print them, then convert one-way to an invoice."
+        description="Build quotes, lock to print, then convert REGULAR estimates to invoices."
         actions={
           <Button type="button" variant="solid" onClick={handleNew}>
             New estimate
@@ -220,6 +248,7 @@ function EstimatesListPage() {
               estimate={estimate}
               busy={busyId === estimate.purchaseId}
               onEdit={() => handleOpen(estimate)}
+              onLock={() => void handleLock(estimate)}
               onConvert={() => void handleConvert(estimate)}
               onDiscard={() => void handleDiscard(estimate)}
             />

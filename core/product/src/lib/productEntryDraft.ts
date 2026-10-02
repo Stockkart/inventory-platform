@@ -51,17 +51,27 @@ export interface ProductEntryDraft<TProduct = unknown, TVendor = unknown> {
 }
 
 /**
+ * Product Entry and Entry Estimate render the same form but must not share a draft:
+ * a half-typed vendor bill would otherwise surface inside a new estimate, and the
+ * reverse.
+ */
+export type ProductEntryDraftScope = 'entry' | 'estimate';
+
+/**
  * The shop the draft belongs to. Read from the same source the API layer sends as
  * X-Shop-Id, so a draft cannot outlive a shop switch.
  */
-function draftKey(): string | null {
+function draftKey(scope: ProductEntryDraftScope): string | null {
   if (typeof localStorage === 'undefined') return null;
   try {
     // apiClient owns the shop id; reading its accessor rather than the raw
     // 'x_shop_id' key keeps that ownership in one place and picks up the
     // in-memory value before localStorage has been written.
     const shopId = apiClient.getShopId()?.trim();
-    return shopId ? `${DRAFT_KEY_PREFIX}:${shopId}` : null;
+    if (!shopId) return null;
+    return scope === 'estimate'
+      ? `${DRAFT_KEY_PREFIX}:estimate:${shopId}`
+      : `${DRAFT_KEY_PREFIX}:${shopId}`;
   } catch {
     // Browsers set to block site data throw on access rather than returning null.
     return null;
@@ -75,8 +85,9 @@ function draftKey(): string | null {
  */
 export function saveProductEntryDraft<TProduct, TVendor = unknown>(
   draft: Omit<ProductEntryDraft<TProduct, TVendor>, 'savedAt'>,
+  scope: ProductEntryDraftScope = 'entry',
 ): void {
-  const key = draftKey();
+  const key = draftKey(scope);
   if (!key) return;
   try {
     const payload: ProductEntryDraft<TProduct, TVendor> = { ...draft, savedAt: Date.now() };
@@ -96,11 +107,10 @@ export function saveProductEntryDraft<TProduct, TVendor = unknown>(
  * The saved draft, or null when there is none, it is unreadable, or it has aged out.
  * An expired or corrupt draft is removed on read so it cannot be offered again.
  */
-export function readProductEntryDraft<TProduct, TVendor = unknown>(): ProductEntryDraft<
-  TProduct,
-  TVendor
-> | null {
-  const key = draftKey();
+export function readProductEntryDraft<TProduct, TVendor = unknown>(
+  scope: ProductEntryDraftScope = 'entry',
+): ProductEntryDraft<TProduct, TVendor> | null {
+  const key = draftKey(scope);
   if (!key) return null;
   let raw: string | null;
   try {
@@ -120,19 +130,19 @@ export function readProductEntryDraft<TProduct, TVendor = unknown>(): ProductEnt
       (Array.isArray(parsed.products) && parsed.products.length > 0) || Boolean(parsed.vendor);
     const usable = fresh && hasContent;
     if (!usable) {
-      clearProductEntryDraft();
+      clearProductEntryDraft(scope);
       return null;
     }
     return parsed;
   } catch {
-    clearProductEntryDraft();
+    clearProductEntryDraft(scope);
     return null;
   }
 }
 
 /** Forget the draft. Called once the entry has been submitted, or the form cleared. */
-export function clearProductEntryDraft(): void {
-  const key = draftKey();
+export function clearProductEntryDraft(scope: ProductEntryDraftScope = 'entry'): void {
+  const key = draftKey(scope);
   if (!key) return;
   try {
     localStorage.removeItem(key);
