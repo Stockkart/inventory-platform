@@ -55,7 +55,7 @@ export interface ApiError {
 
 export type { PlanResponse, UsageResponse, ShopPlanStatusResponse } from './plan.types.js';
 export { PLAN_EXPIRY_ALLOWED_PATHS, isPlanExpiryAllowedPath } from './plan-guards.js';
-export type { MenuItem, MenuSection, ShopMenu, MenuSellMode } from './cafe-menu.types.js';
+export type { MenuItem, MenuRate, MenuSection, ShopMenu, MenuSellMode } from './cafe-menu.types.js';
 export type { PricingRate, PricingResponse } from './pricing.types.js';
 export type {
   ReminderStatus,

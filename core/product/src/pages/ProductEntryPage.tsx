@@ -9,6 +9,7 @@ import { productApi } from '../api/product.api';
 import { barcodesApi } from '../api/barcodes.api';
 import { stockEntryEstimatesApi } from '../api/stockEntryEstimates.api';
 import { mapLastInventoryToRegistrationPatch } from '../lib/registrationPrefill';
+import { requiresExplicitPackSize } from '../lib/packagingPackSize';
 import {
   clearProductEntryDraft,
   readProductEntryDraft,
@@ -23,6 +24,7 @@ import {
   PARTY_NAME_LETTERS_MESSAGE,
 } from '@inventory-platform/user/customers';
 import type {
+  PurchaseTaxTreatment,
   CreateInventoryDto,
   BulkCreateInventoryDto,
   ParseInvoiceItem,
@@ -824,13 +826,24 @@ function headerReconciliationWarning(
 }
 
 /** Recompute supplier bill line subtotal + tax total from live product rows. */
+/**
+ * The invoice header the supplier's bill would state, worked out from the rows.
+ *
+ * <p>What a row is worth after its scheme and discount is one number; whether the tax is already
+ * inside that number is a separate question the supplier answers, not the row. Under MRP billing
+ * the amount holds the tax, so the taxable value is backed out of it rather than taxed again --
+ * the same arithmetic the server applies, per line and to the paisa, so the two cannot drift and
+ * the reconciliation warning never fires on a bill that is right.
+ */
 function computeVendorInvoiceTotalsFromProducts(
   productRows: ProductFormData[],
   billingModeForGst: BillingMode,
   schemeDrafts?: Record<string, { sale?: string; purchase?: string }>,
+  treatment?: PurchaseTaxTreatment | null,
+  overallDiscount?: number,
 ): { lineSubTotal: number; taxTotal: number } {
-  let lineSubTotal = 0;
-  let taxTotal = 0;
+  const taxIsInsideTheAmount = treatment === 'INCLUSIVE';
+  const lines: { amount: number; cgst: number; sgst: number; pct: number }[] = [];
 
   for (const p of productRows) {
     const qtyRaw = p.count;
@@ -845,7 +858,7 @@ function computeVendorInvoiceTotalsFromProducts(
     }
 
     const scheme = resolvePurchaseSchemeForTotals(p, schemeDrafts?.[p.id]?.purchase);
-    const lineTaxableExclusive = purchaseLineTaxableExclusive(q, unit, scheme);
+    const lineAmount = purchaseLineTaxableExclusive(q, unit, scheme);
 
     const sgst =
       billingModeForGst === 'BASIC'
@@ -857,18 +870,55 @@ function computeVendorInvoiceTotalsFromProducts(
         : parseGstPercent(typeof p.cgst === 'string' ? p.cgst : undefined);
     const pct = sgst + cgst;
 
-    if (pct > 0 && lineTaxableExclusive > 0) {
-      const cgstAmt = roundMoney((lineTaxableExclusive * cgst) / 100);
-      const sgstAmt = roundMoney((lineTaxableExclusive * sgst) / 100);
-      lineSubTotal += lineTaxableExclusive;
-      taxTotal += roundMoney(cgstAmt + sgstAmt);
-    } else {
-      lineSubTotal += lineTaxableExclusive;
+    lines.push({ amount: lineAmount, cgst, sgst, pct });
+  }
+
+  const lineSubTotal = roundMoney(lines.reduce((sum, line) => sum + line.amount, 0));
+
+  // A discount taken on the bill as a whole reduces what the tax is due on, so it comes off the
+  // lines before they are taxed. Spread across them in proportion to what each is worth, which is
+  // how the server splits the stated subtotal, with the rounding remainder left on the last line
+  // so the parts still add up to the whole.
+  //
+  // Only on a bill quoted ex-GST. Where the amounts already hold the tax, the invoice total
+  // subtracts the discount itself, and taking it off here as well would remove it twice; such a
+  // bill states its reductions on the rows, which are already in the amounts above.
+  const discount =
+    !taxIsInsideTheAmount && overallDiscount != null && overallDiscount > 0 ? overallDiscount : 0;
+  const taxBases = lines.map((line) => line.amount);
+  if (discount > 0 && lineSubTotal > 0) {
+    const net = Math.max(0, roundMoney(lineSubTotal - discount));
+    let allocated = 0;
+    for (let i = 0; i < taxBases.length; i += 1) {
+      if (i === taxBases.length - 1) {
+        taxBases[i] = roundMoney(net - allocated);
+      } else {
+        taxBases[i] = roundMoney((lines[i].amount * net) / lineSubTotal);
+        allocated = roundMoney(allocated + taxBases[i]);
+      }
     }
   }
 
+  let taxTotal = 0;
+  for (let i = 0; i < lines.length; i += 1) {
+    const { cgst, sgst, pct } = lines[i];
+    const base = taxBases[i];
+    if (pct <= 0 || base <= 0) continue;
+    if (taxIsInsideTheAmount) {
+      // Tax comes out of the amount, and is what is left after the taxable value rather than a
+      // second multiplication -- so taxable + tax re-sums to the amount with no stray paisa.
+      taxTotal += roundMoney(base - roundMoney((base * 100) / (100 + pct)));
+    } else {
+      taxTotal += roundMoney(roundMoney((base * cgst) / 100) + roundMoney((base * sgst) / 100));
+    }
+  }
+
+  // Under MRP billing the tax was inside the line amounts, so the taxable value is what is left
+  // once it is taken out -- the subtotal the bill states, not the amounts the rows carry.
+  const subTotal = taxIsInsideTheAmount ? roundMoney(lineSubTotal - taxTotal) : lineSubTotal;
+
   return {
-    lineSubTotal: roundMoney(lineSubTotal),
+    lineSubTotal: roundMoney(subTotal),
     taxTotal: roundMoney(taxTotal),
   };
 }
@@ -885,11 +935,15 @@ function computeProductsRegistrationSummary(
   productRows: ProductFormData[],
   billingModeForGst: BillingMode,
   schemeDrafts?: Record<string, { sale?: string; purchase?: string }>,
+  treatment?: PurchaseTaxTreatment | null,
+  overallDiscount?: number,
 ): ProductsRegistrationSummary {
   const { lineSubTotal, taxTotal } = computeVendorInvoiceTotalsFromProducts(
     productRows,
     billingModeForGst,
     schemeDrafts,
+    treatment,
+    overallDiscount,
   );
   let totalQuantity = 0;
   for (const p of productRows) {
@@ -1041,6 +1095,8 @@ export function ProductEntryPage() {
   const [userSearchMessage, setUserSearchMessage] = useState<string | null>(null);
 
   const [vendorInvoiceNo, setVendorInvoiceNo] = useState('');
+  // Null means "as this vendor usually bills"; the server falls back to their default.
+  const [vendorTaxTreatment, setVendorTaxTreatment] = useState<PurchaseTaxTreatment | null>(null);
   const [vendorInvoiceDate, setVendorInvoiceDate] = useState('');
   const [vendorLineSubTotal, setVendorLineSubTotal] = useState('');
   const [vendorTaxTotal, setVendorTaxTotal] = useState('');
@@ -1271,14 +1327,23 @@ export function ProductEntryPage() {
       products,
       billingMode,
       gridSchemeDrafts,
+      vendorTaxTreatment,
+      optionalNumFromString(vendorOverallDiscount),
     );
     setVendorLineSubTotal(formatComputedAmount(lineSubTotal));
     setVendorTaxTotal(formatComputedAmount(taxTotal));
-  }, [products, billingMode, gridSchemeDrafts]);
+  }, [products, billingMode, gridSchemeDrafts, vendorTaxTreatment, vendorOverallDiscount]);
 
   const productsRegistrationSummary = useMemo(
-    () => computeProductsRegistrationSummary(products, billingMode, gridSchemeDrafts),
-    [products, billingMode, gridSchemeDrafts],
+    () =>
+      computeProductsRegistrationSummary(
+        products,
+        billingMode,
+        gridSchemeDrafts,
+        vendorTaxTreatment,
+        optionalNumFromString(vendorOverallDiscount),
+      ),
+    [products, billingMode, gridSchemeDrafts, vendorTaxTreatment, vendorOverallDiscount],
   );
 
   // Product view mode: list (accordion) or grid (Excel-style)
@@ -2850,8 +2915,7 @@ export function ProductEntryPage() {
           );
           const normalizedUnitsPerPack = packagingFactorToUnitsPerPack(displayFactor, unitDef);
           if (
-            unitDef?.allowsUnitsPerPack &&
-            unitDef.sellUnitRule === 'PACK_ONLY' &&
+            requiresExplicitPackSize(unitDef) &&
             !isSelfPackUnit(baseUqcForValidation, packagingUnits) &&
             normalizedUnitsPerPack <= 0
           ) {
@@ -3213,6 +3277,7 @@ export function ProductEntryPage() {
       if (ro !== undefined) vendorPurchaseInvoice.roundOff = ro;
       const it = optionalNumFromString(vendorInvoiceTotal);
       if (it !== undefined) vendorPurchaseInvoice.invoiceTotal = it;
+      if (vendorTaxTreatment) vendorPurchaseInvoice.taxTreatment = vendorTaxTreatment;
       // Estimate drafts never capture payment; Product Entry sets it when converting to invoice.
       if (!estimateWorkspace && vendorPaymentMethod) {
         vendorPurchaseInvoice.paymentMethod = vendorPaymentMethod;
@@ -3266,6 +3331,7 @@ export function ProductEntryPage() {
               : `Successfully registered ${count} products`,
           );
           if (reconciliationWarning) notifyWarning(reconciliationWarning, 20000);
+          (response?.rateWarnings ?? []).forEach((warning) => notifyWarning(warning, 20000));
 
           if (activeEstimateId && billingMode === 'REGULAR' && response?.vendorPurchaseInvoiceId) {
             try {
@@ -3309,6 +3375,7 @@ export function ProductEntryPage() {
             setProducts([]);
             handleClearVendor();
             setVendorInvoiceNo('');
+            setVendorTaxTreatment(null);
             setVendorInvoiceDate('');
             setVendorLineSubTotal('');
             setVendorTaxTotal('');
@@ -3336,6 +3403,7 @@ export function ProductEntryPage() {
           );
           clearProductEntryDraft(draftScope);
           if (reconciliationWarning) notifyWarning(reconciliationWarning, 20000);
+          (response?.rateWarnings ?? []).forEach((warning) => notifyWarning(warning, 20000));
           setTimeout(() => {
             setProducts([]);
             handleClearVendor();
@@ -3407,6 +3475,10 @@ export function ProductEntryPage() {
     setVendorSearchQuery(vendor.name);
     setShowVendorDropdown(false);
     setVendorSearchResults([]);
+    // Show what this vendor was last recorded as billing, rather than leaving the operator to
+    // recall it. Seeing it is also what makes changing it meaningful: the new answer is saved
+    // against the vendor and read on their next bill.
+    setVendorTaxTreatment(vendor.defaultTaxTreatment ?? null);
   };
 
   useLayoutEffect(() => {
@@ -3538,6 +3610,7 @@ export function ProductEntryPage() {
 
   const handleClearVendor = () => {
     setSelectedVendor(null);
+    setVendorTaxTreatment(null);
     setVendorSearchQuery('');
     setVendorSearchResults([]);
     setShowVendorDropdown(false);
@@ -3939,7 +4012,9 @@ export function ProductEntryPage() {
                         </Text>{' '}
                         is only used when PTS is empty.{' '}
                         {billingMode !== 'BASIC'
-                          ? 'With CGST/SGST on the row, PTS × qty is taxable value (ex‑GST); tax is added on top for line subtotal + tax totals.'
+                          ? vendorTaxTreatment === 'INCLUSIVE'
+                            ? 'This vendor bills at MRP, so PTS × qty already holds the GST: the taxable value is backed out of it and the tax is the remainder.'
+                            : 'With CGST/SGST on the row, PTS × qty is taxable value (ex‑GST); tax is added on top for line subtotal + tax totals.'
                           : null}
                       </Text>
                     ) : null}
@@ -3964,6 +4039,23 @@ export function ProductEntryPage() {
                           onChange={(e) => setVendorInvoiceDate(e.target.value)}
                           disabled={isLoading}
                         />
+                      </Box>
+                      <Box className={pageStyles.formGroup}>
+                        <Label htmlFor="vendorTaxTreatment">How this vendor bills</Label>
+                        <Select
+                          id="vendorTaxTreatment"
+                          value={vendorTaxTreatment ?? ''}
+                          onChange={(e) =>
+                            setVendorTaxTreatment(
+                              e.target.value ? (e.target.value as PurchaseTaxTreatment) : null,
+                            )
+                          }
+                          disabled={isLoading}
+                        >
+                          <option value="">Not recorded yet</option>
+                          <option value="EXCLUSIVE">GST added on top</option>
+                          <option value="INCLUSIVE">GST already included (MRP billing)</option>
+                        </Select>
                       </Box>
                       <Box className={pageStyles.formGroup}>
                         <Label htmlFor="vendorLineSubTotal">Line subtotal</Label>

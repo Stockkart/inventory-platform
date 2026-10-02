@@ -1,6 +1,8 @@
+import { formatDocumentDate } from '../lib/documentDate';
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import { inventoryApi } from '../api/inventory.api';
 import type {
+  AmendVendorPurchaseInvoicePayload,
   InventoryItem,
   VendorPurchaseInvoiceDetail,
   VendorPurchaseInvoiceSummary,
@@ -31,17 +33,9 @@ import {
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { isVendorReturnEnabled } from '@inventory-platform/routing';
-import {
-  HistoryListSummary,
-  hasActiveHistoryFilters,
-  isDateInRange,
-  buildVendorInvoiceSearchQuery,
-  paginateLocal,
-  matchesRegexField,
-  VendorInvoiceExpandedBody,
-} from '../ui';
+import { HistoryListSummary, hasActiveHistoryFilters, VendorInvoiceExpandedBody } from '../ui';
 import type { HistoryFilters } from '../ui';
-import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/session';
+import { useAuthStore, useNotify, useShopCapabilitiesStore } from '@inventory-platform/session';
 
 export function meta() {
   return [
@@ -60,21 +54,6 @@ function formatMoney(n: number | null | undefined): string {
     currency: 'INR',
     maximumFractionDigits: 2,
   }).format(n);
-}
-
-function formatDateShort(iso: string | null | undefined): string {
-  if (!iso) return '—';
-  try {
-    return new Date(iso).toLocaleDateString('en-IN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  } catch {
-    return iso;
-  }
 }
 
 function readInventoryIdentity(item: InventoryItem): string | null {
@@ -103,6 +82,8 @@ function InvoiceExpansionPanel({
   inventoryLoadingByInvoice,
   inventoryWarningByInvoice,
   panelId,
+  onAmend,
+  amending,
 }: {
   inv: VendorPurchaseInvoiceSummary;
   detail: VendorPurchaseInvoiceDetail | undefined;
@@ -112,6 +93,8 @@ function InvoiceExpansionPanel({
   inventoryLoadingByInvoice: Record<string, boolean>;
   inventoryWarningByInvoice: Record<string, string>;
   panelId?: string;
+  onAmend?: (payload: AmendVendorPurchaseInvoicePayload) => Promise<void>;
+  amending?: boolean;
 }) {
   const content = (
     <>
@@ -123,6 +106,8 @@ function InvoiceExpansionPanel({
           inventoryById={inventoryById}
           inventoryLoading={inventoryLoadingByInvoice[inv.id] === true}
           inventoryWarning={inventoryWarningByInvoice[inv.id]}
+          onAmend={onAmend}
+          amending={amending}
         />
       ) : null}
     </>
@@ -152,8 +137,6 @@ export type VendorInvoicesPageProps = {
   filters?: HistoryFilters;
 };
 
-const FILTER_FETCH_SIZE = 100;
-
 export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoicesPageProps) {
   const activeShopId = useAuthStore((s) => s.user?.shopId ?? null);
   const fetchCapabilities = useShopCapabilitiesStore((s) => s.fetchCapabilities);
@@ -175,6 +158,7 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
   const [invoices, setInvoices] = useState<VendorPurchaseInvoiceSummary[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [detailsById, setDetailsById] = useState<Record<string, VendorPurchaseInvoiceDetail>>({});
+  const [amendingId, setAmendingId] = useState<string | null>(null);
   const [fetchingId, setFetchingId] = useState<string | null>(null);
   const [rowError, setRowError] = useState<Record<string, string>>({});
   const [inventoryById, setInventoryById] = useState<Record<string, InventoryItem>>({});
@@ -197,19 +181,23 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
     setError(null);
     try {
       if (filtering && filters) {
-        const q = buildVendorInvoiceSearchQuery(filters);
-        const res = await inventoryApi.listVendorPurchaseInvoices(0, FILTER_FETCH_SIZE, q);
-        let rows = res.invoices ?? [];
-        rows = rows.filter((inv) =>
-          isDateInRange(inv.invoiceDate, filters.dateFrom, filters.dateTo),
+        // Every filter goes to the server so it searches the shop's whole history. Filtering a
+        // fetched page here only ever saw the most recently entered bills.
+        const res = await inventoryApi.listVendorPurchaseInvoices(
+          filterPage - 1,
+          embeddedPageSize,
+          undefined,
+          {
+            invoiceNo: filters.invoiceNo,
+            vendor: filters.vendor,
+            from: filters.dateFrom || undefined,
+            to: filters.dateTo || undefined,
+          },
         );
-        rows = rows.filter((inv) => matchesRegexField(filters.invoiceNo, inv.invoiceNo));
-        rows = rows.filter((inv) => matchesRegexField(filters.vendor, vendorDisplay(inv)));
-        const paged = paginateLocal(rows, filterPage, embeddedPageSize);
-        setFilteredTotal(paged.total);
-        setInvoices(paged.slice);
-        setTotalPages(paged.totalPages);
-        setTotalItems(paged.total);
+        setFilteredTotal(res.page?.totalItems ?? 0);
+        setInvoices(res.invoices ?? []);
+        setTotalPages(res.page?.totalPages ?? 0);
+        setTotalItems(res.page?.totalItems ?? 0);
       } else if (embedded) {
         const res = await inventoryApi.listVendorPurchaseInvoices(
           page,
@@ -368,6 +356,36 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
     }
   };
 
+  /**
+   * Corrects an invoice header from the paper bill and reloads it.
+   *
+   * <p>The reload matters: the server re-resolves the tax on save, so the reconciliation shown
+   * after a correction is the new one rather than the one that prompted it.
+   */
+  const amendInvoice = async (id: string, payload: AmendVendorPurchaseInvoicePayload) => {
+    setAmendingId(id);
+    setRowError((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    try {
+      const updated = await inventoryApi.amendVendorPurchaseInvoice(id, payload);
+      setDetailsById((prev) => ({ ...prev, [id]: updated }));
+      useNotify.success(
+        updated.headerReconciliation === 'OK'
+          ? 'Corrected — the bill now agrees with its lines'
+          : 'Correction saved',
+      );
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Could not save the correction';
+      setRowError((prev) => ({ ...prev, [id]: msg }));
+      useNotify.error(msg);
+    } finally {
+      setAmendingId(null);
+    }
+  };
+
   const pageDescription = vendorReturnEnabled
     ? 'Supplier bills linked to stock-in registrations. Search by product, barcode, invoice number, or vendor name. Expand a row to see line items and totals. To return stock to a supplier, use Return to vendor under Products & Sales.'
     : 'Supplier bills linked to stock-in registrations. Search by product, barcode, invoice number, or vendor name. Expand a row to see line items and totals.';
@@ -436,7 +454,7 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
                         Date
                       </Text>
                       <Text as="p" className={productChrome.salePickValue}>
-                        {formatDateShort(inv.invoiceDate)}
+                        {formatDocumentDate(inv.invoiceDate)}
                       </Text>
                     </Box>
                     <Box className={productChrome.salePickField}>
@@ -526,7 +544,7 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
                     <Text weight="semibold">{vendorDisplay(inv)}</Text>
                   </TableCell>
                   <TableCell>
-                    <Text color="secondary">{formatDateShort(inv.invoiceDate)}</Text>
+                    <Text color="secondary">{formatDocumentDate(inv.invoiceDate)}</Text>
                   </TableCell>
                   <TableCell className={surfaceChrome.numericCell}>
                     <Text color="secondary">{inv.lineCount}</Text>
@@ -560,6 +578,8 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
                         inventoryLoadingByInvoice={inventoryLoadingByInvoice}
                         inventoryWarningByInvoice={inventoryWarningByInvoice}
                         panelId={panelId}
+                        onAmend={(payload) => amendInvoice(inv.id, payload)}
+                        amending={amendingId === inv.id}
                       />
                     </TableCell>
                   </TableRow>

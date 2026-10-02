@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { InventoryItem } from '@inventory-platform/product/types';
-import type { MenuItem, SellCatalog } from '@inventory-platform/product/types';
+import type { MenuItem, MenuRate, SellCatalog } from '@inventory-platform/product/types';
 import {
   Badge,
   Box,
@@ -8,8 +8,10 @@ import {
   CenteredLoader,
   EmptyState,
   Inline,
+  Modal,
   Stack,
   Text,
+  cn,
   productChrome,
 } from '@inventory-platform/ui-kit';
 import { getShopAvailableDisplayCount } from '../lib/inventoryAvailability';
@@ -18,14 +20,50 @@ function money(n: number): string {
   return `₹${n.toFixed(2)}`;
 }
 
-type CafeTab = { id: string; label: string; kind: 'all' | 'menu' | 'stock' };
+type CafeTab = { id: string; label: string; kind: 'all' | 'menu' | 'stock'; tone?: string };
+
+const SECTION_TONES = [
+  productChrome.cafeTone0,
+  productChrome.cafeTone1,
+  productChrome.cafeTone2,
+  productChrome.cafeTone3,
+  productChrome.cafeTone4,
+  productChrome.cafeTone5,
+];
+
+/**
+ * A section's tone follows its position in the whole menu, not in the filtered view, so a search
+ * or a tab switch never repaints Starter in Main Course's colour.
+ */
+export function sectionTone(position: number): string {
+  return SECTION_TONES[position % SECTION_TONES.length];
+}
+
+/**
+ * The portions a cashier may actually pick: a row with no frozen id or no name is a half-typed
+ * menu row, and offering it would put a ref on the wire that resolves to nothing.
+ */
+export function sellablePortions(item: MenuItem): MenuRate[] {
+  return (item.rates ?? []).filter((rate) => rate.id?.trim() && rate.name?.trim());
+}
+
+function portionPriceRange(portions: MenuRate[]): string {
+  const prices = portions.map((rate) => Number(rate.price) || 0);
+  const low = Math.min(...prices);
+  const high = Math.max(...prices);
+  return low === high ? money(low) : `${money(low)} – ${money(high)}`;
+}
 
 export interface CafeSellCatalogPanelProps {
   catalog: SellCatalog | null;
   loading?: boolean;
   disabled?: boolean;
   filterQuery?: string;
-  onAddMenuItem: (item: MenuItem) => void;
+  /**
+   * Called with the portion the cashier chose, or with no portion for an unportioned item. A
+   * portioned item never reaches here without one: the picker is the only way in.
+   */
+  onAddMenuItem: (item: MenuItem, rate?: MenuRate) => void;
   onAddDirectStock: (item: InventoryItem) => void;
 }
 
@@ -45,8 +83,8 @@ export function CafeSellCatalogPanel({
   onAddMenuItem,
   onAddDirectStock,
 }: CafeSellCatalogPanelProps) {
-  const sections = catalog?.menu?.sections ?? [];
-  const directStock = catalog?.directStock ?? [];
+  const sections = useMemo(() => catalog?.menu?.sections ?? [], [catalog]);
+  const directStock = useMemo(() => catalog?.directStock ?? [], [catalog]);
   const normalizedFilter = filterQuery.trim().toLowerCase();
 
   const visibleSections = useMemo(
@@ -82,6 +120,11 @@ export function CafeSellCatalogPanel({
     [directStock, normalizedFilter],
   );
 
+  const tonesBySectionId = useMemo(
+    () => new Map(sections.map((section, position) => [section.id, sectionTone(position)])),
+    [sections],
+  );
+
   const tabs = useMemo((): CafeTab[] => {
     const next: CafeTab[] = [{ id: 'all', label: 'All', kind: 'all' }];
     for (const section of visibleSections) {
@@ -89,15 +132,24 @@ export function CafeSellCatalogPanel({
         id: section.id,
         label: section.title || 'Menu',
         kind: 'menu',
+        tone: tonesBySectionId.get(section.id),
       });
     }
     if (filteredDirectStock.length > 0) {
-      next.push({ id: '__stock__', label: 'Stock', kind: 'stock' });
+      next.push({
+        id: '__stock__',
+        label: 'Stock',
+        kind: 'stock',
+        tone: productChrome.cafeToneStock,
+      });
     }
     return next;
-  }, [visibleSections, filteredDirectStock.length]);
+  }, [visibleSections, filteredDirectStock.length, tonesBySectionId]);
 
   const [activeTab, setActiveTab] = useState('all');
+  /** The item whose portion picker is open. Null means no picker. */
+  const [portionItem, setPortionItem] = useState<MenuItem | null>(null);
+  const openPortions = portionItem ? sellablePortions(portionItem) : [];
 
   const resolvedTab = tabs.some((tab) => tab.id === activeTab) ? activeTab : 'all';
 
@@ -160,7 +212,11 @@ export function CafeSellCatalogPanel({
                 role="tab"
                 aria-selected={isActive}
                 onClick={() => setActiveTab(tab.id)}
-                className={productChrome.cafeCatalogTab}
+                className={cn(
+                  productChrome.cafeCatalogTab,
+                  tab.tone && productChrome.cafeCatalogTabToned,
+                  tab.tone,
+                )}
               >
                 {tab.label}
               </Button>
@@ -171,67 +227,81 @@ export function CafeSellCatalogPanel({
 
       <Box padding="md" className={productChrome.cafeCatalogScroll}>
         {menuSectionsToRender.map((section) => (
-          <Box key={section.id} className={productChrome.cafeCatalogSection}>
+          <Box
+            key={section.id}
+            className={cn(productChrome.cafeCatalogSection, tonesBySectionId.get(section.id))}
+          >
             <Inline
               justify="between"
               align="center"
               gap="sm"
               className={productChrome.cafeCatalogSectionHeader}
             >
-              <Text
-                variant="caption"
-                weight="bold"
-                color="secondary"
-                className={productChrome.sectionLabel}
-              >
+              <Text weight="bold" className={productChrome.cafeCatalogSectionTitle}>
                 {section.title || 'Menu'}
               </Text>
-              <Badge variant="neutral">{section.items.length}</Badge>
+              <Badge variant="neutral" className={productChrome.cafeCatalogCount}>
+                {section.items.length}
+              </Badge>
             </Inline>
             <Box className={productChrome.cafeCatalogGrid}>
-              {section.items.map((item) => (
-                <Button
-                  key={item.id}
-                  type="button"
-                  variant="outline"
-                  disabled={disabled}
-                  onClick={() => onAddMenuItem(item)}
-                  className={productChrome.cafeCatalogTile}
-                >
-                  <Stack gap="xs" width="full">
-                    <Text weight="semibold" truncate>
-                      {item.name}
-                    </Text>
-                    <Inline justify="between" align="center" width="full">
-                      <Text weight="semibold">{money(item.sellingPrice)}</Text>
-                      <Text aria-hidden className={productChrome.cafeCatalogAddBadge}>
-                        +
+              {section.items.map((item) => {
+                const portions = sellablePortions(item);
+                const isPortioned = portions.length > 0;
+                return (
+                  <Button
+                    key={item.id}
+                    type="button"
+                    variant="outline"
+                    disabled={disabled}
+                    onClick={() => (isPortioned ? setPortionItem(item) : onAddMenuItem(item))}
+                    className={
+                      isPortioned
+                        ? productChrome.cafeCatalogTilePortioned
+                        : productChrome.cafeCatalogTile
+                    }
+                  >
+                    <Stack gap="xs" width="full">
+                      <Text weight="semibold" truncate>
+                        {item.name}
                       </Text>
-                    </Inline>
-                  </Stack>
-                </Button>
-              ))}
+                      <Inline justify="between" align="center" width="full">
+                        <Text weight="semibold">
+                          {isPortioned
+                            ? portionPriceRange(portions)
+                            : money(item.sellingPrice ?? 0)}
+                        </Text>
+                        <Text aria-hidden className={productChrome.cafeCatalogAddBadge}>
+                          +
+                        </Text>
+                      </Inline>
+                      {isPortioned ? (
+                        <Text className={productChrome.cafeCatalogTileHint}>
+                          {portions.length} portions
+                        </Text>
+                      ) : null}
+                    </Stack>
+                  </Button>
+                );
+              })}
             </Box>
           </Box>
         ))}
 
         {showStock && hasDirectStock ? (
-          <Box>
+          <Box className={cn(productChrome.cafeCatalogSection, productChrome.cafeToneStock)}>
             <Inline
               justify="between"
               align="center"
               gap="sm"
               className={productChrome.cafeCatalogSectionHeader}
             >
-              <Text
-                variant="caption"
-                weight="bold"
-                color="secondary"
-                className={productChrome.sectionLabel}
-              >
+              <Text weight="bold" className={productChrome.cafeCatalogSectionTitle}>
                 Direct stock
               </Text>
-              <Badge variant="neutral">{filteredDirectStock.length}</Badge>
+              <Badge variant="neutral" className={productChrome.cafeCatalogCount}>
+                {filteredDirectStock.length}
+              </Badge>
             </Inline>
             <Box className={productChrome.cafeCatalogGrid}>
               {filteredDirectStock.map((item) => {
@@ -267,6 +337,48 @@ export function CafeSellCatalogPanel({
           </Box>
         ) : null}
       </Box>
+
+      {/*
+        The picker is the only way a portioned item enters the cart. Each row carries its own
+        price beside its own name: a cashier reading "Half" next to a range would have to guess
+        which half of the range it is, and a guess at the counter becomes a wrong bill.
+      */}
+      <Modal open={portionItem !== null} onClose={() => setPortionItem(null)} size="sm">
+        <Modal.Header
+          title={portionItem ? `Choose portion — ${portionItem.name}` : 'Choose portion'}
+        />
+        <Modal.Body>
+          <Box className={productChrome.cafeCatalogPortionList}>
+            {openPortions.map((rate) => (
+              <Button
+                key={rate.id}
+                type="button"
+                variant="outline"
+                disabled={disabled}
+                className={productChrome.cafeCatalogPortionRow}
+                onClick={() => {
+                  if (!portionItem) return;
+                  const item = portionItem;
+                  setPortionItem(null);
+                  onAddMenuItem(item, rate);
+                }}
+              >
+                <Inline justify="between" align="center" width="full" gap="md">
+                  <Text weight="semibold">{rate.name}</Text>
+                  <Text weight="semibold" className={productChrome.cafeCatalogPortionPrice}>
+                    {money(Number(rate.price) || 0)}
+                  </Text>
+                </Inline>
+              </Button>
+            ))}
+          </Box>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button type="button" variant="ghost" onClick={() => setPortionItem(null)}>
+            Cancel
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Stack>
   );
 }

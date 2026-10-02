@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { EstimateSummary } from '@inventory-platform/product/types';
+import { useNotify } from '@inventory-platform/session';
 import { formatCustomerDisplayName } from '../lib/customerDisplay';
 import {
   Alert,
@@ -135,6 +136,7 @@ export function EstimateListCard({
   onConvert: () => void;
   onDiscard: () => void;
 }) {
+  const { error: notifyError, success: notifySuccess, info: notifyInfo } = useNotify;
   const [expanded, setExpanded] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
   const canPrint = estimate.estimateState === 'LOCKED' || estimate.estimateState === 'CONVERTED';
@@ -269,6 +271,10 @@ export function EstimateListCard({
                   items={items}
                   lineRates={detailQuery.data?.taxSummary?.lineRates}
                 />
+
+                {/* An estimate is a cart read before conversion, so it carries the same
+                    totals a completed sale does. Showing only Qty, Unit price and Line
+                    total made the same document look thinner here than in History. */}
                 <SaleTotals
                   taxSummary={detailQuery.data?.taxSummary}
                   subTotal={detailQuery.data?.subTotal}
@@ -300,6 +306,9 @@ export function EstimateListCard({
         purchaseId={estimate.purchaseId}
         invoiceNo={estimate.estimateNo ?? undefined}
         documentLabel="Estimate"
+        onError={(msg) => msg && notifyError(msg)}
+        onSuccess={(msg) => msg && notifySuccess(msg)}
+        onInfo={(msg) => msg && notifyInfo(msg)}
       />
     </>
   );

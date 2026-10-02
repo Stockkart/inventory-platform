@@ -13,6 +13,7 @@
     "jsx": "react-jsx",
     "types": ["node", "vite/client"],
     "paths": {
+      "@inventory-platform/api-client": ["../../platform/api-client/src/index.ts"],
       "@inventory-platform/product/api": ["../../core/product/src/api/index.ts"],
       "@inventory-platform/product/types": ["../../core/product/src/model/index.ts"],
       "@inventory-platform/contracts": ["../../platform/contracts/src/index.ts"],
@@ -27,12 +28,16 @@
       "@inventory-platform/ui-kit": ["../../ui-kit/src/index.ts"],
       "@inventory-platform/schema": ["../../platform/schema/src/index.ts"],
       "@inventory-platform/product": ["../../core/product/src/index.ts"],
-      "@inventory-platform/user/users": ["../../core/user/src/api/user-lookup.api.ts"]
+      "@inventory-platform/user/users": ["../../core/user/src/api/user-lookup.api.ts"],
+      "@inventory-platform/query": ["../../platform/query/src/index.ts"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts", "src/**/*.spec.tsx", "src/**/*.test.tsx"],
   "references": [
+    {
+      "path": "../../platform/api-client/tsconfig.lib.json"
+    },
     {
       "path": "../../platform/schema/tsconfig.lib.json"
     },
@@ -53,6 +58,9 @@
     },
     {
       "path": "../../core/user/tsconfig.lib.json"
+    },
+    {
+      "path": "../../platform/query/tsconfig.lib.json"
     }
   ]
 }
