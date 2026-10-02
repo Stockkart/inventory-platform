@@ -13,19 +13,34 @@ COPY nx.json tsconfig.base.json tsconfig.json ./
 
 # Copy package.json files from workspace (Docker doesn't support glob, copy individually)
 COPY apps/inventory/package.json ./apps/inventory/
-COPY platform/contracts/package.json ./platform/contracts/
 COPY platform/access/package.json ./platform/access/
+COPY platform/api-client/package.json ./platform/api-client/
+COPY platform/contracts/package.json ./platform/contracts/
+COPY platform/query/package.json ./platform/query/
+COPY platform/routing/package.json ./platform/routing/
+COPY platform/schema/package.json ./platform/schema/
 COPY platform/session/package.json ./platform/session/
+COPY platform/shell/package.json ./platform/shell/
 COPY ui-kit/package.json ./ui-kit/
+COPY core/accounting/package.json ./core/accounting/
 COPY core/analytics/package.json ./core/analytics/
-COPY core/reminders/package.json ./core/reminders/
+COPY core/checkout/package.json ./core/checkout/
+COPY core/credit/package.json ./core/credit/
+COPY core/mis/package.json ./core/mis/
+COPY core/notifications/package.json ./core/notifications/
 COPY core/plan/package.json ./core/plan/
-COPY core/user/package.json ./core/user/
 COPY core/pricing/package.json ./core/pricing/
 COPY core/product/package.json ./core/product/
+COPY core/reminders/package.json ./core/reminders/
+COPY core/taxation/package.json ./core/taxation/
+COPY core/user/package.json ./core/user/
+COPY plugins/cafe/package.json ./plugins/cafe/
+COPY plugins/registry/package.json ./plugins/registry/
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+# strict-dep-builds=false lets pnpm 10 skip postinstall scripts for @swc/core, esbuild, nx
+# (their native binaries ship as separate optional-dep packages, so the scripts aren't needed).
+RUN pnpm install --frozen-lockfile --config.strict-dep-builds=false
 
 # Copy all source code
 COPY . .
