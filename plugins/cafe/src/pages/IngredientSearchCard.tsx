@@ -51,7 +51,6 @@ export interface IngredientSearchCardProps {
   isDetailLoading: boolean;
   isAddingToCart: boolean;
   onViewDetails: (item: InventoryItem) => void;
-  onCorrectStock: (item: InventoryItem) => void;
   onAddToCart: (item: InventoryItem) => void;
 }
 
@@ -61,7 +60,6 @@ export function IngredientSearchCard({
   isDetailLoading,
   isAddingToCart,
   onViewDetails,
-  onCorrectStock,
   onAddToCart,
 }: IngredientSearchCardProps) {
   const ingredientType = getExtensionFieldString(item, 'ingredientType');
@@ -176,12 +174,7 @@ export function IngredientSearchCard({
         <Box className={productChrome.searchResultGrow} aria-hidden />
       </CardBody>
 
-      <CardFooter
-        className={cn(
-          productChrome.searchResultFooter,
-          sellDirect && productChrome.searchResultFooterTriple,
-        )}
-      >
+      <CardFooter className={productChrome.searchResultFooter}>
         <Button
           type="button"
           variant="outline"
@@ -190,14 +183,6 @@ export function IngredientSearchCard({
           loading={isDetailLoading}
         >
           {isDetailLoading ? 'Loading…' : 'View Details'}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => onCorrectStock(item)}
-          disabled={!itemId || isPageLoading}
-        >
-          Correct stock
         </Button>
         {sellDirect ? (
           <Button
