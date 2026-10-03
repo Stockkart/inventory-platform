@@ -1,7 +1,11 @@
 import JsBarcode from 'jsbarcode';
 import { labelLayoutSession } from './labelLayoutSession';
 import { renderBarcodeLabelsHtml, type RenderOptions } from './renderBarcodeLabelsHtml';
-import { DEFAULT_LAYOUT, type EffectiveLabelLayout, type LabelData } from '../model/labelLayout.types';
+import {
+  DEFAULT_LAYOUT,
+  type EffectiveLabelLayout,
+  type LabelData,
+} from '../model/labelLayout.types';
 
 /**
  * Opens a printable sticker sheet rendered by the pure `renderBarcodeLabelsHtml`

@@ -55,7 +55,9 @@ export function FieldToggleGroups({
               const available = fieldAvailableForShop(field, shopType);
               const on = available && enabled.has(field.fieldKey);
               const disabled = !available || (atLimit && !on);
-              const hint = available ? null : `Available for: ${field.availableForShopTypes.join(', ')}`;
+              const hint = available
+                ? null
+                : `Available for: ${field.availableForShopTypes.join(', ')}`;
 
               return (
                 <Switch

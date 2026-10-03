@@ -138,8 +138,8 @@ export function PrintBarcodeLabelsModal({
         err instanceof ApiError
           ? err.message
           : err instanceof Error
-            ? err.message
-            : 'Failed to print barcode labels';
+          ? err.message
+          : 'Failed to print barcode labels';
       // Keep the modal open so the user can retry or change the layout (Req 8.5).
       setPrintError(message);
       onError?.(message);

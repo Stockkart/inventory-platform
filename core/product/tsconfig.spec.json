@@ -9,7 +9,13 @@
     "forceConsistentCasingInFileNames": true,
     "lib": ["es2022", "dom"],
     "jsx": "react-jsx",
-    "types": ["node", "vite/client", "vitest/globals", "vitest/importMeta", "@testing-library/jest-dom"],
+    "types": [
+      "node",
+      "vite/client",
+      "vitest/globals",
+      "vitest/importMeta",
+      "@testing-library/jest-dom"
+    ],
     "paths": {
       "@inventory-platform/contracts": ["../../platform/contracts/src/index.ts"],
       "@inventory-platform/api-client": ["../../platform/api-client/src/index.ts"],

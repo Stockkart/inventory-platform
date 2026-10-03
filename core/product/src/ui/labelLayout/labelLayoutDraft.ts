@@ -103,7 +103,9 @@ const WELL_KNOWN_SAMPLES: Record<string, string> = {
 };
 
 /** Builds a draft from a saved/effective layout (enabled keys in layout order). */
-export function draftFromLayout(layout: EffectiveLabelLayout | LabelLayoutResponse): LabelLayoutDraft {
+export function draftFromLayout(
+  layout: EffectiveLabelLayout | LabelLayoutResponse,
+): LabelLayoutDraft {
   const printMedia: PrintMedia = layout.printMedia ?? 'ROLL';
   return {
     enabledFieldKeys: layout.enabledFields.map((f) => f.fieldKey),
@@ -112,7 +114,7 @@ export function draftFromLayout(layout: EffectiveLabelLayout | LabelLayoutRespon
     showFieldLabels: layout.showFieldLabels,
     blankValueBehavior: layout.blankValueBehavior,
     printMedia,
-    sheetPreset: printMedia === 'SHEET' ? (layout.sheetPreset ?? null) : null,
+    sheetPreset: printMedia === 'SHEET' ? layout.sheetPreset ?? null : null,
     template: layout.template ?? 'STACKED',
     barcodePosition: layout.barcodePosition ?? 'TOP',
     currencyStyle: layout.currencyStyle ?? 'RUPEE_SYMBOL',
@@ -147,7 +149,9 @@ export function draftsEqual(a: LabelLayoutDraft, b: LabelLayoutDraft): boolean {
     return false;
   }
   if (!a.enabledFieldKeys.every((key, i) => key === b.enabledFieldKeys[i])) return false;
-  return mapsEqual(a.fieldZones, b.fieldZones) && mapsEqual(a.fieldLabelOverrides, b.fieldLabelOverrides);
+  return (
+    mapsEqual(a.fieldZones, b.fieldZones) && mapsEqual(a.fieldLabelOverrides, b.fieldLabelOverrides)
+  );
 }
 
 /**
@@ -206,14 +210,20 @@ function catalogIndex(catalog: FieldCatalogResponse): Map<string, PrintableField
 }
 
 /** Resolves the `StickerSizeSpec` for `size` from the catalog, falling back to `STICKER_SIZES`. */
-export function stickerSizeSpecFor(size: StickerSize, catalog?: FieldCatalogResponse | null): StickerSizeSpec {
+export function stickerSizeSpecFor(
+  size: StickerSize,
+  catalog?: FieldCatalogResponse | null,
+): StickerSizeSpec {
   const fromCatalog = catalog?.stickerSizes.find((s) => s.size === size);
   if (fromCatalog) return fromCatalog;
   return STICKER_SIZES.find((s) => s.size === size) ?? STICKER_SIZES[0];
 }
 
 /** Max printable lines for the draft's sticker size. */
-export function maxLinesFor(stickerSize: StickerSize, catalog?: FieldCatalogResponse | null): number {
+export function maxLinesFor(
+  stickerSize: StickerSize,
+  catalog?: FieldCatalogResponse | null,
+): number {
   return stickerSizeSpecFor(stickerSize, catalog).maxLines;
 }
 
@@ -266,7 +276,10 @@ export function resolveSheetSpec(
  * Converts a draft into what the renderer consumes. Enabled keys are enriched
  * with label/value type from the catalog; keys unknown to the catalog are dropped.
  */
-export function toEffectiveLayout(draft: LabelLayoutDraft, catalog: FieldCatalogResponse): EffectiveLabelLayout {
+export function toEffectiveLayout(
+  draft: LabelLayoutDraft,
+  catalog: FieldCatalogResponse,
+): EffectiveLabelLayout {
   const index = catalogIndex(catalog);
   const compact = draft.template === 'COMPACT';
   const enabledFields: EnabledField[] = [];
@@ -284,7 +297,9 @@ export function toEffectiveLayout(draft: LabelLayoutDraft, catalog: FieldCatalog
     });
   }
   const isSheet = draft.printMedia === 'SHEET';
-  const sheetSpec = isSheet ? resolveSheetSpec(catalog, draft.sheetPreset, draft.stickerSize) : undefined;
+  const sheetSpec = isSheet
+    ? resolveSheetSpec(catalog, draft.sheetPreset, draft.stickerSize)
+    : undefined;
   return {
     enabledFields,
     stickerSize: draft.stickerSize,
@@ -333,7 +348,10 @@ function resolveFieldShowLabel(
  * known to the catalog are counted, matching `toEffectiveLayout`; the zone follows
  * the same `fieldZones[key] ?? 'LEFT'` rule used for rendering.
  */
-export function zoneCounts(draft: LabelLayoutDraft, catalog: FieldCatalogResponse): Record<LabelZone, number> {
+export function zoneCounts(
+  draft: LabelLayoutDraft,
+  catalog: FieldCatalogResponse,
+): Record<LabelZone, number> {
   const index = catalogIndex(catalog);
   const counts: Record<LabelZone, number> = { HEADER: 0, LEFT: 0, RIGHT: 0 };
   for (const key of draft.enabledFieldKeys) {
@@ -358,13 +376,19 @@ export function zoneOverflow(
 }
 
 /** Resolves the `COMPACT` zone caps for a draft's sticker size (spec override or `ZONE_CAPS`). */
-export function zoneCapsFor(draft: LabelLayoutDraft, catalog?: FieldCatalogResponse | null): ZoneCaps {
+export function zoneCapsFor(
+  draft: LabelLayoutDraft,
+  catalog?: FieldCatalogResponse | null,
+): ZoneCaps {
   const spec = stickerSizeSpecFor(draft.stickerSize, catalog);
   return spec.zoneCaps ?? ZONE_CAPS[draft.stickerSize] ?? ZONE_CAPS['50x25'];
 }
 
 /** Save payload: enabled keys restricted to the catalog, order preserved. */
-export function prepareSaveRequest(draft: LabelLayoutDraft, catalog: FieldCatalogResponse): SaveLabelLayoutRequest {
+export function prepareSaveRequest(
+  draft: LabelLayoutDraft,
+  catalog: FieldCatalogResponse,
+): SaveLabelLayoutRequest {
   const index = catalogIndex(catalog);
   const enabledFieldKeys = draft.enabledFieldKeys.filter((key) => index.has(key));
   const enabled = new Set(enabledFieldKeys);

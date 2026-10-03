@@ -171,7 +171,14 @@ describe('computeCompactZones per-zone caps', () => {
       ],
     });
     const values: Record<string, string> = {
-      h1: 'a', h2: 'b', l1: 'c', l2: 'd', l3: 'e', l4: 'f', r1: 'g', r2: 'h',
+      h1: 'a',
+      h2: 'b',
+      l1: 'c',
+      l2: 'd',
+      l3: 'e',
+      l4: 'f',
+      r1: 'g',
+      r2: 'h',
     };
 
     const zones = computeCompactZones({ code: 'C', values }, layout);
@@ -255,10 +262,13 @@ describe('renderBarcodeLabelsHtml COMPACT template', () => {
   });
 
   it('orders the barcode after the body with barcodePosition BOTTOM', () => {
-    const result = renderBarcodeLabelsHtml([label], compactLayout({
-      ...layout,
-      barcodePosition: 'BOTTOM',
-    }));
+    const result = renderBarcodeLabelsHtml(
+      [label],
+      compactLayout({
+        ...layout,
+        barcodePosition: 'BOTTOM',
+      }),
+    );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const { html } = result;
@@ -271,10 +281,13 @@ describe('renderBarcodeLabelsHtml COMPACT template', () => {
 
   it('includes the code text under the bars only when showBarcodeText', () => {
     const withText = renderBarcodeLabelsHtml([label], layout);
-    const withoutText = renderBarcodeLabelsHtml([label], compactLayout({
-      ...layout,
-      showBarcodeText: false,
-    }));
+    const withoutText = renderBarcodeLabelsHtml(
+      [label],
+      compactLayout({
+        ...layout,
+        showBarcodeText: false,
+      }),
+    );
     expect(withText.ok && withoutText.ok).toBe(true);
     if (!withText.ok || !withoutText.ok) return;
 

@@ -43,7 +43,15 @@ const STICKER_SIZE_KEYS = STICKER_SIZES.map((s) => s.size);
 
 /** Mix of well-known keys (with curated samples) and arbitrary keys. */
 const arbFieldKey: fc.Arbitrary<string> = fc.oneof(
-  fc.constantFrom('productName', 'companyName', 'mrp', 'batchNo', 'expiryDate', 'shopName', 'barcodeText'),
+  fc.constantFrom(
+    'productName',
+    'companyName',
+    'mrp',
+    'batchNo',
+    'expiryDate',
+    'shopName',
+    'barcodeText',
+  ),
   fc.stringMatching(/^[a-z][a-zA-Z0-9.]{0,15}$/),
 );
 
@@ -72,7 +80,8 @@ const arbCatalog: fc.Arbitrary<FieldCatalogResponse> = fc.record({
 /** A draft whose enabled keys mix catalog keys with keys the catalog does not know. */
 function arbDraft(catalog: FieldCatalogResponse): fc.Arbitrary<LabelLayoutDraft> {
   const catalogKeys = catalog.fields.map((f) => f.fieldKey);
-  const arbKnownKey = catalogKeys.length > 0 ? fc.constantFrom(...catalogKeys) : fc.constant<string | null>(null);
+  const arbKnownKey =
+    catalogKeys.length > 0 ? fc.constantFrom(...catalogKeys) : fc.constant<string | null>(null);
   const arbUnknownKey = fc.stringMatching(/^unknown_[a-z0-9]{1,8}$/);
   const arbAnyKey = fc.oneof(
     catalogKeys.length > 0 ? fc.constantFrom(...catalogKeys) : arbUnknownKey,
@@ -102,7 +111,9 @@ function arbDraft(catalog: FieldCatalogResponse): fc.Arbitrary<LabelLayoutDraft>
   });
 }
 
-const arbCatalogAndDraft = arbCatalog.chain((catalog) => fc.tuple(fc.constant(catalog), arbDraft(catalog)));
+const arbCatalogAndDraft = arbCatalog.chain((catalog) =>
+  fc.tuple(fc.constant(catalog), arbDraft(catalog)),
+);
 
 const isNonBlank = (v: unknown): boolean => typeof v === 'string' && v.trim().length > 0;
 
@@ -126,7 +137,10 @@ describe('labelLayoutDraft property tests', () => {
   // Feature: barcode-label-layout, Property 28: Moving a field is an adjacent swap within bounds
   it('Property 28: moveField is an adjacent swap within bounds and an identity copy otherwise', () => {
     // **Validates: Requirements 5.5**
-    const arbList = fc.uniqueArray(fc.string({ minLength: 1, maxLength: 8 }), { minLength: 0, maxLength: 12 });
+    const arbList = fc.uniqueArray(fc.string({ minLength: 1, maxLength: 8 }), {
+      minLength: 0,
+      maxLength: 12,
+    });
     fc.assert(
       fc.property(
         arbList,
@@ -169,7 +183,9 @@ describe('labelLayoutDraft property tests', () => {
         for (const key of request.enabledFieldKeys) {
           expect(catalogKeys.has(key)).toBe(true);
         }
-        expect(request.enabledFieldKeys).toEqual(draft.enabledFieldKeys.filter((k) => catalogKeys.has(k)));
+        expect(request.enabledFieldKeys).toEqual(
+          draft.enabledFieldKeys.filter((k) => catalogKeys.has(k)),
+        );
 
         expect(request.stickerSize).toBe(draft.stickerSize);
         expect(request.showBarcodeText).toBe(draft.showBarcodeText);
@@ -186,8 +202,10 @@ describe('labelLayoutDraft property tests', () => {
 
         // `fieldZones`/`fieldLabelOverrides` carry only enabled keys (Req 11.5).
         const enabled = new Set(request.enabledFieldKeys);
-        for (const key of Object.keys(request.fieldZones ?? {})) expect(enabled.has(key)).toBe(true);
-        for (const key of Object.keys(request.fieldLabelOverrides ?? {})) expect(enabled.has(key)).toBe(true);
+        for (const key of Object.keys(request.fieldZones ?? {}))
+          expect(enabled.has(key)).toBe(true);
+        for (const key of Object.keys(request.fieldLabelOverrides ?? {}))
+          expect(enabled.has(key)).toBe(true);
         for (const [key, zone] of Object.entries(request.fieldZones ?? {})) {
           if (enabled.has(key)) expect(zone).toBe(draft.fieldZones[key]);
         }
@@ -269,7 +287,8 @@ describe('labelLayoutDraft property tests', () => {
         // Group order is a strictly increasing subsequence of SOURCE_GROUPS (no duplicates).
         const positions = groups.map((g) => SOURCE_GROUPS.indexOf(g.group));
         for (const p of positions) expect(p).toBeGreaterThanOrEqual(0);
-        for (let i = 1; i < positions.length; i++) expect(positions[i]).toBeGreaterThan(positions[i - 1]);
+        for (let i = 1; i < positions.length; i++)
+          expect(positions[i]).toBeGreaterThan(positions[i - 1]);
 
         // Within a group, fields equal the catalog fields of that group in catalog order.
         for (const g of groups) {
@@ -343,13 +362,21 @@ const SHEET_CATALOG: FieldCatalogResponse = {
 
 describe('compatibleSheetPresets', () => {
   it('returns the plain preset plus only the die-cut presets that fit the size', () => {
-    expect(compatibleSheetPresets(SHEET_CATALOG, '38x25').map((p) => p.id)).toEqual(['A4_PLAIN', 'A4_65UP']);
-    expect(compatibleSheetPresets(SHEET_CATALOG, '50x25').map((p) => p.id)).toEqual(['A4_PLAIN', 'A4_40UP']);
+    expect(compatibleSheetPresets(SHEET_CATALOG, '38x25').map((p) => p.id)).toEqual([
+      'A4_PLAIN',
+      'A4_65UP',
+    ]);
+    expect(compatibleSheetPresets(SHEET_CATALOG, '50x25').map((p) => p.id)).toEqual([
+      'A4_PLAIN',
+      'A4_40UP',
+    ]);
     expect(compatibleSheetPresets(SHEET_CATALOG, '100x50').map((p) => p.id)).toEqual(['A4_PLAIN']);
   });
 
   it('is empty when the catalog carries no sheet presets', () => {
-    expect(compatibleSheetPresets({ ...SHEET_CATALOG, sheetPresets: undefined }, '50x25')).toEqual([]);
+    expect(compatibleSheetPresets({ ...SHEET_CATALOG, sheetPresets: undefined }, '50x25')).toEqual(
+      [],
+    );
   });
 });
 
@@ -379,11 +406,41 @@ describe('resolveSheetSpec', () => {
 /** A small catalog of five fields across zones for the compact helper examples. */
 const COMPACT_CATALOG: FieldCatalogResponse = {
   fields: [
-    { fieldKey: 'shopName', label: 'Shop name', sourceGroup: 'shop', valueType: 'text', availableForShopTypes: ['RETAILER', 'DISTRIBUTOR', 'WHOLESALER'] },
-    { fieldKey: 'productName', label: 'Product name', sourceGroup: 'product', valueType: 'text', availableForShopTypes: ['RETAILER', 'DISTRIBUTOR', 'WHOLESALER'] },
-    { fieldKey: 'companyName', label: 'Company', sourceGroup: 'product', valueType: 'text', availableForShopTypes: ['RETAILER', 'DISTRIBUTOR', 'WHOLESALER'] },
-    { fieldKey: 'packSize', label: 'Pack size', sourceGroup: 'product', valueType: 'text', availableForShopTypes: ['RETAILER', 'DISTRIBUTOR', 'WHOLESALER'] },
-    { fieldKey: 'mrp', label: 'MRP', sourceGroup: 'pricing', valueType: 'currency', availableForShopTypes: ['RETAILER', 'DISTRIBUTOR', 'WHOLESALER'] },
+    {
+      fieldKey: 'shopName',
+      label: 'Shop name',
+      sourceGroup: 'shop',
+      valueType: 'text',
+      availableForShopTypes: ['RETAILER', 'DISTRIBUTOR', 'WHOLESALER'],
+    },
+    {
+      fieldKey: 'productName',
+      label: 'Product name',
+      sourceGroup: 'product',
+      valueType: 'text',
+      availableForShopTypes: ['RETAILER', 'DISTRIBUTOR', 'WHOLESALER'],
+    },
+    {
+      fieldKey: 'companyName',
+      label: 'Company',
+      sourceGroup: 'product',
+      valueType: 'text',
+      availableForShopTypes: ['RETAILER', 'DISTRIBUTOR', 'WHOLESALER'],
+    },
+    {
+      fieldKey: 'packSize',
+      label: 'Pack size',
+      sourceGroup: 'product',
+      valueType: 'text',
+      availableForShopTypes: ['RETAILER', 'DISTRIBUTOR', 'WHOLESALER'],
+    },
+    {
+      fieldKey: 'mrp',
+      label: 'MRP',
+      sourceGroup: 'pricing',
+      valueType: 'currency',
+      availableForShopTypes: ['RETAILER', 'DISTRIBUTOR', 'WHOLESALER'],
+    },
   ],
   stickerSizes: STICKER_SIZES,
   shopType: 'RETAILER',
@@ -434,7 +491,13 @@ describe('zoneCounts / zoneOverflow', () => {
     // 38x25 allows header 1 / left 3 / right 1. Put 2 in LEFT (ok) and 2 in RIGHT (over).
     const draft = compactDraft({
       stickerSize: '38x25',
-      fieldZones: { shopName: 'HEADER', productName: 'LEFT', companyName: 'LEFT', packSize: 'RIGHT', mrp: 'RIGHT' },
+      fieldZones: {
+        shopName: 'HEADER',
+        productName: 'LEFT',
+        companyName: 'LEFT',
+        packSize: 'RIGHT',
+        mrp: 'RIGHT',
+      },
     });
     expect(zoneCounts(draft, COMPACT_CATALOG)).toEqual({ HEADER: 1, LEFT: 2, RIGHT: 2 });
     expect(zoneOverflow(draft, COMPACT_CATALOG, ZONE_CAPS['38x25'])).toEqual(['RIGHT']);

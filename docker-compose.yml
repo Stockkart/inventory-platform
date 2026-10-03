@@ -33,7 +33,6 @@ services:
     # networks:
     #   - inventory-network
     restart: unless-stopped
-
 # networks:
 #   inventory-network:
 #     driver: bridge

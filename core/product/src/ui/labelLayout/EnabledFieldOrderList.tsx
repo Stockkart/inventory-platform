@@ -1,5 +1,13 @@
 import { ArrowDown, ArrowUp, X } from 'lucide-react';
-import { Badge, Box, IconButton, Inline, Select, Text, surfaceChrome } from '@inventory-platform/ui-kit';
+import {
+  Badge,
+  Box,
+  IconButton,
+  Inline,
+  Select,
+  Text,
+  surfaceChrome,
+} from '@inventory-platform/ui-kit';
 import type { LabelZone, StickerTemplate } from '../../model/labelLayout.types.js';
 
 export interface EnabledFieldOrderItem {
@@ -82,7 +90,13 @@ export function EnabledFieldOrderList({
   }
 
   return (
-    <Box as="ol" className={surfaceChrome.listPlain} aria-label="Enabled fields in print order" padding="none" margin="none">
+    <Box
+      as="ol"
+      className={surfaceChrome.listPlain}
+      aria-label="Enabled fields in print order"
+      padding="none"
+      margin="none"
+    >
       {items.map((item, index) => {
         const first = index === 0;
         const last = index === items.length - 1;
@@ -98,7 +112,12 @@ export function EnabledFieldOrderList({
             borderBottom={!last}
           >
             <Inline gap="sm" align="center">
-              <Text as="span" variant="caption" color="secondary" className={surfaceChrome.tabularNums}>
+              <Text
+                as="span"
+                variant="caption"
+                color="secondary"
+                className={surfaceChrome.tabularNums}
+              >
                 {index + 1}.
               </Text>
               <Text as="span">{item.label}</Text>
@@ -119,7 +138,12 @@ export function EnabledFieldOrderList({
                     className={surfaceChrome.minW7_5}
                     value={labelModeFor(fieldLabelOverrides?.[item.fieldKey])}
                     options={LABEL_MODE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-                    onChange={(e) => onLabelModeChange?.(item.fieldKey, overrideForLabelMode(e.target.value as LabelMode))}
+                    onChange={(e) =>
+                      onLabelModeChange?.(
+                        item.fieldKey,
+                        overrideForLabelMode(e.target.value as LabelMode),
+                      )
+                    }
                   />
                 </>
               ) : null}
@@ -139,7 +163,11 @@ export function EnabledFieldOrderList({
               >
                 <ArrowDown size={14} />
               </IconButton>
-              <IconButton size="sm" label={`Remove ${item.label}`} onClick={() => onRemove(item.fieldKey)}>
+              <IconButton
+                size="sm"
+                label={`Remove ${item.label}`}
+                onClick={() => onRemove(item.fieldKey)}
+              >
                 <X size={14} />
               </IconButton>
             </Inline>

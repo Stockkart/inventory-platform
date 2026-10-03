@@ -10,7 +10,16 @@ import {
   type LabelValueType,
 } from '../model/labelLayout.types';
 
-const FIELD_KEYS = ['productName', 'companyName', 'mrp', 'batchNo', 'expiry', 'gst', 'hsn', 'weight'] as const;
+const FIELD_KEYS = [
+  'productName',
+  'companyName',
+  'mrp',
+  'batchNo',
+  'expiry',
+  'gst',
+  'hsn',
+  'weight',
+] as const;
 const VALUE_TYPES: LabelValueType[] = ['text', 'number', 'currency', 'date', 'percentage'];
 const BLANK_BEHAVIORS: BlankValueBehavior[] = ['HIDE_LINE', 'PRINT_BLANK'];
 

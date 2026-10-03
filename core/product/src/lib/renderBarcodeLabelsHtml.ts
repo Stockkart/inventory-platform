@@ -189,7 +189,12 @@ export function computeCompactZones(label: LabelData, layout: EffectiveLabelLayo
 }
 
 /** Renders the barcode `<svg>` plus, when `showBarcodeText`, the human-readable code line. */
-function renderCompactBars(code: string, escapedCode: string, index: number, showText: boolean): string {
+function renderCompactBars(
+  code: string,
+  escapedCode: string,
+  index: number,
+  showText: boolean,
+): string {
   const barsSvg = `<svg class="bars" data-idx="${index}" data-code="${escapedCode}"></svg>`;
   const codeLine = showText ? `<div class="code">${escapeHtml(code)}</div>` : '';
   return barsSvg + codeLine;
@@ -200,7 +205,11 @@ function renderCompactBars(code: string, escapedCode: string, index: number, sho
  * `TOP` (default) or `BOTTOM`, and a body split into a wide left column and a
  * narrow right column.
  */
-function renderCompactSticker(label: LabelData, layout: EffectiveLabelLayout, index: number): string {
+function renderCompactSticker(
+  label: LabelData,
+  layout: EffectiveLabelLayout,
+  index: number,
+): string {
   const { widthMm, heightMm } = resolveStickerSize(layout);
   const code = label.code;
   const escapedCode = escapeHtml(code);
@@ -231,7 +240,11 @@ function renderCompactSticker(label: LabelData, layout: EffectiveLabelLayout, in
 }
 
 /** Picks the sticker renderer for the active template (Req 11). */
-function renderStickerForTemplate(label: LabelData, layout: EffectiveLabelLayout, index: number): string {
+function renderStickerForTemplate(
+  label: LabelData,
+  layout: EffectiveLabelLayout,
+  index: number,
+): string {
   return layout.template === 'COMPACT'
     ? renderCompactSticker(label, layout, index)
     : renderSticker(label, layout, index);

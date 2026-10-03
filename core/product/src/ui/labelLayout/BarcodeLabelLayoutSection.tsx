@@ -21,7 +21,11 @@ import {
   useSaveLabelLayoutMutation,
 } from '../../queries/labelLayout.queries.js';
 import { openBarcodeLabelPrintWindow } from '../../lib/printBarcodeLabels.js';
-import type { FieldCatalogResponse, LabelLayoutResponse, LabelZone } from '../../model/labelLayout.types.js';
+import type {
+  FieldCatalogResponse,
+  LabelLayoutResponse,
+  LabelZone,
+} from '../../model/labelLayout.types.js';
 import {
   buildSampleLabelData,
   compatibleSheetPresets,
@@ -72,9 +76,17 @@ function zoneOverflowMessage(
   sizeLabel: string,
 ): string {
   if (!counts) return '';
-  const capFor: Record<LabelZone, number> = { HEADER: caps.header, LEFT: caps.left, RIGHT: caps.right };
-  const parts = zones.map((z) => `${ZONE_LABELS[z]} allows ${capFor[z]} on ${sizeLabel}, ${counts[z]} assigned`);
-  return `Too many fields in a column: ${parts.join('; ')}. Move fields to another column or pick a larger sticker.`;
+  const capFor: Record<LabelZone, number> = {
+    HEADER: caps.header,
+    LEFT: caps.left,
+    RIGHT: caps.right,
+  };
+  const parts = zones.map(
+    (z) => `${ZONE_LABELS[z]} allows ${capFor[z]} on ${sizeLabel}, ${counts[z]} assigned`,
+  );
+  return `Too many fields in a column: ${parts.join(
+    '; ',
+  )}. Move fields to another column or pick a larger sticker.`;
 }
 
 /**
@@ -82,9 +94,17 @@ function zoneOverflowMessage(
  * Keeping it separate lets the draft state initialise synchronously from props
  * instead of via an effect, and remount cleanly on Retry.
  */
-function LabelLayoutEditor({ catalog, layout }: { catalog: FieldCatalogResponse; layout: LabelLayoutResponse }) {
+function LabelLayoutEditor({
+  catalog,
+  layout,
+}: {
+  catalog: FieldCatalogResponse;
+  layout: LabelLayoutResponse;
+}) {
   const [draft, setDraft] = useState<LabelLayoutDraft>(() => draftFromLayout(layout));
-  const [savedSnapshot, setSavedSnapshot] = useState<LabelLayoutDraft>(() => draftFromLayout(layout));
+  const [savedSnapshot, setSavedSnapshot] = useState<LabelLayoutDraft>(() =>
+    draftFromLayout(layout),
+  );
   const [saveError, setSaveError] = useState<string | null>(null);
   const [sheetResetNotice, setSheetResetNotice] = useState<string | null>(null);
 
@@ -165,7 +185,10 @@ function LabelLayoutEditor({ catalog, layout }: { catalog: FieldCatalogResponse;
         return { ...prev, enabledFieldKeys: [...prev.enabledFieldKeys, fieldKey] };
       }
       // Turning a field off drops its COMPACT zone / label-mode entries (Req 11.5).
-      const without = { ...prev, enabledFieldKeys: prev.enabledFieldKeys.filter((k) => k !== fieldKey) };
+      const without = {
+        ...prev,
+        enabledFieldKeys: prev.enabledFieldKeys.filter((k) => k !== fieldKey),
+      };
       return dropFieldMaps(without, fieldKey);
     });
   };
@@ -186,7 +209,10 @@ function LabelLayoutEditor({ catalog, layout }: { catalog: FieldCatalogResponse;
   const handleRemove = (fieldKey: string) => handleToggle(fieldKey, false);
 
   const handleMove = (index: number, dir: 'up' | 'down') => {
-    setDraft((prev) => ({ ...prev, enabledFieldKeys: moveField(prev.enabledFieldKeys, index, dir) }));
+    setDraft((prev) => ({
+      ...prev,
+      enabledFieldKeys: moveField(prev.enabledFieldKeys, index, dir),
+    }));
   };
 
   const handleOptionsChange = (patch: Partial<LabelLayoutDraft>) => {
@@ -240,7 +266,9 @@ function LabelLayoutEditor({ catalog, layout }: { catalog: FieldCatalogResponse;
       setSaveError(null);
       setSheetResetNotice(null);
     } catch (err) {
-      useNotify.error(err instanceof Error && err.message ? err.message : 'Could not load the default layout');
+      useNotify.error(
+        err instanceof Error && err.message ? err.message : 'Could not load the default layout',
+      );
     }
   };
 
@@ -248,7 +276,9 @@ function LabelLayoutEditor({ catalog, layout }: { catalog: FieldCatalogResponse;
     try {
       openBarcodeLabelPrintWindow([sample], effective);
     } catch (err) {
-      useNotify.error(err instanceof Error && err.message ? err.message : 'Could not open the print window');
+      useNotify.error(
+        err instanceof Error && err.message ? err.message : 'Could not open the print window',
+      );
     }
   };
 
@@ -266,8 +296,8 @@ function LabelLayoutEditor({ catalog, layout }: { catalog: FieldCatalogResponse;
             {dirty ? <Badge variant="warning">Unsaved changes</Badge> : null}
           </Inline>
           <Text as="p" className={surfaceChrome.invoiceSettingsSubtitle}>
-            Choose which fields print on each sticker, their order and the sticker size. The preview on
-            the right updates live and matches what the printer produces.
+            Choose which fields print on each sticker, their order and the sticker size. The preview
+            on the right updates live and matches what the printer produces.
           </Text>
         </Box>
         <Box className={surfaceChrome.invoiceSettingsHeaderActions}>
@@ -310,8 +340,8 @@ function LabelLayoutEditor({ catalog, layout }: { catalog: FieldCatalogResponse;
 
       {overLimit ? (
         <Alert variant="warning" className={surfaceChrome.invoiceSettingsAlert}>
-          Sticker {sizeLabel} allows at most {maxLines} lines; {enabledCount} enabled. Remove fields or pick a
-          larger sticker.
+          Sticker {sizeLabel} allows at most {maxLines} lines; {enabledCount} enabled. Remove fields
+          or pick a larger sticker.
         </Alert>
       ) : null}
 
@@ -379,7 +409,12 @@ function LabelLayoutEditor({ catalog, layout }: { catalog: FieldCatalogResponse;
               </Text>
             ) : null}
             {unavailable.length > 0 ? (
-              <Text as="p" variant="caption" color="secondary" className={surfaceChrome.invoiceToggleHint}>
+              <Text
+                as="p"
+                variant="caption"
+                color="secondary"
+                className={surfaceChrome.invoiceToggleHint}
+              >
                 Fields marked “No longer available” are skipped on print and dropped when you save.
               </Text>
             ) : null}
@@ -399,7 +434,12 @@ function LabelLayoutEditor({ catalog, layout }: { catalog: FieldCatalogResponse;
             <Text variant="caption" color="secondary">
               Changes apply to new prints after you save.
             </Text>
-            <Button type="button" variant="solid" onClick={handleSave} disabled={busy || saveBlocked}>
+            <Button
+              type="button"
+              variant="solid"
+              onClick={handleSave}
+              disabled={busy || saveBlocked}
+            >
               {saveMutation.isPending ? 'Saving…' : 'Save layout'}
             </Button>
           </Box>
@@ -408,9 +448,16 @@ function LabelLayoutEditor({ catalog, layout }: { catalog: FieldCatalogResponse;
         <Box className={surfaceChrome.invoiceSettingsPreview}>
           <Stack gap="sm">
             <LabelPreview label={sample} layout={effective} />
-            <Text as="p" variant="caption" color="secondary" className={surfaceChrome.invoicePreviewHint}>
+            <Text
+              as="p"
+              variant="caption"
+              color="secondary"
+              className={surfaceChrome.invoicePreviewHint}
+            >
               {sizeLabel} ·{' '}
-              {effectiveFieldNames.length > 0 ? effectiveFieldNames.join(', ') : 'No fields enabled'}
+              {effectiveFieldNames.length > 0
+                ? effectiveFieldNames.join(', ')
+                : 'No fields enabled'}
             </Text>
           </Stack>
         </Box>

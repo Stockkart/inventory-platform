@@ -101,7 +101,13 @@ describe('printBarcodeLabels', () => {
     };
 
     openBarcodeLabelPrintWindow(
-      [{ code: 'XYZ', companyName: 'Acme Pharma', values: { companyName: 'Acme Pharma', mrp: '₹12.00' } }],
+      [
+        {
+          code: 'XYZ',
+          companyName: 'Acme Pharma',
+          values: { companyName: 'Acme Pharma', mrp: '₹12.00' },
+        },
+      ],
       explicit,
     );
     vi.advanceTimersByTime(50);

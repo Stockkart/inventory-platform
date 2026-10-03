@@ -15,7 +15,16 @@ import {
   type LabelValueType,
 } from '../model/labelLayout.types';
 
-const FIELD_KEYS = ['productName', 'companyName', 'mrp', 'batchNo', 'expiry', 'gst', 'hsn', 'weight'] as const;
+const FIELD_KEYS = [
+  'productName',
+  'companyName',
+  'mrp',
+  'batchNo',
+  'expiry',
+  'gst',
+  'hsn',
+  'weight',
+] as const;
 const VALUE_TYPES: LabelValueType[] = ['text', 'number', 'currency', 'date', 'percentage'];
 const BLANK_BEHAVIORS: BlankValueBehavior[] = ['HIDE_LINE', 'PRINT_BLANK'];
 
@@ -45,7 +54,11 @@ const arbLayoutWithinCap: fc.Arbitrary<EffectiveLabelLayout> = fc
   .chain((spec) =>
     fc.record({
       enabledFields: fc
-        .uniqueArray(arbEnabledField, { minLength: 0, maxLength: spec.maxLines, selector: (f) => f.fieldKey })
+        .uniqueArray(arbEnabledField, {
+          minLength: 0,
+          maxLength: spec.maxLines,
+          selector: (f) => f.fieldKey,
+        })
         .map((fields) => fields as EnabledField[]),
       stickerSize: fc.constant(spec.size),
       showBarcodeText: fc.boolean(),
@@ -70,7 +83,11 @@ function arbLabelFor(layout: EffectiveLabelLayout): fc.Arbitrary<LabelData> {
   });
 }
 
-function arbLabelsFor(layout: EffectiveLabelLayout, min: number, max: number): fc.Arbitrary<LabelData[]> {
+function arbLabelsFor(
+  layout: EffectiveLabelLayout,
+  min: number,
+  max: number,
+): fc.Arbitrary<LabelData[]> {
   return fc.array(arbLabelFor(layout), { minLength: min, maxLength: max });
 }
 
@@ -83,7 +100,11 @@ describe('renderBarcodeLabelsHtml line property tests', () => {
   // Validates: Requirements 7.1
   it('renders one sticker per label with field lines in enabled order carrying verbatim values', () => {
     const arb = arbLayoutWithinCap
-      .map((layout) => ({ ...layout, blankValueBehavior: 'PRINT_BLANK' as const, showFieldLabels: false }))
+      .map((layout) => ({
+        ...layout,
+        blankValueBehavior: 'PRINT_BLANK' as const,
+        showFieldLabels: false,
+      }))
       .chain((layout) => arbLabelsFor(layout, 1, 5).map((labels) => ({ labels, layout })));
 
     fc.assert(

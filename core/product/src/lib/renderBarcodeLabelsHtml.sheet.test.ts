@@ -167,7 +167,9 @@ describe('renderBarcodeLabelsHtml SHEET mode (Req 10.7, 10.9)', () => {
         fc.integer({ min: 1, max: 20 }),
         fc.integer({ min: 1, max: PER_SHEET }),
         (n, start) => {
-          const result = renderBarcodeLabelsHtml(makeLabels(n), sheetLayout(), { startPosition: start });
+          const result = renderBarcodeLabelsHtml(makeLabels(n), sheetLayout(), {
+            startPosition: start,
+          });
           expect(result.ok).toBe(true);
           if (!result.ok) return;
           const { html } = result;

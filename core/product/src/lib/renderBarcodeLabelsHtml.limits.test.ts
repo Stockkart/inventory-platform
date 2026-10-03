@@ -17,7 +17,16 @@ import {
   type LabelValueType,
 } from '../model/labelLayout.types';
 
-const FIELD_KEYS = ['productName', 'companyName', 'mrp', 'batchNo', 'expiry', 'gst', 'hsn', 'weight'] as const;
+const FIELD_KEYS = [
+  'productName',
+  'companyName',
+  'mrp',
+  'batchNo',
+  'expiry',
+  'gst',
+  'hsn',
+  'weight',
+] as const;
 const VALUE_TYPES: LabelValueType[] = ['text', 'number', 'currency', 'date', 'percentage'];
 const BLANK_BEHAVIORS: BlankValueBehavior[] = ['HIDE_LINE', 'PRINT_BLANK'];
 
@@ -66,7 +75,10 @@ const arbValue = fc.oneof(
   fc.string({ minLength: 1, maxLength: 20 }),
 );
 
-function arbLabelFor(layout: EffectiveLabelLayout, valueArb: fc.Arbitrary<string> = arbValue): fc.Arbitrary<LabelData> {
+function arbLabelFor(
+  layout: EffectiveLabelLayout,
+  valueArb: fc.Arbitrary<string> = arbValue,
+): fc.Arbitrary<LabelData> {
   const valueArbs = Object.fromEntries(layout.enabledFields.map((f) => [f.fieldKey, valueArb]));
   return fc.record({
     code: fc.string({ minLength: 1, maxLength: 16 }),
@@ -75,7 +87,9 @@ function arbLabelFor(layout: EffectiveLabelLayout, valueArb: fc.Arbitrary<string
 }
 
 const arbLabelsAndLayout = arbLayout.chain((layout) =>
-  fc.array(arbLabelFor(layout), { minLength: 1, maxLength: 5 }).map((labels) => ({ labels, layout })),
+  fc
+    .array(arbLabelFor(layout), { minLength: 1, maxLength: 5 })
+    .map((labels) => ({ labels, layout })),
 );
 
 function fieldLineCount(label: LabelData, layout: EffectiveLabelLayout): number {
@@ -123,10 +137,21 @@ describe('renderBarcodeLabelsHtml limits, escaping, parity and determinism', () 
   // Validates: Requirements 7.7
   it('escapes every printed code, label and value so no raw markup characters survive', () => {
     const arbHostile = arbLayoutWith(arbEnabledFieldWith(arbHtmlHostileString), 6)
-      .map((layout) => ({ ...layout, showFieldLabels: true, blankValueBehavior: 'PRINT_BLANK' as const }))
+      .map((layout) => ({
+        ...layout,
+        showFieldLabels: true,
+        blankValueBehavior: 'PRINT_BLANK' as const,
+      }))
       .chain((layout) =>
         fc
-          .record({ code: arbHtmlHostileString, values: fc.record(Object.fromEntries(layout.enabledFields.map((f) => [f.fieldKey, arbHtmlHostileString]))) })
+          .record({
+            code: arbHtmlHostileString,
+            values: fc.record(
+              Object.fromEntries(
+                layout.enabledFields.map((f) => [f.fieldKey, arbHtmlHostileString]),
+              ),
+            ),
+          })
           .map((label) => ({ label: label as LabelData, layout })),
       );
 
@@ -175,15 +200,13 @@ describe('renderBarcodeLabelsHtml limits, escaping, parity and determinism', () 
       fc.constantFrom(' ', '\t', '\n '),
       fc.string({ minLength: 1, maxLength: 20 }),
     );
-    const arbLegacyLabel = fc.record(
-      {
-        code: fc.string({ minLength: 1, maxLength: 16 }),
-        name: arbOptionalText,
-        companyName: arbOptionalText,
-        price: fc.oneof(fc.constant(null), fc.double({ noNaN: true, min: 0, max: 100000 })),
-        useValuesMap: fc.boolean(),
-      },
-    );
+    const arbLegacyLabel = fc.record({
+      code: fc.string({ minLength: 1, maxLength: 16 }),
+      name: arbOptionalText,
+      companyName: arbOptionalText,
+      price: fc.oneof(fc.constant(null), fc.double({ noNaN: true, min: 0, max: 100000 })),
+      useValuesMap: fc.boolean(),
+    });
 
     fc.assert(
       fc.property(arbLegacyLabel, ({ code, name, companyName, price, useValuesMap }) => {
@@ -196,7 +219,8 @@ describe('renderBarcodeLabelsHtml limits, escaping, parity and determinism', () 
         const expected: Array<{ kind: 'code' | 'field'; fieldKey?: string; text: string }> = [
           { kind: 'code', text: code },
         ];
-        if ((name ?? '').trim()) expected.push({ kind: 'field', fieldKey: 'productName', text: name as string });
+        if ((name ?? '').trim())
+          expected.push({ kind: 'field', fieldKey: 'productName', text: name as string });
         if ((companyName ?? '').trim()) {
           expected.push({ kind: 'field', fieldKey: 'companyName', text: companyName as string });
         }

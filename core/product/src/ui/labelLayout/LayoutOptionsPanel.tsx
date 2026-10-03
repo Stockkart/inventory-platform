@@ -100,7 +100,9 @@ export function LayoutOptionsPanel({
   const isCompact = template === 'COMPACT';
 
   const selectedPreset =
-    printMedia === 'SHEET' && sheetPreset ? sheetPresets.find((p) => p.id === sheetPreset) : undefined;
+    printMedia === 'SHEET' && sheetPreset
+      ? sheetPresets.find((p) => p.id === sheetPreset)
+      : undefined;
   // When the chosen preset is not in the compatible list (e.g. just before a size
   // change resets it), fall back to showing Roll so the Select stays controlled.
   const printOnValue = selectedPreset ? selectedPreset.id : PRINT_ON_ROLL;
@@ -155,7 +157,12 @@ export function LayoutOptionsPanel({
       </FormField>
 
       {selectedPreset && selectedGrid ? (
-        <Text as="p" variant="caption" color="secondary" className={surfaceChrome.invoiceToggleHint}>
+        <Text
+          as="p"
+          variant="caption"
+          color="secondary"
+          className={surfaceChrome.invoiceToggleHint}
+        >
           {selectedGrid.perSheet} per sheet ({selectedGrid.columns} × {selectedGrid.rows}) ·{' '}
           {selectedPreset.pageWidthMm}×{selectedPreset.pageHeightMm} mm page
         </Text>
@@ -196,7 +203,12 @@ export function LayoutOptionsPanel({
         />
       </Box>
       {isCompact ? (
-        <Text as="p" variant="caption" color="secondary" className={surfaceChrome.invoiceToggleHint}>
+        <Text
+          as="p"
+          variant="caption"
+          color="secondary"
+          className={surfaceChrome.invoiceToggleHint}
+        >
           Applies to Stacked; Compact uses per-field label modes.
         </Text>
       ) : null}

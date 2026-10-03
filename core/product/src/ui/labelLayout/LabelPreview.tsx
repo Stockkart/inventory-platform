@@ -91,7 +91,10 @@ export function LabelPreview({ label, layout, title = 'Live preview' }: LabelPre
 
   const html = result.ok
     ? sheet
-      ? injectBeforeHead(result.html, sheetPreviewStyle(SHEET_PREVIEW_WIDTH_PX / (sheet.pageWidthMm * PX_PER_MM)))
+      ? injectBeforeHead(
+          result.html,
+          sheetPreviewStyle(SHEET_PREVIEW_WIDTH_PX / (sheet.pageWidthMm * PX_PER_MM)),
+        )
       : injectBeforeHead(result.html, PREVIEW_STYLE)
     : null;
 
