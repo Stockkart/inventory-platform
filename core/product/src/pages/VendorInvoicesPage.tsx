@@ -1,6 +1,8 @@
 import { Fragment, useCallback, useEffect, useState } from 'react';
+import { useAmendVendorPurchaseInvoiceMutation } from '../queries/hooks';
 import { inventoryApi } from '../api/inventory.api';
 import type {
+  AmendVendorPurchaseInvoicePayload,
   InventoryItem,
   VendorPurchaseInvoiceDetail,
   VendorPurchaseInvoiceSummary,
@@ -41,7 +43,7 @@ import {
   VendorInvoiceExpandedBody,
 } from '../ui';
 import type { HistoryFilters } from '../ui';
-import { useAuthStore, useShopCapabilitiesStore } from '@inventory-platform/session';
+import { useAuthStore, useNotify, useShopCapabilitiesStore } from '@inventory-platform/session';
 
 export function meta() {
   return [
@@ -103,6 +105,8 @@ function InvoiceExpansionPanel({
   inventoryLoadingByInvoice,
   inventoryWarningByInvoice,
   panelId,
+  onAmend,
+  amending,
 }: {
   inv: VendorPurchaseInvoiceSummary;
   detail: VendorPurchaseInvoiceDetail | undefined;
@@ -112,6 +116,8 @@ function InvoiceExpansionPanel({
   inventoryLoadingByInvoice: Record<string, boolean>;
   inventoryWarningByInvoice: Record<string, string>;
   panelId?: string;
+  onAmend?: (payload: AmendVendorPurchaseInvoicePayload) => Promise<void>;
+  amending?: boolean;
 }) {
   const content = (
     <>
@@ -123,6 +129,8 @@ function InvoiceExpansionPanel({
           inventoryById={inventoryById}
           inventoryLoading={inventoryLoadingByInvoice[inv.id] === true}
           inventoryWarning={inventoryWarningByInvoice[inv.id]}
+          onAmend={onAmend}
+          amending={amending}
         />
       ) : null}
     </>
@@ -175,6 +183,8 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
   const [invoices, setInvoices] = useState<VendorPurchaseInvoiceSummary[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [detailsById, setDetailsById] = useState<Record<string, VendorPurchaseInvoiceDetail>>({});
+  const amendMutation = useAmendVendorPurchaseInvoiceMutation();
+  const amendingId = amendMutation.isPending ? amendMutation.variables?.id ?? null : null;
   const [fetchingId, setFetchingId] = useState<string | null>(null);
   const [rowError, setRowError] = useState<Record<string, string>>({});
   const [inventoryById, setInventoryById] = useState<Record<string, InventoryItem>>({});
@@ -365,6 +375,29 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
       setRowError((prev) => ({ ...prev, [id]: msg }));
     } finally {
       setFetchingId(null);
+    }
+  };
+
+  /**
+   * Corrects an invoice header from the paper bill and reloads it.
+   *
+   * <p>The reload matters: the server works the totals out again on save, so the figures shown
+   * after a correction are the new ones.
+   */
+  const amendInvoice = async (id: string, payload: AmendVendorPurchaseInvoicePayload) => {
+    setRowError((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    try {
+      const updated = await amendMutation.mutateAsync({ id, payload });
+      setDetailsById((prev) => ({ ...prev, [id]: updated }));
+      useNotify.success('Correction saved');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Could not save the correction';
+      setRowError((prev) => ({ ...prev, [id]: msg }));
+      useNotify.error(msg);
     }
   };
 
@@ -560,6 +593,8 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
                         inventoryLoadingByInvoice={inventoryLoadingByInvoice}
                         inventoryWarningByInvoice={inventoryWarningByInvoice}
                         panelId={panelId}
+                        onAmend={(payload) => amendInvoice(inv.id, payload)}
+                        amending={amendingId === inv.id}
                       />
                     </TableCell>
                   </TableRow>

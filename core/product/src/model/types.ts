@@ -1,3 +1,4 @@
+import type { PurchaseTaxTreatment } from '@inventory-platform/user/types';
 import type {
   PaymentMethod,
   CustomReminderInput,
@@ -283,15 +284,26 @@ export interface BulkCreateInventoryItem {
   verticalFields?: Record<string, unknown> | null;
 }
 
+/** How a vendor's bill states tax; owned by the vendor (user domain), re-exported here. */
+export type { PurchaseTaxTreatment } from '@inventory-platform/user/types';
+
 /** Optional vendor invoice header on bulk stock-in. Omit for legacy behavior. */
+
 export interface VendorPurchaseInvoicePayload {
   invoiceNo: string;
+  /**
+   * Whether the line amounts on this bill already include GST.
+   *
+   * Omitted falls back to the vendor's default, and then to EXCLUSIVE.
+   */
+  taxTreatment?: PurchaseTaxTreatment | null;
   invoiceDate?: string | null;
+  /** The server's bill preview figures, sent so the bill stores them. */
   lineSubTotal?: number | null;
   taxTotal?: number | null;
   shippingCharge?: number | null;
   otherCharges?: number | null;
-  /** Bill-level discount (₹), subtracted from invoice total. */
+  /** Bill-level discount (₹), taken off the lines before tax. */
   overallDiscount?: number | null;
   roundOff?: number | null;
   invoiceTotal?: number | null;
@@ -322,6 +334,42 @@ export interface BulkCreateInventoryDto {
   items: BulkCreateInventoryItem[];
 }
 
+/**
+ * The stock-in screen as it stands, sent to POST /vendor-purchase-invoices/preview-totals. The
+ * server works out tax and totals with the stock-in rules; the screen only shows them.
+ */
+export interface PurchaseTaxPreviewRequest {
+  vendorId?: string | null;
+  taxTreatment?: PurchaseTaxTreatment | null;
+  items: BulkCreateInventoryItem[];
+  shippingCharge?: number;
+  otherCharges?: number;
+  overallDiscount?: number;
+  roundOff?: number;
+}
+
+export interface PurchaseTaxPreviewLine {
+  taxable: number;
+  ratePct: number;
+  centralTax: number;
+  stateTax: number;
+  integratedTax: number;
+  tax: number;
+}
+
+export interface PurchaseTaxPreviewResponse {
+  taxTreatment: PurchaseTaxTreatment | null;
+  lineSubTotal: number;
+  taxTotal: number;
+  /** Items only: taxable value plus tax, before header charges. */
+  itemsTotal: number;
+  /** Typed subtotal/tax where given (else resolved), plus charges, less discount. */
+  invoiceTotal: number;
+  productCount: number;
+  totalQuantity: number;
+  lines: PurchaseTaxPreviewLine[];
+}
+
 export interface BulkCreateInventoryResponse {
   success?: boolean;
   lotId?: string | null;
@@ -335,17 +383,12 @@ export interface BulkCreateInventoryResponse {
   /** Set when stock-in leaves payable due in credit ledger. */
   creditEntryId?: string | null;
   /**
-   * How the invoice header that was typed compares to what its lines come to.
+   * Products whose GST rate disagrees with the rest of the catalogue under the same HSN.
    *
-   * OK when they agree. MISSING when no header was given, MISMATCH when the stated subtotal and
-   * tax do not agree at the line rates, RATE_CONFLICT when the tax implies a GST slab none of the
-   * goods are priced at. Advisory only -- the stock is registered either way.
+   * The one error a correct-looking bill can still hide: priced at the wrong slab, an invoice
+   * adds up perfectly against itself and is wrong all the same.
    */
-  headerReconciliation?: 'OK' | 'MISSING' | 'MISMATCH' | 'RATE_CONFLICT' | null;
-  /** Taxable value the lines resolve to, for showing beside the typed subtotal. */
-  computedLineSubTotal?: number | null;
-  /** Tax the lines resolve to at their own rates, for showing beside the typed tax. */
-  computedTaxTotal?: number | null;
+  rateWarnings?: string[] | null;
   items: Array<{
     id: string;
     lotId?: string;
@@ -405,6 +448,28 @@ export interface VendorPurchaseInvoiceDetail {
   synthetic?: boolean | null;
   legacyLotId?: string | null;
   lines: VendorPurchaseInvoiceLineDto[];
+
+  taxTreatment?: PurchaseTaxTreatment | null;
+
+  /** Set once the header has been corrected against the paper bill. */
+  amendedAt?: string | null;
+  amendedByUserId?: string | null;
+  amendmentReason?: string | null;
+}
+
+/**
+ * Corrections to a purchase invoice header, keyed from the paper bill.
+ *
+ * Every field is optional -- an omitted one is left as it stands. The subtotal, tax and invoice
+ * total are worked out by the server from the lines. The reason is required.
+ */
+export interface AmendVendorPurchaseInvoicePayload {
+  shippingCharge?: number | null;
+  otherCharges?: number | null;
+  overallDiscount?: number | null;
+  roundOff?: number | null;
+  taxTreatment?: PurchaseTaxTreatment | null;
+  reason: string;
 }
 
 export interface VendorPurchaseInvoiceListResponse {
