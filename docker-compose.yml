@@ -1,16 +1,16 @@
 services:
-  inventory-server:
-    image: myntrack/inventory-backend:latest
-    platform: linux/amd64
-    container_name: inventory-server
-    restart: unless-stopped
-    environment:
-      DB_URI: ${DB_URI}
-      CLIENT_URL: ${CLIENT_URL}
-    networks:
-      - inventory-network
-    ports:
-      - '8080:8080'
+  # inventory-server:
+  #   image: myntrack/inventory-backend:latest
+  #   platform: linux/amd64
+  #   container_name: inventory-server
+  #   restart: unless-stopped
+  #   environment:
+  #     DB_URI: ${DB_URI}
+  #     CLIENT_URL: ${CLIENT_URL}
+  #   networks:
+  #     - inventory-network
+  #   ports:
+  #     - '8080:8080'
 
   inventory-platform:
     build:
@@ -28,12 +28,12 @@ services:
     environment:
       - VITE_API_URL=${VITE_API_URL:-http://localhost:8080/api/v1}
       - NODE_ENV=development
-    depends_on:
-      - inventory-server
-    networks:
-      - inventory-network
+    # depends_on:
+    #   - inventory-server
+    # networks:
+    #   - inventory-network
     restart: unless-stopped
 
-networks:
-  inventory-network:
-    driver: bridge
+# networks:
+#   inventory-network:
+#     driver: bridge
