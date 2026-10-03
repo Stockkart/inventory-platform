@@ -381,8 +381,8 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
   /**
    * Corrects an invoice header from the paper bill and reloads it.
    *
-   * <p>The reload matters: the server re-resolves the tax on save, so the reconciliation shown
-   * after a correction is the new one rather than the one that prompted it.
+   * <p>The reload matters: the server works the totals out again on save, so the figures shown
+   * after a correction are the new ones.
    */
   const amendInvoice = async (id: string, payload: AmendVendorPurchaseInvoicePayload) => {
     setRowError((prev) => {
@@ -393,11 +393,7 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
     try {
       const updated = await amendMutation.mutateAsync({ id, payload });
       setDetailsById((prev) => ({ ...prev, [id]: updated }));
-      useNotify.success(
-        updated.headerReconciliation === 'OK'
-          ? 'Corrected — the bill now agrees with its lines'
-          : 'Correction saved',
-      );
+      useNotify.success('Correction saved');
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Could not save the correction';
       setRowError((prev) => ({ ...prev, [id]: msg }));

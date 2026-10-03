@@ -319,12 +319,6 @@ function mapCustomRemindersForBulkApi(
   return mapped.length > 0 ? mapped : null;
 }
 
-function numOr0(v: number | null | undefined): number {
-  if (v == null) return 0;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : 0;
-}
-
 export function meta() {
   return [
     { title: 'Product Entry - StockKart' },
@@ -618,43 +612,6 @@ interface GridBulkFillDraft {
   verticalBulk?: Record<string, string>;
 }
 
-/**
- * What to tell the operator when the bill they typed does not reconcile with the lines.
- *
- * <p>Written for someone still holding the paper, so each case says which number to look at
- * rather than naming the fault. The stock is already registered — this is the last cheap moment
- * to settle a discrepancy, not a reason to undo anything.
- */
-function headerReconciliationWarning(
-  verdict: string | null | undefined,
-  typedSubTotal: string,
-  typedTax: string,
-  computedSubTotal: number | null | undefined,
-  computedTax: number | null | undefined,
-): string | null {
-  if (!verdict || verdict === 'OK') return null;
-  const money = (v: number | null | undefined) => (v == null ? '—' : `₹${formatComputedAmount(v)}`);
-
-  switch (verdict) {
-    case 'MISSING':
-      return `Saved, but this bill has no invoice total. Its GST will be worked out from the line prices — ${money(
-        computedSubTotal,
-      )} taxable, ${money(
-        computedTax,
-      )} tax — which ignores any discount the bill gave. Add the totals from the paper when you can.`;
-    case 'MISMATCH':
-      return `Saved, but the totals do not tie out. You typed ${typedSubTotal || '—'} taxable and ${
-        typedTax || '—'
-      } tax; the lines come to ${money(computedSubTotal)} and ${money(
-        computedTax,
-      )}. Worth a look at the bill before this month is filed.`;
-    case 'RATE_CONFLICT':
-      return `Saved, but the tax you typed does not match any rate on these products. One of them is probably priced at the wrong GST slab — check the rates against the bill.`;
-    default:
-      return null;
-  }
-}
-
 interface ProductsRegistrationSummary {
   productCount: number;
   totalQuantity: number;
@@ -813,18 +770,8 @@ export function ProductEntryPage() {
     emptyPaymentSplit(),
   );
 
-  /**
-   * Apply OCR header + optional line-derived totals. When `parsedItems` has
-   * rows, line subtotal, tax total, and invoice total are computed from items
-   * (and header shipping / other / round-off); header line/tax/invoice amounts
-   * are ignored in that case.
-   */
-  const applyParsedVendorInvoice = (
-    v: ParsedVendorInvoiceDto | null | undefined,
-    parsedItems?: ParseInvoiceItem[] | null,
-  ) => {
-    const hasItems = parsedItems != null && parsedItems.length > 0;
-
+  /** Apply the scanned invoice header: number, date and the typed charges. */
+  const applyParsedVendorInvoice = (v: ParsedVendorInvoiceDto | null | undefined) => {
     if (v) {
       if (v.invoiceNo) setVendorInvoiceNo(String(v.invoiceNo).trim());
       if (v.invoiceDate) {
@@ -834,15 +781,10 @@ export function ProductEntryPage() {
       if (v.shippingCharge != null) setVendorShippingCharge(String(v.shippingCharge));
       if (v.otherCharges != null) setVendorOtherCharges(String(v.otherCharges));
       if (v.roundOff != null) setVendorRoundOff(String(v.roundOff));
-      if (!hasItems) {
-        if (v.lineSubTotal != null) setVendorLineSubTotal(String(v.lineSubTotal));
-        if (v.taxTotal != null) setVendorTaxTotal(String(v.taxTotal));
-        if (v.invoiceTotal != null) setVendorInvoiceTotal(String(v.invoiceTotal));
-      }
     }
 
-    // With parsed items the subtotal and tax come from the server's bill preview once the rows
-    // are on the page (see usePurchaseTaxPreviewQuery below), not from arithmetic here.
+    // The subtotal, tax and invoice total come from the server's bill preview once the rows are on
+    // the page (see usePurchaseTaxPreviewQuery below), never from the scanned header.
   };
 
   const vendorInvoiceTotalNum = optionalNumFromString(vendorInvoiceTotal) ?? 0;
@@ -1386,7 +1328,7 @@ export function ProductEntryPage() {
   );
 
   // Tax and totals for the bill on screen come from the server, worked out with the stock-in
-  // rules; this page only shows them. Typed header figures are sent so the invoice total matches.
+  // rules; this page only shows them. The typed charges are sent so the invoice total includes them.
   const purchaseTaxPreviewRequest = useMemo<PurchaseTaxPreviewRequest | null>(() => {
     if (products.length === 0) return null;
     return {
@@ -1397,8 +1339,6 @@ export function ProductEntryPage() {
       otherCharges: optionalNumFromString(vendorOtherCharges),
       overallDiscount: optionalNumFromString(vendorOverallDiscount),
       roundOff: optionalNumFromString(vendorRoundOff),
-      lineSubTotal: optionalNumFromString(vendorLineSubTotal),
-      taxTotal: optionalNumFromString(vendorTaxTotal),
     };
   }, [
     products,
@@ -1409,15 +1349,12 @@ export function ProductEntryPage() {
     vendorOtherCharges,
     vendorOverallDiscount,
     vendorRoundOff,
-    vendorLineSubTotal,
-    vendorTaxTotal,
   ]);
   const purchaseTaxPreview = usePurchaseTaxPreviewQuery(purchaseTaxPreviewRequest).data;
   const previewLineSubTotal = purchaseTaxPreview?.lineSubTotal;
   const previewTaxTotal = purchaseTaxPreview?.taxTotal;
 
-  // Keep the header's subtotal and tax in step with the rows, as the server works them out. They
-  // only move when the rows do, so a figure the operator types afterwards is left alone.
+  // The header's subtotal and tax are the server's figures for the rows; they are not typed.
   useEffect(() => {
     if (products.length === 0) {
       if (prevRegisteredProductCountRef.current > 0) {
@@ -1524,7 +1461,7 @@ export function ProductEntryPage() {
       };
     });
     setProducts(parsedProducts);
-    applyParsedVendorInvoice(vendorPurchaseInvoice, items);
+    applyParsedVendorInvoice(vendorPurchaseInvoice);
   };
 
   const transformParsedItemToProduct = (item: ParseInvoiceItem): ProductFormData => {
@@ -2695,13 +2632,10 @@ export function ProductEntryPage() {
       const trimmedInvNo = vendorInvoiceNo.trim();
       const hasInvoiceExtra =
         vendorInvoiceDate.trim() !== '' ||
-        optionalNumFromString(vendorLineSubTotal) !== undefined ||
-        optionalNumFromString(vendorTaxTotal) !== undefined ||
         optionalNumFromString(vendorShippingCharge) !== undefined ||
         optionalNumFromString(vendorOtherCharges) !== undefined ||
         optionalNumFromString(vendorOverallDiscount) !== undefined ||
-        optionalNumFromString(vendorRoundOff) !== undefined ||
-        optionalNumFromString(vendorInvoiceTotal) !== undefined;
+        optionalNumFromString(vendorRoundOff) !== undefined;
       if (hasInvoiceExtra && !trimmedInvNo) {
         notifyError('Enter the vendor invoice number, or clear all vendor invoice fields.');
         setIsLoading(false);
@@ -2713,22 +2647,6 @@ export function ProductEntryPage() {
         notifyError('Overall discount cannot be negative.');
         setIsLoading(false);
         return;
-      }
-      if (overallDisc !== undefined && overallDisc > 0) {
-        const preDiscountTotal = roundMoney(
-          numOr0(optionalNumFromString(vendorLineSubTotal)) +
-            numOr0(optionalNumFromString(vendorTaxTotal)) +
-            numOr0(optionalNumFromString(vendorShippingCharge)) +
-            numOr0(optionalNumFromString(vendorOtherCharges)) +
-            numOr0(optionalNumFromString(vendorRoundOff)),
-        );
-        if (overallDisc > preDiscountTotal) {
-          notifyError(
-            'Overall discount cannot exceed line subtotal + tax + shipping + other charges + round off.',
-          );
-          setIsLoading(false);
-          return;
-        }
       }
 
       // Validate at least one product exists
@@ -2992,10 +2910,6 @@ export function ProductEntryPage() {
       if (vendorInvoiceDate.trim()) {
         vendorPurchaseInvoice.invoiceDate = `${vendorInvoiceDate.trim()}T00:00:00.000Z`;
       }
-      const ls = optionalNumFromString(vendorLineSubTotal);
-      if (ls !== undefined) vendorPurchaseInvoice.lineSubTotal = ls;
-      const tt = optionalNumFromString(vendorTaxTotal);
-      if (tt !== undefined) vendorPurchaseInvoice.taxTotal = tt;
       const sh = optionalNumFromString(vendorShippingCharge);
       if (sh !== undefined) vendorPurchaseInvoice.shippingCharge = sh;
       const oc = optionalNumFromString(vendorOtherCharges);
@@ -3004,8 +2918,6 @@ export function ProductEntryPage() {
       if (od !== undefined) vendorPurchaseInvoice.overallDiscount = od;
       const ro = optionalNumFromString(vendorRoundOff);
       if (ro !== undefined) vendorPurchaseInvoice.roundOff = ro;
-      const it = optionalNumFromString(vendorInvoiceTotal);
-      if (it !== undefined) vendorPurchaseInvoice.invoiceTotal = it;
       if (vendorTaxTreatment) vendorPurchaseInvoice.taxTreatment = vendorTaxTreatment;
       // Estimate drafts never capture payment; Product Entry sets it when converting to invoice.
       if (!estimateWorkspace && vendorPaymentMethod) {
@@ -3040,17 +2952,6 @@ export function ProductEntryPage() {
         const itemErrors = response?.itemErrors ?? [];
         const items = response?.items ?? [];
 
-        // The stock is in either way; this only says whether the bill's own totals stand up.
-        // Held on screen far longer than the success toast, because acting on it means finding
-        // the paper again.
-        const reconciliationWarning = headerReconciliationWarning(
-          response?.headerReconciliation,
-          vendorLineSubTotal,
-          vendorTaxTotal,
-          response?.computedLineSubTotal,
-          response?.computedTaxTotal,
-        );
-
         // If we have items or a positive createdCount, consider it successful
         if (createdCount > 0 || items.length > 0) {
           const count = createdCount || items.length;
@@ -3059,7 +2960,6 @@ export function ProductEntryPage() {
               ? 'Product registered successfully'
               : `Successfully registered ${count} products`,
           );
-          if (reconciliationWarning) notifyWarning(reconciliationWarning, 20000);
           (response?.rateWarnings ?? []).forEach((warning) => notifyWarning(warning, 20000));
 
           if (activeEstimateId && billingMode === 'REGULAR' && response?.vendorPurchaseInvoiceId) {
@@ -3131,7 +3031,6 @@ export function ProductEntryPage() {
               : `Successfully registered ${count} products`,
           );
           clearProductEntryDraft(draftScope);
-          if (reconciliationWarning) notifyWarning(reconciliationWarning, 20000);
           (response?.rateWarnings ?? []).forEach((warning) => notifyWarning(warning, 20000));
           setTimeout(() => {
             setProducts([]);
@@ -3793,9 +3692,9 @@ export function ProductEntryPage() {
                           type="text"
                           inputMode="decimal"
                           value={vendorLineSubTotal}
-                          onChange={(e) => setVendorLineSubTotal(e.target.value)}
                           placeholder="0"
                           disabled={isLoading}
+                          readOnly
                         />
                       </Box>
                       <Box className={pageStyles.formGroup}>
@@ -3805,9 +3704,9 @@ export function ProductEntryPage() {
                           type="text"
                           inputMode="decimal"
                           value={vendorTaxTotal}
-                          onChange={(e) => setVendorTaxTotal(e.target.value)}
                           placeholder="0"
                           disabled={isLoading}
+                          readOnly
                         />
                       </Box>
                       <Box className={pageStyles.formGroup}>

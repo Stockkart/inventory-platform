@@ -19,9 +19,8 @@ import {
 /**
  * Corrects an invoice header against the paper bill.
  *
- * <p>The way out of a flagged invoice. Registration warns when the totals do not reconcile, but
- * the goods are already in stock by then, so re-entering the bill would double them — until now
- * there was nowhere to act on the warning at all.
+ * <p>The bill-level discount, round off and how the line amounts state GST can be corrected; the
+ * server then works the subtotal, tax and invoice total out again from the lines.
  *
  * <p>Header only. The lines record what the stock was created from; correcting a quantity here
  * would leave the invoice describing goods that were never received.
@@ -46,19 +45,13 @@ function initial(value: number | null | undefined): string {
 
 export function AmendInvoiceHeaderForm({ detail, onAmend, busy }: AmendInvoiceHeaderFormProps) {
   const [open, setOpen] = useState(false);
-  const [lineSubTotal, setLineSubTotal] = useState(initial(detail.lineSubTotal));
-  const [taxTotal, setTaxTotal] = useState(initial(detail.taxTotal));
   const [overallDiscount, setOverallDiscount] = useState(initial(detail.overallDiscount));
   const [roundOff, setRoundOff] = useState(initial(detail.roundOff));
-  const [invoiceTotal, setInvoiceTotal] = useState(initial(detail.invoiceTotal));
   const [taxTreatment, setTaxTreatment] = useState<PurchaseTaxTreatment | ''>(
     detail.taxTreatment ?? '',
   );
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
-
-  const verdict = detail.headerReconciliation;
-  const flagged = Boolean(verdict) && verdict !== 'OK';
 
   const submit = async () => {
     if (!reason.trim()) {
@@ -67,11 +60,8 @@ export function AmendInvoiceHeaderForm({ detail, onAmend, busy }: AmendInvoiceHe
     }
     setError(null);
     await onAmend({
-      lineSubTotal: numberOrUndefined(lineSubTotal),
-      taxTotal: numberOrUndefined(taxTotal),
       overallDiscount: numberOrUndefined(overallDiscount),
       roundOff: numberOrUndefined(roundOff),
-      invoiceTotal: numberOrUndefined(invoiceTotal),
       taxTreatment: taxTreatment || undefined,
       reason: reason.trim(),
     });
@@ -83,13 +73,8 @@ export function AmendInvoiceHeaderForm({ detail, onAmend, busy }: AmendInvoiceHe
     return (
       <Inline gap="sm" align="center">
         <Button variant="outline" onClick={() => setOpen(true)} disabled={busy}>
-          Correct these totals
+          Correct this bill
         </Button>
-        {flagged ? (
-          <Text variant="caption" color="secondary">
-            This invoice does not reconcile with its lines.
-          </Text>
-        ) : null}
         {detail.amendedAt ? (
           <Text variant="caption" color="secondary">
             Last corrected: {detail.amendmentReason}
@@ -101,42 +86,13 @@ export function AmendInvoiceHeaderForm({ detail, onAmend, busy }: AmendInvoiceHe
 
   return (
     <Stack gap="sm" padding="sm" border rounded="md" bg="surface">
-      <Text weight="semibold">Correct the totals from the bill</Text>
+      <Text weight="semibold">Correct the bill header</Text>
       <Text variant="caption" color="secondary">
-        Only the invoice header changes. The products and quantities stay as they were received.
+        Only the invoice header changes. The products and quantities stay as they were received, and
+        the subtotal, tax and invoice total are worked out again from them.
       </Text>
 
-      {flagged ? (
-        <Alert variant="warning">
-          {verdict === 'MISSING'
-            ? 'This bill was recorded without totals, so its GST is being worked out from line prices.'
-            : verdict === 'RATE_CONFLICT'
-            ? 'The tax on this bill does not match any rate on its products — check the GST rate on the items as well.'
-            : `The lines come to ${detail.computedLineSubTotal ?? '—'} taxable and ${
-                detail.computedTaxTotal ?? '—'
-              } tax.`}
-        </Alert>
-      ) : null}
-
       <Grid columns={3} gap="sm">
-        <FormField label="Line subtotal" htmlFor="amendLineSubTotal">
-          <Input
-            id="amendLineSubTotal"
-            inputMode="decimal"
-            value={lineSubTotal}
-            onChange={(e) => setLineSubTotal(e.target.value)}
-            disabled={busy}
-          />
-        </FormField>
-        <FormField label="Tax total" htmlFor="amendTaxTotal">
-          <Input
-            id="amendTaxTotal"
-            inputMode="decimal"
-            value={taxTotal}
-            onChange={(e) => setTaxTotal(e.target.value)}
-            disabled={busy}
-          />
-        </FormField>
         <FormField label="Bill discount" htmlFor="amendOverallDiscount">
           <Input
             id="amendOverallDiscount"
@@ -152,15 +108,6 @@ export function AmendInvoiceHeaderForm({ detail, onAmend, busy }: AmendInvoiceHe
             inputMode="decimal"
             value={roundOff}
             onChange={(e) => setRoundOff(e.target.value)}
-            disabled={busy}
-          />
-        </FormField>
-        <FormField label="Invoice total" htmlFor="amendInvoiceTotal">
-          <Input
-            id="amendInvoiceTotal"
-            inputMode="decimal"
-            value={invoiceTotal}
-            onChange={(e) => setInvoiceTotal(e.target.value)}
             disabled={busy}
           />
         </FormField>

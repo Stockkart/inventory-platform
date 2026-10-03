@@ -29,10 +29,13 @@ Inventory and sell flows: product registration, search, stock corrections, scan-
 - **Bill preview.** The header subtotal, tax, invoice total and the summary bar come from
   `POST /vendor-purchase-invoices/preview-totals` (`usePurchaseTaxPreviewQuery`, debounced). The
   page sends the same rows as stock-in (`buildBulkItems`) and shows what comes back; it does not
-  compute GST, schemes, discounts or totals itself. Needs inventory-api #190 deployed first.
+  compute GST, schemes, discounts or totals itself. Line subtotal, tax total and invoice total are
+  read-only and are not sent on stock-in; the server works them out from the lines. Needs
+  inventory-api #190 deployed first.
 - **Correcting a header.** `VendorInvoicesPage` → `AmendInvoiceHeaderForm` sends
   `PATCH /vendor-purchase-invoices/{id}` through `useAmendVendorPurchaseInvoiceMutation`. Header
-  only, with a required reason; the server re-resolves the tax and reposts the journal.
+  only (bill discount, round off, tax treatment), with a required reason; the server works the
+  totals out again and reposts the journal.
 
 ## UI chrome
 
