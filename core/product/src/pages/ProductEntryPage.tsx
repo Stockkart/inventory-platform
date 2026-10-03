@@ -2910,6 +2910,11 @@ export function ProductEntryPage() {
       if (vendorInvoiceDate.trim()) {
         vendorPurchaseInvoice.invoiceDate = `${vendorInvoiceDate.trim()}T00:00:00.000Z`;
       }
+      // The totals shown read-only are the server's preview; they are sent so the bill stores them.
+      const ls = optionalNumFromString(vendorLineSubTotal);
+      if (ls !== undefined) vendorPurchaseInvoice.lineSubTotal = ls;
+      const tt = optionalNumFromString(vendorTaxTotal);
+      if (tt !== undefined) vendorPurchaseInvoice.taxTotal = tt;
       const sh = optionalNumFromString(vendorShippingCharge);
       if (sh !== undefined) vendorPurchaseInvoice.shippingCharge = sh;
       const oc = optionalNumFromString(vendorOtherCharges);
@@ -2918,6 +2923,8 @@ export function ProductEntryPage() {
       if (od !== undefined) vendorPurchaseInvoice.overallDiscount = od;
       const ro = optionalNumFromString(vendorRoundOff);
       if (ro !== undefined) vendorPurchaseInvoice.roundOff = ro;
+      const it = optionalNumFromString(vendorInvoiceTotal);
+      if (it !== undefined) vendorPurchaseInvoice.invoiceTotal = it;
       if (vendorTaxTreatment) vendorPurchaseInvoice.taxTreatment = vendorTaxTreatment;
       // Estimate drafts never capture payment; Product Entry sets it when converting to invoice.
       if (!estimateWorkspace && vendorPaymentMethod) {

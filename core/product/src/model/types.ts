@@ -298,11 +298,15 @@ export interface VendorPurchaseInvoicePayload {
    */
   taxTreatment?: PurchaseTaxTreatment | null;
   invoiceDate?: string | null;
+  /** The server's bill preview figures, sent so the bill stores them. */
+  lineSubTotal?: number | null;
+  taxTotal?: number | null;
   shippingCharge?: number | null;
   otherCharges?: number | null;
   /** Bill-level discount (₹), taken off the lines before tax. */
   overallDiscount?: number | null;
   roundOff?: number | null;
+  invoiceTotal?: number | null;
   /**
    * Canonical PaymentMethod (one of the 6 values). For backward compatibility
    * this stays `string` on the wire — older callers may still send 'CASH' /

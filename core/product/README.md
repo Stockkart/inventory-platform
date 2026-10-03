@@ -30,7 +30,8 @@ Inventory and sell flows: product registration, search, stock corrections, scan-
   `POST /vendor-purchase-invoices/preview-totals` (`usePurchaseTaxPreviewQuery`, debounced). The
   page sends the same rows as stock-in (`buildBulkItems`) and shows what comes back; it does not
   compute GST, schemes, discounts or totals itself. Line subtotal, tax total and invoice total are
-  read-only and are not sent on stock-in; the server works them out from the lines. Needs
+  read-only, filled from the preview, and sent on stock-in so the bill stores them; the server
+  works out any that are missing. Needs
   inventory-api #190 deployed first.
 - **Correcting a header.** `VendorInvoicesPage` → `AmendInvoiceHeaderForm` sends
   `PATCH /vendor-purchase-invoices/{id}` through `useAmendVendorPurchaseInvoiceMutation`. Header
