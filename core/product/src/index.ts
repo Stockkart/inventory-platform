@@ -1,6 +1,7 @@
 export { inventoryApi, resolveInventoryDocumentId } from './api/inventory.api';
 export { productApi } from './api/product.api';
 export { barcodesApi } from './api/barcodes.api';
+export { barcodeLabelLayoutApi } from './api/barcodeLabelLayout.api';
 export { cartApi } from './api/cart.api';
 export { estimatesApi } from './api/estimates.api';
 export { stockEntryEstimatesApi } from './api/stockEntryEstimates.api';
@@ -11,6 +12,7 @@ export {
   INVENTORY_ENDPOINTS,
   PRODUCT_ENDPOINTS,
   BARCODE_ENDPOINTS,
+  BARCODE_LABEL_LAYOUT_ENDPOINTS,
   VENDOR_PURCHASE_INVOICES_ENDPOINTS,
   VENDOR_PURCHASE_RETURNS_ENDPOINTS,
   INVENTORY_CORRECTIONS_ENDPOINTS,
@@ -21,8 +23,16 @@ export {
   SHOP_SELL_ENDPOINTS,
   INVOICE_ENDPOINTS,
 } from './api/endpoints';
+export {
+  labelLayoutSession,
+  setLabelLayoutSession,
+  getLabelLayoutSession,
+  clearLabelLayoutSession,
+} from './lib/labelLayoutSession';
 export { productKeys, PRODUCT_MODULE_VERSION } from './queries/keys';
 export * from './queries/hooks';
+export * from './queries/labelLayout.queries';
+export { BarcodeLabelLayoutSection } from './ui/labelLayout/BarcodeLabelLayoutSection';
 export {
   productEntryRoutes,
   importRoutes,
@@ -86,6 +96,14 @@ export {
   validatePaymentSplit,
 } from './ui';
 export * from './ui/scanSellStyles';
+export {
+  renderBarcodeLabelsHtml,
+  computeStickerLines,
+  resolveStickerSize,
+  isBlank,
+  escapeHtml,
+} from './lib/renderBarcodeLabelsHtml';
+export type { RenderResult, StickerLine } from './lib/renderBarcodeLabelsHtml';
 export type {
   HistoryFilters,
   HistoryTab,

@@ -28,6 +28,12 @@ export const BARCODE_ENDPOINTS = {
   LABELS: '/barcodes/labels',
   ATTACH: (code: string) => `/barcodes/${encodeURIComponent(code)}/attach`,
 } as const;
+/** Shop barcode label layout (active-shop scoped) paths. */
+export const BARCODE_LABEL_LAYOUT_ENDPOINTS = {
+  BASE: '/shops/active-shop/barcode-label-layout',
+  FIELD_CATALOG: '/shops/active-shop/barcode-label-layout/field-catalog',
+  DEFAULTS: '/shops/active-shop/barcode-label-layout/defaults',
+} as const;
 
 /** Invoice / credit-note printer layout for PDF generation. */
 export type PrinterType = 'NORMAL' | 'DOT_MATRIX' | 'THERMAL_3INCH';
