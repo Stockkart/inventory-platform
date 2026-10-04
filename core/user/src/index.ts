@@ -46,6 +46,15 @@ export {
   JoinRequestList,
   JoinRequestCard,
   ShopUsersList,
+  ProfileTabs,
+  PROFILE_TABS,
+  registerProfileTab,
+  unregisterProfileTab,
+  getProfileTabExtensions,
+  useProfileTabExtensions,
+  type ProfileTabId,
+  type ProfileTabKey,
+  type ProfileTabExtension,
 } from './ui';
 
 export { CustomersPage } from './pages/CustomersPage';

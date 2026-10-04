@@ -1,9 +1,14 @@
 import { apiClient } from '@inventory-platform/api-client';
 import type { ApiResponse } from '@inventory-platform/contracts';
 import { BARCODE_ENDPOINTS } from './endpoints';
+import { labelLayoutSession } from '../lib/labelLayoutSession';
+import type {
+  BarcodeLabelsResponse,
+  LabelData,
+  LabelLayoutResponse,
+} from '../model/labelLayout.types';
 import type {
   AttachBarcodeRequest,
-  BarcodeLabelDto,
   BarcodeLabelsRequest,
   BarcodePoolItem,
   BarcodePoolListResponse,
@@ -53,11 +58,25 @@ export const barcodesApi = {
     return response.data;
   },
 
-  labels: async (data: BarcodeLabelsRequest): Promise<BarcodeLabelDto[]> => {
-    const response = await apiClient.post<ApiResponse<{ labels: BarcodeLabelDto[] }>>(
-      BARCODE_ENDPOINTS.LABELS,
-      data,
-    );
-    return response.data.labels ?? [];
+  /**
+   * Resolve printable labels plus the shop's effective layout in one call (Req 6.11).
+   * Forwards `inventoryIds` so the server can resolve lot values from the scanned row.
+   * When the server returns a `layout`, it is cached in `labelLayoutSession` for
+   * later offline prints (Req 7.8, 7.9). Older servers that return only `{ labels }`
+   * yield `layout: null`.
+   */
+  labels: async (data: BarcodeLabelsRequest): Promise<BarcodeLabelsResponse> => {
+    const response = await apiClient.post<
+      ApiResponse<{ labels?: LabelData[] | null; layout?: LabelLayoutResponse | null }>
+    >(BARCODE_ENDPOINTS.LABELS, {
+      ...(data.productIds?.length ? { productIds: data.productIds } : {}),
+      ...(data.codes?.length ? { codes: data.codes } : {}),
+      ...(data.inventoryIds ? { inventoryIds: data.inventoryIds } : {}),
+    });
+    const layout = response.data.layout ?? null;
+    if (layout) {
+      labelLayoutSession.set(layout);
+    }
+    return { labels: response.data.labels ?? [], layout };
   },
 };

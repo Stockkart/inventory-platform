@@ -1421,6 +1421,8 @@ export interface AttachBarcodeRequest {
 export interface BarcodeLabelsRequest {
   productIds?: string[];
   codes?: string[];
+  /** Optional code → inventoryId map so the server resolves lot values from the scanned row. */
+  inventoryIds?: Record<string, string>;
 }
 
 export interface BarcodeLabelDto {
