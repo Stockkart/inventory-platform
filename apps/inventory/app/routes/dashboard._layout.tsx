@@ -4,9 +4,14 @@ import { VerticalPluginProvider } from '@inventory-platform/routing';
 import { DashboardLayout, DashboardRouteGuard } from '@inventory-platform/shell';
 import {
   COMPOSED_DASHBOARD_MENU_GROUPS,
+  registerComposedProfileTabs,
   useVerticalPluginStore,
 } from '@inventory-platform/plugin-registry';
 import { Outlet } from 'react-router';
+
+// Module-load registration so SSR and hydration of /dashboard/profile render
+// the same tab set. Idempotent inside plugin-registry.
+registerComposedProfileTabs();
 
 export default function DashboardLayoutRoute() {
   return (

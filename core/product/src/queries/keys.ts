@@ -20,6 +20,10 @@ export const productKeys = {
   hsnGstRates: (hsn: string) => [...base.all, 'hsn-gst-rates', hsn] as const,
   invoiceAmendmentPreview: (id: string, payload: AmendVendorPurchaseInvoicePayload) =>
     [...base.all, 'invoice-amendment-preview', id, payload] as const,
+  labelLayout: () => [...base.all, 'label-layout'] as const,
+  labelFieldCatalog: () => [...base.all, 'label-field-catalog'] as const,
+  cardLayouts: () => [...base.all, 'card-layouts'] as const,
+  cardFieldCatalog: () => [...base.all, 'card-field-catalog'] as const,
 };
 
 export const PRODUCT_MODULE_VERSION = '0.1.0';

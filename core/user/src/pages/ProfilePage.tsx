@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { Store } from 'lucide-react';
 import {
   Alert,
@@ -18,7 +19,8 @@ import {
   InvoiceSettingsSection,
   InvoiceSeriesSection,
   ProfileTabs,
-  type ProfileTabId,
+  useProfileTabExtensions,
+  type ProfileTabKey,
 } from '../ui';
 import type { Location as LocationType, ShopDetailResponse, ShopType } from '../model/shop.types';
 
@@ -102,7 +104,13 @@ function ProfileField({ label, value, wide }: { label: string; value: string; wi
 }
 
 export function ProfilePage() {
-  const [activeTab, setActiveTab] = useState<ProfileTabId>('shop');
+  const [searchParams] = useSearchParams();
+  const extensions = useProfileTabExtensions();
+  // Deep-link support: `?tab=<id>` selects a built-in or registered tab on mount.
+  const [activeTab, setActiveTab] = useState<ProfileTabKey>(
+    () => searchParams.get('tab')?.trim() || 'shop',
+  );
+  const activeExtension = extensions.find((ext) => ext.id === activeTab);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [shop, setShop] = useState<ShopDetailResponse | null>(null);
@@ -142,7 +150,7 @@ export function ProfilePage() {
     loadShop();
   }, [loadShop]);
 
-  const handleTabChange = (id: ProfileTabId) => {
+  const handleTabChange = (id: ProfileTabKey) => {
     setActiveTab(id);
     if (id !== 'shop') {
       setEditing(false);
@@ -352,6 +360,7 @@ export function ProfilePage() {
 
       {activeTab === 'numbering' ? <InvoiceSeriesSection /> : null}
       {activeTab === 'invoice' ? <InvoiceSettingsSection /> : null}
+      {activeExtension ? activeExtension.render() : null}
     </Stack>
   );
 }

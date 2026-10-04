@@ -66,3 +66,4 @@ export type { CustomerProductHistoryHintProps } from './CustomerProductHistoryHi
 export { useCustomerProductHistory } from './useCustomerProductHistory';
 export * from './scanSellStyles';
 export { CustomRemindersSection } from './CustomReminderInput';
+export { BarcodeLabelLayoutSection } from './labelLayout/BarcodeLabelLayoutSection';
