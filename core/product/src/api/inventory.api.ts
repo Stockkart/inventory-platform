@@ -19,6 +19,10 @@ import type {
   ParseInvoiceResponse,
   UpdateInventoryRequest,
   InventoryItem,
+  AmendInvoicePreview,
+  AmendVendorPurchaseInvoicePayload,
+  PurchaseTaxPreviewRequest,
+  PurchaseTaxPreviewResponse,
   VendorPurchaseInvoiceDetail,
   VendorPurchaseInvoiceListResponse,
   VendorPurchaseReturnPayload,
@@ -325,6 +329,41 @@ export const inventoryApi = {
   getVendorPurchaseInvoice: async (id: string): Promise<VendorPurchaseInvoiceDetail> => {
     const response = await apiClient.get<ApiResponse<VendorPurchaseInvoiceDetail>>(
       VENDOR_PURCHASE_INVOICES_ENDPOINTS.BY_ID(id),
+    );
+    return response.data;
+  },
+
+  /** Corrects a purchase invoice header against the paper bill. Header only; lines are fixed. */
+  /** What a correction would change, worked out by the server without saving. */
+  previewInvoiceAmendment: async (
+    id: string,
+    payload: AmendVendorPurchaseInvoicePayload,
+  ): Promise<AmendInvoicePreview> => {
+    const response = await apiClient.post<ApiResponse<AmendInvoicePreview>>(
+      VENDOR_PURCHASE_INVOICES_ENDPOINTS.AMEND_PREVIEW(id),
+      payload,
+    );
+    return response.data;
+  },
+
+  amendVendorPurchaseInvoice: async (
+    id: string,
+    payload: AmendVendorPurchaseInvoicePayload,
+  ): Promise<VendorPurchaseInvoiceDetail> => {
+    const response = await apiClient.patch<ApiResponse<VendorPurchaseInvoiceDetail>>(
+      VENDOR_PURCHASE_INVOICES_ENDPOINTS.BY_ID(id),
+      payload,
+    );
+    return response.data;
+  },
+
+  /** Tax and totals for the bill on the stock-in screen, worked out by the server. Saves nothing. */
+  previewPurchaseTotals: async (
+    payload: PurchaseTaxPreviewRequest,
+  ): Promise<PurchaseTaxPreviewResponse> => {
+    const response = await apiClient.post<ApiResponse<PurchaseTaxPreviewResponse>>(
+      VENDOR_PURCHASE_INVOICES_ENDPOINTS.PREVIEW_TOTALS,
+      payload,
     );
     return response.data;
   },

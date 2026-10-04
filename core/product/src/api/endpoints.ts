@@ -19,6 +19,8 @@ export const PRODUCT_ENDPOINTS = {
   BY_BARCODE: '/products/by-barcode',
   BY_ID: (id: string) => `/products/${id}`,
   LAST_INVENTORY: (id: string) => `/products/${id}/last-inventory`,
+  /** Served by taxation; the table lives beside the GSTR HSN descriptions. */
+  HSN_GST_RATES: '/taxation/hsn-gst-rates',
 } as const;
 
 /** Shop barcode generate / pool / label paths. */
@@ -52,6 +54,8 @@ export type PrinterType = 'NORMAL' | 'DOT_MATRIX' | 'THERMAL_3INCH';
 export const VENDOR_PURCHASE_INVOICES_ENDPOINTS = {
   BASE: '/vendor-purchase-invoices',
   BY_ID: (id: string) => `/vendor-purchase-invoices/${id}`,
+  PREVIEW_TOTALS: '/vendor-purchase-invoices/preview-totals',
+  AMEND_PREVIEW: (id: string) => `/vendor-purchase-invoices/${id}/amend-preview`,
 } as const;
 
 /** Vendor purchase return paths. */

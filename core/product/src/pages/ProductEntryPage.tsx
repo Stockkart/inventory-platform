@@ -5,6 +5,7 @@ import { uploadApi } from '@inventory-platform/product/api';
 import { apiClient } from '@inventory-platform/api-client';
 import { userLookupApi } from '@inventory-platform/user/users';
 import { inventoryApi } from '../api/inventory.api';
+import { usePurchaseTaxPreviewQuery } from '../queries/hooks';
 import { productApi } from '../api/product.api';
 import { barcodesApi } from '../api/barcodes.api';
 import { stockEntryEstimatesApi } from '../api/stockEntryEstimates.api';
@@ -23,6 +24,7 @@ import {
   PARTY_NAME_LETTERS_MESSAGE,
 } from '@inventory-platform/user/customers';
 import type {
+  PurchaseTaxTreatment,
   CreateInventoryDto,
   BulkCreateInventoryDto,
   ParseInvoiceItem,
@@ -37,6 +39,8 @@ import type {
   BillingMode,
   ProductSuggestion,
   StockEntryEstimateLine,
+  BulkCreateInventoryItem,
+  PurchaseTaxPreviewRequest,
 } from '@inventory-platform/product/types';
 import type { CustomReminderInput } from '@inventory-platform/contracts';
 import type {
@@ -54,6 +58,7 @@ import {
   isCreditMethod,
   validatePaymentSplit,
   CustomRemindersSection,
+  HsnGstRateSelect,
 } from '../ui';
 import {
   VerticalInventoryFields,
@@ -100,6 +105,7 @@ import {
 } from '../ui/PackagingFactorInput';
 import {
   Alert,
+  Checkbox,
   AnchoredPortal,
   Badge,
   Box,
@@ -313,89 +319,6 @@ function mapCustomRemindersForBulkApi(
       };
     });
   return mapped.length > 0 ? mapped : null;
-}
-
-/** Parse GST rate from OCR strings like "9", "9%", " 9 ". */
-function parseGstPercent(rate: string | null | undefined): number {
-  if (rate == null) return 0;
-  const s = String(rate).trim().replace(/%/g, '');
-  if (!s) return 0;
-  const n = Number(s);
-  return Number.isFinite(n) ? n : 0;
-}
-
-function numOr0(v: number | null | undefined): number {
-  if (v == null) return 0;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : 0;
-}
-
-/**
- * Line subtotal = sum of tax-exclusive line values (PTS/PTR × qty before GST).
- * Tax total = SGST + CGST computed on top of that taxable (not reverse-calculated
- * from a tax-inclusive lump). Matches typical purchase bills: line amount ex-GST + tax.
- */
-function computeVendorInvoiceTotalsFromParseItems(items: ParseInvoiceItem[]): {
-  lineSubTotal: number;
-  taxTotal: number;
-} {
-  let lineSubTotal = 0;
-  let taxTotal = 0;
-  for (const item of items) {
-    const qtyRaw = item.count;
-    const q = qtyRaw != null && Number.isFinite(Number(qtyRaw)) ? Math.max(0, Number(qtyRaw)) : 0;
-    // Purchase valuation: PTS (costPrice / stockist) when present — including 0.
-    // Do not fall through to PTR (retailer transfer) when PTS is intentionally 0;
-    // use PTR only if stockist price was omitted (matches OCR-only-PTR lines).
-    const pts = item.costPrice != null ? Number(item.costPrice) : Number.NaN;
-    const ptr = Number(item.priceToRetail);
-    let unit = 0;
-    if (item.costPrice != null && Number.isFinite(pts) && pts >= 0) {
-      unit = pts;
-    } else if (Number.isFinite(ptr) && ptr > 0) {
-      unit = ptr;
-    }
-    const lineTaxableExclusive = roundMoney(q * unit);
-    const sgst = parseGstPercent(item.sgst ?? undefined);
-    const cgst = parseGstPercent(item.cgst ?? undefined);
-    const pct = sgst + cgst;
-    if (pct > 0 && lineTaxableExclusive > 0) {
-      const cgstAmt = roundMoney((lineTaxableExclusive * cgst) / 100);
-      const sgstAmt = roundMoney((lineTaxableExclusive * sgst) / 100);
-      const lineTax = roundMoney(cgstAmt + sgstAmt);
-      lineSubTotal += lineTaxableExclusive;
-      taxTotal += lineTax;
-    } else {
-      lineSubTotal += lineTaxableExclusive;
-    }
-  }
-  return {
-    lineSubTotal: roundMoney(lineSubTotal),
-    taxTotal: roundMoney(taxTotal),
-  };
-}
-
-function computeVendorInvoiceTotalFromFields(
-  lineSubTotal: string,
-  taxTotal: string,
-  shippingCharge: string,
-  otherCharges: string,
-  overallDiscount: string,
-  roundOff: string,
-): string {
-  const values = [lineSubTotal, taxTotal, shippingCharge, otherCharges, overallDiscount, roundOff];
-  const hasAnyValue = values.some((v) => v.trim() !== '');
-  if (!hasAnyValue) return '';
-
-  const total = roundMoney(
-    numOr0(optionalNumFromString(lineSubTotal)) +
-      numOr0(optionalNumFromString(taxTotal)) +
-      numOr0(optionalNumFromString(shippingCharge)) +
-      numOr0(optionalNumFromString(otherCharges)) +
-      numOr0(optionalNumFromString(roundOff)) -
-      numOr0(optionalNumFromString(overallDiscount)),
-  );
-  return formatComputedAmount(Math.max(0, total));
 }
 
 export function meta() {
@@ -691,186 +614,22 @@ interface GridBulkFillDraft {
   verticalBulk?: Record<string, string>;
 }
 
-/**
- * Apply vendor purchase scheme + additional discount to a tax-exclusive line.
- * FIXED_UNITS "8+2" → pay 8/10 of line (20% off). PERCENTAGE → price × (1 − pct/100).
- */
-function applyPurchaseDiscountsToLine(
-  lineTaxableExclusive: number,
-  scheme: PurchaseSchemeFields,
-): number {
-  if (lineTaxableExclusive <= 0) return 0;
-  let line = lineTaxableExclusive;
-  const schemeType = scheme.purchaseSchemeType ?? 'FIXED_UNITS';
-
-  if (schemeType === 'PERCENTAGE') {
-    const pct = scheme.purchaseSchemePercentage;
-    if (pct != null && pct > 0) {
-      line = roundMoney(line * (1 - pct / 100));
-    }
-  } else {
-    const payFor = scheme.purchaseSchemePayFor;
-    const free = scheme.purchaseSchemeFree;
-    if (payFor != null && payFor > 0 && free != null && free >= 0) {
-      const sum = payFor + free;
-      if (sum > 0) {
-        line = roundMoney((line * payFor) / sum);
-      }
-    }
+/** Says how the server is reading the bill when the operator has not chosen. */
+function treatmentHint(
+  treatment: PurchaseTaxTreatment | null | undefined,
+  source: string | null | undefined,
+): string {
+  const how =
+    treatment === 'INCLUSIVE'
+      ? 'GST is already included in the price'
+      : 'GST is added to the price';
+  if (source === 'LINES') {
+    return treatment === 'INCLUSIVE'
+      ? `Read as “${how}”: the entered prices equal the MRP.`
+      : `Read as “${how}”: the entered prices are lower than the MRP.`;
   }
-
-  const addDisc = scheme.purchaseAdditionalDiscount;
-  if (addDisc != null && addDisc !== 0) {
-    line = roundMoney(line * (1 - addDisc / 100));
-  }
-  return line;
-}
-
-/**
- * Tax-exclusive purchase line.
- * Free-quantity flow: count is total received (e.g. 100); billable = count − freeQty (80);
- * line = billable × unit only — free units are the scheme, not an extra % off billable.
- * Deal-ratio / % flows: discount via applyPurchaseDiscountsToLine on gross or billable.
- */
-function purchaseLineTaxableExclusive(
-  count: number,
-  unit: number,
-  scheme: PurchaseSchemeFields,
-): number {
-  const gross = roundMoney(count * unit);
-  if (gross <= 0) return 0;
-
-  const freeQty = scheme.purchaseSchemeFreeQty;
-  const schemeType = scheme.purchaseSchemeType ?? 'FIXED_UNITS';
-
-  if (
-    freeQty != null &&
-    freeQty > 0 &&
-    schemeType !== 'PERCENTAGE' &&
-    schemeType !== 'FREE_QUANTITY'
-  ) {
-    const billable =
-      count >= freeQty
-        ? count - freeQty
-        : Math.max(
-            0,
-            Math.round(
-              (count * (scheme.purchaseSchemePayFor ?? 0)) /
-                ((scheme.purchaseSchemePayFor ?? 0) + (scheme.purchaseSchemeFree ?? 0)),
-            ),
-          );
-    return roundMoney(Math.max(0, billable) * unit);
-  }
-
-  return applyPurchaseDiscountsToLine(gross, scheme);
-}
-
-function resolvePurchaseSchemeForTotals(
-  product: ProductFormData,
-  purchaseDraft?: string,
-): PurchaseSchemeFields {
-  const parsed = purchaseDraft ? parsePurchaseSchemeDraft(purchaseDraft) : null;
-  if (parsed) {
-    return {
-      ...parsed,
-      purchaseAdditionalDiscount: product.purchaseAdditionalDiscount,
-    };
-  }
-  return {
-    purchaseSchemeType: product.purchaseSchemeType,
-    purchaseSchemePayFor: product.purchaseSchemePayFor,
-    purchaseSchemeFree: product.purchaseSchemeFree,
-    purchaseSchemePercentage: product.purchaseSchemePercentage,
-    purchaseSchemeFreeQty: product.purchaseSchemeFreeQty,
-    purchaseAdditionalDiscount: product.purchaseAdditionalDiscount,
-  };
-}
-
-/**
- * What to tell the operator when the bill they typed does not reconcile with the lines.
- *
- * <p>Written for someone still holding the paper, so each case says which number to look at
- * rather than naming the fault. The stock is already registered — this is the last cheap moment
- * to settle a discrepancy, not a reason to undo anything.
- */
-function headerReconciliationWarning(
-  verdict: string | null | undefined,
-  typedSubTotal: string,
-  typedTax: string,
-  computedSubTotal: number | null | undefined,
-  computedTax: number | null | undefined,
-): string | null {
-  if (!verdict || verdict === 'OK') return null;
-  const money = (v: number | null | undefined) => (v == null ? '—' : `₹${formatComputedAmount(v)}`);
-
-  switch (verdict) {
-    case 'MISSING':
-      return `Saved, but this bill has no invoice total. Its GST will be worked out from the line prices — ${money(
-        computedSubTotal,
-      )} taxable, ${money(
-        computedTax,
-      )} tax — which ignores any discount the bill gave. Add the totals from the paper when you can.`;
-    case 'MISMATCH':
-      return `Saved, but the totals do not tie out. You typed ${typedSubTotal || '—'} taxable and ${
-        typedTax || '—'
-      } tax; the lines come to ${money(computedSubTotal)} and ${money(
-        computedTax,
-      )}. Worth a look at the bill before this month is filed.`;
-    case 'RATE_CONFLICT':
-      return `Saved, but the tax you typed does not match any rate on these products. One of them is probably priced at the wrong GST slab — check the rates against the bill.`;
-    default:
-      return null;
-  }
-}
-
-/** Recompute supplier bill line subtotal + tax total from live product rows. */
-function computeVendorInvoiceTotalsFromProducts(
-  productRows: ProductFormData[],
-  billingModeForGst: BillingMode,
-  schemeDrafts?: Record<string, { sale?: string; purchase?: string }>,
-): { lineSubTotal: number; taxTotal: number } {
-  let lineSubTotal = 0;
-  let taxTotal = 0;
-
-  for (const p of productRows) {
-    const qtyRaw = p.count;
-    const q = qtyRaw != null && Number.isFinite(Number(qtyRaw)) ? Math.max(0, Number(qtyRaw)) : 0;
-    const pts = numericProductMoney(p.costPrice);
-    const ptr = numericProductMoney(p.priceToRetail);
-    let unit = 0;
-    if (pts != null && pts >= 0) {
-      unit = pts;
-    } else if (ptr != null && ptr > 0) {
-      unit = ptr;
-    }
-
-    const scheme = resolvePurchaseSchemeForTotals(p, schemeDrafts?.[p.id]?.purchase);
-    const lineTaxableExclusive = purchaseLineTaxableExclusive(q, unit, scheme);
-
-    const sgst =
-      billingModeForGst === 'BASIC'
-        ? 0
-        : parseGstPercent(typeof p.sgst === 'string' ? p.sgst : undefined);
-    const cgst =
-      billingModeForGst === 'BASIC'
-        ? 0
-        : parseGstPercent(typeof p.cgst === 'string' ? p.cgst : undefined);
-    const pct = sgst + cgst;
-
-    if (pct > 0 && lineTaxableExclusive > 0) {
-      const cgstAmt = roundMoney((lineTaxableExclusive * cgst) / 100);
-      const sgstAmt = roundMoney((lineTaxableExclusive * sgst) / 100);
-      lineSubTotal += lineTaxableExclusive;
-      taxTotal += roundMoney(cgstAmt + sgstAmt);
-    } else {
-      lineSubTotal += lineTaxableExclusive;
-    }
-  }
-
-  return {
-    lineSubTotal: roundMoney(lineSubTotal),
-    taxTotal: roundMoney(taxTotal),
-  };
+  if (source === 'VENDOR') return `Read as “${how}”: this vendor's usual setting.`;
+  return `Read as “${how}”.`;
 }
 
 interface ProductsRegistrationSummary {
@@ -879,31 +638,6 @@ interface ProductsRegistrationSummary {
   lineSubTotal: number;
   taxTotal: number;
   grandTotal: number;
-}
-
-function computeProductsRegistrationSummary(
-  productRows: ProductFormData[],
-  billingModeForGst: BillingMode,
-  schemeDrafts?: Record<string, { sale?: string; purchase?: string }>,
-): ProductsRegistrationSummary {
-  const { lineSubTotal, taxTotal } = computeVendorInvoiceTotalsFromProducts(
-    productRows,
-    billingModeForGst,
-    schemeDrafts,
-  );
-  let totalQuantity = 0;
-  for (const p of productRows) {
-    const qtyRaw = p.count;
-    const q = qtyRaw != null && Number.isFinite(Number(qtyRaw)) ? Math.max(0, Number(qtyRaw)) : 0;
-    totalQuantity += q;
-  }
-  return {
-    productCount: productRows.length,
-    totalQuantity,
-    lineSubTotal,
-    taxTotal,
-    grandTotal: roundMoney(lineSubTotal + taxTotal),
-  };
 }
 
 function ProductsRegistrationSummaryBar({ summary }: { summary: ProductsRegistrationSummary }) {
@@ -982,7 +716,7 @@ export function ProductEntryPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [generatingBarcodeId, setGeneratingBarcodeId] = useState<string | null>(null);
   const [printLabelCodes, setPrintLabelCodes] = useState<string[] | null>(null);
-  const { success: notifySuccess, error: notifyError, warning: notifyWarning } = useNotify;
+  const { success: notifySuccess, error: notifyError } = useNotify;
 
   // QR Code Upload state
   const [showQrModal, setShowQrModal] = useState(false);
@@ -1041,6 +775,11 @@ export function ProductEntryPage() {
   const [userSearchMessage, setUserSearchMessage] = useState<string | null>(null);
 
   const [vendorInvoiceNo, setVendorInvoiceNo] = useState('');
+  // Null means "as this vendor usually bills"; the server falls back to their default.
+  const [vendorTaxTreatment, setVendorTaxTreatment] = useState<PurchaseTaxTreatment | null>(null);
+  // Set when the operator has read the bill and stands by a treatment the rows' cost vs MRP
+  // disputes; cleared whenever the choice or the vendor changes.
+  const [vendorTaxTreatmentConfirmed, setVendorTaxTreatmentConfirmed] = useState(false);
   const [vendorInvoiceDate, setVendorInvoiceDate] = useState('');
   const [vendorLineSubTotal, setVendorLineSubTotal] = useState('');
   const [vendorTaxTotal, setVendorTaxTotal] = useState('');
@@ -1054,18 +793,8 @@ export function ProductEntryPage() {
     emptyPaymentSplit(),
   );
 
-  /**
-   * Apply OCR header + optional line-derived totals. When `parsedItems` has
-   * rows, line subtotal, tax total, and invoice total are computed from items
-   * (and header shipping / other / round-off); header line/tax/invoice amounts
-   * are ignored in that case.
-   */
-  const applyParsedVendorInvoice = (
-    v: ParsedVendorInvoiceDto | null | undefined,
-    parsedItems?: ParseInvoiceItem[] | null,
-  ) => {
-    const hasItems = parsedItems != null && parsedItems.length > 0;
-
+  /** Apply the scanned invoice header: number, date and the typed charges. */
+  const applyParsedVendorInvoice = (v: ParsedVendorInvoiceDto | null | undefined) => {
     if (v) {
       if (v.invoiceNo) setVendorInvoiceNo(String(v.invoiceNo).trim());
       if (v.invoiceDate) {
@@ -1075,39 +804,11 @@ export function ProductEntryPage() {
       if (v.shippingCharge != null) setVendorShippingCharge(String(v.shippingCharge));
       if (v.otherCharges != null) setVendorOtherCharges(String(v.otherCharges));
       if (v.roundOff != null) setVendorRoundOff(String(v.roundOff));
-      if (!hasItems) {
-        if (v.lineSubTotal != null) setVendorLineSubTotal(String(v.lineSubTotal));
-        if (v.taxTotal != null) setVendorTaxTotal(String(v.taxTotal));
-        if (v.invoiceTotal != null) setVendorInvoiceTotal(String(v.invoiceTotal));
-      }
     }
 
-    if (hasItems) {
-      const { lineSubTotal, taxTotal } = computeVendorInvoiceTotalsFromParseItems(parsedItems);
-      setVendorLineSubTotal(formatComputedAmount(lineSubTotal));
-      setVendorTaxTotal(formatComputedAmount(taxTotal));
-    }
+    // The subtotal, tax and invoice total come from the server's bill preview once the rows are on
+    // the page (see usePurchaseTaxPreviewQuery below), never from the scanned header.
   };
-
-  useEffect(() => {
-    setVendorInvoiceTotal(
-      computeVendorInvoiceTotalFromFields(
-        vendorLineSubTotal,
-        vendorTaxTotal,
-        vendorShippingCharge,
-        vendorOtherCharges,
-        vendorOverallDiscount,
-        vendorRoundOff,
-      ),
-    );
-  }, [
-    vendorLineSubTotal,
-    vendorTaxTotal,
-    vendorShippingCharge,
-    vendorOtherCharges,
-    vendorOverallDiscount,
-    vendorRoundOff,
-  ]);
 
   const vendorInvoiceTotalNum = optionalNumFromString(vendorInvoiceTotal) ?? 0;
   const vendorCreditLedgerOutstandingNum = roundMoney(Math.max(vendorPaymentSplit.creditAmount, 0));
@@ -1254,32 +955,6 @@ export function ProductEntryPage() {
   >({});
 
   const prevRegisteredProductCountRef = useRef(0);
-
-  // Keep invoice line subtotal / tax in sync whenever product rows or GST mode change.
-  useEffect(() => {
-    const n = products.length;
-    if (n === 0) {
-      if (prevRegisteredProductCountRef.current > 0) {
-        setVendorLineSubTotal('');
-        setVendorTaxTotal('');
-      }
-      prevRegisteredProductCountRef.current = 0;
-      return;
-    }
-    prevRegisteredProductCountRef.current = n;
-    const { lineSubTotal, taxTotal } = computeVendorInvoiceTotalsFromProducts(
-      products,
-      billingMode,
-      gridSchemeDrafts,
-    );
-    setVendorLineSubTotal(formatComputedAmount(lineSubTotal));
-    setVendorTaxTotal(formatComputedAmount(taxTotal));
-  }, [products, billingMode, gridSchemeDrafts]);
-
-  const productsRegistrationSummary = useMemo(
-    () => computeProductsRegistrationSummary(products, billingMode, gridSchemeDrafts),
-    [products, billingMode, gridSchemeDrafts],
-  );
 
   // Product view mode: list (accordion) or grid (Excel-style)
   const [productViewMode, setProductViewMode] = useState<'list' | 'grid'>(() => {
@@ -1497,6 +1172,244 @@ export function ProductEntryPage() {
     otherFields: verticalRegistrationFields,
   } = useMemo(() => partitionRegistrationFields(registrationFields), [registrationFields]);
 
+  /**
+   * The rows bulk stock-in sends, built once for both stock-in and the bill preview so the server
+   * previews exactly what it will record.
+   */
+  const buildBulkItems = useCallback(
+    (rows: ProductFormData[], purchaseDateFromInvoice?: string): BulkCreateInventoryItem[] =>
+      rows.map((product) => {
+        const validRates = (product.rates ?? []).filter(
+          (r) => r.name.trim() && !isNaN(r.price) && r.price >= 0,
+        );
+        const hasValidDefaultRate =
+          product.defaultRate &&
+          product.defaultRate.trim() &&
+          (['priceToRetail', 'maximumRetailPrice', 'costPrice'].includes(
+            product.defaultRate.trim(),
+          ) ||
+            (product.rates ?? []).some((r) => r.name.trim() === product.defaultRate?.trim()));
+
+        // Format reminderAt if provided
+        let reminderAtISO: string | undefined;
+        if (product.reminderAt) {
+          if (product.reminderAt.includes('T')) {
+            reminderAtISO = new Date(product.reminderAt).toISOString();
+          } else {
+            reminderAtISO = new Date(product.reminderAt).toISOString();
+          }
+        }
+
+        const expiryField = registrationFields.find((f) => f.key === 'expiryDate');
+        const productExpiryRaw = expiryField
+          ? getVerticalFieldValue(product, expiryField)
+          : product.expiryDate?.trim() || '';
+
+        // Custom reminders: send reminderAt/endDate/notes (works for all verticals)
+        const customReminders = mapCustomRemindersForBulkApi(
+          product.customReminders,
+          productExpiryRaw,
+        );
+
+        const unitsPerPackForApi = Number(product.unitsPerPack ?? product.conversionFactor) || 0;
+
+        const batchField = registrationFields.find((f) => f.key === 'batchNo');
+        const resolvedExpiryRaw = expiryField
+          ? getVerticalFieldValue(product, expiryField)
+          : product.expiryDate?.trim() || '';
+        const resolvedBatchNo = batchField
+          ? getVerticalFieldValue(product, batchField)
+          : product.batchNo?.trim() || '';
+        const expiryOnExtension = expiryField?.storage === 'extension';
+        const batchOnExtension = batchField?.storage === 'extension';
+
+        const coreItem = {
+          ...(product.productId ? { productId: product.productId } : {}),
+          ...(product.barcode?.trim() ? { barcode: product.barcode.trim() } : {}),
+          name: product.name,
+          description: product.description || undefined,
+          companyName: product.companyName,
+          ...(isCompactPriceUi
+            ? {
+                maximumRetailPrice: 0,
+                costPrice: Number(product.costPrice) || 0,
+                priceToRetail: 0,
+                ...(product.sellingPrice != null &&
+                product.sellingPrice !== '' &&
+                Number(product.sellingPrice) > 0
+                  ? { sellingPrice: Number(product.sellingPrice) }
+                  : {}),
+              }
+            : {
+                maximumRetailPrice: Number(product.maximumRetailPrice) || 0,
+                costPrice: Number(product.costPrice) || 0,
+                priceToRetail: Number(product.priceToRetail) || 0,
+              }),
+          businessType: (shopSchema?.verticalId ?? product.businessType).toUpperCase(),
+          location: product.location,
+          count: product.count,
+          baseUnit: resolvePackagingUqc(product.baseUnit ?? '', packagingUnits),
+          ...(unitsPerPackForApi > 0 ? { unitsPerPack: unitsPerPackForApi } : {}),
+          ...(resolvedExpiryRaw && !expiryOnExtension
+            ? { expiryDate: formatCoreExpiryDateForApi(resolvedExpiryRaw) }
+            : {}),
+          reminderAt: reminderAtISO,
+          customReminders: customReminders,
+          hsn: product.hsn || null,
+          ...(resolvedBatchNo && !batchOnExtension ? { batchNo: resolvedBatchNo } : {}),
+          ...(showCommercialTerms
+            ? (product.schemeType ?? 'FIXED_UNITS') === 'PERCENTAGE'
+              ? {
+                  schemeType: 'PERCENTAGE' as const,
+                  schemePercentage: product.schemePercentage ?? null,
+                }
+              : product.schemePayFor != null || product.schemeFree != null
+              ? {
+                  schemeType: 'FIXED_UNITS' as const,
+                  schemePayFor: product.schemePayFor ?? null,
+                  schemeFree: product.schemeFree ?? null,
+                  scheme: null,
+                }
+              : {
+                  schemeType: (product.schemeType ?? 'FIXED_UNITS') as 'FIXED_UNITS',
+                  scheme: product.scheme ?? null,
+                }
+            : {}),
+          billingMode: billingMode as BillingMode,
+          ...(billingMode !== 'BASIC' && product.sgst && product.sgst.trim()
+            ? { sgst: product.sgst.trim() }
+            : {}),
+          ...(billingMode !== 'BASIC' && product.cgst && product.cgst.trim()
+            ? { cgst: product.cgst.trim() }
+            : {}),
+          ...(showCommercialTerms &&
+          product.saleAdditionalDiscount !== null &&
+          product.saleAdditionalDiscount !== undefined
+            ? { saleAdditionalDiscount: product.saleAdditionalDiscount }
+            : {}),
+          ...(showCommercialTerms &&
+          (product.purchaseSchemeType != null ||
+            product.purchaseSchemePayFor != null ||
+            product.purchaseSchemeFree != null ||
+            product.purchaseSchemePercentage != null ||
+            product.purchaseSchemeFreeQty != null)
+            ? (product.purchaseSchemeType ?? 'FIXED_UNITS') === 'PERCENTAGE'
+              ? {
+                  purchaseSchemeType: 'PERCENTAGE' as const,
+                  purchaseSchemePercentage: product.purchaseSchemePercentage ?? null,
+                  purchaseSchemePayFor: null,
+                  purchaseSchemeFree: null,
+                }
+              : {
+                  purchaseSchemeType: 'FIXED_UNITS' as const,
+                  purchaseSchemePayFor: product.purchaseSchemePayFor ?? null,
+                  purchaseSchemeFree: product.purchaseSchemeFree ?? null,
+                  purchaseSchemePercentage: null,
+                }
+            : {}),
+          ...(showCommercialTerms &&
+          product.purchaseAdditionalDiscount !== null &&
+          product.purchaseAdditionalDiscount !== undefined
+            ? {
+                purchaseAdditionalDiscount: product.purchaseAdditionalDiscount,
+              }
+            : {}),
+          ...(product.itemType ? { itemType: product.itemType as ItemType } : {}),
+          ...(product.itemType === 'DEGREE' &&
+          product.itemTypeDegree != null &&
+          Number(product.itemTypeDegree) > 0
+            ? { itemTypeDegree: Number(product.itemTypeDegree) }
+            : {}),
+          ...(product.discountApplicable != null && showCommercialTerms
+            ? { discountApplicable: product.discountApplicable }
+            : {}),
+          ...(purchaseDateFromInvoice ? { purchaseDate: purchaseDateFromInvoice } : {}),
+          ...(showRateTiers && validRates.length > 0
+            ? {
+                rates: validRates.map((r) => ({
+                  name: r.name.trim(),
+                  price: Number(r.price),
+                })),
+              }
+            : {}),
+          ...(showRateTiers && hasValidDefaultRate && product.defaultRate
+            ? { defaultRate: product.defaultRate.trim() }
+            : {}),
+        };
+
+        return attachVerticalFieldsToBulkItem(coreItem, product, registrationFields);
+      }),
+    [
+      isCompactPriceUi,
+      shopSchema,
+      packagingUnits,
+      showCommercialTerms,
+      showRateTiers,
+      billingMode,
+      registrationFields,
+    ],
+  );
+
+  // Tax and totals for the bill on screen come from the server, worked out with the stock-in
+  // rules; this page only shows them. The typed charges are sent so the invoice total includes them.
+  const purchaseTaxPreviewRequest = useMemo<PurchaseTaxPreviewRequest | null>(() => {
+    if (products.length === 0) return null;
+    return {
+      vendorId: selectedVendor?.vendorId ?? null,
+      taxTreatment: vendorTaxTreatment ?? null,
+      items: buildBulkItems(products),
+      shippingCharge: optionalNumFromString(vendorShippingCharge),
+      otherCharges: optionalNumFromString(vendorOtherCharges),
+      overallDiscount: optionalNumFromString(vendorOverallDiscount),
+      roundOff: optionalNumFromString(vendorRoundOff),
+    };
+  }, [
+    products,
+    selectedVendor?.vendorId,
+    vendorTaxTreatment,
+    buildBulkItems,
+    vendorShippingCharge,
+    vendorOtherCharges,
+    vendorOverallDiscount,
+    vendorRoundOff,
+  ]);
+  const purchaseTaxPreview = usePurchaseTaxPreviewQuery(purchaseTaxPreviewRequest).data;
+  const previewLineSubTotal = purchaseTaxPreview?.lineSubTotal;
+  const previewTaxTotal = purchaseTaxPreview?.taxTotal;
+
+  // The header's subtotal and tax are the server's figures for the rows; they are not typed.
+  useEffect(() => {
+    if (products.length === 0) {
+      if (prevRegisteredProductCountRef.current > 0) {
+        setVendorLineSubTotal('');
+        setVendorTaxTotal('');
+      }
+      prevRegisteredProductCountRef.current = 0;
+      return;
+    }
+    prevRegisteredProductCountRef.current = products.length;
+    if (previewLineSubTotal == null || previewTaxTotal == null) return;
+    setVendorLineSubTotal(formatComputedAmount(previewLineSubTotal));
+    setVendorTaxTotal(formatComputedAmount(previewTaxTotal));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the server's figures change
+  }, [previewLineSubTotal, previewTaxTotal, products.length === 0]);
+
+  useEffect(() => {
+    setVendorInvoiceTotal(
+      products.length > 0 && purchaseTaxPreview
+        ? formatComputedAmount(purchaseTaxPreview.invoiceTotal)
+        : '',
+    );
+  }, [products.length, purchaseTaxPreview]);
+
+  const productsRegistrationSummary: ProductsRegistrationSummary = {
+    productCount: products.length,
+    totalQuantity: purchaseTaxPreview?.totalQuantity ?? 0,
+    lineSubTotal: purchaseTaxPreview?.lineSubTotal ?? 0,
+    taxTotal: purchaseTaxPreview?.taxTotal ?? 0,
+    grandTotal: purchaseTaxPreview?.itemsTotal ?? 0,
+  };
+
   const registrationSchemaReady = useMemo(
     () =>
       isRegistrationSchemaReady(shopSchema, billingMode, {
@@ -1571,7 +1484,7 @@ export function ProductEntryPage() {
       };
     });
     setProducts(parsedProducts);
-    applyParsedVendorInvoice(vendorPurchaseInvoice, items);
+    applyParsedVendorInvoice(vendorPurchaseInvoice);
   };
 
   const transformParsedItemToProduct = (item: ParseInvoiceItem): ProductFormData => {
@@ -2742,13 +2655,10 @@ export function ProductEntryPage() {
       const trimmedInvNo = vendorInvoiceNo.trim();
       const hasInvoiceExtra =
         vendorInvoiceDate.trim() !== '' ||
-        optionalNumFromString(vendorLineSubTotal) !== undefined ||
-        optionalNumFromString(vendorTaxTotal) !== undefined ||
         optionalNumFromString(vendorShippingCharge) !== undefined ||
         optionalNumFromString(vendorOtherCharges) !== undefined ||
         optionalNumFromString(vendorOverallDiscount) !== undefined ||
-        optionalNumFromString(vendorRoundOff) !== undefined ||
-        optionalNumFromString(vendorInvoiceTotal) !== undefined;
+        optionalNumFromString(vendorRoundOff) !== undefined;
       if (hasInvoiceExtra && !trimmedInvNo) {
         notifyError('Enter the vendor invoice number, or clear all vendor invoice fields.');
         setIsLoading(false);
@@ -2760,22 +2670,6 @@ export function ProductEntryPage() {
         notifyError('Overall discount cannot be negative.');
         setIsLoading(false);
         return;
-      }
-      if (overallDisc !== undefined && overallDisc > 0) {
-        const preDiscountTotal = roundMoney(
-          numOr0(optionalNumFromString(vendorLineSubTotal)) +
-            numOr0(optionalNumFromString(vendorTaxTotal)) +
-            numOr0(optionalNumFromString(vendorShippingCharge)) +
-            numOr0(optionalNumFromString(vendorOtherCharges)) +
-            numOr0(optionalNumFromString(vendorRoundOff)),
-        );
-        if (overallDisc > preDiscountTotal) {
-          notifyError(
-            'Overall discount cannot exceed line subtotal + tax + shipping + other charges + round off.',
-          );
-          setIsLoading(false);
-          return;
-        }
       }
 
       // Validate at least one product exists
@@ -3020,167 +2914,7 @@ export function ProductEntryPage() {
       }
 
       // Transform products to bulk API format
-      const items = products.map((product) => {
-        const validRates = (product.rates ?? []).filter(
-          (r) => r.name.trim() && !isNaN(r.price) && r.price >= 0,
-        );
-        const hasValidDefaultRate =
-          product.defaultRate &&
-          product.defaultRate.trim() &&
-          (['priceToRetail', 'maximumRetailPrice', 'costPrice'].includes(
-            product.defaultRate.trim(),
-          ) ||
-            (product.rates ?? []).some((r) => r.name.trim() === product.defaultRate?.trim()));
-
-        // Format reminderAt if provided
-        let reminderAtISO: string | undefined;
-        if (product.reminderAt) {
-          if (product.reminderAt.includes('T')) {
-            reminderAtISO = new Date(product.reminderAt).toISOString();
-          } else {
-            reminderAtISO = new Date(product.reminderAt).toISOString();
-          }
-        }
-
-        const expiryField = registrationFields.find((f) => f.key === 'expiryDate');
-        const productExpiryRaw = expiryField
-          ? getVerticalFieldValue(product, expiryField)
-          : product.expiryDate?.trim() || '';
-
-        // Custom reminders: send reminderAt/endDate/notes (works for all verticals)
-        const customReminders = mapCustomRemindersForBulkApi(
-          product.customReminders,
-          productExpiryRaw,
-        );
-
-        const unitsPerPackForApi = Number(product.unitsPerPack ?? product.conversionFactor) || 0;
-
-        const batchField = registrationFields.find((f) => f.key === 'batchNo');
-        const resolvedExpiryRaw = expiryField
-          ? getVerticalFieldValue(product, expiryField)
-          : product.expiryDate?.trim() || '';
-        const resolvedBatchNo = batchField
-          ? getVerticalFieldValue(product, batchField)
-          : product.batchNo?.trim() || '';
-        const expiryOnExtension = expiryField?.storage === 'extension';
-        const batchOnExtension = batchField?.storage === 'extension';
-
-        const coreItem = {
-          ...(product.productId ? { productId: product.productId } : {}),
-          ...(product.barcode?.trim() ? { barcode: product.barcode.trim() } : {}),
-          name: product.name,
-          description: product.description || undefined,
-          companyName: product.companyName,
-          ...(isCompactPriceUi
-            ? {
-                maximumRetailPrice: 0,
-                costPrice: Number(product.costPrice) || 0,
-                priceToRetail: 0,
-                ...(product.sellingPrice != null &&
-                product.sellingPrice !== '' &&
-                Number(product.sellingPrice) > 0
-                  ? { sellingPrice: Number(product.sellingPrice) }
-                  : {}),
-              }
-            : {
-                maximumRetailPrice: Number(product.maximumRetailPrice) || 0,
-                costPrice: Number(product.costPrice) || 0,
-                priceToRetail: Number(product.priceToRetail) || 0,
-              }),
-          businessType: (shopSchema?.verticalId ?? product.businessType).toUpperCase(),
-          location: product.location,
-          count: product.count,
-          baseUnit: resolvePackagingUqc(product.baseUnit ?? '', packagingUnits),
-          ...(unitsPerPackForApi > 0 ? { unitsPerPack: unitsPerPackForApi } : {}),
-          ...(resolvedExpiryRaw && !expiryOnExtension
-            ? { expiryDate: formatCoreExpiryDateForApi(resolvedExpiryRaw) }
-            : {}),
-          reminderAt: reminderAtISO,
-          customReminders: customReminders,
-          hsn: product.hsn || null,
-          ...(resolvedBatchNo && !batchOnExtension ? { batchNo: resolvedBatchNo } : {}),
-          ...(showCommercialTerms
-            ? (product.schemeType ?? 'FIXED_UNITS') === 'PERCENTAGE'
-              ? {
-                  schemeType: 'PERCENTAGE' as const,
-                  schemePercentage: product.schemePercentage ?? null,
-                }
-              : product.schemePayFor != null || product.schemeFree != null
-              ? {
-                  schemeType: 'FIXED_UNITS' as const,
-                  schemePayFor: product.schemePayFor ?? null,
-                  schemeFree: product.schemeFree ?? null,
-                  scheme: null,
-                }
-              : {
-                  schemeType: (product.schemeType ?? 'FIXED_UNITS') as 'FIXED_UNITS',
-                  scheme: product.scheme ?? null,
-                }
-            : {}),
-          billingMode: billingMode as BillingMode,
-          ...(billingMode !== 'BASIC' && product.sgst && product.sgst.trim()
-            ? { sgst: product.sgst.trim() }
-            : {}),
-          ...(billingMode !== 'BASIC' && product.cgst && product.cgst.trim()
-            ? { cgst: product.cgst.trim() }
-            : {}),
-          ...(showCommercialTerms &&
-          product.saleAdditionalDiscount !== null &&
-          product.saleAdditionalDiscount !== undefined
-            ? { saleAdditionalDiscount: product.saleAdditionalDiscount }
-            : {}),
-          ...(showCommercialTerms &&
-          (product.purchaseSchemeType != null ||
-            product.purchaseSchemePayFor != null ||
-            product.purchaseSchemeFree != null ||
-            product.purchaseSchemePercentage != null ||
-            product.purchaseSchemeFreeQty != null)
-            ? (product.purchaseSchemeType ?? 'FIXED_UNITS') === 'PERCENTAGE'
-              ? {
-                  purchaseSchemeType: 'PERCENTAGE' as const,
-                  purchaseSchemePercentage: product.purchaseSchemePercentage ?? null,
-                  purchaseSchemePayFor: null,
-                  purchaseSchemeFree: null,
-                }
-              : {
-                  purchaseSchemeType: 'FIXED_UNITS' as const,
-                  purchaseSchemePayFor: product.purchaseSchemePayFor ?? null,
-                  purchaseSchemeFree: product.purchaseSchemeFree ?? null,
-                  purchaseSchemePercentage: null,
-                }
-            : {}),
-          ...(showCommercialTerms &&
-          product.purchaseAdditionalDiscount !== null &&
-          product.purchaseAdditionalDiscount !== undefined
-            ? {
-                purchaseAdditionalDiscount: product.purchaseAdditionalDiscount,
-              }
-            : {}),
-          ...(product.itemType ? { itemType: product.itemType as ItemType } : {}),
-          ...(product.itemType === 'DEGREE' &&
-          product.itemTypeDegree != null &&
-          Number(product.itemTypeDegree) > 0
-            ? { itemTypeDegree: Number(product.itemTypeDegree) }
-            : {}),
-          ...(product.discountApplicable != null && showCommercialTerms
-            ? { discountApplicable: product.discountApplicable }
-            : {}),
-          ...(purchaseDateFromInvoice ? { purchaseDate: purchaseDateFromInvoice } : {}),
-          ...(showRateTiers && validRates.length > 0
-            ? {
-                rates: validRates.map((r) => ({
-                  name: r.name.trim(),
-                  price: Number(r.price),
-                })),
-              }
-            : {}),
-          ...(showRateTiers && hasValidDefaultRate && product.defaultRate
-            ? { defaultRate: product.defaultRate.trim() }
-            : {}),
-        };
-
-        return attachVerticalFieldsToBulkItem(coreItem, product, registrationFields);
-      });
+      const items = buildBulkItems(products, purchaseDateFromInvoice);
 
       if (!estimateWorkspace) {
         if (!vendorPaymentMethod) {
@@ -3199,6 +2933,7 @@ export function ProductEntryPage() {
       if (vendorInvoiceDate.trim()) {
         vendorPurchaseInvoice.invoiceDate = `${vendorInvoiceDate.trim()}T00:00:00.000Z`;
       }
+      // The totals shown read-only are the server's preview; they are sent so the bill stores them.
       const ls = optionalNumFromString(vendorLineSubTotal);
       if (ls !== undefined) vendorPurchaseInvoice.lineSubTotal = ls;
       const tt = optionalNumFromString(vendorTaxTotal);
@@ -3213,6 +2948,13 @@ export function ProductEntryPage() {
       if (ro !== undefined) vendorPurchaseInvoice.roundOff = ro;
       const it = optionalNumFromString(vendorInvoiceTotal);
       if (it !== undefined) vendorPurchaseInvoice.invoiceTotal = it;
+      if (vendorTaxTreatment) vendorPurchaseInvoice.taxTreatment = vendorTaxTreatment;
+      if (purchaseTaxPreview?.taxTreatmentConflict) {
+        if (!vendorTaxTreatmentConfirmed) {
+          throw new Error(purchaseTaxPreview.taxTreatmentConflict);
+        }
+        vendorPurchaseInvoice.confirmTaxTreatment = true;
+      }
       // Estimate drafts never capture payment; Product Entry sets it when converting to invoice.
       if (!estimateWorkspace && vendorPaymentMethod) {
         vendorPurchaseInvoice.paymentMethod = vendorPaymentMethod;
@@ -3246,17 +2988,6 @@ export function ProductEntryPage() {
         const itemErrors = response?.itemErrors ?? [];
         const items = response?.items ?? [];
 
-        // The stock is in either way; this only says whether the bill's own totals stand up.
-        // Held on screen far longer than the success toast, because acting on it means finding
-        // the paper again.
-        const reconciliationWarning = headerReconciliationWarning(
-          response?.headerReconciliation,
-          vendorLineSubTotal,
-          vendorTaxTotal,
-          response?.computedLineSubTotal,
-          response?.computedTaxTotal,
-        );
-
         // If we have items or a positive createdCount, consider it successful
         if (createdCount > 0 || items.length > 0) {
           const count = createdCount || items.length;
@@ -3265,7 +2996,6 @@ export function ProductEntryPage() {
               ? 'Product registered successfully'
               : `Successfully registered ${count} products`,
           );
-          if (reconciliationWarning) notifyWarning(reconciliationWarning, 20000);
 
           if (activeEstimateId && billingMode === 'REGULAR' && response?.vendorPurchaseInvoiceId) {
             try {
@@ -3309,6 +3039,7 @@ export function ProductEntryPage() {
             setProducts([]);
             handleClearVendor();
             setVendorInvoiceNo('');
+            setVendorTaxTreatment(null);
             setVendorInvoiceDate('');
             setVendorLineSubTotal('');
             setVendorTaxTotal('');
@@ -3335,7 +3066,6 @@ export function ProductEntryPage() {
               : `Successfully registered ${count} products`,
           );
           clearProductEntryDraft(draftScope);
-          if (reconciliationWarning) notifyWarning(reconciliationWarning, 20000);
           setTimeout(() => {
             setProducts([]);
             handleClearVendor();
@@ -3407,6 +3137,12 @@ export function ProductEntryPage() {
     setVendorSearchQuery(vendor.name);
     setShowVendorDropdown(false);
     setVendorSearchResults([]);
+    // Left on "Not recorded yet": the server reads the bill from its rows (cost at MRP is
+    // inclusive, below MRP exclusive) before falling back to how this vendor usually bills, and
+    // the hint under the dropdown says which. Prefilling the vendor's default here would count as
+    // a choice and override what the rows say.
+    setVendorTaxTreatment(null);
+    setVendorTaxTreatmentConfirmed(false);
   };
 
   useLayoutEffect(() => {
@@ -3538,6 +3274,7 @@ export function ProductEntryPage() {
 
   const handleClearVendor = () => {
     setSelectedVendor(null);
+    setVendorTaxTreatment(null);
     setVendorSearchQuery('');
     setVendorSearchResults([]);
     setShowVendorDropdown(false);
@@ -3939,7 +3676,9 @@ export function ProductEntryPage() {
                         </Text>{' '}
                         is only used when PTS is empty.{' '}
                         {billingMode !== 'BASIC'
-                          ? 'With CGST/SGST on the row, PTS × qty is taxable value (ex‑GST); tax is added on top for line subtotal + tax totals.'
+                          ? vendorTaxTreatment === 'INCLUSIVE'
+                            ? 'This vendor bills at MRP, so PTS × qty already holds the GST: the taxable value is backed out of it and the tax is the remainder.'
+                            : 'With CGST/SGST on the row, PTS × qty is taxable value (ex‑GST); tax is added on top for line subtotal + tax totals.'
                           : null}
                       </Text>
                     ) : null}
@@ -3966,15 +3705,54 @@ export function ProductEntryPage() {
                         />
                       </Box>
                       <Box className={pageStyles.formGroup}>
+                        <Label htmlFor="vendorTaxTreatment">How this vendor bills</Label>
+                        <Select
+                          id="vendorTaxTreatment"
+                          value={vendorTaxTreatment ?? ''}
+                          onChange={(e) => {
+                            setVendorTaxTreatment(
+                              e.target.value ? (e.target.value as PurchaseTaxTreatment) : null,
+                            );
+                            setVendorTaxTreatmentConfirmed(false);
+                          }}
+                          disabled={isLoading}
+                        >
+                          <option value="">Not recorded yet</option>
+                          <option value="EXCLUSIVE">GST is added to the price</option>
+                          <option value="INCLUSIVE">GST is already included in the price</option>
+                        </Select>
+                        {!vendorTaxTreatment &&
+                        purchaseTaxPreview &&
+                        !purchaseTaxPreview.taxTreatmentConflict ? (
+                          <Text variant="caption" color="secondary">
+                            {treatmentHint(
+                              purchaseTaxPreview.taxTreatment,
+                              purchaseTaxPreview.taxTreatmentSource,
+                            )}
+                          </Text>
+                        ) : null}
+                        {purchaseTaxPreview?.taxTreatmentConflict ? (
+                          <Alert variant="warning">
+                            {purchaseTaxPreview.taxTreatmentConflict}
+                            <Checkbox
+                              label="I have checked the bill and want to keep this setting"
+                              checked={vendorTaxTreatmentConfirmed}
+                              onChange={(e) => setVendorTaxTreatmentConfirmed(e.target.checked)}
+                              disabled={isLoading}
+                            />
+                          </Alert>
+                        ) : null}
+                      </Box>
+                      <Box className={pageStyles.formGroup}>
                         <Label htmlFor="vendorLineSubTotal">Line subtotal</Label>
                         <Input
                           id="vendorLineSubTotal"
                           type="text"
                           inputMode="decimal"
                           value={vendorLineSubTotal}
-                          onChange={(e) => setVendorLineSubTotal(e.target.value)}
                           placeholder="0"
                           disabled={isLoading}
+                          readOnly
                         />
                       </Box>
                       <Box className={pageStyles.formGroup}>
@@ -3984,9 +3762,9 @@ export function ProductEntryPage() {
                           type="text"
                           inputMode="decimal"
                           value={vendorTaxTotal}
-                          onChange={(e) => setVendorTaxTotal(e.target.value)}
                           placeholder="0"
                           disabled={isLoading}
+                          readOnly
                         />
                       </Box>
                       <Box className={pageStyles.formGroup}>
@@ -4348,6 +4126,12 @@ export function ProductEntryPage() {
                                 <>
                                   <TableHeaderCell className={denseDataGrid.th} title="Tax section">
                                     HSN
+                                  </TableHeaderCell>
+                                  <TableHeaderCell
+                                    className={denseDataGrid.th}
+                                    title="GST rates allowed for this HSN"
+                                  >
+                                    GST
                                   </TableHeaderCell>
                                   <TableHeaderCell className={denseDataGrid.th} title="Tax section">
                                     CGST %
@@ -5034,6 +4818,19 @@ export function ProductEntryPage() {
                                         onChange={(e) =>
                                           handleProductChange(product.id, 'hsn', e.target.value)
                                         }
+                                        disabled={isLoading}
+                                      />
+                                    </TableCell>
+                                    <TableCell className={denseDataGrid.td}>
+                                      <HsnGstRateSelect
+                                        className={denseDataGrid.inputNarrow}
+                                        hsn={product.hsn}
+                                        cgst={product.cgst}
+                                        sgst={product.sgst}
+                                        onPick={(cgst, sgst) => {
+                                          handleProductChange(product.id, 'cgst', cgst);
+                                          handleProductChange(product.id, 'sgst', sgst);
+                                        }}
                                         disabled={isLoading}
                                       />
                                     </TableCell>
@@ -6884,8 +6681,8 @@ function ProductAccordion({
                 </Text>
               </Box>
               <Text as="span" className={accordionStyles.unitHint}>
-                Taxable product entry — enter HSN and GST rates for this line. Leave CGST/SGST empty
-                to use the shop default.
+                Taxable product entry — enter the HSN, then pick its GST rate or type CGST/SGST.
+                Leave CGST/SGST empty to use the shop default.
               </Text>
               <Box className={accordionStyles.formRow}>
                 <Box className={pageStyles.formGroup}>
@@ -6899,7 +6696,20 @@ function ProductAccordion({
                     disabled={isLoading}
                   />
                 </Box>
-                <FormRowEmpty />
+                <Box className={pageStyles.formGroup}>
+                  <Label htmlFor={`gst-rate-${product.id}`}>GST rate</Label>
+                  <HsnGstRateSelect
+                    id={`gst-rate-${product.id}`}
+                    hsn={product.hsn}
+                    cgst={product.cgst}
+                    sgst={product.sgst}
+                    onPick={(cgst, sgst) => {
+                      onChange(product.id, 'cgst', cgst);
+                      onChange(product.id, 'sgst', sgst);
+                    }}
+                    disabled={isLoading}
+                  />
+                </Box>
               </Box>
               <Box className={accordionStyles.formRow}>
                 <Box className={pageStyles.formGroup}>
