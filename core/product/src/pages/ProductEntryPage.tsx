@@ -105,6 +105,7 @@ import {
 } from '../ui/PackagingFactorInput';
 import {
   Alert,
+  Checkbox,
   AnchoredPortal,
   Badge,
   Box,
@@ -773,6 +774,9 @@ export function ProductEntryPage() {
   const [vendorInvoiceNo, setVendorInvoiceNo] = useState('');
   // Null means "as this vendor usually bills"; the server falls back to their default.
   const [vendorTaxTreatment, setVendorTaxTreatment] = useState<PurchaseTaxTreatment | null>(null);
+  // Set when the operator has read the bill and stands by a treatment the rows' cost vs MRP
+  // disputes; cleared whenever the choice or the vendor changes.
+  const [vendorTaxTreatmentConfirmed, setVendorTaxTreatmentConfirmed] = useState(false);
   const [vendorInvoiceDate, setVendorInvoiceDate] = useState('');
   const [vendorLineSubTotal, setVendorLineSubTotal] = useState('');
   const [vendorTaxTotal, setVendorTaxTotal] = useState('');
@@ -2942,6 +2946,12 @@ export function ProductEntryPage() {
       const it = optionalNumFromString(vendorInvoiceTotal);
       if (it !== undefined) vendorPurchaseInvoice.invoiceTotal = it;
       if (vendorTaxTreatment) vendorPurchaseInvoice.taxTreatment = vendorTaxTreatment;
+      if (purchaseTaxPreview?.taxTreatmentConflict) {
+        if (!vendorTaxTreatmentConfirmed) {
+          throw new Error(purchaseTaxPreview.taxTreatmentConflict);
+        }
+        vendorPurchaseInvoice.confirmTaxTreatment = true;
+      }
       // Estimate drafts never capture payment; Product Entry sets it when converting to invoice.
       if (!estimateWorkspace && vendorPaymentMethod) {
         vendorPurchaseInvoice.paymentMethod = vendorPaymentMethod;
@@ -3129,6 +3139,7 @@ export function ProductEntryPage() {
     // the hint under the dropdown says which. Prefilling the vendor's default here would count as
     // a choice and override what the rows say.
     setVendorTaxTreatment(null);
+    setVendorTaxTreatmentConfirmed(false);
   };
 
   useLayoutEffect(() => {
@@ -3695,24 +3706,38 @@ export function ProductEntryPage() {
                         <Select
                           id="vendorTaxTreatment"
                           value={vendorTaxTreatment ?? ''}
-                          onChange={(e) =>
+                          onChange={(e) => {
                             setVendorTaxTreatment(
                               e.target.value ? (e.target.value as PurchaseTaxTreatment) : null,
-                            )
-                          }
+                            );
+                            setVendorTaxTreatmentConfirmed(false);
+                          }}
                           disabled={isLoading}
                         >
                           <option value="">Not recorded yet</option>
                           <option value="EXCLUSIVE">GST added on top</option>
                           <option value="INCLUSIVE">GST already included (MRP billing)</option>
                         </Select>
-                        {!vendorTaxTreatment && purchaseTaxPreview ? (
+                        {!vendorTaxTreatment &&
+                        purchaseTaxPreview &&
+                        !purchaseTaxPreview.taxTreatmentConflict ? (
                           <Text variant="caption" color="secondary">
                             {treatmentHint(
                               purchaseTaxPreview.taxTreatment,
                               purchaseTaxPreview.taxTreatmentSource,
                             )}
                           </Text>
+                        ) : null}
+                        {purchaseTaxPreview?.taxTreatmentConflict ? (
+                          <Alert variant="warning">
+                            {purchaseTaxPreview.taxTreatmentConflict}
+                            <Checkbox
+                              label="I have checked the bill; keep this choice"
+                              checked={vendorTaxTreatmentConfirmed}
+                              onChange={(e) => setVendorTaxTreatmentConfirmed(e.target.checked)}
+                              disabled={isLoading}
+                            />
+                          </Alert>
                         ) : null}
                       </Box>
                       <Box className={pageStyles.formGroup}>

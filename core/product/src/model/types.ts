@@ -298,6 +298,8 @@ export interface VendorPurchaseInvoicePayload {
    */
   taxTreatment?: PurchaseTaxTreatment | null;
   invoiceDate?: string | null;
+  /** The operator has read the bill and confirms its tax treatment although the rows disagree. */
+  confirmTaxTreatment?: boolean;
   /** The server's bill preview figures, sent so the bill stores them. */
   lineSubTotal?: number | null;
   taxTotal?: number | null;
@@ -381,6 +383,13 @@ export interface PurchaseTaxPreviewResponse {
    * below MRP exclusive), VENDOR (its usual convention) or NONE.
    */
   taxTreatmentSource?: 'STATED' | 'LINES' | 'VENDOR' | 'NONE' | null;
+  /** What cost against MRP says on the rows; null when they cannot decide. */
+  taxTreatmentFromLines?: PurchaseTaxTreatment | null;
+  /**
+   * Set when the treatment applied contradicts the rows: the message to show. Stock-in refuses
+   * such a bill unless confirmTaxTreatment is sent.
+   */
+  taxTreatmentConflict?: string | null;
   lineSubTotal: number;
   taxTotal: number;
   /** Items only: taxable value plus tax, before header charges. */
