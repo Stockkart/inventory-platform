@@ -619,14 +619,17 @@ function treatmentHint(
   treatment: PurchaseTaxTreatment | null | undefined,
   source: string | null | undefined,
 ): string {
-  const how = treatment === 'INCLUSIVE' ? 'GST already included' : 'GST added on top';
+  const how =
+    treatment === 'INCLUSIVE'
+      ? 'GST is already included in the price'
+      : 'GST is added to the price';
   if (source === 'LINES') {
     return treatment === 'INCLUSIVE'
-      ? `Read as ${how}: cost equals MRP.`
-      : `Read as ${how}: cost is below MRP.`;
+      ? `Read as “${how}”: the entered prices equal the MRP.`
+      : `Read as “${how}”: the entered prices are lower than the MRP.`;
   }
-  if (source === 'VENDOR') return `Read as ${how}: how this vendor usually bills.`;
-  return `Read as ${how}.`;
+  if (source === 'VENDOR') return `Read as “${how}”: this vendor's usual setting.`;
+  return `Read as “${how}”.`;
 }
 
 interface ProductsRegistrationSummary {
@@ -3715,8 +3718,8 @@ export function ProductEntryPage() {
                           disabled={isLoading}
                         >
                           <option value="">Not recorded yet</option>
-                          <option value="EXCLUSIVE">GST added on top</option>
-                          <option value="INCLUSIVE">GST already included (MRP billing)</option>
+                          <option value="EXCLUSIVE">GST is added to the price</option>
+                          <option value="INCLUSIVE">GST is already included in the price</option>
                         </Select>
                         {!vendorTaxTreatment &&
                         purchaseTaxPreview &&
@@ -3732,7 +3735,7 @@ export function ProductEntryPage() {
                           <Alert variant="warning">
                             {purchaseTaxPreview.taxTreatmentConflict}
                             <Checkbox
-                              label="I have checked the bill; keep this choice"
+                              label="I have checked the bill and want to keep this setting"
                               checked={vendorTaxTreatmentConfirmed}
                               onChange={(e) => setVendorTaxTreatmentConfirmed(e.target.checked)}
                               disabled={isLoading}

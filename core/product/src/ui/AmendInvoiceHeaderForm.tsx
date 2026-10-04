@@ -59,8 +59,8 @@ function money(value: number | null | undefined): string {
 }
 
 function treatmentLabel(value: PurchaseTaxTreatment | null | undefined): string {
-  if (value === 'INCLUSIVE') return 'GST already included';
-  if (value === 'EXCLUSIVE') return 'GST added on top';
+  if (value === 'INCLUSIVE') return 'GST is already included in the price';
+  if (value === 'EXCLUSIVE') return 'GST is added to the price';
   return 'Not recorded';
 }
 
@@ -168,8 +168,8 @@ export function AmendInvoiceHeaderForm({ detail, onAmend, busy }: AmendInvoiceHe
             disabled={busy}
           >
             <option value="">As this vendor usually bills</option>
-            <option value="EXCLUSIVE">GST added on top</option>
-            <option value="INCLUSIVE">GST already included (MRP billing)</option>
+            <option value="EXCLUSIVE">GST is added to the price</option>
+            <option value="INCLUSIVE">GST is already included in the price</option>
           </Select>
         </FormField>
       </Grid>
@@ -216,7 +216,7 @@ export function AmendInvoiceHeaderForm({ detail, onAmend, busy }: AmendInvoiceHe
           id="amendReason"
           value={reason}
           onChange={(e) => setReason(e.target.value)}
-          placeholder="e.g. PARAS bills at MRP, GST already included"
+          placeholder="e.g. PARAS bills at MRP, GST is already included in the price"
           disabled={busy}
         />
       </FormField>
