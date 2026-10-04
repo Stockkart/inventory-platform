@@ -19,7 +19,8 @@ export const PRODUCT_ENDPOINTS = {
   BY_BARCODE: '/products/by-barcode',
   BY_ID: (id: string) => `/products/${id}`,
   LAST_INVENTORY: (id: string) => `/products/${id}/last-inventory`,
-  HSN_GST_RATES: '/products/hsn-gst-rates',
+  /** Served by taxation; the table lives beside the GSTR HSN descriptions. */
+  HSN_GST_RATES: '/taxation/hsn-gst-rates',
 } as const;
 
 /** Shop barcode generate / pool / label paths. */

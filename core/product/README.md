@@ -34,7 +34,7 @@ Inventory and sell flows: product registration, search, stock corrections, scan-
   works out any that are missing. Needs
   inventory-api #190 deployed first.
 - **GST rate from the HSN.** Once a row's HSN is typed, `HsnGstRateSelect` (`ui/`) offers the
-  rates the CBIC notifications allow for it, from `GET /products/hsn-gst-rates`
+  rates the CBIC notifications allow for it, from `GET /taxation/hsn-gst-rates`
   (`useHsnGstRatesQuery`). Picking one fills CGST and SGST with the halves the server sends;
   both stay editable, and a rate typed by hand shows as "Custom". Used in the stock-in grid and
   the product detail form.
