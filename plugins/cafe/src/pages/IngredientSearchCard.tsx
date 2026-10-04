@@ -30,7 +30,6 @@ function isLowStock(item: InventoryItem): boolean {
   return threshold > 0 && stock <= threshold;
 }
 
-
 export interface IngredientSearchCardProps {
   item: InventoryItem;
   /** The shop's resolved `cafe-ingredient-search` layout (from `useSurfaceCardLayout`). */

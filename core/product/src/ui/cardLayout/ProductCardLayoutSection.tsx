@@ -149,24 +149,39 @@ function SurfaceLayoutEditor({ catalog, layouts }: SurfaceLayoutEditorProps) {
   const dirtyThis = !variantsEqual(drafts[sid], saved[sid]);
 
   const groups = useMemo(() => groupCatalogFields(catalog), [catalog]);
-  const catalogByKey = useMemo(() => new Map(catalog.fields.map((f) => [f.fieldKey, f])), [catalog]);
+  const catalogByKey = useMemo(
+    () => new Map(catalog.fields.map((f) => [f.fieldKey, f])),
+    [catalog],
+  );
   const sample = useMemo(() => buildSampleItem(catalog), [catalog]);
-  const sampleForVariant = useMemo(() => ({ ...sample, billingMode: activeVariant }), [sample, activeVariant]);
-  const resolved = useMemo(() => resolveDraftLocally(spec, catalog, surfaceInfo), [spec, catalog, surfaceInfo]);
+  const sampleForVariant = useMemo(
+    () => ({ ...sample, billingMode: activeVariant }),
+    [sample, activeVariant],
+  );
+  const resolved = useMemo(
+    () => resolveDraftLocally(spec, catalog, surfaceInfo),
+    [spec, catalog, surfaceInfo],
+  );
 
   const fieldCount = countFields(spec);
   const atLimit = fieldCount >= limits.maxFieldsTotal;
 
   const current = selection[selKey] ?? { sectionId: null, fieldKey: null };
   const targetSectionId =
-    (current.sectionId && spec.sections.some((s) => s.id === current.sectionId) ? current.sectionId : null) ??
+    (current.sectionId && spec.sections.some((s) => s.id === current.sectionId)
+      ? current.sectionId
+      : null) ??
     spec.sections[spec.sections.length - 1]?.id ??
     null;
-  const selectedFieldKey = current.fieldKey && locate(spec, current.fieldKey) ? current.fieldKey : null;
+  const selectedFieldKey =
+    current.fieldKey && locate(spec, current.fieldKey) ? current.fieldKey : null;
 
   const select = useCallback(
     (patch: Partial<Selection>) =>
-      setSelection((prev) => ({ ...prev, [selKey]: { ...(prev[selKey] ?? { sectionId: null, fieldKey: null }), ...patch } })),
+      setSelection((prev) => ({
+        ...prev,
+        [selKey]: { ...(prev[selKey] ?? { sectionId: null, fieldKey: null }), ...patch },
+      })),
     [selKey],
   );
 
@@ -195,7 +210,10 @@ function SurfaceLayoutEditor({ catalog, layouts }: SurfaceLayoutEditorProps) {
         const cur = prev[surface.surfaceId]?.[activeVariant] ?? EMPTY_SPEC;
         const next = fn(cur);
         if (next === cur) return prev;
-        return { ...prev, [surface.surfaceId]: { ...prev[surface.surfaceId], [activeVariant]: next } };
+        return {
+          ...prev,
+          [surface.surfaceId]: { ...prev[surface.surfaceId], [activeVariant]: next },
+        };
       });
       setSaveError(null);
     },
@@ -238,7 +256,9 @@ function SurfaceLayoutEditor({ catalog, layouts }: SurfaceLayoutEditorProps) {
       setDrafts((prev) => ({ ...prev, [surface.surfaceId]: draftFromResponse(result, catalog) }));
       setSaveError(null);
     } catch (err) {
-      useNotify.error(err instanceof Error && err.message ? err.message : 'Could not load the default layout');
+      useNotify.error(
+        err instanceof Error && err.message ? err.message : 'Could not load the default layout',
+      );
     }
   };
 
@@ -344,7 +364,11 @@ function SurfaceLayoutEditor({ catalog, layouts }: SurfaceLayoutEditorProps) {
             <Text variant="caption" color="secondary">
               Billing mode
             </Text>
-            <SegmentedControl value={activeVariant} options={VARIANT_OPTIONS} onChange={setVariant} />
+            <SegmentedControl
+              value={activeVariant}
+              options={VARIANT_OPTIONS}
+              onChange={setVariant}
+            />
           </Box>
         ) : null}
         <Box className={surfaceChrome.cardBuilderToolbarGroup}>
@@ -421,7 +445,9 @@ function SurfaceLayoutEditor({ catalog, layouts }: SurfaceLayoutEditorProps) {
               catalogField={catalogByKey.get(selectedFieldKey)}
               limits={limits}
               onUpdate={(patch) => edit((s) => updateField(s, selectedFieldKey, patch, limits))}
-              onMoveToSection={(to) => edit((s) => moveFieldToSection(s, selectedFieldKey, to, limits))}
+              onMoveToSection={(to) =>
+                edit((s) => moveFieldToSection(s, selectedFieldKey, to, limits))
+              }
               onRemove={() => {
                 edit((s) => removeField(s, selectedFieldKey));
                 select({ fieldKey: null });
@@ -433,7 +459,11 @@ function SurfaceLayoutEditor({ catalog, layouts }: SurfaceLayoutEditorProps) {
 
         <Box className={surfaceChrome.invoiceSettingsPreview}>
           <Box className={surfaceChrome.cardBuilderPreviewSticky}>
-            <CardLayoutPreview surfaceId={surface.surfaceId} item={sampleForVariant} layout={resolved} />
+            <CardLayoutPreview
+              surfaceId={surface.surfaceId}
+              item={sampleForVariant}
+              layout={resolved}
+            />
           </Box>
         </Box>
       </Box>

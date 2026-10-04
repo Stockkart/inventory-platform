@@ -85,12 +85,16 @@ export const inventoryItemArb: fc.Arbitrary<InventoryItem> = fc
         lotId: r.id,
         shopId: 'shop',
         itemTypeDegree: r.itemTypeDegree ?? undefined,
-      }) as unknown as InventoryItem,
+      } as unknown as InventoryItem),
   );
 
 export function isoDateArb(): fc.Arbitrary<string> {
   return fc
-    .date({ min: new Date('2000-01-01T00:00:00Z'), max: new Date('2040-12-31T00:00:00Z'), noInvalidDate: true })
+    .date({
+      min: new Date('2000-01-01T00:00:00Z'),
+      max: new Date('2040-12-31T00:00:00Z'),
+      noInvalidDate: true,
+    })
     .map((d) => d.toISOString());
 }
 

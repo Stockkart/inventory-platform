@@ -74,7 +74,12 @@ export function resolveCardLines(
       }
     });
     if (lines.length > 0) {
-      sections.push({ id: section.id, title: section.title, dividerAbove: section.dividerAbove, lines });
+      sections.push({
+        id: section.id,
+        title: section.title,
+        dividerAbove: section.dividerAbove,
+        lines,
+      });
     }
   }
   return sections;

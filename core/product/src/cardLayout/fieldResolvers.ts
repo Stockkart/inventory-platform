@@ -97,7 +97,10 @@ export function formatPurchaseScheme(item: InventoryItem): string {
   return '';
 }
 
-export function sumGst(sgst: string | null | undefined, cgst: string | null | undefined): number | null {
+export function sumGst(
+  sgst: string | null | undefined,
+  cgst: string | null | undefined,
+): number | null {
   const s = Number(sgst);
   const c = Number(cgst);
   if (!Number.isFinite(s) && !Number.isFinite(c)) return null;

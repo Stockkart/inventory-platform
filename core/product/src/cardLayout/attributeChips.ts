@@ -49,7 +49,7 @@ export function schemeLabel(item: InventoryItem): string | null {
 
 /** The chips a card shows for an item, in today's order, blanks removed. */
 export function attributeChips(item: InventoryItem): string[] {
-  return [itemTypeLabel(item), discountLabel(item), schemeLabel(item)].filter(
-    (c): c is string => Boolean(c),
+  return [itemTypeLabel(item), discountLabel(item), schemeLabel(item)].filter((c): c is string =>
+    Boolean(c),
   );
 }

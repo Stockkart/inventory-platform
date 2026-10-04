@@ -33,7 +33,10 @@ export interface LayoutBuilderProps {
   onAddSection(): void;
   onRemoveSection(sectionId: string): void;
   onMoveSection(index: number, dir: 'up' | 'down'): void;
-  onUpdateSection(sectionId: string, patch: Partial<Pick<CardSectionSpec, 'title' | 'dividerAbove'>>): void;
+  onUpdateSection(
+    sectionId: string,
+    patch: Partial<Pick<CardSectionSpec, 'title' | 'dividerAbove'>>,
+  ): void;
   onMoveRow(sectionId: string, index: number, dir: 'up' | 'down'): void;
   onJoinRow(sectionId: string, index: number): void;
   onSplitRow(sectionId: string, index: number): void;
@@ -73,7 +76,11 @@ export function LayoutBuilder({
 
   // Chips and description render after the sections on the card, so they are configured there too.
   const extras = (
-    <Box className={surfaceChrome.cardBuilderExtras} role="group" aria-label="Shown after the sections">
+    <Box
+      className={surfaceChrome.cardBuilderExtras}
+      role="group"
+      aria-label="Shown after the sections"
+    >
       <Text as="span" className={surfaceChrome.cardBuilderSectionIndex}>
         After the sections
       </Text>
@@ -105,7 +112,13 @@ export function LayoutBuilder({
           Tick fields on the left to add them. Each field becomes a line; you can then join lines,
           reorder them and group them into sections.
         </Text>
-        <Button type="button" size="sm" variant="outline" leftIcon={<Plus size={14} />} onClick={onAddSection}>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          leftIcon={<Plus size={14} />}
+          onClick={onAddSection}
+        >
           Add a section
         </Button>
         {extras}
@@ -115,7 +128,11 @@ export function LayoutBuilder({
 
   return (
     <>
-      <Box as="ol" className={surfaceChrome.cardBuilderLines} aria-label="Card sections in display order">
+      <Box
+        as="ol"
+        className={surfaceChrome.cardBuilderLines}
+        aria-label="Card sections in display order"
+      >
         {spec.sections.map((section, sIdx) => {
           const isTarget = section.id === targetSectionId;
           const sectionName = section.title?.trim() || `Section ${sIdx + 1}`;
@@ -123,7 +140,10 @@ export function LayoutBuilder({
             <Box
               as="li"
               key={section.id}
-              className={cn(surfaceChrome.cardBuilderSection, isTarget && surfaceChrome.cardBuilderSectionSelected)}
+              className={cn(
+                surfaceChrome.cardBuilderSection,
+                isTarget && surfaceChrome.cardBuilderSectionSelected,
+              )}
             >
               <Box className={surfaceChrome.cardBuilderSectionHead}>
                 <Box className={surfaceChrome.cardBuilderSectionHeadRow}>
@@ -144,14 +164,21 @@ export function LayoutBuilder({
                     className={surfaceChrome.cardBuilderNoWrap}
                     label="Divider above"
                     checked={section.dividerAbove}
-                    onChange={(e) => onUpdateSection(section.id, { dividerAbove: e.target.checked })}
+                    onChange={(e) =>
+                      onUpdateSection(section.id, { dividerAbove: e.target.checked })
+                    }
                   />
                 </Box>
                 <Box className={surfaceChrome.cardBuilderSectionHeadRow}>
                   {isTarget ? (
                     <Badge variant="info">New fields go here</Badge>
                   ) : (
-                    <Button type="button" size="sm" variant="ghost" onClick={() => onSelectSection(section.id)}>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => onSelectSection(section.id)}
+                    >
                       Add new fields here
                     </Button>
                   )}
@@ -186,22 +213,33 @@ export function LayoutBuilder({
                 </Box>
               </Box>
 
-              {section.dividerAbove ? <Box className={surfaceChrome.cardBuilderDivider} aria-hidden /> : null}
+              {section.dividerAbove ? (
+                <Box className={surfaceChrome.cardBuilderDivider} aria-hidden />
+              ) : null}
 
               {section.rows.length === 0 ? (
                 <Text variant="caption" color="secondary">
                   Empty section — tick a field on the left to add a line here.
                 </Text>
               ) : (
-                <Box as="ol" className={surfaceChrome.cardBuilderLines} aria-label={`Lines in ${sectionName}`}>
+                <Box
+                  as="ol"
+                  className={surfaceChrome.cardBuilderLines}
+                  aria-label={`Lines in ${sectionName}`}
+                >
                   {section.rows.map((row, rIdx) => {
                     const prevWidth = rIdx > 0 ? section.rows[rIdx - 1].fields.length : Infinity;
-                    const canJoin = rIdx > 0 && prevWidth + row.fields.length <= limits.maxFieldsPerRow;
+                    const canJoin =
+                      rIdx > 0 && prevWidth + row.fields.length <= limits.maxFieldsPerRow;
                     const canSplit =
                       row.fields.length > 1 &&
                       section.rows.length - 1 + row.fields.length <= limits.maxRowsPerSection;
                     return (
-                      <Box as="li" key={row.fields.map((f) => f.fieldKey).join('+')} className={surfaceChrome.cardBuilderLine}>
+                      <Box
+                        as="li"
+                        key={row.fields.map((f) => f.fieldKey).join('+')}
+                        className={surfaceChrome.cardBuilderLine}
+                      >
                         <Text as="span" className={surfaceChrome.cardBuilderLineIndex}>
                           {rIdx + 1}
                         </Text>
@@ -209,7 +247,11 @@ export function LayoutBuilder({
                           {row.fields.map((field, fIdx) => (
                             <Fragment key={field.fieldKey}>
                               {fIdx > 0 ? (
-                                <Text as="span" className={surfaceChrome.cardBuilderChipSeparator} aria-hidden>
+                                <Text
+                                  as="span"
+                                  className={surfaceChrome.cardBuilderChipSeparator}
+                                  aria-hidden
+                                >
                                   |
                                 </Text>
                               ) : null}
@@ -217,7 +259,11 @@ export function LayoutBuilder({
                                 field={field}
                                 catalogField={catalogByKey.get(field.fieldKey)}
                                 selected={field.fieldKey === selectedFieldKey}
-                                onSelect={() => onSelectField(field.fieldKey === selectedFieldKey ? null : field.fieldKey)}
+                                onSelect={() =>
+                                  onSelectField(
+                                    field.fieldKey === selectedFieldKey ? null : field.fieldKey,
+                                  )
+                                }
                               />
                             </Fragment>
                           ))}
@@ -246,8 +292,8 @@ export function LayoutBuilder({
                               canJoin
                                 ? 'Join with the line above'
                                 : rIdx === 0
-                                  ? 'First line'
-                                  : `A line holds at most ${limits.maxFieldsPerRow} fields`
+                                ? 'First line'
+                                : `A line holds at most ${limits.maxFieldsPerRow} fields`
                             }
                           >
                             <IconButton
@@ -260,7 +306,13 @@ export function LayoutBuilder({
                               <Merge size={14} />
                             </IconButton>
                           </Tooltip>
-                          <Tooltip content={canSplit ? 'One field per line' : 'Only lines with several fields can be split'}>
+                          <Tooltip
+                            content={
+                              canSplit
+                                ? 'One field per line'
+                                : 'Only lines with several fields can be split'
+                            }
+                          >
                             <IconButton
                               type="button"
                               size="sm"

@@ -82,7 +82,13 @@ function ScanSellRowPreview({ item, layout }: { item: InventoryItem; layout: Res
   );
 }
 
-function IngredientCardPreview({ item, layout }: { item: InventoryItem; layout: ResolvedCardLayout }) {
+function IngredientCardPreview({
+  item,
+  layout,
+}: {
+  item: InventoryItem;
+  layout: ResolvedCardLayout;
+}) {
   return (
     <Box style={{ maxWidth: 360 }}>
       <Card className={productChrome.searchResultCard}>
@@ -91,7 +97,10 @@ function IngredientCardPreview({ item, layout }: { item: InventoryItem; layout: 
             <Box as="h3" className={productChrome.searchResultTitle}>
               {item.name || 'Unnamed ingredient'}
             </Box>
-            <Badge variant="neutral" className={cn(productChrome.searchResultBadge, productChrome.searchResultBadgeBasic)}>
+            <Badge
+              variant="neutral"
+              className={cn(productChrome.searchResultBadge, productChrome.searchResultBadgeBasic)}
+            >
               Ingredient
             </Badge>
           </Box>

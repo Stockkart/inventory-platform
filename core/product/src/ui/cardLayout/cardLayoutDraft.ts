@@ -55,7 +55,10 @@ export const DEFAULT_LIMITS: CardLayoutLimits = {
 // ---- resolved ↔ spec ---------------------------------------------------------------------------
 
 /** Strips catalog enrichment from a resolved layout, keeping only what is saved. */
-export function specFromResolved(layout: ResolvedCardLayout, catalog?: CardFieldCatalogResponse): CardLayoutSpec {
+export function specFromResolved(
+  layout: ResolvedCardLayout,
+  catalog?: CardFieldCatalogResponse,
+): CardLayoutSpec {
   const labels = new Map(catalog?.fields.map((f) => [f.fieldKey, f.label]) ?? []);
   return {
     sections: layout.sections.map((s) => ({
@@ -67,7 +70,8 @@ export function specFromResolved(layout: ResolvedCardLayout, catalog?: CardField
           fieldKey: f.fieldKey,
           showLabel: f.showLabel,
           // A resolved label equal to the catalog label was not an override.
-          labelOverride: labels.has(f.fieldKey) && labels.get(f.fieldKey) === f.label ? null : f.label,
+          labelOverride:
+            labels.has(f.fieldKey) && labels.get(f.fieldKey) === f.label ? null : f.label,
           emphasis: f.emphasis,
         })),
       })),
@@ -101,7 +105,9 @@ export function draftsFromResponses(
 }
 
 /** What the server validates and persists for one surface. */
-export function prepareSaveRequest(variants: Partial<Record<CardVariant, CardLayoutSpec>>): SaveCardLayoutRequest {
+export function prepareSaveRequest(
+  variants: Partial<Record<CardVariant, CardLayoutSpec>>,
+): SaveCardLayoutRequest {
   return { variants };
 }
 
@@ -232,7 +238,12 @@ export function toggleField(
   if (enabledKeys(spec).includes(fieldKey)) return spec;
   if (countFields(spec) >= limits.maxFieldsTotal) return spec;
 
-  const field: CardFieldSpec = { fieldKey, showLabel: true, labelOverride: null, emphasis: 'NORMAL' };
+  const field: CardFieldSpec = {
+    fieldKey,
+    showLabel: true,
+    labelOverride: null,
+    emphasis: 'NORMAL',
+  };
   let sections = spec.sections;
   let target = sections.find((s) => s.id === targetSectionId) ?? sections[sections.length - 1];
   if (!target) {
@@ -246,7 +257,12 @@ export function toggleField(
     if (roomy) {
       target = roomy;
     } else if (sections.length < limits.maxSections) {
-      target = { id: newSectionId({ ...spec, sections }), title: null, dividerAbove: false, rows: [] };
+      target = {
+        id: newSectionId({ ...spec, sections }),
+        title: null,
+        dividerAbove: false,
+        rows: [],
+      };
       sections = [...sections, target];
     } else {
       return spec;
@@ -255,7 +271,9 @@ export function toggleField(
   const targetId = target.id;
   return {
     ...spec,
-    sections: sections.map((s) => (s.id === targetId ? { ...s, rows: [...s.rows, { fields: [field] }] } : s)),
+    sections: sections.map((s) =>
+      s.id === targetId ? { ...s, rows: [...s.rows, { fields: [field] }] } : s,
+    ),
   };
 }
 
@@ -310,25 +328,46 @@ export function updateSection(
   if (safe.title != null && safe.title.length > limits.maxTextLength) {
     safe.title = safe.title.slice(0, limits.maxTextLength);
   }
-  return { ...spec, sections: spec.sections.map((s) => (s.id === sectionId ? { ...s, ...safe } : s)) };
+  return {
+    ...spec,
+    sections: spec.sections.map((s) => (s.id === sectionId ? { ...s, ...safe } : s)),
+  };
 }
 
-export function addSection(spec: CardLayoutSpec, limits: CardLayoutLimits = DEFAULT_LIMITS): CardLayoutSpec {
+export function addSection(
+  spec: CardLayoutSpec,
+  limits: CardLayoutLimits = DEFAULT_LIMITS,
+): CardLayoutSpec {
   if (spec.sections.length >= limits.maxSections) return spec;
   // An empty section is allowed in the draft so the user can target it; pruned on save if still empty.
-  return { ...spec, sections: [...spec.sections, { id: newSectionId(spec), title: null, dividerAbove: false, rows: [] }] };
+  return {
+    ...spec,
+    sections: [
+      ...spec.sections,
+      { id: newSectionId(spec), title: null, dividerAbove: false, rows: [] },
+    ],
+  };
 }
 
 export function removeSection(spec: CardLayoutSpec, sectionId: string): CardLayoutSpec {
   return { ...spec, sections: spec.sections.filter((s) => s.id !== sectionId) };
 }
 
-export function moveSection(spec: CardLayoutSpec, index: number, dir: 'up' | 'down'): CardLayoutSpec {
+export function moveSection(
+  spec: CardLayoutSpec,
+  index: number,
+  dir: 'up' | 'down',
+): CardLayoutSpec {
   const sections = moveItem(spec.sections, index, dir);
   return sections === spec.sections ? spec : { ...spec, sections };
 }
 
-export function moveRow(spec: CardLayoutSpec, sectionId: string, index: number, dir: 'up' | 'down'): CardLayoutSpec {
+export function moveRow(
+  spec: CardLayoutSpec,
+  sectionId: string,
+  index: number,
+  dir: 'up' | 'down',
+): CardLayoutSpec {
   return mapSection(spec, sectionId, (s) => {
     const rows = moveItem(s.rows, index, dir);
     return rows === s.rows ? s : { ...s, rows };
@@ -426,7 +465,9 @@ export function moveFieldToSection(
 ): CardLayoutSpec {
   const to = spec.sections.find((s) => s.id === toSectionId);
   if (!to) return spec;
-  const field = spec.sections.flatMap((s) => s.rows.flatMap((r) => r.fields)).find((f) => f.fieldKey === fieldKey);
+  const field = spec.sections
+    .flatMap((s) => s.rows.flatMap((r) => r.fields))
+    .find((f) => f.fieldKey === fieldKey);
   if (!field) return spec;
   const alreadyThere = to.rows.some((r) => r.fields.some((f) => f.fieldKey === fieldKey));
   if (alreadyThere) return spec;
@@ -435,7 +476,9 @@ export function moveFieldToSection(
   // removeField may have pruned `to` if it only held this field — it cannot, since the field was elsewhere.
   return {
     ...without,
-    sections: without.sections.map((s) => (s.id === toSectionId ? { ...s, rows: [...s.rows, { fields: [field] }] } : s)),
+    sections: without.sections.map((s) =>
+      s.id === toSectionId ? { ...s, rows: [...s.rows, { fields: [field] }] } : s,
+    ),
   };
 }
 

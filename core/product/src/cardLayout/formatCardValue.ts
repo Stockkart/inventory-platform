@@ -85,8 +85,8 @@ export function formatDate(raw: unknown): string {
     raw instanceof Date
       ? raw
       : typeof raw === 'string' || typeof raw === 'number'
-        ? new Date(raw)
-        : new Date(Number.NaN);
+      ? new Date(raw)
+      : new Date(Number.NaN);
   if (Number.isNaN(date.getTime())) {
     return asText(raw).slice(0, 10);
   }

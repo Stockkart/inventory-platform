@@ -37,7 +37,13 @@ const CATALOG: CardFieldCatalogResponse = {
     f('mrp', 'MRP', 'pricing', 'currency', 'maximumRetailPrice'),
     f('sellingPrice', 'Selling price', 'pricing', 'currency', 'sellingPrice'),
     f('costPrice', 'Cost price', 'pricing', 'currency', 'costPrice', 'SHOP_INTERNAL'),
-    f('saleAdditionalDiscount', 'Additional discount', 'pricing', 'percentage', 'saleAdditionalDiscount'),
+    f(
+      'saleAdditionalDiscount',
+      'Additional discount',
+      'pricing',
+      'percentage',
+      'saleAdditionalDiscount',
+    ),
     f('batchNo', 'Batch no.', 'lot', 'text', 'batchNo'),
     f('expiryDate', 'Expiry', 'lot', 'date', 'expiryDate'),
     f('location', 'Location', 'lot', 'text', 'location'),
@@ -55,8 +61,18 @@ const CATALOG: CardFieldCatalogResponse = {
     f('ptr', 'PTR', 'pricing', 'currency', 'priceToRetail'),
   ],
   surfaces: [
-    { surfaceId: 'product-search', label: 'Product search', billingModeAware: true, excludedFieldKeys: [] },
-    { surfaceId: 'scan-sell', label: 'Scan & Sell', billingModeAware: true, excludedFieldKeys: ['description'] },
+    {
+      surfaceId: 'product-search',
+      label: 'Product search',
+      billingModeAware: true,
+      excludedFieldKeys: [],
+    },
+    {
+      surfaceId: 'scan-sell',
+      label: 'Scan & Sell',
+      billingModeAware: true,
+      excludedFieldKeys: ['description'],
+    },
   ],
   limits: DEFAULT_LIMITS,
   verticalSchemaLoaded: true,
@@ -74,19 +90,47 @@ type Edit =
   | { kind: 'split'; section: number; row: number }
   | { kind: 'moveRowTo'; section: number; row: number; to: number }
   | { kind: 'moveFieldTo'; key: string; to: number }
-  | { kind: 'updateField'; key: string; label: string | null; emphasis: 'NORMAL' | 'STRONG' | 'MUTED'; showLabel: boolean };
+  | {
+      kind: 'updateField';
+      key: string;
+      label: string | null;
+      emphasis: 'NORMAL' | 'STRONG' | 'MUTED';
+      showLabel: boolean;
+    };
 
 const editArb: fc.Arbitrary<Edit> = fc.oneof(
-  fc.record({ kind: fc.constant('toggleOn' as const), key: fc.constantFrom(...KEYS), section: fc.nat(6) }),
+  fc.record({
+    kind: fc.constant('toggleOn' as const),
+    key: fc.constantFrom(...KEYS),
+    section: fc.nat(6),
+  }),
   fc.record({ kind: fc.constant('toggleOff' as const), key: fc.constantFrom(...KEYS) }),
   fc.record({ kind: fc.constant('addSection' as const) }),
   fc.record({ kind: fc.constant('removeSection' as const), section: fc.nat(6) }),
-  fc.record({ kind: fc.constant('moveSection' as const), section: fc.nat(6), dir: fc.constantFrom<'up' | 'down'>('up', 'down') }),
-  fc.record({ kind: fc.constant('moveRow' as const), section: fc.nat(6), row: fc.nat(8), dir: fc.constantFrom<'up' | 'down'>('up', 'down') }),
+  fc.record({
+    kind: fc.constant('moveSection' as const),
+    section: fc.nat(6),
+    dir: fc.constantFrom<'up' | 'down'>('up', 'down'),
+  }),
+  fc.record({
+    kind: fc.constant('moveRow' as const),
+    section: fc.nat(6),
+    row: fc.nat(8),
+    dir: fc.constantFrom<'up' | 'down'>('up', 'down'),
+  }),
   fc.record({ kind: fc.constant('join' as const), section: fc.nat(6), row: fc.nat(8) }),
   fc.record({ kind: fc.constant('split' as const), section: fc.nat(6), row: fc.nat(8) }),
-  fc.record({ kind: fc.constant('moveRowTo' as const), section: fc.nat(6), row: fc.nat(8), to: fc.nat(6) }),
-  fc.record({ kind: fc.constant('moveFieldTo' as const), key: fc.constantFrom(...KEYS), to: fc.nat(6) }),
+  fc.record({
+    kind: fc.constant('moveRowTo' as const),
+    section: fc.nat(6),
+    row: fc.nat(8),
+    to: fc.nat(6),
+  }),
+  fc.record({
+    kind: fc.constant('moveFieldTo' as const),
+    key: fc.constantFrom(...KEYS),
+    to: fc.nat(6),
+  }),
   fc.record({
     kind: fc.constant('updateField' as const),
     key: fc.constantFrom(...KEYS),
@@ -116,11 +160,17 @@ function apply(spec: CardLayoutSpec, e: Edit): CardLayoutSpec {
     case 'split':
       return sid(e.section) ? splitRow(spec, sid(e.section) as string, e.row) : spec;
     case 'moveRowTo':
-      return sid(e.section) && sid(e.to) ? moveRowToSection(spec, sid(e.section) as string, e.row, sid(e.to) as string) : spec;
+      return sid(e.section) && sid(e.to)
+        ? moveRowToSection(spec, sid(e.section) as string, e.row, sid(e.to) as string)
+        : spec;
     case 'moveFieldTo':
       return sid(e.to) ? moveFieldToSection(spec, e.key, sid(e.to) as string) : spec;
     case 'updateField':
-      return updateField(spec, e.key, { labelOverride: e.label, emphasis: e.emphasis, showLabel: e.showLabel });
+      return updateField(spec, e.key, {
+        labelOverride: e.label,
+        emphasis: e.emphasis,
+        showLabel: e.showLabel,
+      });
   }
 }
 
@@ -137,7 +187,8 @@ function assertInvariants(spec: CardLayoutSpec) {
       expect(r.fields.length).toBeGreaterThan(0);
       expect(r.fields.length).toBeLessThanOrEqual(DEFAULT_LIMITS.maxFieldsPerRow);
       for (const fld of r.fields) {
-        if (fld.labelOverride != null) expect(fld.labelOverride.length).toBeLessThanOrEqual(DEFAULT_LIMITS.maxTextLength);
+        if (fld.labelOverride != null)
+          expect(fld.labelOverride.length).toBeLessThanOrEqual(DEFAULT_LIMITS.maxTextLength);
       }
     }
   }
@@ -178,7 +229,10 @@ describe('cardLayoutDraft — Property 11: draft helper invariants (Req 9.4–9.
         const resolved = resolveDraftLocally(spec, CATALOG, CATALOG.surfaces[0]);
         const back = specFromResolved(resolved, CATALOG);
         // resolution prunes empty sections the draft may still carry
-        const pruned: CardLayoutSpec = { ...spec, sections: spec.sections.filter((s) => s.rows.length > 0) };
+        const pruned: CardLayoutSpec = {
+          ...spec,
+          sections: spec.sections.filter((s) => s.rows.length > 0),
+        };
         expect(specsEqual(back, pruned)).toBe(true);
       }),
     );
@@ -187,7 +241,9 @@ describe('cardLayoutDraft — Property 11: draft helper invariants (Req 9.4–9.
   it('local resolution drops excluded keys exactly like the server', () => {
     const spec = toggleField(toggleField(EMPTY_SPEC, 'description', true, null), 'mrp', true, null);
     const resolved = resolveDraftLocally(spec, CATALOG, CATALOG.surfaces[1]);
-    expect(resolved.sections.flatMap((s) => s.rows.flatMap((r) => r.fields.map((x) => x.fieldKey)))).toEqual(['mrp']);
+    expect(
+      resolved.sections.flatMap((s) => s.rows.flatMap((r) => r.fields.map((x) => x.fieldKey))),
+    ).toEqual(['mrp']);
   });
 
   it('draftFromResponse round-trips the fallback layouts', () => {
@@ -204,13 +260,18 @@ describe('cardLayoutDraft — Property 11: draft helper invariants (Req 9.4–9.
     const draft = draftFromResponse(response, CATALOG);
     expect(draft.REGULAR).toBeDefined();
     expect(draft.BASIC).toBeDefined();
-    const again = resolveDraftLocally(draft.REGULAR as CardLayoutSpec, CATALOG, CATALOG.surfaces[0]);
+    const again = resolveDraftLocally(
+      draft.REGULAR as CardLayoutSpec,
+      CATALOG,
+      CATALOG.surfaces[0],
+    );
     expect(labels(again)).toEqual(labels(layout));
   });
 
   it('join respects the per-row cap and split is a no-op for single-field rows', () => {
     let spec = EMPTY_SPEC;
-    for (const k of ['mrp', 'sellingPrice', 'costPrice', 'ptr']) spec = toggleField(spec, k, true, null);
+    for (const k of ['mrp', 'sellingPrice', 'costPrice', 'ptr'])
+      spec = toggleField(spec, k, true, null);
     const sid = spec.sections[0].id;
     spec = joinRowWithPrevious(spec, sid, 1); // [mrp, selling] [cost] [ptr]
     spec = joinRowWithPrevious(spec, sid, 1); // [mrp, selling, cost] [ptr]
@@ -232,9 +293,19 @@ function f(
   itemPath: string,
   sensitivity: 'PUBLIC' | 'SHOP_INTERNAL' = 'PUBLIC',
 ) {
-  return { fieldKey, label, sourceGroup, valueType, itemPath, schemaApiKey: null, sensitivity } as const;
+  return {
+    fieldKey,
+    label,
+    sourceGroup,
+    valueType,
+    itemPath,
+    schemaApiKey: null,
+    sensitivity,
+  } as const;
 }
 
 function labels(layout: ResolvedCardLayout): string[] {
-  return layout.sections.flatMap((s) => s.rows.flatMap((r) => r.fields.map((x) => `${x.fieldKey}=${x.label}`)));
+  return layout.sections.flatMap((s) =>
+    s.rows.flatMap((r) => r.fields.map((x) => `${x.fieldKey}=${x.label}`)),
+  );
 }

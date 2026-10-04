@@ -35,10 +35,10 @@ export function useSurfaceCardLayout(surfaceId: string): SurfaceCardLayout {
   );
 
   const pair = useMemo<Record<CardVariant, ResolvedCardLayout>>(() => {
-    const regular =
-      surface?.variants.REGULAR ?? fallbackLayoutFor(surfaceId, 'REGULAR');
+    const regular = surface?.variants.REGULAR ?? fallbackLayoutFor(surfaceId, 'REGULAR');
     // A single-layout surface stores only REGULAR; BASIC items use the same layout.
-    const basic = surface?.variants.BASIC ?? (surface ? regular : fallbackLayoutFor(surfaceId, 'BASIC'));
+    const basic =
+      surface?.variants.BASIC ?? (surface ? regular : fallbackLayoutFor(surfaceId, 'BASIC'));
     return { REGULAR: regular, BASIC: basic };
   }, [surface, surfaceId]);
 

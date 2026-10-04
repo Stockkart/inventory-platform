@@ -2873,8 +2873,13 @@
   align-items: center;
   gap: 0.75rem 1.5rem;
   padding: 0.85rem 1.35rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
-  background: color-mix(in srgb, var(--sk-color-bg-muted, #f8fafc) 40%, var(--sk-color-bg-elevated, #fff));
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--sk-color-bg-muted, #f8fafc) 40%,
+    var(--sk-color-bg-elevated, #fff)
+  );
 }
 
 .cardBuilderToolbarGroup {
@@ -2896,8 +2901,13 @@
   gap: 0.85rem;
   min-width: 0;
   padding: 1rem 1.1rem 1.25rem;
-  border-right: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
-  background: color-mix(in srgb, var(--sk-color-bg-muted, #f8fafc) 28%, var(--sk-color-bg-elevated, #fff));
+  border-right: 1px solid
+    color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--sk-color-bg-muted, #f8fafc) 28%,
+    var(--sk-color-bg-elevated, #fff)
+  );
   max-height: min(78vh, 56rem);
   overflow-y: auto;
   overflow-x: hidden;
@@ -2909,7 +2919,8 @@
   gap: 0.85rem;
   min-width: 0;
   padding: 1rem 1.25rem 1.25rem;
-  border-right: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
+  border-right: 1px solid
+    color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
   max-height: min(78vh, 56rem);
   overflow-y: auto;
   overflow-x: hidden;
@@ -2957,7 +2968,8 @@
   min-width: 0;
   padding: 0.75rem 0.85rem 0.85rem;
   border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 85%, transparent);
-  border-left: 3px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 85%, transparent);
+  border-left: 3px solid
+    color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 85%, transparent);
   border-radius: 12px;
   background: var(--sk-color-bg-elevated, #fff);
 }
@@ -3033,7 +3045,11 @@
   min-width: 0;
   padding: 0.3rem 0.4rem 0.3rem 0.5rem;
   border-radius: 10px;
-  background: color-mix(in srgb, var(--sk-color-bg-muted, #f8fafc) 70%, var(--sk-color-bg-elevated, #fff));
+  background: color-mix(
+    in srgb,
+    var(--sk-color-bg-muted, #f8fafc) 70%,
+    var(--sk-color-bg-elevated, #fff)
+  );
 }
 
 .cardBuilderLineIndex {
@@ -3084,7 +3100,11 @@
 
 .cardBuilderChipSelected {
   border-color: var(--sk-color-brand, #2563eb);
-  background: color-mix(in srgb, var(--sk-color-brand, #2563eb) 9%, var(--sk-color-bg-elevated, #fff));
+  background: color-mix(
+    in srgb,
+    var(--sk-color-brand, #2563eb) 9%,
+    var(--sk-color-bg-elevated, #fff)
+  );
 }
 
 .cardBuilderChipStrong {
@@ -3108,7 +3128,11 @@
   padding: 0.85rem 0.95rem;
   border: 1px solid color-mix(in srgb, var(--sk-color-brand, #2563eb) 30%, transparent);
   border-radius: 12px;
-  background: color-mix(in srgb, var(--sk-color-brand, #2563eb) 4%, var(--sk-color-bg-elevated, #fff));
+  background: color-mix(
+    in srgb,
+    var(--sk-color-brand, #2563eb) 4%,
+    var(--sk-color-bg-elevated, #fff)
+  );
 }
 
 .cardBuilderInspectorGrid {
@@ -3178,7 +3202,8 @@
   .cardBuilderMain {
     max-height: none;
     border-right: 0;
-    border-bottom: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
+    border-bottom: 1px solid
+      color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
   }
 
   .cardBuilderInspectorGrid {

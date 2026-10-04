@@ -94,7 +94,10 @@ export function ProductSearchPage() {
   );
   // One subscription for the whole page; each card gets a map lookup by billing mode (Req 10.1).
   const { layoutFor: cardLayoutFor } = useSurfaceCardLayout(CARD_SURFACE_IDS.productSearch);
-  const cardVisibility = useMemo(() => shopAccessPolicy(productSearchAccess), [productSearchAccess]);
+  const cardVisibility = useMemo(
+    () => shopAccessPolicy(productSearchAccess),
+    [productSearchAccess],
+  );
 
   const hasActiveSearch = searchQuery.trim().length > 0;
 

@@ -1,5 +1,15 @@
 import { useMemo, useState } from 'react';
-import { Badge, Box, Checkbox, Inline, SearchInput, Stack, Text, surfaceChrome, cn } from '@inventory-platform/ui-kit';
+import {
+  Badge,
+  Box,
+  Checkbox,
+  Inline,
+  SearchInput,
+  Stack,
+  Text,
+  surfaceChrome,
+  cn,
+} from '@inventory-platform/ui-kit';
 import type { CatalogFieldGroup } from './cardLayoutDraft';
 
 export interface CardFieldPickerProps {
@@ -72,7 +82,10 @@ export function CardFieldPicker({
             return (
               <Box
                 key={field.fieldKey}
-                className={cn(surfaceChrome.cardBuilderFieldItem, disabled && surfaceChrome.cardBuilderFieldItemDisabled)}
+                className={cn(
+                  surfaceChrome.cardBuilderFieldItem,
+                  disabled && surfaceChrome.cardBuilderFieldItemDisabled,
+                )}
                 title={isExcluded ? 'Not available on this card' : undefined}
               >
                 <Checkbox
@@ -83,7 +96,9 @@ export function CardFieldPicker({
                   onChange={(e) => onToggle(field.fieldKey, e.target.checked)}
                 />
                 <Inline gap="xs" align="center">
-                  {field.sensitivity === 'SHOP_INTERNAL' ? <Badge variant="warning">internal</Badge> : null}
+                  {field.sensitivity === 'SHOP_INTERNAL' ? (
+                    <Badge variant="warning">internal</Badge>
+                  ) : null}
                   {isExcluded ? <Badge variant="neutral">n/a</Badge> : null}
                 </Inline>
               </Box>

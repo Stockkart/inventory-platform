@@ -28,27 +28,163 @@ vi.mock('@inventory-platform/session', () => ({
 
 const CATALOG: CardFieldCatalogResponse = {
   fields: [
-    { fieldKey: 'companyName', label: 'Company', sourceGroup: 'product', valueType: 'text', itemPath: 'companyName', schemaApiKey: null, sensitivity: 'PUBLIC' },
-    { fieldKey: 'barcodeText', label: 'Barcode', sourceGroup: 'product', valueType: 'text', itemPath: 'barcode', schemaApiKey: null, sensitivity: 'PUBLIC' },
-    { fieldKey: 'description', label: 'Description', sourceGroup: 'product', valueType: 'text', itemPath: 'description', schemaApiKey: null, sensitivity: 'PUBLIC' },
-    { fieldKey: 'mrp', label: 'MRP', sourceGroup: 'pricing', valueType: 'currency', itemPath: 'maximumRetailPrice', schemaApiKey: null, sensitivity: 'PUBLIC' },
-    { fieldKey: 'sellingPrice', label: 'Selling price', sourceGroup: 'pricing', valueType: 'currency', itemPath: 'sellingPrice', schemaApiKey: null, sensitivity: 'PUBLIC' },
-    { fieldKey: 'costPrice', label: 'Cost price', sourceGroup: 'pricing', valueType: 'currency', itemPath: 'costPrice', schemaApiKey: null, sensitivity: 'SHOP_INTERNAL' },
-    { fieldKey: 'saleAdditionalDiscount', label: 'Additional discount', sourceGroup: 'pricing', valueType: 'percentage', itemPath: 'saleAdditionalDiscount', schemaApiKey: null, sensitivity: 'PUBLIC' },
-    { fieldKey: 'batchNo', label: 'Batch no.', sourceGroup: 'lot', valueType: 'text', itemPath: 'batchNo', schemaApiKey: null, sensitivity: 'PUBLIC' },
-    { fieldKey: 'expiryDate', label: 'Expiry', sourceGroup: 'lot', valueType: 'date', itemPath: 'expiryDate', schemaApiKey: null, sensitivity: 'PUBLIC' },
-    { fieldKey: 'location', label: 'Location', sourceGroup: 'lot', valueType: 'text', itemPath: 'location', schemaApiKey: null, sensitivity: 'PUBLIC' },
-    { fieldKey: 'availableCount', label: 'Available', sourceGroup: 'lot', valueType: 'number', itemPath: 'availableCount', schemaApiKey: null, sensitivity: 'PUBLIC' },
-    { fieldKey: 'receivedCount', label: 'Received', sourceGroup: 'lot', valueType: 'number', itemPath: 'receivedCount', schemaApiKey: null, sensitivity: 'PUBLIC' },
-    { fieldKey: 'soldCount', label: 'Sold', sourceGroup: 'lot', valueType: 'number', itemPath: 'soldCount', schemaApiKey: null, sensitivity: 'PUBLIC' },
-    { fieldKey: 'purchaseDate', label: 'Purchased on', sourceGroup: 'lot', valueType: 'date', itemPath: 'purchaseDate', schemaApiKey: null, sensitivity: 'PUBLIC' },
-    { fieldKey: 'hsn', label: 'HSN', sourceGroup: 'product', valueType: 'text', itemPath: 'hsn', schemaApiKey: null, sensitivity: 'PUBLIC' },
+    {
+      fieldKey: 'companyName',
+      label: 'Company',
+      sourceGroup: 'product',
+      valueType: 'text',
+      itemPath: 'companyName',
+      schemaApiKey: null,
+      sensitivity: 'PUBLIC',
+    },
+    {
+      fieldKey: 'barcodeText',
+      label: 'Barcode',
+      sourceGroup: 'product',
+      valueType: 'text',
+      itemPath: 'barcode',
+      schemaApiKey: null,
+      sensitivity: 'PUBLIC',
+    },
+    {
+      fieldKey: 'description',
+      label: 'Description',
+      sourceGroup: 'product',
+      valueType: 'text',
+      itemPath: 'description',
+      schemaApiKey: null,
+      sensitivity: 'PUBLIC',
+    },
+    {
+      fieldKey: 'mrp',
+      label: 'MRP',
+      sourceGroup: 'pricing',
+      valueType: 'currency',
+      itemPath: 'maximumRetailPrice',
+      schemaApiKey: null,
+      sensitivity: 'PUBLIC',
+    },
+    {
+      fieldKey: 'sellingPrice',
+      label: 'Selling price',
+      sourceGroup: 'pricing',
+      valueType: 'currency',
+      itemPath: 'sellingPrice',
+      schemaApiKey: null,
+      sensitivity: 'PUBLIC',
+    },
+    {
+      fieldKey: 'costPrice',
+      label: 'Cost price',
+      sourceGroup: 'pricing',
+      valueType: 'currency',
+      itemPath: 'costPrice',
+      schemaApiKey: null,
+      sensitivity: 'SHOP_INTERNAL',
+    },
+    {
+      fieldKey: 'saleAdditionalDiscount',
+      label: 'Additional discount',
+      sourceGroup: 'pricing',
+      valueType: 'percentage',
+      itemPath: 'saleAdditionalDiscount',
+      schemaApiKey: null,
+      sensitivity: 'PUBLIC',
+    },
+    {
+      fieldKey: 'batchNo',
+      label: 'Batch no.',
+      sourceGroup: 'lot',
+      valueType: 'text',
+      itemPath: 'batchNo',
+      schemaApiKey: null,
+      sensitivity: 'PUBLIC',
+    },
+    {
+      fieldKey: 'expiryDate',
+      label: 'Expiry',
+      sourceGroup: 'lot',
+      valueType: 'date',
+      itemPath: 'expiryDate',
+      schemaApiKey: null,
+      sensitivity: 'PUBLIC',
+    },
+    {
+      fieldKey: 'location',
+      label: 'Location',
+      sourceGroup: 'lot',
+      valueType: 'text',
+      itemPath: 'location',
+      schemaApiKey: null,
+      sensitivity: 'PUBLIC',
+    },
+    {
+      fieldKey: 'availableCount',
+      label: 'Available',
+      sourceGroup: 'lot',
+      valueType: 'number',
+      itemPath: 'availableCount',
+      schemaApiKey: null,
+      sensitivity: 'PUBLIC',
+    },
+    {
+      fieldKey: 'receivedCount',
+      label: 'Received',
+      sourceGroup: 'lot',
+      valueType: 'number',
+      itemPath: 'receivedCount',
+      schemaApiKey: null,
+      sensitivity: 'PUBLIC',
+    },
+    {
+      fieldKey: 'soldCount',
+      label: 'Sold',
+      sourceGroup: 'lot',
+      valueType: 'number',
+      itemPath: 'soldCount',
+      schemaApiKey: null,
+      sensitivity: 'PUBLIC',
+    },
+    {
+      fieldKey: 'purchaseDate',
+      label: 'Purchased on',
+      sourceGroup: 'lot',
+      valueType: 'date',
+      itemPath: 'purchaseDate',
+      schemaApiKey: null,
+      sensitivity: 'PUBLIC',
+    },
+    {
+      fieldKey: 'hsn',
+      label: 'HSN',
+      sourceGroup: 'product',
+      valueType: 'text',
+      itemPath: 'hsn',
+      schemaApiKey: null,
+      sensitivity: 'PUBLIC',
+    },
   ],
   surfaces: [
-    { surfaceId: 'product-search', label: 'Product search', billingModeAware: true, excludedFieldKeys: [] },
-    { surfaceId: 'scan-sell', label: 'Scan & Sell results', billingModeAware: true, excludedFieldKeys: ['description'] },
+    {
+      surfaceId: 'product-search',
+      label: 'Product search',
+      billingModeAware: true,
+      excludedFieldKeys: [],
+    },
+    {
+      surfaceId: 'scan-sell',
+      label: 'Scan & Sell results',
+      billingModeAware: true,
+      excludedFieldKeys: ['description'],
+    },
   ],
-  limits: { maxSections: 6, maxRowsPerSection: 8, maxFieldsPerRow: 3, maxFieldsTotal: 20, maxTextLength: 40 },
+  limits: {
+    maxSections: 6,
+    maxRowsPerSection: 8,
+    maxFieldsPerRow: 3,
+    maxFieldsTotal: 20,
+    maxTextLength: 40,
+  },
   verticalSchemaLoaded: true,
 };
 
@@ -66,11 +202,16 @@ function surface(id: 'product-search' | 'scan-sell', label: string): SurfaceLayo
 }
 
 const LAYOUTS: CardLayoutsResponse = {
-  surfaces: [surface('product-search', 'Product search'), surface('scan-sell', 'Scan & Sell results')],
+  surfaces: [
+    surface('product-search', 'Product search'),
+    surface('scan-sell', 'Scan & Sell results'),
+  ],
 };
 
 function mount() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
   const router = createMemoryRouter(
     [
       { path: '/profile', element: <ProductCardLayoutSection /> },
@@ -126,10 +267,14 @@ describe('ProductCardLayoutSection (Req 9.2–9.11)', () => {
     await screen.findByRole('heading', { name: 'Product cards' });
     fireEvent.click(screen.getByRole('button', { name: /^MRP — edit field/ }));
     const inspector = screen.getByRole('region', { name: 'Settings for MRP' });
-    fireEvent.change(within(inspector).getByLabelText('Custom label for MRP'), { target: { value: 'Max price' } });
+    fireEvent.change(within(inspector).getByLabelText('Custom label for MRP'), {
+      target: { value: 'Max price' },
+    });
     expect(screen.getByLabelText('Card preview')).toHaveTextContent('Max price: ₹200.00');
     fireEvent.click(within(inspector).getByRole('button', { name: 'Normal' }));
-    fireEvent.change(within(inspector).getByLabelText('Section for MRP'), { target: { value: 'identity' } });
+    fireEvent.change(within(inspector).getByLabelText('Section for MRP'), {
+      target: { value: 'identity' },
+    });
     // MRP now sits in the identity section (first in the preview), before the divider
     const preview = screen.getByLabelText('Card preview').textContent ?? '';
     expect(preview.indexOf('Max price')).toBeLessThan(preview.indexOf('Available'));
@@ -156,7 +301,23 @@ describe('ProductCardLayoutSection (Req 9.2–9.11)', () => {
                 id: req.variants.REGULAR!.sections[req.variants.REGULAR!.sections.length - 1].id,
                 title: null,
                 dividerAbove: false,
-                rows: [{ fields: [{ fieldKey: 'hsn', label: 'HSN', showLabel: true, emphasis: 'NORMAL', valueType: 'text', sourceGroup: 'product', itemPath: 'hsn', schemaApiKey: null, sensitivity: 'PUBLIC' }] }],
+                rows: [
+                  {
+                    fields: [
+                      {
+                        fieldKey: 'hsn',
+                        label: 'HSN',
+                        showLabel: true,
+                        emphasis: 'NORMAL',
+                        valueType: 'text',
+                        sourceGroup: 'product',
+                        itemPath: 'hsn',
+                        schemaApiKey: null,
+                        sensitivity: 'PUBLIC',
+                      },
+                    ],
+                  },
+                ],
               },
             ],
           },
@@ -174,7 +335,9 @@ describe('ProductCardLayoutSection (Req 9.2–9.11)', () => {
     const [surfaceId, body] = api.save.mock.calls[0] as [string, SaveCardLayoutRequest];
     expect(surfaceId).toBe('product-search');
     expect(Object.keys(body.variants).sort()).toEqual(['BASIC', 'REGULAR']);
-    const keys = body.variants.REGULAR!.sections.flatMap((s) => s.rows.flatMap((r) => r.fields.map((f) => f.fieldKey)));
+    const keys = body.variants.REGULAR!.sections.flatMap((s) =>
+      s.rows.flatMap((r) => r.fields.map((f) => f.fieldKey)),
+    );
     expect(keys).toContain('hsn');
     await waitFor(() => expect(screen.queryByText('Unsaved changes')).not.toBeInTheDocument());
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
@@ -210,9 +373,13 @@ describe('ProductCardLayoutSection (Req 9.2–9.11)', () => {
     // In the default layout the "pricing" section's line 2 (MRP) can be joined into line 1.
     const pricingSection = screen.getByLabelText('Lines in Section 3');
     fireEvent.click(within(pricingSection).getByLabelText('Join line 2 with the previous line'));
-    expect(screen.getByLabelText('Card preview')).toHaveTextContent('Selling Price: ₹120.00 | MRP: ₹200.00');
+    expect(screen.getByLabelText('Card preview')).toHaveTextContent(
+      'Selling Price: ₹120.00 | MRP: ₹200.00',
+    );
     fireEvent.click(within(pricingSection).getByLabelText('Split line 1 into one field per line'));
-    expect(screen.getByLabelText('Card preview')).not.toHaveTextContent('Selling Price: ₹120.00 | MRP');
+    expect(screen.getByLabelText('Card preview')).not.toHaveTextContent(
+      'Selling Price: ₹120.00 | MRP',
+    );
   });
 
   it('prompts before navigating away with unsaved changes and stays when declined', async () => {
@@ -229,7 +396,9 @@ describe('ProductCardLayoutSection (Req 9.2–9.11)', () => {
   it('shows an error with Retry when a load fails', async () => {
     api.fieldCatalog.mockRejectedValueOnce(new Error('boom'));
     mount();
-    expect(await screen.findByText('Could not load the product card settings.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Could not load the product card settings.'),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
     expect(await screen.findByRole('heading', { name: 'Product cards' })).toBeInTheDocument();
   });

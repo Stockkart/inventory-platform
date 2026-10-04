@@ -150,7 +150,9 @@ describe('CardLayoutBody default parity — scan-sell compact (Req 6.2)', () => 
   });
 
   it('never shows chips or description', () => {
-    expect(lines(sportsBasic, layout, 'compact').some((l) => l.startsWith('#') || l.startsWith('>'))).toBe(false);
+    expect(
+      lines(sportsBasic, layout, 'compact').some((l) => l.startsWith('#') || l.startsWith('>')),
+    ).toBe(false);
   });
 });
 
@@ -189,7 +191,12 @@ describe('CardLayoutBody default parity — cafe-ingredient-search (Req 6.3)', (
   });
 
   it('hideSensitivePolicy removes the cost line (Req 7.8)', () => {
-    const ingredient = item({ costPrice: 48.5, sellingPrice: 60, priceToRetail: 60, maximumRetailPrice: 0 });
+    const ingredient = item({
+      costPrice: 48.5,
+      sellingPrice: 60,
+      priceToRetail: 60,
+      maximumRetailPrice: 0,
+    });
     const out = lines(ingredient, layout, 'card', [], hideSensitivePolicy());
     expect(out).toContain('*Selling Price: ₹60.00');
     expect(out.some((l) => l.startsWith('*Cost'))).toBe(false);

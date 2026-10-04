@@ -38,7 +38,10 @@ export function CardLayoutBody({
   variant = 'card',
   chips: extraChips,
 }: CardLayoutBodyProps) {
-  const sections = useMemo(() => resolveCardLines(item, layout, visibility), [item, layout, visibility]);
+  const sections = useMemo(
+    () => resolveCardLines(item, layout, visibility),
+    [item, layout, visibility],
+  );
   const chips = useMemo(() => {
     if (!layout.options.showAttributeChips) return [];
     return [...attributeChips(item), ...(extraChips ?? [])];
@@ -63,8 +66,12 @@ function CardBody({ sections, chips, description }: BodyProps) {
     <>
       {sections.map((section) => (
         <Fragment key={section.id}>
-          {section.dividerAbove ? <Box as="hr" className={productChrome.searchResultDivider} /> : null}
-          <Box className={cn(productChrome.searchResultStack, productChrome.searchResultStackTight)}>
+          {section.dividerAbove ? (
+            <Box as="hr" className={productChrome.searchResultDivider} />
+          ) : null}
+          <Box
+            className={cn(productChrome.searchResultStack, productChrome.searchResultStackTight)}
+          >
             {section.title ? (
               <Text variant="caption" color="secondary">
                 {section.title}

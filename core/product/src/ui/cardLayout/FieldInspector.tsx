@@ -53,7 +53,11 @@ export function FieldInspector({
   const name = catalogField?.label ?? fieldKey;
 
   return (
-    <Box className={surfaceChrome.cardBuilderInspector} role="region" aria-label={`Settings for ${name}`}>
+    <Box
+      className={surfaceChrome.cardBuilderInspector}
+      role="region"
+      aria-label={`Settings for ${name}`}
+    >
       <Inline justify="between" align="center">
         <Inline gap="sm" align="center">
           <Text weight="semibold">{name}</Text>
@@ -64,7 +68,9 @@ export function FieldInspector({
           ) : (
             <Badge variant="neutral">Unavailable in catalog</Badge>
           )}
-          {catalogField?.sensitivity === 'SHOP_INTERNAL' ? <Badge variant="warning">shop-internal</Badge> : null}
+          {catalogField?.sensitivity === 'SHOP_INTERNAL' ? (
+            <Badge variant="warning">shop-internal</Badge>
+          ) : null}
         </Inline>
         <IconButton type="button" size="sm" label="Close field settings" onClick={onClose}>
           <X size={14} />
@@ -87,7 +93,11 @@ export function FieldInspector({
             onChange={(e) => onUpdate({ showLabel: e.target.checked })}
           />
         </FormField>
-        <FormField label="Custom label" id={`label-override-${fieldKey}`} hint={`Leave empty to use “${name}”`}>
+        <FormField
+          label="Custom label"
+          id={`label-override-${fieldKey}`}
+          hint={`Leave empty to use “${name}”`}
+        >
           <Input
             id={`label-override-${fieldKey}`}
             aria-label={`Custom label for ${name}`}
