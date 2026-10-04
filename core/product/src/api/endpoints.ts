@@ -38,6 +38,7 @@ export const VENDOR_PURCHASE_INVOICES_ENDPOINTS = {
   BASE: '/vendor-purchase-invoices',
   BY_ID: (id: string) => `/vendor-purchase-invoices/${id}`,
   PREVIEW_TOTALS: '/vendor-purchase-invoices/preview-totals',
+  AMEND_PREVIEW: (id: string) => `/vendor-purchase-invoices/${id}/amend-preview`,
 } as const;
 
 /** Vendor purchase return paths. */

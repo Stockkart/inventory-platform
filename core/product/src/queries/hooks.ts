@@ -100,6 +100,28 @@ export function useHsnGstRatesQuery(hsn: string | undefined) {
   });
 }
 
+/**
+ * What a correction would change on an invoice, from the server, while the form is open. Waits
+ * for typing to settle; the reason is left out since it does not move any figure.
+ */
+export function useInvoiceAmendmentPreviewQuery(
+  id: string,
+  payload: AmendVendorPurchaseInvoicePayload,
+  enabled: boolean,
+) {
+  const [debounced, setDebounced] = useState(payload);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(payload), PURCHASE_TAX_PREVIEW_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [payload]);
+  return useQuery({
+    queryKey: productKeys.invoiceAmendmentPreview(id, debounced),
+    queryFn: () => inventoryApi.previewInvoiceAmendment(id, debounced),
+    enabled,
+    placeholderData: keepPreviousData,
+  });
+}
+
 /** Corrects a purchase invoice header; refreshes the invoice lists and details. */
 export function useAmendVendorPurchaseInvoiceMutation() {
   const queryClient = useQueryClient();

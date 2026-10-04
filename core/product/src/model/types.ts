@@ -465,6 +465,30 @@ export interface VendorPurchaseInvoiceDetail {
   amendedAt?: string | null;
   amendedByUserId?: string | null;
   amendmentReason?: string | null;
+  /** The header as it stood before the last correction. */
+  previousHeader?: InvoiceHeaderFigures | null;
+}
+
+/** A purchase invoice's header figures at one point in time. */
+export interface InvoiceHeaderFigures {
+  lineSubTotal: number | null;
+  taxTotal: number | null;
+  shippingCharge: number | null;
+  otherCharges: number | null;
+  overallDiscount: number | null;
+  roundOff: number | null;
+  invoiceTotal: number | null;
+  taxTreatment: PurchaseTaxTreatment | null;
+}
+
+/** POST /vendor-purchase-invoices/{id}/amend-preview: a correction worked out, not saved. */
+export interface AmendInvoicePreview {
+  saved: InvoiceHeaderFigures;
+  corrected: InvoiceHeaderFigures;
+  /** Names of the figures that move, e.g. 'taxTreatment', 'taxTotal'. */
+  changedFields: string[];
+  /** True when saving would reverse the journal entry and post a corrected one. */
+  journalReposted: boolean;
 }
 
 /**

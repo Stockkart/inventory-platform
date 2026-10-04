@@ -40,8 +40,11 @@ Inventory and sell flows: product registration, search, stock corrections, scan-
   the product detail form.
 - **Correcting a header.** `VendorInvoicesPage` → `AmendInvoiceHeaderForm` sends
   `PATCH /vendor-purchase-invoices/{id}` through `useAmendVendorPurchaseInvoiceMutation`. Header
-  only (bill discount, round off, tax treatment), with a required reason; the server works the
-  totals out again and reposts the journal.
+  only (bill discount, round off, tax treatment), with a required reason. While the form is open
+  it shows the saved figures beside the corrected ones from `POST .../{id}/amend-preview`
+  (`useInvoiceAmendmentPreviewQuery`), marks the ones that change and says the journal will be
+  reposted; Save is off when nothing would change. After saving, the toast and the "Last
+  corrected" line give the invoice total and tax before and after.
 
 ## UI chrome
 

@@ -1,5 +1,8 @@
 import { createQueryKeyFactory } from '@inventory-platform/query';
-import type { PurchaseTaxPreviewRequest } from '@inventory-platform/product/types';
+import type {
+  AmendVendorPurchaseInvoicePayload,
+  PurchaseTaxPreviewRequest,
+} from '@inventory-platform/product/types';
 
 const base = createQueryKeyFactory('product');
 
@@ -15,6 +18,8 @@ export const productKeys = {
     [...base.all, 'purchase-tax-preview', request] as const,
   vendorPurchaseInvoices: () => [...base.all, 'vendor-purchase-invoices'] as const,
   hsnGstRates: (hsn: string) => [...base.all, 'hsn-gst-rates', hsn] as const,
+  invoiceAmendmentPreview: (id: string, payload: AmendVendorPurchaseInvoicePayload) =>
+    [...base.all, 'invoice-amendment-preview', id, payload] as const,
 };
 
 export const PRODUCT_MODULE_VERSION = '0.1.0';

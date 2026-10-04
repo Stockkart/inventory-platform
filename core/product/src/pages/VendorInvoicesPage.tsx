@@ -393,7 +393,15 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
     try {
       const updated = await amendMutation.mutateAsync({ id, payload });
       setDetailsById((prev) => ({ ...prev, [id]: updated }));
-      useNotify.success('Correction saved');
+      const before = updated.previousHeader;
+      const money = (v: number | null | undefined) => (v == null ? '—' : `₹${v.toFixed(2)}`);
+      useNotify.success(
+        before
+          ? `Correction saved — invoice total ${money(before.invoiceTotal)} → ${money(
+              updated.invoiceTotal,
+            )}, tax ${money(before.taxTotal)} → ${money(updated.taxTotal)}. Journal reposted.`
+          : 'Correction saved',
+      );
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Could not save the correction';
       setRowError((prev) => ({ ...prev, [id]: msg }));

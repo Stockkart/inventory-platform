@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type {
   AmendVendorPurchaseInvoicePayload,
+  InvoiceHeaderFigures,
   PurchaseTaxTreatment,
   VendorPurchaseInvoiceDetail,
 } from '@inventory-platform/product/types';
@@ -13,14 +14,24 @@ import {
   Input,
   Select,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
   Text,
+  surfaceChrome,
 } from '@inventory-platform/ui-kit';
+import { useInvoiceAmendmentPreviewQuery } from '../queries/hooks';
 
 /**
  * Corrects an invoice header against the paper bill.
  *
  * <p>The bill-level discount, round off and how the line amounts state GST can be corrected; the
- * server then works the subtotal, tax and invoice total out again from the lines.
+ * server then works the subtotal, tax and invoice total out again from the lines. Before saving,
+ * the form shows the saved figures beside the corrected ones, as the server works them out, so
+ * nothing changes on the invoice or in the journal without the operator seeing it.
  *
  * <p>Header only. The lines record what the stock was created from; correcting a quantity here
  * would leave the invoice describing goods that were never received.
@@ -43,6 +54,29 @@ function initial(value: number | null | undefined): string {
   return value == null ? '' : String(value);
 }
 
+function money(value: number | null | undefined): string {
+  return value == null ? '—' : `₹${value.toFixed(2)}`;
+}
+
+function treatmentLabel(value: PurchaseTaxTreatment | null | undefined): string {
+  if (value === 'INCLUSIVE') return 'GST already included';
+  if (value === 'EXCLUSIVE') return 'GST added on top';
+  return 'Not recorded';
+}
+
+const ROWS: {
+  field: keyof InvoiceHeaderFigures;
+  label: string;
+  show: (figures: InvoiceHeaderFigures) => string;
+}[] = [
+  { field: 'taxTreatment', label: 'Line amounts', show: (f) => treatmentLabel(f.taxTreatment) },
+  { field: 'overallDiscount', label: 'Bill discount', show: (f) => money(f.overallDiscount) },
+  { field: 'roundOff', label: 'Round off', show: (f) => money(f.roundOff) },
+  { field: 'lineSubTotal', label: 'Line subtotal', show: (f) => money(f.lineSubTotal) },
+  { field: 'taxTotal', label: 'Tax total', show: (f) => money(f.taxTotal) },
+  { field: 'invoiceTotal', label: 'Invoice total', show: (f) => money(f.invoiceTotal) },
+];
+
 export function AmendInvoiceHeaderForm({ detail, onAmend, busy }: AmendInvoiceHeaderFormProps) {
   const [open, setOpen] = useState(false);
   const [overallDiscount, setOverallDiscount] = useState(initial(detail.overallDiscount));
@@ -53,23 +87,32 @@ export function AmendInvoiceHeaderForm({ detail, onAmend, busy }: AmendInvoiceHe
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
 
+  const changes = useMemo<AmendVendorPurchaseInvoicePayload>(
+    () => ({
+      overallDiscount: numberOrUndefined(overallDiscount),
+      roundOff: numberOrUndefined(roundOff),
+      taxTreatment: taxTreatment || undefined,
+      reason: '',
+    }),
+    [overallDiscount, roundOff, taxTreatment],
+  );
+  const preview = useInvoiceAmendmentPreviewQuery(detail.id, changes, open).data;
+  const changed = new Set(preview?.changedFields ?? []);
+  const nothingChanges = preview != null && changed.size === 0;
+
   const submit = async () => {
     if (!reason.trim()) {
       setError('Say why this is being corrected — an amended figure has to account for itself.');
       return;
     }
     setError(null);
-    await onAmend({
-      overallDiscount: numberOrUndefined(overallDiscount),
-      roundOff: numberOrUndefined(roundOff),
-      taxTreatment: taxTreatment || undefined,
-      reason: reason.trim(),
-    });
+    await onAmend({ ...changes, reason: reason.trim() });
     setOpen(false);
     setReason('');
   };
 
   if (!open) {
+    const before = detail.previousHeader;
     return (
       <Inline gap="sm" align="center">
         <Button variant="outline" onClick={() => setOpen(true)} disabled={busy}>
@@ -78,6 +121,11 @@ export function AmendInvoiceHeaderForm({ detail, onAmend, busy }: AmendInvoiceHe
         {detail.amendedAt ? (
           <Text variant="caption" color="secondary">
             Last corrected: {detail.amendmentReason}
+            {before
+              ? ` — invoice total ${money(before.invoiceTotal)} → ${money(
+                  detail.invoiceTotal,
+                )}, tax ${money(before.taxTotal)} → ${money(detail.taxTotal)}`
+              : ''}
           </Text>
         ) : null}
       </Inline>
@@ -89,7 +137,8 @@ export function AmendInvoiceHeaderForm({ detail, onAmend, busy }: AmendInvoiceHe
       <Text weight="semibold">Correct the bill header</Text>
       <Text variant="caption" color="secondary">
         Only the invoice header changes. The products and quantities stay as they were received, and
-        the subtotal, tax and invoice total are worked out again from them.
+        the subtotal, tax and invoice total are worked out again from them. Check the figures below
+        before saving.
       </Text>
 
       <Grid columns={3} gap="sm">
@@ -125,12 +174,49 @@ export function AmendInvoiceHeaderForm({ detail, onAmend, busy }: AmendInvoiceHe
         </FormField>
       </Grid>
 
+      {preview ? (
+        <Table className={surfaceChrome.tableWideDense}>
+          <TableHead>
+            <TableRow>
+              <TableHeaderCell>Figure</TableHeaderCell>
+              <TableHeaderCell>Saved now</TableHeaderCell>
+              <TableHeaderCell>After correction</TableHeaderCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {ROWS.map((row) => {
+              const moves = changed.has(row.field);
+              return (
+                <TableRow key={row.field}>
+                  <TableCell>{row.label}</TableCell>
+                  <TableCell>{row.show(preview.saved)}</TableCell>
+                  <TableCell>
+                    <Text as="span" weight={moves ? 'semibold' : undefined}>
+                      {row.show(preview.corrected)}
+                      {moves ? ' (changes)' : ''}
+                    </Text>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      ) : null}
+
+      {nothingChanges ? <Alert variant="info">Nothing would change on this invoice.</Alert> : null}
+      {preview?.journalReposted ? (
+        <Alert variant="warning">
+          Saving reverses this bill&apos;s purchase journal entry and posts it again with the
+          corrected figures.
+        </Alert>
+      ) : null}
+
       <FormField label="Why" htmlFor="amendReason" required>
         <Input
           id="amendReason"
           value={reason}
           onChange={(e) => setReason(e.target.value)}
-          placeholder="e.g. totals keyed from the paper bill"
+          placeholder="e.g. PARAS bills at MRP, GST already included"
           disabled={busy}
         />
       </FormField>
@@ -138,7 +224,7 @@ export function AmendInvoiceHeaderForm({ detail, onAmend, busy }: AmendInvoiceHe
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
       <Inline gap="sm">
-        <Button variant="solid" onClick={submit} disabled={busy}>
+        <Button variant="solid" onClick={submit} disabled={busy || !preview || nothingChanges}>
           Save correction
         </Button>
         <Button variant="outline" onClick={() => setOpen(false)} disabled={busy}>
