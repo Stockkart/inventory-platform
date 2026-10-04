@@ -33,6 +33,11 @@ Inventory and sell flows: product registration, search, stock corrections, scan-
   read-only, filled from the preview, and sent on stock-in so the bill stores them; the server
   works out any that are missing. Needs
   inventory-api #190 deployed first.
+- **GST rate from the HSN.** Once a row's HSN is typed, `HsnGstRateSelect` (`ui/`) offers the
+  rates the CBIC notifications allow for it, from `GET /products/hsn-gst-rates`
+  (`useHsnGstRatesQuery`). Picking one fills CGST and SGST with the halves the server sends;
+  both stay editable, and a rate typed by hand shows as "Custom". Used in the stock-in grid and
+  the product detail form.
 - **Correcting a header.** `VendorInvoicesPage` → `AmendInvoiceHeaderForm` sends
   `PATCH /vendor-purchase-invoices/{id}` through `useAmendVendorPurchaseInvoiceMutation`. Header
   only (bill discount, round off, tax treatment), with a required reason; the server works the

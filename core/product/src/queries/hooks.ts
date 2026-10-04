@@ -9,11 +9,13 @@ import {
 import type {
   AmendVendorPurchaseInvoicePayload,
   CartResponse,
+  HsnGstRates,
   PurchaseTaxPreviewRequest,
   StockEntryEstimateResponse,
 } from '@inventory-platform/product/types';
 import { inventoryApi } from '../api/inventory.api';
 import { estimatesApi } from '../api/estimates.api';
+import { productApi } from '../api/product.api';
 import { stockEntryEstimatesApi } from '../api/stockEntryEstimates.api';
 import { productKeys } from './keys';
 
@@ -74,6 +76,27 @@ export function usePurchaseTaxPreviewQuery(request: PurchaseTaxPreviewRequest | 
     enabled: Boolean(debounced && debounced.items.length > 0),
     placeholderData: keepPreviousData,
     staleTime: 30_000,
+  });
+}
+
+const HSN_GST_RATES_DEBOUNCE_MS = 300;
+
+/**
+ * GST rates the rate notifications allow for an HSN, for a stock-in row to offer. Waits for the
+ * HSN to settle while it is typed, and asks only once at least a heading (four digits) is there.
+ */
+export function useHsnGstRatesQuery(hsn: string | undefined) {
+  const code = (hsn ?? '').replace(/\D/g, '');
+  const [debounced, setDebounced] = useState(code);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(code), HSN_GST_RATES_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [code]);
+  return useQuery<HsnGstRates>({
+    queryKey: productKeys.hsnGstRates(debounced),
+    queryFn: () => productApi.hsnGstRates(debounced),
+    enabled: debounced.length >= 4,
+    staleTime: Infinity,
   });
 }
 

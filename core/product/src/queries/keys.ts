@@ -14,6 +14,7 @@ export const productKeys = {
   purchaseTaxPreview: (request: PurchaseTaxPreviewRequest) =>
     [...base.all, 'purchase-tax-preview', request] as const,
   vendorPurchaseInvoices: () => [...base.all, 'vendor-purchase-invoices'] as const,
+  hsnGstRates: (hsn: string) => [...base.all, 'hsn-gst-rates', hsn] as const,
 };
 
 export const PRODUCT_MODULE_VERSION = '0.1.0';

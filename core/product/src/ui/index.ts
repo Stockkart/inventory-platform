@@ -41,6 +41,8 @@ export type { InventoryAlertDetailsProps } from './InventoryAlertDetails';
 export { ProductSearchCard, normalizedBillingMode } from './ProductSearchCard';
 export type { ProductSearchCardProps } from './ProductSearchCard';
 export { AmendInvoiceHeaderForm } from './AmendInvoiceHeaderForm';
+export { HsnGstRateSelect } from './HsnGstRateSelect';
+export type { HsnGstRateSelectProps } from './HsnGstRateSelect';
 export { VendorInvoiceExpandedBody } from './VendorInvoiceExpandedBody';
 export type { VendorInvoiceExpandedBodyProps } from './VendorInvoiceExpandedBody';
 export { AddToSellQuotationPicker } from './AddToSellQuotationPicker';

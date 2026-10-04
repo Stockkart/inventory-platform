@@ -58,6 +58,7 @@ import {
   isCreditMethod,
   validatePaymentSplit,
   CustomRemindersSection,
+  HsnGstRateSelect,
 } from '../ui';
 import {
   VerticalInventoryFields,
@@ -696,7 +697,7 @@ export function ProductEntryPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [generatingBarcodeId, setGeneratingBarcodeId] = useState<string | null>(null);
   const [printLabelCodes, setPrintLabelCodes] = useState<string[] | null>(null);
-  const { success: notifySuccess, error: notifyError, warning: notifyWarning } = useNotify;
+  const { success: notifySuccess, error: notifyError } = useNotify;
 
   // QR Code Upload state
   const [showQrModal, setShowQrModal] = useState(false);
@@ -2967,7 +2968,6 @@ export function ProductEntryPage() {
               ? 'Product registered successfully'
               : `Successfully registered ${count} products`,
           );
-          (response?.rateWarnings ?? []).forEach((warning) => notifyWarning(warning, 20000));
 
           if (activeEstimateId && billingMode === 'REGULAR' && response?.vendorPurchaseInvoiceId) {
             try {
@@ -3038,7 +3038,6 @@ export function ProductEntryPage() {
               : `Successfully registered ${count} products`,
           );
           clearProductEntryDraft(draftScope);
-          (response?.rateWarnings ?? []).forEach((warning) => notifyWarning(warning, 20000));
           setTimeout(() => {
             setProducts([]);
             handleClearVendor();
@@ -4076,6 +4075,12 @@ export function ProductEntryPage() {
                                   <TableHeaderCell className={denseDataGrid.th} title="Tax section">
                                     HSN
                                   </TableHeaderCell>
+                                  <TableHeaderCell
+                                    className={denseDataGrid.th}
+                                    title="GST rates allowed for this HSN"
+                                  >
+                                    GST
+                                  </TableHeaderCell>
                                   <TableHeaderCell className={denseDataGrid.th} title="Tax section">
                                     CGST %
                                   </TableHeaderCell>
@@ -4761,6 +4766,19 @@ export function ProductEntryPage() {
                                         onChange={(e) =>
                                           handleProductChange(product.id, 'hsn', e.target.value)
                                         }
+                                        disabled={isLoading}
+                                      />
+                                    </TableCell>
+                                    <TableCell className={denseDataGrid.td}>
+                                      <HsnGstRateSelect
+                                        className={denseDataGrid.inputNarrow}
+                                        hsn={product.hsn}
+                                        cgst={product.cgst}
+                                        sgst={product.sgst}
+                                        onPick={(cgst, sgst) => {
+                                          handleProductChange(product.id, 'cgst', cgst);
+                                          handleProductChange(product.id, 'sgst', sgst);
+                                        }}
                                         disabled={isLoading}
                                       />
                                     </TableCell>
@@ -6611,8 +6629,8 @@ function ProductAccordion({
                 </Text>
               </Box>
               <Text as="span" className={accordionStyles.unitHint}>
-                Taxable product entry — enter HSN and GST rates for this line. Leave CGST/SGST empty
-                to use the shop default.
+                Taxable product entry — enter the HSN, then pick its GST rate or type CGST/SGST.
+                Leave CGST/SGST empty to use the shop default.
               </Text>
               <Box className={accordionStyles.formRow}>
                 <Box className={pageStyles.formGroup}>
@@ -6626,7 +6644,20 @@ function ProductAccordion({
                     disabled={isLoading}
                   />
                 </Box>
-                <FormRowEmpty />
+                <Box className={pageStyles.formGroup}>
+                  <Label htmlFor={`gst-rate-${product.id}`}>GST rate</Label>
+                  <HsnGstRateSelect
+                    id={`gst-rate-${product.id}`}
+                    hsn={product.hsn}
+                    cgst={product.cgst}
+                    sgst={product.sgst}
+                    onPick={(cgst, sgst) => {
+                      onChange(product.id, 'cgst', cgst);
+                      onChange(product.id, 'sgst', sgst);
+                    }}
+                    disabled={isLoading}
+                  />
+                </Box>
               </Box>
               <Box className={accordionStyles.formRow}>
                 <Box className={pageStyles.formGroup}>

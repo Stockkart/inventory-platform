@@ -334,6 +334,23 @@ export interface BulkCreateInventoryDto {
   items: BulkCreateInventoryItem[];
 }
 
+/** One GST rate an HSN may carry, already split into the CGST and SGST a stock-in row stores. */
+export interface HsnGstRateOption {
+  gstRate: number;
+  cgst: number;
+  sgst: number;
+}
+
+/** GET /products/hsn-gst-rates: the rates the rate notifications allow for an HSN. */
+export interface HsnGstRates {
+  hsn: string;
+  /** The code that answered (the HSN or its six- or four-digit parent); null when not on file. */
+  matchedHsn: string | null;
+  rates: HsnGstRateOption[];
+  /** The notification entries the rates come from. */
+  ref: string | null;
+}
+
 /**
  * The stock-in screen as it stands, sent to POST /vendor-purchase-invoices/preview-totals. The
  * server works out tax and totals with the stock-in rules; the screen only shows them.
@@ -363,7 +380,7 @@ export interface PurchaseTaxPreviewResponse {
   taxTotal: number;
   /** Items only: taxable value plus tax, before header charges. */
   itemsTotal: number;
-  /** Typed subtotal/tax where given (else resolved), plus charges, less discount. */
+  /** Taxable value after the bill-level discount, plus tax, charges and round-off. */
   invoiceTotal: number;
   productCount: number;
   totalQuantity: number;
@@ -382,13 +399,6 @@ export interface BulkCreateInventoryResponse {
   vendorPurchaseInvoiceId?: string | null;
   /** Set when stock-in leaves payable due in credit ledger. */
   creditEntryId?: string | null;
-  /**
-   * Products whose GST rate disagrees with the rest of the catalogue under the same HSN.
-   *
-   * The one error a correct-looking bill can still hide: priced at the wrong slab, an invoice
-   * adds up perfectly against itself and is wrong all the same.
-   */
-  rateWarnings?: string[] | null;
   items: Array<{
     id: string;
     lotId?: string;
