@@ -72,3 +72,21 @@ export function canEditProductSearchUiField(
   }
   return access.editableFields.includes(uiFieldToRbacKey(uiKey));
 }
+
+/**
+ * Whether a product-search field may be *shown* to the current member.
+ *
+ * Per-field view permissions do not exist yet: `ShopProductSearchAccess.canView` is a module-level
+ * switch. This helper is the seam where a per-field view list plugs in later — callers (the card
+ * renderer's visibility policy) already go through it, so growing RBAC will not touch them.
+ */
+export function canViewProductSearchUiField(
+  uiKey: string,
+  access: ShopProductSearchAccess | null | undefined,
+): boolean {
+  void uiFieldToRbacKey(uiKey);
+  if (!access) {
+    return true;
+  }
+  return access.canView;
+}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { cartApi } from '../api/cart.api';
 import { estimatesApi } from '../api/estimates.api';
 import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
@@ -31,6 +31,9 @@ import { InventoryAlertDetails, ProductSearchCard, normalizedBillingMode } from 
 import { sortInventoryByExpirySoonest } from '@inventory-platform/schema';
 import { rememberOpenQuotationId } from '../lib/sellSession';
 import { getShopAvailableBaseCount } from '../lib/inventoryAvailability';
+import { CARD_SURFACE_IDS } from '../model/cardLayout.types';
+import { shopAccessPolicy } from '../cardLayout/fieldVisibility';
+import { useSurfaceCardLayout } from '../cardLayout/useSurfaceCardLayout';
 import {
   useAuthStore,
   useNotify,
@@ -89,6 +92,9 @@ export function ProductSearchPage() {
   const productSearchAccess = useShopAccessStore((s) =>
     user?.shopId ? s.byShopId[user.shopId]?.productSearch : undefined,
   );
+  // One subscription for the whole page; each card gets a map lookup by billing mode (Req 10.1).
+  const { layoutFor: cardLayoutFor } = useSurfaceCardLayout(CARD_SURFACE_IDS.productSearch);
+  const cardVisibility = useMemo(() => shopAccessPolicy(productSearchAccess), [productSearchAccess]);
 
   const hasActiveSearch = searchQuery.trim().length > 0;
 
@@ -562,6 +568,8 @@ export function ProductSearchPage() {
                       <ProductSearchCard
                         key={item.id || item.lotId}
                         item={item}
+                        layout={cardLayoutFor(item)}
+                        visibility={cardVisibility}
                         isPageLoading={isLoading}
                         isDetailLoading={detailLoadingId === inventoryId}
                         isAddingToCart={addingToCart === inventoryId}

@@ -2864,3 +2864,328 @@
 [data-theme='dark'] .reminderListDueOverdue {
   color: #fca5a5;
 }
+
+/* ---- Product card layout builder (Profile → Product cards) ---------------------------- */
+
+.cardBuilderToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.5rem;
+  padding: 0.85rem 1.35rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
+  background: color-mix(in srgb, var(--sk-color-bg-muted, #f8fafc) 40%, var(--sk-color-bg-elevated, #fff));
+}
+
+.cardBuilderToolbarGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cardBuilderLayout {
+  display: grid;
+  grid-template-columns: minmax(15rem, 17.5rem) minmax(0, 1fr) minmax(19rem, 24rem);
+  align-items: stretch;
+  min-height: 34rem;
+}
+
+.cardBuilderColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-width: 0;
+  padding: 1rem 1.1rem 1.25rem;
+  border-right: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
+  background: color-mix(in srgb, var(--sk-color-bg-muted, #f8fafc) 28%, var(--sk-color-bg-elevated, #fff));
+  max-height: min(78vh, 56rem);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.cardBuilderMain {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-width: 0;
+  padding: 1rem 1.25rem 1.25rem;
+  border-right: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
+  max-height: min(78vh, 56rem);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.cardBuilderColumnHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 1.75rem;
+}
+
+/* Field picker */
+.cardBuilderFieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.cardBuilderFieldItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.3rem 0.45rem;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+}
+
+.cardBuilderFieldItem:hover {
+  background: color-mix(in srgb, var(--sk-color-brand, #2563eb) 6%, transparent);
+}
+
+.cardBuilderFieldItemDisabled {
+  opacity: 0.55;
+}
+
+/* Sections */
+.cardBuilderSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 0.75rem 0.85rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 85%, transparent);
+  border-left: 3px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 85%, transparent);
+  border-radius: 12px;
+  background: var(--sk-color-bg-elevated, #fff);
+}
+
+.cardBuilderSectionSelected {
+  border-left-color: var(--sk-color-brand, #2563eb);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--sk-color-brand, #2563eb) 25%, transparent);
+}
+
+.cardBuilderSectionHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  min-width: 0;
+}
+
+.cardBuilderSectionHeadRow {
+  display: flex;
+  flex: 1 1 100%;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  min-width: 0;
+}
+
+.cardBuilderNoWrap {
+  white-space: nowrap;
+}
+
+.cardBuilderSectionIndex {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  color: var(--sk-color-text-secondary, #94a3b8);
+  white-space: nowrap;
+}
+
+.cardBuilderSectionTitleInput {
+  flex: 1 1 8rem;
+  min-width: 6rem;
+}
+
+.cardBuilderActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.cardBuilderDivider {
+  height: 1px;
+  margin: 0.1rem 0;
+  background: color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 90%, transparent);
+}
+
+/* Lines */
+.cardBuilderLines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cardBuilderLine {
+  display: grid;
+  grid-template-columns: 1.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.3rem 0.4rem 0.3rem 0.5rem;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--sk-color-bg-muted, #f8fafc) 70%, var(--sk-color-bg-elevated, #fff));
+}
+
+.cardBuilderLineIndex {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--sk-color-text-secondary, #94a3b8);
+  text-align: center;
+}
+
+.cardBuilderChips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.cardBuilderChipSeparator {
+  color: var(--sk-color-text-secondary, #94a3b8);
+  font-size: 0.75rem;
+}
+
+.cardBuilderChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  max-width: 100%;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 90%, transparent);
+  border-radius: 999px;
+  background: var(--sk-color-bg-elevated, #fff);
+  color: var(--sk-color-text-primary, #0f172a);
+  font: inherit;
+  font-size: 0.8125rem;
+  line-height: 1.2;
+  cursor: pointer;
+  text-align: left;
+}
+
+.cardBuilderChip:hover {
+  border-color: color-mix(in srgb, var(--sk-color-brand, #2563eb) 45%, transparent);
+}
+
+.cardBuilderChip:focus-visible {
+  outline: 2px solid var(--sk-color-brand, #2563eb);
+  outline-offset: 1px;
+}
+
+.cardBuilderChipSelected {
+  border-color: var(--sk-color-brand, #2563eb);
+  background: color-mix(in srgb, var(--sk-color-brand, #2563eb) 9%, var(--sk-color-bg-elevated, #fff));
+}
+
+.cardBuilderChipStrong {
+  font-weight: 600;
+}
+
+.cardBuilderChipMuted {
+  color: var(--sk-color-text-secondary, #94a3b8);
+}
+
+.cardBuilderChipHint {
+  font-size: 0.6875rem;
+  color: var(--sk-color-text-secondary, #94a3b8);
+}
+
+/* Inspector */
+.cardBuilderInspector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid color-mix(in srgb, var(--sk-color-brand, #2563eb) 30%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--sk-color-brand, #2563eb) 4%, var(--sk-color-bg-elevated, #fff));
+}
+
+.cardBuilderInspectorGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem 0.9rem;
+}
+
+.cardBuilderInspectorFull {
+  grid-column: 1 / -1;
+}
+
+.cardBuilderExtras {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.65rem 0.85rem 0.75rem;
+  border: 1px dashed color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 95%, transparent);
+  border-radius: 12px;
+}
+
+.cardBuilderExtrasRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.5rem;
+}
+
+.cardBuilderEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 2rem 1rem;
+  border: 1px dashed color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 95%, transparent);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.cardBuilderPreviewSticky {
+  position: sticky;
+  top: 0.5rem;
+  align-self: start;
+}
+
+@media (max-width: 1180px) {
+  .cardBuilderLayout {
+    grid-template-columns: minmax(14rem, 16rem) minmax(0, 1fr);
+  }
+
+  .cardBuilderLayout > :nth-child(3) {
+    grid-column: 1 / -1;
+  }
+
+  .cardBuilderMain {
+    border-right: 0;
+  }
+}
+
+@media (max-width: 860px) {
+  .cardBuilderLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .cardBuilderColumn,
+  .cardBuilderMain {
+    max-height: none;
+    border-right: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--sk-color-border-default, #e2e8f0) 88%, transparent);
+  }
+
+  .cardBuilderInspectorGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+[data-theme='dark'] .cardBuilderChip {
+  background: color-mix(in srgb, var(--sk-color-bg-elevated, #0f172a) 92%, #fff);
+}

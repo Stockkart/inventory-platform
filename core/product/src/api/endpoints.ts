@@ -35,6 +35,16 @@ export const BARCODE_LABEL_LAYOUT_ENDPOINTS = {
   DEFAULTS: '/shops/active-shop/barcode-label-layout/defaults',
 } as const;
 
+/** Shop product card layouts (active-shop scoped) paths. */
+export const CARD_LAYOUT_ENDPOINTS = {
+  BASE: '/shops/active-shop/card-layouts',
+  FIELD_CATALOG: '/shops/active-shop/card-layouts/field-catalog',
+  SURFACE: (surfaceId: string) =>
+    `/shops/active-shop/card-layouts/${encodeURIComponent(surfaceId)}`,
+  DEFAULTS: (surfaceId: string) =>
+    `/shops/active-shop/card-layouts/${encodeURIComponent(surfaceId)}/defaults`,
+} as const;
+
 /** Invoice / credit-note printer layout for PDF generation. */
 export type PrinterType = 'NORMAL' | 'DOT_MATRIX' | 'THERMAL_3INCH';
 

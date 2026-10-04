@@ -3,7 +3,11 @@ import { Link } from 'react-router';
 import { cartApi, inventoryApi, resolveInventoryDocumentId } from '@inventory-platform/product/api';
 import type { InventoryItem } from '@inventory-platform/product/types';
 import { inventorySellableRef } from '@inventory-platform/product/types';
-import { InventoryAlertDetails } from '@inventory-platform/product';
+import {
+  CARD_SURFACE_IDS,
+  InventoryAlertDetails,
+  useSurfaceCardLayout,
+} from '@inventory-platform/product';
 import {
   Alert,
   Box,
@@ -221,6 +225,7 @@ export function ManualStockPage() {
   const productSearchAccess = useShopAccessStore((s) =>
     user?.shopId ? s.byShopId[user.shopId]?.productSearch : undefined,
   );
+  const { layoutFor: cardLayoutFor } = useSurfaceCardLayout(CARD_SURFACE_IDS.cafeIngredientSearch);
   const fetchShopSchema = useVerticalSchemaStore((s) => s.fetchShopSchema);
 
   const hasActiveSearch = searchQuery.trim().length > 0;
@@ -441,6 +446,7 @@ export function ManualStockPage() {
                       <IngredientSearchCard
                         key={item.id || item.lotId}
                         item={item}
+                        layout={cardLayoutFor(item)}
                         isPageLoading={isLoading}
                         isDetailLoading={detailLoadingId === itemId}
                         isAddingToCart={addingToCartId === itemId}
