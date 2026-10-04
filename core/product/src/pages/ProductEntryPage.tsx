@@ -3124,10 +3124,11 @@ export function ProductEntryPage() {
     setVendorSearchQuery(vendor.name);
     setShowVendorDropdown(false);
     setVendorSearchResults([]);
-    // Show what this vendor was last recorded as billing, rather than leaving the operator to
-    // recall it. Seeing it is also what makes changing it meaningful: the new answer is saved
-    // against the vendor and read on their next bill.
-    setVendorTaxTreatment(vendor.defaultTaxTreatment ?? null);
+    // Left on "Not recorded yet": the server reads the bill from its rows (cost at MRP is
+    // inclusive, below MRP exclusive) before falling back to how this vendor usually bills, and
+    // the hint under the dropdown says which. Prefilling the vendor's default here would count as
+    // a choice and override what the rows say.
+    setVendorTaxTreatment(null);
   };
 
   useLayoutEffect(() => {
