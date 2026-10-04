@@ -86,6 +86,14 @@ import {
   getShopAvailableBaseCount,
   getShopAvailableDisplayCount,
 } from '../lib/inventoryAvailability';
+import { CARD_SURFACE_IDS, type ResolvedCardLayout } from '../model/cardLayout.types';
+import {
+  allowAll,
+  hideSensitivePolicy,
+  type FieldVisibilityPolicy,
+} from '../cardLayout/fieldVisibility';
+import { useSurfaceCardLayout } from '../cardLayout/useSurfaceCardLayout';
+import { CardLayoutBody } from '../ui/cardLayout/CardLayoutBody';
 import { sellCatalogApi } from '../api/sell-catalog.api';
 import { pricingClient } from '../api/pricing-client.api';
 import { gstAmountRowLabel, uniqueGstRateLabel } from '../lib/gstRateLabel';
@@ -176,7 +184,6 @@ import {
   formatInventoryExpiryDate,
   hasInventoryExpiryDate,
   getExtensionFieldString,
-  getInventoryBatchNo,
   sortInventoryByExpirySoonest,
 } from '@inventory-platform/schema';
 import {
@@ -863,6 +870,8 @@ function ProductSearchBlock({
   addDisabled,
   rowClassName,
   searchWrapperRef,
+  cardLayoutFor,
+  cardVisibility,
 }: {
   searchQuery: string;
   setSearchQuery: (value: string) => void;
@@ -880,6 +889,10 @@ function ProductSearchBlock({
   addDisabled: (item: InventoryItem) => boolean;
   rowClassName?: string;
   searchWrapperRef?: React.RefObject<HTMLDivElement | null>;
+  /** Resolved Scan & Sell card layout for an item (from `useSurfaceCardLayout`). */
+  cardLayoutFor: (item: InventoryItem) => ResolvedCardLayout;
+  /** Hides shop-internal figures while "hide purchase details" is on. */
+  cardVisibility: FieldVisibilityPolicy;
 }) {
   const [searchFocused, setSearchFocused] = useState(false);
 
@@ -942,6 +955,8 @@ function ProductSearchBlock({
                     <SearchDropdownItem
                       key={item.id}
                       item={item}
+                      layout={cardLayoutFor(item)}
+                      visibility={cardVisibility}
                       onAddToCart={onAddToCart}
                       disabled={addDisabled(item)}
                     />
@@ -1117,6 +1132,13 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
     if (typeof window === 'undefined') return true;
     return localStorage.getItem('scan-sell-hide-purchase-details') !== '0';
   });
+  // Scan & Sell result rows draw from the shop's configured layout; the hide-purchase preference
+  // becomes a visibility policy over SHOP_INTERNAL fields (cost, purchase discount / scheme).
+  const { layoutFor: scanSellCardLayoutFor } = useSurfaceCardLayout(CARD_SURFACE_IDS.scanSell);
+  const scanSellCardVisibility = useMemo(
+    () => (hidePurchaseDetailsInSell ? hideSensitivePolicy() : allowAll),
+    [hidePurchaseDetailsInSell],
+  );
   const [pricingCache, setPricingCache] = useState<Record<string, PricingResponse>>({});
   const [pricingLoading, setPricingLoading] = useState<Record<string, boolean>>({});
   const { error: notifyError } = useNotify;
@@ -3449,6 +3471,8 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                         onAddToCart={handleAddToCart}
                         rowClassName={searchRowCafeStyle}
                         searchWrapperRef={searchWrapperRef}
+                        cardLayoutFor={scanSellCardLayoutFor}
+                        cardVisibility={scanSellCardVisibility}
                         addDisabled={(item) =>
                           getShopAvailableBaseCount(item) <= 0 ||
                           (item.sellingPrice ?? item.priceToRetail) == null ||
@@ -3576,6 +3600,8 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                       autoFocus
                       onAddToCart={handleAddToCart}
                       searchWrapperRef={searchWrapperRef}
+                      cardLayoutFor={scanSellCardLayoutFor}
+                      cardVisibility={scanSellCardVisibility}
                       addDisabled={(item) =>
                         getShopAvailableBaseCount(item) <= 0 ||
                         (item.sellingPrice ?? item.priceToRetail) == null ||
@@ -4705,10 +4731,14 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
 
 function SearchDropdownItem({
   item,
+  layout,
+  visibility,
   onAddToCart,
   disabled,
 }: {
   item: InventoryItem;
+  layout: ResolvedCardLayout;
+  visibility: FieldVisibilityPolicy;
   onAddToCart: (item: InventoryItem, price?: number) => void;
   disabled: boolean;
 }) {
@@ -4716,12 +4746,6 @@ function SearchDropdownItem({
     e.preventDefault();
     onAddToCart(item);
   };
-
-  // The batch sits on the line for some verticals and in the extension fields
-  // for others, so read it through the helper that knows both. It answers '—'
-  // when there is none, which suits a fixed table row but not a card line.
-  const rawBatchNo = getInventoryBatchNo(item);
-  const batchNo = rawBatchNo && rawBatchNo !== '—' ? rawBatchNo : '';
 
   return (
     <Inline as="li" justify="between" align="start" gap="md" className={dropdownItemStyle}>
@@ -4732,38 +4756,8 @@ function SearchDropdownItem({
           </Text>
           <Badge variant="info">{item.billingMode === 'BASIC' ? 'BASIC' : 'REGULAR'}</Badge>
         </Inline>
-        {item.companyName ? (
-          <Text variant="caption" color="secondary" truncate>
-            Company: {item.companyName}
-          </Text>
-        ) : null}
-        {batchNo ? (
-          <Text variant="caption" color="secondary" truncate>
-            Batch: {batchNo}
-          </Text>
-        ) : null}
-        {item.barcode ? (
-          <Text variant="caption" color="secondary" truncate>
-            Barcode: {item.barcode}
-          </Text>
-        ) : null}
-        <Text variant="caption" color="secondary" truncate>
-          Available: {getShopAvailableDisplayCount(item)}
-        </Text>
-        <Text variant="caption" weight="semibold" truncate>
-          MRP: ₹{item.maximumRetailPrice != null ? item.maximumRetailPrice.toFixed(2) : '—'}
-        </Text>
-        <Text variant="caption" weight="semibold" truncate>
-          Selling: ₹
-          {(item.sellingPrice ?? item.priceToRetail) != null
-            ? (item.sellingPrice ?? item.priceToRetail)!.toFixed(2)
-            : '—'}
-        </Text>
-        {hasInventoryExpiryDate(item) ? (
-          <Text variant="caption" weight="semibold" truncate>
-            Expires: {formatInventoryExpiryDate(item)}
-          </Text>
-        ) : null}
+        {/* The lines beneath the name are the shop's configured Scan & Sell layout. */}
+        <CardLayoutBody item={item} layout={layout} visibility={visibility} variant="compact" />
       </Stack>
       <Button type="button" variant="solid" size="sm" onClick={handleAdd} disabled={disabled}>
         Add

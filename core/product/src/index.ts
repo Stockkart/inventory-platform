@@ -96,6 +96,46 @@ export {
   validatePaymentSplit,
 } from './ui';
 export * from './ui/scanSellStyles';
+export { CardLayoutBody, type CardLayoutBodyProps } from './ui/cardLayout/CardLayoutBody';
+export { ProductCardLayoutSection } from './ui/cardLayout/ProductCardLayoutSection';
+export { cardLayoutApi } from './api/cardLayout.api';
+export * from './queries/cardLayout.queries';
+export {
+  useSurfaceCardLayout,
+  allowAll,
+  composePolicies,
+  hideSensitivePolicy,
+  shopAccessPolicy,
+  FALLBACK_CARD_LAYOUTS,
+  fallbackLayoutFor,
+  type FieldVisibilityPolicy,
+  type SurfaceCardLayout,
+} from './cardLayout';
+export {
+  CARD_SURFACE_IDS,
+  DEFAULT_CARD_OPTIONS,
+  type CardBlankValueBehavior,
+  type CardCatalogField,
+  type CardEmphasis,
+  type CardFieldCatalogResponse,
+  type CardFieldSpec,
+  type CardLayoutLimits,
+  type CardLayoutSpec,
+  type CardLayoutsResponse,
+  type CardOptions,
+  type CardRowSpec,
+  type CardSectionSpec,
+  type CardSurfaceId,
+  type CardSurfaceInfo,
+  type CardVariant,
+  type FieldSensitivity,
+  type ResolvedCardField,
+  type ResolvedCardLayout,
+  type ResolvedCardRow,
+  type ResolvedCardSection,
+  type SaveCardLayoutRequest,
+  type SurfaceLayoutResponse,
+} from './model/cardLayout.types';
 export {
   renderBarcodeLabelsHtml,
   computeStickerLines,
