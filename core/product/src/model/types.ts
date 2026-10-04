@@ -343,7 +343,7 @@ export interface HsnGstRateOption {
   sgst: number;
 }
 
-/** GET /products/hsn-gst-rates: the rates the rate notifications allow for an HSN. */
+/** GET /taxation/hsn-gst-rates: the rates the rate notifications allow for an HSN. */
 export interface HsnGstRates {
   hsn: string;
   /** The code that answered (the HSN or its six- or four-digit parent); null when not on file. */
