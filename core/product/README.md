@@ -24,7 +24,7 @@ Inventory and sell flows: product registration, search, stock corrections, scan-
 ### Supplier bills: tax treatment, preview and corrections
 
 - **Tax treatment.** Stock-in asks whether the bill's line amounts already include GST
-  (`EXCLUSIVE` / `INCLUSIVE`, the vendor's `defaultTaxTreatment` when left blank). The type is
+  (`EXCLUSIVE` / `INCLUSIVE`). Left blank, the server reads it from the rows (cost at MRP: inclusive; below MRP: exclusive), else the vendor's `defaultTaxTreatment`, and the page shows which under the dropdown (`taxTreatmentSource`). The type is
   owned by `@inventory-platform/user` (vendors) and re-exported from `/types`.
 - **Bill preview.** The header subtotal, tax, invoice total and the summary bar come from
   `POST /vendor-purchase-invoices/preview-totals` (`usePurchaseTaxPreviewQuery`, debounced). The

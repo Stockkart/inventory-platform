@@ -376,6 +376,11 @@ export interface PurchaseTaxPreviewLine {
 
 export interface PurchaseTaxPreviewResponse {
   taxTreatment: PurchaseTaxTreatment | null;
+  /**
+   * Where the treatment came from: STATED (chosen on the bill), LINES (cost at MRP is inclusive,
+   * below MRP exclusive), VENDOR (its usual convention) or NONE.
+   */
+  taxTreatmentSource?: 'STATED' | 'LINES' | 'VENDOR' | 'NONE' | null;
   lineSubTotal: number;
   taxTotal: number;
   /** Items only: taxable value plus tax, before header charges. */

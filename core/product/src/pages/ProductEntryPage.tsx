@@ -613,6 +613,21 @@ interface GridBulkFillDraft {
   verticalBulk?: Record<string, string>;
 }
 
+/** Says how the server is reading the bill when the operator has not chosen. */
+function treatmentHint(
+  treatment: PurchaseTaxTreatment | null | undefined,
+  source: string | null | undefined,
+): string {
+  const how = treatment === 'INCLUSIVE' ? 'GST already included' : 'GST added on top';
+  if (source === 'LINES') {
+    return treatment === 'INCLUSIVE'
+      ? `Read as ${how}: cost equals MRP.`
+      : `Read as ${how}: cost is below MRP.`;
+  }
+  if (source === 'VENDOR') return `Read as ${how}: how this vendor usually bills.`;
+  return `Read as ${how}.`;
+}
+
 interface ProductsRegistrationSummary {
   productCount: number;
   totalQuantity: number;
@@ -3690,6 +3705,14 @@ export function ProductEntryPage() {
                           <option value="EXCLUSIVE">GST added on top</option>
                           <option value="INCLUSIVE">GST already included (MRP billing)</option>
                         </Select>
+                        {!vendorTaxTreatment && purchaseTaxPreview ? (
+                          <Text variant="caption" color="secondary">
+                            {treatmentHint(
+                              purchaseTaxPreview.taxTreatment,
+                              purchaseTaxPreview.taxTreatmentSource,
+                            )}
+                          </Text>
+                        ) : null}
                       </Box>
                       <Box className={pageStyles.formGroup}>
                         <Label htmlFor="vendorLineSubTotal">Line subtotal</Label>
