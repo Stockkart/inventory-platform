@@ -21,6 +21,15 @@ Inventory and sell flows: product registration, search, stock corrections, scan-
 
 `api/` · `queries/` · `pages/` · `ui/` · `vertical/` · `routes.ts` · `nav.ts`
 
+### Advanced product search (`search/`, `ui/search/`)
+
+Product Search and Scan & Sell call `POST /inventory/search` (`inventoryApi.searchAdvanced`, `useInventorySearchQuery`): text + filter groups + facet counts + sort + paging in one request. The filter panel is built from `GET /inventory/search/fields` (`useSearchFieldsQuery`), so a vertical field marked `searchable` in its schema appears with no frontend change.
+
+- `search/searchState.ts` — the page state and pure helpers (`toggleValue`, `setRange`, `clearFilters`, …); a group never has zero values.
+- `search/searchUrl.ts` — the only code that reads or writes the URL (`?q=&f=field:op:payload&sort=&page=&size=&dump=`); property-tested round trip.
+- `search/useProductSearch.ts` — the page's state machine. Empty URL = **setting up** (filters accumulate, nothing requested until Search); a URL with a search = **refining** (filter ticks apply after 250 ms, sort/page at once, text waits for Search). The URL is the source of truth once searching.
+- `ui/search/` — `SearchFilterStrip` (one dropdown per filter under the search bar, sort at the right end), `ActiveFilterChips` (plain-English wording in `search/filterChips.ts`), `SortSelect`, `CompanyChips` (Scan & Sell; Alt+1…5 picks a chip).
+
 ### Supplier bills: tax treatment, preview and corrections
 
 - **Tax treatment.** Stock-in asks whether the bill's line amounts already include GST

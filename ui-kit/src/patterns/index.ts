@@ -99,6 +99,21 @@ export { chartChrome } from './ChartFrame';
 export { productChrome } from './ProductChrome';
 export { surfaceChrome } from './SurfaceChrome';
 export {
+  ChoiceList,
+  CollapsibleGroup,
+  FacetCheckboxList,
+  FilterDropdown,
+  FilterStrip,
+  searchChrome,
+  type ChoiceListProps,
+  type ChoiceOption,
+  type CollapsibleGroupProps,
+  type FacetCheckboxListProps,
+  type FacetOption,
+  type FilterDropdownProps,
+  type FilterStripProps,
+} from './FacetFilter';
+export {
   accountingChrome,
   journalLineGridStyle,
   journalHeaderLineGridStyle,

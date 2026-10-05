@@ -4,3 +4,4 @@ export * from './sellable-ref.js';
 export * from './store.types.js';
 export * from './sell-catalog.types.js';
 export * from './labelLayout.types.js';
+export * from './search.types.js';

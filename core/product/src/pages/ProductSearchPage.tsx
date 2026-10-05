@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { cartApi } from '../api/cart.api';
 import { estimatesApi } from '../api/estimates.api';
 import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
 import type {
-  BillingMode,
   EstimateSummary,
   InventoryItem,
   QuotationSummary,
@@ -17,18 +17,24 @@ import {
   CenteredLoader,
   EmptyState,
   Icon,
+  Inline,
   PageHeader,
   PaginationBar,
   SearchInput,
-  SegmentedControl,
   Stack,
   Switch,
   Text,
+  cn,
   surfaceChrome,
 } from '@inventory-platform/ui-kit';
 import { Search } from 'lucide-react';
-import { InventoryAlertDetails, ProductSearchCard, normalizedBillingMode } from '../ui';
-import { sortInventoryByExpirySoonest } from '@inventory-platform/schema';
+import { InventoryAlertDetails, ProductSearchCard } from '../ui';
+import { SearchFilterStrip } from '../ui/search/SearchFilterStrip';
+import { ActiveFilterChips } from '../ui/search/ActiveFilterChips';
+import { SortSelect } from '../ui/search/SortSelect';
+import { useProductSearch } from '../search/useProductSearch';
+import { PAGE_SIZE_OPTIONS } from '../search/searchState';
+import { productKeys } from '../queries/keys';
 import { rememberOpenQuotationId } from '../lib/sellSession';
 import { getShopAvailableBaseCount } from '../lib/inventoryAvailability';
 import { CARD_SURFACE_IDS } from '../model/cardLayout.types';
@@ -44,12 +50,6 @@ import { AddToSellQuotationPicker } from '../ui/AddToSellQuotationPicker';
 import { AddToEstimatePicker } from '../ui/AddToEstimatePicker';
 import { AddToCartDestinationPicker, type CartDestination } from '../ui/AddToCartDestinationPicker';
 
-const BILLING_MODE_OPTIONS = [
-  { value: 'ALL', label: 'All' },
-  { value: 'REGULAR', label: 'Regular' },
-  { value: 'BASIC', label: 'Basic' },
-] as const;
-
 export function meta() {
   return [
     { title: 'Product Search - StockKart' },
@@ -61,21 +61,15 @@ export function meta() {
 }
 
 export function ProductSearchPage() {
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const search = useProductSearch();
+  const queryClient = useQueryClient();
+  // Cards edited in the detail modal are patched here so the page does not refetch to show them.
+  const [patched, setPatched] = useState<Record<string, InventoryItem>>({});
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
   const [addingToCart, setAddingToCart] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [searchPage, setSearchPage] = useState(0);
-  const [searchPageSize, setSearchPageSize] = useState(10);
-  const [searchTotalPages, setSearchTotalPages] = useState(0);
-  const [searchTotalItems, setSearchTotalItems] = useState(0);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
-  const [billingModeFilter, setBillingModeFilter] = useState<'ALL' | BillingMode>('ALL');
-  // Sold-out lots are dead weight at the counter, so they are hidden until asked for.
-  const [includeZeroStock, setIncludeZeroStock] = useState(false);
   const [quotationPickerItem, setQuotationPickerItem] = useState<InventoryItem | null>(null);
   const [quotationPickerList, setQuotationPickerList] = useState<QuotationSummary[]>([]);
   const [estimatePickerItem, setEstimatePickerItem] = useState<InventoryItem | null>(null);
@@ -99,11 +93,15 @@ export function ProductSearchPage() {
     [productSearchAccess],
   );
 
-  const hasActiveSearch = searchQuery.trim().length > 0;
-
-  useEffect(() => {
-    fetchAllInventory();
-  }, []);
+  const isLoading = search.isFetching;
+  const inventory = useMemo(
+    () => (search.result?.data ?? []).map((item) => patched[item.id ?? ''] ?? item),
+    [search.result, patched],
+  );
+  const totalItems = search.result?.page.totalItems ?? 0;
+  const totalPages = search.result?.page.totalPages ?? 0;
+  const pageStart = totalItems === 0 ? 0 : search.state.page * search.state.size + 1;
+  const pageEnd = Math.min(totalItems, pageStart + inventory.length - 1);
 
   useEffect(() => {
     if (!activeShopId) {
@@ -116,96 +114,9 @@ export function ProductSearchPage() {
     });
   }, [activeShopId, fetchShopSchema]);
 
-  const fetchAllInventory = async (page = 0, size = 10, withZeroStock = includeZeroStock) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await inventoryApi.getAll(page, size, withZeroStock);
-      setInventory(sortInventoryByExpirySoonest(response.data || []));
-      // Update pagination info if available
-      if (response.page) {
-        setSearchTotalPages(response.page.totalPages || 0);
-        setSearchTotalItems(response.page.totalItems || 0);
-        setSearchPage(response.page.page || 0);
-      } else {
-        // Reset pagination if no page info
-        setSearchTotalPages(0);
-        setSearchTotalItems(0);
-        setSearchPage(0);
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch inventory';
-      notifyError(errorMessage);
-      setInventory([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSearch = async (
-    pageNum?: number,
-    pageSize?: number,
-    withZeroStock = includeZeroStock,
-  ) => {
-    const currentPage = pageNum !== undefined ? pageNum : 0;
-    const currentPageSize = pageSize !== undefined ? pageSize : searchPageSize;
-
-    if (pageNum === undefined && pageSize === undefined) {
-      setSearchPage(0); // Reset to first page on new search
-    }
-
-    if (pageSize !== undefined) {
-      setSearchPageSize(pageSize);
-    }
-
-    if (!hasActiveSearch) {
-      fetchAllInventory(currentPage, currentPageSize, withZeroStock);
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await inventoryApi.search({
-        q: searchQuery.trim(),
-        limit: currentPageSize,
-        page: currentPage,
-        sort: 'expiryDate:asc',
-        includeZeroStock: withZeroStock,
-      });
-      setInventory(response.data || []);
-      if (response.page) {
-        setSearchTotalPages(response.page.totalPages || 0);
-        setSearchTotalItems(response.page.totalItems || 0);
-        setSearchPage(response.page.page ?? currentPage);
-      } else {
-        setSearchTotalPages(0);
-        setSearchTotalItems(response.data?.length ?? 0);
-        setSearchPage(currentPage);
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to search inventory';
-      notifyError(errorMessage);
-      setInventory([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleClearSearch = () => {
-    setSearchQuery('');
-    setSearchPage(0);
-    setSearchTotalPages(0);
-    setSearchTotalItems(0);
-    fetchAllInventory(0, searchPageSize);
-  };
-
-  // Re-run whatever is on screen against the new setting. The flag is passed rather than read
-  // from state because this runs in the same tick as the state update.
-  const handleIncludeZeroStockChange = (next: boolean) => {
-    setIncludeZeroStock(next);
-    setSearchPage(0);
-    void handleSearch(0, searchPageSize, next);
+  /** After a cart change the stock on screen may be stale: refetch the current page in place. */
+  const refreshResults = () => {
+    void queryClient.invalidateQueries({ queryKey: productKeys.searches() });
   };
 
   const openProductDetails = async (item: InventoryItem) => {
@@ -311,7 +222,7 @@ export function ProductSearchPage() {
       const quotation = quotations.find((q) => q.purchaseId === purchaseId);
       notifyAddedToQuotation(item, quotation);
       setQuotationPickerItem(null);
-      void handleSearch(searchPage, searchPageSize);
+      refreshResults();
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
       handleAddToCartDocumentError(err, 'quotation');
@@ -491,15 +402,9 @@ export function ProductSearchPage() {
     }
   };
 
-  const filteredInventory = sortInventoryByExpirySoonest(
-    inventory.filter((item) =>
-      billingModeFilter === 'ALL' ? true : normalizedBillingMode(item) === billingModeFilter,
-    ),
-  );
-
   return (
     <Stack gap="md">
-      <PageHeader description="Search by name, company, location, barcode, HSN, or batch" />
+      <PageHeader description="Search by name, company, barcode, HSN or batch, narrow down with the filters, then press Search" />
 
       <Box className={surfaceChrome.searchFilterBar}>
         <Box className={surfaceChrome.searchFilterGrow}>
@@ -508,96 +413,154 @@ export function ProductSearchPage() {
             flush
             buttonVariant="solid"
             leadingIcon={<Icon icon={Search} size="sm" />}
-            value={searchQuery}
-            onChange={setSearchQuery}
-            onSearch={() => void handleSearch()}
+            value={search.textInput}
+            onChange={search.setTextInput}
+            onSearch={search.submit}
             showSearchButton
-            placeholder="Name, company, location, barcode, HSN, or batch"
-            disabled={isLoading}
+            placeholder="Search by name, company, barcode, HSN or batch"
+            disabled={search.fieldsLoading}
             searchLabel={isLoading ? 'Searching…' : 'Search'}
           />
         </Box>
         <Box className={surfaceChrome.searchFilterDivider} aria-hidden />
         <Switch
           label="Include dump stock"
-          checked={includeZeroStock}
-          onChange={(e) => handleIncludeZeroStockChange(e.target.checked)}
-          disabled={isLoading}
-        />
-        <Box className={surfaceChrome.searchFilterDivider} aria-hidden />
-        <SegmentedControl
-          value={billingModeFilter}
-          options={BILLING_MODE_OPTIONS}
-          onChange={(value) => setBillingModeFilter(value)}
-          disabled={isLoading}
-          aria-label="Billing mode"
-          className={surfaceChrome.searchFilterSegments}
+          checked={search.state.includeZeroStock}
+          onChange={(e) => search.changeIncludeZeroStock(e.target.checked)}
+          disabled={search.fieldsLoading}
         />
       </Box>
 
+      <SearchFilterStrip
+        fields={search.fields}
+        state={search.state}
+        facets={search.facets}
+        onChange={search.applyPanel}
+        disabled={search.fieldsLoading}
+        end={
+          <SortSelect
+            fields={search.fields}
+            value={search.state.sort}
+            defaultSort={search.defaultSort}
+            onChange={search.changeSort}
+            disabled={search.fieldsLoading}
+          />
+        }
+      />
+
+      <ActiveFilterChips
+        filters={search.state.filters}
+        fields={search.fields}
+        match={search.state.match}
+        onRemove={search.removeFilter}
+        onClearAll={search.clearAllFilters}
+        onMatchChange={search.changeMatch}
+        disabled={search.fieldsLoading}
+      />
+
       {error ? <Alert variant="danger">{error}</Alert> : null}
       {successMessage ? <Alert variant="success">{successMessage}</Alert> : null}
+      {search.error ? (
+        <Alert variant="danger">
+          <Inline gap="sm" align="center" justify="between" width="full">
+            <Text as="span">{search.error.message || 'The search failed.'}</Text>
+            <Button variant="outline" size="sm" onClick={search.retry}>
+              Retry
+            </Button>
+          </Inline>
+        </Alert>
+      ) : null}
 
-      <Card>
-        <CardBody>
-          <Stack gap="md">
-            <Text variant="caption" color="secondary">
-              {isLoading
-                ? 'Loading…'
-                : `Showing ${filteredInventory.length} ${
-                    filteredInventory.length === 1 ? 'result' : 'results'
-                  }`}
-            </Text>
+      {search.mode === 'settingUp' ? (
+        <Card>
+          <CardBody>
+            <EmptyState
+              title="Set up your search"
+              description="Pick filters above, type a name, or both — then press Search. Leave the box empty to browse everything that matches the filters."
+              action={
+                <Button variant="solid" onClick={search.submit}>
+                  Search
+                </Button>
+              }
+            />
+          </CardBody>
+        </Card>
+      ) : (
+        <Card>
+          <CardBody>
+            <Stack gap="md">
+              <Text variant="caption" color="secondary" aria-live="polite">
+                {search.isLoading
+                  ? 'Searching…'
+                  : totalItems === 0
+                  ? 'No results'
+                  : `Showing ${pageStart.toLocaleString()}–${pageEnd.toLocaleString()} of ${totalItems.toLocaleString()} ${
+                      totalItems === 1 ? 'result' : 'results'
+                    }${isLoading ? ' · updating…' : ''}`}
+              </Text>
 
-            {isLoading && filteredInventory.length === 0 ? (
-              <CenteredLoader label="Loading inventory…" />
-            ) : filteredInventory.length === 0 ? (
-              <EmptyState
-                title="No inventory items found"
-                action={
-                  searchQuery ? (
-                    <Button variant="outline" onClick={handleClearSearch}>
-                      Clear search to see all items
-                    </Button>
-                  ) : undefined
-                }
-              />
-            ) : (
-              <>
-                <Box display="grid" gap="lg" width="full" className={surfaceChrome.autoGrid280}>
-                  {filteredInventory.map((item) => {
-                    const inventoryId = resolveInventoryDocumentId(item);
-                    return (
-                      <ProductSearchCard
-                        key={item.id || item.lotId}
-                        item={item}
-                        layout={cardLayoutFor(item)}
-                        visibility={cardVisibility}
-                        isPageLoading={isLoading}
-                        isDetailLoading={detailLoadingId === inventoryId}
-                        isAddingToCart={addingToCart === inventoryId}
-                        onViewDetails={openProductDetails}
-                        onAddToCart={handleAddToCart}
-                      />
-                    );
-                  })}
-                </Box>
-                <PaginationBar
-                  page={searchPage}
-                  totalPages={Math.max(searchTotalPages, 1)}
-                  totalItems={searchTotalItems}
-                  disabled={isLoading}
-                  onPageChange={(p) => void handleSearch(p)}
-                  pageSize={searchPageSize}
-                  pageSizeOptions={[10, 20, 50]}
-                  onPageSizeChange={(n) => void handleSearch(0, n)}
-                  aria-label="Product search results pages"
+              {search.isLoading && inventory.length === 0 ? (
+                <CenteredLoader label="Searching…" />
+              ) : inventory.length === 0 && !isLoading ? (
+                <EmptyState
+                  title="Nothing matches"
+                  description="Try fewer filters or a shorter word."
+                  action={
+                    <Inline gap="sm">
+                      {search.state.filters.length > 0 ? (
+                        <Button variant="outline" onClick={search.clearAllFilters}>
+                          Clear filters
+                        </Button>
+                      ) : null}
+                      <Button variant="ghost" onClick={search.reset}>
+                        Start over
+                      </Button>
+                    </Inline>
+                  }
                 />
-              </>
-            )}
-          </Stack>
-        </CardBody>
-      </Card>
+              ) : (
+                <>
+                  <Box
+                    display="grid"
+                    gap="lg"
+                    width="full"
+                    className={cn(surfaceChrome.autoGrid280, isLoading && surfaceChrome.busyDim)}
+                    aria-busy={isLoading}
+                  >
+                    {inventory.map((item) => {
+                      const inventoryId = resolveInventoryDocumentId(item);
+                      return (
+                        <ProductSearchCard
+                          key={item.id || item.lotId}
+                          item={item}
+                          layout={cardLayoutFor(item)}
+                          visibility={cardVisibility}
+                          isPageLoading={isLoading}
+                          isDetailLoading={detailLoadingId === inventoryId}
+                          isAddingToCart={addingToCart === inventoryId}
+                          onViewDetails={openProductDetails}
+                          onAddToCart={handleAddToCart}
+                        />
+                      );
+                    })}
+                  </Box>
+                  <PaginationBar
+                    page={search.state.page}
+                    totalPages={Math.max(totalPages, 1)}
+                    totalItems={totalItems}
+                    disabled={isLoading}
+                    onPageChange={search.changePage}
+                    pageSize={search.state.size}
+                    pageSizeOptions={PAGE_SIZE_OPTIONS}
+                    onPageSizeChange={search.changePageSize}
+                    aria-label="Product search results pages"
+                  />
+                </>
+              )}
+            </Stack>
+          </CardBody>
+        </Card>
+      )}
 
       <InventoryAlertDetails
         open={selectedItem !== null}
@@ -606,7 +569,7 @@ export function ProductSearchPage() {
         editable
         productSearchAccess={productSearchAccess}
         onUpdated={(updated) => {
-          setInventory((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
+          if (updated.id) setPatched((prev) => ({ ...prev, [updated.id as string]: updated }));
           setSelectedItem(updated);
         }}
       />

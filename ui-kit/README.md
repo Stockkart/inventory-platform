@@ -41,15 +41,16 @@ Domain widgets and pages stay in `core/*/ui` and `core/*/pages`.
 
 ## Chrome map
 
-| Export               | Use for                                                       |
-| -------------------- | ------------------------------------------------------------- |
-| `shellChrome`        | Dashboard header, sidebar, notifications, help panel          |
-| `journeyChrome`      | Auth + onboarding / shop registration                         |
-| `chartChrome`        | Analytics filters, KPIs, chart frames (`plot` = fixed height) |
-| `productChrome`      | Scan Sell, carts, cafe stock lines                            |
-| `accountingChrome`   | Ledger / journal layouts                                      |
-| `surfaceChrome`      | Generic dashboard surfaces, profile tiles                     |
-| `registrationChrome` | Product registration grids / vendor cards                     |
+| Export               | Use for                                                                                                                                     |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `shellChrome`        | Dashboard header, sidebar, notifications, help panel                                                                                        |
+| `journeyChrome`      | Auth + onboarding / shop registration                                                                                                       |
+| `chartChrome`        | Analytics filters, KPIs, chart frames (`plot` = fixed height)                                                                               |
+| `productChrome`      | Scan Sell, carts, cafe stock lines                                                                                                          |
+| `accountingChrome`   | Ledger / journal layouts                                                                                                                    |
+| `surfaceChrome`      | Generic dashboard surfaces, profile tiles                                                                                                   |
+| `searchChrome`       | Filter strip under a search bar: `FilterStrip` + `FilterDropdown` pills, `FacetCheckboxList` inside; `CollapsibleGroup` for vertical panels |
+| `registrationChrome` | Product registration grids / vendor cards                                                                                                   |
 
 ## Button language
 
