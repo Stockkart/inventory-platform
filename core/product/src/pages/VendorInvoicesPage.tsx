@@ -1,5 +1,6 @@
 import { formatDocumentDate } from '../lib/documentDate';
 import { Fragment, useCallback, useEffect, useState } from 'react';
+import { useAmendVendorPurchaseInvoiceMutation } from '../queries/hooks';
 import { inventoryApi } from '../api/inventory.api';
 import type {
   AmendVendorPurchaseInvoicePayload,
@@ -158,7 +159,8 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
   const [invoices, setInvoices] = useState<VendorPurchaseInvoiceSummary[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [detailsById, setDetailsById] = useState<Record<string, VendorPurchaseInvoiceDetail>>({});
-  const [amendingId, setAmendingId] = useState<string | null>(null);
+  const amendMutation = useAmendVendorPurchaseInvoiceMutation();
+  const amendingId = amendMutation.isPending ? amendMutation.variables?.id ?? null : null;
   const [fetchingId, setFetchingId] = useState<string | null>(null);
   const [rowError, setRowError] = useState<Record<string, string>>({});
   const [inventoryById, setInventoryById] = useState<Record<string, InventoryItem>>({});
@@ -359,30 +361,31 @@ export function VendorInvoicesPage({ embedded = false, filters }: VendorInvoices
   /**
    * Corrects an invoice header from the paper bill and reloads it.
    *
-   * <p>The reload matters: the server re-resolves the tax on save, so the reconciliation shown
-   * after a correction is the new one rather than the one that prompted it.
+   * <p>The reload matters: the server works the totals out again on save, so the figures shown
+   * after a correction are the new ones.
    */
   const amendInvoice = async (id: string, payload: AmendVendorPurchaseInvoicePayload) => {
-    setAmendingId(id);
     setRowError((prev) => {
       const next = { ...prev };
       delete next[id];
       return next;
     });
     try {
-      const updated = await inventoryApi.amendVendorPurchaseInvoice(id, payload);
+      const updated = await amendMutation.mutateAsync({ id, payload });
       setDetailsById((prev) => ({ ...prev, [id]: updated }));
+      const before = updated.previousHeader;
+      const money = (v: number | null | undefined) => (v == null ? '—' : `₹${v.toFixed(2)}`);
       useNotify.success(
-        updated.headerReconciliation === 'OK'
-          ? 'Corrected — the bill now agrees with its lines'
+        before
+          ? `Correction saved — invoice total ${money(before.invoiceTotal)} → ${money(
+              updated.invoiceTotal,
+            )}, tax ${money(before.taxTotal)} → ${money(updated.taxTotal)}. Journal reposted.`
           : 'Correction saved',
       );
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Could not save the correction';
       setRowError((prev) => ({ ...prev, [id]: msg }));
       useNotify.error(msg);
-    } finally {
-      setAmendingId(null);
     }
   };
 

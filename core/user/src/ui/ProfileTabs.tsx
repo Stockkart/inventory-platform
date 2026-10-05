@@ -1,4 +1,5 @@
 import { Box, Button, Inline, accountingChrome, cn } from '@inventory-platform/ui-kit';
+import { useProfileTabExtensions, type ProfileTabExtension } from './profileTabRegistry';
 
 export const PROFILE_TABS = [
   { id: 'shop', label: 'Shop' },
@@ -8,12 +9,45 @@ export const PROFILE_TABS = [
 
 export type ProfileTabId = (typeof PROFILE_TABS)[number]['id'];
 
+/** Built-in tab id or the id of a registered `ProfileTabExtension`. */
+export type ProfileTabKey = ProfileTabId | (string & {});
+
+interface ProfileTabItem {
+  id: ProfileTabKey;
+  label: string;
+}
+
+/**
+ * Built-in tabs followed by extensions, each inserted directly after its
+ * `after` anchor (preserving registration order among siblings). Extensions
+ * without an anchor, or with an unknown one, go at the end.
+ */
+export function orderProfileTabs(extensions: readonly ProfileTabExtension[]): ProfileTabItem[] {
+  const ordered: ProfileTabItem[] = [];
+  const trailing: ProfileTabItem[] = [];
+  const builtInIds = new Set<string>(PROFILE_TABS.map((tab) => tab.id));
+
+  for (const tab of PROFILE_TABS) {
+    ordered.push({ id: tab.id, label: tab.label });
+    for (const ext of extensions) {
+      if (ext.after === tab.id) ordered.push({ id: ext.id, label: ext.label });
+    }
+  }
+  for (const ext of extensions) {
+    if (!ext.after || !builtInIds.has(ext.after)) trailing.push({ id: ext.id, label: ext.label });
+  }
+  return [...ordered, ...trailing];
+}
+
 export interface ProfileTabsProps {
-  activeTab: ProfileTabId;
-  onTabChange: (id: ProfileTabId) => void;
+  activeTab: ProfileTabKey;
+  onTabChange: (id: ProfileTabKey) => void;
 }
 
 export function ProfileTabs({ activeTab, onTabChange }: ProfileTabsProps) {
+  const extensions = useProfileTabExtensions();
+  const tabs = orderProfileTabs(extensions);
+
   return (
     <Box
       as="nav"
@@ -22,7 +56,7 @@ export function ProfileTabs({ activeTab, onTabChange }: ProfileTabsProps) {
       className={accountingChrome.navTabBar}
     >
       <Inline gap="none">
-        {PROFILE_TABS.map((tab) => (
+        {tabs.map((tab) => (
           <Button
             key={tab.id}
             type="button"

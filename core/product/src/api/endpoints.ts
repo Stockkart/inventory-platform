@@ -19,6 +19,8 @@ export const PRODUCT_ENDPOINTS = {
   BY_BARCODE: '/products/by-barcode',
   BY_ID: (id: string) => `/products/${id}`,
   LAST_INVENTORY: (id: string) => `/products/${id}/last-inventory`,
+  /** Served by taxation; the table lives beside the GSTR HSN descriptions. */
+  HSN_GST_RATES: '/taxation/hsn-gst-rates',
 } as const;
 
 /** Shop barcode generate / pool / label paths. */
@@ -28,6 +30,22 @@ export const BARCODE_ENDPOINTS = {
   LABELS: '/barcodes/labels',
   ATTACH: (code: string) => `/barcodes/${encodeURIComponent(code)}/attach`,
 } as const;
+/** Shop barcode label layout (active-shop scoped) paths. */
+export const BARCODE_LABEL_LAYOUT_ENDPOINTS = {
+  BASE: '/shops/active-shop/barcode-label-layout',
+  FIELD_CATALOG: '/shops/active-shop/barcode-label-layout/field-catalog',
+  DEFAULTS: '/shops/active-shop/barcode-label-layout/defaults',
+} as const;
+
+/** Shop product card layouts (active-shop scoped) paths. */
+export const CARD_LAYOUT_ENDPOINTS = {
+  BASE: '/shops/active-shop/card-layouts',
+  FIELD_CATALOG: '/shops/active-shop/card-layouts/field-catalog',
+  SURFACE: (surfaceId: string) =>
+    `/shops/active-shop/card-layouts/${encodeURIComponent(surfaceId)}`,
+  DEFAULTS: (surfaceId: string) =>
+    `/shops/active-shop/card-layouts/${encodeURIComponent(surfaceId)}/defaults`,
+} as const;
 
 /** Invoice / credit-note printer layout for PDF generation. */
 export type PrinterType = 'NORMAL' | 'DOT_MATRIX' | 'THERMAL_3INCH';
@@ -36,6 +54,8 @@ export type PrinterType = 'NORMAL' | 'DOT_MATRIX' | 'THERMAL_3INCH';
 export const VENDOR_PURCHASE_INVOICES_ENDPOINTS = {
   BASE: '/vendor-purchase-invoices',
   BY_ID: (id: string) => `/vendor-purchase-invoices/${id}`,
+  PREVIEW_TOTALS: '/vendor-purchase-invoices/preview-totals',
+  AMEND_PREVIEW: (id: string) => `/vendor-purchase-invoices/${id}/amend-preview`,
 } as const;
 
 /** Vendor purchase return paths. */

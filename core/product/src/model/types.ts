@@ -1,3 +1,4 @@
+import type { PurchaseTaxTreatment } from '@inventory-platform/user/types';
 import type {
   PaymentMethod,
   CustomReminderInput,
@@ -283,8 +284,10 @@ export interface BulkCreateInventoryItem {
   verticalFields?: Record<string, unknown> | null;
 }
 
+/** How a vendor's bill states tax; owned by the vendor (user domain), re-exported here. */
+export type { PurchaseTaxTreatment } from '@inventory-platform/user/types';
+
 /** Optional vendor invoice header on bulk stock-in. Omit for legacy behavior. */
-export type PurchaseTaxTreatment = 'INCLUSIVE' | 'EXCLUSIVE';
 
 export interface VendorPurchaseInvoicePayload {
   invoiceNo: string;
@@ -295,11 +298,14 @@ export interface VendorPurchaseInvoicePayload {
    */
   taxTreatment?: PurchaseTaxTreatment | null;
   invoiceDate?: string | null;
+  /** The operator has read the bill and confirms its tax treatment although the rows disagree. */
+  confirmTaxTreatment?: boolean;
+  /** The server's bill preview figures, sent so the bill stores them. */
   lineSubTotal?: number | null;
   taxTotal?: number | null;
   shippingCharge?: number | null;
   otherCharges?: number | null;
-  /** Bill-level discount (₹), subtracted from invoice total. */
+  /** Bill-level discount (₹), taken off the lines before tax. */
   overallDiscount?: number | null;
   roundOff?: number | null;
   invoiceTotal?: number | null;
@@ -330,6 +336,71 @@ export interface BulkCreateInventoryDto {
   items: BulkCreateInventoryItem[];
 }
 
+/** One GST rate an HSN may carry, already split into the CGST and SGST a stock-in row stores. */
+export interface HsnGstRateOption {
+  gstRate: number;
+  cgst: number;
+  sgst: number;
+}
+
+/** GET /taxation/hsn-gst-rates: the rates the rate notifications allow for an HSN. */
+export interface HsnGstRates {
+  hsn: string;
+  /** The code that answered (the HSN or its six- or four-digit parent); null when not on file. */
+  matchedHsn: string | null;
+  rates: HsnGstRateOption[];
+  /** The notification entries the rates come from. */
+  ref: string | null;
+}
+
+/**
+ * The stock-in screen as it stands, sent to POST /vendor-purchase-invoices/preview-totals. The
+ * server works out tax and totals with the stock-in rules; the screen only shows them.
+ */
+export interface PurchaseTaxPreviewRequest {
+  vendorId?: string | null;
+  taxTreatment?: PurchaseTaxTreatment | null;
+  items: BulkCreateInventoryItem[];
+  shippingCharge?: number;
+  otherCharges?: number;
+  overallDiscount?: number;
+  roundOff?: number;
+}
+
+export interface PurchaseTaxPreviewLine {
+  taxable: number;
+  ratePct: number;
+  centralTax: number;
+  stateTax: number;
+  integratedTax: number;
+  tax: number;
+}
+
+export interface PurchaseTaxPreviewResponse {
+  taxTreatment: PurchaseTaxTreatment | null;
+  /**
+   * Where the treatment came from: STATED (chosen on the bill), LINES (cost at MRP is inclusive,
+   * below MRP exclusive), VENDOR (its usual convention) or NONE.
+   */
+  taxTreatmentSource?: 'STATED' | 'LINES' | 'VENDOR' | 'NONE' | null;
+  /** What cost against MRP says on the rows; null when they cannot decide. */
+  taxTreatmentFromLines?: PurchaseTaxTreatment | null;
+  /**
+   * Set when the treatment applied contradicts the rows: the message to show. Stock-in refuses
+   * such a bill unless confirmTaxTreatment is sent.
+   */
+  taxTreatmentConflict?: string | null;
+  lineSubTotal: number;
+  taxTotal: number;
+  /** Items only: taxable value plus tax, before header charges. */
+  itemsTotal: number;
+  /** Taxable value after the bill-level discount, plus tax, charges and round-off. */
+  invoiceTotal: number;
+  productCount: number;
+  totalQuantity: number;
+  lines: PurchaseTaxPreviewLine[];
+}
+
 export interface BulkCreateInventoryResponse {
   success?: boolean;
   lotId?: string | null;
@@ -342,25 +413,6 @@ export interface BulkCreateInventoryResponse {
   vendorPurchaseInvoiceId?: string | null;
   /** Set when stock-in leaves payable due in credit ledger. */
   creditEntryId?: string | null;
-  /**
-   * How the invoice header that was typed compares to what its lines come to.
-   *
-   * OK when they agree. MISSING when no header was given, MISMATCH when the stated subtotal and
-   * tax do not agree at the line rates, RATE_CONFLICT when the tax implies a GST slab none of the
-   * goods are priced at. Advisory only -- the stock is registered either way.
-   */
-  headerReconciliation?: 'OK' | 'MISSING' | 'MISMATCH' | 'RATE_CONFLICT' | null;
-  /** Taxable value the lines resolve to, for showing beside the typed subtotal. */
-  computedLineSubTotal?: number | null;
-  /** Tax the lines resolve to at their own rates, for showing beside the typed tax. */
-  computedTaxTotal?: number | null;
-  /**
-   * Products whose GST rate disagrees with the rest of the catalogue under the same HSN.
-   *
-   * The one error a correct-looking bill can still hide: priced at the wrong slab, an invoice
-   * adds up perfectly against itself and is wrong all the same.
-   */
-  rateWarnings?: string[] | null;
   items: Array<{
     id: string;
     lotId?: string;
@@ -421,32 +473,49 @@ export interface VendorPurchaseInvoiceDetail {
   legacyLotId?: string | null;
   lines: VendorPurchaseInvoiceLineDto[];
 
-  /** How the stated header compares to what the lines come to. */
-  headerReconciliation?: 'OK' | 'MISSING' | 'MISMATCH' | 'RATE_CONFLICT' | null;
-  computedLineSubTotal?: number | null;
-  computedTaxTotal?: number | null;
   taxTreatment?: PurchaseTaxTreatment | null;
 
   /** Set once the header has been corrected against the paper bill. */
   amendedAt?: string | null;
   amendedByUserId?: string | null;
   amendmentReason?: string | null;
+  /** The header as it stood before the last correction. */
+  previousHeader?: InvoiceHeaderFigures | null;
+}
+
+/** A purchase invoice's header figures at one point in time. */
+export interface InvoiceHeaderFigures {
+  lineSubTotal: number | null;
+  taxTotal: number | null;
+  shippingCharge: number | null;
+  otherCharges: number | null;
+  overallDiscount: number | null;
+  roundOff: number | null;
+  invoiceTotal: number | null;
+  taxTreatment: PurchaseTaxTreatment | null;
+}
+
+/** POST /vendor-purchase-invoices/{id}/amend-preview: a correction worked out, not saved. */
+export interface AmendInvoicePreview {
+  saved: InvoiceHeaderFigures;
+  corrected: InvoiceHeaderFigures;
+  /** Names of the figures that move, e.g. 'taxTreatment', 'taxTotal'. */
+  changedFields: string[];
+  /** True when saving would reverse the journal entry and post a corrected one. */
+  journalReposted: boolean;
 }
 
 /**
  * Corrections to a purchase invoice header, keyed from the paper bill.
  *
- * Every money field is optional -- an omitted one is left as it stands, so adding totals to a
- * bill that never had them does not mean restating everything else. The reason is required.
+ * Every field is optional -- an omitted one is left as it stands. The subtotal, tax and invoice
+ * total are worked out by the server from the lines. The reason is required.
  */
 export interface AmendVendorPurchaseInvoicePayload {
-  lineSubTotal?: number | null;
-  taxTotal?: number | null;
   shippingCharge?: number | null;
   otherCharges?: number | null;
   overallDiscount?: number | null;
   roundOff?: number | null;
-  invoiceTotal?: number | null;
   taxTreatment?: PurchaseTaxTreatment | null;
   reason: string;
 }
@@ -1406,6 +1475,8 @@ export interface AttachBarcodeRequest {
 export interface BarcodeLabelsRequest {
   productIds?: string[];
   codes?: string[];
+  /** Optional code → inventoryId map so the server resolves lot values from the scanned row. */
+  inventoryIds?: Record<string, string>;
 }
 
 export interface BarcodeLabelDto {
