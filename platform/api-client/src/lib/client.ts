@@ -18,6 +18,11 @@ function isPublicAuthRequest(url: string | undefined): boolean {
   );
 }
 
+/** Per-call options. `signal` lets a caller (e.g. TanStack Query) cancel a superseded request. */
+export interface RequestOptions {
+  signal?: AbortSignal;
+}
+
 class ApiClient {
   private axiosInstance: AxiosInstance;
   private token: string | null = null;
@@ -169,13 +174,17 @@ class ApiClient {
     this.onUnauthorized = handler;
   }
 
-  async get<T>(endpoint: string, params?: Record<string, string>): Promise<T> {
-    const r = await this.axiosInstance.get<T>(endpoint, { params });
+  async get<T>(
+    endpoint: string,
+    params?: Record<string, string>,
+    options?: RequestOptions,
+  ): Promise<T> {
+    const r = await this.axiosInstance.get<T>(endpoint, { params, signal: options?.signal });
     return r.data;
   }
 
-  async post<T>(endpoint: string, data?: unknown): Promise<T> {
-    const r = await this.axiosInstance.post<T>(endpoint, data);
+  async post<T>(endpoint: string, data?: unknown, options?: RequestOptions): Promise<T> {
+    const r = await this.axiosInstance.post<T>(endpoint, data, { signal: options?.signal });
     return r.data;
   }
 
