@@ -378,6 +378,9 @@ function LabelLayoutEditor({
             printMedia={draft.printMedia}
             sheetPreset={draft.sheetPreset}
             sheetPresets={sheetPresets}
+            rollLabelsAcross={draft.rollLabelsAcross}
+            rollColumnGapMm={draft.rollColumnGapMm}
+            rollPageWidthMm={effective.rollSpec?.pageWidthMm}
             template={draft.template}
             barcodePosition={draft.barcodePosition}
             currencyStyle={draft.currencyStyle}
