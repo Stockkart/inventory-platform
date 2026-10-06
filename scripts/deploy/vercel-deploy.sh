@@ -48,6 +48,29 @@ fi
 log "Vercel: pulling settings for project ${VERCEL_PROJECT_ID}"
 vercel pull --yes --environment=production --token "$VERCEL_TOKEN" >&2
 
+# Build-time variables must be real values. Vercel "Sensitive" variables cannot
+# be pulled and come back as the literal "[SENSITIVE]", which Vite would bake in.
+ENV_FILE=.vercel/.env.production.local
+REQUIRED_VITE_VARS=${REQUIRED_VITE_VARS:-VITE_API_URL}
+if [[ -f "$ENV_FILE" ]]; then
+  problems=()
+  for name in $REQUIRED_VITE_VARS; do
+    value=$( { grep -E "^${name}=" "$ENV_FILE" || true; } | head -1 | cut -d= -f2- | tr -d '"')
+    if [[ -z "$value" ]]; then
+      problems+=("${name} is not set for the Production environment of this Vercel project")
+    elif [[ "$value" == *SENSITIVE* ]]; then
+      problems+=("${name} is marked Sensitive in Vercel, so the build cannot read it — re-add it with Sensitive unchecked (VITE_* values are public in the bundle anyway)")
+    fi
+  done
+  if grep -q '\[SENSITIVE\]' "$ENV_FILE"; then
+    sensitive_names=$( { grep '\[SENSITIVE\]' "$ENV_FILE" || true; } | cut -d= -f1 | tr '\n' ' ')
+    log "Vercel: sensitive variables not available to the build: ${sensitive_names}"
+  fi
+  ((${#problems[@]} == 0)) || die "$(printf '%s; ' "${problems[@]}")"
+else
+  die "vercel pull did not produce ${ENV_FILE}; is VERCEL_PROJECT_ID correct?"
+fi
+
 log "Vercel: building ${SHA}"
 vercel build --prod --yes --token "$VERCEL_TOKEN" >&2
 
