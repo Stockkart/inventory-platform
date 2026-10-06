@@ -65,6 +65,11 @@ Actions → **promote-to-production** → Run workflow, with the full 40-charact
 `production-manual` environment to approve, then builds for production, deploys
 and verifies.
 
+Only commits that render the `build-sha` meta tag (everything from the pipeline
+commit onwards) can be promoted; older commits cannot be verified and are refused up
+front. The deploy scripts are always taken from the workflow's own commit, so an
+older application commit is deployed with current tooling.
+
 Rule with no exceptions: **nothing reaches production without having been verified
 on staging first** — a merge to `main` does both in one run, the PR label requires
 staging to be serving that commit, and promote deploys to staging before asking for
