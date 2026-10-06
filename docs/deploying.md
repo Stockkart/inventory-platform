@@ -12,8 +12,11 @@ result with the Vercel CLI. There are two Vercel projects:
 In Vercel's vocabulary each project's main domain is its "production" target, so
 the pipeline always deploys with `--prod`; which real environment that is depends
 only on the project id. Build-time variables (`VITE_API_URL`,
-`VITE_GOOGLE_CLIENT_ID`, …) live in each Vercel project's settings and are pulled
-by `vercel pull`; the pipeline adds `VITE_BUILD_SHA=<commit>`, which
+`VITE_GOOGLE_CLIENT_ID`, …) live in each Vercel project's settings, enabled for the
+**Production** environment and **not marked Sensitive** (sensitive values cannot be
+pulled and would be baked in as the literal `[SENSITIVE]`; every `VITE_*` value is
+public in the bundle anyway). They are pulled by `vercel pull`; the pipeline adds
+`VITE_BUILD_SHA=<commit>`, which
 `apps/inventory/app/root.tsx` renders as `<meta name="build-sha">` so the deploy
 can be verified.
 
