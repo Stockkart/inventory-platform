@@ -1,6 +1,6 @@
 # Inventory Platform (StockKart frontend)
 
-Nx + React monorepo for the StockKart inventory web app. Domains live under `core/*`, shared UI under `ui-kit`, platform infra under `platform/*`, and vertical extras under `plugins/*`
+Nx + React monorepo for the StockKart inventory web app. Domains live under `core/*`, shared UI under `ui-kit`, platform infra under `platform/*`, and vertical extras under `plugins/*`.
 
 ## Topology
 
