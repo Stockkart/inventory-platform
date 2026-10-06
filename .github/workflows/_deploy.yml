@@ -65,10 +65,20 @@ jobs:
           echo "::error::environment 'production' is reserved for pushes to main (got ${{ github.ref }}). Use promote-to-production."
           exit 1
 
-      - name: Checkout ${{ inputs.sha }}
+      - name: Checkout source at ${{ inputs.sha }}
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ inputs.sha }}
+
+      # The deploy scripts always come from the workflow's own commit, so an older
+      # application commit (rollback) can still be deployed with current tooling.
+      - name: Checkout deploy scripts from the workflow commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.sha }}
+          path: .pipeline
+          sparse-checkout: scripts/deploy
+          sparse-checkout-cone-mode: false
 
       - name: Install pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
@@ -90,10 +100,10 @@ jobs:
 
       - name: Build and deploy to Vercel
         id: vercel
-        run: scripts/deploy/vercel-deploy.sh "${{ inputs.sha }}"
+        run: .pipeline/scripts/deploy/vercel-deploy.sh "${{ inputs.sha }}"
 
       - name: Verify ${{ vars.WEB_URL }} serves this sha
-        run: scripts/deploy/verify-frontend.sh "$WEB_URL" "${{ inputs.sha }}" 5
+        run: .pipeline/scripts/deploy/verify-frontend.sh "$WEB_URL" "${{ inputs.sha }}" 5
 
       - name: Job summary
         if: always()
@@ -107,4 +117,4 @@ jobs:
           SUMMARY_BASE_URL: ${{ vars.WEB_URL }}
           SUMMARY_ACTOR: ${{ github.actor }}
           SUMMARY_REASON: ${{ inputs.reason }}
-        run: scripts/deploy/summary.sh
+        run: .pipeline/scripts/deploy/summary.sh

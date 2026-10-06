@@ -50,6 +50,17 @@ jobs:
             exit 1
           fi
 
+      - name: Commit must be verifiable (renders the build-sha tag)
+        env:
+          SHA: ${{ inputs.sha }}
+        run: |
+          if git show "${SHA}:apps/inventory/app/root.tsx" 2>/dev/null | grep -q 'name="build-sha"'; then
+            echo "commit renders <meta name=\"build-sha\">; deploys of it can be verified"
+          else
+            echo "::error::commit '$SHA' predates the deploy pipeline (no build-sha meta tag), so a deploy of it cannot be verified. Only commits from the pipeline onwards can be promoted."
+            exit 1
+          fi
+
       - name: Summary for the approver
         env:
           SHA: ${{ inputs.sha }}
