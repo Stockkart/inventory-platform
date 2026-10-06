@@ -26,6 +26,37 @@
     "tags": [
       "type:app",
       "scope:inventory"
-    ]
+    ],
+    "targets": {
+      "build": {
+        "inputs": [
+          "production",
+          "^production",
+          {
+            "externalDependencies": [
+              "@react-router/dev"
+            ]
+          },
+          {
+            "env": "VITE_API_URL"
+          },
+          {
+            "env": "VITE_MOBILE_API_URL"
+          },
+          {
+            "env": "VITE_GOOGLE_CLIENT_ID"
+          },
+          {
+            "env": "VITE_FACEBOOK_APP_ID"
+          },
+          {
+            "env": "VITE_RAZORPAY_KEY_ID"
+          },
+          {
+            "env": "VITE_BUILD_SHA"
+          }
+        ]
+      }
+    }
   }
 }
