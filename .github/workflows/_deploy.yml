@@ -1,0 +1,110 @@
+# Reusable: build the frontend for one Vercel project and deploy it, then verify
+# the project's domain serves the requested commit.
+#
+# `environment` selects both the Vercel project (via the environment's
+# VERCEL_PROJECT_ID variable) and the gate:
+#   staging           – Vercel staging project, no reviewers
+#   production        – Vercel production project, no reviewers, main only (release.yml)
+#   production-manual – Vercel production project, required reviewers, any sha (promote.yml)
+name: _deploy
+
+on:
+  workflow_call:
+    inputs:
+      sha:
+        description: Full commit sha to build and deploy
+        type: string
+        required: true
+      environment:
+        description: staging | production | production-manual
+        type: string
+        required: true
+      reason:
+        description: Why this deploy is happening (promote only)
+        type: string
+        required: false
+        default: ''
+    outputs:
+      deployment_url:
+        description: Unique Vercel deployment URL
+        value: ${{ jobs.deploy.outputs.deployment_url }}
+      web_url:
+        description: Public URL of the environment that was deployed
+        value: ${{ jobs.deploy.outputs.web_url }}
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Build and deploy (Vercel)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ vars.WEB_URL }}
+    # Staging: newest push wins (an older staging job is cancelled). Production and
+    # production-manual share a group because they are the same Vercel project, and
+    # a production deploy is never interrupted.
+    concurrency:
+      group: web-${{ inputs.environment == 'staging' && 'staging' || 'production' }}
+      cancel-in-progress: ${{ inputs.environment == 'staging' }}
+    outputs:
+      deployment_url: ${{ steps.vercel.outputs.deployment_url }}
+      web_url: ${{ vars.WEB_URL }}
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+      WEB_URL: ${{ vars.WEB_URL }}
+      VERCEL_CLI_VERSION: ${{ vars.VERCEL_CLI_VERSION || '62.2.0' }}
+    steps:
+      - name: Guard — only release.yml may use the automatic gate
+        if: inputs.environment == 'production' && github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::environment 'production' is reserved for pushes to main (got ${{ github.ref }}). Use promote-to-production."
+          exit 1
+
+      - name: Checkout ${{ inputs.sha }}
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ inputs.sha }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        with:
+          version: 9.8.0
+          run_install: false
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Vercel CLI
+        run: npm install --global "vercel@${VERCEL_CLI_VERSION}"
+
+      - name: Build and deploy to Vercel
+        id: vercel
+        run: scripts/deploy/vercel-deploy.sh "${{ inputs.sha }}"
+
+      - name: Verify ${{ vars.WEB_URL }} serves this sha
+        run: scripts/deploy/verify-frontend.sh "$WEB_URL" "${{ inputs.sha }}" 5
+
+      - name: Job summary
+        if: always()
+        env:
+          SUMMARY_ENVIRONMENT: ${{ inputs.environment == 'staging' && 'staging' || 'production' }}
+          SUMMARY_SHA: ${{ inputs.sha }}
+          SUMMARY_PREVIOUS: ${{ steps.vercel.outputs.previous_sha }}
+          SUMMARY_RESULT: ${{ job.status == 'success' && 'success' || 'failed' }}
+          SUMMARY_DEPLOYMENT_ID: ${{ steps.vercel.outputs.deployment_url }}
+          SUMMARY_DEPLOYMENT_URL: ${{ steps.vercel.outputs.deployment_url }}
+          SUMMARY_BASE_URL: ${{ vars.WEB_URL }}
+          SUMMARY_ACTOR: ${{ github.actor }}
+          SUMMARY_REASON: ${{ inputs.reason }}
+        run: scripts/deploy/summary.sh

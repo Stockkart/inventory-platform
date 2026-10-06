@@ -21,6 +21,12 @@ export const meta: MetaFunction = () => [
     content:
       'Streamline your business operations with our comprehensive inventory management platform.',
   },
+  {
+    // Set by the deploy pipeline (VITE_BUILD_SHA=<commit>) so verify-frontend.sh can
+    // prove which commit is live. 'local' for dev builds.
+    name: 'build-sha',
+    content: import.meta.env.VITE_BUILD_SHA || 'local',
+  },
 ];
 
 export const links: LinksFunction = () => [
