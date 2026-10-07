@@ -6,8 +6,13 @@
  * a fraction of a dot, say 1.3 dots, is rasterised as one dot here and two dots
  * there, and scanners cannot decode the result. The print window therefore draws
  * JsBarcode at one CSS px per module and then stretches the `<svg>` to exactly
- * `modules × dots × DOT_MM` millimetres, so every bar and space is a whole number
- * of printer dots.
+ * `modules × dots × DOT_MM` millimetres whenever at least two dots per module fit,
+ * so every bar and space is a whole number of printer dots.
+ *
+ * When even two dots per module would overflow the sticker (a 14-char Code128 on a
+ * 38 mm or 50 mm label) the bars instead fill {@link BARCODE_FILL} of the sticker,
+ * the width the shops are used to; with the driver's dithering off those bars still
+ * scan, and the shop prefers the larger symbol over the 24 mm one-dot version.
  */
 
 /** Dot pitch of a 203 dpi thermal printer, in millimetres. */
@@ -19,17 +24,26 @@ export const QUIET_ZONE_MODULES = 10;
 /** Widest module the fitter will pick; beyond this the bars just waste label. */
 const MAX_DOTS_PER_MODULE = 4;
 
+/** Share of the sticker's content width the bars take when no whole-dot size fits. */
+export const BARCODE_FILL = 0.9;
+
 export interface BarcodeDotFit {
-  /** Printer dots per Code128 module (always ≥ 1). */
+  /**
+   * Printer dots per Code128 module. A whole number ≥ 2 when the bars are
+   * dot-snapped; a fraction when they fill the sticker instead.
+   */
   dotsPerModule: number;
-  /** Bar area width in millimetres: `modules × dotsPerModule × dotMm`. */
+  /** Bar area width in millimetres. */
   widthMm: number;
+  /** `true` when every module is a whole number of dots. */
+  snapped: boolean;
 }
 
 /**
- * Picks the widest whole-dot module such that the bars plus both quiet zones fit
- * `usableWidthMm`. Falls back to one dot per module when nothing fits (a code too
- * long for the sticker still prints; it just has thin quiet zones).
+ * Picks the widest whole-dot module (2 to 4 dots) such that the bars plus both
+ * quiet zones fit `usableWidthMm`. When not even two dots per module fit, the bars
+ * fill {@link BARCODE_FILL} of the width instead, matching the long-standing print
+ * width, rather than shrinking to a one-dot symbol.
  */
 export function fitBarcodeToDots(
   modules: number,
@@ -39,10 +53,11 @@ export function fitBarcodeToDots(
   const withQuiet = modules + 2 * QUIET_ZONE_MODULES;
   for (let dots = MAX_DOTS_PER_MODULE; dots > 1; dots -= 1) {
     if (withQuiet * dots * dotMm <= usableWidthMm) {
-      return { dotsPerModule: dots, widthMm: modules * dots * dotMm };
+      return { dotsPerModule: dots, widthMm: modules * dots * dotMm, snapped: true };
     }
   }
-  return { dotsPerModule: 1, widthMm: modules * dotMm };
+  const widthMm = usableWidthMm * BARCODE_FILL;
+  return { dotsPerModule: widthMm / (modules * dotMm), widthMm, snapped: false };
 }
 
 /**

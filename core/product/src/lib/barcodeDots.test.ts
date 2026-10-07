@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import {
+  BARCODE_FILL,
   DOT_MM,
   QUIET_ZONE_MODULES,
   fitBarcodeSvgToDots,
@@ -18,35 +19,43 @@ import {
 const CODE128_14_CHARS = 189; // start + 14 data + check = 16 × 11 modules, plus the 13-module stop
 
 describe('fitBarcodeToDots', () => {
-  it('uses one dot per module when two would not fit the 38 mm label', () => {
+  it('fills 90% of the 38 mm label when two dots per module would not fit', () => {
     // 38x38 with 2 mm padding leaves 34 mm. 2 dots: (189 + 20) × 2 × 0.1251 = 52 mm > 34.
+    // The shop wants the familiar wide symbol here, not a 24 mm one-dot one.
     const fit = fitBarcodeToDots(CODE128_14_CHARS, 34);
-    expect(fit.dotsPerModule).toBe(1);
-    expect(fit.widthMm).toBeCloseTo(CODE128_14_CHARS * DOT_MM, 6);
-    expect(fit.widthMm).toBeLessThan(34);
+    expect(fit.snapped).toBe(false);
+    expect(fit.widthMm).toBeCloseTo(34 * BARCODE_FILL, 6);
+    expect(fit.dotsPerModule).toBeCloseTo(fit.widthMm / (CODE128_14_CHARS * DOT_MM), 6);
+    expect(fit.dotsPerModule).toBeGreaterThan(1);
+    expect(fit.dotsPerModule).toBeLessThan(2);
   });
 
   it('picks the widest whole-dot module that still leaves quiet zones', () => {
     // EAN-13 is 95 modules: 2 dots → (95 + 20) × 2 × 0.1251 = 28.8 mm fits in 34; 3 dots does not.
-    expect(fitBarcodeToDots(95, 34).dotsPerModule).toBe(2);
+    const ean = fitBarcodeToDots(95, 34);
+    expect(ean.dotsPerModule).toBe(2);
+    expect(ean.snapped).toBe(true);
     // 100x50 (96 mm usable) takes 3 dots for the 14-char code: (189+20)×3×0.1251 = 78 mm.
     expect(fitBarcodeToDots(CODE128_14_CHARS, 96).dotsPerModule).toBe(3);
     // Never wider than 4 dots.
     expect(fitBarcodeToDots(20, 500).dotsPerModule).toBe(4);
   });
 
-  it('falls back to one dot per module when even that overflows, and never zero', () => {
+  it('a code far too long for the sticker still fills 90% and never reports zero dots', () => {
     const fit = fitBarcodeToDots(400, 10);
-    expect(fit.dotsPerModule).toBe(1);
-    expect(fit.widthMm).toBeCloseTo(400 * DOT_MM, 6);
+    expect(fit.snapped).toBe(false);
+    expect(fit.widthMm).toBeCloseTo(9, 6);
+    expect(fit.dotsPerModule).toBeGreaterThan(0);
   });
 
   it('honours a different dot pitch (300 dpi printer)', () => {
     const dot300 = 25.4 / 300;
-    const fit = fitBarcodeToDots(CODE128_14_CHARS, 34, dot300);
-    // (189 + 20) × 2 × 0.0847 = 35.4 mm > 34, so still 1 dot at 300 dpi.
-    expect(fit.dotsPerModule).toBe(1);
-    expect(fit.widthMm).toBeCloseTo(CODE128_14_CHARS * dot300, 6);
+    // (189 + 20) × 2 × 0.0847 = 35.4 mm > 34, so at 300 dpi the 38 mm label also fills.
+    expect(fitBarcodeToDots(CODE128_14_CHARS, 34, dot300).snapped).toBe(false);
+    // On 100x50, 4 dots: (189 + 20) × 4 × 0.0847 = 70.8 mm fits in 96.
+    const wide = fitBarcodeToDots(CODE128_14_CHARS, 96, dot300);
+    expect(wide.dotsPerModule).toBe(4);
+    expect(wide.widthMm).toBeCloseTo(CODE128_14_CHARS * 4 * dot300, 6);
   });
 
   it('quiet zone constant matches the Code128 minimum of 10 modules a side', () => {
@@ -82,15 +91,22 @@ describe('fitBarcodeSvgToDots', () => {
     return svg;
   }
 
-  it('sets an exact mm width, lets the CSS height stretch the bars and asks for crisp edges', () => {
+  it('sets the fitted mm width, lets the CSS height stretch the bars and asks for crisp edges', () => {
     const svg = svgWithModules(CODE128_14_CHARS);
     const fit = fitBarcodeSvgToDots(svg, 34);
-    expect(fit?.dotsPerModule).toBe(1);
-    expect(svg.style.width).toBe(`${(CODE128_14_CHARS * DOT_MM).toFixed(4)}mm`);
+    expect(fit?.snapped).toBe(false);
+    expect(svg.style.width).toBe(`${(34 * BARCODE_FILL).toFixed(4)}mm`);
     expect(svg.getAttribute('preserveAspectRatio')).toBe('none');
     expect(svg.getAttribute('shape-rendering')).toBe('crispEdges');
     // Height is left to the sticker CSS (percentage of the sticker), not pinned here.
     expect(svg.style.height).toBe('');
+  });
+
+  it('pins a whole-dot width when one fits (EAN-13 on 34 mm → 2 dots)', () => {
+    const svg = svgWithModules(95);
+    const fit = fitBarcodeSvgToDots(svg, 34);
+    expect(fit?.snapped).toBe(true);
+    expect(svg.style.width).toBe(`${(95 * 2 * DOT_MM).toFixed(4)}mm`);
   });
 
   it('leaves the svg alone when the module count cannot be read', () => {
