@@ -9,7 +9,7 @@ import type { BarcodeLabelDto } from './types.js';
 
 export type { ShopType };
 
-export type StickerSize = '50x25' | '38x25' | '100x50';
+export type StickerSize = '50x25' | '38x25' | '38x38' | '100x50';
 export type BlankValueBehavior = 'HIDE_LINE' | 'PRINT_BLANK';
 export type LabelSourceGroup = 'product' | 'lot' | 'pricing' | 'shop' | 'vertical';
 export type LabelValueType = 'text' | 'number' | 'currency' | 'date' | 'percentage';
@@ -69,6 +69,26 @@ export interface SheetPreset {
   /** Grid per compatible Sticker_Size; plain presets include every preset size. */
   perStickerSize: Record<StickerSize, SheetGrid>;
 }
+
+/**
+ * The resolved roll geometry carried on the effective layout when `printMedia` is
+ * `ROLL` and the shop saved how its roll is cut (mirrors the backend `RollSpec`).
+ * One roll row prints per page: `pageWidthMm` spans every label and gap across
+ * the web, `pageHeightMm` is one label. Absent/`null` means the legacy
+ * single-column roll output where the printer driver decides the page.
+ */
+export interface RollSpec {
+  labelsAcross: number;
+  columnGapMm: number;
+  pageWidthMm: number;
+  pageHeightMm: number;
+}
+
+/** Fewest / most labels per roll row the backend accepts (`RollLayoutCalculator`). */
+export const ROLL_LABELS_ACROSS_MIN = 1;
+export const ROLL_LABELS_ACROSS_MAX = 4;
+/** Widest roll column gap the backend accepts, in millimetres. */
+export const ROLL_COLUMN_GAP_MAX_MM = 20;
 
 /** The resolved sheet geometry carried on the effective layout when `printMedia` is `SHEET`. */
 export interface SheetSpec {
@@ -156,6 +176,11 @@ export interface EffectiveLabelLayout {
   /** Resolved sheet geometry; present only when `printMedia` is `SHEET`. */
   sheetSpec?: SheetSpec | null;
   /**
+   * Resolved roll geometry; present only for `ROLL` layouts whose shop saved a
+   * roll setup. Absent/`null` keeps the legacy single-column roll output.
+   */
+  rollSpec?: RollSpec | null;
+  /**
    * Sticker template (Req 11). Absent is treated as `STACKED` by the renderer,
    * so this stays optional; the backend always supplies it on responses.
    */
@@ -188,6 +213,13 @@ export interface SaveLabelLayoutRequest {
   printMedia?: PrintMedia;
   /** Required when `printMedia` is `SHEET`; ignored for `ROLL` (Req 10.1). */
   sheetPreset?: string | null;
+  /**
+   * Labels side by side on the roll (1–4); only used for `ROLL`. Omitting both
+   * roll fields keeps the legacy single-column roll output.
+   */
+  rollLabelsAcross?: number | null;
+  /** Gap between neighbouring roll labels in millimetres (0–20); only used for `ROLL`. */
+  rollColumnGapMm?: number | null;
   /** Defaults to `STACKED` on the backend when omitted (Req 11). */
   template?: StickerTemplate;
   /** Defaults to `TOP` on the backend when omitted (Req 11). */
@@ -214,6 +246,7 @@ export interface BarcodeLabelsResponse {
 export const STICKER_SIZES: StickerSizeSpec[] = [
   { size: '50x25', widthMm: 50, heightMm: 25, maxLines: 3 },
   { size: '38x25', widthMm: 38, heightMm: 25, maxLines: 2 },
+  { size: '38x38', widthMm: 38, heightMm: 38, maxLines: 4 },
   { size: '100x50', widthMm: 100, heightMm: 50, maxLines: 6 },
 ];
 
@@ -226,6 +259,7 @@ export const DEFAULT_STICKER_SIZE: StickerSize = '50x25';
 export const ZONE_CAPS: Record<StickerSize, ZoneCaps> = {
   '50x25': { header: 1, left: 4, right: 2 },
   '38x25': { header: 1, left: 3, right: 1 },
+  '38x38': { header: 1, left: 4, right: 2 },
   '100x50': { header: 1, left: 6, right: 3 },
 };
 

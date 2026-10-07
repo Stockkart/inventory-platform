@@ -34,6 +34,7 @@ import type {
   InventoryCorrectionListResponse,
   PackagingUnit,
 } from '@inventory-platform/product/types';
+import type { SearchFieldCatalog, SearchRequest, SearchResponse } from '../model/search.types';
 import axios from 'axios';
 
 /** Resolve inventory document id for GET/PUT `/inventory/{id}`. */
@@ -186,6 +187,51 @@ export const inventoryApi = {
   /** @deprecated Use inventoryApi.search with flat params */
   searchWithFilters: async (params: InventorySearchParams): Promise<InventoryListResponse> => {
     return inventoryApi.search(params);
+  },
+
+  /**
+   * Advanced search (advanced-product-search R2.1): text + filter groups + facets + sort + paging
+   * in one request. Pass TanStack Query's `signal` so a superseded request is cancelled.
+   */
+  searchAdvanced: async (request: SearchRequest, signal?: AbortSignal): Promise<SearchResponse> => {
+    const response = await apiClient.post<ApiResponse<SearchResponse>>(
+      INVENTORY_ENDPOINTS.SEARCH,
+      request,
+      { signal },
+    );
+    const body = response.data;
+    return {
+      data: Array.isArray(body?.data) ? body.data : [],
+      page: body?.page ?? { page: request.page, size: request.size, totalItems: 0, totalPages: 0 },
+      facets: body?.facets ?? {},
+      appliedSort: body?.appliedSort ?? null,
+    };
+  },
+
+  /** The fields the active shop can filter, facet and sort on (R1.1). */
+  searchFields: async (): Promise<SearchFieldCatalog> => {
+    const response = await apiClient.get<ApiResponse<SearchFieldCatalog>>(
+      INVENTORY_ENDPOINTS.SEARCH_FIELDS,
+    );
+    return response.data;
+  },
+
+  /** Distinct values of a text facet field for the "Find…" box (R5.4). */
+  searchValues: async (
+    field: string,
+    q?: string,
+    limit?: number,
+    signal?: AbortSignal,
+  ): Promise<string[]> => {
+    const params: Record<string, string> = { field };
+    if (q?.trim()) params.q = q.trim();
+    if (limit !== undefined && limit > 0) params.limit = String(limit);
+    const response = await apiClient.get<ApiResponse<string[]>>(
+      INVENTORY_ENDPOINTS.SEARCH_VALUES,
+      params,
+      { signal },
+    );
+    return Array.isArray(response.data) ? response.data : [];
   },
 
   getExpiryBuckets: async (expiringSoonDays?: number): Promise<InventoryExpiryBuckets> => {

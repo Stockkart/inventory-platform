@@ -3,6 +3,7 @@ import type {
   AmendVendorPurchaseInvoicePayload,
   PurchaseTaxPreviewRequest,
 } from '@inventory-platform/product/types';
+import type { SearchRequest } from '../model/search.types';
 
 const base = createQueryKeyFactory('product');
 
@@ -24,6 +25,11 @@ export const productKeys = {
   labelFieldCatalog: () => [...base.all, 'label-field-catalog'] as const,
   cardLayouts: () => [...base.all, 'card-layouts'] as const,
   cardFieldCatalog: () => [...base.all, 'card-field-catalog'] as const,
+  searchFields: () => [...base.all, 'search-fields'] as const,
+  searches: () => [...base.all, 'search'] as const,
+  search: (request: SearchRequest | null) => [...base.all, 'search', request] as const,
+  searchValues: (field: string, prefix: string) =>
+    [...base.all, 'search-values', field, prefix] as const,
 };
 
 export const PRODUCT_MODULE_VERSION = '0.1.0';

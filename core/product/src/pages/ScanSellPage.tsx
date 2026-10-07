@@ -71,6 +71,8 @@ import {
   X,
 } from 'lucide-react';
 import { inventoryApi, resolveInventoryDocumentId } from '../api/inventory.api';
+import type { FacetValue } from '../model/search.types';
+import { CompanyChips, chipIndexForKey, visibleCompanyChips } from '../ui/search/CompanyChips';
 import { cartApi } from '../api/cart.api';
 import { estimatesApi } from '../api/estimates.api';
 import {
@@ -873,6 +875,9 @@ function ProductSearchBlock({
   searchWrapperRef,
   cardLayoutFor,
   cardVisibility,
+  companies,
+  selectedCompany,
+  onSelectCompany,
 }: {
   searchQuery: string;
   setSearchQuery: (value: string) => void;
@@ -885,6 +890,10 @@ function ProductSearchBlock({
   onSearch: () => void;
   onLoadMore: () => void;
   placeholder: string;
+  /** Company counts from the last search; chips show when more than one company matched (R7.2). */
+  companies?: readonly FacetValue[];
+  selectedCompany?: string | null;
+  onSelectCompany?: (company: string | null) => void;
   autoFocus?: boolean;
   onAddToCart: (item: InventoryItem, price?: number) => void;
   addDisabled: (item: InventoryItem) => boolean;
@@ -945,11 +954,31 @@ function ProductSearchBlock({
               <Text color="secondary">Searching…</Text>
             </Box>
           ) : searchResults.length === 0 ? (
-            <Box padding="md" textAlign="center">
-              <Text color="secondary">No products found</Text>
-            </Box>
+            <>
+              {companies && onSelectCompany && selectedCompany ? (
+                <CompanyChips
+                  companies={companies}
+                  selected={selectedCompany}
+                  onSelect={onSelectCompany}
+                  disabled={isSearching}
+                  className={dropdownFooterStyle}
+                />
+              ) : null}
+              <Box padding="md" textAlign="center">
+                <Text color="secondary">No products found</Text>
+              </Box>
+            </>
           ) : (
             <>
+              {companies && onSelectCompany ? (
+                <CompanyChips
+                  companies={companies}
+                  selected={selectedCompany ?? null}
+                  onSelect={onSelectCompany}
+                  disabled={isSearching}
+                  className={dropdownFooterStyle}
+                />
+              ) : null}
               <SearchDropdownScroll>
                 <Stack as="ul" gap="none" className={dropdownListStyle}>
                   {searchResults.map((item) => (
@@ -1080,6 +1109,10 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
   const [searchPageSize, setSearchPageSize] = useState(SCAN_SELL_SEARCH_PAGE_SIZE);
   const [searchTotalPages, setSearchTotalPages] = useState(0);
   const [searchTotalItems, setSearchTotalItems] = useState(0);
+  // Company chips over the dropdown (R7): counts from the last text search, the chosen company.
+  const [searchCompanies, setSearchCompanies] = useState<FacetValue[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
+  const lastSearchedQuery = useRef<string>('');
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [cartData, setCartData] = useState<CartResponse | null>(null);
   /** Built once per cart response so each line looks its margin up instead of scanning the cart. */
@@ -1397,12 +1430,19 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
 
   // Product search for dropdown (only on Enter or Search button)
   const runSearch = useCallback(
-    async (query: string, pageNum = 0, pageSize = SCAN_SELL_SEARCH_PAGE_SIZE, append = false) => {
+    async (
+      query: string,
+      pageNum = 0,
+      pageSize = SCAN_SELL_SEARCH_PAGE_SIZE,
+      append = false,
+      company: string | null = selectedCompany,
+    ) => {
       if (!query.trim()) {
         setSearchResults([]);
         setSearchPage(0);
         setSearchTotalPages(0);
         setSearchTotalItems(0);
+        setSearchCompanies([]);
         return;
       }
       setSearchPage(pageNum);
@@ -1414,33 +1454,26 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
       }
       setError(null);
       try {
-        // Sold-out lots cannot be added to a bill, so the counter never sees them here.
-        const response = await inventoryApi.search({
-          q: query.trim(),
-          limit: pageSize,
+        // Sold-out lots cannot be added to a bill, so the counter never sees them here. The company
+        // counts ride along with the first page; "load more" reuses them (R7.1, R10.1).
+        const response = await inventoryApi.searchAdvanced({
+          text: query.trim(),
+          textMode: 'pattern',
+          filters: company ? [{ field: 'companyName', op: 'in', values: [company] }] : [],
+          match: 'all',
+          facets: append ? [] : ['companyName'],
+          sort: null,
           page: pageNum,
-          sort: 'expiryDate:asc',
+          size: pageSize,
           includeZeroStock: false,
+          surface: 'scan-sell',
         });
-        let items: InventoryItem[] = [];
-        if (response) {
-          if (Array.isArray(response)) items = response;
-          else if (response.data) {
-            if (Array.isArray(response.data)) items = response.data;
-            else if (
-              response.data &&
-              typeof response.data === 'object' &&
-              'data' in response.data
-            ) {
-              const nestedData = (response.data as { data?: InventoryItem[] }).data;
-              items = Array.isArray(nestedData) ? nestedData : [];
-            }
-          }
-        }
-        if (response?.page) {
-          setSearchTotalPages(response.page.totalPages);
-          setSearchTotalItems(response.page.totalItems);
-          setSearchPage(response.page.page);
+        const items: InventoryItem[] = response.data;
+        setSearchTotalPages(response.page.totalPages);
+        setSearchTotalItems(response.page.totalItems);
+        setSearchPage(response.page.page);
+        if (!append && response.facets.companyName) {
+          setSearchCompanies(response.facets.companyName);
         }
         const sortedItems = sortInventoryByExpirySoonest(items);
         setSearchResults((prev) => {
@@ -1466,7 +1499,18 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
         }
       }
     },
-    [searchPageSize, notifyError],
+    [searchPageSize, notifyError, selectedCompany],
+  );
+
+  /** Picking a company re-runs the same text with that company; "All" drops it (R7.3). */
+  const handleSelectCompany = useCallback(
+    (company: string | null) => {
+      setSelectedCompany(company);
+      if (!searchQuery.trim()) return;
+      setShowSearchDropdown(true);
+      void runSearch(searchQuery, 0, SCAN_SELL_SEARCH_PAGE_SIZE, false, company);
+    },
+    [searchQuery, runSearch],
   );
 
   const handleSearchSubmit = useCallback(
@@ -1481,10 +1525,36 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
         return;
       }
       setShowSearchDropdown(true);
-      runSearch(searchQuery, 0, SCAN_SELL_SEARCH_PAGE_SIZE, false);
+      // A new text starts from "All": a company chosen for the previous text is unrelated (R7.4).
+      const changed = searchQuery.trim() !== lastSearchedQuery.current;
+      lastSearchedQuery.current = searchQuery.trim();
+      if (changed) setSelectedCompany(null);
+      runSearch(
+        searchQuery,
+        0,
+        SCAN_SELL_SEARCH_PAGE_SIZE,
+        false,
+        changed ? null : selectedCompany,
+      );
     },
-    [searchQuery, runSearch],
+    [searchQuery, runSearch, selectedCompany],
   );
+
+  // Alt + 1…5 picks a company chip while the dropdown is open (R7.5).
+  useEffect(() => {
+    if (!showSearchDropdown) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      const index = chipIndexForKey(e);
+      if (index === null) return;
+      const chips = visibleCompanyChips(searchCompanies);
+      const chip = chips[index];
+      if (!chip) return;
+      e.preventDefault();
+      handleSelectCompany(selectedCompany === chip.value ? null : chip.value);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [showSearchDropdown, searchCompanies, selectedCompany, handleSelectCompany]);
 
   const handleLoadMoreSearch = useCallback(() => {
     if (!searchQuery.trim() || isSearching || isLoadingMore) return;
@@ -3516,6 +3586,9 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                         hasMoreResults={hasMoreSearchResults}
                         onSearch={() => handleSearchSubmit()}
                         onLoadMore={handleLoadMoreSearch}
+                        companies={searchCompanies}
+                        selectedCompany={selectedCompany}
+                        onSelectCompany={handleSelectCompany}
                         placeholder="Filter menu, or search more products…"
                         onAddToCart={handleAddToCart}
                         rowClassName={searchRowCafeStyle}
@@ -3655,6 +3728,9 @@ export function ScanSellPage({ forceEstimateMode = false }: { forceEstimateMode?
                       hasMoreResults={hasMoreSearchResults}
                       onSearch={() => handleSearchSubmit()}
                       onLoadMore={handleLoadMoreSearch}
+                      companies={searchCompanies}
+                      selectedCompany={selectedCompany}
+                      onSelectCompany={handleSelectCompany}
                       placeholder="Search products..."
                       autoFocus
                       onAddToCart={handleAddToCart}

@@ -62,7 +62,9 @@ function sheetSpecOf(layout: EffectiveLabelLayout | null | undefined): SheetSpec
  */
 export function describeLabelLayout(layout: EffectiveLabelLayout): string {
   const spec = layout.stickerSizeSpec;
-  const size = spec ? `${spec.widthMm}x${spec.heightMm} mm` : `${layout.stickerSize} mm`;
+  const base = spec ? `${spec.widthMm}x${spec.heightMm} mm` : `${layout.stickerSize} mm`;
+  const across = layout.printMedia !== 'SHEET' ? layout.rollSpec?.labelsAcross ?? 1 : 1;
+  const size = across > 1 ? `${base} · ${across} across` : base;
   const parts = layout.enabledFields.map((f) => f.label);
   if (layout.showBarcodeText) parts.push('barcode text');
   const content = parts.length ? parts.join(', ') : 'no text fields';

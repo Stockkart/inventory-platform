@@ -5,6 +5,8 @@ export const INVENTORY_ENDPOINTS = {
   PARSE_INVOICE: '/inventory/parse-invoice',
   PARSE_STOCK_SHEET: '/inventory/parse-stock-sheet',
   SEARCH: '/inventory/search',
+  SEARCH_FIELDS: '/inventory/search/fields',
+  SEARCH_VALUES: '/inventory/search/values',
   EXPIRY_BUCKETS: '/inventory/expiry-buckets',
   BY_IDS: '/inventory/by-ids',
   LOTS: '/inventory/lots',

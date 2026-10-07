@@ -22,7 +22,12 @@ const X_SHOP_ID_KEY = 'x_shop_id';
 export interface ApiRequestOptions {
   headers?: Record<string, string>;
   params?: Record<string, string>;
+  /** Lets a caller (e.g. TanStack Query) cancel a superseded request. */
+  signal?: AbortSignal;
 }
+
+/** The same options under the name callers written against `main` use. */
+export type RequestOptions = ApiRequestOptions;
 
 /**
  * An error body read off a response whose `responseType` was `blob`.
@@ -205,8 +210,16 @@ class ApiClient {
     this.onUnauthorized = handler;
   }
 
-  async get<T>(endpoint: string, params?: Record<string, string>): Promise<T> {
-    const r = await this.axiosInstance.get<T>(endpoint, { params });
+  async get<T>(
+    endpoint: string,
+    params?: Record<string, string>,
+    options?: ApiRequestOptions,
+  ): Promise<T> {
+    const r = await this.axiosInstance.get<T>(endpoint, {
+      params: options?.params ?? params,
+      headers: options?.headers,
+      signal: options?.signal,
+    });
     return r.data;
   }
 
@@ -214,6 +227,7 @@ class ApiClient {
     const r = await this.axiosInstance.post<T>(endpoint, data, {
       headers: options?.headers,
       params: options?.params,
+      signal: options?.signal,
     });
     return r.data;
   }
@@ -228,6 +242,7 @@ class ApiClient {
       responseType: 'blob',
       headers: options?.headers,
       params: options?.params,
+      signal: options?.signal,
     });
     return r.data;
   }
@@ -238,6 +253,7 @@ class ApiClient {
       responseType: 'blob',
       headers: options?.headers,
       params: options?.params,
+      signal: options?.signal,
     });
     return r.data;
   }

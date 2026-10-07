@@ -2,11 +2,15 @@ import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
 import {
   buildSampleLabelData,
+  clampColumnGap,
+  clampLabelsAcross,
   compatibleSheetPresets,
+  draftFromLayout,
   dropFieldMaps,
   groupCatalogFields,
   moveField,
   prepareSaveRequest,
+  resolveRollSpec,
   resolveSheetSpec,
   toEffectiveLayout,
   zoneCounts,
@@ -103,6 +107,8 @@ function arbDraft(catalog: FieldCatalogResponse): fc.Arbitrary<LabelLayoutDraft>
     blankValueBehavior: fc.constantFrom(...BLANK_BEHAVIORS),
     printMedia: fc.constantFrom(...PRINT_MEDIA),
     sheetPreset: fc.option(fc.stringMatching(/^[A-Z0-9_]{1,10}$/), { nil: null }),
+    rollLabelsAcross: fc.integer({ min: 1, max: 4 }),
+    rollColumnGapMm: fc.integer({ min: 0, max: 200 }).map((tenths) => tenths / 10),
     template: fc.constantFrom(...TEMPLATES),
     barcodePosition: fc.constantFrom(...BARCODE_POSITIONS),
     currencyStyle: fc.constantFrom(...CURRENCY_STYLES),
@@ -194,6 +200,14 @@ describe('labelLayoutDraft property tests', () => {
         expect(request.printMedia).toBe(draft.printMedia);
         // `sheetPreset` only rides along for SHEET media; ROLL always clears it.
         expect(request.sheetPreset).toBe(draft.printMedia === 'SHEET' ? draft.sheetPreset : null);
+        // The roll fields only ride along for ROLL media; SHEET always clears them.
+        if (draft.printMedia === 'ROLL') {
+          expect(request.rollLabelsAcross).toBe(draft.rollLabelsAcross);
+          expect(request.rollColumnGapMm).toBe(draft.rollColumnGapMm);
+        } else {
+          expect(request.rollLabelsAcross).toBeNull();
+          expect(request.rollColumnGapMm).toBeNull();
+        }
 
         // Sticker template options (Req 11) ride along unchanged.
         expect(request.template).toBe(draft.template);
@@ -344,10 +358,11 @@ const A4_PLAIN: SheetPreset = {
   marginTopMm: 8,
   marginLeftMm: 8,
   plain: true,
-  compatibleStickerSizes: ['50x25', '38x25', '100x50'],
+  compatibleStickerSizes: ['50x25', '38x25', '38x38', '100x50'],
   perStickerSize: {
     '50x25': { columns: 3, rows: 10, perSheet: 30, pitchXMm: 52, pitchYMm: 27 },
     '38x25': { columns: 5, rows: 10, perSheet: 50, pitchXMm: 40, pitchYMm: 27 },
+    '38x38': { columns: 5, rows: 7, perSheet: 35, pitchXMm: 40, pitchYMm: 40 },
     '100x50': { columns: 1, rows: 5, perSheet: 5, pitchXMm: 102, pitchYMm: 52 },
   },
 };
@@ -456,6 +471,8 @@ function compactDraft(overrides: Partial<LabelLayoutDraft> = {}): LabelLayoutDra
     blankValueBehavior: 'HIDE_LINE',
     printMedia: 'ROLL',
     sheetPreset: null,
+    rollLabelsAcross: 1,
+    rollColumnGapMm: 0,
     template: 'COMPACT',
     barcodePosition: 'TOP',
     currencyStyle: 'RUPEE_SYMBOL',
@@ -541,5 +558,98 @@ describe('toEffectiveLayout (compact resolution)', () => {
     const byKey = new Map(effective.enabledFields.map((f) => [f.fieldKey, f] as const));
     expect(byKey.get('mrp')?.showLabel).toBe(true);
     expect(byKey.get('shopName')?.showLabel).toBe(true);
+  });
+});
+
+describe('roll setup (multi-across label rolls)', () => {
+  const S_38x38 = { size: '38x38' as const, widthMm: 38, heightMm: 38, maxLines: 4 };
+
+  it('clamps labels across and the column gap to the backend bounds', () => {
+    expect(clampLabelsAcross(2)).toBe(2);
+    expect(clampLabelsAcross(2.9)).toBe(2);
+    expect(clampLabelsAcross(0)).toBe(1);
+    expect(clampLabelsAcross(5)).toBe(1);
+    expect(clampLabelsAcross(undefined)).toBe(1);
+    expect(clampLabelsAcross(Number.NaN)).toBe(1);
+    expect(clampColumnGap(3)).toBe(3);
+    expect(clampColumnGap(2.54)).toBe(2.5);
+    expect(clampColumnGap(-1)).toBe(0);
+    expect(clampColumnGap(21)).toBe(0);
+    expect(clampColumnGap(null)).toBe(0);
+  });
+
+  it('resolveRollSpec spans every label and gap across the web, one label high', () => {
+    expect(
+      resolveRollSpec({ printMedia: 'ROLL', rollLabelsAcross: 2, rollColumnGapMm: 3 }, S_38x38),
+    ).toEqual({ labelsAcross: 2, columnGapMm: 3, pageWidthMm: 79, pageHeightMm: 38 });
+    expect(
+      resolveRollSpec({ printMedia: 'ROLL', rollLabelsAcross: 1, rollColumnGapMm: 7 }, S_38x38),
+    ).toEqual({ labelsAcross: 1, columnGapMm: 7, pageWidthMm: 38, pageHeightMm: 38 });
+    expect(
+      resolveRollSpec({ printMedia: 'SHEET', rollLabelsAcross: 2, rollColumnGapMm: 3 }, S_38x38),
+    ).toBeUndefined();
+  });
+
+  it('draftFromLayout reads the saved rollSpec and defaults to 1 across / 0 gap', () => {
+    const base = {
+      enabledFields: [],
+      stickerSize: '38x38' as const,
+      showBarcodeText: true,
+      showFieldLabels: false,
+      blankValueBehavior: 'HIDE_LINE' as const,
+    };
+    const withRoll = draftFromLayout({
+      ...base,
+      printMedia: 'ROLL',
+      rollSpec: { labelsAcross: 2, columnGapMm: 3, pageWidthMm: 79, pageHeightMm: 38 },
+    });
+    expect(withRoll.rollLabelsAcross).toBe(2);
+    expect(withRoll.rollColumnGapMm).toBe(3);
+
+    const legacy = draftFromLayout({ ...base, printMedia: 'ROLL', rollSpec: null });
+    expect(legacy.rollLabelsAcross).toBe(1);
+    expect(legacy.rollColumnGapMm).toBe(0);
+
+    // A SHEET layout's rollSpec (if any) is ignored.
+    const sheet = draftFromLayout({
+      ...base,
+      printMedia: 'SHEET',
+      sheetPreset: 'A4_PLAIN',
+      rollSpec: { labelsAcross: 3, columnGapMm: 2, pageWidthMm: 118, pageHeightMm: 38 },
+    });
+    expect(sheet.rollLabelsAcross).toBe(1);
+    expect(sheet.rollColumnGapMm).toBe(0);
+  });
+
+  it('toEffectiveLayout carries the resolved rollSpec for ROLL and null for SHEET', () => {
+    const draft = compactDraft({
+      template: 'STACKED',
+      stickerSize: '38x38',
+      rollLabelsAcross: 2,
+      rollColumnGapMm: 3,
+    });
+    expect(toEffectiveLayout(draft, COMPACT_CATALOG).rollSpec).toEqual({
+      labelsAcross: 2,
+      columnGapMm: 3,
+      pageWidthMm: 79,
+      pageHeightMm: 38,
+    });
+    expect(
+      toEffectiveLayout({ ...draft, printMedia: 'SHEET', sheetPreset: 'A4_PLAIN' }, COMPACT_CATALOG)
+        .rollSpec,
+    ).toBeNull();
+  });
+
+  it('prepareSaveRequest sends the roll fields for ROLL and clears them for SHEET', () => {
+    const roll = compactDraft({ rollLabelsAcross: 2, rollColumnGapMm: 3 });
+    expect(prepareSaveRequest(roll, COMPACT_CATALOG)).toMatchObject({
+      rollLabelsAcross: 2,
+      rollColumnGapMm: 3,
+    });
+    const sheet = compactDraft({ printMedia: 'SHEET', sheetPreset: 'A4_PLAIN' });
+    expect(prepareSaveRequest(sheet, COMPACT_CATALOG)).toMatchObject({
+      rollLabelsAcross: null,
+      rollColumnGapMm: null,
+    });
   });
 });
