@@ -116,6 +116,9 @@ function Harness() {
         state={s.state}
         facets={s.facets}
         onChange={s.applyPanel}
+        pinned={s.pinned}
+        onPin={s.pin}
+        onUnpin={s.unpin}
       />
     </>
   );
@@ -134,9 +137,18 @@ function renderAt(url: string) {
   return router;
 }
 
-/** Opens a strip dropdown by its button label (the panel stays open while ticking). */
+/**
+ * Opens a filter's panel: adds it through "+ Add filter" when its pill is not in the strip yet
+ * (adding opens it), otherwise clicks the pill. The panel stays open while ticking.
+ */
 async function openDropdown(label: string) {
-  fireEvent.click(await screen.findByRole('button', { name: new RegExp(`^${label}`) }));
+  const pill = screen.queryByRole('button', { name: new RegExp(`^${label}(\\s*:|$)`) });
+  if (pill) {
+    fireEvent.click(pill);
+    return;
+  }
+  fireEvent.click(await screen.findByRole('button', { name: /\+ Add filter/ }));
+  fireEvent.click(await screen.findByRole('option', { name: label }));
 }
 
 function lastRequest(): SearchRequest {
@@ -153,16 +165,20 @@ beforeEach(() => {
   api.searchValues.mockImplementation(async (field: string) =>
     field === 'companyName' ? ['Cipla', 'GSK', 'Sun Pharma'] : ['J1', 'J2'],
   );
-  api.searchAdvanced.mockResolvedValue(
-    response(42, {
+  // like the server: only the facets that were asked for come back
+  api.searchAdvanced.mockImplementation(async (request: SearchRequest) => {
+    const all: SearchResponse['facets'] = {
       companyName: [
         { value: 'Cipla', label: 'Cipla', count: 30 },
         { value: 'GSK', label: 'GSK', count: 12 },
       ],
       location: [{ value: 'J1', label: 'J1', count: 42 }],
       stockState: [],
-    }),
-  );
+    };
+    const facets: SearchResponse['facets'] = {};
+    for (const k of request.facets) if (all[k]) facets[k] = all[k];
+    return response(42, facets);
+  });
 });
 
 describe('setting up (empty URL)', () => {
@@ -176,8 +192,9 @@ describe('setting up (empty URL)', () => {
     // text facets fall back to /search/values for their options
     await openDropdown('Company');
     await screen.findByLabelText('GSK');
-
     fireEvent.click(screen.getByLabelText('Cipla'));
+    // one panel open at a time: reopen Stock from its pill
+    await openDropdown('Stock');
     fireEvent.click(screen.getByLabelText('Low stock'));
 
     // chips show, nothing has been requested, URL untouched
@@ -195,7 +212,8 @@ describe('setting up (empty URL)', () => {
       { field: 'companyName', op: 'in', values: ['Cipla'] },
       { field: 'stockState', op: 'in', values: ['LOW_STOCK'] },
     ]);
-    expect(req.facets).toEqual(['companyName', 'location', 'stockState']);
+    // counts only for the pills on the strip, not the whole catalog
+    expect(req.facets).toEqual(['companyName', 'stockState']);
     expect(screen.getByTestId('mode').textContent).toBe('refining');
     expect(screen.getByTestId('url').textContent).toContain('f=companyName');
     await waitFor(() => expect(screen.getByTestId('total').textContent).toBe('42'));
@@ -226,18 +244,23 @@ describe('refining (URL has a search)', () => {
       filters: [{ field: 'companyName', op: 'in', values: ['Cipla'] }],
     });
     await waitFor(() => expect(screen.getByTestId('total').textContent).toBe('42'));
-    // the Company button shows its one selection; counts from the answer appear inside
-    expect(screen.getByRole('button', { name: /^Company 1/ })).toBeTruthy();
+    // the Company pill came from the URL and shows its selection; counts from the answer appear inside
+    expect(screen.getByRole('button', { name: /^Company\s*:\s*Cipla/ })).toBeTruthy();
     await openDropdown('Company');
     expect(screen.getByLabelText('30 results')).toBeTruthy();
 
+    // adding the Location pill asks for its counts straight away (one request, same criteria)
     await openDropdown('Location');
+    await waitFor(() => expect(api.searchAdvanced).toHaveBeenCalledTimes(2));
+    expect(lastRequest().facets).toEqual(['companyName', 'location']);
+    expect(lastRequest().filters).toEqual([{ field: 'companyName', op: 'in', values: ['Cipla'] }]);
+    await screen.findByLabelText('J1');
     fireEvent.click(screen.getByLabelText('J1'));
-    expect(api.searchAdvanced).toHaveBeenCalledTimes(1); // not yet: debounced
+    expect(api.searchAdvanced).toHaveBeenCalledTimes(2); // not yet: debounced
     await act(async () => {
       await vi.advanceTimersByTimeAsync(300);
     });
-    await waitFor(() => expect(api.searchAdvanced).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(api.searchAdvanced).toHaveBeenCalledTimes(3));
     expect(lastRequest().filters).toEqual([
       { field: 'companyName', op: 'in', values: ['Cipla'] },
       { field: 'location', op: 'in', values: ['J1'] },
@@ -252,8 +275,10 @@ describe('refining (URL has a search)', () => {
     renderAt('/search?q=para&f=companyName:in:Cipla&f=location:in:J1');
     await waitFor(() => expect(api.searchAdvanced).toHaveBeenCalledTimes(1));
 
-    fireEvent.click(screen.getByLabelText('Remove filter Location: J1'));
+    // removing with the pill's ✕ drops the filter and the pill
+    fireEvent.click(screen.getByLabelText('Remove Location filter'));
     await waitFor(() => expect(api.searchAdvanced).toHaveBeenCalledTimes(2));
+    expect(screen.queryByRole('button', { name: /^Location/ })).toBeNull();
     expect(lastRequest().filters).toEqual([{ field: 'companyName', op: 'in', values: ['Cipla'] }]);
 
     fireEvent.click(within(screen.getByLabelText('Active filters')).getByText('Clear all'));

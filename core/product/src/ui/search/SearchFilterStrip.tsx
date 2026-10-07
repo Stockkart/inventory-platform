@@ -1,11 +1,13 @@
 // Feature: advanced-product-search — the filter strip under the search bar (R6.2, R6.3, R5.4).
 //
-// One dropdown per filter, left to right in catalog order; rarely used text fields live under
-// "More"; the sort picker sits at the far right. Results take the full width below.
+// The strip starts almost empty: "+ Add filter" and the sort picker on the right. Picking a field
+// adds a pill for it (and opens it); the pill shows what is chosen, ✕ removes it. Fields with a
+// filter in the URL get their pill on load. Results take the full width below.
 import { useMemo, useState, type ReactNode } from 'react';
 import {
   Button,
   Checkbox,
+  ChoiceList,
   FacetCheckboxList,
   FilterDropdown,
   FilterStrip,
@@ -13,14 +15,15 @@ import {
   Inline,
   Input,
   Stack,
+  type ChoiceOption,
   type FacetOption,
 } from '@inventory-platform/ui-kit';
 import type { FacetValue, SearchField, SearchFieldGroup } from '../../model/search.types';
 import { useSearchValuesQuery } from '../../queries/search.queries';
+import { chipLabel } from '../../search/filterChips';
 import {
   findGroup,
   setExists,
-  setMatches,
   setRange,
   setWithinDays,
   toggleValue,
@@ -41,6 +44,10 @@ export interface SearchFilterStripProps {
    */
   facets?: Record<string, FacetValue[]>;
   onChange: (next: SearchState) => void;
+  /** Fields whose pill is on the strip without a filter yet. */
+  pinned: readonly string[];
+  onPin: (fieldKey: string) => void;
+  onUnpin: (fieldKey: string) => void;
   disabled?: boolean;
   /** Right-aligned content, normally the sort picker. */
   end?: ReactNode;
@@ -51,6 +58,9 @@ export function SearchFilterStrip({
   state,
   facets,
   onChange,
+  pinned,
+  onPin,
+  onUnpin,
   disabled = false,
   end,
 }: SearchFilterStripProps) {
@@ -67,15 +77,64 @@ export function SearchFilterStrip({
     return out;
   }, [fields]);
 
-  const dropdownFields = ordered.filter((f) => f.facet || f.type === 'date' || f.type === 'number');
-  const moreFields = ordered.filter(
-    (f) => !dropdownFields.includes(f) && f.ops.includes('matches'),
+  const filterable = ordered.filter(
+    (f) => f.facet || f.type === 'date' || f.type === 'number' || f.ops.includes('in'),
   );
-  const moreCount = moreFields.filter((f) => findGroup(state.filters, f.key, 'matches')).length;
+  const hasGroup = (key: string) => state.filters.some((g) => g.field === key);
 
+  // A pill is visible when its field has a filter or was pinned; once a field's filter is removed
+  // its empty pill goes too.
+  const added = pinned;
+  const [openKey, setOpenKey] = useState<string | null>(null);
+  const visible = useMemo(() => {
+    const keys: string[] = [];
+    for (const g of state.filters) if (!keys.includes(g.field)) keys.push(g.field);
+    for (const k of added) if (!keys.includes(k)) keys.push(k);
+    return keys
+      .map((k) => filterable.find((f) => f.key === k))
+      .filter((f): f is SearchField => Boolean(f));
+  }, [state.filters, added, filterable]);
+  const addable = filterable.filter((f) => !visible.includes(f));
+
+  const addOptions: ChoiceOption[] = addable.map((f) => ({ value: f.key, label: f.label }));
+  const add = (key: string) => {
+    onPin(key);
+    setOpenKey(key);
+  };
+  const remove = (field: SearchField) => {
+    onUnpin(field.key);
+    if (openKey === field.key) setOpenKey(null);
+    if (hasGroup(field.key)) {
+      onChange({ ...state, filters: state.filters.filter((g) => g.field !== field.key), page: 0 });
+    }
+  };
   return (
-    <FilterStrip aria-label="Search filters" end={end}>
-      {dropdownFields.map((field) => (
+    <FilterStrip
+      aria-label="Search filters"
+      end={
+        <>
+          {addable.length > 0 ? (
+            <FilterDropdown
+              label="+ Add filter"
+              open={openKey === ADD_KEY}
+              onOpenChange={(o) => setOpenKey(o ? ADD_KEY : null)}
+              disabled={disabled}
+              alignRight
+              panelTitle="Add a filter"
+            >
+              <ChoiceList
+                aria-label="Filters to add"
+                options={addOptions}
+                value=""
+                onChange={add}
+              />
+            </FilterDropdown>
+          ) : null}
+          {end}
+        </>
+      }
+    >
+      {visible.map((field) => (
         <FieldDropdown
           key={field.key}
           field={field}
@@ -83,27 +142,18 @@ export function SearchFilterStrip({
           facetValues={facets?.[field.key]}
           hasCounts={facets !== undefined}
           onChange={onChange}
+          onRemove={() => remove(field)}
+          open={openKey === field.key}
+          onOpenChange={(o) => setOpenKey(o ? field.key : null)}
           disabled={disabled}
+          fields={fields}
         />
       ))}
-      {moreFields.length > 0 ? (
-        <FilterDropdown label="More" count={moreCount} disabled={disabled} wide>
-          <Stack gap="sm">
-            {moreFields.map((field) => (
-              <MatchesInput
-                key={field.key}
-                field={field}
-                state={state}
-                onChange={onChange}
-                disabled={disabled}
-              />
-            ))}
-          </Stack>
-        </FilterDropdown>
-      ) : null}
     </FilterStrip>
   );
 }
+
+const ADD_KEY = '__add';
 
 // ---- one field -------------------------------------------------------------------------------
 
@@ -116,9 +166,29 @@ interface FieldProps {
   disabled: boolean;
 }
 
-function FieldDropdown({ field, state, facetValues, hasCounts, onChange, disabled }: FieldProps) {
+interface FieldDropdownProps extends FieldProps {
+  fields: readonly SearchField[];
+  onRemove: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+function FieldDropdown({
+  field,
+  fields,
+  state,
+  facetValues,
+  hasCounts,
+  onChange,
+  onRemove,
+  open,
+  onOpenChange,
+  disabled,
+}: FieldDropdownProps) {
   const active = state.filters.filter((g) => g.field === field.key);
   const count = active.reduce((n, g) => n + (g.op === 'in' ? g.values.length : 1), 0);
+  const value =
+    active.length > 0 ? active.map((g) => chipLabel(g, fields).detail).join('; ') : undefined;
   const clear = () => {
     let next = state;
     for (const g of active) next = { ...next, filters: next.filters.filter((x) => x !== g) };
@@ -128,7 +198,12 @@ function FieldDropdown({ field, state, facetValues, hasCounts, onChange, disable
   return (
     <FilterDropdown
       label={field.label}
+      value={value}
       count={count}
+      onRemove={onRemove}
+      removeLabel={`Remove ${field.label} filter`}
+      open={open}
+      onOpenChange={onOpenChange}
       disabled={disabled}
       wide={isForm}
       headerAction={
@@ -196,8 +271,10 @@ function EnumFacet({
 }
 
 /**
- * Text facets (company, location): the top values with counts, the ticked ones always listed,
- * and a "Find…" box backed by `/search/values` when the list is long or there are no counts yet.
+ * Text fields. Counted ones (company, location) list the top values with counts, the ticked ones
+ * always first, and a "Find…" box backed by `/search/values` when the list is long or there are no
+ * counts yet. One-per-product fields (name, barcode, HSN, batch) have no counts to show, so the
+ * panel is the Find box: type a few letters, tick the matches.
  */
 function TextFacet({ field, state, facetValues, hasCounts, onChange, disabled }: FieldProps) {
   const [find, setFind] = useState('');
@@ -363,37 +440,5 @@ function NumberControls({
         />
       </FormField>
     </Inline>
-  );
-}
-
-/** Free text on a non-facet field (barcode, HSN, batch…): applied on Enter or when leaving the box. */
-function MatchesInput({
-  field,
-  state,
-  onChange,
-  disabled,
-}: Omit<FieldProps, 'facetValues' | 'hasCounts'>) {
-  const current = findGroup(state.filters, field.key, 'matches')?.values[0] ?? '';
-  const [text, setText] = useState(current);
-  const commit = () => {
-    if (text.trim() !== current) onChange(setMatches(state, field.key, text));
-  };
-  return (
-    <FormField
-      label={field.label}
-      htmlFor={`${field.key}-matches`}
-      hint="Matches any part of the value"
-    >
-      <Input
-        id={`${field.key}-matches`}
-        value={text}
-        disabled={disabled}
-        onChange={(e) => setText(e.currentTarget.value)}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') commit();
-        }}
-      />
-    </FormField>
   );
 }
