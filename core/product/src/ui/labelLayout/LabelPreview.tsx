@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import JsBarcode from 'jsbarcode';
 import { Alert, Box, Stack, Text, surfaceChrome } from '@inventory-platform/ui-kit';
 import type { EffectiveLabelLayout, LabelData } from '../../model/labelLayout.types.js';
+import { fitBarcodeSvgToDots, usableWidthMmOf } from '../../lib/barcodeDots.js';
 import { renderBarcodeLabelsHtml, usableRollSpec } from '../../lib/renderBarcodeLabelsHtml.js';
 
 export interface LabelPreviewProps {
@@ -51,13 +52,19 @@ function drawBars(frame: HTMLIFrameElement | null): void {
     const code = svg.dataset.code;
     if (!code) return;
     try {
+      // Same sizing as the print window (`printBarcodeLabels.ts`): one px per
+      // module, then snap to whole printer dots so the preview shows the real
+      // bar width and height the printer will produce.
       JsBarcode(svg, code, {
         format: 'CODE128',
         displayValue: false,
         margin: 0,
-        height: 40,
-        width: 1.6,
+        height: 50,
+        width: 1,
       });
+      const view = frame.contentWindow;
+      const usable = view ? usableWidthMmOf(svg, view) : null;
+      if (usable !== null) fitBarcodeSvgToDots(svg, usable);
     } catch {
       // Invalid code for CODE128 — leave the bars area empty.
     }
