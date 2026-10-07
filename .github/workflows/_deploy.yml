@@ -102,7 +102,21 @@ jobs:
         id: vercel
         run: .pipeline/scripts/deploy/vercel-deploy.sh "${{ inputs.sha }}"
 
+      # Commits from before the pipeline do not render <meta name="build-sha">, so for them
+      # the check is only that the site answers; the summary says which check ran.
+      - name: Decide how the deploy can be verified
+        id: verify-mode
+        run: |
+          if grep -q 'name="build-sha"' apps/inventory/app/root.tsx 2>/dev/null; then
+            echo "mode=sha" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=reachable" >> "$GITHUB_OUTPUT"
+            echo "::warning::commit ${{ inputs.sha }} predates the build-sha tag; verifying reachability only"
+          fi
+
       - name: Verify ${{ vars.WEB_URL }} serves this sha
+        env:
+          VERIFY_MODE: ${{ steps.verify-mode.outputs.mode }}
         run: .pipeline/scripts/deploy/verify-frontend.sh "$WEB_URL" "${{ inputs.sha }}" 5
 
       - name: Job summary
@@ -117,4 +131,5 @@ jobs:
           SUMMARY_BASE_URL: ${{ vars.WEB_URL }}
           SUMMARY_ACTOR: ${{ github.actor }}
           SUMMARY_REASON: ${{ inputs.reason }}
+          SUMMARY_VERIFY_MODE: ${{ steps.verify-mode.outputs.mode }}
         run: .pipeline/scripts/deploy/summary.sh
