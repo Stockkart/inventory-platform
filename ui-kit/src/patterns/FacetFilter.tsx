@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import { Check, ChevronDown } from 'lucide-react';
+import { Check, ChevronDown, X } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { Icon } from '../icons';
 import styles from './FacetFilter.module.css';
@@ -42,6 +42,11 @@ export function FilterStrip({
 export interface FilterDropdownProps {
   /** Button text, e.g. "Company". */
   label: string;
+  /** What is chosen, shown after the label in a lighter weight: "Company: Cipla, GSK". */
+  value?: string;
+  /** When given, a ✕ next to the button removes this filter. */
+  onRemove?: () => void;
+  removeLabel?: string;
   /** Number of active selections, shown in a badge and marking the button active. */
   count?: number;
   children: ReactNode;
@@ -66,6 +71,9 @@ export interface FilterDropdownProps {
  */
 export function FilterDropdown({
   label,
+  value,
+  onRemove,
+  removeLabel,
   count = 0,
   children,
   open: controlledOpen,
@@ -105,7 +113,10 @@ export function FilterDropdown({
   }, [open, setOpen]);
 
   return (
-    <div ref={rootRef} className={cn(styles.dropdown, className)}>
+    <div
+      ref={rootRef}
+      className={cn(styles.dropdown, onRemove && styles.dropdownHasRemove, className)}
+    >
       <button
         type="button"
         className={cn(
@@ -119,14 +130,33 @@ export function FilterDropdown({
         disabled={disabled}
         onClick={() => setOpen(!open)}
       >
-        <span>{label}</span>
-        {count > 0 ? <span className={styles.dropdownCount}>{count}</span> : null}
+        <span className={styles.dropdownLabel}>
+          {label}
+          {value ? (
+            <span className={styles.dropdownValue}>
+              {': '}
+              {value}
+            </span>
+          ) : null}
+        </span>
+        {count > 0 && !value ? <span className={styles.dropdownCount}>{count}</span> : null}
         <Icon
           icon={ChevronDown}
           size="sm"
           className={cn(styles.dropdownChevron, open && styles.dropdownChevronOpen)}
         />
       </button>
+      {onRemove ? (
+        <button
+          type="button"
+          className={styles.dropdownRemove}
+          aria-label={removeLabel ?? `Remove ${label} filter`}
+          disabled={disabled}
+          onClick={onRemove}
+        >
+          <Icon icon={X} size="sm" />
+        </button>
+      ) : null}
       {open ? (
         <div
           id={panelId}
