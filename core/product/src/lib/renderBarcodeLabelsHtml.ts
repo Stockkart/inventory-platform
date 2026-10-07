@@ -1,3 +1,4 @@
+import { DOT_MM } from './barcodeDots';
 import {
   STICKER_SIZES,
   ZONE_CAPS,
@@ -49,14 +50,17 @@ const COMPACT_CSS = `.compact{align-items:stretch;padding:1.5mm;font-family:"Ari
 /**
  * Sticker-level CSS shared by every page-based layout (`SHEET` and a `ROLL` with a
  * `rollSpec`): the sticker is sized by its inline style, has no dashed border and
- * no margin because the grid cell places it exactly on the label.
+ * no margin because the grid cell places it exactly on the label. Every text line
+ * is at least semibold: thermal printers threshold anti-aliased glyphs onto a
+ * 0.125 mm dot grid, and a regular-weight 9 pt stroke is ~1 dot wide, so its
+ * thin horizontals drop out at random; semibold keeps every stroke ≥ 2 dots.
  */
 const PAGE_STICKER_CSS = `.sticker{box-sizing:border-box;display:inline-flex;flex-direction:column;align-items:center;justify-content:flex-start;border:none;padding:2mm;overflow:hidden;page-break-inside:avoid}
     .bars{height:38%;width:90%}
-    .code,.line{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:system-ui,sans-serif;text-align:center}
+    .code,.line{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:system-ui,sans-serif;text-align:center;font-weight:600}
     .code{font-size:10pt;letter-spacing:.5px}
     .line{font-size:9pt}
-    .code+.line,.bars+.line{font-weight:600}
+    .code+.line,.bars+.line{font-weight:700}
     ${COMPACT_CSS}`;
 
 export function escapeHtml(value: string): string {
@@ -341,6 +345,10 @@ function renderRollHtml(
 ): RenderResult {
   const { widthMm } = resolveStickerSize(layout);
   const across = Math.max(1, Math.trunc(roll.labelsAcross));
+  // Column pitch (label + gap) snapped to whole printer dots so every column
+  // starts on the same sub-dot phase and identical text rasterises identically
+  // in each column. The ≤ 0.06 mm drift is far below what the liner cut shows.
+  const pitchMm = snapToDots(widthMm + roll.columnGapMm);
 
   const pages: string[] = [];
   for (let i = 0; i < labels.length; i += across) {
@@ -367,7 +375,7 @@ function renderRollHtml(
   <style>
     @page { size: ${roll.pageWidthMm}mm ${roll.pageHeightMm}mm; margin: 0 }
     body { font-family: system-ui, sans-serif; margin: 0; color: #111; }
-    .page { display: grid; grid-template-columns: repeat(${across}, ${widthMm}mm); grid-auto-rows: ${roll.pageHeightMm}mm; column-gap: ${roll.columnGapMm}mm; width: ${roll.pageWidthMm}mm; height: ${roll.pageHeightMm}mm; box-sizing: border-box }
+    .page { display: grid; grid-template-columns: repeat(${across}, ${pitchMm}mm); grid-auto-rows: ${roll.pageHeightMm}mm; width: ${roll.pageWidthMm}mm; height: ${roll.pageHeightMm}mm; box-sizing: border-box }
     ${PAGE_STICKER_CSS}
   </style>
 </head>
@@ -377,6 +385,11 @@ function renderRollHtml(
 </html>`;
 
   return { ok: true, html };
+}
+
+/** Nearest whole number of printer dots, in millimetres, to four decimals. */
+export function snapToDots(mm: number): number {
+  return Number((Math.round(mm / DOT_MM) * DOT_MM).toFixed(4));
 }
 
 /** The usable roll spec of a layout, or `null` when it should print the legacy roll output. */
