@@ -10,6 +10,8 @@
 # VERIFY_MODE=reachable relaxes this to "GET <base>/ returns 200" for commits from
 # before the tag existed (rollbacks to old builds). The caller decides the mode by
 # looking at the source it just built; this script does not guess.
+# TODO(temporary-old-commit-deploys): remove the reachable mode (and every VERIFY_MODE branch
+# below) once old commits no longer need deploying.
 
 # shellcheck source=scripts/deploy/lib.sh
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"

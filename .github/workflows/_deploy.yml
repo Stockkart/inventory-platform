@@ -104,6 +104,8 @@ jobs:
 
       # Commits from before the pipeline do not render <meta name="build-sha">, so for them
       # the check is only that the site answers; the summary says which check ran.
+      # TODO(temporary-old-commit-deploys): remove this step and pass no VERIFY_MODE once old commits
+      # no longer need deploying (verify-frontend.sh then always checks the tag).
       - name: Decide how the deploy can be verified
         id: verify-mode
         run: |

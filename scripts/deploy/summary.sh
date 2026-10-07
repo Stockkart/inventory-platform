@@ -15,6 +15,7 @@
 #   SUMMARY_REASON          promote reason, if any
 #   SUMMARY_VERIFY_MODE     sha (page proved to serve the commit) | reachable (page answered; commit
 #                           predates the build-sha tag, so it could not be proven)
+#                           TODO(temporary-old-commit-deploys): drop the reachable case with the flow.
 #   SUMMARY_REPOSITORY      owner/repo, used to link the commit
 
 # shellcheck source=scripts/deploy/lib.sh
