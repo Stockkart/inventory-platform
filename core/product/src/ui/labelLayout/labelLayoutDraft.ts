@@ -301,7 +301,7 @@ export function toEffectiveLayout(
     const field = index.get(key);
     if (!field) continue;
     const zone = resolveFieldZone(draft, key);
-    const showLabel = resolveFieldShowLabel(draft, field, zone, compact);
+    const showLabel = resolveFieldShowLabel(draft, field, compact);
     enabledFields.push({
       fieldKey: field.fieldKey,
       label: field.label,
@@ -343,21 +343,17 @@ function resolveFieldZone(draft: LabelLayoutDraft, key: string): LabelZone {
 /**
  * Resolved `showLabel` for a field, matching the renderer and the backend
  * `ZoneResolver` (Req 11.2): a per-field override wins; otherwise `STACKED` uses
- * `showFieldLabels` and `COMPACT` uses the per-zone default (HEADER off, LEFT on,
- * RIGHT on unless the value is a currency).
+ * `showFieldLabels` and `COMPACT` prints values only (no field name) in every zone.
  */
 function resolveFieldShowLabel(
   draft: LabelLayoutDraft,
   field: PrintableField,
-  zone: LabelZone,
   compact: boolean,
 ): boolean {
   const override = draft.fieldLabelOverrides[field.fieldKey];
   if (override !== undefined) return override;
   if (!compact) return draft.showFieldLabels;
-  if (zone === 'HEADER') return false;
-  if (zone === 'RIGHT') return field.valueType !== 'currency';
-  return true;
+  return false;
 }
 
 /**
