@@ -9,10 +9,9 @@
  * `modules × dots × DOT_MM` millimetres whenever at least two dots per module fit,
  * so every bar and space is a whole number of printer dots.
  *
- * When even two dots per module would overflow the sticker (a 14-char Code128 on a
- * 38 mm or 50 mm label) the bars instead fill {@link BARCODE_FILL} of the sticker,
- * the width the shops are used to; with the driver's dithering off those bars still
- * scan, and the shop prefers the larger symbol over the 24 mm one-dot version.
+ * One dot per module is the floor: a 14-char Code128 on a 38 mm label prints at
+ * ~24 mm. Filling the label instead (~1.3 dots per module) was tried on the shop's
+ * TE244 and did not scan even when the print looked clean.
  */
 
 /** Dot pitch of a 203 dpi thermal printer, in millimetres. */
@@ -31,26 +30,21 @@ const MAX_DOTS_PER_MODULE = 4;
  */
 export const BARCODE_HEIGHT_MM = 6;
 
-/** Share of the sticker's content width the bars take when no whole-dot size fits. */
-export const BARCODE_FILL = 0.9;
-
 export interface BarcodeDotFit {
-  /**
-   * Printer dots per Code128 module. A whole number ≥ 2 when the bars are
-   * dot-snapped; a fraction when they fill the sticker instead.
-   */
+  /** Printer dots per Code128 module, always a whole number ≥ 1. */
   dotsPerModule: number;
-  /** Bar area width in millimetres. */
+  /** Bar area width in millimetres: `modules × dotsPerModule × dotMm`. */
   widthMm: number;
-  /** `true` when every module is a whole number of dots. */
+  /** Always `true`: every module is a whole number of dots. Kept for callers. */
   snapped: boolean;
 }
 
 /**
- * Picks the widest whole-dot module (2 to 4 dots) such that the bars plus both
- * quiet zones fit `usableWidthMm`. When not even two dots per module fit, the bars
- * fill {@link BARCODE_FILL} of the width instead, matching the long-standing print
- * width, rather than shrinking to a one-dot symbol.
+ * Picks the widest whole-dot module (1 to 4 dots) such that the bars plus both
+ * quiet zones fit `usableWidthMm`. A 14-char Code128 on a 38 mm or 50 mm label
+ * gets one dot per module (~24 mm): narrower than the old stretched symbol, but
+ * every bar is exactly one dot wide, which is what the scanner needs. Stretching
+ * to the label (~1.3 dots per module) printed cleanly but did not scan.
  */
 export function fitBarcodeToDots(
   modules: number,
@@ -63,8 +57,7 @@ export function fitBarcodeToDots(
       return { dotsPerModule: dots, widthMm: modules * dots * dotMm, snapped: true };
     }
   }
-  const widthMm = usableWidthMm * BARCODE_FILL;
-  return { dotsPerModule: widthMm / (modules * dotMm), widthMm, snapped: false };
+  return { dotsPerModule: 1, widthMm: modules * dotMm, snapped: true };
 }
 
 /**
