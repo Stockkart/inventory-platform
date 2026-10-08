@@ -12,18 +12,14 @@ import type {
   BlankValueBehavior,
   CurrencyStyle,
   PrintMedia,
+  RollLimits,
   SheetPreset,
   StickerSize,
   StickerSizeSpec,
   StickerTemplate,
   TemplateInfo,
 } from '../../model/labelLayout.types.js';
-import {
-  ROLL_COLUMN_GAP_MAX_MM,
-  ROLL_LABELS_ACROSS_MAX,
-  ROLL_LABELS_ACROSS_MIN,
-} from '../../model/labelLayout.types.js';
-import { clampColumnGap, clampLabelsAcross, type LabelLayoutDraft } from './labelLayoutDraft.js';
+import type { LabelLayoutDraft } from './labelLayoutDraft.js';
 
 export interface LayoutOptionsPanelProps {
   stickerSize: StickerSize;
@@ -41,8 +37,10 @@ export interface LayoutOptionsPanelProps {
   rollLabelsAcross: number;
   /** Gap between neighbouring roll labels in millimetres; shown only for `ROLL`. */
   rollColumnGapMm: number;
-  /** Resolved web width for the current roll setup, for the hint line. */
+  /** Resolved web width for the current roll setup (from the API preview), for the hint line. */
   rollPageWidthMm?: number;
+  /** Roll-setup bounds from the field catalog; the roll controls are hidden without them. */
+  rollLimits?: RollLimits;
   /** Current sticker template (Req 11). */
   template: StickerTemplate;
   /** Barcode band position for `COMPACT` (Req 11). */
@@ -77,13 +75,14 @@ const CURRENCY_STYLE_OPTIONS: ReadonlyArray<{ value: CurrencyStyle; label: strin
 
 const PRINT_ON_ROLL = 'ROLL';
 
-const LABELS_ACROSS_OPTIONS: ReadonlyArray<{ value: string; label: string }> = Array.from(
-  { length: ROLL_LABELS_ACROSS_MAX - ROLL_LABELS_ACROSS_MIN + 1 },
-  (_, i) => {
-    const n = ROLL_LABELS_ACROSS_MIN + i;
-    return { value: String(n), label: n === 1 ? '1 (single column)' : `${n} side by side` };
-  },
-);
+/** Labels-across choices for the bounds the API publishes. */
+function labelsAcrossOptions(limits: RollLimits): Array<{ value: string; label: string }> {
+  const options: Array<{ value: string; label: string }> = [];
+  for (let n = limits.minLabelsAcross; n <= limits.maxLabelsAcross; n += 1) {
+    options.push({ value: String(n), label: n === 1 ? '1 (single column)' : `${n} side by side` });
+  }
+  return options;
+}
 
 export function stickerSizeOptionLabel(spec: StickerSizeSpec): string {
   return `${spec.widthMm}x${spec.heightMm} mm · up to ${spec.maxLines} lines`;
@@ -112,6 +111,7 @@ export function LayoutOptionsPanel({
   rollLabelsAcross,
   rollColumnGapMm,
   rollPageWidthMm,
+  rollLimits,
   template,
   barcodePosition,
   currencyStyle,
@@ -198,7 +198,7 @@ export function LayoutOptionsPanel({
         </Text>
       ) : null}
 
-      {printMedia === 'ROLL' ? (
+      {printMedia === 'ROLL' && rollLimits ? (
         <>
           <FormField
             label="Labels across the roll"
@@ -207,11 +207,9 @@ export function LayoutOptionsPanel({
           >
             <Select
               id="label-layout-roll-across"
-              value={String(clampLabelsAcross(rollLabelsAcross))}
-              options={LABELS_ACROSS_OPTIONS}
-              onChange={(e) =>
-                onChange({ rollLabelsAcross: clampLabelsAcross(Number(e.target.value)) })
-              }
+              value={String(rollLabelsAcross)}
+              options={labelsAcrossOptions(rollLimits)}
+              onChange={(e) => onChange({ rollLabelsAcross: Number(e.target.value) })}
             />
           </FormField>
 
@@ -225,12 +223,13 @@ export function LayoutOptionsPanel({
                 id="label-layout-roll-gap"
                 type="number"
                 min={0}
-                max={ROLL_COLUMN_GAP_MAX_MM}
+                max={rollLimits.maxColumnGapMm}
                 step={0.5}
                 value={rollColumnGapMm}
                 onChange={(e) => {
+                  // Parse only; the API validates the range and the preview shows its message.
                   const next = Number(e.target.value);
-                  onChange({ rollColumnGapMm: clampColumnGap(Number.isFinite(next) ? next : 0) });
+                  if (Number.isFinite(next)) onChange({ rollColumnGapMm: next });
                 }}
               />
             </FormField>

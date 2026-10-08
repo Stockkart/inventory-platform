@@ -37,6 +37,7 @@ export const BARCODE_LABEL_LAYOUT_ENDPOINTS = {
   BASE: '/shops/active-shop/barcode-label-layout',
   FIELD_CATALOG: '/shops/active-shop/barcode-label-layout/field-catalog',
   DEFAULTS: '/shops/active-shop/barcode-label-layout/defaults',
+  PREVIEW: '/shops/active-shop/barcode-label-layout/preview',
 } as const;
 
 /** Shop product card layouts (active-shop scoped) paths. */

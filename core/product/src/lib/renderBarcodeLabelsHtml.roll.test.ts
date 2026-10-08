@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
-import { renderBarcodeLabelsHtml, snapToDots } from './renderBarcodeLabelsHtml';
-import { DOT_MM } from './barcodeDots';
+import { renderBarcodeLabelsHtml } from './renderBarcodeLabelsHtml';
 import type { EffectiveLabelLayout, LabelData, RollSpec } from '../model/labelLayout.types';
 
 /**
@@ -11,7 +10,13 @@ import type { EffectiveLabelLayout, LabelData, RollSpec } from '../model/labelLa
  * filled in one feed. Without a `rollSpec` the legacy ROLL output is unchanged.
  */
 
-const TWO_UP: RollSpec = { labelsAcross: 2, columnGapMm: 3, pageWidthMm: 79, pageHeightMm: 38 };
+const TWO_UP: RollSpec = {
+  labelsAcross: 2,
+  columnGapMm: 3,
+  pageWidthMm: 79,
+  pageHeightMm: 38,
+  pitchMm: 41.0345,
+};
 
 function rollLayout(overrides: Partial<EffectiveLabelLayout> = {}): EffectiveLabelLayout {
   return {
@@ -46,8 +51,8 @@ describe('renderBarcodeLabelsHtml ROLL with a rollSpec', () => {
     const { html } = result;
 
     expect(html).toContain('@page { size: 79mm 38mm; margin: 0 }');
-    // Column pitch = label + gap, snapped to whole printer dots (41 mm → 328 dots).
-    expect(html).toContain(`grid-template-columns: repeat(2, ${snapToDots(41)}mm)`);
+    // Column pitch comes from the API (already dot-snapped), not computed here.
+    expect(html).toContain('grid-template-columns: repeat(2, 41.0345mm)');
     expect(html).not.toContain('column-gap');
     expect(html).toContain('width: 79mm; height: 38mm');
     expect(html).toContain('border:none');
@@ -81,7 +86,13 @@ describe('renderBarcodeLabelsHtml ROLL with a rollSpec', () => {
   });
 
   it('single-across rollSpec prints one sticker per page sized to the sticker', () => {
-    const oneUp: RollSpec = { labelsAcross: 1, columnGapMm: 0, pageWidthMm: 50, pageHeightMm: 25 };
+    const oneUp: RollSpec = {
+      labelsAcross: 1,
+      columnGapMm: 0,
+      pageWidthMm: 50,
+      pageHeightMm: 25,
+      pitchMm: 50.0123,
+    };
     const result = renderBarcodeLabelsHtml(
       makeLabels(2),
       rollLayout({ stickerSize: '50x25', stickerSizeSpec: undefined, rollSpec: oneUp }),
@@ -89,16 +100,15 @@ describe('renderBarcodeLabelsHtml ROLL with a rollSpec', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.html).toContain('@page { size: 50mm 25mm; margin: 0 }');
-    expect(result.html).toContain(`grid-template-columns: repeat(1, ${snapToDots(50)}mm)`);
+    expect(result.html).toContain('grid-template-columns: repeat(1, 50.0123mm)');
     expect(countOccurrences(result.html, 'class="page"')).toBe(2);
   });
 
-  it('snaps the column pitch to whole 203 dpi printer dots', () => {
-    expect(snapToDots(41)).toBeCloseTo(328 * DOT_MM, 4);
-    expect(Math.abs(snapToDots(41) - 41)).toBeLessThan(DOT_MM / 2 + 1e-4);
-    expect(snapToDots(0)).toBe(0);
-    // Whole-dot inputs are left alone (to the 4-decimal rounding).
-    expect(snapToDots(328 * DOT_MM)).toBeCloseTo(328 * DOT_MM, 4);
+  it('falls back to the legacy output when the API sent no column pitch', () => {
+    const legacy = renderBarcodeLabelsHtml(makeLabels(2), rollLayout({ rollSpec: undefined }));
+    expect(
+      renderBarcodeLabelsHtml(makeLabels(2), rollLayout({ rollSpec: { ...TWO_UP, pitchMm: 0 } })),
+    ).toEqual(legacy);
   });
 
   it('page layouts print every text line at least semibold so strokes survive the dot grid', () => {
@@ -169,8 +179,9 @@ describe('renderBarcodeLabelsHtml ROLL with a rollSpec', () => {
         const spec: RollSpec = {
           labelsAcross: across,
           columnGapMm: 3,
-          pageWidthMm: across * 38 + (across - 1) * 3,
+          pageWidthMm: 79,
           pageHeightMm: 38,
+          pitchMm: 41.0345,
         };
         const result = renderBarcodeLabelsHtml(makeLabels(n), rollLayout({ rollSpec: spec }));
         expect(result.ok).toBe(true);

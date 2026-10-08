@@ -12,7 +12,6 @@ import type {
   LabelZone,
   PrintableField,
   PrintMedia,
-  RollSpec,
   SaveLabelLayoutRequest,
   SheetPreset,
   SheetSpec,
@@ -22,13 +21,7 @@ import type {
   StickerTemplate,
   ZoneCaps,
 } from '../../model/labelLayout.types.js';
-import {
-  ROLL_COLUMN_GAP_MAX_MM,
-  ROLL_LABELS_ACROSS_MAX,
-  ROLL_LABELS_ACROSS_MIN,
-  STICKER_SIZES,
-  ZONE_CAPS,
-} from '../../model/labelLayout.types.js';
+import { STICKER_SIZES, ZONE_CAPS } from '../../model/labelLayout.types.js';
 
 /**
  * Pure (no React, no DOM) helpers backing the barcode label layout
@@ -48,12 +41,12 @@ export interface LabelLayoutDraft {
   /** Chosen Sheet_Preset id when `printMedia` is `SHEET`; `null` for `ROLL`. */
   sheetPreset: string | null;
   /**
-   * Labels side by side on the roll (1–4) when `printMedia` is `ROLL`. Saving
-   * always sends the roll fields, so a saved `ROLL` layout prints one roll row
-   * per page sized to the web; `1` across with `0` gap is one sticker per page.
+   * Labels side by side on the roll when `printMedia` is `ROLL`, as entered.
+   * The API validates it (bounds come from `catalog.rollLimits`); saving always
+   * sends the roll fields, so a saved `ROLL` layout prints one roll row per page.
    */
   rollLabelsAcross: number;
-  /** Gap between neighbouring roll labels in millimetres (0–20). */
+  /** Gap between neighbouring roll labels in millimetres, as entered. */
   rollColumnGapMm: number;
   /** Sticker template (Req 11). `STACKED` is today's single-column layout. */
   template: StickerTemplate;
@@ -131,52 +124,14 @@ export function draftFromLayout(
     blankValueBehavior: layout.blankValueBehavior,
     printMedia,
     sheetPreset: printMedia === 'SHEET' ? layout.sheetPreset ?? null : null,
-    rollLabelsAcross: clampLabelsAcross(roll?.labelsAcross),
-    rollColumnGapMm: clampColumnGap(roll?.columnGapMm),
+    // Initial form values only; a layout saved without a roll setup starts at 1 across, no gap.
+    rollLabelsAcross: roll?.labelsAcross ?? 1,
+    rollColumnGapMm: roll?.columnGapMm ?? 0,
     template: layout.template ?? 'STACKED',
     barcodePosition: layout.barcodePosition ?? 'TOP',
     currencyStyle: layout.currencyStyle ?? 'RUPEE_SYMBOL',
     fieldZones: { ...(layout.fieldZones ?? {}) },
     fieldLabelOverrides: { ...(layout.fieldLabelOverrides ?? {}) },
-  };
-}
-
-/** Whole labels-across count inside the backend bounds; anything else becomes `1`. */
-export function clampLabelsAcross(value: number | null | undefined): number {
-  if (value === null || value === undefined || !Number.isFinite(value)) {
-    return ROLL_LABELS_ACROSS_MIN;
-  }
-  const whole = Math.trunc(value);
-  if (whole < ROLL_LABELS_ACROSS_MIN || whole > ROLL_LABELS_ACROSS_MAX) {
-    return ROLL_LABELS_ACROSS_MIN;
-  }
-  return whole;
-}
-
-/** Column gap inside the backend bounds, to a tenth of a millimetre; anything else becomes `0`. */
-export function clampColumnGap(value: number | null | undefined): number {
-  if (value === null || value === undefined || !Number.isFinite(value)) return 0;
-  if (value < 0 || value > ROLL_COLUMN_GAP_MAX_MM) return 0;
-  return Math.round(value * 10) / 10;
-}
-
-/**
- * The roll geometry a draft prints with, mirroring the backend
- * `RollLayoutCalculator.resolve`: page width spans every label and gap across the
- * web, page height is one label. `undefined` for `SHEET` drafts.
- */
-export function resolveRollSpec(
-  draft: Pick<LabelLayoutDraft, 'printMedia' | 'rollLabelsAcross' | 'rollColumnGapMm'>,
-  size: StickerSizeSpec,
-): RollSpec | undefined {
-  if (draft.printMedia !== 'ROLL') return undefined;
-  const across = clampLabelsAcross(draft.rollLabelsAcross);
-  const gap = clampColumnGap(draft.rollColumnGapMm);
-  return {
-    labelsAcross: across,
-    columnGapMm: gap,
-    pageWidthMm: across * size.widthMm + (across - 1) * gap,
-    pageHeightMm: size.heightMm,
   };
 }
 
@@ -370,7 +325,8 @@ export function toEffectiveLayout(
     printMedia: draft.printMedia,
     sheetPreset: isSheet ? draft.sheetPreset : null,
     sheetSpec: sheetSpec ?? null,
-    rollSpec: resolveRollSpec(draft, stickerSizeSpec) ?? null,
+    // Roll geometry is resolved by the API (`useLabelLayoutPreviewQuery`), never here.
+    rollSpec: null,
     template: draft.template,
     barcodePosition: draft.barcodePosition,
     currencyStyle: draft.currencyStyle,
@@ -462,9 +418,8 @@ export function prepareSaveRequest(
     printMedia: draft.printMedia,
     sheetPreset: draft.printMedia === 'SHEET' ? draft.sheetPreset : null,
     // Roll fields ride along only for ROLL; the backend ignores them for SHEET anyway.
-    rollLabelsAcross:
-      draft.printMedia === 'ROLL' ? clampLabelsAcross(draft.rollLabelsAcross) : null,
-    rollColumnGapMm: draft.printMedia === 'ROLL' ? clampColumnGap(draft.rollColumnGapMm) : null,
+    rollLabelsAcross: draft.printMedia === 'ROLL' ? draft.rollLabelsAcross : null,
+    rollColumnGapMm: draft.printMedia === 'ROLL' ? draft.rollColumnGapMm : null,
     template: draft.template,
     barcodePosition: draft.barcodePosition,
     currencyStyle: draft.currencyStyle,

@@ -1,4 +1,3 @@
-import { DOT_MM } from './barcodeDots';
 import {
   STICKER_SIZES,
   ZONE_CAPS,
@@ -343,12 +342,10 @@ function renderRollHtml(
   layout: EffectiveLabelLayout,
   roll: RollSpec,
 ): RenderResult {
-  const { widthMm } = resolveStickerSize(layout);
   const across = Math.max(1, Math.trunc(roll.labelsAcross));
-  // Column pitch (label + gap) snapped to whole printer dots so every column
-  // starts on the same sub-dot phase and identical text rasterises identically
-  // in each column. The ≤ 0.06 mm drift is far below what the liner cut shows.
-  const pitchMm = snapToDots(widthMm + roll.columnGapMm);
+  // Column pitch from the API (label + gap, snapped to whole printer dots there)
+  // so every column starts on the same dot phase.
+  const { pitchMm } = roll;
 
   const pages: string[] = [];
   for (let i = 0; i < labels.length; i += across) {
@@ -387,16 +384,11 @@ function renderRollHtml(
   return { ok: true, html };
 }
 
-/** Nearest whole number of printer dots, in millimetres, to four decimals. */
-export function snapToDots(mm: number): number {
-  return Number((Math.round(mm / DOT_MM) * DOT_MM).toFixed(4));
-}
-
 /** The usable roll spec of a layout, or `null` when it should print the legacy roll output. */
 export function usableRollSpec(layout: EffectiveLabelLayout): RollSpec | null {
   const roll = layout.rollSpec;
   if (!roll || !(roll.labelsAcross >= 1)) return null;
-  if (!(roll.pageWidthMm > 0) || !(roll.pageHeightMm > 0)) return null;
+  if (!(roll.pageWidthMm > 0) || !(roll.pageHeightMm > 0) || !(roll.pitchMm > 0)) return null;
   return roll;
 }
 
