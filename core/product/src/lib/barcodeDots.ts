@@ -24,6 +24,13 @@ export const QUIET_ZONE_MODULES = 10;
 /** Widest module the fitter will pick; beyond this the bars just waste label. */
 const MAX_DOTS_PER_MODULE = 4;
 
+/**
+ * Printed bar height. Kept short, like the stickers the shops have always had
+ * (~5.5 mm), so the text lines below keep their room; a handheld scanner reads
+ * a 6 mm Code128 fine.
+ */
+export const BARCODE_HEIGHT_MM = 6;
+
 /** Share of the sticker's content width the bars take when no whole-dot size fits. */
 export const BARCODE_FILL = 0.9;
 
@@ -75,9 +82,9 @@ export function moduleCountOf(svg: SVGSVGElement): number | null {
 
 /**
  * Applies {@link fitBarcodeToDots} to a rendered JsBarcode `<svg>`: pins its width
- * to a whole number of printer dots per module, lets the sticker CSS decide the
- * height (`preserveAspectRatio="none"` so the bars stretch to fill it), and asks
- * the rasteriser for crisp edges rather than anti-aliased grey ones.
+ * per the fit, pins its height to {@link BARCODE_HEIGHT_MM}
+ * (`preserveAspectRatio="none"` so the bars fill exactly that box), and asks the
+ * rasteriser for crisp edges rather than anti-aliased grey ones.
  */
 export function fitBarcodeSvgToDots(
   svg: SVGSVGElement,
@@ -88,6 +95,7 @@ export function fitBarcodeSvgToDots(
   if (modules === null) return null;
   const fit = fitBarcodeToDots(modules, usableWidthMm, dotMm);
   svg.style.width = `${fit.widthMm.toFixed(4)}mm`;
+  svg.style.height = `${BARCODE_HEIGHT_MM}mm`;
   svg.setAttribute('preserveAspectRatio', 'none');
   svg.setAttribute('shape-rendering', 'crispEdges');
   return fit;

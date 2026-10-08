@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   BARCODE_FILL,
+  BARCODE_HEIGHT_MM,
   DOT_MM,
   QUIET_ZONE_MODULES,
   fitBarcodeSvgToDots,
@@ -91,15 +92,16 @@ describe('fitBarcodeSvgToDots', () => {
     return svg;
   }
 
-  it('sets the fitted mm width, lets the CSS height stretch the bars and asks for crisp edges', () => {
+  it('sets the fitted mm width, a short fixed bar height and asks for crisp edges', () => {
     const svg = svgWithModules(CODE128_14_CHARS);
     const fit = fitBarcodeSvgToDots(svg, 34);
     expect(fit?.snapped).toBe(false);
     expect(svg.style.width).toBe(`${(34 * BARCODE_FILL).toFixed(4)}mm`);
     expect(svg.getAttribute('preserveAspectRatio')).toBe('none');
     expect(svg.getAttribute('shape-rendering')).toBe('crispEdges');
-    // Height is left to the sticker CSS (percentage of the sticker), not pinned here.
-    expect(svg.style.height).toBe('');
+    // Short bars like the shops' original stickers, not stretched to the sticker.
+    expect(BARCODE_HEIGHT_MM).toBe(6);
+    expect(svg.style.height).toBe('6mm');
   });
 
   it('pins a whole-dot width when one fits (EAN-13 on 34 mm → 2 dots)', () => {
