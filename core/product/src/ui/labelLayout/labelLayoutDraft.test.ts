@@ -262,9 +262,7 @@ describe('labelLayoutDraft property tests', () => {
           let expectedShowLabel: boolean;
           if (override !== undefined) expectedShowLabel = override;
           else if (!compact) expectedShowLabel = draft.showFieldLabels;
-          else if (zone === 'HEADER') expectedShowLabel = false;
-          else if (zone === 'RIGHT') expectedShowLabel = source!.valueType !== 'currency';
-          else expectedShowLabel = true;
+          else expectedShowLabel = false;
           expect(field.showLabel).toBe(expectedShowLabel);
         }
 
@@ -527,12 +525,11 @@ describe('dropFieldMaps', () => {
 });
 
 describe('toEffectiveLayout (compact resolution)', () => {
-  it('resolves per-zone showLabel defaults and currency RIGHT label-off', () => {
+  it('resolves zones and prints values only by default', () => {
     const effective = toEffectiveLayout(compactDraft(), COMPACT_CATALOG);
     const byKey = new Map(effective.enabledFields.map((f) => [f.fieldKey, f] as const));
     expect(byKey.get('shopName')).toMatchObject({ zone: 'HEADER', showLabel: false });
-    expect(byKey.get('productName')).toMatchObject({ zone: 'LEFT', showLabel: true });
-    // mrp is RIGHT + currency → label off by default.
+    expect(byKey.get('productName')).toMatchObject({ zone: 'LEFT', showLabel: false });
     expect(byKey.get('mrp')).toMatchObject({ zone: 'RIGHT', showLabel: false });
     expect(effective.template).toBe('COMPACT');
     expect(effective.currencyStyle).toBe('RUPEE_SYMBOL');

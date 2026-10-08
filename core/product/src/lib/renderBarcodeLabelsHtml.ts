@@ -32,17 +32,19 @@ export type RenderOptions = { startPosition?: number };
  * Sticker-level CSS for the `COMPACT` template (Req 11). Shared verbatim between the
  * `ROLL` and `SHEET` style blocks so a compact sticker renders identically in both.
  * The base `.sticker`, `.bars`, `.code` and `.line` rules still apply; these add the
- * header band, the two-column body and the condensed type scale.
+ * header band, the two-column body and the condensed type scale. Left-column lines
+ * wrap at word breaks to at most two lines instead of being cut with "…"; the header
+ * and the right column (prices) stay on one line. The sticker never grows past its size.
  */
 const COMPACT_CSS = `.compact{align-items:stretch;padding:1.5mm;font-family:"Arial Narrow","Roboto Condensed","Liberation Sans Narrow",system-ui,sans-serif}
-    .compact .hdr{width:100%;font-size:11pt;font-weight:700;text-transform:uppercase}
+    .compact .hdr{width:100%;font-size:9pt;font-weight:700;text-transform:uppercase}
     .compact .hdr .line{text-align:left}
     .compact .body{display:flex;gap:1.5mm;flex:1;min-height:0}
     .compact .col{display:flex;flex-direction:column;min-width:0}
     .compact .left{flex:3}
     .compact .right{flex:2;text-align:right}
-    .compact .left .line{font-size:7.5pt;text-align:left}
-    .compact .right .line{font-size:10pt;font-weight:700;text-align:right}
+    .compact .left .line{font-size:8pt;text-align:left;white-space:normal;overflow-wrap:break-word;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-height:1.15}
+    .compact .right .line{font-size:9pt;font-weight:700;text-align:right}
     .compact .bars{height:30%;width:100%}
     .compact .code{font-size:9pt;letter-spacing:1px;text-align:center}`;
 
@@ -183,10 +185,8 @@ export function computeCompactZones(label: LabelData, layout: EffectiveLabelLayo
 
     const key = field.fieldKey;
     const zone: LabelZone = field.zone ?? layout.fieldZones?.[key] ?? 'LEFT';
-    const showLabel =
-      field.showLabel ??
-      layout.fieldLabelOverrides?.[key] ??
-      (zone === 'HEADER' ? false : zone === 'RIGHT' ? field.valueType !== 'currency' : true);
+    // The server resolves `showLabel` (COMPACT: values only unless overridden).
+    const showLabel = field.showLabel ?? layout.fieldLabelOverrides?.[key] ?? false;
 
     const value = resolveFieldValue(label, key);
     let text: string;
