@@ -24,7 +24,9 @@ COPY core/user/package.json ./core/user/
 COPY core/pricing/package.json ./core/pricing/
 COPY core/product/package.json ./core/product/
 
-RUN pnpm install --frozen-lockfile --prod --ignore-scripts
+# Full install, not --prod: the SSR bundle side-effect-imports @react-router/dev/routes,
+# which is a devDependency, so react-router-serve fails to start without it.
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
 COPY apps/inventory/build ./apps/inventory/build
 
