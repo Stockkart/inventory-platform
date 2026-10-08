@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
-import { renderBarcodeLabelsHtml } from './renderBarcodeLabelsHtml';
+import { renderBarcodeLabelsHtml, snapToDots } from './renderBarcodeLabelsHtml';
+import { DOT_MM } from './barcodeDots';
 import type { EffectiveLabelLayout, LabelData, RollSpec } from '../model/labelLayout.types';
 
 /**
@@ -45,8 +46,9 @@ describe('renderBarcodeLabelsHtml ROLL with a rollSpec', () => {
     const { html } = result;
 
     expect(html).toContain('@page { size: 79mm 38mm; margin: 0 }');
-    expect(html).toContain('grid-template-columns: repeat(2, 38mm)');
-    expect(html).toContain('column-gap: 3mm');
+    // Column pitch = label + gap, snapped to whole printer dots (41 mm → 328 dots).
+    expect(html).toContain(`grid-template-columns: repeat(2, ${snapToDots(41)}mm)`);
+    expect(html).not.toContain('column-gap');
     expect(html).toContain('width: 79mm; height: 38mm');
     expect(html).toContain('border:none');
     expect(html).not.toContain('dashed');
@@ -87,8 +89,24 @@ describe('renderBarcodeLabelsHtml ROLL with a rollSpec', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.html).toContain('@page { size: 50mm 25mm; margin: 0 }');
-    expect(result.html).toContain('grid-template-columns: repeat(1, 50mm)');
+    expect(result.html).toContain(`grid-template-columns: repeat(1, ${snapToDots(50)}mm)`);
     expect(countOccurrences(result.html, 'class="page"')).toBe(2);
+  });
+
+  it('snaps the column pitch to whole 203 dpi printer dots', () => {
+    expect(snapToDots(41)).toBeCloseTo(328 * DOT_MM, 4);
+    expect(Math.abs(snapToDots(41) - 41)).toBeLessThan(DOT_MM / 2 + 1e-4);
+    expect(snapToDots(0)).toBe(0);
+    // Whole-dot inputs are left alone (to the 4-decimal rounding).
+    expect(snapToDots(328 * DOT_MM)).toBeCloseTo(328 * DOT_MM, 4);
+  });
+
+  it('page layouts print every text line at least semibold so strokes survive the dot grid', () => {
+    const result = renderBarcodeLabelsHtml(makeLabels(1), rollLayout());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.html).toContain('text-align:center;font-weight:600}');
+    expect(result.html).toContain('.code+.line,.bars+.line{font-weight:700}');
   });
 
   it('renders COMPACT stickers inside the roll grid', () => {
