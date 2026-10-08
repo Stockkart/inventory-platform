@@ -2,7 +2,7 @@
 FROM node:20-alpine AS builder
 
 # Install pnpm
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9.8.0
 
 # Set working directory
 WORKDIR /app
@@ -31,13 +31,14 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 
 # Build the application
+ENV NX_DAEMON=false
 RUN pnpm nx build inventory
 
 # Production stage
 FROM node:20-alpine AS production
 
 # Install pnpm
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9.8.0
 
 # Set working directory
 WORKDIR /app
