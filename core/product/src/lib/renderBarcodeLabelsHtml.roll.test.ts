@@ -184,3 +184,13 @@ describe('renderBarcodeLabelsHtml ROLL with a rollSpec', () => {
     );
   });
 });
+
+describe('page layouts: barcode text size', () => {
+  it('prints the code line at the same 9pt as the field lines', () => {
+    const result = renderBarcodeLabelsHtml(makeLabels(1), rollLayout());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.html).toContain('.code{font-size:9pt;letter-spacing:.5px}');
+    expect(result.html).toContain('.line{font-size:9pt}');
+  });
+});

@@ -58,7 +58,7 @@ const COMPACT_CSS = `.compact{align-items:stretch;padding:1.5mm;font-family:"Ari
 const PAGE_STICKER_CSS = `.sticker{box-sizing:border-box;display:inline-flex;flex-direction:column;align-items:center;justify-content:flex-start;border:none;padding:2mm;overflow:hidden;page-break-inside:avoid}
     .bars{height:38%;width:90%}
     .code,.line{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:system-ui,sans-serif;text-align:center;font-weight:600}
-    .code{font-size:10pt;letter-spacing:.5px}
+    .code{font-size:9pt;letter-spacing:.5px}
     .line{font-size:9pt}
     .code+.line,.bars+.line{font-weight:700}
     ${COMPACT_CSS}`;
