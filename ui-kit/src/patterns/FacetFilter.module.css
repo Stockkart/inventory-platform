@@ -36,7 +36,59 @@
 .dropdown {
   position: relative;
   display: inline-flex;
+  align-items: stretch;
   flex-shrink: 0;
+  max-width: 100%;
+}
+
+.dropdownHasRemove .dropdownButton {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-right: none;
+  padding-right: 0.5rem;
+}
+
+.dropdownRemove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 2.25rem;
+  width: 1.9rem;
+  padding: 0;
+  border: 1px solid var(--sk-color-border-default);
+  border-radius: 0 999px 999px 0;
+  background: var(--sk-color-bg-surface, #fff);
+  color: var(--sk-color-text-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.dropdownRemove:hover:not(:disabled) {
+  color: var(--sk-color-danger, #dc2626);
+  background: color-mix(in srgb, var(--sk-color-danger, #dc2626) 8%, transparent);
+}
+
+.dropdownRemove:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--sk-color-focus-ring);
+}
+
+.dropdownHasRemove .dropdownButtonActive + .dropdownRemove {
+  border-color: color-mix(in srgb, var(--sk-color-brand, #3b82f6) 45%, transparent);
+}
+
+.dropdownLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 18rem;
+}
+
+.dropdownValue {
+  font-weight: 400;
+  color: inherit;
+  opacity: 0.85;
 }
 
 .dropdownButton {

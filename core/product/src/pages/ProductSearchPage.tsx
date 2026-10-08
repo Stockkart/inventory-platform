@@ -436,6 +436,9 @@ export function ProductSearchPage() {
         state={search.state}
         facets={search.facets}
         onChange={search.applyPanel}
+        pinned={search.pinned}
+        onPin={search.pin}
+        onUnpin={search.unpin}
         disabled={search.fieldsLoading}
         end={
           <SortSelect

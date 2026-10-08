@@ -49,6 +49,10 @@ export type SearchMode = 'settingUp' | 'refining';
 
 export interface ProductSearchController {
   mode: SearchMode;
+  /** Fields whose pill is on the strip without a filter yet (filters in the URL imply a pill). */
+  pinned: readonly string[];
+  pin: (fieldKey: string) => void;
+  unpin: (fieldKey: string) => void;
   fields: readonly SearchField[];
   fieldsLoading: boolean;
   defaultSort: string | null;
@@ -98,6 +102,17 @@ export function useProductSearch(): ProductSearchController {
   const [draft, setDraft] = useState<SearchState>(() => committed ?? emptySearchState());
   const [textInput, setTextInput] = useState(() => committed?.text ?? '');
   const lastWritten = useRef<string | null>(null);
+  // Pills added through "+ Add filter" that hold no filter yet. Counts are requested for these and
+  // for fields with a filter — never for the whole catalog (R10.1). Once the URL carries a filter
+  // for a pinned field the pin is dropped: the filter itself keeps the pill.
+  const [pinned, setPinned] = useState<string[]>([]);
+  useEffect(() => {
+    if (!committed) return;
+    setPinned((prev) => {
+      const next = prev.filter((k) => !committed.filters.some((g) => g.field === k));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [committed]);
   // A failed search keeps the previous answer on screen next to the error (R6.11). TanStack only
   // keeps the previous data while loading, not after an error, so the last good answer is held here.
   const lastGood = useRef<SearchResponse | undefined>(undefined);
@@ -184,10 +199,15 @@ export function useProductSearch(): ProductSearchController {
     setSearchParams(params);
     setDraft(emptySearchState());
     setTextInput('');
+    setPinned([]);
   }, [searchParams, setSearchParams]);
 
   // ---- the request -----------------------------------------------------------------------------
-  const keys = useMemo(() => facetKeys(fields), [fields]);
+  const keys = useMemo(() => {
+    const wanted = new Set<string>(pinned);
+    for (const g of committed?.filters ?? []) wanted.add(g.field);
+    return facetKeys(fields).filter((k) => wanted.has(k));
+  }, [fields, pinned, committed]);
   // The last counts we received and the criteria they belong to.
   const facetCache = useRef<{ criteria: SearchState; facets: Record<string, FacetValue[]> } | null>(
     null,
@@ -196,12 +216,19 @@ export function useProductSearch(): ProductSearchController {
   // Decided once per URL change (not re-derived when the answer lands, or the key would change
   // again and trigger a second request): a page or size turn on the same criteria asks for no
   // facets, because the counts on screen are still right (R10.1).
+  const keysSignature = keys.join('|');
   const request = useMemo(() => {
     if (!committed || !catalog.data) return null;
+    const wanted = keysSignature ? keysSignature.split('|') : [];
     const cached = facetCache.current;
-    const withFacets = !cached || !sameCriteria(cached.criteria, committed);
-    return toSearchRequest(committed, keys, 'product-search', withFacets);
-  }, [committed, catalog.data, keys]);
+    const withFacets =
+      !cached ||
+      !sameCriteria(cached.criteria, committed) ||
+      wanted.some((k) => !(k in cached.facets));
+    return toSearchRequest(committed, wanted, 'product-search', withFacets);
+    // keyed by the facet keys' content so a same-content array does not re-decide `withFacets`
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [committed, catalog.data, keysSignature]);
   const query = useInventorySearchQuery(request);
 
   useEffect(() => {
@@ -214,13 +241,19 @@ export function useProductSearch(): ProductSearchController {
   const facets =
     request && request.facets.length > 0 && query.data && !query.isPlaceholderData
       ? query.data.facets
-      : facetCache.current?.facets;
+      : committed
+      ? facetCache.current?.facets
+      : undefined;
 
   if (query.data) lastGood.current = query.data;
   const result = query.data ?? (committed ? lastGood.current : undefined);
 
   return {
     mode,
+    pinned,
+    pin: (key) => setPinned((prev) => (prev.includes(key) ? prev : [...prev, key])),
+    unpin: (key) =>
+      setPinned((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : prev)),
     fields,
     fieldsLoading: catalog.isLoading,
     defaultSort,

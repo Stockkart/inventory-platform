@@ -39,6 +39,9 @@ testem.log
 .env.local
 .env.*.local
 
+# Vercel CLI (written by `vercel pull` / `vercel build` in the deploy pipeline)
+.vercel
+
 # System Files
 .DS_Store
 Thumbs.db
