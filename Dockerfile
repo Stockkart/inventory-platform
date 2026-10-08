@@ -60,7 +60,7 @@ COPY core/pricing/package.json ./core/pricing/
 COPY core/product/package.json ./core/product/
 
 # Install production dependencies only
-RUN pnpm install --frozen-lockfile --prod
+RUN pnpm install --frozen-lockfile --prod --ignore-scripts
 
 # Copy built application from builder
 COPY --from=builder /app/apps/inventory/build ./apps/inventory/build
